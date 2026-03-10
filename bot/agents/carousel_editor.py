@@ -58,13 +58,39 @@ def edit_carousel_sync(raw_slides: list[str], topic: str) -> list[str]:
     )
     text = resp.content[0].text.strip()
 
-    slides: list[str] = []
-    for line in text.splitlines():
-        line = line.strip()
-        for i in range(1, 7):
-            if line.startswith(f"SLIDE{i}:"):
-                slides.append(line.split(":", 1)[1].strip())
-                break
+    slides = _parse_slides(text, count=6)
 
     # Fallback: return originals if parsing failed
     return slides[:6] if len(slides) >= 4 else raw_slides
+
+
+def _parse_slides(text: str, count: int = 6) -> list[str]:
+    """Parse SLIDE1: ... SLIDE{count}: blocks, handling multi-line content."""
+    slots: dict[int, list[str]] = {}
+    current: int | None = None
+
+    for line in text.splitlines():
+        stripped = line.strip()
+        matched = False
+        for i in range(1, count + 1):
+            prefix = f"SLIDE{i}:"
+            if stripped.upper().startswith(prefix.upper()):
+                current = i
+                slots[i] = []
+                after = stripped[len(prefix):].strip()
+                if after:
+                    slots[i].append(after)
+                matched = True
+                break
+        if not matched and current is not None:
+            # Stop accumulating at IMG_PROMPT or empty separator between slides
+            if stripped.upper().startswith("IMG_PROMPT"):
+                current = None
+            elif stripped:
+                slots[current].append(stripped)
+
+    result = []
+    for i in range(1, count + 1):
+        if i in slots:
+            result.append(" ".join(slots[i]))
+    return result
