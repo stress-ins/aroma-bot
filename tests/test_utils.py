@@ -80,6 +80,7 @@ class TestFixDashes:
 # ---------------------------------------------------------------------------
 
 from bot.handlers.threads import _claude_topics as _real_claude_topics
+from bot.agents.content import parse_numbered_list, parse_content_draft, format_content_message
 
 
 def _parse_topics(raw: str) -> list[str]:
@@ -116,6 +117,83 @@ class TestParseTopics:
         raw = "1.   Тема с пробелами   "
         topics = _parse_topics(raw)
         assert topics[0] == "Тема с пробелами"
+
+
+class TestAgentParseNumberedList:
+    def test_parses_limited_list(self):
+        raw = "\n".join(f"{i}. Тема {i}" for i in range(1, 13))
+        topics = parse_numbered_list(raw)
+        assert len(topics) == 10
+
+    def test_fixes_long_dash(self):
+        raw = "1. Тема — про регуляцию"
+        topics = parse_numbered_list(raw)
+        assert topics == ["Тема - про регуляцию"]
+
+
+class TestParseContentDraft:
+    def test_regular_post_draft(self):
+        raw = (
+            "ANGLE: Через запах проще заметить, насколько тело перегружено\n"
+            "HOOK: Иногда нервная система просит не мотивацию, а паузу\n"
+            "CAPTION: Я часто вижу, как аромат возвращает человека в тело быстрее длинных объяснений.\n"
+            "CTA: Если хочешь такой формат для себя или команды, напиши мне.\n"
+            "HASHTAGS: #ароматерапия #нервнаясистема\n"
+            "VISUAL_PROMPT: warm minimalist wellness photo, essential oils, soft daylight"
+        )
+        draft = parse_content_draft(raw)
+        assert "паузу" in draft.hook
+        assert draft.slides == []
+        assert "essential oils" in draft.visual_prompt
+
+    def test_carousel_draft(self):
+        raw = (
+            "ANGLE: Сенсорный ритуал как быстрый вход в контакт с собой\n"
+            "HOOK: Когда голова шумит, начинай не с мыслей, а с ощущений\n"
+            "SLIDE1: Стресс часто начинается с потери контакта с телом\n"
+            "SLIDE2: Запах помогает быстрее вернуться в момент\n"
+            "SLIDE3: Звук замедляет внутренний темп\n"
+            "SLIDE4: Вместе они создают мягкую опору\n"
+            "SLIDE5: Такой формат хорошо работает и в личной, и в корпоративной практике\n"
+            "CTA: Хочешь попробовать такой опыт - напиши мне\n"
+            "HASHTAGS: #гонг #медитация\n"
+            "VISUAL_PROMPT: calm sensory ritual, gong, warm neutral palette"
+        )
+        draft = parse_content_draft(raw)
+        assert len(draft.slides) == 5
+        assert draft.caption == ""
+
+    def test_multiline_caption_preserved(self):
+        raw = (
+            "ANGLE: Через тело проще заметить перегрузку\n"
+            "HOOK: Иногда лучший шаг - замедлиться\n"
+            "CAPTION: Я часто использую запах как мягкий способ вернуться в ощущение себя.\n"
+            "Это не магия и не обещание быстрого исцеления.\n"
+            "Это конкретный телесный якорь.\n"
+            "CTA: Если тебе близок такой подход, напиши мне.\n"
+            "HASHTAGS: #сенсорныепрактики\n"
+            "VISUAL_PROMPT: quiet ritual, aroma oil, warm light"
+        )
+        draft = parse_content_draft(raw)
+        assert "телесный якорь" in draft.caption
+
+
+class TestFormatContentMessage:
+    def test_formats_carousel(self):
+        draft = parse_content_draft(
+            "ANGLE: a\nHOOK: b\nSLIDE1: 1\nSLIDE2: 2\nSLIDE3: 3\nSLIDE4: 4\nSLIDE5: 5\nCTA: c\nHASHTAGS: #x\nVISUAL_PROMPT: prompt"
+        )
+        text = format_content_message(draft, "Тема", "trust", "carousel")
+        assert "SLIDES" in text
+        assert "TEXT" not in text
+
+    def test_formats_regular_post(self):
+        draft = parse_content_draft(
+            "ANGLE: a\nHOOK: b\nCAPTION: caption\nCTA: c\nHASHTAGS: #x\nVISUAL_PROMPT: prompt"
+        )
+        text = format_content_message(draft, "Тема", "sales", "telegram")
+        assert "TEXT" in text
+        assert "caption" in text
 
 
 # ---------------------------------------------------------------------------
