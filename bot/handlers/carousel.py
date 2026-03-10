@@ -59,7 +59,7 @@ _PROMPT_CAROUSEL = """\
 - Живой язык, от первого лица, без клише и длинных тире
 - Базовый промпт для фото (английский, 15-25 слов) в стиле Nana Banana: \
 палитра терракота + беж + шалфей, природные элементы, мягкий свет, атмосферно, \
-square 1:1 composition. Заканчивай: --ar 1:1 --style atmospheric
+large empty area for text overlay, square 1:1 composition. Заканчивай: --ar 1:1 --style atmospheric
 
 Формат — строго:
 SLIDE1: [текст]
@@ -138,7 +138,10 @@ def _generate_slide_image_prompts_sync(slides: list[str], topic: str) -> list[st
         "Dried herbs, incense smoke, stones, candles, hands on skin, wood textures, "
         "natural fabric. Soft diffused natural light. Minimal lifestyle atmosphere.\n"
         "Forbidden: stock photo look, plastic, harsh shadows, white/grey backgrounds, "
-        "faces, any text or typography.\n\n"
+        "faces, any text or typography.\n"
+        "Required: leave a large clear area (at least 1/3 of frame) with minimal visual "
+        "complexity — blurred background, flat surface, negative space, or soft gradient — "
+        "so that text overlay remains readable.\n\n"
         "Generate one unique image prompt for each slide below.\n"
         "Each prompt must:\n"
         "- Be 25-40 words in English\n"
