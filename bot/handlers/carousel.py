@@ -775,7 +775,11 @@ async def cb_carousel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
         topic = topics[idx]
         status = await query.message.reply_text("⏳ Начинаю...")
-        await _run_carousel(query, context, topic, status)
+        try:
+            await _run_carousel(query, context, topic, status)
+        except Exception:
+            logger.exception("_run_carousel failed")
+            await query.message.reply_text("❌ Ошибка при генерации. Попробуй ещё раз.")
         return
 
     # ── Prompt buttons ────────────────────────────────────────────────────
@@ -863,7 +867,11 @@ async def cb_carousel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             await query.message.reply_text("❌ Тема не найдена. Запроси /carousel заново.")
             return
         status = await query.message.reply_text("🔄 Пересоздаю карусель...")
-        await _run_carousel(query, context, topic, status)
+        try:
+            await _run_carousel(query, context, topic, status)
+        except Exception:
+            logger.exception("_run_carousel (regen) failed")
+            await query.message.reply_text("❌ Ошибка при генерации. Попробуй ещё раз.")
         return
 
     # ── Slide editor ──────────────────────────────────────────────────────
@@ -1063,7 +1071,11 @@ async def msg_carousel_topic(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
     context.user_data["ca_awaiting_topic"] = False
     status = await update.message.reply_text("⏳ Начинаю...")
-    await _run_carousel(update.message, context, text, status)
+    try:
+        await _run_carousel(update.message, context, text, status)
+    except Exception:
+        logger.exception("_run_carousel (topic msg) failed")
+        await update.message.reply_text("❌ Ошибка при генерации. Попробуй ещё раз.")
 
 
 async def msg_carousel_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
