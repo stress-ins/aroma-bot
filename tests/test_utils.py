@@ -81,8 +81,15 @@ class TestFixDashes:
 # ---------------------------------------------------------------------------
 
 from bot.handlers.threads import _claude_topics as _real_claude_topics
-from bot.agents.content import parse_numbered_list, parse_content_draft, format_content_message
-from bot.agents.content import _has_structured_content
+from bot.agents.content import (
+    _has_structured_content,
+    format_content_message,
+    make_single_image_prompt,
+    make_slide_prompts_no_text,
+    make_slide_prompts_with_text,
+    parse_content_draft,
+    parse_numbered_list,
+)
 
 
 def _parse_topics(raw: str) -> list[str]:
@@ -234,6 +241,24 @@ class TestContentSourceLabel:
         assert _source_label("prompt") == "Свой запрос"
 
 
+class TestContentImagePrompts:
+    def test_with_text_prompts_include_each_slide(self):
+        result = make_slide_prompts_with_text("base prompt", ["Слайд один", "Слайд два"])
+        assert "Слайд 1:" in result
+        assert "Слайд один" in result
+        assert "text overlay" in result
+
+    def test_without_text_prompts_preserve_negative_space(self):
+        result = make_slide_prompts_no_text("base prompt", ["Слайд один"])
+        assert "negative space for text" in result
+        assert "no typography" in result
+
+    def test_single_prompt_can_be_built_without_text(self):
+        prompt = make_single_image_prompt("base prompt", "Заголовок слайда", with_text=False)
+        assert "Заголовок слайда" in prompt
+        assert "no typography" in prompt
+
+
 # ---------------------------------------------------------------------------
 # _claude_carousel parser (carousel.py) — tests parsing logic
 # ---------------------------------------------------------------------------
@@ -298,11 +323,39 @@ class TestParseCarousel:
 # _make_slide_prompts_with_text / _make_slide_prompts_no_text (carousel.py)
 # ---------------------------------------------------------------------------
 
-from bot.handlers.carousel import _make_slide_prompts_with_text, _make_slide_prompts_no_text
+from bot.handlers.carousel import _make_slide_prompts_with_text, _make_slide_prompts_no_text, _format_for_canva
 
 _SLIDES = ["Хук — лаванда снимает стресс", "3 масла для офиса", "Медитация за 15 минут",
            "Корпоративы с ароматерапией", "Запишись сейчас"]
 _BASE = "warm minimal photo, essential oils, beige tones"
+
+
+class TestFormatForCanva:
+    def test_contains_all_slides(self):
+        slides = ["Хук слайд", "Слайд 2", "Слайд 3", "Слайд 4", "CTA слайд"]
+        text = _format_for_canva(slides)
+        for slide in slides:
+            assert slide in text
+
+    def test_has_canva_label(self):
+        slides = ["a", "b", "c", "d", "e"]
+        text = _format_for_canva(slides)
+        assert "Canva" in text
+
+    def test_hook_label_on_first_slide(self):
+        slides = ["Хук", "б", "в", "г", "д"]
+        text = _format_for_canva(slides)
+        assert "Хук" in text
+
+    def test_cta_label_on_last_slide(self):
+        slides = ["а", "б", "в", "г", "CTA текст"]
+        text = _format_for_canva(slides)
+        assert "CTA" in text
+
+    def test_has_nana_banana_hint(self):
+        slides = ["а", "б", "в", "г", "д"]
+        text = _format_for_canva(slides)
+        assert "Nana Banana" in text
 
 
 class TestSlidePromptsWithText:
