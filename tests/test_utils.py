@@ -323,11 +323,45 @@ class TestParseCarousel:
 # _make_slide_prompts_with_text / _make_slide_prompts_no_text (carousel.py)
 # ---------------------------------------------------------------------------
 
-from bot.handlers.carousel import _make_slide_prompts_with_text, _make_slide_prompts_no_text, _format_for_canva
+from bot.handlers.carousel import (
+    _make_slide_prompts_with_text, _make_slide_prompts_no_text,
+    _format_for_canva, _build_pptx,
+)
 
 _SLIDES = ["Хук — лаванда снимает стресс", "3 масла для офиса", "Медитация за 15 минут",
            "Корпоративы с ароматерапией", "Запишись сейчас"]
 _BASE = "warm minimal photo, essential oils, beige tones"
+
+
+class TestBuildPptx:
+    _SLIDES = ["Хук", "Слайд 2", "Слайд 3", "Слайд 4", "CTA"]
+
+    def test_returns_bytes(self):
+        result = _build_pptx(self._SLIDES)
+        assert isinstance(result, bytes)
+        assert len(result) > 1000
+
+    def test_pptx_magic_bytes(self):
+        # PPTX is a ZIP file — starts with PK
+        result = _build_pptx(self._SLIDES)
+        assert result[:2] == b"PK"
+
+    def test_with_images(self):
+        import struct, zlib
+        sig = b"\x89PNG\r\n\x1a\n"
+        ihdr = b"\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde"
+        idat_data = zlib.compress(b"\x00\xff\xff\xff")
+        idat = struct.pack(">I", len(idat_data)) + b"IDAT" + idat_data
+        idat += struct.pack(">I", zlib.crc32(b"IDAT" + idat_data) & 0xFFFFFFFF)
+        iend = b"\x00\x00\x00\x00IEND\xaeB`\x82"
+        tiny_png = sig + ihdr + idat + iend
+        result = _build_pptx(self._SLIDES, [tiny_png] * 5)
+        assert result[:2] == b"PK"
+        assert len(result) > 1000
+
+    def test_partial_images(self):
+        result = _build_pptx(self._SLIDES, [None, None, None, None, None])
+        assert result[:2] == b"PK"
 
 
 class TestFormatForCanva:
