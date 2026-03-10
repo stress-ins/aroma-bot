@@ -29,8 +29,14 @@ def build_application() -> Application:
     app.add_handler(CallbackQueryHandler(yt_thumbs_callback, pattern="^yt_thumbs$"))
     for h in build_threads_handler():
         app.add_handler(h)
+    from telegram.ext import filters as tg_filters
     for h in build_carousel_handler():
-        app.add_handler(h)
+        # TEXT MessageHandler → group 2 (content=0, adapt=1, carousel=2)
+        # PHOTO/Command/Callback handlers → group 0
+        if isinstance(h, MessageHandler) and not (h.filters & tg_filters.PHOTO):
+            app.add_handler(h, group=2)
+        else:
+            app.add_handler(h)
     for h in build_content_handler():
         app.add_handler(h)
     for h in build_adapt_handler():
