@@ -678,35 +678,42 @@ async def _run_carousel(query_or_message, context: ContextTypes.DEFAULT_TYPE,
 
     target = query_or_message if hasattr(query_or_message, "reply_text") else query_or_message.message
 
-    def _build_slides_text(slides_list: list[str], max_len: int = 3800) -> str:
-        """Build combined slides text; truncate individual slides if needed to fit."""
-        lines = []
-        for i, s in enumerate(slides_list):
-            label = _SLIDE_LABELS[i] if i < len(_SLIDE_LABELS) else f"Слайд {i + 1}"
-            lines.append(f"<b>{_html.escape(label)}</b>\n{_html.escape(s)}")
-        text = "\n\n".join(lines)
-        if len(text) <= max_len:
-            return text
-        # Shorten each slide proportionally to fit
-        budget = max_len // len(slides_list) - 30
-        lines = []
-        for i, s in enumerate(slides_list):
-            label = _SLIDE_LABELS[i] if i < len(_SLIDE_LABELS) else f"Слайд {i + 1}"
-            short = s[:budget].rsplit(" ", 1)[0] + "…" if len(s) > budget else s
-            lines.append(f"<b>{_html.escape(label)}</b>\n{_html.escape(short)}")
-        return "\n\n".join(lines)
-
-    slides_body = _build_slides_text(slides)
     keyboard = _text_review_keyboard(len(slides))
-    full_text = f"📝 <b>Тексты слайдов готовы:</b>\n\n{slides_body}\n\nНажми номер слайда чтобы изменить, или генерируй картинки:"
-    try:
-        await status_msg.edit_text(full_text, parse_mode="HTML", reply_markup=keyboard)
-    except Exception:
+
+    lines = []
+    for i, s in enumerate(slides):
+        label = _SLIDE_LABELS[i] if i < len(_SLIDE_LABELS) else f"Слайд {i + 1}"
+        lines.append(f"<b>{_html.escape(label)}</b>\n{_html.escape(s)}")
+    slides_body = "\n\n".join(lines)
+
+    header = "📝 <b>Тексты слайдов готовы:</b>\n\n"
+    footer = "\n\nНажми номер слайда чтобы изменить, или генерируй картинки:"
+    full_text = header + slides_body + footer
+
+    # Telegram HTML limit is ~4096 rendered chars; split into two messages if needed
+    if len(full_text) <= 4096:
         try:
-            await status_msg.delete()
+            await status_msg.edit_text(full_text, parse_mode="HTML", reply_markup=keyboard)
         except Exception:
-            pass
-        await target.reply_text(full_text, parse_mode="HTML", reply_markup=keyboard)
+            try:
+                await status_msg.delete()
+            except Exception:
+                pass
+            await target.reply_text(full_text, parse_mode="HTML", reply_markup=keyboard)
+    else:
+        # Send first half of slides, then second half + keyboard
+        mid = len(slides) // 2
+        part1 = header + "\n\n".join(lines[:mid])
+        part2 = "\n\n".join(lines[mid:]) + footer
+        try:
+            await status_msg.edit_text(part1, parse_mode="HTML")
+        except Exception:
+            try:
+                await status_msg.delete()
+            except Exception:
+                pass
+            await target.reply_text(part1, parse_mode="HTML")
+        await target.reply_text(part2, parse_mode="HTML", reply_markup=keyboard)
 
 
 # ── Command handler ──────────────────────────────────────────────────────────
