@@ -88,6 +88,16 @@ def _make_slide_prompts_no_text(base: str, slides: list[str]) -> str:
     return "\n".join(lines)
 
 
+def _format_for_canva(slides: list[str]) -> str:
+    SLIDE_LABELS = ["Слайд 1 — Хук", "Слайд 2", "Слайд 3", "Слайд 4", "Слайд 5 — CTA"]
+    parts = ["📋 Тексты для Canva:\n"]
+    for i, slide in enumerate(slides):
+        label = SLIDE_LABELS[i] if i < len(SLIDE_LABELS) else f"Слайд {i + 1}"
+        parts.append(f"━━━ {label} ━━━\n{slide}")
+    parts.append("\n💡 Используй как фон изображения из Nana Banana (без текста), добавляй текст в Canva из Brand Kit.")
+    return "\n\n".join(parts)
+
+
 def _carousel_keyboard(topics: list[str]) -> InlineKeyboardMarkup:
     row = [InlineKeyboardButton(str(i + 1), callback_data=f"ca:g:{i}") for i in range(len(topics))]
     buttons = [row[i:i+5] for i in range(0, len(row), 5)]
@@ -95,11 +105,14 @@ def _carousel_keyboard(topics: list[str]) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(buttons)
 
 
-def _prompt_buttons() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup([[
-        InlineKeyboardButton("🖼 Промпт с текстом", callback_data="ca:prompt:text"),
-        InlineKeyboardButton("🖼 Промпт без текста", callback_data="ca:prompt:notxt"),
-    ]])
+def _action_buttons() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("🍌 Nana Banana (с текстом)", callback_data="ca:prompt:text"),
+            InlineKeyboardButton("🍌 Nana Banana (без текста)", callback_data="ca:prompt:notxt"),
+        ],
+        [InlineKeyboardButton("📋 Тексты для Canva", callback_data="ca:prompt:canva")],
+    ])
 
 
 async def cmd_carousel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -183,6 +196,10 @@ async def cb_carousel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
         await status.delete()
 
+        # Always store slides for action buttons
+        context.user_data["ca_slides"] = slides
+        context.user_data["ca_img_prompt"] = img_prompt
+
         # Always send slide texts
         slides_text = "\n\n".join(f"Слайд {i+1}:\n{s}" for i, s in enumerate(slides))
         await query.message.reply_text(f"📝 Тексты слайдов:\n\n{slides_text}")
@@ -190,13 +207,15 @@ async def cb_carousel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         if media:
             for i in range(0, len(media), 10):
                 await query.message.reply_media_group(media[i:i+10])
-        else:
-            # Store prompts for buttons
-            context.user_data["ca_slides"] = slides
-            context.user_data["ca_img_prompt"] = img_prompt
             await query.message.reply_text(
-                "⚠️ Картинки не удалось сгенерировать автоматически.\nПолучи промпты для Nano Banana:",
-                reply_markup=_prompt_buttons(),
+                "🎨 Хочешь использовать Nana Banana + Canva вместо автогенерации?",
+                reply_markup=_action_buttons(),
+            )
+        else:
+            await query.message.reply_text(
+                "⚠️ Картинки не удалось сгенерировать автоматически.\n"
+                "Сгенерируй фоны в Nana Banana и собери в Canva:",
+                reply_markup=_action_buttons(),
             )
         return
 
@@ -216,6 +235,14 @@ async def cb_carousel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             await query.message.reply_text("❌ Данные устарели. Сгенерируй карусель заново.")
             return
         await query.message.reply_text(_make_slide_prompts_no_text(img_prompt, slides))
+        return
+
+    if data == "ca:prompt:canva":
+        slides = context.user_data.get("ca_slides", [])
+        if not slides:
+            await query.message.reply_text("❌ Данные устарели. Сгенерируй карусель заново.")
+            return
+        await query.message.reply_text(_format_for_canva(slides))
 
 
 def build_carousel_handler():
