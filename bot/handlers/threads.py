@@ -43,9 +43,14 @@ _PROMPT_POST = """\
 """
 
 _PROMPT_IMAGE = """\
-Based on this Threads post topic: {topic}
-Create a short English image generation prompt (max 20 words) for a professional lifestyle photo \
-about aromatherapy. Warm tones, minimal, Instagram-worthy. Return only the prompt, nothing else.
+Based on this post topic: {topic}
+
+Generate a short English image prompt (max 25 words) for Midjourney/Nana Banana.
+Brand visual style: terracotta + beige + sage palette, dried herbs, incense smoke, stones, candles, hands, wood, fabric, soft natural light, minimal lifestyle atmosphere.
+Forbidden: stock photo look, plastic, white background, harsh light.
+End with: --ar 4:5 --style atmospheric
+
+Return only the image prompt, nothing else.
 """
 
 

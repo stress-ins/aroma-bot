@@ -411,3 +411,83 @@ class TestThreadsParsePost:
 
     def test_returns_none_for_empty(self):
         assert _parse_post("", "https://threads.net") is None
+
+
+# ---------------------------------------------------------------------------
+# adapter agent — ADAPT_PLATFORM_SPECS / adapt prompt constants
+# ---------------------------------------------------------------------------
+
+from bot.agents.adapter import ADAPT_PLATFORM_LABELS, ADAPT_PLATFORM_SPECS
+
+
+class TestAdapterAgent:
+    def test_all_platforms_have_labels(self):
+        for key in ["threads", "instagram", "telegram", "reels"]:
+            assert key in ADAPT_PLATFORM_LABELS
+
+    def test_all_platforms_have_specs(self):
+        for key in ADAPT_PLATFORM_LABELS:
+            assert key in ADAPT_PLATFORM_SPECS
+            assert len(ADAPT_PLATFORM_SPECS[key]) > 10
+
+    def test_threads_spec_mentions_length(self):
+        assert "450" in ADAPT_PLATFORM_SPECS["threads"]
+
+    def test_telegram_spec_longer_than_threads(self):
+        # telegram allows longer posts
+        assert "1200" in ADAPT_PLATFORM_SPECS["telegram"]
+
+
+# ---------------------------------------------------------------------------
+# reels agent — generate_reels_topics_sync parsing logic
+# ---------------------------------------------------------------------------
+
+from bot.agents.reels_agent import generate_reels_topics_sync, generate_reels_scenario_sync
+
+
+def _parse_reels_topics(raw: str) -> list[str]:
+    """Same parsing as generate_reels_topics_sync but without API call."""
+    topics: list[str] = []
+    for line in raw.strip().splitlines():
+        line = line.strip()
+        if line and line[0].isdigit() and ". " in line:
+            topics.append(line.split(". ", 1)[1].strip())
+    return topics[:7]
+
+
+class TestReelsTopicsParser:
+    def test_parses_numbered_list(self):
+        raw = "1. Хук про лаванду\n2. Медитация утром\n3. Гонг за 10 минут"
+        topics = _parse_reels_topics(raw)
+        assert topics == ["Хук про лаванду", "Медитация утром", "Гонг за 10 минут"]
+
+    def test_max_7_topics(self):
+        raw = "\n".join(f"{i}. Тема {i}" for i in range(1, 12))
+        topics = _parse_reels_topics(raw)
+        assert len(topics) == 7
+
+    def test_empty_returns_empty(self):
+        assert _parse_reels_topics("") == []
+
+    def test_ignores_non_numbered(self):
+        raw = "Вот темы:\n1. Тема одна\nТекст\n2. Тема два"
+        topics = _parse_reels_topics(raw)
+        assert len(topics) == 2
+
+
+# ---------------------------------------------------------------------------
+# planner agent — generate_plan_sync format check (structure/constants)
+# ---------------------------------------------------------------------------
+
+from bot.agents.planner import _PLAN_PROMPT, _BRAND_CONTEXT
+
+
+class TestPlannerConstants:
+    def test_plan_prompt_has_weekdays(self):
+        assert "пн" in _PLAN_PROMPT.lower() or "понедельник" in _PLAN_PROMPT.lower()
+
+    def test_plan_prompt_has_platform_section(self):
+        assert "Платформа" in _PLAN_PROMPT
+
+    def test_brand_context_mentions_ароматерапия(self):
+        assert "ароматерапия" in _BRAND_CONTEXT.lower() or "сенсорн" in _BRAND_CONTEXT.lower()
