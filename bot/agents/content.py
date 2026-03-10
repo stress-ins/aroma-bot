@@ -97,29 +97,31 @@ def parse_content_draft(raw: str) -> ContentDraft:
     current_field = ""
     for line in raw.strip().splitlines():
         line = line.strip()
-        if line.startswith("ANGLE:"):
-            draft.angle = _fix_dashes(line.split(":", 1)[1].strip())
+        probe = line.removeprefix("- ").strip()
+        probe = probe.replace("**", "").replace("__", "").strip()
+        if probe.startswith("ANGLE:"):
+            draft.angle = _fix_dashes(probe.split(":", 1)[1].strip())
             current_field = "angle"
-        elif line.startswith("HOOK:"):
-            draft.hook = _fix_dashes(line.split(":", 1)[1].strip())
+        elif probe.startswith("HOOK:"):
+            draft.hook = _fix_dashes(probe.split(":", 1)[1].strip())
             current_field = "hook"
-        elif line.startswith("CAPTION:"):
-            draft.caption = _fix_dashes(line.split(":", 1)[1].strip())
+        elif probe.startswith("CAPTION:"):
+            draft.caption = _fix_dashes(probe.split(":", 1)[1].strip())
             current_field = "caption"
-        elif line.startswith("CTA:"):
-            draft.cta = _fix_dashes(line.split(":", 1)[1].strip())
+        elif probe.startswith("CTA:"):
+            draft.cta = _fix_dashes(probe.split(":", 1)[1].strip())
             current_field = "cta"
-        elif line.startswith("HASHTAGS:"):
-            draft.hashtags = _fix_dashes(line.split(":", 1)[1].strip())
+        elif probe.startswith("HASHTAGS:"):
+            draft.hashtags = _fix_dashes(probe.split(":", 1)[1].strip())
             current_field = "hashtags"
-        elif line.startswith("VISUAL_PROMPT:"):
-            draft.visual_prompt = _fix_dashes(line.split(":", 1)[1].strip())
+        elif probe.startswith("VISUAL_PROMPT:"):
+            draft.visual_prompt = _fix_dashes(probe.split(":", 1)[1].strip())
             current_field = "visual_prompt"
         else:
             matched_slide = False
             for idx in range(1, 6):
-                if line.startswith(f"SLIDE{idx}:"):
-                    draft.slides.append(_fix_dashes(line.split(":", 1)[1].strip()))
+                if probe.startswith(f"SLIDE{idx}:"):
+                    draft.slides.append(_fix_dashes(probe.split(":", 1)[1].strip()))
                     current_field = ""
                     matched_slide = True
                     break
@@ -138,6 +140,18 @@ def parse_content_draft(raw: str) -> ContentDraft:
             elif current_field == "visual_prompt":
                 draft.visual_prompt = "\n".join(filter(None, [draft.visual_prompt, _fix_dashes(line)]))
     return draft
+
+
+def _has_structured_content(draft: ContentDraft) -> bool:
+    return any([
+        draft.angle,
+        draft.hook,
+        draft.caption,
+        draft.cta,
+        draft.hashtags,
+        draft.visual_prompt,
+        draft.slides,
+    ])
 
 
 def format_content_message(draft: ContentDraft, topic: str, goal_key: str, format_key: str) -> str:
@@ -290,7 +304,10 @@ def _generate_topics_sync(
 
 def _generate_draft_sync(topic: str, goal_key: str, format_key: str) -> ContentDraft:
     raw = _call_claude(_draft_prompt(topic, goal_key, format_key), max_tokens=1200)
-    return parse_content_draft(raw)
+    draft = parse_content_draft(raw)
+    if not _has_structured_content(draft) and raw.strip():
+        draft.caption = _fix_dashes(raw.strip())
+    return draft
 
 
 async def generate_topic_options(

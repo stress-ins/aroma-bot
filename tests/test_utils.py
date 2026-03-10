@@ -82,6 +82,7 @@ class TestFixDashes:
 
 from bot.handlers.threads import _claude_topics as _real_claude_topics
 from bot.agents.content import parse_numbered_list, parse_content_draft, format_content_message
+from bot.agents.content import _has_structured_content
 
 
 def _parse_topics(raw: str) -> list[str]:
@@ -177,6 +178,28 @@ class TestParseContentDraft:
         )
         draft = parse_content_draft(raw)
         assert "телесный якорь" in draft.caption
+
+    def test_markdown_labels_are_parsed(self):
+        raw = (
+            "**ANGLE:** Через тело проще заметить усталость\n"
+            "**HOOK:** Иногда лучше не форсировать, а замедлиться\n"
+            "**CAPTION:** Аромат может стать мягким якорем внимания.\n"
+            "**CTA:** Если хочешь такой формат, напиши мне.\n"
+            "**HASHTAGS:** #ароматерапия\n"
+            "**VISUAL_PROMPT:** warm ritual, essential oil, calm light"
+        )
+        draft = parse_content_draft(raw)
+        assert "замедлиться" in draft.hook
+        assert "#ароматерапия" in draft.hashtags
+
+
+class TestStructuredContent:
+    def test_empty_draft_is_not_structured(self):
+        assert _has_structured_content(parse_content_draft("")) is False
+
+    def test_markdown_draft_is_structured(self):
+        draft = parse_content_draft("**CAPTION:** Готовый текст")
+        assert _has_structured_content(draft) is True
 
 
 class TestFormatContentMessage:
