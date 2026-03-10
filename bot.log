@@ -1,0 +1,775 @@
+/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/bot/handlers/keywords.py:232: PTBUserWarning: If 'per_message=False', 'CallbackQueryHandler' will not be tracked for every message. Read this FAQ entry to learn more about the per_* settings: https://github.com/python-telegram-bot/python-telegram-bot/wiki/Frequently-Asked-Questions#what-do-the-per_-settings-in-conversationhandler-do.
+  return ConversationHandler(
+2026-03-09 11:21:37,859 | INFO | apscheduler.scheduler | Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2026-03-09 11:21:37,860 | INFO | scheduler.jobs | Scheduled daily digest at 09:00 (Europe/Moscow)
+2026-03-09 11:21:38,410 | INFO | apscheduler.scheduler | Added job "Daily Aroma Trends Digest" to job store "default"
+2026-03-09 11:21:38,410 | INFO | apscheduler.scheduler | Scheduler started
+2026-03-09 11:21:38,411 | INFO | __main__ | Scheduler started
+2026-03-09 11:21:38,411 | INFO | __main__ | Bot starting...
+2026-03-09 11:21:40,352 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getMe "HTTP/1.1 200 OK"
+2026-03-09 11:21:40,354 | INFO | apscheduler.scheduler | Scheduler started
+2026-03-09 11:21:40,354 | INFO | telegram.ext.Application | Application started
+2026-03-09 11:21:40,441 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/deleteWebhook "HTTP/1.1 200 OK"
+2026-03-09 11:21:40,442 | INFO | __main__ | Bot is running. Press Ctrl+C to stop.
+2026-03-09 11:21:50,901 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:22:01,014 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:22:11,123 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:22:21,223 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:22:31,638 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:22:41,760 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:22:51,888 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:23:02,027 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:23:12,151 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:23:22,282 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:23:32,400 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:23:42,539 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:23:52,684 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:24:02,814 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:24:12,994 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:24:23,111 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:24:33,227 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:24:43,584 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:24:53,708 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:25:03,839 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:25:14,207 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:25:24,413 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:25:34,899 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:25:45,022 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:25:55,136 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:26:05,326 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:26:15,430 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:26:25,558 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:26:35,712 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:26:45,836 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:26:55,959 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:27:06,121 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:27:16,220 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:27:26,330 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:27:36,530 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:27:46,647 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:27:56,771 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:28:06,934 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:28:17,041 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:28:25,811 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:28:28,676 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/sendMessage "HTTP/1.1 200 OK"
+2026-03-09 11:28:28,709 | INFO | googleapiclient.discovery_cache | file_cache is only supported with oauth2client<4.0.0
+2026-03-09 11:28:30,947 | INFO | public_request | [None] [404] GET https://www.instagram.com/explore/tags/aromatherapy/?__a=1&__d=dis
+2026-03-09 11:28:31,950 | INFO | instagrapi | https://i.instagram.com/api/v1/tags/aromatherapy/sections/
+2026-03-09 11:28:35,799 | INFO | private_request | stress_ins [200] POST https://i.instagram.com/api/v1/tags/aromatherapy/sections/ (385.0.0.47.74, OnePlus 6T Dev)
+2026-03-09 11:28:38,227 | WARNING | analytics.google_trends | GoogleTrends EN error: The request failed: Google returned a response with code 429
+2026-03-09 11:28:38,230 | WARNING | analytics.google_trends | GoogleTrends RU error: The request failed: Google returned a response with code 429
+2026-03-09 11:28:38,278 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:28:39,176 | INFO | public_request | [None] [404] GET https://www.instagram.com/explore/tags/soundhealing/?__a=1&__d=dis
+2026-03-09 11:28:40,181 | INFO | instagrapi | https://i.instagram.com/api/v1/tags/soundhealing/sections/
+2026-03-09 11:28:43,828 | INFO | private_request | stress_ins [200] POST https://i.instagram.com/api/v1/tags/soundhealing/sections/ (385.0.0.47.74, OnePlus 6T Dev)
+2026-03-09 11:28:47,300 | INFO | public_request | [None] [404] GET https://www.instagram.com/explore/tags/gongbath/?__a=1&__d=dis
+2026-03-09 11:28:48,307 | INFO | instagrapi | https://i.instagram.com/api/v1/tags/gongbath/sections/
+2026-03-09 11:28:48,378 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:28:51,204 | INFO | private_request | stress_ins [200] POST https://i.instagram.com/api/v1/tags/gongbath/sections/ (385.0.0.47.74, OnePlus 6T Dev)
+2026-03-09 11:28:54,529 | INFO | public_request | [None] [404] GET https://www.instagram.com/explore/tags/essentialoils/?__a=1&__d=dis
+2026-03-09 11:28:55,531 | INFO | instagrapi | https://i.instagram.com/api/v1/tags/essentialoils/sections/
+2026-03-09 11:28:58,479 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:28:59,764 | INFO | private_request | stress_ins [200] POST https://i.instagram.com/api/v1/tags/essentialoils/sections/ (385.0.0.47.74, OnePlus 6T Dev)
+2026-03-09 11:29:03,089 | INFO | public_request | [None] [404] GET https://www.instagram.com/explore/tags/olfactotherapy/?__a=1&__d=dis
+2026-03-09 11:29:04,094 | INFO | instagrapi | https://i.instagram.com/api/v1/tags/olfactotherapy/sections/
+2026-03-09 11:29:06,401 | INFO | private_request | stress_ins [200] POST https://i.instagram.com/api/v1/tags/olfactotherapy/sections/ (385.0.0.47.74, OnePlus 6T Dev)
+2026-03-09 11:29:08,434 | INFO | analytics.aggregator | Source google_trends_en skipped/failed: The request failed: Google returned a response with code 429
+2026-03-09 11:29:08,434 | INFO | analytics.aggregator | Source google_trends_ru skipped/failed: The request failed: Google returned a response with code 429
+2026-03-09 11:29:08,434 | INFO | analytics.aggregator | Source reddit skipped/failed: REDDIT_CLIENT_ID/SECRET не заданы
+2026-03-09 11:29:08,434 | INFO | analytics.aggregator | Source telegram_channels skipped/failed: TELEGRAM_API_ID/HASH или TELEGRAM_CHANNELS не заданы
+2026-03-09 11:29:08,434 | INFO | analytics.aggregator | Source twitter skipped/failed: TWITTER_BEARER_TOKEN не задан
+2026-03-09 11:29:08,619 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:29:09,850 | INFO | httpx | HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 400 Bad Request"
+2026-03-09 11:29:09,854 | WARNING | analytics.ai_recommendations | AI recommendations error: Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011CYsC5SwdAqjnrY2mJhSZj'}
+2026-03-09 11:29:10,262 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/deleteMessage "HTTP/1.1 200 OK"
+2026-03-09 11:29:10,560 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/sendMessage "HTTP/1.1 200 OK"
+2026-03-09 11:29:10,724 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/sendMessage "HTTP/1.1 200 OK"
+2026-03-09 11:29:18,861 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:29:28,961 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:29:39,057 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:29:49,166 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:29:59,273 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:30:09,450 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:30:19,573 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:30:29,678 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:30:39,779 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:30:49,996 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:31:00,082 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:31:10,173 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:31:20,268 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:31:30,366 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:31:40,452 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:31:50,556 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:32:00,783 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:32:10,873 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:32:21,023 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:32:31,167 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:32:41,280 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:32:51,395 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:33:01,572 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:33:11,671 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:33:21,755 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:33:31,858 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:33:41,970 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:33:52,078 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:34:02,197 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:34:12,356 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:34:22,452 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:34:32,565 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:34:42,865 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:34:53,023 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:35:03,214 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:35:13,339 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:35:23,449 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:35:33,619 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:35:43,728 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:35:53,930 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:36:03,792 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 409 Conflict"
+2026-03-09 11:36:03,794 | ERROR | telegram.ext.Updater | Exception happened while polling for updates.
+Traceback (most recent call last):
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_updater.py", line 753, in _network_loop_retry
+    if not await do_action():
+           ^^^^^^^^^^^^^^^^^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_updater.py", line 747, in do_action
+    return action_cb_task.result()
+           ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_updater.py", line 377, in polling_action_cb
+    updates = await self.bot.get_updates(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_extbot.py", line 649, in get_updates
+    updates = await super().get_updates(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<9 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/_bot.py", line 4366, in get_updates
+    await self._post(
+    ^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+    ),
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/_bot.py", line 623, in _post
+    return await self._do_post(
+           ^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_extbot.py", line 355, in _do_post
+    return await super()._do_post(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/_bot.py", line 652, in _do_post
+    result = await request.post(
+             ^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/request/_baserequest.py", line 201, in post
+    result = await self._request_wrapper(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/request/_baserequest.py", line 384, in _request_wrapper
+    raise Conflict(message)
+telegram.error.Conflict: Conflict: terminated by other getUpdates request; make sure that only one bot instance is running
+2026-03-09 11:36:09,072 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 409 Conflict"
+2026-03-09 11:36:09,074 | ERROR | telegram.ext.Updater | Exception happened while polling for updates.
+Traceback (most recent call last):
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_updater.py", line 753, in _network_loop_retry
+    if not await do_action():
+           ^^^^^^^^^^^^^^^^^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_updater.py", line 747, in do_action
+    return action_cb_task.result()
+           ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_updater.py", line 377, in polling_action_cb
+    updates = await self.bot.get_updates(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_extbot.py", line 649, in get_updates
+    updates = await super().get_updates(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<9 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/_bot.py", line 4366, in get_updates
+    await self._post(
+    ^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+    ),
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/_bot.py", line 623, in _post
+    return await self._do_post(
+           ^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_extbot.py", line 355, in _do_post
+    return await super()._do_post(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/_bot.py", line 652, in _do_post
+    result = await request.post(
+             ^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/request/_baserequest.py", line 201, in post
+    result = await self._request_wrapper(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/request/_baserequest.py", line 384, in _request_wrapper
+    raise Conflict(message)
+telegram.error.Conflict: Conflict: terminated by other getUpdates request; make sure that only one bot instance is running
+2026-03-09 11:36:15,345 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 409 Conflict"
+2026-03-09 11:36:15,349 | ERROR | telegram.ext.Updater | Exception happened while polling for updates.
+Traceback (most recent call last):
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_updater.py", line 753, in _network_loop_retry
+    if not await do_action():
+           ^^^^^^^^^^^^^^^^^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_updater.py", line 747, in do_action
+    return action_cb_task.result()
+           ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_updater.py", line 377, in polling_action_cb
+    updates = await self.bot.get_updates(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_extbot.py", line 649, in get_updates
+    updates = await super().get_updates(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<9 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/_bot.py", line 4366, in get_updates
+    await self._post(
+    ^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+    ),
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/_bot.py", line 623, in _post
+    return await self._do_post(
+           ^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_extbot.py", line 355, in _do_post
+    return await super()._do_post(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/_bot.py", line 652, in _do_post
+    result = await request.post(
+             ^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/request/_baserequest.py", line 201, in post
+    result = await self._request_wrapper(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/request/_baserequest.py", line 384, in _request_wrapper
+    raise Conflict(message)
+telegram.error.Conflict: Conflict: terminated by other getUpdates request; make sure that only one bot instance is running
+2026-03-09 11:36:23,189 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 409 Conflict"
+2026-03-09 11:36:23,190 | ERROR | telegram.ext.Updater | Exception happened while polling for updates.
+Traceback (most recent call last):
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_updater.py", line 753, in _network_loop_retry
+    if not await do_action():
+           ^^^^^^^^^^^^^^^^^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_updater.py", line 747, in do_action
+    return action_cb_task.result()
+           ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_updater.py", line 377, in polling_action_cb
+    updates = await self.bot.get_updates(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_extbot.py", line 649, in get_updates
+    updates = await super().get_updates(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<9 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/_bot.py", line 4366, in get_updates
+    await self._post(
+    ^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+    ),
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/_bot.py", line 623, in _post
+    return await self._do_post(
+           ^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_extbot.py", line 355, in _do_post
+    return await super()._do_post(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/_bot.py", line 652, in _do_post
+    result = await request.post(
+             ^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/request/_baserequest.py", line 201, in post
+    result = await self._request_wrapper(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/request/_baserequest.py", line 384, in _request_wrapper
+    raise Conflict(message)
+telegram.error.Conflict: Conflict: terminated by other getUpdates request; make sure that only one bot instance is running
+2026-03-09 11:36:30,240 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 409 Conflict"
+2026-03-09 11:36:30,243 | ERROR | telegram.ext.Updater | Exception happened while polling for updates.
+Traceback (most recent call last):
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_updater.py", line 753, in _network_loop_retry
+    if not await do_action():
+           ^^^^^^^^^^^^^^^^^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_updater.py", line 747, in do_action
+    return action_cb_task.result()
+           ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_updater.py", line 377, in polling_action_cb
+    updates = await self.bot.get_updates(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_extbot.py", line 649, in get_updates
+    updates = await super().get_updates(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<9 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/_bot.py", line 4366, in get_updates
+    await self._post(
+    ^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+    ),
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/_bot.py", line 623, in _post
+    return await self._do_post(
+           ^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_extbot.py", line 355, in _do_post
+    return await super()._do_post(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/_bot.py", line 652, in _do_post
+    result = await request.post(
+             ^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/request/_baserequest.py", line 201, in post
+    result = await self._request_wrapper(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/request/_baserequest.py", line 384, in _request_wrapper
+    raise Conflict(message)
+telegram.error.Conflict: Conflict: terminated by other getUpdates request; make sure that only one bot instance is running
+2026-03-09 11:36:41,254 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 409 Conflict"
+2026-03-09 11:36:41,258 | ERROR | telegram.ext.Updater | Exception happened while polling for updates.
+Traceback (most recent call last):
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_updater.py", line 753, in _network_loop_retry
+    if not await do_action():
+           ^^^^^^^^^^^^^^^^^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_updater.py", line 747, in do_action
+    return action_cb_task.result()
+           ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_updater.py", line 377, in polling_action_cb
+    updates = await self.bot.get_updates(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_extbot.py", line 649, in get_updates
+    updates = await super().get_updates(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<9 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/_bot.py", line 4366, in get_updates
+    await self._post(
+    ^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+    ),
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/_bot.py", line 623, in _post
+    return await self._do_post(
+           ^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_extbot.py", line 355, in _do_post
+    return await super()._do_post(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/_bot.py", line 652, in _do_post
+    result = await request.post(
+             ^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/request/_baserequest.py", line 201, in post
+    result = await self._request_wrapper(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/request/_baserequest.py", line 384, in _request_wrapper
+    raise Conflict(message)
+telegram.error.Conflict: Conflict: terminated by other getUpdates request; make sure that only one bot instance is running
+2026-03-09 11:36:59,217 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 200 OK"
+2026-03-09 11:37:02,322 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 409 Conflict"
+2026-03-09 11:37:02,324 | ERROR | telegram.ext.Updater | Exception happened while polling for updates.
+Traceback (most recent call last):
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_updater.py", line 753, in _network_loop_retry
+    if not await do_action():
+           ^^^^^^^^^^^^^^^^^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_updater.py", line 747, in do_action
+    return action_cb_task.result()
+           ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_updater.py", line 377, in polling_action_cb
+    updates = await self.bot.get_updates(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_extbot.py", line 649, in get_updates
+    updates = await super().get_updates(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<9 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/_bot.py", line 4366, in get_updates
+    await self._post(
+    ^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+    ),
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/_bot.py", line 623, in _post
+    return await self._do_post(
+           ^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_extbot.py", line 355, in _do_post
+    return await super()._do_post(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/_bot.py", line 652, in _do_post
+    result = await request.post(
+             ^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/request/_baserequest.py", line 201, in post
+    result = await self._request_wrapper(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/request/_baserequest.py", line 384, in _request_wrapper
+    raise Conflict(message)
+telegram.error.Conflict: Conflict: terminated by other getUpdates request; make sure that only one bot instance is running
+2026-03-09 11:37:07,579 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 409 Conflict"
+2026-03-09 11:37:07,581 | ERROR | telegram.ext.Updater | Exception happened while polling for updates.
+Traceback (most recent call last):
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_updater.py", line 753, in _network_loop_retry
+    if not await do_action():
+           ^^^^^^^^^^^^^^^^^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_updater.py", line 747, in do_action
+    return action_cb_task.result()
+           ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_updater.py", line 377, in polling_action_cb
+    updates = await self.bot.get_updates(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_extbot.py", line 649, in get_updates
+    updates = await super().get_updates(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<9 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/_bot.py", line 4366, in get_updates
+    await self._post(
+    ^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+    ),
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/_bot.py", line 623, in _post
+    return await self._do_post(
+           ^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_extbot.py", line 355, in _do_post
+    return await super()._do_post(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/_bot.py", line 652, in _do_post
+    result = await request.post(
+             ^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/request/_baserequest.py", line 201, in post
+    result = await self._request_wrapper(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/request/_baserequest.py", line 384, in _request_wrapper
+    raise Conflict(message)
+telegram.error.Conflict: Conflict: terminated by other getUpdates request; make sure that only one bot instance is running
+2026-03-09 11:37:13,860 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 409 Conflict"
+2026-03-09 11:37:13,861 | ERROR | telegram.ext.Updater | Exception happened while polling for updates.
+Traceback (most recent call last):
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_updater.py", line 753, in _network_loop_retry
+    if not await do_action():
+           ^^^^^^^^^^^^^^^^^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_updater.py", line 747, in do_action
+    return action_cb_task.result()
+           ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_updater.py", line 377, in polling_action_cb
+    updates = await self.bot.get_updates(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_extbot.py", line 649, in get_updates
+    updates = await super().get_updates(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<9 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/_bot.py", line 4366, in get_updates
+    await self._post(
+    ^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+    ),
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/_bot.py", line 623, in _post
+    return await self._do_post(
+           ^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_extbot.py", line 355, in _do_post
+    return await super()._do_post(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/_bot.py", line 652, in _do_post
+    result = await request.post(
+             ^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/request/_baserequest.py", line 201, in post
+    result = await self._request_wrapper(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/request/_baserequest.py", line 384, in _request_wrapper
+    raise Conflict(message)
+telegram.error.Conflict: Conflict: terminated by other getUpdates request; make sure that only one bot instance is running
+2026-03-09 11:37:21,740 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 409 Conflict"
+2026-03-09 11:37:21,743 | ERROR | telegram.ext.Updater | Exception happened while polling for updates.
+Traceback (most recent call last):
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_updater.py", line 753, in _network_loop_retry
+    if not await do_action():
+           ^^^^^^^^^^^^^^^^^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_updater.py", line 747, in do_action
+    return action_cb_task.result()
+           ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_updater.py", line 377, in polling_action_cb
+    updates = await self.bot.get_updates(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_extbot.py", line 649, in get_updates
+    updates = await super().get_updates(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<9 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/_bot.py", line 4366, in get_updates
+    await self._post(
+    ^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+    ),
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/_bot.py", line 623, in _post
+    return await self._do_post(
+           ^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_extbot.py", line 355, in _do_post
+    return await super()._do_post(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/_bot.py", line 652, in _do_post
+    result = await request.post(
+             ^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/request/_baserequest.py", line 201, in post
+    result = await self._request_wrapper(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/request/_baserequest.py", line 384, in _request_wrapper
+    raise Conflict(message)
+telegram.error.Conflict: Conflict: terminated by other getUpdates request; make sure that only one bot instance is running
+2026-03-09 11:37:28,838 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 409 Conflict"
+2026-03-09 11:37:28,840 | ERROR | telegram.ext.Updater | Exception happened while polling for updates.
+Traceback (most recent call last):
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_updater.py", line 753, in _network_loop_retry
+    if not await do_action():
+           ^^^^^^^^^^^^^^^^^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_updater.py", line 747, in do_action
+    return action_cb_task.result()
+           ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_updater.py", line 377, in polling_action_cb
+    updates = await self.bot.get_updates(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_extbot.py", line 649, in get_updates
+    updates = await super().get_updates(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<9 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/_bot.py", line 4366, in get_updates
+    await self._post(
+    ^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+    ),
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/_bot.py", line 623, in _post
+    return await self._do_post(
+           ^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_extbot.py", line 355, in _do_post
+    return await super()._do_post(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/_bot.py", line 652, in _do_post
+    result = await request.post(
+             ^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/request/_baserequest.py", line 201, in post
+    result = await self._request_wrapper(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/request/_baserequest.py", line 384, in _request_wrapper
+    raise Conflict(message)
+telegram.error.Conflict: Conflict: terminated by other getUpdates request; make sure that only one bot instance is running
+2026-03-09 11:37:39,968 | INFO | httpx | HTTP Request: POST https://api.telegram.org/bot804748576:AAFpDeRtEjTQyLIDv6KytxwZGPfrNyzS2tQ/getUpdates "HTTP/1.1 409 Conflict"
+2026-03-09 11:37:39,970 | ERROR | telegram.ext.Updater | Exception happened while polling for updates.
+Traceback (most recent call last):
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_updater.py", line 753, in _network_loop_retry
+    if not await do_action():
+           ^^^^^^^^^^^^^^^^^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_updater.py", line 747, in do_action
+    return action_cb_task.result()
+           ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_updater.py", line 377, in polling_action_cb
+    updates = await self.bot.get_updates(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_extbot.py", line 649, in get_updates
+    updates = await super().get_updates(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<9 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/_bot.py", line 4366, in get_updates
+    await self._post(
+    ^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+    ),
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/_bot.py", line 623, in _post
+    return await self._do_post(
+           ^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/ext/_extbot.py", line 355, in _do_post
+    return await super()._do_post(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/_bot.py", line 652, in _do_post
+    result = await request.post(
+             ^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/request/_baserequest.py", line 201, in post
+    result = await self._request_wrapper(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+    )
+    ^
+  File "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma/.venv/lib/python3.13/site-packages/telegram/request/_baserequest.py", line 384, in _request_wrapper
+    raise Conflict(message)
+telegram.error.Conflict: Conflict: terminated by other getUpdates request; make sure that only one bot instance is running
