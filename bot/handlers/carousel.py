@@ -488,6 +488,9 @@ def _review_keyboard(n_slides: int, has_failed: bool = False) -> InlineKeyboardM
     action_row.append(InlineKeyboardButton("🔄 Пересоздать всё", callback_data="ca:regen:all"))
     buttons.append(action_row)
     buttons.append([
+        InlineKeyboardButton("🖼 Все с замечанием", callback_data="ca:regen:all:imgnote"),
+    ])
+    buttons.append([
         InlineKeyboardButton("🍌 Промпты (с текстом)", callback_data="ca:prompt:text"),
         InlineKeyboardButton("🍌 Промпты (фон)",       callback_data="ca:prompt:notxt"),
     ])
@@ -874,6 +877,20 @@ async def cb_carousel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             await query.message.reply_text("❌ Данные устарели. Сгенерируй карусель заново.")
             return
         await _run_image_generation(query.message, context, skip_existing=False)
+        return
+
+    # ── Regen ALL images with a note ─────────────────────────────────────
+    if data == "ca:regen:all:imgnote":
+        slides = context.user_data.get("ca_slides", [])
+        if not slides:
+            await query.message.reply_text("❌ Данные устарели. Сгенерируй карусель заново.")
+            return
+        context.user_data["ca_awaiting_img_note"] = {"idx": None, "skip_existing": False}
+        await query.message.reply_text(
+            "✏️ Напиши замечание — применю ко всем картинкам.\n"
+            "<i>Например: более тёмные тона, без рук, добавить свечи, минималистичнее</i>",
+            parse_mode="HTML",
+        )
         return
 
     # ── Retry failed images — ask for note first ──────────────────────────
