@@ -453,6 +453,10 @@ def _text_review_keyboard(n_slides: int) -> InlineKeyboardMarkup:
         InlineKeyboardButton("🖼 Генерировать картинки", callback_data="ca:gen:images"),
         InlineKeyboardButton("🔄 Пересоздать",           callback_data="ca:regen:all"),
     ])
+    buttons.append([
+        InlineKeyboardButton("🍌 Промпты (с текстом)",  callback_data="ca:prompt:text"),
+        InlineKeyboardButton("🍌 Промпты (фон)",        callback_data="ca:prompt:notxt"),
+    ])
     return InlineKeyboardMarkup(buttons)
 
 
@@ -465,6 +469,10 @@ def _review_keyboard(n_slides: int, has_failed: bool = False) -> InlineKeyboardM
         action_row.append(InlineKeyboardButton("🔄 Повторить ❌", callback_data="ca:regen:failed"))
     action_row.append(InlineKeyboardButton("🔄 Пересоздать всё", callback_data="ca:regen:all"))
     buttons.append(action_row)
+    buttons.append([
+        InlineKeyboardButton("🍌 Промпты (с текстом)", callback_data="ca:prompt:text"),
+        InlineKeyboardButton("🍌 Промпты (фон)",       callback_data="ca:prompt:notxt"),
+    ])
     return InlineKeyboardMarkup(buttons)
 
 
