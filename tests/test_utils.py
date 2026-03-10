@@ -337,11 +337,21 @@ class TestParseCarousel:
 from bot.handlers.carousel import (
     _make_slide_prompts_with_text, _make_slide_prompts_no_text,
     _format_for_canva, _build_pptx,
+    _SLIDE_VISUAL_ROLES, _generate_slide_image_prompts_sync,
+    _embed_font_in_pptx, _FONT_NAME,
 )
 
 _SLIDES = ["Хук — лаванда снимает стресс", "3 масла для офиса", "Медитация за 15 минут",
            "Корпоративы с ароматерапией", "Запишись сейчас"]
-_BASE = "warm minimal photo, essential oils, beige tones"
+
+# Per-slide image prompts fixture — each one is unique
+_IMG_PROMPTS = [
+    "dried lavender bundle on terracotta tile, close-up, soft morning light, --ar 1:1 --style atmospheric",
+    "sage green desk with small diffuser, essential oils in glass bottles, office minimal, --ar 1:1 --style atmospheric",
+    "woman's hands resting on knees near lit candle, beige linen background, --ar 1:1 --style atmospheric",
+    "stones and dried herbs arranged on wood surface, warm amber light, abstract, --ar 1:1 --style atmospheric",
+    "two hands cupped around a small smooth stone, close-up, terracotta ground, --ar 1:1 --style atmospheric",
+]
 
 
 from bot.agents.carousel_editor import edit_carousel_sync
@@ -393,6 +403,29 @@ class TestBuildPptx:
         result = _build_pptx(self._SLIDES)
         assert result[:2] == b"PK"
 
+    def test_font_embedded(self):
+        import zipfile, io
+        result = _build_pptx(self._SLIDES)
+        with zipfile.ZipFile(io.BytesIO(result)) as z:
+            assert "ppt/fonts/font1.ttf" in z.namelist()
+            pxml = z.read("ppt/presentation.xml").decode()
+            assert "embeddedFontLst" in pxml
+            assert _FONT_NAME in pxml
+            rels = z.read("ppt/_rels/presentation.xml.rels").decode()
+            assert "font" in rels
+            ct = z.read("[Content_Types].xml").decode()
+            assert "x-fontdata" in ct
+
+    def test_font_name_in_slide_xml(self):
+        import zipfile, io
+        result = _build_pptx(self._SLIDES)
+        with zipfile.ZipFile(io.BytesIO(result)) as z:
+            # Find at least one slide and verify font name
+            slide_files = [n for n in z.namelist() if n.startswith("ppt/slides/slide")]
+            assert slide_files, "No slide files found"
+            slide_xml = z.read(slide_files[0]).decode()
+            assert _FONT_NAME in slide_xml
+
     def test_with_images(self):
         import struct, zlib
         sig = b"\x89PNG\r\n\x1a\n"
@@ -441,44 +474,145 @@ class TestFormatForCanva:
 
 class TestSlidePromptsWithText:
     def test_each_slide_has_own_text(self):
-        result = _make_slide_prompts_with_text(_BASE, _SLIDES)
+        result = _make_slide_prompts_with_text(_IMG_PROMPTS, _SLIDES)
         for slide in _SLIDES:
             assert slide in result
 
     def test_five_slides_present(self):
-        result = _make_slide_prompts_with_text(_BASE, _SLIDES)
+        result = _make_slide_prompts_with_text(_IMG_PROMPTS, _SLIDES)
         for i in range(1, 6):
             assert f"Слайд {i}:" in result
 
-    def test_contains_base_prompt(self):
-        result = _make_slide_prompts_with_text(_BASE, _SLIDES)
-        assert _BASE in result
-
-    def test_text_overlay_marker(self):
-        result = _make_slide_prompts_with_text(_BASE, _SLIDES)
+    def test_text_overlay_injected(self):
+        result = _make_slide_prompts_with_text(_IMG_PROMPTS, _SLIDES)
         assert "text overlay" in result
+
+    def test_each_prompt_is_unique(self):
+        result = _make_slide_prompts_with_text(_IMG_PROMPTS, _SLIDES)
+        # Extract <pre>...</pre> blocks — each must be different
+        import re
+        blocks = re.findall(r"<pre>(.*?)</pre>", result, re.DOTALL)
+        assert len(blocks) == len(_SLIDES)
+        assert len(set(blocks)) == len(blocks)
+
+    def test_per_slide_base_prompt_used(self):
+        import html as _html
+        # A distinctive word from each base prompt must appear in the result (unescape HTML entities)
+        result = _html.unescape(_make_slide_prompts_with_text(_IMG_PROMPTS, _SLIDES))
+        for prompt in _IMG_PROMPTS:
+            fragment = prompt.split(",")[0][:20]
+            assert fragment in result
 
 
 class TestSlidePromptsNoText:
-    def test_each_slide_unique(self):
-        result = _make_slide_prompts_no_text(_BASE, _SLIDES)
-        lines = [l for l in result.splitlines() if l.startswith("Слайд")]
-        # All lines must be different (unique per slide)
-        assert len(set(lines)) == len(lines)
+    def test_each_slide_label_present(self):
+        result = _make_slide_prompts_no_text(_IMG_PROMPTS, _SLIDES)
+        for i in range(1, 6):
+            assert f"Слайд {i}" in result
 
-    def test_slide_content_in_prompt(self):
-        result = _make_slide_prompts_no_text(_BASE, _SLIDES)
+    def test_slide_text_shown_in_header(self):
+        result = _make_slide_prompts_no_text(_IMG_PROMPTS, _SLIDES)
         for slide in _SLIDES:
             assert slide[:30] in result
 
-    def test_no_typography_marker(self):
-        result = _make_slide_prompts_no_text(_BASE, _SLIDES)
-        assert "no typography" in result
+    def test_each_prompt_is_unique(self):
+        result = _make_slide_prompts_no_text(_IMG_PROMPTS, _SLIDES)
+        import re
+        blocks = re.findall(r"<pre>(.*?)</pre>", result, re.DOTALL)
+        assert len(blocks) == len(_SLIDES)
+        assert len(set(blocks)) == len(blocks)
 
-    def test_five_slides_present(self):
-        result = _make_slide_prompts_no_text(_BASE, _SLIDES)
-        for i in range(1, 6):
-            assert f"Слайд {i}" in result
+    def test_per_slide_prompt_content_present(self):
+        import html as _html
+        result = _html.unescape(_make_slide_prompts_no_text(_IMG_PROMPTS, _SLIDES))
+        for prompt in _IMG_PROMPTS:
+            fragment = prompt.split(",")[0][:20]
+            assert fragment in result
+
+
+# ---------------------------------------------------------------------------
+# _SLIDE_VISUAL_ROLES + _generate_slide_image_prompts_sync (carousel.py)
+# ---------------------------------------------------------------------------
+
+class TestSlideVisualRoles:
+    def test_has_six_roles(self):
+        assert len(_SLIDE_VISUAL_ROLES) == 6
+
+    def test_roles_are_distinct(self):
+        assert len(set(_SLIDE_VISUAL_ROLES)) == 6
+
+    def test_hook_is_first(self):
+        assert "hook" in _SLIDE_VISUAL_ROLES[0].lower()
+
+    def test_cta_is_last(self):
+        last = _SLIDE_VISUAL_ROLES[-1].lower()
+        assert "call" in last or "action" in last or "invitation" in last
+
+
+class TestGenerateSlideImagePrompts:
+    """Tests for _generate_slide_image_prompts_sync — mocks Claude API."""
+
+    _SLIDES_6 = ["Хук", "Проблема", "Механизм", "Инсайт", "Решение", "CTA"]
+
+    def _make_fake_client(self, response_text: str):
+        class _FakeClient:
+            def __init__(self, **kw): pass
+            class messages:
+                @staticmethod
+                def create(*a, **kw):
+                    class _R:
+                        content = [type("c", (), {"text": response_text})()]
+                    return _R()
+        return _FakeClient
+
+    def test_returns_same_count_as_slides(self, monkeypatch):
+        import bot.handlers.carousel as c
+        import anthropic as _anthropic
+        response = "\n".join(
+            f"IMG{i + 1}: unique visual {i + 1}, terracotta, --ar 1:1 --style atmospheric"
+            for i in range(len(self._SLIDES_6))
+        )
+        monkeypatch.setattr(c, "settings", type("s", (), {"anthropic_api_key": "x"})())
+        monkeypatch.setattr(_anthropic, "Anthropic", lambda **kw: self._make_fake_client(response)())
+        result = c._generate_slide_image_prompts_sync(self._SLIDES_6, "тема")
+        assert len(result) == len(self._SLIDES_6)
+
+    def test_prompts_are_unique(self, monkeypatch):
+        import bot.handlers.carousel as c
+        import anthropic as _anthropic
+        response = "\n".join(
+            f"IMG{i + 1}: scene_{i + 1} with object_{i + 1}, beige, --ar 1:1 --style atmospheric"
+            for i in range(len(self._SLIDES_6))
+        )
+        monkeypatch.setattr(c, "settings", type("s", (), {"anthropic_api_key": "x"})())
+        monkeypatch.setattr(_anthropic, "Anthropic", lambda **kw: self._make_fake_client(response)())
+        result = c._generate_slide_image_prompts_sync(self._SLIDES_6, "тема")
+        assert len(set(result)) == len(result)
+
+    def test_fallback_on_empty_parse(self, monkeypatch):
+        """If Claude response is unparseable, fallback strings are returned."""
+        import bot.handlers.carousel as c
+        import anthropic as _anthropic
+        monkeypatch.setattr(c, "settings", type("s", (), {"anthropic_api_key": "x"})())
+        monkeypatch.setattr(_anthropic, "Anthropic", lambda **kw: self._make_fake_client("ничего")())
+        slides = ["А", "Б"]
+        result = c._generate_slide_image_prompts_sync(slides, "тема")
+        assert len(result) == 2
+        assert all(isinstance(p, str) and len(p) > 10 for p in result)
+
+    def test_each_result_contains_style_flag(self, monkeypatch):
+        """Every returned prompt must end with the standard style flag."""
+        import bot.handlers.carousel as c
+        import anthropic as _anthropic
+        response = "\n".join(
+            f"IMG{i + 1}: visual {i + 1}, terracotta, --ar 1:1 --style atmospheric"
+            for i in range(len(self._SLIDES_6))
+        )
+        monkeypatch.setattr(c, "settings", type("s", (), {"anthropic_api_key": "x"})())
+        monkeypatch.setattr(_anthropic, "Anthropic", lambda **kw: self._make_fake_client(response)())
+        result = c._generate_slide_image_prompts_sync(self._SLIDES_6, "тема")
+        for p in result:
+            assert "--style atmospheric" in p
 
 
 # ---------------------------------------------------------------------------
@@ -625,3 +759,88 @@ class TestPlannerConstants:
 
     def test_brand_context_mentions_ароматерапия(self):
         assert "ароматерапия" in _BRAND_CONTEXT.lower() or "сенсорн" in _BRAND_CONTEXT.lower()
+
+
+# ---------------------------------------------------------------------------
+# creative_team — edit_post_sync (unit: prompt structure + fallback logic)
+# ---------------------------------------------------------------------------
+
+from bot.agents.creative_team import _PLATFORM_RULES, _EDITOR_SYSTEM, edit_post_sync
+
+
+class TestCreativeTeamConstants:
+    def test_platform_rules_has_threads(self):
+        assert "threads" in _PLATFORM_RULES
+        assert "450" in _PLATFORM_RULES["threads"]
+
+    def test_platform_rules_has_instagram(self):
+        assert "instagram" in _PLATFORM_RULES
+        assert "900" in _PLATFORM_RULES["instagram"]
+
+    def test_platform_rules_has_telegram(self):
+        assert "telegram" in _PLATFORM_RULES
+
+    def test_platform_rules_has_default(self):
+        assert "default" in _PLATFORM_RULES
+
+    def test_editor_system_mentions_hook(self):
+        assert "хук" in _EDITOR_SYSTEM.lower() or "hook" in _EDITOR_SYSTEM.lower() or "скролл" in _EDITOR_SYSTEM.lower()
+
+    def test_editor_system_forbids_stampы(self):
+        # Must mention at least one banned cliché
+        assert "позволь себе" in _EDITOR_SYSTEM or "погружаясь" in _EDITOR_SYSTEM
+
+    def test_editor_system_mentions_cta(self):
+        assert "cta" in _EDITOR_SYSTEM.lower() or "призыв" in _EDITOR_SYSTEM.lower() or "CTA" in _EDITOR_SYSTEM
+
+
+class TestEditPostFallback:
+    """edit_post_sync must fall back to the original if result is too short."""
+
+    def test_fallback_on_short_result(self, monkeypatch):
+        """If Claude returns a very short string, keep original."""
+        import bot.agents.creative_team as ct
+
+        def _fake_call(*args, **kwargs):
+            class _FakeResp:
+                content = [type("c", (), {"text": "ok"})()]
+            return _FakeResp()
+
+        class _FakeClient:
+            def __init__(self, *a, **kw): pass
+            class messages:
+                @staticmethod
+                def create(*a, **kw):
+                    class _R:
+                        content = [type("c", (), {"text": "ok"})()]
+                    return _R()
+
+        monkeypatch.setattr(ct, "settings", type("s", (), {"anthropic_api_key": "x"})())
+        import anthropic as _anthropic
+        monkeypatch.setattr(_anthropic, "Anthropic", lambda **kw: _FakeClient())
+
+        original = "Это нормальный пост с достаточным количеством символов для теста."
+        result = ct.edit_post_sync(original, "тема", "threads")
+        assert result == original  # fallback triggered because "ok" < 30 chars
+
+    def test_returns_edited_when_long_enough(self, monkeypatch):
+        """If Claude returns a long enough string, use it."""
+        import bot.agents.creative_team as ct
+
+        edited = "А" * 50  # 50 chars, well above threshold
+
+        class _FakeClient:
+            def __init__(self, *a, **kw): pass
+            class messages:
+                @staticmethod
+                def create(*a, **kw):
+                    class _R:
+                        content = [type("c", (), {"text": edited})()]
+                    return _R()
+
+        monkeypatch.setattr(ct, "settings", type("s", (), {"anthropic_api_key": "x"})())
+        import anthropic as _anthropic
+        monkeypatch.setattr(_anthropic, "Anthropic", lambda **kw: _FakeClient())
+
+        result = ct.edit_post_sync("original text", "тема", "instagram")
+        assert result == edited

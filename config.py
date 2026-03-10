@@ -27,6 +27,12 @@ class Settings(BaseSettings):
     yandex_client_secret: str = ""
     tiktok_ms_token: str = ""
     gemini_api_key: str = ""
+    nana_banana_api_key: str = ""  # Gemini key dedicated to image generation
+
+    @property
+    def image_api_key(self) -> str:
+        """Key for image generation — prefers nana_banana_api_key, falls back to gemini_api_key."""
+        return self.nana_banana_api_key or self.gemini_api_key
 
     # Phase 2
     telegram_api_id: int | None = None

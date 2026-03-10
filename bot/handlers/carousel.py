@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import asyncio
+import html as _html
 import io
 import logging
+import zipfile
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
 from telegram.ext import ContextTypes, CommandHandler, CallbackQueryHandler, MessageHandler, filters
@@ -14,9 +17,26 @@ from bot.handlers.threads import _format_trends, _claude_topics, _fix_dashes
 logger = logging.getLogger(__name__)
 
 _executor = ThreadPoolExecutor(max_workers=2)
+_img_executor = ThreadPoolExecutor(max_workers=5)
+
+# ── Font ────────────────────────────────────────────────────────────────────
+_FONT_PATH = Path(__file__).parent.parent.parent / "assets" / "fonts" / "DeldedaOpen.ttf"
+_FONT_NAME = "Deledda Open"
+_FONT_REL_ID = "rIdDeldedaRegular"
 
 # ── Layout constants ────────────────────────────────────────────────────────
 _SLIDE_EMU = 1080 * 9525
+
+# Visual role hint for the art director prompt — one per slide position
+_SLIDE_VISUAL_ROLES = [
+    "hook — strong emotion that stops scrolling, first visual impact",
+    "relatable problem — person in a recognizable moment of stress or overload",
+    "mechanism — body process shown metaphorically, calm reflective mood",
+    "insight — moment of clarity and perceptual shift, abstract but warm",
+    "solution — hands-on sensory practice, grounding ritual, tactile action",
+    "call to action — warm invitation, human connection, intimacy",
+]
+
 _SLIDE_LABELS = [
     "Слайд 1 — Hook",
     "Слайд 2 — Проблема",
@@ -104,14 +124,103 @@ def _claude_carousel_draft(topic: str) -> tuple[list[str], str]:
     return slides, img_prompt
 
 
-def _generate_carousel_sync(topic: str) -> tuple[list[str], str]:
-    """Draft → editor → 6 refined slides + img_prompt."""
-    from bot.agents.carousel_editor import edit_carousel_sync
-    raw_slides, img_prompt = _claude_carousel_draft(topic)
-    if not raw_slides:
-        return [], img_prompt
-    refined = edit_carousel_sync(raw_slides, topic)
-    return refined, img_prompt
+def _generate_slide_image_prompts_sync(slides: list[str], topic: str) -> list[str]:
+    """Generate one unique, detailed English image prompt per slide."""
+    import anthropic
+
+    roles = _SLIDE_VISUAL_ROLES
+    slides_desc = "\n".join(
+        f"Slide {i + 1} [{roles[i] if i < len(roles) else 'supporting visual'}]: {text}"
+        for i, text in enumerate(slides)
+    )
+    prompt = (
+        f'You are an art director for an Instagram carousel on the topic: "{topic}"\n\n'
+        "Brand visual style: terracotta, beige, sage green palette. "
+        "Dried herbs, incense smoke, stones, candles, hands on skin, wood textures, "
+        "natural fabric. Soft diffused natural light. Minimal lifestyle atmosphere.\n"
+        "Forbidden: stock photo look, plastic, harsh shadows, white/grey backgrounds, "
+        "faces, any text or typography.\n\n"
+        "Generate one unique image prompt for each slide below.\n"
+        "Each prompt must:\n"
+        "- Be 25-40 words in English\n"
+        "- Match the specific narrative role and emotional tone of that slide\n"
+        "- Be visually distinct from other slides (different subject, angle, or mood)\n"
+        "- Include specific visual elements (object, texture, colour, light, composition)\n"
+        "- End with: --ar 1:1 --style atmospheric\n\n"
+        f"{slides_desc}\n\n"
+        f"Return strictly in this format, nothing else:\n"
+        + "\n".join(f"IMG{i + 1}: [prompt]" for i in range(len(slides)))
+    )
+
+    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+    resp = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=900,
+        messages=[{"role": "user", "content": prompt}],
+    )
+
+    parsed: dict[int, str] = {}
+    for line in resp.content[0].text.strip().splitlines():
+        line = line.strip()
+        for i in range(1, len(slides) + 1):
+            if line.startswith(f"IMG{i}:"):
+                parsed[i - 1] = line.split(":", 1)[1].strip()
+                break
+
+    # Fallback for any missing slides
+    result: list[str] = []
+    for i, slide in enumerate(slides):
+        if i in parsed:
+            result.append(parsed[i])
+        else:
+            role_hint = roles[i].split(" — ")[0] if i < len(roles) else "supporting"
+            result.append(
+                f"terracotta and sage minimal lifestyle, {slide[:35]}, "
+                f"soft natural light, {role_hint}, dried herbs, "
+                "--ar 1:1 --style atmospheric"
+            )
+    return result
+
+
+def _generate_carousel_sync(topic: str) -> tuple[list[str], list[str]]:
+    """Draft → editor → 6 refined slides + per-slide image prompts."""
+    try:
+        from bot.agents.carousel_editor import edit_carousel_sync
+        raw_slides, _ = _claude_carousel_draft(topic)
+        if not raw_slides:
+            logger.error("_claude_carousel_draft returned empty slides for topic: %s", topic)
+            return [], []
+        refined = edit_carousel_sync(raw_slides, topic)
+        if not refined:
+            logger.error("edit_carousel_sync returned empty for topic: %s", topic)
+            return [], []
+        img_prompts = _generate_slide_image_prompts_sync(refined, topic)
+        return refined, img_prompts
+    except Exception:
+        logger.exception("_generate_carousel_sync failed for topic: %s", topic)
+        return [], []
+
+
+# ── Image analysis ──────────────────────────────────────────────────────────
+
+def _find_text_zone(img_bytes: bytes) -> tuple[float, float]:
+    """Return (top_fraction, height_fraction) for text box placement.
+    Picks the darker image third — lower brightness = better contrast for white text.
+    """
+    try:
+        from PIL import Image as _PILImage
+        img = _PILImage.open(io.BytesIO(img_bytes)).convert("L").resize((60, 60))
+        data = list(img.getdata())
+        top_avg = sum(data[:60 * 20]) / (60 * 20)
+        bot_avg = sum(data[60 * 40:]) / (60 * 20)
+        if top_avg < bot_avg - 25:
+            return 0.03, 0.34   # top third is darker
+        elif bot_avg < top_avg - 25:
+            return 0.63, 0.35   # bottom third is darker
+        else:
+            return 0.32, 0.36   # roughly equal → centre
+    except Exception:
+        return 0.63, 0.35       # safe default: bottom
 
 
 # ── Gemini ──────────────────────────────────────────────────────────────────
@@ -120,7 +229,7 @@ def _gemini_slide(prompt: str) -> bytes | None:
     try:
         from google import genai
         from google.genai import types
-        client = genai.Client(api_key=settings.gemini_api_key)
+        client = genai.Client(api_key=settings.image_api_key)
         response = client.models.generate_content(
             model="gemini-3.1-flash-image-preview",
             contents=prompt,
@@ -135,6 +244,59 @@ def _gemini_slide(prompt: str) -> bytes | None:
 
 
 # ── PPTX ────────────────────────────────────────────────────────────────────
+
+def _embed_font_in_pptx(pptx_bytes: bytes) -> bytes:
+    """Embed DeldedaOpen.ttf into the PPTX ZIP so the font travels with the file."""
+    if not _FONT_PATH.exists():
+        logger.warning("Font file not found: %s — skipping font embedding", _FONT_PATH)
+        return pptx_bytes
+
+    font_data = _FONT_PATH.read_bytes()
+    inp = io.BytesIO(pptx_bytes)
+    out = io.BytesIO()
+
+    font_rel_entry = (
+        f'<Relationship Id="{_FONT_REL_ID}" '
+        f'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/font" '
+        f'Target="fonts/font1.ttf"/>'
+    ).encode()
+
+    font_xml_entry = (
+        f'<p:embeddedFontLst>'
+        f'<p:embeddedFont>'
+        f'<p:font typeface="{_FONT_NAME}" charset="0" pitchFamily="32"/>'
+        f'<p:regular r:id="{_FONT_REL_ID}"/>'
+        f'</p:embeddedFont>'
+        f'</p:embeddedFontLst>'
+    ).encode()
+
+    content_type_entry = (
+        b'<Override PartName="/ppt/fonts/font1.ttf" '
+        b'ContentType="application/x-fontdata"/>'
+    )
+
+    with zipfile.ZipFile(inp, "r") as zin, \
+         zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as zout:
+
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+
+            if item.filename == "ppt/_rels/presentation.xml.rels":
+                data = data.replace(b"</Relationships>", font_rel_entry + b"</Relationships>")
+
+            elif item.filename == "ppt/presentation.xml":
+                data = data.replace(b"</p:presentation>", font_xml_entry + b"</p:presentation>")
+
+            elif item.filename == "[Content_Types].xml":
+                data = data.replace(b"</Types>", content_type_entry + b"</Types>")
+
+            zout.writestr(item, data)
+
+        # Add the font binary
+        zout.writestr("ppt/fonts/font1.ttf", font_data)
+
+    return out.getvalue()
+
 
 def _build_pptx(slides: list[str], images: list[bytes | None] | None = None) -> bytes:
     from pptx import Presentation
@@ -160,69 +322,78 @@ def _build_pptx(slides: list[str], images: list[bytes | None] | None = None) -> 
                 io.BytesIO(img_bytes), Emu(0), Emu(0), Emu(_SLIDE_EMU), Emu(_SLIDE_EMU)
             )
             text_color = WHITE
+            top_frac, h_frac = _find_text_zone(img_bytes)
         else:
             bg = slide.shapes.add_shape(1, Emu(0), Emu(0), Emu(_SLIDE_EMU), Emu(_SLIDE_EMU))
             bg.fill.solid()
             bg.fill.fore_color.rgb = BEIGE
             bg.line.color.rgb = BEIGE
             text_color = DARK
+            top_frac, h_frac = 0.32, 0.36   # centre for plain background
 
-        margin   = Emu(60000)
-        box_top  = Emu(int(_SLIDE_EMU * 0.60))
-        box_h    = Emu(int(_SLIDE_EMU * 0.40))
-        txBox = slide.shapes.add_textbox(
+        margin  = Emu(80000)
+        box_top = Emu(int(_SLIDE_EMU * top_frac))
+        box_h   = Emu(int(_SLIDE_EMU * h_frac))
+        txBox   = slide.shapes.add_textbox(
             margin, box_top, Emu(_SLIDE_EMU) - margin * 2, box_h
         )
         txBox.fill.background()
         tf = txBox.text_frame
         tf.word_wrap = True
 
-        label = _SLIDE_LABELS[i] if i < len(_SLIDE_LABELS) else f"Слайд {i + 1}"
-        p_lbl = tf.paragraphs[0]
-        p_lbl.alignment = PP_ALIGN.CENTER
-        r_lbl = p_lbl.add_run()
-        r_lbl.text = label
-        r_lbl.font.size = Pt(13)
-        r_lbl.font.color.rgb = text_color
-
-        p_txt = tf.add_paragraph()
-        p_txt.space_before = Pt(6)
-        p_txt.alignment = PP_ALIGN.CENTER
+        # Only the slide text — no labels
+        p_txt = tf.paragraphs[0]
+        p_txt.alignment = PP_ALIGN.LEFT
         r_txt = p_txt.add_run()
         r_txt.text = text
-        r_txt.font.size = Pt(22)
+        r_txt.font.name = _FONT_NAME
+        r_txt.font.size = Pt(24)
         r_txt.font.bold = True
         r_txt.font.color.rgb = text_color
 
     out = io.BytesIO()
     prs.save(out)
-    return out.getvalue()
+    return _embed_font_in_pptx(out.getvalue())
 
 
 # ── Text formatters ──────────────────────────────────────────────────────────
 
-def _make_slide_prompts_with_text(base: str, slides: list[str]) -> str:
-    lines = ["Промпты для карусели (картинка с текстом):\n"]
-    for i, slide in enumerate(slides, 1):
-        lines.append(f"Слайд {i}: {base}, text overlay: \"{slide[:60]}\", minimal clean design")
+def _make_slide_prompts_with_text(img_prompts: list[str], slides: list[str]) -> str:
+    """HTML-formatted — send with parse_mode=HTML.
+    Each slide gets its own unique image prompt with text overlay injected.
+    """
+    lines = ["<b>🍌 Nana Banana — с текстом (1080×1080, --ar 1:1):</b>\n"]
+    flags = "--ar 1:1 --style atmospheric"
+    for i, (prompt, slide) in enumerate(zip(img_prompts, slides), 1):
+        # Strip trailing flags, inject text overlay, re-add flags
+        clean = prompt.replace(flags, "").strip().rstrip(",").rstrip()
+        full_prompt = f'{clean}, text overlay: "{slide[:50]}", {flags}'
+        lines.append(
+            f"<b>Слайд {i}:</b>\n"
+            f"<pre>{_html.escape(full_prompt)}</pre>"
+        )
     return "\n".join(lines)
 
 
-def _make_slide_prompts_no_text(base: str, slides: list[str]) -> str:
-    lines = ["Промпты для карусели (чистый фон, без текста):\n"]
-    for i, slide in enumerate(slides, 1):
+def _make_slide_prompts_no_text(img_prompts: list[str], slides: list[str]) -> str:
+    """HTML-formatted — send with parse_mode=HTML.
+    Each slide gets its own unique image prompt (backgrounds, no text).
+    """
+    lines = ["<b>🍌 Nana Banana — фон без текста (1080×1080, --ar 1:1):</b>\n"]
+    for i, (prompt, slide) in enumerate(zip(img_prompts, slides), 1):
         lines.append(
-            f"Слайд {i} ({slide[:50]}): {base}, visual theme: {slide[:50]}, "
-            "clean minimal background, negative space for text, no typography"
+            f"<b>Слайд {i}</b> — {_html.escape(slide[:45])}\n"
+            f"<pre>{_html.escape(prompt)}</pre>"
         )
     return "\n".join(lines)
 
 
 def _format_for_canva(slides: list[str]) -> str:
-    parts = ["📋 Тексты для Canva:\n"]
+    """HTML-formatted — send with parse_mode=HTML."""
+    parts = ["<b>📋 Тексты для Canva:</b>\n"]
     for i, slide in enumerate(slides):
         label = _SLIDE_LABELS[i] if i < len(_SLIDE_LABELS) else f"Слайд {i + 1}"
-        parts.append(f"━━━ {label} ━━━\n{slide}")
+        parts.append(f"<b>{_html.escape(label)}</b>\n<pre>{_html.escape(slide)}</pre>")
     parts.append(
         "\n💡 Используй фоны из Nana Banana (без текста), "
         "добавляй текст в Canva из Brand Kit."
@@ -274,55 +445,175 @@ def _pptx_from_my_images_button(count: int) -> InlineKeyboardMarkup:
     ]])
 
 
-# ── Shared carousel generation helper ───────────────────────────────────────
+def _text_review_keyboard(n_slides: int) -> InlineKeyboardMarkup:
+    """Keyboard for text-only review stage (before image generation)."""
+    row = [InlineKeyboardButton(str(i + 1), callback_data=f"ca:edit:{i}") for i in range(n_slides)]
+    buttons = [row[i:i + 5] for i in range(0, len(row), 5)]
+    buttons.append([
+        InlineKeyboardButton("🖼 Генерировать картинки", callback_data="ca:gen:images"),
+        InlineKeyboardButton("🔄 Пересоздать",           callback_data="ca:regen:all"),
+    ])
+    return InlineKeyboardMarkup(buttons)
 
-async def _run_carousel(query_or_message, context: ContextTypes.DEFAULT_TYPE,
-                        topic: str, status_msg) -> None:
-    """Generate, edit, and send carousel for a given topic."""
+
+def _review_keyboard(n_slides: int, has_failed: bool = False) -> InlineKeyboardMarkup:
+    """Keyboard for post-image review. Optionally shows retry-failed button."""
+    row = [InlineKeyboardButton(str(i + 1), callback_data=f"ca:edit:{i}") for i in range(n_slides)]
+    buttons = [row[i:i + 5] for i in range(0, len(row), 5)]
+    action_row = [InlineKeyboardButton("📄 Скачать PPTX", callback_data="ca:pptx:final")]
+    if has_failed:
+        action_row.append(InlineKeyboardButton("🔄 Повторить ❌", callback_data="ca:regen:failed"))
+    action_row.append(InlineKeyboardButton("🔄 Пересоздать всё", callback_data="ca:regen:all"))
+    buttons.append(action_row)
+    return InlineKeyboardMarkup(buttons)
+
+
+def _slide_actions_keyboard(idx: int) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("🔄 Новый текст AI", callback_data=f"ca:edit:{idx}:ai"),
+            InlineKeyboardButton("✏️ Свой текст",     callback_data=f"ca:edit:{idx}:manual"),
+        ],
+        [
+            InlineKeyboardButton("🖼 Новая картинка", callback_data=f"ca:edit:{idx}:img"),
+            InlineKeyboardButton("✅ Готово",          callback_data="ca:review"),
+        ],
+    ])
+
+
+# ── Slide-level regeneration ─────────────────────────────────────────────────
+
+def _regen_slide_text_sync(topic: str, slides: list[str], idx: int) -> str:
+    """Ask Claude to rewrite a single slide, aware of its role and neighbours."""
+    import anthropic
+    role = _SLIDE_VISUAL_ROLES[idx] if idx < len(_SLIDE_VISUAL_ROLES) else "supporting slide"
+    label = _SLIDE_LABELS[idx] if idx < len(_SLIDE_LABELS) else f"Слайд {idx + 1}"
+    others = "\n".join(
+        f"Слайд {i + 1}: {s}" for i, s in enumerate(slides) if i != idx
+    )
+    prompt = (
+        f"Ты — копирайтер карусели для Instagram. Ниша: регуляция нервной системы через сенсорные практики.\n\n"
+        f"Тема карусели: {topic}\n"
+        f"Роль {label}: {role}\n\n"
+        f"Другие слайды (контекст):\n{others}\n\n"
+        f"Напиши новый вариант текста для {label}.\n"
+        f"Требования: максимум 5-6 строк, до 10 слов в строке, живой язык, без клише, без длинных тире.\n"
+        f"Верни только текст слайда — ничего больше."
+    )
+    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+    resp = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=300,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    return _fix_dashes(resp.content[0].text.strip())
+
+
+async def _show_slide_for_edit(
+    target,
+    idx: int,
+    slides: list[str],
+    images: list[bytes | None],
+) -> None:
+    """Send a single slide (image + text) with edit action buttons."""
+    label = _SLIDE_LABELS[idx] if idx < len(_SLIDE_LABELS) else f"Слайд {idx + 1}"
+    text = slides[idx]
+    img = images[idx] if idx < len(images) else None
+    caption = f"<b>{_html.escape(label)}</b>\n\n{_html.escape(text)}"
+
+    if img:
+        await target.reply_photo(
+            photo=img,
+            caption=caption,
+            parse_mode="HTML",
+            reply_markup=_slide_actions_keyboard(idx),
+        )
+    else:
+        await target.reply_text(
+            caption + "\n\n<i>картинка не сгенерирована</i>",
+            parse_mode="HTML",
+            reply_markup=_slide_actions_keyboard(idx),
+        )
+
+
+# ── Parallel image generation ────────────────────────────────────────────────
+
+_FALLBACK_IMG_PROMPT = (
+    "terracotta minimal lifestyle, incense smoke, soft natural light, "
+    "--ar 1:1 --style atmospheric"
+)
+
+
+async def _run_image_generation(
+    msg,
+    context: ContextTypes.DEFAULT_TYPE,
+    skip_existing: bool = False,
+) -> None:
+    """Generate all slide images in parallel with live progress updates."""
+    slides      = context.user_data.get("ca_slides", [])
+    img_prompts = context.user_data.get("ca_img_prompts", [])
+    existing    = context.user_data.get("ca_gemini_images", [])
+    n = len(slides)
     loop = asyncio.get_event_loop()
 
-    await status_msg.edit_text(
-        f"🎠 Тема: {topic}\n\n⏳ Генерирую черновик → прогоняю через редактора..."
-    )
+    # Start from existing images, extend to n slots
+    images: list[bytes | None] = list(existing) + [None] * max(0, n - len(existing))
+    done:   list[bool]         = [False] * n
 
-    slides, img_prompt = await loop.run_in_executor(
-        _executor, _generate_carousel_sync, topic
-    )
+    # Which indices need generation
+    indices = [
+        i for i in range(n)
+        if not (skip_existing and i < len(existing) and existing[i])
+    ]
 
-    if not slides:
-        await status_msg.edit_text("❌ Не удалось сгенерировать карусель. Попробуй позже.")
+    if not indices:
+        await msg.reply_text("✅ Все картинки уже готовы!")
         return
 
-    context.user_data["ca_slides"]     = slides
-    context.user_data["ca_img_prompt"] = img_prompt
-    context.user_data["ca_topic"]      = topic
-    context.user_data["ca_awaiting_images"]  = False
-    context.user_data["ca_user_image_ids"]   = []
-
-    # Send slide texts
-    slides_text = "\n\n".join(
-        f"{_SLIDE_LABELS[i] if i < len(_SLIDE_LABELS) else f'Слайд {i+1}'}:\n{s}"
-        for i, s in enumerate(slides)
+    icons_str = lambda: "".join(
+        "✅" if images[j] else ("❌" if done[j] else "⏳") for j in range(n)
     )
-    await status_msg.edit_text(f"📝 Слайды карусели:\n\n{slides_text}")
+    progress_msg = await msg.reply_text(
+        f"🖼 Генерирую картинки: {'⏳' * n} 0/{n}"
+    )
+    done_count = 0
 
-    # Generate images (no text — goes to PPTX/Canva)
-    await status_msg.reply_text("🖼 Генерирую картинки...")
-    images: list[bytes | None] = []
-    for slide in slides:
-        prompt = (
-            f"{img_prompt}, visual theme: {slide[:50]}, "
-            "clean minimal background, no text, no typography, square 1:1"
-        )
-        img = await loop.run_in_executor(_executor, _gemini_slide, prompt)
-        images.append(img)
+    async def gen_one(i: int) -> None:
+        nonlocal done_count
+        prompt = img_prompts[i] if i < len(img_prompts) else _FALLBACK_IMG_PROMPT
+        img = await loop.run_in_executor(_img_executor, _gemini_slide, prompt)
+        images[i] = img
+        done[i] = True
+        done_count += 1
+        try:
+            await progress_msg.edit_text(
+                f"🖼 Картинки: {icons_str()} {done_count}/{n}"
+            )
+        except Exception:
+            pass
+        if img:
+            label = _SLIDE_LABELS[i] if i < len(_SLIDE_LABELS) else f"Слайд {i + 1}"
+            try:
+                await msg.reply_photo(
+                    photo=img,
+                    caption=f"<b>{_html.escape(label)}</b>\n{_html.escape(slides[i][:120])}",
+                    parse_mode="HTML",
+                )
+            except Exception:
+                pass
+
+    await asyncio.gather(*[gen_one(i) for i in indices])
+
+    try:
+        await progress_msg.delete()
+    except Exception:
+        pass
 
     context.user_data["ca_gemini_images"] = images
+    generated  = sum(1 for img in images if img)
+    has_failed = generated < n
 
-    msg = query_or_message if hasattr(query_or_message, "reply_text") else query_or_message.message
-
-    all_ok = all(images)
-    if all_ok:
+    if not has_failed:
         pptx_bytes = await loop.run_in_executor(_executor, _build_pptx, slides, images)
         await msg.reply_document(
             document=io.BytesIO(pptx_bytes),
@@ -332,22 +623,53 @@ async def _run_carousel(query_or_message, context: ContextTypes.DEFAULT_TYPE,
                 "Загрузи в Canva и настрой шрифт / цвета из Brand Kit."
             ),
         )
-        await msg.reply_text("Нужны тексты отдельно?", reply_markup=_canva_buttons())
     else:
-        generated = sum(1 for img in images if img)
-        media = [
-            InputMediaPhoto(media=img, caption=f"Слайд {i+1}: {slides[i]}")
-            for i, img in enumerate(images) if img
-        ]
-        if media:
-            await msg.reply_media_group(media)
         await msg.reply_text(
-            f"⚠️ Сгенерировано {generated}/{len(slides)} картинок.\n"
-            "Сгенерируй остальные в Nana Banana и пришли сюда — соберу PPTX.\n"
-            "Или скачай PPTX с текстами и добавь картинки сам в Canva:",
-            reply_markup=_action_buttons_no_images(),
+            f"⚠️ Сгенерировано {generated}/{n} картинок. "
+            "Нажми «🔄 Повторить ❌» чтобы попробовать ещё раз."
         )
-        context.user_data["ca_awaiting_images"] = True
+
+    await msg.reply_text(
+        "✏️ Нажми номер слайда чтобы изменить:",
+        reply_markup=_review_keyboard(n, has_failed=has_failed),
+    )
+
+
+# ── Shared carousel generation helper ───────────────────────────────────────
+
+async def _run_carousel(query_or_message, context: ContextTypes.DEFAULT_TYPE,
+                        topic: str, status_msg) -> None:
+    """Generate slide texts only. User then triggers image generation manually."""
+    loop = asyncio.get_event_loop()
+
+    await status_msg.edit_text(
+        f"🎠 Тема: {topic}\n\n⏳ Генерирую черновик → прогоняю через редактора..."
+    )
+
+    slides, img_prompts = await loop.run_in_executor(
+        _executor, _generate_carousel_sync, topic
+    )
+
+    if not slides:
+        await status_msg.edit_text("❌ Не удалось сгенерировать карусель. Попробуй позже.")
+        return
+
+    context.user_data["ca_slides"]           = slides
+    context.user_data["ca_img_prompts"]      = img_prompts
+    context.user_data["ca_topic"]            = topic
+    context.user_data["ca_gemini_images"]    = []
+    context.user_data["ca_awaiting_images"]  = False
+    context.user_data["ca_user_image_ids"]   = []
+
+    slides_text = "\n\n".join(
+        f"{_SLIDE_LABELS[i] if i < len(_SLIDE_LABELS) else f'Слайд {i+1}'}:\n{s}"
+        for i, s in enumerate(slides)
+    )
+    await status_msg.edit_text(
+        f"📝 Тексты слайдов готовы:\n\n{slides_text}\n\n"
+        "Нажми номер слайда чтобы изменить, или генерируй картинки:",
+        reply_markup=_text_review_keyboard(len(slides)),
+    )
 
 
 # ── Command handler ──────────────────────────────────────────────────────────
@@ -357,9 +679,10 @@ async def cmd_carousel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         await update.message.reply_text("❌ Для /carousel нужен ANTHROPIC_API_KEY.")
         return
 
-    context.user_data["ca_awaiting_images"] = False
-    context.user_data["ca_awaiting_topic"]  = False
-    context.user_data["ca_user_image_ids"]  = []
+    context.user_data["ca_awaiting_images"]    = False
+    context.user_data["ca_awaiting_topic"]     = False
+    context.user_data["ca_awaiting_slide_edit"] = None
+    context.user_data["ca_user_image_ids"]     = []
 
     await update.message.reply_text(
         "🎠 *Карусель для Instagram*\n\nВыбери, откуда взять тему:",
@@ -430,26 +753,35 @@ async def cb_carousel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         return
 
     # ── Prompt buttons ────────────────────────────────────────────────────
-    if data == "ca:prompt:text":
-        slides    = context.user_data.get("ca_slides", [])
-        img_prompt = context.user_data.get("ca_img_prompt", "")
+    if data in ("ca:prompt:text", "ca:prompt:notxt"):
+        slides     = context.user_data.get("ca_slides", [])
+        img_prompts = context.user_data.get("ca_img_prompts", [])
+        topic      = context.user_data.get("ca_topic", "")
         if not slides:
             await query.message.reply_text("❌ Данные устарели. Сгенерируй карусель заново.")
             return
-        await query.message.reply_text(_make_slide_prompts_with_text(img_prompt, slides))
-        return
-
-    if data == "ca:prompt:notxt":
-        slides    = context.user_data.get("ca_slides", [])
-        img_prompt = context.user_data.get("ca_img_prompt", "")
-        if not slides:
-            await query.message.reply_text("❌ Данные устарели. Сгенерируй карусель заново.")
-            return
-        await query.message.reply_text(_make_slide_prompts_no_text(img_prompt, slides))
-        context.user_data["ca_awaiting_images"] = True
-        await query.message.reply_text(
-            "📸 Сгенерировал в Nana Banana? Пришли картинки сюда — я соберу PPTX."
-        )
+        if not img_prompts:
+            gen_msg = await query.message.reply_text("⏳ Генерирую промты для картинок...")
+            loop = asyncio.get_event_loop()
+            img_prompts = await loop.run_in_executor(
+                _executor, _generate_slide_image_prompts_sync, slides, topic
+            )
+            context.user_data["ca_img_prompts"] = img_prompts
+            await gen_msg.delete()
+        if data == "ca:prompt:text":
+            await query.message.reply_text(
+                _make_slide_prompts_with_text(img_prompts, slides),
+                parse_mode="HTML",
+            )
+        else:
+            await query.message.reply_text(
+                _make_slide_prompts_no_text(img_prompts, slides),
+                parse_mode="HTML",
+            )
+            context.user_data["ca_awaiting_images"] = True
+            await query.message.reply_text(
+                "📸 Сгенерировал в Nana Banana? Пришли картинки сюда — я соберу PPTX."
+            )
         return
 
     if data == "ca:prompt:canva":
@@ -457,7 +789,153 @@ async def cb_carousel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         if not slides:
             await query.message.reply_text("❌ Данные устарели. Сгенерируй карусель заново.")
             return
-        await query.message.reply_text(_format_for_canva(slides))
+        await query.message.reply_text(_format_for_canva(slides), parse_mode="HTML")
+        return
+
+    # ── Generate images (first time) ──────────────────────────────────────
+    if data == "ca:gen:images":
+        slides = context.user_data.get("ca_slides", [])
+        if not slides:
+            await query.message.reply_text("❌ Данные устарели. Сгенерируй карусель заново.")
+            return
+        await _run_image_generation(query.message, context, skip_existing=False)
+        return
+
+    # ── Retry failed images ───────────────────────────────────────────────
+    if data == "ca:regen:failed":
+        slides = context.user_data.get("ca_slides", [])
+        if not slides:
+            await query.message.reply_text("❌ Данные устарели. Сгенерируй карусель заново.")
+            return
+        await _run_image_generation(query.message, context, skip_existing=True)
+        return
+
+    # ── Review screen ─────────────────────────────────────────────────────
+    if data == "ca:review":
+        slides = context.user_data.get("ca_slides", [])
+        if not slides:
+            await query.message.reply_text("❌ Данные устарели. Сгенерируй карусель заново.")
+            return
+        images = context.user_data.get("ca_gemini_images", [])
+        if images:
+            has_failed = any(img is None for img in images[:len(slides)])
+            await query.message.reply_text(
+                "✏️ Нажми номер слайда чтобы изменить:",
+                reply_markup=_review_keyboard(len(slides), has_failed=has_failed),
+            )
+        else:
+            await query.message.reply_text(
+                "✏️ Нажми номер слайда чтобы изменить, или генерируй картинки:",
+                reply_markup=_text_review_keyboard(len(slides)),
+            )
+        return
+
+    # ── Regenerate whole carousel with same topic ──────────────────────────
+    if data == "ca:regen:all":
+        topic = context.user_data.get("ca_topic", "")
+        if not topic:
+            await query.message.reply_text("❌ Тема не найдена. Запроси /carousel заново.")
+            return
+        status = await query.message.reply_text("🔄 Пересоздаю карусель...")
+        await _run_carousel(query, context, topic, status)
+        return
+
+    # ── Slide editor ──────────────────────────────────────────────────────
+    if data.startswith("ca:edit:"):
+        parts = data.split(":")
+        idx = int(parts[2])
+        action = parts[3] if len(parts) > 3 else ""
+        slides = context.user_data.get("ca_slides", [])
+        images = context.user_data.get("ca_gemini_images", [])
+        topic  = context.user_data.get("ca_topic", "")
+        img_prompts = context.user_data.get("ca_img_prompts", [])
+
+        if not slides or idx >= len(slides):
+            await query.message.reply_text("❌ Данные устарели. Сгенерируй карусель заново.")
+            return
+
+        # ── Show slide ────────────────────────────────────────────────────
+        if not action:
+            await _show_slide_for_edit(query.message, idx, slides, images)
+            return
+
+        # ── AI: regenerate text (+ image) ─────────────────────────────────
+        if action == "ai":
+            status = await query.message.reply_text(
+                f"🔄 Генерирую новый текст для слайда {idx + 1}..."
+            )
+            loop = asyncio.get_event_loop()
+            new_text = await loop.run_in_executor(
+                _executor, _regen_slide_text_sync, topic, slides, idx
+            )
+            slides[idx] = new_text
+            context.user_data["ca_slides"] = slides
+
+            if img_prompts and idx < len(img_prompts):
+                await status.edit_text(f"🖼 Обновляю картинку для слайда {idx + 1}...")
+                new_img = await loop.run_in_executor(
+                    _img_executor, _gemini_slide, img_prompts[idx]
+                )
+                if new_img:
+                    while len(images) <= idx:
+                        images.append(None)
+                    images[idx] = new_img
+                    context.user_data["ca_gemini_images"] = images
+
+            await status.delete()
+            await _show_slide_for_edit(query.message, idx, slides, images)
+            return
+
+        # ── Manual: wait for user text ────────────────────────────────────
+        if action == "manual":
+            context.user_data["ca_awaiting_slide_edit"] = idx
+            label = _SLIDE_LABELS[idx] if idx < len(_SLIDE_LABELS) else f"Слайд {idx + 1}"
+            await query.message.reply_text(
+                f"✏️ Введи новый текст для <b>{_html.escape(label)}</b>:\n"
+                f"<i>Просто напиши следующим сообщением</i>",
+                parse_mode="HTML",
+            )
+            return
+
+        # ── Regenerate image only ─────────────────────────────────────────
+        if action == "img":
+            if not img_prompts or idx >= len(img_prompts):
+                await query.message.reply_text("❌ Промт для картинки не найден.")
+                return
+            status = await query.message.reply_text(
+                f"🖼 Генерирую новую картинку для слайда {idx + 1}..."
+            )
+            loop = asyncio.get_event_loop()
+            new_img = await loop.run_in_executor(
+                _img_executor, _gemini_slide, img_prompts[idx]
+            )
+            await status.delete()
+            if new_img:
+                while len(images) <= idx:
+                    images.append(None)
+                images[idx] = new_img
+                context.user_data["ca_gemini_images"] = images
+            else:
+                await query.message.reply_text("⚠️ Gemini не сгенерировал картинку. Попробуй ещё раз.")
+            await _show_slide_for_edit(query.message, idx, slides, images)
+            return
+
+    # ── Final PPTX from current state ─────────────────────────────────────
+    if data == "ca:pptx:final":
+        slides = context.user_data.get("ca_slides", [])
+        images = context.user_data.get("ca_gemini_images", [])
+        if not slides:
+            await query.message.reply_text("❌ Данные устарели. Сгенерируй карусель заново.")
+            return
+        status = await query.message.reply_text("⏳ Собираю PPTX...")
+        loop = asyncio.get_event_loop()
+        pptx_bytes = await loop.run_in_executor(_executor, _build_pptx, slides, images or None)
+        await status.delete()
+        await query.message.reply_document(
+            document=io.BytesIO(pptx_bytes),
+            filename="carousel_final.pptx",
+            caption="📄 PPTX из текущей версии карусели.",
+        )
         return
 
     # ── PPTX: text only ───────────────────────────────────────────────────
@@ -511,18 +989,55 @@ async def cb_carousel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 # ── Message handlers ──────────────────────────────────────────────────────────
 
 async def msg_carousel_topic(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Receive custom topic text when ca_awaiting_topic is True."""
+    """Handle text input — either a new topic or manual slide edit."""
+    text = (update.message.text or "").strip()
+
+    # ── Manual slide edit ──────────────────────────────────────────────────
+    slide_idx = context.user_data.get("ca_awaiting_slide_edit")
+    if slide_idx is not None:
+        if not text:
+            return
+        slides = context.user_data.get("ca_slides", [])
+        images = context.user_data.get("ca_gemini_images", [])
+        img_prompts = context.user_data.get("ca_img_prompts", [])
+
+        if not slides or slide_idx >= len(slides):
+            await update.message.reply_text("❌ Данные устарели. Сгенерируй карусель заново.")
+            context.user_data["ca_awaiting_slide_edit"] = None
+            return
+
+        slides[slide_idx] = text
+        context.user_data["ca_slides"] = slides
+        context.user_data["ca_awaiting_slide_edit"] = None
+
+        # Regenerate image for the edited slide
+        if img_prompts and slide_idx < len(img_prompts):
+            status = await update.message.reply_text("✅ Текст обновлён! 🖼 Генерирую картинку...")
+            loop = asyncio.get_event_loop()
+            new_img = await loop.run_in_executor(
+                _executor, _gemini_slide, img_prompts[slide_idx]
+            )
+            await status.delete()
+            if new_img:
+                while len(images) <= slide_idx:
+                    images.append(None)
+                images[slide_idx] = new_img
+                context.user_data["ca_gemini_images"] = images
+
+        await _show_slide_for_edit(update.message, slide_idx, slides, images)
+        return
+
+    # ── New carousel topic ─────────────────────────────────────────────────
     if not context.user_data.get("ca_awaiting_topic"):
         return
 
-    topic = (update.message.text or "").strip()
-    if len(topic) < 5:
+    if len(text) < 5:
         await update.message.reply_text("❌ Тема слишком короткая. Опиши подробнее.")
         return
 
     context.user_data["ca_awaiting_topic"] = False
     status = await update.message.reply_text("⏳ Начинаю...")
-    await _run_carousel(update.message, context, topic, status)
+    await _run_carousel(update.message, context, text, status)
 
 
 async def msg_carousel_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

@@ -90,6 +90,8 @@ def _claude_topics(trends_text: str) -> list[str]:
 
 def _claude_post_and_prompt(topic: str) -> tuple[str, str]:
     import anthropic
+    from bot.agents.creative_team import edit_post_sync
+
     client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
 
     post_resp = client.messages.create(
@@ -97,7 +99,8 @@ def _claude_post_and_prompt(topic: str) -> tuple[str, str]:
         max_tokens=600,
         messages=[{"role": "user", "content": _PROMPT_POST.format(topic=topic)}],
     )
-    post_text = post_resp.content[0].text.strip()
+    raw_post = post_resp.content[0].text.strip()
+    post_text = edit_post_sync(raw_post, topic, platform="threads")
 
     img_resp = client.messages.create(
         model="claude-haiku-4-5-20251001",
@@ -114,7 +117,7 @@ def _gemini_image(prompt: str) -> bytes | None:
         from google import genai
         from google.genai import types
 
-        client = genai.Client(api_key=settings.gemini_api_key)
+        client = genai.Client(api_key=settings.image_api_key)
         response = client.models.generate_content(
             model="gemini-3.1-flash-image-preview",
             contents=prompt,
@@ -244,7 +247,12 @@ async def cb_threads(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     if data == "tt:prompt":
         prompt = context.user_data.get("tt_img_prompt", "")
         if prompt:
-            await query.message.reply_text(f"Промпт для Nano Banana:\n\n{prompt}")
+            import html as _html
+            await query.message.reply_text(
+                f"🍌 Промпт для Nana Banana (1080×1350, --ar 4:5):\n\n"
+                f"<pre>{_html.escape(prompt)}</pre>",
+                parse_mode="HTML",
+            )
         else:
             await query.message.reply_text("❌ Промпт не найден. Сгенерируй пост заново.")
 
