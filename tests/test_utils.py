@@ -254,3 +254,44 @@ class TestFmtCount:
         result = _fmt_count(1_000_000)
         assert "1" in result
         assert "000" in result
+
+
+# ---------------------------------------------------------------------------
+# Threads collector: _parse_post
+# ---------------------------------------------------------------------------
+
+from analytics.threads_collector import _parse_post
+
+
+class TestThreadsParsePost:
+    def test_parses_basic_post(self):
+        text = "username\n01/01/26\nThis is a great aromatherapy tip!\n42\n5\n3"
+        item = _parse_post(text, "https://threads.net/@username/post/abc")
+        assert item is not None
+        assert "aromatherapy tip" in item.title
+
+    def test_returns_none_for_too_short(self):
+        item = _parse_post("user\ndate\nhi\n1", "https://threads.net/x")
+        assert item is None
+
+    def test_extracts_score(self):
+        text = "user\n01/01/26\nAromatherapy for stress relief and wellness\n1K\n20\n5"
+        item = _parse_post(text, "https://threads.net/@user/post/x")
+        assert item is not None
+        assert "1K" in item.score
+
+    def test_url_stored(self):
+        text = "user\n01/01/26\nEssential oils and sound healing practices\n10\n2"
+        url = "https://www.threads.net/@user/post/XYZ"
+        item = _parse_post(text, url)
+        assert item is not None
+        assert item.url == url
+
+    def test_author_in_extra(self):
+        text = "aromafan\n02/01/26\nGong meditation changed my life completely!\n55\n8"
+        item = _parse_post(text, "https://threads.net/@aromafan/post/1")
+        assert item is not None
+        assert item.extra["author"] == "aromafan"
+
+    def test_returns_none_for_empty(self):
+        assert _parse_post("", "https://threads.net") is None
