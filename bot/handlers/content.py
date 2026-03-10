@@ -45,6 +45,16 @@ def _topics_keyboard(topics: list[str]) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(rows)
 
 
+def _topics_text(goal_key: str, format_key: str, topics: list[str]) -> str:
+    items = "\n".join(f"{idx + 1}. {topic}" for idx, topic in enumerate(topics))
+    return (
+        f"🎯 Цель: {goal_label(goal_key)}\n"
+        f"🧩 Формат: {format_label(format_key)}\n\n"
+        f"Выбери тему:\n\n{items}\n\n"
+        "Нажми на цифру ниже."
+    )
+
+
 async def cmd_content(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not settings.anthropic_api_key:
         await update.message.reply_text("❌ Для /content нужен ANTHROPIC_API_KEY.")
@@ -101,7 +111,7 @@ async def cb_content(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
         context.user_data["content_topics"] = topics
         await query.message.edit_text(
-            f"🎯 Цель: {goal_label(goal_key)}\n🧩 Формат: {format_label(format_key)}\n\nВыбери тему:",
+            _topics_text(goal_key, format_key, topics),
             reply_markup=_topics_keyboard(topics),
         )
         return
@@ -128,7 +138,7 @@ async def cb_content(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
         context.user_data["content_topics"] = topics
         await query.message.edit_text(
-            f"🎯 Цель: {goal_label(goal_key)}\n🧩 Формат: {format_label(format_key)}\n\nВыбери тему:",
+            _topics_text(goal_key, format_key, topics),
             reply_markup=_topics_keyboard(topics),
         )
         return

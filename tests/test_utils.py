@@ -9,6 +9,7 @@ import pytest
 # ---------------------------------------------------------------------------
 
 from bot.handlers.commands import _split_message
+from bot.handlers.content import _topics_text
 
 
 class TestSplitMessage:
@@ -194,6 +195,14 @@ class TestFormatContentMessage:
         text = format_content_message(draft, "Тема", "sales", "telegram")
         assert "TEXT" in text
         assert "caption" in text
+
+
+class TestContentTopicsText:
+    def test_topics_are_visible_in_message(self):
+        text = _topics_text("trust", "telegram", ["Тема 1", "Тема 2"])
+        assert "1. Тема 1" in text
+        assert "2. Тема 2" in text
+        assert "Доверие" in text
 
 
 # ---------------------------------------------------------------------------
