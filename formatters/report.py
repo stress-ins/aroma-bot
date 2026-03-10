@@ -46,6 +46,8 @@ def build_report(results: list[SourceResult], lang: str = "ru",
             continue
         if not settings.is_source_enabled(result.source_key):
             continue
+        if not result.ok:
+            continue
         lines.append(format_section(result))
         lines.append("")
 
