@@ -222,6 +222,13 @@ def _find_text_zone(img_bytes: bytes) -> tuple[float, float]:
         return 0.63, 0.35       # safe default: bottom
 
 
+def _apply_note_to_prompt(prompt: str, note: str) -> str:
+    """Inject user note into image prompt before the style flags."""
+    flags = "--ar 1:1 --style atmospheric"
+    base = prompt.replace(flags, "").strip().rstrip(",")
+    return f"{base}, {note.strip()} {flags}"
+
+
 # ── Gemini ──────────────────────────────────────────────────────────────────
 
 def _gemini_slide(prompt: str, key_index: int = 0) -> bytes | None:
@@ -465,7 +472,7 @@ def _review_keyboard(n_slides: int, has_failed: bool = False) -> InlineKeyboardM
     buttons = [row[i:i + 5] for i in range(0, len(row), 5)]
     action_row = [InlineKeyboardButton("📄 Скачать PPTX", callback_data="ca:pptx:final")]
     if has_failed:
-        action_row.append(InlineKeyboardButton("🔄 Повторить ❌", callback_data="ca:regen:failed"))
+        action_row.append(InlineKeyboardButton("🔄 Повторить ❌", callback_data="ca:regen:failed:note"))
     action_row.append(InlineKeyboardButton("🔄 Пересоздать всё", callback_data="ca:regen:all"))
     buttons.append(action_row)
     buttons.append([
@@ -482,8 +489,11 @@ def _slide_actions_keyboard(idx: int) -> InlineKeyboardMarkup:
             InlineKeyboardButton("✏️ Свой текст",     callback_data=f"ca:edit:{idx}:manual"),
         ],
         [
-            InlineKeyboardButton("🖼 Новая картинка", callback_data=f"ca:edit:{idx}:img"),
-            InlineKeyboardButton("✅ Готово",          callback_data="ca:review"),
+            InlineKeyboardButton("🖼 Новая картинка",        callback_data=f"ca:edit:{idx}:img"),
+            InlineKeyboardButton("🖼 С замечанием",          callback_data=f"ca:edit:{idx}:imgnote"),
+        ],
+        [
+            InlineKeyboardButton("✅ Готово", callback_data="ca:review"),
         ],
     ])
 
@@ -854,7 +864,21 @@ async def cb_carousel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         await _run_image_generation(query.message, context, skip_existing=False)
         return
 
-    # ── Retry failed images ───────────────────────────────────────────────
+    # ── Retry failed images — ask for note first ──────────────────────────
+    if data == "ca:regen:failed:note":
+        slides = context.user_data.get("ca_slides", [])
+        if not slides:
+            await query.message.reply_text("❌ Данные устарели. Сгенерируй карусель заново.")
+            return
+        context.user_data["ca_awaiting_img_note"] = {"idx": None, "skip_existing": True}
+        await query.message.reply_text(
+            "✏️ Напиши замечание к картинкам — что изменить, добавить или убрать.\n"
+            "<i>Например: более тёмные тона, без рук, добавить свечи, минималистичнее</i>",
+            parse_mode="HTML",
+        )
+        return
+
+    # ── Retry failed images — no note (kept for backward compat) ─────────
     if data == "ca:regen:failed":
         slides = context.user_data.get("ca_slides", [])
         if not slides:
@@ -977,6 +1001,21 @@ async def cb_carousel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             await _show_slide_for_edit(query.message, idx, slides, images)
             return
 
+        # ── Regenerate image with user note ──────────────────────────────
+        if action == "imgnote":
+            if not img_prompts or idx >= len(img_prompts):
+                await query.message.reply_text("❌ Промт для картинки не найден.")
+                return
+            context.user_data["ca_awaiting_img_note"] = {"idx": idx, "skip_existing": False}
+            label = _SLIDE_LABELS[idx] if idx < len(_SLIDE_LABELS) else f"Слайд {idx + 1}"
+            await query.message.reply_text(
+                f"✏️ Замечание для картинки <b>{_html.escape(label)}</b>:\n"
+                "<i>Что изменить, добавить или убрать?</i>\n"
+                "<i>Например: темнее, без рук, добавить свечи, более абстрактно</i>",
+                parse_mode="HTML",
+            )
+            return
+
     # ── Final PPTX from current state ─────────────────────────────────────
     if data == "ca:pptx:final":
         slides = context.user_data.get("ca_slides", [])
@@ -1048,6 +1087,55 @@ async def cb_carousel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 async def msg_carousel_topic(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle text input — either a new topic or manual slide edit."""
     text = (update.message.text or "").strip()
+
+    # ── Image note received ────────────────────────────────────────────────
+    img_note_state = context.user_data.get("ca_awaiting_img_note")
+    if img_note_state is not None:
+        if not text:
+            return
+        context.user_data["ca_awaiting_img_note"] = None
+        slides     = context.user_data.get("ca_slides", [])
+        img_prompts = list(context.user_data.get("ca_img_prompts", []))
+        images     = context.user_data.get("ca_gemini_images", [])
+        slide_idx_note  = img_note_state.get("idx")        # None = all failed
+        skip_existing   = img_note_state.get("skip_existing", False)
+
+        if not slides:
+            await update.message.reply_text("❌ Данные устарели. Сгенерируй карусель заново.")
+            return
+
+        if slide_idx_note is None:
+            # Apply note to all prompts (for retry-failed flow)
+            img_prompts = [_apply_note_to_prompt(p, text) for p in img_prompts]
+        else:
+            # Apply note to single slide prompt
+            if slide_idx_note < len(img_prompts):
+                img_prompts[slide_idx_note] = _apply_note_to_prompt(
+                    img_prompts[slide_idx_note], text
+                )
+
+        context.user_data["ca_img_prompts"] = img_prompts
+
+        if slide_idx_note is None:
+            await _run_image_generation(update.message, context, skip_existing=skip_existing)
+        else:
+            status = await update.message.reply_text(
+                f"🖼 Генерирую картинку для слайда {slide_idx_note + 1} с замечанием..."
+            )
+            loop = asyncio.get_event_loop()
+            new_img = await loop.run_in_executor(
+                _img_executor, _gemini_slide, img_prompts[slide_idx_note]
+            )
+            await status.delete()
+            if new_img:
+                while len(images) <= slide_idx_note:
+                    images.append(None)
+                images[slide_idx_note] = new_img
+                context.user_data["ca_gemini_images"] = images
+            else:
+                await update.message.reply_text("⚠️ Gemini не сгенерировал картинку. Попробуй ещё раз.")
+            await _show_slide_for_edit(update.message, slide_idx_note, slides, images)
+        return
 
     # ── Manual slide edit ──────────────────────────────────────────────────
     slide_idx = context.user_data.get("ca_awaiting_slide_edit")
