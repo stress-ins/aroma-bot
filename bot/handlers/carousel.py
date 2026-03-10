@@ -662,7 +662,11 @@ async def _run_carousel(query_or_message, context: ContextTypes.DEFAULT_TYPE,
     )
 
     if not slides:
-        await status_msg.edit_text("❌ Не удалось сгенерировать карусель. Попробуй позже.")
+        target = query_or_message if hasattr(query_or_message, "reply_text") else query_or_message.message
+        try:
+            await status_msg.edit_text("❌ Не удалось сгенерировать карусель. Попробуй позже.")
+        except Exception:
+            await target.reply_text("❌ Не удалось сгенерировать карусель. Попробуй позже.")
         return
 
     context.user_data["ca_slides"]           = slides
@@ -676,11 +680,18 @@ async def _run_carousel(query_or_message, context: ContextTypes.DEFAULT_TYPE,
         f"{_SLIDE_LABELS[i] if i < len(_SLIDE_LABELS) else f'Слайд {i+1}'}:\n{s}"
         for i, s in enumerate(slides)
     )
-    await status_msg.edit_text(
+    text_body = (
         f"📝 Тексты слайдов готовы:\n\n{slides_text}\n\n"
-        "Нажми номер слайда чтобы изменить, или генерируй картинки:",
-        reply_markup=_text_review_keyboard(len(slides)),
+        "Нажми номер слайда чтобы изменить, или генерируй картинки:"
     )
+    keyboard = _text_review_keyboard(len(slides))
+    try:
+        await status_msg.edit_text(text_body, reply_markup=keyboard)
+    except Exception:
+        # Fallback if edit times out or message is stale
+        msg_obj = status_msg.chat if hasattr(status_msg, "chat") else None
+        target = query_or_message if hasattr(query_or_message, "reply_text") else query_or_message.message
+        await target.reply_text(text_body, reply_markup=keyboard)
 
 
 # ── Command handler ──────────────────────────────────────────────────────────
