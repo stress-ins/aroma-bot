@@ -629,6 +629,17 @@ async def _run_image_generation(
             )
         except Exception:
             pass
+        # Send immediately — don't wait for all to finish
+        if img:
+            label = _SLIDE_LABELS[i] if i < len(_SLIDE_LABELS) else f"Слайд {i + 1}"
+            try:
+                await msg.reply_photo(
+                    photo=img,
+                    caption=f"<b>{_html.escape(label)}</b>\n{_html.escape(slides[i][:120])}",
+                    parse_mode="HTML",
+                )
+            except Exception:
+                pass
 
     await asyncio.gather(*[gen_one(i) for i in indices])
 
@@ -640,19 +651,6 @@ async def _run_image_generation(
     context.user_data["ca_gemini_images"] = images
     generated  = sum(1 for img in images if img)
     has_failed = generated < n
-
-    # Send all images in order after generation completes
-    for i, img in enumerate(images):
-        if img:
-            label = _SLIDE_LABELS[i] if i < len(_SLIDE_LABELS) else f"Слайд {i + 1}"
-            try:
-                await msg.reply_photo(
-                    photo=img,
-                    caption=f"<b>{_html.escape(label)}</b>\n{_html.escape(slides[i][:120])}",
-                    parse_mode="HTML",
-                )
-            except Exception:
-                pass
 
     if not has_failed:
         pptx_bytes = await loop.run_in_executor(_executor, _build_pptx, slides, images)
