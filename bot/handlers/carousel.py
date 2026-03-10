@@ -224,50 +224,21 @@ def _find_text_zone(img_bytes: bytes) -> tuple[float, float]:
 
 # ── Gemini ──────────────────────────────────────────────────────────────────
 
-def _get_image_keys() -> list[str]:
-    """Return available Gemini API keys (deduplicated)."""
-    keys: list[str] = []
-    if settings.nana_banana_api_key:
-        keys.append(settings.nana_banana_api_key)
-    if settings.gemini_api_key and settings.gemini_api_key not in keys:
-        keys.append(settings.gemini_api_key)
-    if not keys:
-        keys = [settings.image_api_key]
-    return keys
-
-
 def _gemini_slide(prompt: str, key_index: int = 0) -> bytes | None:
-    """Generate one image. key_index selects which API key to use first (round-robin)."""
-    import time
-    from google import genai
-    from google.genai import types
-
-    keys = _get_image_keys()
-    # Rotate so each slide starts on a different key
-    ordered = keys[key_index % len(keys):] + keys[:key_index % len(keys)]
-
-    for attempt, api_key in enumerate(ordered):
-        try:
-            client = genai.Client(api_key=api_key)
-            response = client.models.generate_content(
-                model="gemini-3.1-flash-image-preview",
-                contents=prompt,
-                config=types.GenerateContentConfig(response_modalities=["IMAGE", "TEXT"]),
-            )
-            for part in response.candidates[0].content.parts:
-                if part.inline_data:
-                    return part.inline_data.data
-        except Exception as exc:
-            err = str(exc)[:160]
-            if "429" in err or "RESOURCE_EXHAUSTED" in err:
-                logger.warning("Gemini 429 on key #%d, %s", attempt + 1,
-                               "trying next key" if attempt + 1 < len(ordered) else "no more keys")
-                if attempt + 1 < len(ordered):
-                    time.sleep(1)
-                    continue
-            else:
-                logger.warning("Gemini carousel error: %s", err)
-            break
+    try:
+        from google import genai
+        from google.genai import types
+        client = genai.Client(api_key=settings.image_api_key)
+        response = client.models.generate_content(
+            model="gemini-3.1-flash-image-preview",
+            contents=prompt,
+            config=types.GenerateContentConfig(response_modalities=["IMAGE", "TEXT"]),
+        )
+        for part in response.candidates[0].content.parts:
+            if part.inline_data:
+                return part.inline_data.data
+    except Exception as exc:
+        logger.warning("Gemini carousel error: %s", str(exc)[:160])
     return None
 
 
