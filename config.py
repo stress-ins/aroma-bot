@@ -61,6 +61,7 @@ class Settings(BaseSettings):
             "wordstat": bool(self.yandex_client_id and self.yandex_client_secret),
             "tiktok": bool(self.tiktok_ms_token),
             "tiktok_ru": bool(self.tiktok_ms_token),
+            "threads": True,
             "ai_recommendations": bool(self.anthropic_api_key),
         }
         return checks.get(source, False)

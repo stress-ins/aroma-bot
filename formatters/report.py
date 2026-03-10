@@ -9,7 +9,7 @@ from config import settings
 
 # Which source_keys belong to which report
 RU_SOURCE_KEYS = {"google_trends_ru", "youtube_ru", "instagram_ru", "vk", "telegram_channels", "ai_recommendations", "wordstat", "tiktok_ru"}
-EN_SOURCE_KEYS = {"google_trends_en", "youtube", "reddit", "instagram", "twitter", "tiktok"}
+EN_SOURCE_KEYS = {"google_trends_en", "youtube", "reddit", "instagram", "twitter", "tiktok", "threads"}
 
 _RU_MONTHS = {
     "January": "января", "February": "февраля", "March": "марта",
