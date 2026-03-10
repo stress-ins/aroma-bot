@@ -263,7 +263,7 @@ async def cb_content(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
             base_prompt = draft.visual_prompt or DEFAULT_CAROUSEL_IMAGE_PROMPT
             context.user_data["content_img_prompt"] = base_prompt
 
-            if not settings.gemini_api_key:
+            if not settings.image_api_key:
                 await query.message.reply_text(
                     "⚠️ Автогенерация картинок недоступна.\nВыбери, какие промпты показать:",
                     reply_markup=_prompt_buttons(),

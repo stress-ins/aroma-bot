@@ -1,0 +1,13 @@
+[Unit]
+Description=Threads OAuth Callback Service
+After=network.target
+
+[Service]
+WorkingDirectory=/opt/aroma
+ExecStart=/usr/local/bin/uvicorn threads_oauth_callback:app --host 127.0.0.1 --port 8090
+Restart=always
+RestartSec=3
+User=root
+
+[Install]
+WantedBy=multi-user.target

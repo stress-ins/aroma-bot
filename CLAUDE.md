@@ -61,11 +61,24 @@ curl -s -X PUT http://localhost:5678/api/v1/workflows/uVGs2O7RguKjLWSW \
 ```
 *(API ключ берётся из настроек n8n UI → Settings → API Keys)*
 
-## Перезапуск бота
+## Деплой на VPS
 
+Бот работает на VPS `46.32.186.192` как systemd-сервис `aroma-bot`.
+
+**Задеплоить изменения:**
 ```bash
-pgrep -af "aroma" | xargs kill 2>/dev/null
-sleep 2
 cd "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma"
-.venv/bin/python main.py > /tmp/aroma_bot.log 2>&1 &
+git add -A && git commit -m "описание изменений"
+git push vps main
+```
+После push хук автоматически: checkout → pip install → systemctl restart aroma-bot.
+
+**Перезапуск вручную:**
+```bash
+ssh root@46.32.186.192 'systemctl restart aroma-bot'
+```
+
+**Логи:**
+```bash
+ssh root@46.32.186.192 'journalctl -u aroma-bot -n 50 --no-pager'
 ```

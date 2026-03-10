@@ -327,10 +327,19 @@ def _generate_topics_sync(
 
 
 def _generate_draft_sync(topic: str, goal_key: str, format_key: str) -> ContentDraft:
+    from bot.agents.creative_team import edit_post_sync
+
     raw = _call_claude(_draft_prompt(topic, goal_key, format_key), max_tokens=1200)
     draft = parse_content_draft(raw)
     if not _has_structured_content(draft) and raw.strip():
         draft.caption = _fix_dashes(raw.strip())
+
+    # Editor pass: sharpen hook and caption
+    if format_key != "carousel":
+        if draft.hook:
+            draft.hook = edit_post_sync(draft.hook, topic, platform=format_key)
+        if draft.caption:
+            draft.caption = edit_post_sync(draft.caption, topic, platform=format_key)
     return draft
 
 
@@ -356,7 +365,7 @@ def generate_image_bytes(prompt: str) -> bytes | None:
         from google import genai
         from google.genai import types
 
-        client = genai.Client(api_key=settings.gemini_api_key)
+        client = genai.Client(api_key=settings.image_api_key)
         response = client.models.generate_content(
             model="gemini-3.1-flash-image-preview",
             contents=prompt,
