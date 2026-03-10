@@ -10,6 +10,7 @@ import pytest
 
 from bot.handlers.commands import _split_message
 from bot.handlers.content import _topics_text, _source_label
+from bot.agents.threads_replies import _extract_json
 
 
 class TestSplitMessage:
@@ -257,6 +258,16 @@ class TestContentImagePrompts:
         prompt = make_single_image_prompt("base prompt", "Заголовок слайда", with_text=False)
         assert "Заголовок слайда" in prompt
         assert "no typography" in prompt
+
+
+class TestThreadsReplyJson:
+    def test_extracts_json_array(self):
+        raw = 'before\n[{"candidate_index":1,"reason":"ok","draft_reply":"reply"}]\nafter'
+        payload = _extract_json(raw)
+        assert payload[0]["candidate_index"] == 1
+
+    def test_invalid_json_returns_empty(self):
+        assert _extract_json("not json") == []
 
 
 # ---------------------------------------------------------------------------

@@ -12,6 +12,7 @@ from bot.handlers.content import build_content_handler
 from bot.handlers.adapter import build_adapt_handler
 from bot.handlers.planner import build_plan_handler
 from bot.handlers.reels import build_reels_handler
+from bot.handlers.threads_manager import build_threads_manager_handler
 
 
 def build_application() -> Application:
@@ -49,6 +50,11 @@ def build_application() -> Application:
         app.add_handler(h)
     for h in build_reels_handler():
         app.add_handler(h)
+    for h in build_threads_manager_handler():
+        if isinstance(h, MessageHandler):
+            app.add_handler(h, group=3)
+        else:
+            app.add_handler(h)
 
     app.add_error_handler(error_handler)
 

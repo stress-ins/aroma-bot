@@ -39,6 +39,11 @@ class Settings(BaseSettings):
     # AI
     anthropic_api_key: str = ""
 
+    # Threads API
+    threads_access_token: str = ""
+    threads_user_id: str = ""
+    threads_username: str = ""
+
     # Scheduler
     daily_digest_time: str = "09:00"
     timezone: str = "Europe/Moscow"
@@ -65,6 +70,10 @@ class Settings(BaseSettings):
             "ai_recommendations": bool(self.anthropic_api_key),
         }
         return checks.get(source, False)
+
+    @property
+    def is_threads_api_enabled(self) -> bool:
+        return bool(self.threads_access_token and self.threads_user_id)
 
     @property
     def telegram_channels_list(self) -> list[str]:
