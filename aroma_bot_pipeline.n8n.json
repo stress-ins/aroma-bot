@@ -1,0 +1,1628 @@
+{
+  "name": "🌿 Aroma Bot — Полный пайплайн",
+  "nodes": [
+    {
+      "id": "s1-header",
+      "name": "── РАЗДЕЛ 1: Автодайджест / /trends ──",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -360,
+        -220
+      ],
+      "parameters": {
+        "content": "## 📅 РАЗДЕЛ 1: Автодайджест / /trends\nЗапускается по расписанию 09:00 МСК **или** командой /trends.\nВсе источники собираются **параллельно** → merge → два отчёта (🇷🇺 + 🇬🇧) → Telegram.\nКэш TTL 1 час (`cache/store.py`). Ключи: `digest` (RU+EN), `results` (list[SourceResult]).",
+        "height": 110,
+        "width": 2900,
+        "color": 3
+      }
+    },
+    {
+      "id": "schedule",
+      "name": "⏰ Расписание 09:00 МСК",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 6 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "tg-trends",
+      "name": "📨 Команда /trends",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1,
+      "position": [
+        280,
+        0
+      ],
+      "parameters": {
+        "updates": [
+          "message"
+        ]
+      }
+    },
+    {
+      "id": "sticky-collectors",
+      "name": "── Параллельный сбор данных ──",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -360,
+        180
+      ],
+      "parameters": {
+        "content": "## 🔄 Параллельный сбор данных\nВсе коллекторы запускаются одновременно через `asyncio.gather()`.\nКаждый возвращает `SourceResult(source_key, items[], error)`.\n\nФайлы: `analytics/google_trends.py`, `youtube.py`, `reddit.py`, `instagram.py`, `tiktok.py`, `vk.py`, `wordstat.py`, `telegram_channels.py`",
+        "height": 100,
+        "width": 2900,
+        "color": 0
+      }
+    },
+    {
+      "id": "col-gt-ru",
+      "name": "📈 Google Trends RU",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        0,
+        360
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://trends.google.com/trends/api/dailytrends",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "geo",
+              "value": "RU"
+            },
+            {
+              "name": "hl",
+              "value": "ru"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "col-gt-en",
+      "name": "📈 Google Trends EN",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        260,
+        360
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://trends.google.com/trends/api/dailytrends",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "geo",
+              "value": "US"
+            },
+            {
+              "name": "hl",
+              "value": "en"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "col-yt-ru",
+      "name": "▶️ YouTube RU",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        520,
+        360
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://www.googleapis.com/youtube/v3/search",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "={{ $env.YOUTUBE_API_KEY }}"
+            },
+            {
+              "name": "part",
+              "value": "id"
+            },
+            {
+              "name": "type",
+              "value": "video"
+            },
+            {
+              "name": "regionCode",
+              "value": "RU"
+            },
+            {
+              "name": "relevanceLanguage",
+              "value": "ru"
+            },
+            {
+              "name": "maxResults",
+              "value": "3"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "col-yt-en",
+      "name": "▶️ YouTube EN",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        780,
+        360
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://www.googleapis.com/youtube/v3/search",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "={{ $env.YOUTUBE_API_KEY }}"
+            },
+            {
+              "name": "part",
+              "value": "id"
+            },
+            {
+              "name": "type",
+              "value": "video"
+            },
+            {
+              "name": "regionCode",
+              "value": "US"
+            },
+            {
+              "name": "relevanceLanguage",
+              "value": "en"
+            },
+            {
+              "name": "maxResults",
+              "value": "3"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "col-reddit",
+      "name": "💬 Reddit",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1040,
+        360
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://oauth.reddit.com/r/aromatherapy/hot",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.REDDIT_TOKEN }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "col-instagram",
+      "name": "📸 Instagram RU+EN",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1300,
+        360
+      ],
+      "parameters": {
+        "jsCode": "// instagrapi — сессия кэшируется в .instagrapi_session.json\n// При login_required: удаляет сессию и перелогинивается автоматически\n// RU хэштеги: ароматерапия, звуковыеванны, эфирныемасла, медитациягонг, поющиечаши\n// EN хэштеги: aromatherapy, soundhealing, gongbath, essentialoils, olfactotherapy\nreturn [];"
+      }
+    },
+    {
+      "id": "col-tiktok",
+      "name": "🎵 TikTok RU+EN",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        360
+      ],
+      "parameters": {
+        "jsCode": "// TikTokApi + Playwright (WebKit headless)\n// Требует TIKTOK_MS_TOKEN (expires in weeks)\n// Обновить: tiktok.com DevTools → Application → Cookies → msToken\n// RU хэштеги: ароматерапия, звуковыеванны, эфирныемасла, медитация, поющиечаши\n// EN хэштеги: aromatherapy, soundhealing, gongbath, essentialoils, singingbowls\nreturn [];"
+      }
+    },
+    {
+      "id": "col-vk",
+      "name": "🔵 ВКонтакте",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1820,
+        360
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.vk.com/method/wall.search",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "access_token",
+              "value": "={{ $env.VK_TOKEN }}"
+            },
+            {
+              "name": "query",
+              "value": "ароматерапия"
+            },
+            {
+              "name": "count",
+              "value": "10"
+            },
+            {
+              "name": "v",
+              "value": "5.199"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "col-wordstat",
+      "name": "📊 Яндекс Wordstat",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2080,
+        360
+      ],
+      "parameters": {
+        "jsCode": "// 1. OAuth: POST oauth.yandex.ru/token (grant_type=client_credentials) → Bearer token\n// 2. POST api.wordstat.yandex.net/v1/topRequests → totalCount (показов/мес)\n// 3. POST api.wordstat.yandex.net/v1/dynamics → тренд (▲▼%)\n// 5 ключей × 2 запроса = 10 вызовов. Лимит: 10 req/sec, 1000/day\n// Ключи: ароматерапия, звуковые ванны, эфирные масла, медитация, поющие чаши\nreturn [];"
+      }
+    },
+    {
+      "id": "col-tg",
+      "name": "📱 Telegram каналы",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2340,
+        360
+      ],
+      "parameters": {
+        "jsCode": "// Telethon (MTProto API)\n// Требует TELEGRAM_API_ID + TELEGRAM_API_HASH\n// Читает последние посты из подписанных каналов по ароматерапии\nreturn [];"
+      }
+    },
+    {
+      "id": "merge-all",
+      "name": "🔀 Merge — все источники",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        560
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "sticky-yt-prompt",
+      "name": "Промпт: Выжимки YouTube",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -360,
+        680
+      ],
+      "parameters": {
+        "content": "## 🤖 ПРОМПТ: Выжимки YouTube\n`analytics/youtube.py → _summarize_videos()`\n**Модель:** claude-haiku-4-5-20251001 | **max_tokens:** 600\n\n---\n```\nДай краткую выжимку (1-2 предложения на русском)\nо чём каждое видео.\nОтвет строго в формате:\n0. <текст>\n1. <текст>\n...\n\n{список видео: Название + Описание}\n```",
+        "height": 280,
+        "width": 560,
+        "color": 2
+      }
+    },
+    {
+      "id": "claude-yt",
+      "name": "🤖 Claude — Выжимки YouTube",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        0,
+        780
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{ $env.ANTHROPIC_API_KEY }}"
+            },
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:600,messages:[{role:'user',content:'Дай краткую выжимку (1-2 предложения на русском) о чём каждое видео.\\nОтвет строго в формате:\\n0. <текст>\\n1. <текст>\\n...\\n\\n'+$json.videos_numbered}]}) }}"
+      }
+    },
+    {
+      "id": "sticky-airec-prompt",
+      "name": "Промпт: AI-рекомендации",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        620,
+        680
+      ],
+      "parameters": {
+        "content": "## 🤖 ПРОМПТ: AI-рекомендации постов\n`analytics/ai_recommendations.py → _call_claude()`\n**Модель:** claude-haiku-4-5-20251001 | **max_tokens:** 1000\n\n---\n```\nТы — эксперт по контент-маркетингу для\nwellness-специалиста (ароматерапия, звуковые\nванны, поющие чаши, ольфактотерапия).\n\nСегодняшние тренды:\n{trends_text}\n\nНа основе этих трендов предложи 3 идеи\nдля постов в Instagram или Telegram.\nДля каждой:\n1. 📌 Тема (1 строка)\n2. 🪝 Первая строка — зацепка\n3. 💡 О чём писать (2-3 тезиса)\n4. #️⃣ Хэштеги (3-4)\n\nОтвечай на русском. Будь конкретным,\nбез воды.\n```",
+        "height": 420,
+        "width": 560,
+        "color": 2
+      }
+    },
+    {
+      "id": "claude-airec",
+      "name": "🤖 Claude — AI-рекомендации",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        400,
+        780
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{ $env.ANTHROPIC_API_KEY }}"
+            },
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:1000,messages:[{role:'user',content:'Ты — эксперт по контент-маркетингу для wellness-специалиста (ароматерапия, звуковые ванны, поющие чаши, ольфактотерапия).\\n\\nСегодняшние тренды:\\n'+$json.trends_text+'\\n\\nНа основе этих трендов предложи 3 идеи для постов в Instagram или Telegram. Для каждой:\\n1. 📌 Тема (1 строка)\\n2. 🪝 Первая строка поста — зацепка для читателя\\n3. 💡 О чём писать (2-3 тезиса)\\n4. #️⃣ Хэштеги (3-4)\\n\\nОтвечай на русском. Будь конкретным, без воды.'}]}) }}"
+      }
+    },
+    {
+      "id": "build-ru",
+      "name": "📝 Сформировать RU-отчёт",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        1020
+      ],
+      "parameters": {
+        "jsCode": "// formatters/report.py → build_report(results, lang='ru')\n// RU_SOURCE_KEYS: google_trends_ru, youtube_ru, instagram_ru,\n//   vk, telegram_channels, ai_recommendations, wordstat, tiktok_ru\n// Добавляет заголовок 🇷🇺, блоки по источникам (MarkdownV2), футер с хэштегами\nreturn [{ json: { report: 'RU report content here' } }];"
+      }
+    },
+    {
+      "id": "build-en",
+      "name": "📝 Сформировать EN-отчёт",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        300,
+        1020
+      ],
+      "parameters": {
+        "jsCode": "// formatters/report.py → build_report(results, lang='en')\n// EN_SOURCE_KEYS: google_trends_en, youtube, reddit,\n//   instagram, twitter, tiktok\n// Добавляет заголовок 🇬🇧, блоки по источникам (MarkdownV2), футер с хэштегами\nreturn [{ json: { report: 'EN report content here' } }];"
+      }
+    },
+    {
+      "id": "send-ru",
+      "name": "📤 Telegram — Отправить RU-отчёт",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        0,
+        1180
+      ],
+      "parameters": {
+        "chatId": "={{ $env.REPORT_TARGET_CHAT_ID }}",
+        "text": "={{ $json.report }}",
+        "additionalFields": {
+          "parse_mode": "MarkdownV2",
+          "disable_web_page_preview": true
+        }
+      }
+    },
+    {
+      "id": "send-en",
+      "name": "📤 Telegram — Отправить EN-отчёт",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        300,
+        1180
+      ],
+      "parameters": {
+        "chatId": "={{ $env.REPORT_TARGET_CHAT_ID }}",
+        "text": "={{ $json.report }}",
+        "additionalFields": {
+          "parse_mode": "MarkdownV2",
+          "disable_web_page_preview": true
+        }
+      }
+    },
+    {
+      "id": "send-yt-btn",
+      "name": "🖼 Кнопка обложек YouTube",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        600,
+        1180
+      ],
+      "parameters": {
+        "chatId": "={{ $env.REPORT_TARGET_CHAT_ID }}",
+        "text": "📸 Топ видео YouTube:",
+        "additionalFields": {
+          "reply_markup": "{\"inline_keyboard\":[[{\"text\":\"🖼 Обложки YouTube\",\"callback_data\":\"yt_thumbs\"}]]}"
+        }
+      }
+    },
+    {
+      "id": "s2-header",
+      "name": "── РАЗДЕЛ 2: /threads ──",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -360,
+        1440
+      ],
+      "parameters": {
+        "content": "## 📱 РАЗДЕЛ 2: /threads — Контент для Threads\nПользователь выбирает тему → Claude пишет пост (≤450 символов) → Gemini рисует картинку.\nЕсли картинка не вышла — кнопка **🖼 Промпт для картинки** отправляет промпт для Nano Banana.",
+        "height": 100,
+        "width": 2300,
+        "color": 3
+      }
+    },
+    {
+      "id": "tg-threads",
+      "name": "📨 Команда /threads",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        1600
+      ],
+      "parameters": {
+        "updates": [
+          "message"
+        ]
+      }
+    },
+    {
+      "id": "get-cache",
+      "name": "💾 Загрузить тренды из кэша",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        280,
+        1600
+      ],
+      "parameters": {
+        "jsCode": "// cache/store.py → cache.get('results')\n// TTL 1 час. Если кэш пуст — запускает collect_all() и кэширует.\n// bot/handlers/threads.py → _format_trends(results) → trends_text\nreturn [{ json: { trends_text: 'trends summary here' } }];"
+      }
+    },
+    {
+      "id": "sticky-topics-prompt",
+      "name": "Промпт: Темы для Threads",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1020,
+        1480
+      ],
+      "parameters": {
+        "content": "## 🤖 ПРОМПТ: Генерация 10 тем\n`bot/handlers/threads.py → _PROMPT_TOPICS + _claude_topics()`\n**Модель:** claude-haiku-4-5-20251001 | **max_tokens:** 800\n\n---\n```\n[system]\nТы — стратег по росту в Threads. Ниша:\nароматерапия. Цель: привлечь клиентов\nна корпоративные мероприятия и\nиндивидуальные практики.\n\nНа основе трендов ниже предложи 10 тем\nдля постов. Каждая = один цепляющий хук\nв стиле дерзкого маркетолога. Без\nбанальностей. Без воды. Спорные,\nпровокационные, те что хочется переслать.\n\nФормат — строго:\n1. [хук]\n...\n10. [хук]\n\n[user]\nТренды:\n{trends_text}\n```",
+        "height": 460,
+        "width": 560,
+        "color": 2
+      }
+    },
+    {
+      "id": "claude-topics",
+      "name": "🤖 Claude — Генерация тем",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        720,
+        1600
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{ $env.ANTHROPIC_API_KEY }}"
+            },
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:800,system:'Ты — стратег по росту в Threads. Ниша: ароматерапия. Цель: привлечь клиентов на корпоративные мероприятия и индивидуальные практики.\\n\\nНа основе трендов ниже предложи 10 тем для постов. Каждая = один цепляющий хук в стиле дерзкого маркетолога. Без банальностей. Без воды. Спорные, провокационные, те что хочется переслать.\\n\\nФормат — строго пронумерованный список без пояснений:\\n1. [хук]\\n...\\n10. [хук]',messages:[{role:'user',content:'Тренды:\\n'+$json.trends_text}]}) }}"
+      }
+    },
+    {
+      "id": "send-topics",
+      "name": "📤 Telegram — Отправить темы",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        720,
+        1780
+      ],
+      "parameters": {
+        "chatId": "={{ $json.chat_id }}",
+        "text": "={{ $json.topics_text }}",
+        "additionalFields": {
+          "reply_markup": "={{ $json.keyboard }}"
+        }
+      }
+    },
+    {
+      "id": "tg-callback-tt",
+      "name": "📨 Callback: выбор темы tt:g:N",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        1980
+      ],
+      "parameters": {
+        "updates": [
+          "callback_query"
+        ]
+      }
+    },
+    {
+      "id": "sticky-post-prompt",
+      "name": "Промпт: Написать пост",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        620,
+        1880
+      ],
+      "parameters": {
+        "content": "## 🤖 ПРОМПТ: Написать пост для Threads\n`bot/handlers/threads.py → _PROMPT_POST + _claude_post_and_prompt()`\n**Модель:** claude-haiku-4-5-20251001 | **max_tokens:** 600\n\n---\n```\nТы — копирайтер для Threads. Ниша:\nароматерапия (корпоративные мероприятия\n+ индивидуальные практики).\nНапиши пост до 450 символов по теме:\n{topic}\n\nТребования:\n- От первого лица, живой язык,\n  не звучи как ИИ\n- Первая строка = хук из темы\n- Тело = конкретика, без воды,\n  без клише\n- Последняя строка = вопрос или призыв\n- 3-5 хэштегов в самом конце\n- Без длинных тире\n\nВерни только текст поста.\n```",
+        "height": 420,
+        "width": 560,
+        "color": 2
+      }
+    },
+    {
+      "id": "claude-post",
+      "name": "🤖 Claude — Написать пост",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        300,
+        1980
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{ $env.ANTHROPIC_API_KEY }}"
+            },
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:600,messages:[{role:'user',content:'Ты — копирайтер для Threads. Ниша: ароматерапия (корпоративные мероприятия + индивидуальные практики).\\nНапиши пост до 450 символов по теме: '+$json.topic+'\\n\\nТребования:\\n- От первого лица, живой язык, не звучи как ИИ\\n- Первая строка = хук из темы (можно немного переформулировать)\\n- Тело = конкретика, без воды, без клише\\n- Последняя строка = вопрос к аудитории или призыв\\n- 3-5 хэштегов в самом конце\\n- Без длинных тире\\n\\nВерни только текст поста — ничего больше.'}]}) }}"
+      }
+    },
+    {
+      "id": "sticky-imgprompt-prompt",
+      "name": "Промпт: Промпт для картинки",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        620,
+        2160
+      ],
+      "parameters": {
+        "content": "## 🤖 ПРОМПТ: Генерация промпта для картинки\n`bot/handlers/threads.py → _PROMPT_IMAGE`\n**Модель:** claude-haiku-4-5-20251001 | **max_tokens:** 60\n\n---\n```\nBased on this Threads post topic: {topic}\n\nCreate a short English image generation\nprompt (max 20 words) for a professional\nlifestyle photo about aromatherapy.\nWarm tones, minimal, Instagram-worthy.\n\nReturn only the prompt, nothing else.\n```",
+        "height": 280,
+        "width": 560,
+        "color": 2
+      }
+    },
+    {
+      "id": "claude-imgprompt",
+      "name": "🤖 Claude — Промпт картинки",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        300,
+        2180
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{ $env.ANTHROPIC_API_KEY }}"
+            },
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:60,messages:[{role:'user',content:'Based on this Threads post topic: '+$json.topic+'\\n\\nCreate a short English image generation prompt (max 20 words) for a professional lifestyle photo about aromatherapy. Warm tones, minimal, Instagram-worthy.\\n\\nReturn only the prompt, nothing else.'}]}) }}"
+      }
+    },
+    {
+      "id": "sticky-gemini",
+      "name": "Gemini — инфо",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        620,
+        2360
+      ],
+      "parameters": {
+        "content": "## 🎨 Gemini — генерация картинки\n**Пакет:** google-genai (REST, не gRPC — DNS в РФ не работает с gRPC)\n**Модель:** gemini-3.1-flash-image-preview\n**Ключ:** GEMINI_API_KEY\n**Лимит:** free tier — 429 = квота исчерпана, ждать несколько минут\n\nЕсли 429 → бот отправляет текст поста + кнопку **🖼 Промпт для картинки**\n(для ручной генерации в Nano Banana)",
+        "height": 200,
+        "width": 560,
+        "color": 0
+      }
+    },
+    {
+      "id": "gemini-img",
+      "name": "🎨 Gemini — Сгенерировать картинку",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        300,
+        2400
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image-preview:generateContent?key=' + $env.GEMINI_API_KEY }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({contents:[{parts:[{text:$json.image_prompt}]}],generationConfig:{responseModalities:['IMAGE','TEXT']}}) }}"
+      }
+    },
+    {
+      "id": "if-img",
+      "name": "❓ Картинка получена?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        560,
+        2400
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.image_bytes }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "send-photo",
+      "name": "📤 Telegram — Фото + пост",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        820,
+        2300
+      ],
+      "parameters": {
+        "chatId": "={{ $json.chat_id }}",
+        "binaryData": true,
+        "additionalFields": {
+          "caption": "={{ $json.post_text }}"
+        }
+      }
+    },
+    {
+      "id": "send-text-btn",
+      "name": "📤 Telegram — Текст + кнопка промпта",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        820,
+        2500
+      ],
+      "parameters": {
+        "chatId": "={{ $json.chat_id }}",
+        "text": "={{ $json.post_text }}",
+        "additionalFields": {
+          "reply_markup": "{\"inline_keyboard\":[[{\"text\":\"🖼 Промпт для картинки\",\"callback_data\":\"tt:prompt\"}]]}"
+        }
+      }
+    },
+    {
+      "id": "s3-header",
+      "name": "── РАЗДЕЛ 3: /carousel ──",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -360,
+        2840
+      ],
+      "parameters": {
+        "content": "## 🎠 РАЗДЕЛ 3: /carousel — Карусель из 5 слайдов\nПользователь выбирает тему → Claude генерирует 5 слайдов + IMG_PROMPT → Gemini рисует 5 картинок.\nЕсли картинки не вышли → 2 кнопки: **🖼 Промпт с текстом** / **🖼 Промпт без текста** для Nano Banana.",
+        "height": 100,
+        "width": 2300,
+        "color": 3
+      }
+    },
+    {
+      "id": "tg-carousel",
+      "name": "📨 Команда /carousel",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        3000
+      ],
+      "parameters": {
+        "updates": [
+          "message"
+        ]
+      }
+    },
+    {
+      "id": "claude-topics-ca",
+      "name": "🤖 Claude — Темы для карусели",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        560,
+        3000
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{ $env.ANTHROPIC_API_KEY }}"
+            },
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:800,system:'Ты — стратег по росту в Threads. Ниша: ароматерапия. Цель: привлечь клиентов на корпоративные мероприятия и индивидуальные практики.\\n\\nНа основе трендов ниже предложи 10 тем для постов. Каждая = один цепляющий хук в стиле дерзкого маркетолога. Без банальностей. Без воды.\\n\\nФормат — строго:\\n1. [хук]\\n...\\n10. [хук]',messages:[{role:'user',content:'Тренды:\\n'+$json.trends_text}]}) }}"
+      }
+    },
+    {
+      "id": "send-topics-ca",
+      "name": "📤 Telegram — Темы карусели",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        560,
+        3180
+      ],
+      "parameters": {
+        "chatId": "={{ $json.chat_id }}",
+        "text": "={{ $json.topics_text }}",
+        "additionalFields": {
+          "reply_markup": "={{ $json.keyboard }}"
+        }
+      }
+    },
+    {
+      "id": "tg-callback-ca",
+      "name": "📨 Callback: выбор темы ca:g:N",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        3380
+      ],
+      "parameters": {
+        "updates": [
+          "callback_query"
+        ]
+      }
+    },
+    {
+      "id": "sticky-carousel-prompt",
+      "name": "Промпт: Карусель 5 слайдов",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        620,
+        3260
+      ],
+      "parameters": {
+        "content": "## 🤖 ПРОМПТ: Карусель 5 слайдов\n`bot/handlers/carousel.py → _PROMPT_CAROUSEL + _claude_carousel()`\n**Модель:** claude-haiku-4-5-20251001 | **max_tokens:** 900\n\n---\n```\nТы — дизайнер карусели для Threads/Instagram.\nНиша: ароматерапия (корпоративные мероприятия\n+ индивидуальные практики).\nСоздай карусель из 5 слайдов по теме: {topic}\n\nТребования:\n- Слайд 1: цепляющий хук, до 60 символов\n- Слайды 2-4: тезис + 1-2 предложения,\n  до 120 символов на слайд\n- Слайд 5: призыв к действию, до 80 символов\n- Живой язык, от первого лица,\n  без клише и длинных тире\n- Базовый промпт для фото (английский,\n  15-20 слов): стиль, цвета, настроение,\n  без текста на изображении\n\nФормат — строго:\nSLIDE1: [текст]\nSLIDE2: [текст]\nSLIDE3: [текст]\nSLIDE4: [текст]\nSLIDE5: [текст]\nIMG_PROMPT: [базовый промпт]\n```\n\n---\n**Кнопки промптов** (если Gemini недоступен):\n- 🖼 С текстом: `{base}, text overlay: \"{slide}\", minimal clean design`\n- 🖼 Без текста: `{base}, visual theme: {slide}, clean minimal background, no typography`\n\nКаждый слайд получает **уникальный промпт** на основе своего текста (`_make_slide_prompts_no_text`/`_with_text` в `carousel.py`).",
+        "height": 580,
+        "width": 560,
+        "color": 2
+      }
+    },
+    {
+      "id": "claude-carousel",
+      "name": "🤖 Claude — Создать карусель",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        300,
+        3380
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{ $env.ANTHROPIC_API_KEY }}"
+            },
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:900,messages:[{role:'user',content:'Ты — дизайнер карусели для Threads/Instagram. Ниша: ароматерапия (корпоративные мероприятия + индивидуальные практики).\\nСоздай карусель из 5 слайдов по теме: '+$json.topic+'\\n\\nТребования:\\n- Слайд 1: цепляющий хук, до 60 символов\\n- Слайды 2-4: один тезис + 1-2 предложения, всего до 120 символов на слайд\\n- Слайд 5: призыв к действию, до 80 символов\\n- Живой язык, от первого лица, без клише и длинных тире\\n- Дай базовый промпт для фото (английский, 15-20 слов) — стиль, цвета, настроение. Без текста.\\n\\nФормат — строго:\\nSLIDE1: [текст]\\nSLIDE2: [текст]\\nSLIDE3: [текст]\\nSLIDE4: [текст]\\nSLIDE5: [текст]\\nIMG_PROMPT: [базовый промпт]'}]}) }}"
+      }
+    },
+    {
+      "id": "split-slides",
+      "name": "🔁 По слайдам (1-5)",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 1,
+      "position": [
+        560,
+        3380
+      ],
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      }
+    },
+    {
+      "id": "gemini-slide",
+      "name": "🎨 Gemini — Картинка слайда",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        820,
+        3380
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image-preview:generateContent?key=' + $env.GEMINI_API_KEY }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({contents:[{parts:[{text:$json.base_prompt+', text overlay: \"'+$json.slide_text+'\", minimal clean design'}]}],generationConfig:{responseModalities:['IMAGE','TEXT']}}) }}"
+      }
+    },
+    {
+      "id": "merge-slides",
+      "name": "🔀 Merge — все картинки слайдов",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        560,
+        3580
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "if-slides",
+      "name": "❓ Картинки слайдов получены?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        820,
+        3580
+      ],
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "leftValue": "={{ $json.images_count }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "send-slide-texts",
+      "name": "📤 Telegram — Тексты слайдов",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        3480
+      ],
+      "parameters": {
+        "chatId": "={{ $json.chat_id }}",
+        "text": "={{ $json.slides_text }}",
+        "additionalFields": {}
+      }
+    },
+    {
+      "id": "send-media-group",
+      "name": "📤 Telegram — Медиагруппа (5 картинок)",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        3580
+      ],
+      "parameters": {
+        "chatId": "={{ $json.chat_id }}",
+        "text": "={{ $json.chat_id }}",
+        "additionalFields": {}
+      }
+    },
+    {
+      "id": "send-prompt-btns",
+      "name": "📤 Telegram — Промпты для Nano Banana",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        3680
+      ],
+      "parameters": {
+        "chatId": "={{ $json.chat_id }}",
+        "text": "⚠️ Картинки не сгенерированы. Получи промпты для Nano Banana:",
+        "additionalFields": {
+          "reply_markup": "{\"inline_keyboard\":[[{\"text\":\"🖼 Промпт с текстом\",\"callback_data\":\"ca:prompt:text\"},{\"text\":\"🖼 Промпт без текста\",\"callback_data\":\"ca:prompt:notxt\"}]]}"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "⏰ Расписание 09:00 МСК": {
+      "main": [
+        [
+          {
+            "node": "📈 Google Trends RU",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "📈 Google Trends EN",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "▶️ YouTube RU",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "▶️ YouTube EN",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "💬 Reddit",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "📸 Instagram RU+EN",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "🎵 TikTok RU+EN",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "🔵 ВКонтакте",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "📊 Яндекс Wordstat",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "📱 Telegram каналы",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📨 Команда /trends": {
+      "main": [
+        [
+          {
+            "node": "📈 Google Trends RU",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "📈 Google Trends EN",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "▶️ YouTube RU",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "▶️ YouTube EN",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "💬 Reddit",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "📸 Instagram RU+EN",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "🎵 TikTok RU+EN",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "🔵 ВКонтакте",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "📊 Яндекс Wordstat",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "📱 Telegram каналы",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📈 Google Trends RU": {
+      "main": [
+        [
+          {
+            "node": "🔀 Merge — все источники",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📈 Google Trends EN": {
+      "main": [
+        [
+          {
+            "node": "🔀 Merge — все источники",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "▶️ YouTube RU": {
+      "main": [
+        [
+          {
+            "node": "🔀 Merge — все источники",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "▶️ YouTube EN": {
+      "main": [
+        [
+          {
+            "node": "🔀 Merge — все источники",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "💬 Reddit": {
+      "main": [
+        [
+          {
+            "node": "🔀 Merge — все источники",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    },
+    "📸 Instagram RU+EN": {
+      "main": [
+        [
+          {
+            "node": "🔀 Merge — все источники",
+            "type": "main",
+            "index": 5
+          }
+        ]
+      ]
+    },
+    "🎵 TikTok RU+EN": {
+      "main": [
+        [
+          {
+            "node": "🔀 Merge — все источники",
+            "type": "main",
+            "index": 6
+          }
+        ]
+      ]
+    },
+    "🔵 ВКонтакте": {
+      "main": [
+        [
+          {
+            "node": "🔀 Merge — все источники",
+            "type": "main",
+            "index": 7
+          }
+        ]
+      ]
+    },
+    "📊 Яндекс Wordstat": {
+      "main": [
+        [
+          {
+            "node": "🔀 Merge — все источники",
+            "type": "main",
+            "index": 8
+          }
+        ]
+      ]
+    },
+    "📱 Telegram каналы": {
+      "main": [
+        [
+          {
+            "node": "🔀 Merge — все источники",
+            "type": "main",
+            "index": 9
+          }
+        ]
+      ]
+    },
+    "🔀 Merge — все источники": {
+      "main": [
+        [
+          {
+            "node": "🤖 Claude — Выжимки YouTube",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "🤖 Claude — AI-рекомендации",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🤖 Claude — Выжимки YouTube": {
+      "main": [
+        [
+          {
+            "node": "📝 Сформировать RU-отчёт",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🤖 Claude — AI-рекомендации": {
+      "main": [
+        [
+          {
+            "node": "📝 Сформировать RU-отчёт",
+            "type": "main",
+            "index": 1
+          },
+          {
+            "node": "📝 Сформировать EN-отчёт",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📝 Сформировать RU-отчёт": {
+      "main": [
+        [
+          {
+            "node": "📤 Telegram — Отправить RU-отчёт",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📝 Сформировать EN-отчёт": {
+      "main": [
+        [
+          {
+            "node": "📤 Telegram — Отправить EN-отчёт",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📤 Telegram — Отправить EN-отчёт": {
+      "main": [
+        [
+          {
+            "node": "🖼 Кнопка обложек YouTube",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📨 Команда /threads": {
+      "main": [
+        [
+          {
+            "node": "💾 Загрузить тренды из кэша",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💾 Загрузить тренды из кэша": {
+      "main": [
+        [
+          {
+            "node": "🤖 Claude — Генерация тем",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🤖 Claude — Генерация тем": {
+      "main": [
+        [
+          {
+            "node": "📤 Telegram — Отправить темы",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📨 Callback: выбор темы tt:g:N": {
+      "main": [
+        [
+          {
+            "node": "🤖 Claude — Написать пост",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🤖 Claude — Написать пост": {
+      "main": [
+        [
+          {
+            "node": "🤖 Claude — Промпт картинки",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🤖 Claude — Промпт картинки": {
+      "main": [
+        [
+          {
+            "node": "🎨 Gemini — Сгенерировать картинку",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🎨 Gemini — Сгенерировать картинку": {
+      "main": [
+        [
+          {
+            "node": "❓ Картинка получена?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "❓ Картинка получена?": {
+      "main": [
+        [
+          {
+            "node": "📤 Telegram — Фото + пост",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "📤 Telegram — Текст + кнопка промпта",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📨 Команда /carousel": {
+      "main": [
+        [
+          {
+            "node": "🤖 Claude — Темы для карусели",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🤖 Claude — Темы для карусели": {
+      "main": [
+        [
+          {
+            "node": "📤 Telegram — Темы карусели",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📨 Callback: выбор темы ca:g:N": {
+      "main": [
+        [
+          {
+            "node": "🤖 Claude — Создать карусель",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🤖 Claude — Создать карусель": {
+      "main": [
+        [
+          {
+            "node": "🔁 По слайдам (1-5)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔁 По слайдам (1-5)": {
+      "main": [
+        [
+          {
+            "node": "🎨 Gemini — Картинка слайда",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🎨 Gemini — Картинка слайда": {
+      "main": [
+        [
+          {
+            "node": "🔀 Merge — все картинки слайдов",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔀 Merge — все картинки слайдов": {
+      "main": [
+        [
+          {
+            "node": "❓ Картинки слайдов получены?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "❓ Картинки слайдов получены?": {
+      "main": [
+        [
+          {
+            "node": "📤 Telegram — Тексты слайдов",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "📤 Telegram — Медиагруппа (5 картинок)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "📤 Telegram — Тексты слайдов",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "📤 Telegram — Промпты для Nano Banana",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

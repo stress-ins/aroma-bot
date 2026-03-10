@@ -1,0 +1,238 @@
+from __future__ import annotations
+
+import asyncio
+import logging
+from concurrent.futures import ThreadPoolExecutor
+
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.constants import ParseMode
+from telegram.ext import ContextTypes, CommandHandler, CallbackQueryHandler
+
+from config import settings
+
+logger = logging.getLogger(__name__)
+
+_executor = ThreadPoolExecutor(max_workers=2)
+
+_PROMPT_TOPICS = """\
+Ты — стратег по росту в Threads. Ниша: ароматерапия. \
+Цель: привлечь клиентов на корпоративные мероприятия и индивидуальные практики.
+
+На основе трендов ниже предложи 10 тем для постов. \
+Каждая = один цепляющий хук в стиле дерзкого маркетолога. \
+Без банальностей. Без воды. Спорные, провокационные, те что хочется переслать.
+
+Формат — строго пронумерованный список без пояснений:
+1. [хук]
+...
+10. [хук]
+"""
+
+_PROMPT_POST = """\
+Ты — копирайтер для Threads. Ниша: ароматерапия (корпоративные мероприятия + индивидуальные практики).
+Напиши пост до 450 символов по теме: {topic}
+
+Требования:
+- От первого лица, живой язык, не звучи как ИИ
+- Первая строка = хук из темы (можно немного переформулировать)
+- Тело = конкретика, без воды, без клише
+- Последняя строка = вопрос к аудитории или призыв
+- 3-5 хэштегов в самом конце
+
+Верни только текст поста — ничего больше.
+"""
+
+_PROMPT_IMAGE = """\
+Based on this Threads post topic: {topic}
+Create a short English image generation prompt (max 20 words) for a professional lifestyle photo \
+about aromatherapy. Warm tones, minimal, Instagram-worthy. Return only the prompt, nothing else.
+"""
+
+
+def _fix_dashes(text: str) -> str:
+    """Replace em/en dashes with plain hyphen to avoid GPT-like style."""
+    return text.replace("\u2014", "-").replace("\u2013", "-")
+
+
+def _format_trends(results: list) -> str:
+    parts = []
+    for r in results:
+        if not r.items or r.source_key in ("ai_recommendations",):
+            continue
+        top = r.items[:3]
+        lines = [f"  • {i.title[:80]} {i.score}".strip() for i in top]
+        parts.append(f"{r.source_name}:\n" + "\n".join(lines))
+    return "\n\n".join(parts[:12])
+
+
+def _claude_topics(trends_text: str) -> list[str]:
+    import anthropic
+    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+    resp = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=800,
+        system=_PROMPT_TOPICS,
+        messages=[{"role": "user", "content": f"Тренды:\n{trends_text}"}],
+    )
+    topics: list[str] = []
+    for line in resp.content[0].text.strip().splitlines():
+        line = line.strip()
+        if line and line[0].isdigit() and ". " in line:
+            topics.append(line.split(". ", 1)[1].strip())
+    return topics[:10]
+
+
+def _claude_post_and_prompt(topic: str) -> tuple[str, str]:
+    import anthropic
+    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+
+    post_resp = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=600,
+        messages=[{"role": "user", "content": _PROMPT_POST.format(topic=topic)}],
+    )
+    post_text = post_resp.content[0].text.strip()
+
+    img_resp = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=60,
+        messages=[{"role": "user", "content": _PROMPT_IMAGE.format(topic=topic)}],
+    )
+    image_prompt = img_resp.content[0].text.strip()
+
+    return post_text, image_prompt
+
+
+def _gemini_image(prompt: str) -> bytes | None:
+    try:
+        from google import genai
+        from google.genai import types
+
+        client = genai.Client(api_key=settings.gemini_api_key)
+        response = client.models.generate_content(
+            model="gemini-3.1-flash-image-preview",
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                response_modalities=["IMAGE", "TEXT"]
+            ),
+        )
+        for part in response.candidates[0].content.parts:
+            if part.inline_data:
+                return part.inline_data.data
+    except Exception as exc:
+        logger.warning("Gemini image error: %s", str(exc)[:120])
+    return None
+
+
+def _topics_keyboard(topics: list[str]) -> InlineKeyboardMarkup:
+    row = [InlineKeyboardButton(str(i + 1), callback_data=f"tt:g:{i}") for i in range(len(topics))]
+    # Split into rows of 5
+    buttons = [row[i:i+5] for i in range(0, len(row), 5)]
+    buttons.append([InlineKeyboardButton("🔄 Обновить темы", callback_data="tt:topics")])
+    return InlineKeyboardMarkup(buttons)
+
+
+def _topics_text(topics: list[str], header: str) -> str:
+    items = "\n".join(f"{i+1}. {t}" for i, t in enumerate(topics))
+    return f"{header}\n\n{items}\n\nНажми номер темы — напишу пост и нарисую картинку:"
+
+
+async def cmd_threads(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    from cache.store import cache
+    from analytics.aggregator import collect_all
+
+    results = cache.get("results")
+    if not results:
+        msg = await update.message.reply_text("⏳ Собираю тренды для генерации тем...")
+        results = await collect_all()
+        cache.set("results", results)
+        await msg.delete()
+
+    msg = await update.message.reply_text("🧠 Анализирую тренды, генерирую темы...")
+
+    loop = asyncio.get_event_loop()
+    trends_text = _format_trends(results)
+    topics = await loop.run_in_executor(_executor, _claude_topics, trends_text)
+
+    if not topics:
+        await msg.edit_text("❌ Не удалось сгенерировать темы. Попробуй позже.")
+        return
+
+    context.user_data["tt_topics"] = topics
+    await msg.edit_text(
+        _topics_text(topics, "📱 Темы для Threads на основе сегодняшних трендов:"),
+        reply_markup=_topics_keyboard(topics),
+    )
+
+
+async def cb_threads(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    from cache.store import cache
+    from analytics.aggregator import collect_all
+
+    query = update.callback_query
+    await query.answer()
+    data = query.data
+
+    if data == "tt:topics":
+        results = cache.get("results")
+        if not results:
+            await query.message.edit_text("⏳ Нет данных. Сначала запроси /trends или /threads.")
+            return
+        await query.message.edit_text("🧠 Обновляю темы...")
+        loop = asyncio.get_event_loop()
+        trends_text = _format_trends(results)
+        topics = await loop.run_in_executor(_executor, _claude_topics, trends_text)
+        context.user_data["tt_topics"] = topics
+        await query.message.edit_text(
+            _topics_text(topics, "📱 Темы для Threads (обновлено):"),
+            reply_markup=_topics_keyboard(topics),
+        )
+        return
+
+    if data.startswith("tt:g:"):
+        idx = int(data.split(":")[2])
+        topics: list[str] = context.user_data.get("tt_topics", [])
+        if not topics or idx >= len(topics):
+            await query.message.reply_text("❌ Темы устарели — запроси /threads снова.")
+            return
+
+        topic = topics[idx]
+        status = await query.message.reply_text(
+            f"✍️ Тема: {topic}\n\n⏳ Генерирую пост и картинку...",
+        )
+
+        loop = asyncio.get_event_loop()
+        post_text, image_prompt = await loop.run_in_executor(
+            _executor, _claude_post_and_prompt, topic
+        )
+        post_text = _fix_dashes(post_text)
+        image_bytes = await loop.run_in_executor(_executor, _gemini_image, image_prompt)
+
+        await status.delete()
+
+        if image_bytes:
+            await query.message.reply_photo(
+                photo=image_bytes,
+                caption=post_text,
+            )
+        else:
+            context.user_data["tt_img_prompt"] = image_prompt
+            prompt_btn = InlineKeyboardMarkup([[
+                InlineKeyboardButton("🖼 Промпт для картинки", callback_data="tt:prompt"),
+            ]])
+            await query.message.reply_text(post_text, reply_markup=prompt_btn)
+
+    if data == "tt:prompt":
+        prompt = context.user_data.get("tt_img_prompt", "")
+        if prompt:
+            await query.message.reply_text(f"Промпт для Nano Banana:\n\n{prompt}")
+        else:
+            await query.message.reply_text("❌ Промпт не найден. Сгенерируй пост заново.")
+
+
+def build_threads_handler():
+    from telegram.ext import Application
+    return [
+        CommandHandler("threads", cmd_threads),
+        CallbackQueryHandler(cb_threads, pattern="^tt:"),
+    ]
