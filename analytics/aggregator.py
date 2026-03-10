@@ -13,6 +13,7 @@ from analytics.instagram import InstagramCollector, InstagramRUCollector
 from analytics.vk import VKCollector
 from analytics.wordstat import WordstatCollector
 from analytics.tiktok import TikTokCollector, TikTokRUCollector
+from analytics.threads_collector import ThreadsCollector
 from analytics.ai_recommendations import get_ai_recommendations
 
 logger = logging.getLogger(__name__)
@@ -31,6 +32,7 @@ _BASE_COLLECTORS: list[BaseCollector] = [
     WordstatCollector(),
     TikTokCollector(),
     TikTokRUCollector(),
+    ThreadsCollector(),
 ]
 
 
