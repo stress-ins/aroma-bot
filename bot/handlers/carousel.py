@@ -104,6 +104,7 @@ def _claude_topics_carousel(trends_text: str) -> list[str]:
 
 
 def _claude_carousel_draft(topic: str) -> tuple[list[str], str]:
+    from bot.agents.carousel_editor import _parse_slides
     import anthropic
     client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
     resp = client.messages.create(
@@ -112,15 +113,13 @@ def _claude_carousel_draft(topic: str) -> tuple[list[str], str]:
         messages=[{"role": "user", "content": _PROMPT_CAROUSEL.format(topic=topic)}],
     )
     text = resp.content[0].text.strip()
-    slides: list[str] = []
+    slides = [_fix_dashes(s) for s in _parse_slides(text, count=5)]
     img_prompt = ""
     for line in text.splitlines():
         line = line.strip()
-        for i in range(1, 6):
-            if line.startswith(f"SLIDE{i}:"):
-                slides.append(_fix_dashes(line.split(":", 1)[1].strip()))
-        if line.startswith("IMG_PROMPT:"):
+        if line.upper().startswith("IMG_PROMPT:"):
             img_prompt = line.split(":", 1)[1].strip()
+            break
     return slides, img_prompt
 
 
