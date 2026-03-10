@@ -9,6 +9,7 @@ from telegram.constants import ParseMode
 from telegram.ext import ContextTypes, CommandHandler, CallbackQueryHandler
 
 from config import settings
+from bot.handlers.threads_manager import publish_threads_keyboard, threads_api_enabled
 
 logger = logging.getLogger(__name__)
 
@@ -220,12 +221,25 @@ async def cb_threads(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
                 photo=image_bytes,
                 caption=post_text,
             )
+            if threads_api_enabled():
+                context.user_data["threads_publish_text"] = post_text
+                await query.message.reply_text(
+                    "Если текст готов, можешь отправить его прямо в Threads:",
+                    reply_markup=publish_threads_keyboard(),
+                )
         else:
             context.user_data["tt_img_prompt"] = image_prompt
+            if threads_api_enabled():
+                context.user_data["threads_publish_text"] = post_text
             prompt_btn = InlineKeyboardMarkup([[
                 InlineKeyboardButton("🖼 Промпт для картинки", callback_data="tt:prompt"),
             ]])
             await query.message.reply_text(post_text, reply_markup=prompt_btn)
+            if threads_api_enabled():
+                await query.message.reply_text(
+                    "Если текст готов, можешь отправить его прямо в Threads:",
+                    reply_markup=publish_threads_keyboard(),
+                )
 
     if data == "tt:prompt":
         prompt = context.user_data.get("tt_img_prompt", "")

@@ -20,6 +20,7 @@ from bot.agents import (
     make_slide_prompts_with_text,
 )
 from config import settings
+from bot.handlers.threads_manager import publish_threads_keyboard, threads_api_enabled
 
 logger = logging.getLogger(__name__)
 
@@ -249,6 +250,13 @@ async def cb_content(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         message = format_content_message(draft, topic, goal_key, format_key)
         await status.delete()
         await query.message.reply_text(message)
+
+        if format_key == "threads" and draft.caption and threads_api_enabled():
+            context.user_data["threads_publish_text"] = draft.caption
+            await query.message.reply_text(
+                "Если текст готов, можешь отправить его прямо в Threads:",
+                reply_markup=publish_threads_keyboard(),
+            )
 
         if format_key == "carousel" and draft.slides:
             context.user_data["content_slides"] = draft.slides
