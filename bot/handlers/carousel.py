@@ -676,22 +676,26 @@ async def _run_carousel(query_or_message, context: ContextTypes.DEFAULT_TYPE,
     context.user_data["ca_awaiting_images"]  = False
     context.user_data["ca_user_image_ids"]   = []
 
-    slides_text = "\n\n".join(
-        f"{_SLIDE_LABELS[i] if i < len(_SLIDE_LABELS) else f'Слайд {i+1}'}:\n{s}"
-        for i, s in enumerate(slides)
-    )
-    text_body = (
-        f"📝 Тексты слайдов готовы:\n\n{slides_text}\n\n"
-        "Нажми номер слайда чтобы изменить, или генерируй картинки:"
-    )
-    keyboard = _text_review_keyboard(len(slides))
+    target = query_or_message if hasattr(query_or_message, "reply_text") else query_or_message.message
+
+    # Delete the spinner, send each slide as a separate message to avoid 4096-char truncation
     try:
-        await status_msg.edit_text(text_body, reply_markup=keyboard)
+        await status_msg.delete()
     except Exception:
-        # Fallback if edit times out or message is stale
-        msg_obj = status_msg.chat if hasattr(status_msg, "chat") else None
-        target = query_or_message if hasattr(query_or_message, "reply_text") else query_or_message.message
-        await target.reply_text(text_body, reply_markup=keyboard)
+        pass
+
+    await target.reply_text("📝 <b>Тексты слайдов готовы:</b>", parse_mode="HTML")
+    for i, slide in enumerate(slides):
+        label = _SLIDE_LABELS[i] if i < len(_SLIDE_LABELS) else f"Слайд {i + 1}"
+        await target.reply_text(
+            f"<b>{_html.escape(label)}</b>\n\n{_html.escape(slide)}",
+            parse_mode="HTML",
+        )
+
+    await target.reply_text(
+        "Нажми номер слайда чтобы изменить, или генерируй картинки:",
+        reply_markup=_text_review_keyboard(len(slides)),
+    )
 
 
 # ── Command handler ──────────────────────────────────────────────────────────
