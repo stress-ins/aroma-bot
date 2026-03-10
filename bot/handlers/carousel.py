@@ -182,22 +182,34 @@ def _generate_slide_image_prompts_sync(slides: list[str], topic: str) -> list[st
 
 
 def _generate_carousel_sync(topic: str) -> tuple[list[str], list[str]]:
-    """Draft → editor → 6 refined slides + per-slide image prompts."""
-    try:
-        from bot.agents.carousel_editor import edit_carousel_sync
-        raw_slides, _ = _claude_carousel_draft(topic)
-        if not raw_slides:
-            logger.error("_claude_carousel_draft returned empty slides for topic: %s", topic)
-            return [], []
-        refined = edit_carousel_sync(raw_slides, topic)
-        if not refined:
-            logger.error("edit_carousel_sync returned empty for topic: %s", topic)
-            return [], []
-        img_prompts = _generate_slide_image_prompts_sync(refined, topic)
-        return refined, img_prompts
-    except Exception:
-        logger.exception("_generate_carousel_sync failed for topic: %s", topic)
-        return [], []
+    """Draft → editor → 6 refined slides + per-slide image prompts. Retries once on failure."""
+    from bot.agents.carousel_editor import edit_carousel_sync
+    import time
+
+    for attempt in range(2):
+        try:
+            raw_slides, _ = _claude_carousel_draft(topic)
+            if not raw_slides:
+                logger.warning("_claude_carousel_draft empty on attempt %d, topic: %s", attempt + 1, topic)
+                if attempt == 0:
+                    time.sleep(3)
+                    continue
+                return [], []
+            refined = edit_carousel_sync(raw_slides, topic)
+            if not refined:
+                logger.warning("edit_carousel_sync empty on attempt %d, topic: %s", attempt + 1, topic)
+                if attempt == 0:
+                    time.sleep(3)
+                    continue
+                return [], []
+            img_prompts = _generate_slide_image_prompts_sync(refined, topic)
+            return refined, img_prompts
+        except Exception:
+            logger.exception("_generate_carousel_sync attempt %d failed for topic: %s", attempt + 1, topic)
+            if attempt == 0:
+                time.sleep(3)
+                continue
+    return [], []
 
 
 # ── Image analysis ──────────────────────────────────────────────────────────
