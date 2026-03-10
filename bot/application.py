@@ -8,6 +8,7 @@ from bot.handlers.errors import error_handler
 from bot.handlers.keywords import build_keywords_handler
 from bot.handlers.threads import build_threads_handler
 from bot.handlers.carousel import build_carousel_handler
+from bot.handlers.content import build_content_handler
 
 
 def build_application() -> Application:
@@ -26,6 +27,8 @@ def build_application() -> Application:
     for h in build_threads_handler():
         app.add_handler(h)
     for h in build_carousel_handler():
+        app.add_handler(h)
+    for h in build_content_handler():
         app.add_handler(h)
 
     app.add_error_handler(error_handler)
