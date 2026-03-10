@@ -64,20 +64,36 @@ def edit_carousel_sync(raw_slides: list[str], topic: str) -> list[str]:
     return slides[:6] if len(slides) >= 4 else raw_slides
 
 
+def _normalize_line(line: str) -> str:
+    """Strip markdown bold/italic and leading punctuation from a line."""
+    s = line.strip()
+    # Remove **...** and __...__ wrappers at the start
+    for marker in ("**", "__", "*", "_"):
+        if s.startswith(marker):
+            s = s[len(marker):]
+    return s
+
+
 def _parse_slides(text: str, count: int = 6) -> list[str]:
-    """Parse SLIDE1: ... SLIDE{count}: blocks, handling multi-line content."""
+    """Parse SLIDE1: ... SLIDE{count}: blocks, handling multi-line content
+    and common Claude formatting variations (bold markers, spaces in numbers)."""
+    import re
     slots: dict[int, list[str]] = {}
     current: int | None = None
 
     for line in text.splitlines():
-        stripped = line.strip()
+        stripped = _normalize_line(line)
         matched = False
         for i in range(1, count + 1):
+            # Match SLIDE1: or SLIDE 1: (with optional space)
             prefix = f"SLIDE{i}:"
-            if stripped.upper().startswith(prefix.upper()):
+            prefix_spaced = f"SLIDE {i}:"
+            if stripped.upper().startswith(prefix.upper()) or \
+               stripped.upper().startswith(prefix_spaced.upper()):
                 current = i
                 slots[i] = []
-                after = stripped[len(prefix):].strip()
+                plen = len(prefix_spaced) if stripped.upper().startswith(prefix_spaced.upper()) else len(prefix)
+                after = stripped[plen:].strip().lstrip("*_").rstrip("*_").strip()
                 if after:
                     slots[i].append(after)
                 matched = True
