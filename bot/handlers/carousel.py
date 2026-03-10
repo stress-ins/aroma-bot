@@ -224,21 +224,29 @@ def _find_text_zone(img_bytes: bytes) -> tuple[float, float]:
 
 # ── Gemini ──────────────────────────────────────────────────────────────────
 
-def _gemini_slide(prompt: str) -> bytes | None:
+def _get_image_keys() -> list[str]:
+    """Return available Gemini API keys (deduplicated)."""
+    keys: list[str] = []
+    if settings.nana_banana_api_key:
+        keys.append(settings.nana_banana_api_key)
+    if settings.gemini_api_key and settings.gemini_api_key not in keys:
+        keys.append(settings.gemini_api_key)
+    if not keys:
+        keys = [settings.image_api_key]
+    return keys
+
+
+def _gemini_slide(prompt: str, key_index: int = 0) -> bytes | None:
+    """Generate one image. key_index selects which API key to use first (round-robin)."""
     import time
     from google import genai
     from google.genai import types
 
-    # Try keys in order: nana_banana → gemini (fallback)
-    keys = []
-    if settings.nana_banana_api_key:
-        keys.append(settings.nana_banana_api_key)
-    if settings.gemini_api_key and settings.gemini_api_key != settings.nana_banana_api_key:
-        keys.append(settings.gemini_api_key)
-    if not keys:
-        keys = [settings.image_api_key]
+    keys = _get_image_keys()
+    # Rotate so each slide starts on a different key
+    ordered = keys[key_index % len(keys):] + keys[:key_index % len(keys)]
 
-    for attempt, api_key in enumerate(keys):
+    for attempt, api_key in enumerate(ordered):
         try:
             client = genai.Client(api_key=api_key)
             response = client.models.generate_content(
@@ -253,9 +261,9 @@ def _gemini_slide(prompt: str) -> bytes | None:
             err = str(exc)[:160]
             if "429" in err or "RESOURCE_EXHAUSTED" in err:
                 logger.warning("Gemini 429 on key #%d, %s", attempt + 1,
-                               "trying next key" if attempt + 1 < len(keys) else "no more keys")
-                if attempt + 1 < len(keys):
-                    time.sleep(2)
+                               "trying next key" if attempt + 1 < len(ordered) else "no more keys")
+                if attempt + 1 < len(ordered):
+                    time.sleep(1)
                     continue
             else:
                 logger.warning("Gemini carousel error: %s", err)
@@ -608,9 +616,11 @@ async def _run_image_generation(
     )
     done_count = 0
 
-    for idx_pos, i in enumerate(indices):
+    async def gen_one(i: int) -> None:
+        nonlocal done_count
         prompt = img_prompts[i] if i < len(img_prompts) else _FALLBACK_IMG_PROMPT
-        img = await loop.run_in_executor(_img_executor, _gemini_slide, prompt)
+        # Distribute across keys by index to spread RPM load
+        img = await loop.run_in_executor(_img_executor, _gemini_slide, prompt, i)
         images[i] = img
         processed.add(i)
         done_count += 1
@@ -634,9 +644,8 @@ async def _run_image_generation(
                 )
             except Exception:
                 pass
-        # Respect Gemini RPM limit — pause between requests (skip after last)
-        if idx_pos < len(indices) - 1:
-            await asyncio.sleep(5)
+
+    await asyncio.gather(*[gen_one(i) for i in indices])
 
     try:
         await progress_msg.delete()
