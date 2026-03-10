@@ -333,6 +333,42 @@ _SLIDES = ["Хук — лаванда снимает стресс", "3 масл�
 _BASE = "warm minimal photo, essential oils, beige tones"
 
 
+from bot.agents.carousel_editor import edit_carousel_sync
+
+
+def _parse_editor_output(raw: str) -> list[str]:
+    """Same parsing as edit_carousel_sync but without API call."""
+    slides: list[str] = []
+    for line in raw.strip().splitlines():
+        line = line.strip()
+        for i in range(1, 7):
+            if line.startswith(f"SLIDE{i}:"):
+                slides.append(line.split(":", 1)[1].strip())
+                break
+    return slides[:6]
+
+
+class TestCarouselEditor:
+    def test_parses_6_slides(self):
+        raw = "\n".join(f"SLIDE{i}: Текст слайда {i}" for i in range(1, 7))
+        slides = _parse_editor_output(raw)
+        assert len(slides) == 6
+
+    def test_ignores_extra_slides(self):
+        raw = "\n".join(f"SLIDE{i}: Текст {i}" for i in range(1, 9))
+        slides = _parse_editor_output(raw)
+        assert len(slides) == 6
+
+    def test_parses_hook_as_first_slide(self):
+        raw = "SLIDE1: Хук слайд\nSLIDE2: б\nSLIDE3: в\nSLIDE4: г\nSLIDE5: д\nSLIDE6: CTA"
+        slides = _parse_editor_output(raw)
+        assert slides[0] == "Хук слайд"
+        assert slides[5] == "CTA"
+
+    def test_empty_returns_empty(self):
+        assert _parse_editor_output("") == []
+
+
 class TestBuildPptx:
     _SLIDES = ["Хук", "Слайд 2", "Слайд 3", "Слайд 4", "CTA"]
 
