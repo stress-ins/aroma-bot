@@ -225,20 +225,41 @@ def _find_text_zone(img_bytes: bytes) -> tuple[float, float]:
 # ── Gemini ──────────────────────────────────────────────────────────────────
 
 def _gemini_slide(prompt: str) -> bytes | None:
-    try:
-        from google import genai
-        from google.genai import types
-        client = genai.Client(api_key=settings.image_api_key)
-        response = client.models.generate_content(
-            model="gemini-3.1-flash-image-preview",
-            contents=prompt,
-            config=types.GenerateContentConfig(response_modalities=["IMAGE", "TEXT"]),
-        )
-        for part in response.candidates[0].content.parts:
-            if part.inline_data:
-                return part.inline_data.data
-    except Exception as exc:
-        logger.warning("Gemini carousel error: %s", str(exc)[:120])
+    import time
+    from google import genai
+    from google.genai import types
+
+    # Try keys in order: nana_banana → gemini (fallback)
+    keys = []
+    if settings.nana_banana_api_key:
+        keys.append(settings.nana_banana_api_key)
+    if settings.gemini_api_key and settings.gemini_api_key != settings.nana_banana_api_key:
+        keys.append(settings.gemini_api_key)
+    if not keys:
+        keys = [settings.image_api_key]
+
+    for attempt, api_key in enumerate(keys):
+        try:
+            client = genai.Client(api_key=api_key)
+            response = client.models.generate_content(
+                model="gemini-3.1-flash-image-preview",
+                contents=prompt,
+                config=types.GenerateContentConfig(response_modalities=["IMAGE", "TEXT"]),
+            )
+            for part in response.candidates[0].content.parts:
+                if part.inline_data:
+                    return part.inline_data.data
+        except Exception as exc:
+            err = str(exc)[:160]
+            if "429" in err or "RESOURCE_EXHAUSTED" in err:
+                logger.warning("Gemini 429 on key #%d, %s", attempt + 1,
+                               "trying next key" if attempt + 1 < len(keys) else "no more keys")
+                if attempt + 1 < len(keys):
+                    time.sleep(2)
+                    continue
+            else:
+                logger.warning("Gemini carousel error: %s", err)
+            break
     return None
 
 
@@ -587,7 +608,7 @@ async def _run_image_generation(
     )
     done_count = 0
 
-    for i in indices:
+    for idx_pos, i in enumerate(indices):
         prompt = img_prompts[i] if i < len(img_prompts) else _FALLBACK_IMG_PROMPT
         img = await loop.run_in_executor(_img_executor, _gemini_slide, prompt)
         images[i] = img
@@ -613,6 +634,9 @@ async def _run_image_generation(
                 )
             except Exception:
                 pass
+        # Respect Gemini RPM limit — pause between requests (skip after last)
+        if idx_pos < len(indices) - 1:
+            await asyncio.sleep(5)
 
     try:
         await progress_msg.delete()
