@@ -549,7 +549,7 @@ async def _run_image_generation(
     context: ContextTypes.DEFAULT_TYPE,
     skip_existing: bool = False,
 ) -> None:
-    """Generate all slide images in parallel with live progress updates."""
+    """Generate slide images sequentially (Gemini has strict rate limits)."""
     slides      = context.user_data.get("ca_slides", [])
     img_prompts = context.user_data.get("ca_img_prompts", [])
     existing    = context.user_data.get("ca_gemini_images", [])
@@ -558,7 +558,6 @@ async def _run_image_generation(
 
     # Start from existing images, extend to n slots
     images: list[bytes | None] = list(existing) + [None] * max(0, n - len(existing))
-    done:   list[bool]         = [False] * n
 
     # Which indices need generation
     indices = [
@@ -570,24 +569,30 @@ async def _run_image_generation(
         await msg.reply_text("✅ Все картинки уже готовы!")
         return
 
-    icons_str = lambda: "".join(
-        "✅" if images[j] else ("❌" if done[j] else "⏳") for j in range(n)
-    )
+    processed: set[int] = set()
+    # Pre-mark skipped slots as already processed
+    for j in range(n):
+        if j not in indices:
+            processed.add(j)
+
     progress_msg = await msg.reply_text(
-        f"🖼 Генерирую картинки: {'⏳' * n} 0/{n}"
+        f"🖼 Генерирую картинки: {'⏳' * n} 0/{len(indices)}"
     )
     done_count = 0
 
-    async def gen_one(i: int) -> None:
-        nonlocal done_count
+    for i in indices:
         prompt = img_prompts[i] if i < len(img_prompts) else _FALLBACK_IMG_PROMPT
         img = await loop.run_in_executor(_img_executor, _gemini_slide, prompt)
         images[i] = img
-        done[i] = True
+        processed.add(i)
         done_count += 1
+        icons = "".join(
+            ("✅" if images[j] else "❌") if j in processed else "⏳"
+            for j in range(n)
+        )
         try:
             await progress_msg.edit_text(
-                f"🖼 Картинки: {icons_str()} {done_count}/{n}"
+                f"🖼 Картинки: {icons} {done_count}/{len(indices)}"
             )
         except Exception:
             pass
@@ -601,8 +606,6 @@ async def _run_image_generation(
                 )
             except Exception:
                 pass
-
-    await asyncio.gather(*[gen_one(i) for i in indices])
 
     try:
         await progress_msg.delete()
