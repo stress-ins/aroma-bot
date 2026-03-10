@@ -678,24 +678,35 @@ async def _run_carousel(query_or_message, context: ContextTypes.DEFAULT_TYPE,
 
     target = query_or_message if hasattr(query_or_message, "reply_text") else query_or_message.message
 
-    # Delete the spinner, send each slide as a separate message to avoid 4096-char truncation
+    def _build_slides_text(slides_list: list[str], max_len: int = 3800) -> str:
+        """Build combined slides text; truncate individual slides if needed to fit."""
+        lines = []
+        for i, s in enumerate(slides_list):
+            label = _SLIDE_LABELS[i] if i < len(_SLIDE_LABELS) else f"Слайд {i + 1}"
+            lines.append(f"<b>{_html.escape(label)}</b>\n{_html.escape(s)}")
+        text = "\n\n".join(lines)
+        if len(text) <= max_len:
+            return text
+        # Shorten each slide proportionally to fit
+        budget = max_len // len(slides_list) - 30
+        lines = []
+        for i, s in enumerate(slides_list):
+            label = _SLIDE_LABELS[i] if i < len(_SLIDE_LABELS) else f"Слайд {i + 1}"
+            short = s[:budget].rsplit(" ", 1)[0] + "…" if len(s) > budget else s
+            lines.append(f"<b>{_html.escape(label)}</b>\n{_html.escape(short)}")
+        return "\n\n".join(lines)
+
+    slides_body = _build_slides_text(slides)
+    keyboard = _text_review_keyboard(len(slides))
+    full_text = f"📝 <b>Тексты слайдов готовы:</b>\n\n{slides_body}\n\nНажми номер слайда чтобы изменить, или генерируй картинки:"
     try:
-        await status_msg.delete()
+        await status_msg.edit_text(full_text, parse_mode="HTML", reply_markup=keyboard)
     except Exception:
-        pass
-
-    await target.reply_text("📝 <b>Тексты слайдов готовы:</b>", parse_mode="HTML")
-    for i, slide in enumerate(slides):
-        label = _SLIDE_LABELS[i] if i < len(_SLIDE_LABELS) else f"Слайд {i + 1}"
-        await target.reply_text(
-            f"<b>{_html.escape(label)}</b>\n\n{_html.escape(slide)}",
-            parse_mode="HTML",
-        )
-
-    await target.reply_text(
-        "Нажми номер слайда чтобы изменить, или генерируй картинки:",
-        reply_markup=_text_review_keyboard(len(slides)),
-    )
+        try:
+            await status_msg.delete()
+        except Exception:
+            pass
+        await target.reply_text(full_text, parse_mode="HTML", reply_markup=keyboard)
 
 
 # ── Command handler ──────────────────────────────────────────────────────────
