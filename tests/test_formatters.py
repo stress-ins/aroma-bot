@@ -188,6 +188,21 @@ class TestBuildReport:
         report = build_report(self._ru_results(), lang="ru", now=datetime(2026, 3, 10))
         assert "марта" in report
 
+    def test_error_source_hidden_from_report(self):
+        results = [
+            SourceResult(
+                source_name="Twitter/X", source_key="twitter", icon="🐦",
+                error="402 Payment Required",
+            ),
+            SourceResult(
+                source_name="YouTube", source_key="youtube", icon="▶️",
+                items=[TrendItem(title="Aromatherapy", url="https://youtube.com/watch?v=abc", score="1k")],
+            ),
+        ]
+        report = build_report(results, lang="en", now=datetime(2026, 3, 10))
+        assert "Twitter" not in report
+        assert "YouTube" in report
+
 
 class TestDateStr:
     def test_march_in_russian(self):

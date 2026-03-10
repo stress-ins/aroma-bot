@@ -44,6 +44,7 @@ async def _fetch_tiktok(hashtags: list[str]) -> list[TrendItem]:
             num_sessions=1,
             sleep_after=3,
             headless=True,
+            timeout=60000,
         )
 
         for tag in hashtags:
