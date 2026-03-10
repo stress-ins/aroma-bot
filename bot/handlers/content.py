@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, InputMediaPhoto
 from telegram.ext import CallbackQueryHandler, CommandHandler, ContextTypes, MessageHandler, filters
 
 from bot.agents import (
@@ -11,8 +12,12 @@ from bot.agents import (
     format_content_message,
     format_label,
     generate_content_draft,
+    generate_image_bytes,
     generate_topic_options,
     goal_label,
+    make_single_image_prompt,
+    make_slide_prompts_no_text,
+    make_slide_prompts_with_text,
 )
 from config import settings
 
@@ -22,6 +27,11 @@ SOURCE_LABELS = {
     "trends": "Актуальные тренды",
     "prompt": "Свой запрос",
 }
+
+DEFAULT_CAROUSEL_IMAGE_PROMPT = (
+    "warm sensory wellness scene, terracotta beige sage palette, natural textures, "
+    "soft light, calm atmospheric composition --ar 4:5 --style atmospheric"
+)
 
 
 def _goals_keyboard() -> InlineKeyboardMarkup:
@@ -72,6 +82,13 @@ def _topics_text(goal_key: str, format_key: str, topics: list[str], source_key: 
     )
 
 
+def _prompt_buttons() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup([[
+        InlineKeyboardButton("🖼 С текстом", callback_data="ct:prompt:text"),
+        InlineKeyboardButton("🖼 Без текста", callback_data="ct:prompt:notxt"),
+    ]])
+
+
 async def cmd_content(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not settings.anthropic_api_key:
         await update.message.reply_text("❌ Для /content нужен ANTHROPIC_API_KEY.")
@@ -83,6 +100,8 @@ async def cmd_content(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     context.user_data.pop("content_topics", None)
     context.user_data.pop("content_custom_brief", None)
     context.user_data.pop("content_awaiting_prompt", None)
+    context.user_data.pop("content_slides", None)
+    context.user_data.pop("content_img_prompt", None)
 
     await update.message.reply_text(
         "🧠 Контент-агенты готовы.\n\nВыбери цель контента:",
@@ -223,13 +242,64 @@ async def cb_content(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
             return
 
         topic = topics[idx]
-        await query.message.reply_text(
+        status = await query.message.reply_text(
             f"✍️ Генерирую контент.\n\nЦель: {goal_label(goal_key)}\nФормат: {format_label(format_key)}\nТема: {topic}"
         )
         draft = await generate_content_draft(topic, goal_key, format_key)
         message = format_content_message(draft, topic, goal_key, format_key)
-
+        await status.delete()
         await query.message.reply_text(message)
+
+        if format_key == "carousel" and draft.slides:
+            context.user_data["content_slides"] = draft.slides
+            base_prompt = draft.visual_prompt or DEFAULT_CAROUSEL_IMAGE_PROMPT
+            context.user_data["content_img_prompt"] = base_prompt
+
+            if not settings.gemini_api_key:
+                await query.message.reply_text(
+                    "⚠️ Автогенерация картинок недоступна.\nВыбери, какие промпты показать:",
+                    reply_markup=_prompt_buttons(),
+                )
+                return
+
+            media: list[InputMediaPhoto] = []
+            loop = asyncio.get_event_loop()
+            for slide_idx, slide in enumerate(draft.slides, 1):
+                image_prompt = make_single_image_prompt(base_prompt, slide, with_text=True)
+                image_bytes = await loop.run_in_executor(None, generate_image_bytes, image_prompt)
+                if image_bytes:
+                    media.append(InputMediaPhoto(media=image_bytes, caption=f"Слайд {slide_idx}: {slide}"))
+
+            if media and len(media) == len(draft.slides):
+                for start in range(0, len(media), 10):
+                    await query.message.reply_media_group(media[start:start + 10])
+                await query.message.reply_text(
+                    "Если захочешь вручную доработать визуалы в Canva, вот кнопки с prompt'ами:",
+                    reply_markup=_prompt_buttons(),
+                )
+            else:
+                await query.message.reply_text(
+                    "⚠️ Картинки не удалось сгенерировать автоматически.\nВыбери, какие промпты показать:",
+                    reply_markup=_prompt_buttons(),
+                )
+        return
+
+    if data == "ct:prompt:text":
+        slides = context.user_data.get("content_slides", [])
+        img_prompt = context.user_data.get("content_img_prompt", "")
+        if not slides or not img_prompt:
+            await query.message.reply_text("❌ Данные устарели. Сгенерируй карусель заново.")
+            return
+        await query.message.reply_text(make_slide_prompts_with_text(img_prompt, slides))
+        return
+
+    if data == "ct:prompt:notxt":
+        slides = context.user_data.get("content_slides", [])
+        img_prompt = context.user_data.get("content_img_prompt", "")
+        if not slides or not img_prompt:
+            await query.message.reply_text("❌ Данные устарели. Сгенерируй карусель заново.")
+            return
+        await query.message.reply_text(make_slide_prompts_no_text(img_prompt, slides))
         return
 
 

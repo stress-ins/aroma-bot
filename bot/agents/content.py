@@ -178,6 +178,30 @@ def format_content_message(draft: ContentDraft, topic: str, goal_key: str, forma
     return "\n".join(lines)
 
 
+def make_slide_prompts_with_text(base: str, slides: list[str]) -> str:
+    lines = ["Промпты для карусели (картинка с текстом):\n"]
+    for idx, slide in enumerate(slides, 1):
+        lines.append(
+            f"Слайд {idx}: {base}, visual theme: {slide[:90]}, text overlay: \"{slide}\", clean editorial composition"
+        )
+    return "\n".join(lines)
+
+
+def make_slide_prompts_no_text(base: str, slides: list[str]) -> str:
+    lines = ["Промпты для карусели (чистый фон, без текста):\n"]
+    for idx, slide in enumerate(slides, 1):
+        lines.append(
+            f"Слайд {idx}: {base}, visual theme: {slide[:90]}, clean minimal background, negative space for text, no typography"
+        )
+    return "\n".join(lines)
+
+
+def make_single_image_prompt(base: str, text: str, with_text: bool) -> str:
+    if with_text:
+        return f"{base}, visual theme: {text[:90]}, text overlay: \"{text}\", clean editorial composition"
+    return f"{base}, visual theme: {text[:90]}, clean minimal background, negative space for text, no typography"
+
+
 def _topics_prompt(trends_text: str, goal_key: str, format_key: str) -> str:
     return f"""\
 {BRAND_CONTEXT}
@@ -325,3 +349,22 @@ async def generate_topic_options(
 async def generate_content_draft(topic: str, goal_key: str, format_key: str) -> ContentDraft:
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(_executor, _generate_draft_sync, topic, goal_key, format_key)
+
+
+def generate_image_bytes(prompt: str) -> bytes | None:
+    try:
+        from google import genai
+        from google.genai import types
+
+        client = genai.Client(api_key=settings.gemini_api_key)
+        response = client.models.generate_content(
+            model="gemini-3.1-flash-image-preview",
+            contents=prompt,
+            config=types.GenerateContentConfig(response_modalities=["IMAGE", "TEXT"]),
+        )
+        for part in response.candidates[0].content.parts:
+            if part.inline_data:
+                return part.inline_data.data
+    except Exception:
+        return None
+    return None
