@@ -24,6 +24,11 @@ async def main() -> None:
         await app.updater.start_polling(drop_pending_updates=True)
         logger.info("Bot is running. Press Ctrl+C to stop.")
         try:
+            from bot.handlers.monitor import notify_owner
+            notify_owner("✅ <b>aroma-bot запущен</b>")
+        except Exception:
+            pass
+        try:
             await asyncio.Event().wait()
         except (KeyboardInterrupt, SystemExit):
             pass

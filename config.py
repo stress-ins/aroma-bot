@@ -42,6 +42,10 @@ class Settings(BaseSettings):
     instagram_username: str = ""
     instagram_password: str = ""
 
+    # Monitoring
+    monitor_bot_token: str = ""   # second bot token for crash/error notifications
+    monitor_chat_id: str = ""     # owner's chat_id
+
     # AI
     anthropic_api_key: str = ""
 
