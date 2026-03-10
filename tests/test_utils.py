@@ -9,7 +9,7 @@ import pytest
 # ---------------------------------------------------------------------------
 
 from bot.handlers.commands import _split_message
-from bot.handlers.content import _topics_text
+from bot.handlers.content import _topics_text, _source_label
 
 
 class TestSplitMessage:
@@ -199,10 +199,16 @@ class TestFormatContentMessage:
 
 class TestContentTopicsText:
     def test_topics_are_visible_in_message(self):
-        text = _topics_text("trust", "telegram", ["Тема 1", "Тема 2"])
+        text = _topics_text("trust", "telegram", ["Тема 1", "Тема 2"], "trends")
         assert "1. Тема 1" in text
         assert "2. Тема 2" in text
         assert "Доверие" in text
+        assert "Актуальные тренды" in text
+
+
+class TestContentSourceLabel:
+    def test_prompt_source_label(self):
+        assert _source_label("prompt") == "Свой запрос"
 
 
 # ---------------------------------------------------------------------------

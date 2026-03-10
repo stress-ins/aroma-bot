@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
-from telegram.ext import CallbackQueryHandler, CommandHandler, ContextTypes
+from telegram.ext import CallbackQueryHandler, CommandHandler, ContextTypes, MessageHandler, filters
 
 from bot.agents import (
     FORMAT_LABELS,
@@ -17,6 +17,11 @@ from bot.agents import (
 from config import settings
 
 logger = logging.getLogger(__name__)
+
+SOURCE_LABELS = {
+    "trends": "Актуальные тренды",
+    "prompt": "Свой запрос",
+}
 
 
 def _goals_keyboard() -> InlineKeyboardMarkup:
@@ -45,11 +50,23 @@ def _topics_keyboard(topics: list[str]) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(rows)
 
 
-def _topics_text(goal_key: str, format_key: str, topics: list[str]) -> str:
+def _source_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup([[
+        InlineKeyboardButton("📈 На основе трендов", callback_data="ct:source:trends"),
+        InlineKeyboardButton("✍️ Свой запрос", callback_data="ct:source:prompt"),
+    ]])
+
+
+def _source_label(source_key: str) -> str:
+    return SOURCE_LABELS.get(source_key, source_key)
+
+
+def _topics_text(goal_key: str, format_key: str, topics: list[str], source_key: str) -> str:
     items = "\n".join(f"{idx + 1}. {topic}" for idx, topic in enumerate(topics))
     return (
         f"🎯 Цель: {goal_label(goal_key)}\n"
         f"🧩 Формат: {format_label(format_key)}\n\n"
+        f"🧭 Источник: {_source_label(source_key)}\n\n"
         f"Выбери тему:\n\n{items}\n\n"
         "Нажми на цифру ниже."
     )
@@ -62,7 +79,10 @@ async def cmd_content(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
     context.user_data.pop("content_goal", None)
     context.user_data.pop("content_format", None)
+    context.user_data.pop("content_source", None)
     context.user_data.pop("content_topics", None)
+    context.user_data.pop("content_custom_brief", None)
+    context.user_data.pop("content_awaiting_prompt", None)
 
     await update.message.reply_text(
         "🧠 Контент-агенты готовы.\n\nВыбери цель контента:",
@@ -96,7 +116,39 @@ async def cb_content(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
         context.user_data["content_format"] = format_key
         await query.message.edit_text(
-            f"🎯 Цель: {goal_label(goal_key)}\n🧩 Формат: {format_label(format_key)}\n\n⏳ Собираю тренды и ищу темы..."
+            f"🎯 Цель: {goal_label(goal_key)}\n🧩 Формат: {format_label(format_key)}\n\nВыбери, на чем строить темы:",
+            reply_markup=_source_keyboard(),
+        )
+        return
+
+    if data.startswith("ct:source:"):
+        source_key = data.split(":")[2]
+        goal_key = context.user_data.get("content_goal")
+        format_key = context.user_data.get("content_format")
+        if not goal_key or not format_key:
+            await query.message.reply_text("❌ Контекст потерян. Запусти /content заново.")
+            return
+
+        context.user_data["content_source"] = source_key
+        context.user_data["content_topics"] = []
+        context.user_data["content_awaiting_prompt"] = False
+
+        if source_key == "prompt":
+            context.user_data["content_awaiting_prompt"] = True
+            await query.message.edit_text(
+                f"🎯 Цель: {goal_label(goal_key)}\n"
+                f"🧩 Формат: {format_label(format_key)}\n"
+                f"🧭 Источник: {_source_label(source_key)}\n\n"
+                "Пришли одним сообщением свое направление.\n\n"
+                "Например:\n"
+                "- как через аромат мягко снимать офисный стресс\n"
+                "- контент для корпоративных клиентов про wellbeing\n"
+                "- идеи про вечерние ритуалы для нервной системы"
+            )
+            return
+
+        await query.message.edit_text(
+            f"🎯 Цель: {goal_label(goal_key)}\n🧩 Формат: {format_label(format_key)}\n🧭 Источник: {_source_label(source_key)}\n\n⏳ Собираю тренды и ищу темы..."
         )
 
         results = cache.get("results")
@@ -111,7 +163,7 @@ async def cb_content(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
         context.user_data["content_topics"] = topics
         await query.message.edit_text(
-            _topics_text(goal_key, format_key, topics),
+            _topics_text(goal_key, format_key, topics, source_key),
             reply_markup=_topics_keyboard(topics),
         )
         return
@@ -119,26 +171,43 @@ async def cb_content(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     if data == "ct:topics:refresh":
         goal_key = context.user_data.get("content_goal")
         format_key = context.user_data.get("content_format")
-        if not goal_key or not format_key:
+        source_key = context.user_data.get("content_source")
+        custom_brief = context.user_data.get("content_custom_brief", "")
+        if not goal_key or not format_key or not source_key:
             await query.message.reply_text("❌ Контекст потерян. Запусти /content заново.")
             return
 
         await query.message.edit_text(
-            f"🎯 Цель: {goal_label(goal_key)}\n🧩 Формат: {format_label(format_key)}\n\n⏳ Обновляю темы..."
+            f"🎯 Цель: {goal_label(goal_key)}\n"
+            f"🧩 Формат: {format_label(format_key)}\n"
+            f"🧭 Источник: {_source_label(source_key)}\n\n"
+            "⏳ Обновляю темы..."
         )
-        results = cache.get("results")
-        if not results:
-            results = await collect_all()
-            cache.set("results", results)
 
-        topics = await generate_topic_options(results, goal_key, format_key)
+        results = None
+        if source_key == "trends":
+            results = cache.get("results")
+            if not results:
+                results = await collect_all()
+                cache.set("results", results)
+        elif not custom_brief:
+            context.user_data["content_awaiting_prompt"] = True
+            await query.message.edit_text(
+                f"🎯 Цель: {goal_label(goal_key)}\n"
+                f"🧩 Формат: {format_label(format_key)}\n"
+                f"🧭 Источник: {_source_label(source_key)}\n\n"
+                "Пришли заново свое направление одним сообщением."
+            )
+            return
+
+        topics = await generate_topic_options(results, goal_key, format_key, user_brief=custom_brief)
         if not topics:
             await query.message.edit_text("❌ Не удалось обновить темы. Попробуй позже.")
             return
 
         context.user_data["content_topics"] = topics
         await query.message.edit_text(
-            _topics_text(goal_key, format_key, topics),
+            _topics_text(goal_key, format_key, topics, source_key),
             reply_markup=_topics_keyboard(topics),
         )
         return
@@ -164,8 +233,49 @@ async def cb_content(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         return
 
 
+async def msg_content_prompt(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not context.user_data.get("content_awaiting_prompt"):
+        return
+
+    goal_key = context.user_data.get("content_goal")
+    format_key = context.user_data.get("content_format")
+    source_key = context.user_data.get("content_source")
+    user_brief = (update.message.text or "").strip()
+
+    if not goal_key or not format_key or source_key != "prompt":
+        context.user_data["content_awaiting_prompt"] = False
+        await update.message.reply_text("❌ Контекст потерян. Запусти /content заново.")
+        return
+
+    if len(user_brief) < 5:
+        await update.message.reply_text("❌ Направление слишком короткое. Пришли чуть подробнее.")
+        return
+
+    context.user_data["content_awaiting_prompt"] = False
+    context.user_data["content_custom_brief"] = user_brief
+
+    status = await update.message.reply_text(
+        f"🎯 Цель: {goal_label(goal_key)}\n"
+        f"🧩 Формат: {format_label(format_key)}\n"
+        f"🧭 Источник: {_source_label(source_key)}\n\n"
+        "⏳ Генерирую темы по твоему запросу..."
+    )
+
+    topics = await generate_topic_options(None, goal_key, format_key, user_brief=user_brief)
+    if not topics:
+        await status.edit_text("❌ Не удалось сгенерировать темы. Попробуй переформулировать запрос.")
+        return
+
+    context.user_data["content_topics"] = topics
+    await status.edit_text(
+        _topics_text(goal_key, format_key, topics, source_key),
+        reply_markup=_topics_keyboard(topics),
+    )
+
+
 def build_content_handler():
     return [
         CommandHandler("content", cmd_content),
         CallbackQueryHandler(cb_content, pattern="^ct:"),
+        MessageHandler(filters.TEXT & ~filters.COMMAND, msg_content_prompt),
     ]

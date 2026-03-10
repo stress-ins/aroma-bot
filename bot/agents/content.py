@@ -188,6 +188,30 @@ def _topics_prompt(trends_text: str, goal_key: str, format_key: str) -> str:
 """
 
 
+def _custom_topics_prompt(user_brief: str, goal_key: str, format_key: str) -> str:
+    return f"""\
+{BRAND_CONTEXT}
+
+Роль: ты Content Strategist.
+Цель контента: {GOAL_GUIDANCE[goal_key]}
+Формат: {FORMAT_LABELS[format_key]}. {FORMAT_GUIDANCE[format_key]}
+
+Ниже пользовательское направление для контента:
+{user_brief}
+
+Сгенерируй 10 тем.
+Требования:
+- Сохраняй связь с нишей: регуляция нервной системы, сенсорные практики, ароматерапия, медитации, гонг.
+- Раскрой пользовательский запрос через конкретные углы, состояния, жизненные ситуации или сценарии применения.
+- Избегай пустых и общих названий.
+- Формулируй так, чтобы тема подходила под выбранную цель и формат.
+
+Верни строго нумерованный список без пояснений:
+1. ...
+10. ...
+"""
+
+
 def _draft_prompt(topic: str, goal_key: str, format_key: str) -> str:
     base = f"""\
 {BRAND_CONTEXT}
@@ -249,9 +273,18 @@ def _call_claude(prompt: str, max_tokens: int) -> str:
     return response.content[0].text.strip()
 
 
-def _generate_topics_sync(results: list[SourceResult], goal_key: str, format_key: str) -> list[str]:
-    trends_text = _format_trends(results)
-    raw = _call_claude(_topics_prompt(trends_text, goal_key, format_key), max_tokens=900)
+def _generate_topics_sync(
+    results: list[SourceResult] | None,
+    goal_key: str,
+    format_key: str,
+    user_brief: str = "",
+) -> list[str]:
+    if user_brief:
+        prompt = _custom_topics_prompt(user_brief, goal_key, format_key)
+    else:
+        trends_text = _format_trends(results or [])
+        prompt = _topics_prompt(trends_text, goal_key, format_key)
+    raw = _call_claude(prompt, max_tokens=900)
     return parse_numbered_list(raw, limit=10)
 
 
@@ -260,9 +293,16 @@ def _generate_draft_sync(topic: str, goal_key: str, format_key: str) -> ContentD
     return parse_content_draft(raw)
 
 
-async def generate_topic_options(results: list[SourceResult], goal_key: str, format_key: str) -> list[str]:
+async def generate_topic_options(
+    results: list[SourceResult] | None,
+    goal_key: str,
+    format_key: str,
+    user_brief: str = "",
+) -> list[str]:
     loop = asyncio.get_event_loop()
-    return await loop.run_in_executor(_executor, _generate_topics_sync, results, goal_key, format_key)
+    return await loop.run_in_executor(
+        _executor, _generate_topics_sync, results, goal_key, format_key, user_brief
+    )
 
 
 async def generate_content_draft(topic: str, goal_key: str, format_key: str) -> ContentDraft:
