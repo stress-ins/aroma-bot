@@ -2,6 +2,76 @@
 
 Телеграм-бот для мониторинга трендов в ароматерапии, ольфактотерапии, медитации гонг и звуковом целительстве. Собирает данные из 10+ источников, формирует два отчёта (🇷🇺 и 🇬🇧), генерирует темы постов для Threads и карусели с картинками через AI.
 
+## Репозитории и продакшен-роли
+
+Этот репозиторий отвечает за Telegram-бот и Threads OAuth callback.
+
+- локальный путь бота: `/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma`
+- продакшен-путь бота на VPS: `/opt/aroma`
+- systemd-сервис бота: `aroma-bot`
+- Threads OAuth callback на VPS: `threads-oauth.service`
+
+Публичный сайт вынесен в отдельный репозиторий:
+
+- локальный путь сайта: `/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aromara-site`
+- продакшен-путь сайта на VPS: `/opt/aromara-site`
+- systemd-сервис сайта: `aromara-site`
+- домен сайта: `https://aromara.ru`
+
+Схема доменов на VPS:
+
+- `https://aromara.ru` и `https://www.aromara.ru` → `nginx` → `127.0.0.1:3005` → `aromara-site`
+- `https://oauth.aromara.ru` → `nginx` → `127.0.0.1:8090` → `threads-oauth.service`
+
+---
+
+## Мониторинг
+
+Для наблюдения за ботом и VPS работает отдельный **Monitor Bot** (`aroma-monitor.service`).
+
+### Как это работает
+
+- При **запуске** aroma-bot шлёт уведомление `✅ aroma-bot запущен` через второй бот.
+- При **ошибке** в обработчике — шлёт тип ошибки + краткий трейсбек.
+- При **полном краше** Python — systemd срабатывает `OnFailure=aroma-bot-crash.service`, который делает `curl` к Telegram API и шлёт `💥 aroma-bot упал!`.
+
+Переменные окружения (`.env` на VPS):
+```
+MONITOR_BOT_TOKEN=<токен второго бота>
+MONITOR_CHAT_ID=<твой chat_id>
+```
+
+### Команды Monitor Bot
+
+| Команда | Описание |
+|---------|----------|
+| `/status` | Статус всех сервисов: `aroma-bot`, `aromara-site`, `threads-oauth`, `nginx` |
+| `/load` | Нагрузка на сервер: uptime, load avg, RAM, диск, swap |
+| `/logs [N]` | Последние N строк логов aroma-bot (по умолчанию 30, макс 100) |
+| `/restart` | Перезапустить aroma-bot |
+
+### Управление сервисом на VPS
+
+```bash
+# Статус
+systemctl status aroma-monitor
+
+# Перезапуск
+systemctl restart aroma-monitor
+
+# Логи
+journalctl -u aroma-monitor -n 30
+```
+
+### Первичная установка monitor bot на VPS
+
+```bash
+cp /opt/aroma/deploy/aroma-monitor.service /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable aroma-monitor
+systemctl start aroma-monitor
+```
+
 ---
 
 ## Команды
