@@ -126,6 +126,31 @@ function bindTopicForm(form, config) {
   });
 }
 
+function bindPress(element, handler) {
+  if (!element) {
+    return;
+  }
+
+  let lastTouchTs = 0;
+
+  element.addEventListener("pointerup", async (event) => {
+    if (event.pointerType !== "touch") {
+      return;
+    }
+    lastTouchTs = Date.now();
+    event.preventDefault();
+    await handler(event);
+  });
+
+  element.addEventListener("click", async (event) => {
+    if (Date.now() - lastTouchTs < 700) {
+      event.preventDefault();
+      return;
+    }
+    await handler(event);
+  });
+}
+
 function syncDetailPanelState(isEmpty) {
   if (!elements.detailPanel) {
     return;
@@ -1513,11 +1538,12 @@ function bindFilters() {
     timer = window.setTimeout(loadDrafts, 250);
   });
 
-  elements.refreshButton.addEventListener("click", async () => {
+  bindPress(elements.refreshButton, async () => {
     await loadCurrentTab();
   });
+
   for (const button of elements.tabButtons) {
-    button.addEventListener("click", async () => {
+    bindPress(button, async () => {
       setTab(button.dataset.tab);
       await loadCurrentTab();
     });
