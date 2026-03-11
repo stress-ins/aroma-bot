@@ -27,15 +27,50 @@ _FONT_REL_ID = "rIdDeldedaRegular"
 # ── Layout constants ────────────────────────────────────────────────────────
 _SLIDE_EMU = 1080 * 9525
 
-# Visual role hint for the art director prompt — one per slide position
-_SLIDE_VISUAL_ROLES = [
-    "hook — strong emotion that stops scrolling, first visual impact",
-    "relatable problem — person in a recognizable moment of stress or overload",
-    "mechanism — body process shown metaphorically, calm reflective mood",
-    "insight — moment of clarity and perceptual shift, abstract but warm",
-    "solution — hands-on sensory practice, grounding ritual, tactile action",
-    "call to action — warm invitation, human connection, intimacy",
+# Per-slide visual rules: (narrative role, what to show, what NOT to show)
+_SLIDE_VISUAL_RULES: list[tuple[str, str, str]] = [
+    (
+        "hook — powerful first image that stops scrolling",
+        "tension, motion blur, strong contrast, shadow play, abstract dark atmosphere, "
+        "moody urban or natural scene that feels urgent or unresolved",
+        "NO herbs, NO candles, NO oils, NO aromatherapy objects. "
+        "This is the problem world, not the remedy.",
+    ),
+    (
+        "problem — a relatable moment of stress, overload, or disconnection",
+        "cluttered surfaces, scattered objects, overloaded desk, blurred background "
+        "suggesting noise or chaos, muted cold tones, closed or tense composition",
+        "NO herbs, NO wellness elements, NO warm cosy tones. "
+        "The problem must be visible — not the solution.",
+    ),
+    (
+        "mechanism — body process shown metaphorically, a transitional mood",
+        "abstract close-up, light filtering through texture, liminal space, "
+        "subtle natural material just beginning to appear — wood grain, stone, water surface",
+        "No obvious wellness products yet. Keep it abstract and transitional.",
+    ),
+    (
+        "insight — moment of clarity, first hint of the brand world",
+        "soft warm light breaking through, open negative space, first natural textures "
+        "entering the frame — a single dried stem, a smooth stone, warm terracotta tones",
+        "Not a full brand scene yet. One quiet element emerging.",
+    ),
+    (
+        "solution — the sensory practice, the remedy in action",
+        "dried herbs, essential oil bottle, incense smoke, hands holding terracotta bowl, "
+        "candles, dried flowers, sage bundle — full brand palette, tactile and grounding",
+        "Full brand aesthetic. This is the moment of healing.",
+    ),
+    (
+        "call to action — warm human invitation",
+        "close human gesture, hands outstretched or open, warm terracotta and beige, "
+        "soft natural light, intimate and inviting composition",
+        "Full brand aesthetic. Warm, human, not salesy.",
+    ),
 ]
+
+# Backward-compat shorthand used elsewhere
+_SLIDE_VISUAL_ROLES = [r[0] for r in _SLIDE_VISUAL_RULES]
 
 _SLIDE_LABELS = [
     "Слайд 1 — Hook",
@@ -127,30 +162,40 @@ def _generate_slide_image_prompts_sync(slides: list[str], topic: str) -> list[st
     """Generate one unique, detailed English image prompt per slide."""
     import anthropic
 
-    roles = _SLIDE_VISUAL_ROLES
-    slides_desc = "\n".join(
-        f"Slide {i + 1} [{roles[i] if i < len(roles) else 'supporting visual'}]: {text}"
-        for i, text in enumerate(slides)
-    )
+    slides_desc_parts = []
+    for i, text in enumerate(slides):
+        if i < len(_SLIDE_VISUAL_RULES):
+            role, show, forbid = _SLIDE_VISUAL_RULES[i]
+        else:
+            role, show, forbid = "supporting visual", "brand palette", ""
+        part = (
+            f"Slide {i + 1} [{role}]\n"
+            f"  Text: {text}\n"
+            f"  Show: {show}\n"
+            f"  Forbidden: {forbid}"
+        )
+        slides_desc_parts.append(part)
+    slides_desc = "\n\n".join(slides_desc_parts)
+
     prompt = (
         f'You are an art director for an Instagram carousel on the topic: "{topic}"\n\n'
-        "Brand visual style: terracotta, beige, sage green palette. "
-        "Dried herbs, incense smoke, stones, candles, hands on skin, wood textures, "
-        "natural fabric. Soft diffused natural light. Minimal lifestyle atmosphere.\n"
-        "Forbidden: stock photo look, plastic, harsh shadows, white/grey backgrounds, "
-        "faces, any text or typography.\n"
-        "Required: leave a large clear area (at least 1/3 of frame) with minimal visual "
-        "complexity — blurred background, flat surface, negative space, or soft gradient — "
-        "so that text overlay remains readable.\n\n"
-        "Generate one unique image prompt for each slide below.\n"
-        "Each prompt must:\n"
+        "The carousel follows a narrative arc: problem → mechanism → insight → solution. "
+        "Each slide has its own visual world — early slides live in the problem space "
+        "(tension, stress, urban), later slides enter the brand's sensory world "
+        "(herbs, aromas, terracotta). DO NOT apply the brand aesthetic uniformly.\n\n"
+        "Universal rules:\n"
+        "- Palette: terracotta, beige, sage green, warm wood tones\n"
+        "- Forbidden everywhere: stock photo look, plastic, harsh shadows, "
+        "white/grey plain backgrounds, human faces, any text or typography\n"
+        "- Required: leave a large clear area (at least 1/3 of frame) — blurred bg, "
+        "flat surface, or negative space — so text overlay is readable\n\n"
+        "Generate one image prompt per slide. Each must:\n"
         "- Be 25-40 words in English\n"
-        "- Match the specific narrative role and emotional tone of that slide\n"
-        "- Be visually distinct from other slides (different subject, angle, or mood)\n"
-        "- Include specific visual elements (object, texture, colour, light, composition)\n"
+        "- Strictly follow that slide's Show/Forbidden rules\n"
+        "- Be visually distinct from other slides\n"
         "- End with: --ar 1:1 --style atmospheric\n\n"
         f"{slides_desc}\n\n"
-        f"Return strictly in this format, nothing else:\n"
+        "Return strictly in this format, nothing else:\n"
         + "\n".join(f"IMG{i + 1}: [prompt]" for i in range(len(slides)))
     )
 
@@ -175,7 +220,7 @@ def _generate_slide_image_prompts_sync(slides: list[str], topic: str) -> list[st
         if i in parsed:
             result.append(parsed[i])
         else:
-            role_hint = roles[i].split(" — ")[0] if i < len(roles) else "supporting"
+            role_hint = _SLIDE_VISUAL_ROLES[i].split(" — ")[0] if i < len(_SLIDE_VISUAL_ROLES) else "supporting"
             result.append(
                 f"terracotta and sage minimal lifestyle, {slide[:35]}, "
                 f"soft natural light, {role_hint}, dried herbs, "
