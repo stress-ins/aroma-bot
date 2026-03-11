@@ -828,6 +828,10 @@ function renderEmptyDetail() {
   `;
 }
 
+function isContentReviewDraft(draft) {
+  return ["threads", "instagram", "telegram"].includes(String(draft.kind || "").toLowerCase());
+}
+
 function renderDraftDetail(draft) {
   const payload = draft.payload || {};
   const detailHtml = `
@@ -864,6 +868,46 @@ function renderDraftDetail(draft) {
       ${payloadSection("CTA", payload.cta)}
       ${payloadSection("Hashtags", payload.hashtags)}
       ${payloadSection("Visual Prompt", payload.visual_prompt)}
+      ${isContentReviewDraft(draft) ? `
+        <section class="section">
+          <h3>Content Review</h3>
+          <form class="content-review-form" data-content-review-form>
+            <label>
+              Topic
+              <textarea name="topic">${escapeHtml(draft.topic || "")}</textarea>
+            </label>
+            <label>
+              Angle
+              <textarea name="angle">${escapeHtml(payload.angle || "")}</textarea>
+            </label>
+            <label>
+              Hook
+              <textarea name="hook">${escapeHtml(payload.hook || "")}</textarea>
+            </label>
+            <label>
+              Caption
+              <textarea name="caption">${escapeHtml(payload.caption || "")}</textarea>
+            </label>
+            <label>
+              CTA
+              <textarea name="cta">${escapeHtml(payload.cta || "")}</textarea>
+            </label>
+            <label>
+              Hashtags
+              <textarea name="hashtags">${escapeHtml(payload.hashtags || "")}</textarea>
+            </label>
+            <label>
+              Visual Prompt
+              <textarea name="visual_prompt">${escapeHtml(payload.visual_prompt || "")}</textarea>
+            </label>
+            <div class="actions-row">
+              <button class="primary-button" type="submit">Save content</button>
+              <button class="secondary-button" type="button" data-content-polish>Polish text</button>
+              <button class="secondary-button" type="button" data-content-approve>Approve</button>
+            </div>
+          </form>
+        </section>
+      ` : ""}
       ${slidesMarkup(payload.slides)}
       ${storyboardMarkup(payload.storyboard)}
       <section class="section">
@@ -885,6 +929,54 @@ function renderDraftDetail(draft) {
       await updateDraft("feedback", { feedback: button.dataset.feedback });
     });
   });
+
+  const contentForm = elements.draftDetail.querySelector("[data-content-review-form]");
+  if (contentForm) {
+    contentForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const updatedDraft = await fetchJson(`/api/drafts/${draft.draft_id}/content`, {
+        method: "POST",
+        body: JSON.stringify({
+          topic: contentForm.querySelector("textarea[name='topic']").value.trim(),
+          angle: contentForm.querySelector("textarea[name='angle']").value.trim(),
+          hook: contentForm.querySelector("textarea[name='hook']").value.trim(),
+          caption: contentForm.querySelector("textarea[name='caption']").value.trim(),
+          cta: contentForm.querySelector("textarea[name='cta']").value.trim(),
+          hashtags: contentForm.querySelector("textarea[name='hashtags']").value.trim(),
+          visual_prompt: contentForm.querySelector("textarea[name='visual_prompt']").value.trim(),
+        }),
+      });
+      setSelectedDraft(updatedDraft);
+      state.drafts = state.drafts.map((item) =>
+        item.draft_id === updatedDraft.draft_id ? { ...item, ...updatedDraft } : item
+      );
+      renderDraftList();
+      renderDraftDetail(updatedDraft);
+    });
+  }
+
+  const polishButton = elements.draftDetail.querySelector("[data-content-polish]");
+  if (polishButton) {
+    polishButton.addEventListener("click", async () => {
+      const updatedDraft = await fetchJson(`/api/drafts/${draft.draft_id}/content/polish`, {
+        method: "POST",
+        body: JSON.stringify({}),
+      });
+      setSelectedDraft(updatedDraft);
+      state.drafts = state.drafts.map((item) =>
+        item.draft_id === updatedDraft.draft_id ? { ...item, ...updatedDraft } : item
+      );
+      renderDraftList();
+      renderDraftDetail(updatedDraft);
+    });
+  }
+
+  const approveButton = elements.draftDetail.querySelector("[data-content-approve]");
+  if (approveButton) {
+    approveButton.addEventListener("click", async () => {
+      await updateDraft("status", { status: "approved" });
+    });
+  }
 }
 
 async function openDraft(draftId) {
