@@ -6,7 +6,7 @@ import hmac
 import urllib.parse
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Query
+from fastapi import BackgroundTasks, Depends, FastAPI, Header, HTTPException, Query
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -21,7 +21,7 @@ from bot.services.miniapp_content_review import (
     update_content_review_draft,
 )
 from bot.services.miniapp_plan_actions import normalize_plan_format, normalize_plan_goal
-from bot.services.reels_assets import ASSETS_DIR, regenerate_reels_frame_asset
+from bot.services.reels_assets import ASSETS_DIR, populate_reels_frame_assets, regenerate_reels_frame_asset
 from bot.services.drafts_store import get_draft, list_recent_drafts, update_draft
 from bot.services.drafts_store import save_draft
 from bot.services.miniapp_generator import (
@@ -268,7 +268,11 @@ async def generate_content(payload: CreateContentPayload, _: None = Depends(_req
 
 
 @app.post("/api/generate/reels")
-async def generate_reels(payload: CreateReelsPayload, _: None = Depends(_require_auth)):
+async def generate_reels(
+    payload: CreateReelsPayload,
+    background_tasks: BackgroundTasks,
+    _: None = Depends(_require_auth),
+):
     if not settings.anthropic_api_key:
         raise HTTPException(status_code=400, detail="anthropic_not_configured")
 
@@ -284,6 +288,11 @@ async def generate_reels(payload: CreateReelsPayload, _: None = Depends(_require
         topic=topic,
         source="/miniapp",
         payload=build_reels_payload(topic, scenario, frames),
+    )
+    background_tasks.add_task(
+        populate_reels_frame_assets,
+        saved.draft_id,
+        frame_indexes=[0, 1],
     )
     draft = serialize_reels_draft(saved.draft_id)
     if not draft:
@@ -480,7 +489,7 @@ async def reels_frame_regenerate(
 ):
     regen_payload = regenerate_reels_frame_asset(draft_id, frame_index)
     if not regen_payload:
-        raise HTTPException(status_code=404, detail="reels_frame_regenerate_failed")
+        raise HTTPException(status_code=503, detail="reels_frame_regenerate_failed")
     draft = serialize_reels_draft(draft_id)
     if not draft:
         raise HTTPException(status_code=404, detail="reels_not_found")
