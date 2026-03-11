@@ -16,6 +16,7 @@ from bot.services.miniapp_keywords import add_keyword, delete_keyword, field_lab
 from bot.services.miniapp_plans import serialize_plan
 from bot.services.miniapp_presenter import filter_drafts, serialize_draft
 from bot.services.miniapp_reels import (
+    build_reels_export_payload,
     list_reels_drafts,
     serialize_reels_draft,
     update_reels_frame_note,
@@ -196,6 +197,14 @@ async def reels_detail(draft_id: str):
     if not draft:
         raise HTTPException(status_code=404, detail="reels_not_found")
     return draft
+
+
+@app.get("/api/reels/{draft_id}/export")
+async def reels_export(draft_id: str):
+    payload = build_reels_export_payload(draft_id)
+    if not payload:
+        raise HTTPException(status_code=404, detail="reels_not_found")
+    return payload
 
 
 @app.post("/api/reels/{draft_id}/frames/{frame_index}/note")
