@@ -806,6 +806,7 @@ class TestStoryboardParser:
 from bot.agents.planner import _PLAN_PROMPT, _BRAND_CONTEXT
 from bot.handlers.planner import _parse_plan_entries
 from bot.services.drafts_store import DraftRecord
+from bot.services.miniapp_inbox import inbox_category, inbox_reason, is_review_status, list_inbox_items
 from bot.services.miniapp_presenter import filter_drafts, payload_preview, serialize_draft
 from bot.services.miniapp_keywords import field_labels, serialize_topics
 from bot.services.miniapp_plans import serialize_plan
@@ -976,6 +977,44 @@ class TestMiniAppKeywords:
         assert len(topics) >= 1
         assert "name" in topics[0]
         assert "fields" in topics[0]
+
+
+class TestMiniAppInbox:
+    def test_review_status_filter(self):
+        assert is_review_status("draft") is True
+        assert is_review_status("in_review") is True
+        assert is_review_status("approved") is False
+
+    def test_category_and_reason(self):
+        plan_record = DraftRecord(
+            draft_id="aaa11111",
+            kind="threads",
+            topic="Плановый пост",
+            source="/plan",
+            created_at="2026-03-11T10:00:00+00:00",
+            status="draft",
+            feedback="",
+            payload={"caption": "text"},
+        )
+        reels_record = DraftRecord(
+            draft_id="bbb22222",
+            kind="reels",
+            topic="Рилс",
+            source="/reels",
+            created_at="2026-03-11T10:00:00+00:00",
+            status="in_review",
+            feedback="",
+            payload={"scenario": "text"},
+        )
+
+        assert inbox_category(plan_record) == "plan"
+        assert "контент-плана" in inbox_reason(plan_record)
+        assert inbox_category(reels_record) == "reels"
+        assert "Reels" in inbox_reason(reels_record)
+
+    def test_list_inbox_items_returns_list(self):
+        items = list_inbox_items(limit=5, kind_filter="content")
+        assert isinstance(items, list)
 
 
 class TestMiniAppPlans:

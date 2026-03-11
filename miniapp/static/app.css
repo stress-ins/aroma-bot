@@ -403,6 +403,39 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 /* ── Status list ─────────────────────────────────────────────────────────── */
 .status-list, .keywords-list, .plans-list { display: flex; flex-direction: column; gap: 8px; }
+.inbox-toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.inbox-toolbar label {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--hint);
+}
+
+.inbox-toolbar select {
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  padding: 7px 10px;
+  color: var(--text);
+}
+
+.inbox-section {
+  display: grid;
+  gap: 8px;
+}
+
+.inbox-section h3 {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--hint);
+}
 
 .status-card {
   display: flex;
