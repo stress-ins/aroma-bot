@@ -1350,3 +1350,13 @@ class TestEditPostFallback:
 
         result = ct.edit_post_sync("original text", "тема", "instagram")
         assert result == edited
+
+class TestMiniAppReelsPolling:
+    def test_server_populates_all_initial_reels_frames(self):
+        source = Path("miniapp_server.py").read_text(encoding="utf-8")
+        assert "frame_indexes=[0, 1]" not in source
+        assert "background_tasks.add_task(" in source
+
+    def test_client_waits_for_all_reels_frames(self):
+        source = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        assert "readyFrames < (reel.frame_count || 0)" in source

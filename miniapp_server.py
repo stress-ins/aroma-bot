@@ -6,7 +6,7 @@ import hmac
 import urllib.parse
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Query
+from fastapi import BackgroundTasks, Depends, FastAPI, Header, HTTPException, Query
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field
 from bot.agents import generate_content_draft
 from bot.agents.planner import generate_plan_sync
 from bot.agents.reels_agent import generate_reels_director_sync, generate_reels_scenario_sync
+from bot.handlers.carousel import _generate_carousel_sync
 from bot.handlers.planner import _parse_plan_entries
 from bot.handlers.threads import _format_trends
 from bot.services.miniapp_content_review import (
@@ -21,7 +22,7 @@ from bot.services.miniapp_content_review import (
     update_content_review_draft,
 )
 from bot.services.miniapp_plan_actions import normalize_plan_format, normalize_plan_goal
-from bot.services.reels_assets import ASSETS_DIR, regenerate_reels_frame_asset
+from bot.services.reels_assets import ASSETS_DIR, populate_reels_frame_assets, regenerate_reels_frame_asset
 from bot.services.drafts_store import get_draft, list_recent_drafts, update_draft
 from bot.services.drafts_store import save_draft
 from bot.services.miniapp_generator import (
@@ -114,6 +115,10 @@ class CreateContentPayload(BaseModel):
 
 
 class CreateReelsPayload(BaseModel):
+    topic: str = Field(default="")
+
+
+class CreateCarouselPayload(BaseModel):
     topic: str = Field(default="")
 
 
@@ -268,7 +273,11 @@ async def generate_content(payload: CreateContentPayload, _: None = Depends(_req
 
 
 @app.post("/api/generate/reels")
-async def generate_reels(payload: CreateReelsPayload, _: None = Depends(_require_auth)):
+async def generate_reels(
+    payload: CreateReelsPayload,
+    background_tasks: BackgroundTasks,
+    _: None = Depends(_require_auth),
+):
     if not settings.anthropic_api_key:
         raise HTTPException(status_code=400, detail="anthropic_not_configured")
 
@@ -285,10 +294,37 @@ async def generate_reels(payload: CreateReelsPayload, _: None = Depends(_require
         source="/miniapp",
         payload=build_reels_payload(topic, scenario, frames),
     )
+    background_tasks.add_task(
+        populate_reels_frame_assets,
+        saved.draft_id,
+    )
     draft = serialize_reels_draft(saved.draft_id)
     if not draft:
         raise HTTPException(status_code=500, detail="reels_not_saved")
     return draft
+
+
+@app.post("/api/generate/carousel")
+async def generate_carousel(payload: CreateCarouselPayload, _: None = Depends(_require_auth)):
+    if not settings.anthropic_api_key:
+        raise HTTPException(status_code=400, detail="anthropic_not_configured")
+
+    topic = payload.topic.strip()
+    if not topic:
+        raise HTTPException(status_code=400, detail="empty_topic")
+
+    loop = asyncio.get_running_loop()
+    slides, img_prompts = await loop.run_in_executor(None, _generate_carousel_sync, topic)
+    if not slides:
+        raise HTTPException(status_code=500, detail="carousel_generation_failed")
+
+    saved = save_draft(
+        kind="carousel",
+        topic=topic,
+        source="/miniapp",
+        payload={"slides": slides, "img_prompts": img_prompts},
+    )
+    return serialize_draft(saved)
 
 
 @app.post("/api/generate/plan")
@@ -480,7 +516,7 @@ async def reels_frame_regenerate(
 ):
     regen_payload = regenerate_reels_frame_asset(draft_id, frame_index)
     if not regen_payload:
-        raise HTTPException(status_code=404, detail="reels_frame_regenerate_failed")
+        raise HTTPException(status_code=503, detail="reels_frame_regenerate_failed")
     draft = serialize_reels_draft(draft_id)
     if not draft:
         raise HTTPException(status_code=404, detail="reels_not_found")

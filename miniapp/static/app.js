@@ -14,6 +14,8 @@ const state = {
   keywords: null,
 };
 
+let reelRefreshTimer = null;
+
 const elements = {
   draftList: document.getElementById("draftList"),
   draftDetail: document.getElementById("draftDetail"),
@@ -174,6 +176,37 @@ function _initDataHeader() {
   return initData ? { "X-Telegram-Init-Data": initData } : {};
 }
 
+function showRequestError(prefix, error) {
+  const message = error?.message || String(error || "unknown_error");
+  alert(`${prefix}: ${message}`);
+}
+
+function scheduleReelsRefresh(draftId, attempts = 10) {
+  if (!draftId || attempts <= 0) {
+    return;
+  }
+  window.clearTimeout(reelRefreshTimer);
+  reelRefreshTimer = window.setTimeout(async () => {
+    try {
+      const reel = await fetchJson(`/api/reels/${draftId}`);
+      const readyFrames = Array.isArray(reel.frames)
+        ? reel.frames.filter((item) => item.current_asset?.url).length
+        : 0;
+      state.selectedReels = reel;
+      state.reels = state.reels.map((item) =>
+        item.draft_id === reel.draft_id ? { ...item, ...reel } : item
+      );
+      renderReels();
+      renderReelsDetail(reel);
+      if (readyFrames < (reel.frame_count || 0)) {
+        scheduleReelsRefresh(draftId, attempts - 1);
+      }
+    } catch (_error) {
+      scheduleReelsRefresh(draftId, attempts - 1);
+    }
+  }, 4000);
+}
+
 function sendDraftToChat(draftId) {
   const tg = window.Telegram?.WebApp;
   if (!tg?.sendData || !draftId) {
@@ -208,13 +241,20 @@ function sendPlanToChat(planId) {
 }
 
 async function fetchJson(url, options = {}) {
-  const extraHeaders = options.method === "POST" ? _initDataHeader() : {};
+  const extraHeaders = url.startsWith("/api/") ? _initDataHeader() : {};
   const response = await fetch(url, {
     headers: { "Content-Type": "application/json", ...extraHeaders },
     ...options,
   });
   if (!response.ok) {
-    throw new Error(`${response.status} ${response.statusText}`);
+    let detail = "";
+    try {
+      const payload = await response.json();
+      detail = payload?.detail ? ` (${payload.detail})` : "";
+    } catch (_error) {
+      detail = "";
+    }
+    throw new Error(`${response.status} ${response.statusText}${detail}`);
   }
   return response.json();
 }
@@ -288,9 +328,15 @@ function renderCreate() {
         <div class="draft-preview">Собирает тренды и сохраняет недельный план прямо в приложении.</div>
       </article>
       <article class="create-card">
+<<<<<<< HEAD
         <div class="draft-kind">карусель</div>
         <h3 class="draft-topic">Карусель Инстаграм</h3>
         <div class="draft-preview">Тема -> 5 слайдов + промпты для картинок, сохраняется в черновики.</div>
+=======
+        <div class="draft-kind">carousel</div>
+        <h3 class="draft-topic">Карусель Instagram</h3>
+        <div class="draft-preview">Тема → 5 слайдов + промпты для картинок, сохраняется в черновики.</div>
+>>>>>>> origin/main
       </article>
     </div>
   `;
@@ -352,6 +398,16 @@ function renderCreate() {
           <button class="primary-button" type="submit">Создать карусель</button>
         </form>
       </section>
+      <section class="section">
+        <h3>Создать карусель</h3>
+        <form class="create-form" data-create-carousel>
+          <label>
+            Тема
+            <textarea name="topic" placeholder="Например: вечерний ритуал для перезагрузки нервной системы"></textarea>
+          </label>
+          <button class="primary-button" type="submit">Сгенерировать</button>
+        </form>
+      </section>
     </div>
   `;
   syncDetailPanelState(false);
@@ -393,8 +449,13 @@ function renderCreate() {
         setTab("reels");
         await loadReels();
         renderReelsDetail(reel);
+        scheduleReelsRefresh(reel.draft_id);
       } catch (err) {
+<<<<<<< HEAD
         showRequestError("Ошибка создания рилса", err);
+=======
+        showRequestError("Ошибка генерации", err);
+>>>>>>> origin/main
       }
       },
     });
@@ -421,6 +482,7 @@ function renderCreate() {
 
   const carouselForm = elements.draftDetail.querySelector("[data-create-carousel]");
   if (carouselForm) {
+<<<<<<< HEAD
     bindTopicForm(carouselForm, {
       pendingText: "Создаю...",
       onSubmit: async (topic) => {
@@ -436,6 +498,28 @@ function renderCreate() {
           showRequestError("Ошибка создания карусели", err);
         }
       },
+=======
+    carouselForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const topic = carouselForm.querySelector("textarea[name='topic']").value.trim();
+      const btn = carouselForm.querySelector("button[type='submit']");
+      btn.disabled = true;
+      btn.textContent = "⏳ Генерируется...";
+      try {
+        const draft = await fetchJson("/api/generate/carousel", {
+          method: "POST",
+          body: JSON.stringify({ topic }),
+        });
+        state.draftId = draft.draft_id;
+        setTab("drafts");
+        await loadDrafts();
+      } catch (err) {
+        showRequestError("Ошибка генерации карусели", err);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Сгенерировать";
+      }
+>>>>>>> origin/main
     });
   }
 }
@@ -790,6 +874,17 @@ function renderReelsDetail(reel) {
             <span class="tag">${escapeHtml(reel.images_ready)} кадров готово</span>
           </div>
           <div class="actions-row">
+            <button class="status-button" data-reel-status="draft">Черновик</button>
+            <button class="status-button" data-reel-status="in_review">На согласовании</button>
+            <button class="status-button" data-reel-status="approved">Согласовано</button>
+            <button class="status-button" data-reel-status="published">Опубликовано</button>
+          </div>
+          <div class="actions-row">
+            <button class="feedback-button" data-reel-feedback="worked">Сработало</button>
+            <button class="feedback-button" data-reel-feedback="missed">Не сработало</button>
+            <button class="feedback-button" data-reel-feedback="">Сбросить</button>
+          </div>
+          <div class="actions-row">
             <button class="secondary-button" type="button" data-reel-export="${escapeHtml(reel.draft_id)}">Экспорт JSON</button>
           </div>
         </div>
@@ -818,7 +913,9 @@ function renderReelsDetail(reel) {
             <div>${escapeHtml(frame.scene || "")}</div>
             <div class="meta">${escapeHtml(frame.angle || "")}</div>
             ${payloadSection("Промпт Gemini", frame.gemini_prompt)}
-            ${frame.current_asset?.url ? `<img class="frame-image" src="${escapeHtml(frame.current_asset.url)}" alt="Кадр ассет" />` : ""}
+            ${frame.current_asset?.url
+              ? `<img class="frame-image" src="${escapeHtml(frame.current_asset.url)}" alt="Кадр ассет" />`
+              : `<div class="frame-loading">⏳ Кадр генерируется…</div>`}
             <div class="actions-row">
               <button class="secondary-button" type="button" data-frame-regenerate="${escapeHtml(String(frame.frame_index))}">Пересобрать кадр</button>
             </div>
@@ -961,6 +1058,36 @@ function renderReelsDetail(reel) {
       await regenerateReelsFrame(reel.draft_id, state.selectedFrameIndex, regenButton);
     });
   }
+
+  elements.draftDetail.querySelectorAll("[data-reel-status]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const updated = await fetchJson(`/api/drafts/${reel.draft_id}/status`, {
+        method: "POST",
+        body: JSON.stringify({ status: button.dataset.reelStatus }),
+      });
+      state.selectedReels = { ...reel, ...updated };
+      state.reels = state.reels.map((item) =>
+        item.draft_id === reel.draft_id ? { ...item, ...updated } : item
+      );
+      renderReels();
+      renderReelsDetail(state.selectedReels);
+    });
+  });
+
+  elements.draftDetail.querySelectorAll("[data-reel-feedback]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const updated = await fetchJson(`/api/drafts/${reel.draft_id}/feedback`, {
+        method: "POST",
+        body: JSON.stringify({ feedback: button.dataset.reelFeedback }),
+      });
+      state.selectedReels = { ...reel, ...updated };
+      state.reels = state.reels.map((item) =>
+        item.draft_id === reel.draft_id ? { ...item, ...updated } : item
+      );
+      renderReels();
+      renderReelsDetail(state.selectedReels);
+    });
+  });
 }
 
 async function openPlan(planId) {
