@@ -204,6 +204,8 @@ async function regenerateCarouselSlide(draftId, slideIndex, withNote) {
   });
   state.selected = draft;
   state.draftId = draft.draft_id;
+  state.drafts = state.drafts.map((item) => item.draft_id === draft.draft_id ? { ...item, ...draft } : item);
+  renderDraftList();
   renderDraftDetail(draft);
 }
 
@@ -211,6 +213,8 @@ async function regenerateCarouselAll(draftId) {
   const draft = await fetchJson(`/api/carousel/${draftId}/regenerate-all`, { method: "POST", body: "{}" });
   state.selected = draft;
   state.draftId = draft.draft_id;
+  state.drafts = state.drafts.map((item) => item.draft_id === draft.draft_id ? { ...item, ...draft } : item);
+  renderDraftList();
   renderDraftDetail(draft);
 }
 
