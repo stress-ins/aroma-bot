@@ -38,11 +38,16 @@ def _topics_text(topics: list[str]) -> str:
 
 
 def _review_keyboard() -> InlineKeyboardMarkup:
+    frame_buttons = [
+        InlineKeyboardButton(str(idx + 1), callback_data=f"rl:frame:open:{idx}")
+        for idx in range(4)
+    ]
     return InlineKeyboardMarkup([
         [
             InlineKeyboardButton("🔄 Новая раскадровка", callback_data="rl:review:storyboard"),
             InlineKeyboardButton("✏️ Свой сценарий", callback_data="rl:review:manual"),
         ],
+        frame_buttons,
         [
             InlineKeyboardButton("✅ Согласовать", callback_data="rl:review:approve"),
         ],
@@ -74,6 +79,13 @@ def _reels_result_text(topic: str, scenario: str, frames: list[StoryboardFrame],
 
 def _gemini_reels_frame(prompt: str) -> bytes | None:
     return generate_gemini_image_sync(prompt, log_context="Gemini reels image")
+
+
+def _apply_note_to_prompt(prompt: str, note: str) -> str:
+    cleaned = note.strip()
+    if not cleaned:
+        return prompt
+    return f"{prompt.rstrip('. ')}. Additional direction: {cleaned}."
 
 
 async def _generate_storyboard_images(
@@ -189,6 +201,83 @@ async def cb_reels(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         )
         return
 
+    if data.startswith("rl:frame:open:"):
+        review = context.user_data.get("rl_review")
+        idx = int(data.split(":")[3])
+        if not review:
+            await query.message.reply_text("❌ Черновик Reels не найден. Сгенерируй заново.")
+            return
+        storyboard = review.get("storyboard", [])
+        images = review.get("images", [])
+        if idx >= len(storyboard):
+            await query.message.reply_text("❌ Кадр не найден.")
+            return
+        frame = storyboard[idx]
+        text = (
+            f"🎞 Кадр {idx + 1}\n"
+            f"Таймкод: {frame.get('timecode', '')}\n"
+            f"Сцена: {frame.get('scene', '')}\n"
+            f"Ракурс: {frame.get('angle', '')}"
+        )
+        keyboard = InlineKeyboardMarkup([
+            [
+                InlineKeyboardButton("🖼 Перегенерировать", callback_data=f"rl:frame:regen:{idx}"),
+                InlineKeyboardButton("✏️ Замечание", callback_data=f"rl:frame:note:{idx}"),
+            ],
+            [InlineKeyboardButton("↩️ К review", callback_data="rl:review:back")],
+        ])
+        if idx < len(images) and images[idx]:
+            photo = io.BytesIO(images[idx])
+            photo.name = f"reels_frame_{idx + 1}.png"
+            await query.message.reply_photo(photo=photo, caption=text, reply_markup=keyboard)
+        else:
+            await query.message.reply_text(text + "\n\nкартинка ещё не сгенерирована", reply_markup=keyboard)
+        return
+
+    if data.startswith("rl:frame:regen:"):
+        review = context.user_data.get("rl_review")
+        idx = int(data.split(":")[3])
+        if not review:
+            await query.message.reply_text("❌ Черновик Reels не найден. Сгенерируй заново.")
+            return
+        await _regen_reels_frame(query.message, context, idx)
+        return
+
+    if data.startswith("rl:frame:note:"):
+        review = context.user_data.get("rl_review")
+        idx = int(data.split(":")[3])
+        if not review:
+            await query.message.reply_text("❌ Черновик Reels не найден. Сгенерируй заново.")
+            return
+        context.user_data["rl_awaiting_image_note"] = idx
+        await query.message.reply_text(
+            f"✏️ Пришли замечание для кадра {idx + 1}.\n"
+            "Например: темнее, меньше предметов, ближе камера, без рук."
+        )
+        return
+
+    if data == "rl:review:back":
+        review = context.user_data.get("rl_review")
+        if not review:
+            await query.message.reply_text("❌ Черновик Reels не найден. Сгенерируй заново.")
+            return
+        frames = [
+            StoryboardFrame(
+                timecode=str(frame.get("timecode", "")),
+                scene=str(frame.get("scene", "")),
+                angle=str(frame.get("angle", "")),
+                gemini_prompt=str(frame.get("gemini_prompt", "")),
+            )
+            for frame in review.get("storyboard", [])
+        ]
+        images = [img for img in review.get("images", []) if img]
+        draft_id = review.get("draft_id", "")
+        await query.message.reply_text(
+            f"{_reels_result_text(str(review.get('topic', '')), str(review.get('scenario', '')), frames, len(images))}\n\n🗂 Draft ID: {draft_id}",
+            reply_markup=_review_keyboard(),
+        )
+        return
+
     if data == "rl:review:approve":
         review = context.user_data.get("rl_review")
         if not review:
@@ -269,8 +358,10 @@ async def _build_reels_review(
         "topic": topic,
         "scenario": scenario,
         "storyboard": payload["storyboard"],
+        "images": images_raw,
     }
     context.user_data["rl_awaiting_manual_edit"] = False
+    context.user_data["rl_awaiting_image_note"] = None
 
     await status_message.edit_text(
         f"{_reels_result_text(topic, scenario, frames, len(images))}\n\n🗂 Draft ID: {draft_id}",
@@ -288,6 +379,15 @@ async def _build_reels_review(
 
 
 async def msg_reels_manual_edit(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    image_note_idx = context.user_data.get("rl_awaiting_image_note")
+    if image_note_idx is not None:
+        context.user_data["rl_awaiting_image_note"] = None
+        note = (update.message.text or "").strip()
+        if not note:
+            return
+        await _regen_reels_frame(update.message, context, int(image_note_idx), note=note)
+        return
+
     if not context.user_data.get("rl_awaiting_manual_edit"):
         return
 
@@ -311,6 +411,69 @@ async def msg_reels_manual_edit(update: Update, context: ContextTypes.DEFAULT_TY
         text,
         existing_draft_id=str(review.get("draft_id", "")),
     )
+
+
+async def _regen_reels_frame(message, context: ContextTypes.DEFAULT_TYPE, idx: int, *, note: str = "") -> None:
+    review = context.user_data.get("rl_review")
+    if not review:
+        await message.reply_text("❌ Черновик Reels не найден.")
+        return
+    storyboard = review.get("storyboard", [])
+    images = list(review.get("images", []))
+    if idx >= len(storyboard):
+        await message.reply_text("❌ Кадр не найден.")
+        return
+    if not settings.image_api_key:
+        await message.reply_text("❌ Для генерации кадра нужен GEMINI_API_KEY/NANA_BANANA_API_KEY.")
+        return
+
+    frame = dict(storyboard[idx])
+    prompt = str(frame.get("gemini_prompt", ""))
+    if note:
+        prompt = _apply_note_to_prompt(prompt, note)
+        frame["gemini_prompt"] = prompt
+        storyboard[idx] = frame
+
+    status = await message.reply_text(f"🖼 Перегенерирую кадр {idx + 1}...")
+    loop = asyncio.get_event_loop()
+    image = await loop.run_in_executor(_img_executor, _gemini_reels_frame, prompt)
+    await status.delete()
+    if not image:
+        await message.reply_text("⚠️ Gemini не сгенерировал кадр. Попробуй ещё раз.")
+        return
+
+    while len(images) <= idx:
+        images.append(None)
+    images[idx] = image
+    review["storyboard"] = storyboard
+    review["images"] = images
+    context.user_data["rl_review"] = review
+
+    draft_id = str(review.get("draft_id", ""))
+    if draft_id:
+        payload = {
+            "scenario": str(review.get("scenario", "")),
+            "storyboard": storyboard,
+            "images_ready": sum(1 for item in images if item),
+        }
+        update_draft(draft_id, payload=payload, status="draft")
+
+    photo = io.BytesIO(image)
+    photo.name = f"reels_frame_{idx + 1}.png"
+    keyboard = InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("🖼 Перегенерировать", callback_data=f"rl:frame:regen:{idx}"),
+            InlineKeyboardButton("✏️ Замечание", callback_data=f"rl:frame:note:{idx}"),
+        ],
+        [InlineKeyboardButton("↩️ К review", callback_data="rl:review:back")],
+    ])
+    frame_text = (
+        f"🎞 Кадр {idx + 1}\n"
+        f"Таймкод: {frame.get('timecode', '')}\n"
+        f"Сцена: {frame.get('scene', '')}\n"
+        f"Ракурс: {frame.get('angle', '')}"
+    )
+    await message.reply_photo(photo=photo, caption=frame_text, reply_markup=keyboard)
 
 
 def build_reels_handler():

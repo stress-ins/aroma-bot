@@ -868,6 +868,19 @@ class TestDraftRecord:
         assert record.status == "draft"
         assert record.payload["scenario"] == "test"
 
+    def test_draft_record_can_store_approved_status(self):
+        record = DraftRecord(
+            draft_id="approved1",
+            kind="threads",
+            topic="Тест",
+            source="/content",
+            created_at="2026-03-11T07:00:00+00:00",
+            status="approved",
+            payload={"caption": "ok"},
+        )
+
+        assert record.status == "approved"
+
 
 # ---------------------------------------------------------------------------
 # creative_team — edit_post_sync (unit: prompt structure + fallback logic)
