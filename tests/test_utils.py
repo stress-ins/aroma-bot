@@ -814,6 +814,7 @@ from bot.services.miniapp_reels import (
     update_reels_frame_note,
     update_reels_frame_prompt,
 )
+from bot.handlers.miniapp_bridge import parse_webapp_payload
 from bot.services.plans_store import PlanRecord
 
 
@@ -1001,6 +1002,17 @@ class TestMiniAppPlans:
         assert data["plan_id"] == "20260311120000"
         assert len(data["entries"]) == 1
         assert data["entries"][0]["platform"] == "Threads"
+
+
+class TestMiniAppBridge:
+    def test_parse_webapp_payload_accepts_open_draft(self):
+        payload = parse_webapp_payload('{"action":"open_draft","draft_id":"abc123"}')
+        assert payload is not None
+        assert payload["action"] == "open_draft"
+        assert payload["draft_id"] == "abc123"
+
+    def test_parse_webapp_payload_rejects_bad_json(self):
+        assert parse_webapp_payload("not-json") is None
 
 
 class TestMiniAppReels:

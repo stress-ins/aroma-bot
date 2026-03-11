@@ -82,6 +82,17 @@ function _initDataHeader() {
   return initData ? { "X-Telegram-Init-Data": initData } : {};
 }
 
+function sendDraftToChat(draftId) {
+  const tg = window.Telegram?.WebApp;
+  if (!tg?.sendData || !draftId) {
+    return;
+  }
+  tg.sendData(JSON.stringify({
+    action: "open_draft",
+    draft_id: String(draftId),
+  }));
+}
+
 async function fetchJson(url, options = {}) {
   const extraHeaders = options.method === "POST" ? _initDataHeader() : {};
   const response = await fetch(url, {
@@ -326,6 +337,9 @@ function renderReelsDetail(reel) {
             <span class="tag">${escapeHtml(reel.images_ready)} images</span>
           </div>
         </div>
+        <div class="actions-row">
+          <button class="secondary-button" type="button" data-send-draft-chat="${escapeHtml(reel.draft_id)}">Send to chat</button>
+        </div>
       </div>
       ${payloadSection("Scenario", reel.payload?.scenario || reel.preview)}
       <section class="section">
@@ -414,6 +428,13 @@ function renderReelsDetail(reel) {
       renderReelsDetail(reel);
     });
   });
+
+  const sendDraftButton = elements.draftDetail.querySelector("[data-send-draft-chat]");
+  if (sendDraftButton) {
+    sendDraftButton.addEventListener("click", () => {
+      sendDraftToChat(sendDraftButton.dataset.sendDraftChat);
+    });
+  }
 
   const noteForm = elements.draftDetail.querySelector("[data-frame-note-form]");
   if (noteForm) {
@@ -647,6 +668,9 @@ function renderDraftDetail(draft) {
             <button class="feedback-button" data-feedback="missed">missed</button>
             <button class="feedback-button" data-feedback="">clear</button>
           </div>
+          <div class="actions-row">
+            <button class="secondary-button" type="button" data-send-draft-chat="${escapeHtml(draft.draft_id)}">Send to chat</button>
+          </div>
         </div>
       </div>
       ${payloadSection("Preview", draft.preview)}
@@ -678,6 +702,13 @@ function renderDraftDetail(draft) {
       await updateDraft("feedback", { feedback: button.dataset.feedback });
     });
   });
+
+  const sendDraftButton = elements.draftDetail.querySelector("[data-send-draft-chat]");
+  if (sendDraftButton) {
+    sendDraftButton.addEventListener("click", () => {
+      sendDraftToChat(sendDraftButton.dataset.sendDraftChat);
+    });
+  }
 }
 
 async function openDraft(draftId) {

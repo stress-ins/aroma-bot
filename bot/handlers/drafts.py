@@ -53,7 +53,7 @@ def _drafts_text(limit: int = 10) -> str:
 
 async def cmd_drafts(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if context.args:
-        await _open_draft(update, context, context.args[0].strip())
+        await open_draft_by_id(update, context, context.args[0].strip())
         return
     await update.message.reply_text(
         _drafts_text(),
@@ -61,7 +61,7 @@ async def cmd_drafts(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     )
 
 
-async def _open_draft(update: Update, context: ContextTypes.DEFAULT_TYPE, draft_id: str) -> None:
+async def open_draft_by_id(update: Update, context: ContextTypes.DEFAULT_TYPE, draft_id: str) -> None:
     draft = get_draft(draft_id)
     if not draft:
         await update.message.reply_text("❌ Черновик с таким ID не найден.")
