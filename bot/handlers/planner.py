@@ -17,6 +17,7 @@ from bot.services.drafts_store import save_draft, update_draft
 from bot.services.gemini_images import generate_gemini_image_sync
 from bot.services.mini_app import append_mini_app_button
 from bot.services.plans_store import save_plan
+from bot.services.plans_store import get_plan
 from config import settings
 
 logger = logging.getLogger(__name__)
@@ -142,6 +143,45 @@ def _reels_result_text(topic: str, scenario: str, storyboard_lines: list[str], i
     return (
         f"🎬 Reels из плана: {topic}\n\n{scenario}\n\n{storyboard_text}\n\n"
         f"🖼 Gemini-кадры: {images_ready}/4"
+    )
+
+
+async def open_plan_by_id(update: Update, context: ContextTypes.DEFAULT_TYPE, plan_id: str) -> None:
+    record = get_plan(plan_id)
+    if not record:
+        await update.effective_message.reply_text("❌ План с таким ID не найден.")
+        return
+
+    entries = _parse_plan_entries(record.raw_text)
+    kwargs = {"parse_mode": "Markdown"}
+    if entries:
+        kwargs["reply_markup"] = append_mini_app_button(
+            _plan_actions_keyboard(entries),
+            label="🧭 Открыть Plan в Mini App",
+            tab="plans",
+        )
+    else:
+        kwargs["reply_markup"] = append_mini_app_button(
+            None,
+            label="🧭 Открыть Plan в Mini App",
+            tab="plans",
+        )
+
+    context.user_data["plan_entries"] = [
+        {
+            "day_label": entry.day_label,
+            "platform": entry.platform,
+            "format_label": entry.format_label,
+            "goal": entry.goal,
+            "topic": entry.topic,
+            "angle": entry.angle,
+        }
+        for entry in entries
+    ]
+    context.user_data["plan_id"] = record.plan_id
+    await update.effective_message.reply_text(
+        f"📅 *Контент-план на неделю:*\n\n{record.raw_text}\n\n🗂 Plan ID: `{record.plan_id}`",
+        **kwargs,
     )
 
 
