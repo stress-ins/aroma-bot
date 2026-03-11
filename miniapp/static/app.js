@@ -2,6 +2,7 @@ const state = {
   tab: new URLSearchParams(window.location.search).get("tab") || "drafts",
   draftId: new URLSearchParams(window.location.search).get("draft_id") || "",
   inbox: [],
+  inboxKind: "all",
   drafts: [],
   plans: [],
   reels: [],
@@ -109,8 +110,14 @@ async function loadDrafts() {
 }
 
 async function loadInbox() {
-  const data = await fetchJson("/api/inbox?limit=100");
+  const params = new URLSearchParams();
+  params.set("limit", "100");
+  if (state.inboxKind && state.inboxKind !== "all") {
+    params.set("kind", state.inboxKind);
+  }
+  const data = await fetchJson(`/api/inbox?${params.toString()}`);
   state.inbox = data.items || [];
+  state.inboxKind = data.kind || "all";
   renderInbox();
 }
 
@@ -289,22 +296,31 @@ function setTab(tab) {
   }
 }
 
-function renderInbox() {
-  elements.listTitle.textContent = "Approval Inbox";
-  const items = state.inbox || [];
-  elements.draftCount.textContent = `${items.length} review`;
-  elements.emptyState.hidden = items.length > 0;
-  elements.draftList.innerHTML = `
-    <div class="plans-list">
+function groupInboxItems(items) {
+  return {
+    plan: items.filter((item) => item.category === "plan"),
+    reels: items.filter((item) => item.category === "reels"),
+    content: items.filter((item) => item.category === "content"),
+  };
+}
+
+function inboxSectionMarkup(title, items) {
+  if (!items.length) {
+    return "";
+  }
+  return `
+    <section class="inbox-section">
+      <h3>${escapeHtml(title)}</h3>
       ${items.map((item) => `
         <article class="draft-card">
           <div class="draft-kind">${escapeHtml(item.kind)}</div>
-          <h3 class="draft-topic">${escapeHtml(item.topic)}</h3>
+          <h4 class="draft-topic">${escapeHtml(item.topic)}</h4>
           <div class="draft-preview">${escapeHtml(item.preview || "Без превью")}</div>
           <div class="draft-meta">
             <span class="tag">${escapeHtml(item.status)}</span>
             <span class="tag">${escapeHtml(item.source)}</span>
           </div>
+          <div class="meta">${escapeHtml(item.review_reason || "")}</div>
           <div class="actions-row">
             <button type="button" data-inbox-open="${escapeHtml(item.draft_id)}">Open</button>
             <button type="button" data-inbox-review="${escapeHtml(item.draft_id)}">In review</button>
@@ -312,16 +328,51 @@ function renderInbox() {
           </div>
         </article>
       `).join("")}
+    </section>
+  `;
+}
+
+function renderInbox() {
+  elements.listTitle.textContent = "Approval Inbox";
+  const items = state.inbox || [];
+  const grouped = groupInboxItems(items);
+  elements.draftCount.textContent = `${items.length} review`;
+  elements.emptyState.hidden = items.length > 0;
+  elements.draftList.innerHTML = `
+    <div class="inbox-toolbar">
+      <label>
+        Queue type
+        <select id="inboxKindFilter">
+          <option value="all"${state.inboxKind === "all" ? " selected" : ""}>All</option>
+          <option value="content"${state.inboxKind === "content" ? " selected" : ""}>Content</option>
+          <option value="reels"${state.inboxKind === "reels" ? " selected" : ""}>Reels</option>
+          <option value="plan"${state.inboxKind === "plan" ? " selected" : ""}>Plan-derived</option>
+        </select>
+      </label>
+    </div>
+    <div class="plans-list">
+      ${inboxSectionMarkup("Plan-derived", grouped.plan)}
+      ${inboxSectionMarkup("Reels", grouped.reels)}
+      ${inboxSectionMarkup("Content", grouped.content)}
     </div>
   `;
   elements.draftDetail.innerHTML = `
     <div class="detail-grid">
       <section class="section">
         <h3>Approval Pipeline</h3>
-        <div class="detail-preview">Здесь собраны все draft'ы, которые ещё не утверждены. Открой, переведи в in_review или сразу согласуй.</div>
+        <div class="detail-preview">Inbox показывает, что именно ждёт review, и почему: новый draft, item из плана или reels-черновик.</div>
       </section>
     </div>
   `;
+
+  const inboxKindFilter = document.getElementById("inboxKindFilter");
+  if (inboxKindFilter) {
+    inboxKindFilter.addEventListener("change", async () => {
+      state.inboxKind = inboxKindFilter.value;
+      await loadInbox();
+    });
+  }
+
 
   elements.draftList.querySelectorAll("[data-inbox-open]").forEach((button) => {
     button.addEventListener("click", async () => {

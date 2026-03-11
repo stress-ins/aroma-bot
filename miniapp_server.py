@@ -329,11 +329,12 @@ async def generate_plan(_: None = Depends(_require_auth)):
 
 
 @app.get("/api/inbox")
-async def inbox(limit: int = Query(default=50, ge=1, le=200), _: None = Depends(_require_auth)):
-    items = list_inbox_items(limit=limit)
+async def inbox(limit: int = Query(default=50, ge=1, le=200), kind: str = "", _: None = Depends(_require_auth)):
+    items = list_inbox_items(limit=limit, kind_filter=kind)
     return {
         "items": items,
         "total": len(items),
+        "kind": kind.strip().lower() or "all",
     }
 
 
