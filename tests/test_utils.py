@@ -1475,3 +1475,20 @@ class TestMiniAppReelsPolling:
     def test_client_waits_for_all_reels_frames(self):
         source = Path("miniapp/static/app.js").read_text(encoding="utf-8")
         assert "readyFrames < (reel.frame_count || 0)" in source
+
+    def test_bootstrap_does_not_block_first_render_on_reference_access(self):
+        source = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        bootstrap_section = source.split("async function bootstrap() {", 1)[1]
+
+        assert 'if (state.mode === "content") {' in source
+        assert "void loadReferenceAccess();" in source
+        assert "await loadReferenceAccess();" not in bootstrap_section
+        assert 'throw new Error("request_timeout")' in source
+
+    def test_reference_access_timeout_stays_retriable(self):
+        source = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+
+        assert "referenceAccessError" in source
+        assert 'state.referenceAccess = null;' in source
+        assert "renderReferencesUnavailable()" in source
+        assert "reference_access_denied" in source
