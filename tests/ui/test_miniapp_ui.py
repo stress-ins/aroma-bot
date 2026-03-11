@@ -357,6 +357,7 @@ def test_carousel_detail_shows_prompt_copy_buttons(page):
     page.wait_for_timeout(300)
 
     assert page.get_by_role("button", name="Скопировать промпт слайда").count() >= 1
+    assert page.get_by_role("button", name="Сохранить текст слайда").count() >= 1
     assert page.locator(".slide").count() >= 2
 
 

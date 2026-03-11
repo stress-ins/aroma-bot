@@ -841,6 +841,7 @@ from bot.services import drafts_store as drafts_store_module
 from bot.services import reels_assets as reels_assets_module
 from bot.services.drafts_store import save_draft
 from bot.services.reels_assets import regenerate_reels_frame_asset
+from bot.services.carousel_assets import update_carousel_slide_text
 from bot.services.mini_app import build_draft_tab
 from bot.handlers.miniapp_bridge import parse_webapp_payload
 from bot.services.plans_store import PlanRecord
@@ -1380,11 +1381,37 @@ class TestMiniAppRussianLocale:
         assert "JSON</h3>" not in app_js
         assert "Перегенерировать все" in app_js
         assert "Учесть замечание" in app_js
+        assert "Сохранить текст слайда" in app_js
+        assert "Текст слайда" in app_js
         assert "Скачать PPTX" in app_js
         assert "sendDraftToChat" in app_js
         assert "bindSwipeBack" in app_js
         assert "/api/carousel/{draft_id}/pptx" in server_py
         assert "/api/carousel/{draft_id}/slides/{slide_index}/regenerate" in server_py
+        assert "/api/carousel/{draft_id}/slides/{slide_index}/text" in server_py
+
+
+class TestMiniAppCarousel:
+    async def test_update_carousel_slide_text_returns_none_for_missing(self):
+        assert await update_carousel_slide_text("missing-id", 0, "Новый слайд") is None
+
+    async def test_update_carousel_slide_text_updates_payload(self):
+        draft = await save_draft(
+            kind="carousel",
+            topic="Вечерний ритуал",
+            source="/carousel",
+            payload={
+                "slides": ["Старый текст", "Второй слайд"],
+                "img_prompts": ["prompt-1", "prompt-2"],
+                "img_prompt_notes": ["", ""],
+            },
+        )
+
+        payload = await update_carousel_slide_text(draft.draft_id, 0, "Новый текст слайда")
+
+        assert payload is not None
+        assert payload["slides"][0] == "Новый текст слайда"
+        assert payload["slides"][1] == "Второй слайд"
 class TestMiniAppReels:
     async def test_serialize_reels_draft_returns_none_for_missing(self):
         assert await serialize_reels_draft("missing-id") is None
