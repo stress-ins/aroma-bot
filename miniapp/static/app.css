@@ -260,6 +260,17 @@ textarea,
   padding: 11px 13px;
   background: var(--surface-2);
   text-align: left;
+  cursor: pointer;
+  transition: transform 0.1s, border-color 0.15s, background 0.15s;
+}
+
+.create-card:active {
+  transform: scale(0.98);
+}
+
+.create-card.active {
+  border-color: var(--brand-border);
+  background: var(--brand-bg);
 }
 
 .draft-kind {
