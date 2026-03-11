@@ -222,6 +222,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 /* ── Draft list ──────────────────────────────────────────────────────────── */
 .draft-list { display: flex; flex-direction: column; gap: 8px; }
+.create-list { display: flex; flex-direction: column; gap: 8px; }
 
 .draft-card {
   border: 1px solid var(--border);
@@ -233,6 +234,13 @@ button, input, select, textarea { font: inherit; color: inherit; }
 }
 .draft-card:hover  { border-color: var(--brand-border); }
 .draft-card.active { border-color: var(--brand-border); background: var(--brand-bg); }
+
+.create-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 11px 13px;
+  background: var(--surface-2);
+}
 
 .draft-kind {
   font-size: 11px;
@@ -343,6 +351,33 @@ button, input, select, textarea { font: inherit; color: inherit; }
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   color: var(--text);
+}
+
+.create-form {
+  display: grid;
+  gap: 12px;
+}
+
+.create-form textarea,
+.create-form select {
+  width: 100%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.create-form textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
 }
 
 .json-block {

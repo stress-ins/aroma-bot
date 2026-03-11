@@ -804,8 +804,16 @@ class TestStoryboardParser:
 # ---------------------------------------------------------------------------
 
 from bot.agents.planner import _PLAN_PROMPT, _BRAND_CONTEXT
+from bot.agents.content import ContentDraft
 from bot.handlers.planner import _parse_plan_entries
+from bot.agents.reels_agent import StoryboardFrame
 from bot.services.drafts_store import DraftRecord
+from bot.services.miniapp_generator import (
+    build_content_payload,
+    build_reels_payload,
+    is_valid_content_format,
+    is_valid_content_goal,
+)
 from bot.services.miniapp_presenter import filter_drafts, payload_preview, serialize_draft
 from bot.services.miniapp_keywords import field_labels, serialize_topics
 from bot.services.miniapp_plans import serialize_plan
@@ -976,6 +984,46 @@ class TestMiniAppKeywords:
         assert len(topics) >= 1
         assert "name" in topics[0]
         assert "fields" in topics[0]
+
+
+class TestMiniAppGenerator:
+    def test_validates_content_goal_and_format(self):
+        assert is_valid_content_goal("trust") is True
+        assert is_valid_content_goal("unknown") is False
+        assert is_valid_content_format("threads") is True
+        assert is_valid_content_format("carousel") is False
+
+    def test_build_content_payload_keeps_text_fields(self):
+        payload = build_content_payload(
+            ContentDraft(
+                angle="Через перегрузку",
+                hook="Тело не выключается вечером",
+                caption="Текст поста",
+                cta="Напиши, если откликается",
+                hashtags="#aroma",
+                visual_prompt="warm still life",
+                slides=["one", "two"],
+            )
+        )
+
+        assert payload["caption"] == "Текст поста"
+        assert payload["slides"] == ["one", "two"]
+
+    def test_build_reels_payload_serializes_storyboard(self):
+        frames = [
+            StoryboardFrame(
+                timecode="0-3 сек",
+                scene="Свеча и флакон",
+                angle="Макро",
+                gemini_prompt="warm candle and bottle",
+            )
+        ]
+
+        payload = build_reels_payload("Вечерний ритуал", "Сценарий", frames)
+
+        assert payload["scenario"] == "Сценарий"
+        assert payload["images_ready"] == 0
+        assert payload["storyboard"][0]["scene"] == "Свеча и флакон"
 
 
 class TestMiniAppPlans:

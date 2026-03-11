@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import hmac
 import urllib.parse
@@ -10,7 +11,19 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from bot.agents import generate_content_draft
+from bot.agents.planner import generate_plan_sync
+from bot.agents.reels_agent import generate_reels_director_sync, generate_reels_scenario_sync
+from bot.handlers.planner import _parse_plan_entries
+from bot.handlers.threads import _format_trends
 from bot.services.drafts_store import get_draft, list_recent_drafts, update_draft
+from bot.services.drafts_store import save_draft
+from bot.services.miniapp_generator import (
+    build_content_payload,
+    build_reels_payload,
+    is_valid_content_format,
+    is_valid_content_goal,
+)
 from bot.services.miniapp_keywords import add_keyword, delete_keyword, field_labels, serialize_topics
 from bot.services.miniapp_plans import serialize_plan
 from bot.services.miniapp_presenter import filter_drafts, serialize_draft
@@ -20,7 +33,7 @@ from bot.services.miniapp_reels import (
     update_reels_frame_note,
     update_reels_frame_prompt,
 )
-from bot.services.plans_store import get_plan, list_recent_plans
+from bot.services.plans_store import get_plan, list_recent_plans, save_plan
 from config import settings
 
 
@@ -73,6 +86,16 @@ class ReelsFrameNotePayload(BaseModel):
 
 class ReelsFramePromptPayload(BaseModel):
     prompt: str = Field(default="")
+
+
+class CreateContentPayload(BaseModel):
+    topic: str = Field(default="")
+    goal_key: str = Field(default="")
+    format_key: str = Field(default="")
+
+
+class CreateReelsPayload(BaseModel):
+    topic: str = Field(default="")
 
 
 @app.get("/")
@@ -160,6 +183,93 @@ async def status():
         "timezone": settings.timezone,
         "mini_app_url": settings.mini_app_url,
     }
+
+
+@app.post("/api/generate/content")
+async def generate_content(payload: CreateContentPayload, _: None = Depends(_require_auth)):
+    if not settings.anthropic_api_key:
+        raise HTTPException(status_code=400, detail="anthropic_not_configured")
+
+    topic = payload.topic.strip()
+    goal_key = payload.goal_key.strip().lower()
+    format_key = payload.format_key.strip().lower()
+
+    if not topic:
+        raise HTTPException(status_code=400, detail="empty_topic")
+    if not is_valid_content_goal(goal_key):
+        raise HTTPException(status_code=400, detail="invalid_goal")
+    if not is_valid_content_format(format_key):
+        raise HTTPException(status_code=400, detail="invalid_format")
+
+    draft = await generate_content_draft(topic, goal_key, format_key)
+    saved = save_draft(
+        kind=format_key,
+        topic=topic,
+        source="/miniapp",
+        payload=build_content_payload(draft),
+    )
+    return serialize_draft(saved)
+
+
+@app.post("/api/generate/reels")
+async def generate_reels(payload: CreateReelsPayload, _: None = Depends(_require_auth)):
+    if not settings.anthropic_api_key:
+        raise HTTPException(status_code=400, detail="anthropic_not_configured")
+
+    topic = payload.topic.strip()
+    if not topic:
+        raise HTTPException(status_code=400, detail="empty_topic")
+
+    loop = asyncio.get_event_loop()
+    scenario = await loop.run_in_executor(None, generate_reels_scenario_sync, topic)
+    frames = await loop.run_in_executor(None, generate_reels_director_sync, topic, scenario)
+    saved = save_draft(
+        kind="reels",
+        topic=topic,
+        source="/miniapp",
+        payload=build_reels_payload(topic, scenario, frames),
+    )
+    draft = serialize_reels_draft(saved.draft_id)
+    if not draft:
+        raise HTTPException(status_code=500, detail="reels_not_saved")
+    return draft
+
+
+@app.post("/api/generate/plan")
+async def generate_plan(_: None = Depends(_require_auth)):
+    if not settings.anthropic_api_key:
+        raise HTTPException(status_code=400, detail="anthropic_not_configured")
+
+    from analytics.aggregator import collect_all
+    from cache.store import cache
+
+    results = cache.get("results")
+    if not results:
+        results = await collect_all()
+        cache.set("results", results)
+
+    trends_text = _format_trends(results)
+    loop = asyncio.get_event_loop()
+    raw_plan = await loop.run_in_executor(None, generate_plan_sync, trends_text)
+    if not raw_plan:
+        raise HTTPException(status_code=500, detail="plan_generation_failed")
+
+    entries = _parse_plan_entries(raw_plan)
+    record = save_plan(
+        raw_text=raw_plan,
+        entries=[
+            {
+                "day_label": entry.day_label,
+                "platform": entry.platform,
+                "format_label": entry.format_label,
+                "goal": entry.goal,
+                "topic": entry.topic,
+                "angle": entry.angle,
+            }
+            for entry in entries
+        ],
+    )
+    return serialize_plan(record)
 
 
 @app.get("/api/plans")
