@@ -1,6 +1,8 @@
 """Tests for utility functions: message splitting, dash fixing, topic/carousel parsing."""
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 
@@ -1162,6 +1164,28 @@ class TestMiniAppBridge:
 
     def test_parse_webapp_payload_rejects_bad_json(self):
         assert parse_webapp_payload("not-json") is None
+
+
+class TestMiniAppRussianLocale:
+    def test_index_selects_and_tabs_use_russian_labels(self):
+        index_html = Path("miniapp/index.html").read_text(encoding="utf-8")
+
+        assert ">Тредс<" in index_html
+        assert ">Инстаграм<" in index_html
+        assert ">Телеграм<" in index_html
+        assert ">Рилсы<" in index_html
+        assert 'data-tab="reels"' in index_html
+        assert ">Reels<" not in index_html
+
+    def test_create_workspace_dropdowns_use_russian_labels(self):
+        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+
+        assert '<option value="threads">Тредс</option>' in app_js
+        assert '<option value="instagram">Инстаграм</option>' in app_js
+        assert '<option value="telegram">Телеграм</option>' in app_js
+        assert '<option value="threads">Threads</option>' not in app_js
+        assert '<option value="instagram">Instagram</option>' not in app_js
+        assert '<option value="telegram">Telegram</option>' not in app_js
 
 
 class TestMiniAppReels:
