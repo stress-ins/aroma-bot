@@ -809,7 +809,7 @@ from bot.services.drafts_store import DraftRecord
 from bot.services.miniapp_presenter import filter_drafts, payload_preview, serialize_draft
 from bot.services.miniapp_keywords import field_labels, serialize_topics
 from bot.services.miniapp_plans import serialize_plan
-from bot.services.miniapp_reels import serialize_reels_draft
+from bot.services.miniapp_reels import serialize_reels_draft, update_reels_frame_note
 from bot.services.plans_store import PlanRecord
 
 
@@ -1002,6 +1002,9 @@ class TestMiniAppPlans:
 class TestMiniAppReels:
     def test_serialize_reels_draft_returns_none_for_missing(self):
         assert serialize_reels_draft("missing-id") is None
+
+    def test_update_reels_frame_note_returns_none_for_missing(self):
+        assert update_reels_frame_note("missing-id", 0, "темнее") is None
 
 
 # ---------------------------------------------------------------------------
