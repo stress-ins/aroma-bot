@@ -168,7 +168,7 @@ function renderSlides(slides = [], prompts = [], slideImages = []) {
                 <div class="prompt-card">
                   <div class="detail-preview prompt-preview">${escapeHtml(promptItems[index])}</div>
                   <div class="actions-row prompt-actions">
-                    <button class="secondary-button" type="button" onclick='copyText(${JSON.stringify(String(promptItems[index]))})'>Скопировать промпт</button>
+                    <button class="secondary-button" type="button" onclick='copyText(${JSON.stringify(String(promptItems[index]))})'>Скопировать промпт слайда</button>
                   </div>
                 </div>
               ` : ""}
@@ -780,11 +780,16 @@ function renderDraftDetail(d) {
       ${payloadSection("Угол", p.angle)}
       ${payloadSection("Текст", mainText)}
       ${payloadSection("CTA", p.cta)}
-      ${renderSlides(p.slides, p.img_prompts)}
+      ${renderSlides(p.slides, p.img_prompts, p.slide_images)}
       ${promptSection("Промпт для изображения", p.visual_prompt)}
       <section class="section"><h3>JSON</h3><pre class="json-block">${escapeHtml(JSON.stringify(p, null, 2))}</pre></section>
     </div>
   `;
+  if (d.kind === "carousel") {
+    const readyCount = (p.slide_images || []).filter(Boolean).length;
+    const slideCount = (p.slides || []).length;
+    if (readyCount < slideCount) scheduleCarouselRefresh(d.draft_id);
+  }
 }
 
 function renderEmptyDetail() {

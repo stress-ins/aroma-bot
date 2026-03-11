@@ -25,6 +25,7 @@ from bot.services.miniapp_content_review import (
 from bot.services.miniapp_references import enrich_reference_card, get_reference_card, list_reference_cards, update_reference_card
 from bot.services.miniapp_plan_actions import normalize_plan_format, normalize_plan_goal
 from bot.services.reels_assets import ASSETS_DIR, populate_reels_frame_assets, regenerate_reels_frame_asset
+from bot.services.carousel_assets import CAROUSEL_ASSETS_DIR, populate_carousel_slide_assets
 from bot.services.drafts_store import get_draft, list_recent_drafts, update_draft
 from bot.services.drafts_store import save_draft
 from bot.services.miniapp_generator import (
@@ -51,6 +52,7 @@ from config import settings
 BASE_DIR = Path(__file__).parent
 MINIAPP_DIR = BASE_DIR / "miniapp"
 STATIC_DIR = MINIAPP_DIR / "static"
+REFERENCE_IMAGES_DIR = BASE_DIR / "assets" / "reference_images"
 
 
 def _verify_init_data(init_data: str) -> bool:
@@ -98,6 +100,8 @@ app = FastAPI()
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="miniapp-static")
 app.mount("/generated/reels_assets", StaticFiles(directory=ASSETS_DIR), name="reels-generated-assets")
+app.mount("/generated/carousel_assets", StaticFiles(directory=CAROUSEL_ASSETS_DIR), name="carousel-generated-assets")
+app.mount("/reference-images", StaticFiles(directory=REFERENCE_IMAGES_DIR), name="reference-images")
 
 
 class DraftStatusPayload(BaseModel):
@@ -386,7 +390,11 @@ async def generate_reels(
 
 
 @app.post("/api/generate/carousel")
-async def generate_carousel(payload: CreateCarouselPayload, _: None = Depends(_require_auth)):
+async def generate_carousel(
+    payload: CreateCarouselPayload,
+    background_tasks: BackgroundTasks,
+    _: None = Depends(_require_auth),
+):
     if not settings.anthropic_api_key:
         raise HTTPException(status_code=400, detail="anthropic_not_configured")
 
@@ -395,7 +403,7 @@ async def generate_carousel(payload: CreateCarouselPayload, _: None = Depends(_r
         raise HTTPException(status_code=400, detail="empty_topic")
 
     loop = asyncio.get_running_loop()
-    slides, img_prompts = await loop.run_in_executor(None, _generate_carousel_sync, topic)
+    slides, img_prompts, arc = await loop.run_in_executor(None, _generate_carousel_sync, topic)
     if not slides:
         raise HTTPException(status_code=500, detail="carousel_generation_failed")
 
@@ -403,9 +411,24 @@ async def generate_carousel(payload: CreateCarouselPayload, _: None = Depends(_r
         kind="carousel",
         topic=topic,
         source="/miniapp",
-        payload={"slides": slides, "img_prompts": img_prompts},
+        payload={
+            "slides": slides,
+            "img_prompts": img_prompts,
+            "arc": arc,
+            "slide_images": [],
+            "images_ready": 0,
+        },
     )
+    background_tasks.add_task(populate_carousel_slide_assets, saved.draft_id)
     return await serialize_draft(saved)
+
+
+@app.get("/api/carousel/{draft_id}")
+async def get_carousel(draft_id: str, _: None = Depends(_require_auth)):
+    draft = await get_draft(draft_id)
+    if not draft or draft.kind != "carousel":
+        raise HTTPException(status_code=404, detail="carousel_not_found")
+    return await serialize_draft(draft)
 
 
 @app.post("/api/generate/plan")
