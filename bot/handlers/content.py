@@ -19,6 +19,7 @@ from bot.agents import (
 from config import settings
 from bot.handlers.threads_manager import publish_threads_keyboard, threads_api_enabled
 from bot.services.drafts_store import save_draft, update_draft
+from bot.services.mini_app import append_mini_app_button
 
 logger = logging.getLogger(__name__)
 
@@ -312,9 +313,16 @@ async def cb_content(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
             await query.message.reply_text("❌ Черновик не найден. Сгенерируй контент заново.")
             return
         updated = update_draft(draft_id, status="approved", payload=draft)
+        resolved_draft_id = updated.draft_id if updated else draft_id
         await query.message.reply_text(
-            f"✅ Черновик согласован.\n🗂 Draft ID: {(updated.draft_id if updated else draft_id)}\n"
-            f"Позже оцени результат через /drafts {(updated.draft_id if updated else draft_id)}"
+            f"✅ Черновик согласован.\n🗂 Draft ID: {resolved_draft_id}\n"
+            f"Позже оцени результат через /drafts {resolved_draft_id}",
+            reply_markup=append_mini_app_button(
+                None,
+                label="🧭 Открыть Draft в Mini App",
+                draft_id=str(resolved_draft_id),
+                tab="drafts",
+            ),
         )
         return
 
@@ -389,7 +397,15 @@ async def _generate_and_show_draft(
         "slides": draft.slides,
     }
     message = format_content_message(draft, topic, goal_key, format_key)
-    await msg.reply_text(f"{message}\n\n🗂 Draft ID: {saved.draft_id}", reply_markup=_draft_keyboard())
+    await msg.reply_text(
+        f"{message}\n\n🗂 Draft ID: {saved.draft_id}",
+        reply_markup=append_mini_app_button(
+            _draft_keyboard(),
+            label="🧭 Открыть Draft в Mini App",
+            draft_id=saved.draft_id,
+            tab="drafts",
+        ),
+    )
 
     # Threads publish button
     if format_key == "threads" and draft.caption and threads_api_enabled():
@@ -434,7 +450,12 @@ async def msg_content_prompt(update: Update, context: ContextTypes.DEFAULT_TYPE)
         message = format_content_message(draft, topic, goal_key, format_key)
         await update.message.reply_text(
             f"{message}\n\n🗂 Draft ID: {draft_id}",
-            reply_markup=_draft_keyboard(),
+            reply_markup=append_mini_app_button(
+                _draft_keyboard(),
+                label="🧭 Открыть Draft в Mini App",
+                draft_id=str(draft_id),
+                tab="drafts",
+            ),
         )
         return
 

@@ -17,6 +17,7 @@ from bot.agents.reels_agent import (
 from bot.handlers.threads import _format_trends
 from bot.services.drafts_store import save_draft, update_draft
 from bot.services.gemini_images import generate_gemini_image_sync
+from bot.services.mini_app import append_mini_app_button
 from config import settings
 
 logger = logging.getLogger(__name__)
@@ -288,7 +289,13 @@ async def cb_reels(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             update_draft(draft_id, status="approved")
         await query.message.reply_text(
             f"✅ Reels-черновик согласован.\n🗂 Draft ID: {draft_id}\n"
-            f"Позже оцени результат через /drafts {draft_id}"
+            f"Позже оцени результат через /drafts {draft_id}",
+            reply_markup=append_mini_app_button(
+                None,
+                label="🧭 Открыть Reels в Mini App",
+                draft_id=str(draft_id),
+                tab="reels",
+            ),
         )
         return
 
@@ -368,7 +375,12 @@ async def _build_reels_review(
 
     await status_message.edit_text(
         f"{_reels_result_text(topic, scenario, frames, len(images))}\n\n🗂 Draft ID: {draft_id}",
-        reply_markup=_review_keyboard(),
+        reply_markup=append_mini_app_button(
+            _review_keyboard(),
+            label="🧭 Открыть Reels в Mini App",
+            draft_id=str(draft_id),
+            tab="reels",
+        ),
     )
 
     if images:

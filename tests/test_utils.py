@@ -832,6 +832,7 @@ from bot.services.miniapp_reels import (
     update_reels_frame_prompt,
 )
 from bot.services.reels_assets import regenerate_reels_frame_asset
+from bot.services.mini_app import build_draft_tab
 from bot.services.plans_store import PlanRecord
 
 
@@ -1129,6 +1130,12 @@ class TestMiniAppPlans:
         assert data["plan_id"] == "20260311120000"
         assert len(data["entries"]) == 1
         assert data["entries"][0]["platform"] == "Threads"
+
+
+class TestMiniAppLinks:
+    def test_build_draft_tab_prefers_reels_for_reels(self):
+        assert build_draft_tab("reels") == "reels"
+        assert build_draft_tab("threads") == "drafts"
 
 
 class TestMiniAppReels:
