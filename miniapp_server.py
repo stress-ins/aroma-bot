@@ -33,6 +33,7 @@ from bot.services.carousel_assets import (
     populate_carousel_slide_assets,
     regenerate_all_carousel_slide_assets,
     regenerate_carousel_slide_asset,
+    update_carousel_slide_text,
 )
 from bot.services.drafts_store import get_draft, list_recent_drafts, update_draft
 from bot.services.drafts_store import save_draft
@@ -165,6 +166,10 @@ class CreateCarouselPayload(BaseModel):
 
 class CarouselSlideRegeneratePayload(BaseModel):
     note: str = Field(default="")
+
+
+class CarouselSlideTextPayload(BaseModel):
+    text: str = Field(default="")
 
 
 class PlanGeneratePayload(BaseModel):
@@ -456,6 +461,22 @@ async def regenerate_carousel_slide(
     _: None = Depends(_require_auth),
 ):
     updated_payload = await regenerate_carousel_slide_asset(draft_id, slide_index, note=payload.note)
+    if updated_payload is None:
+        raise HTTPException(status_code=404, detail="carousel_slide_not_found")
+    draft = await get_draft(draft_id)
+    if not draft:
+        raise HTTPException(status_code=404, detail="carousel_not_found")
+    return await serialize_draft(draft)
+
+
+@app.post("/api/carousel/{draft_id}/slides/{slide_index}/text")
+async def update_carousel_slide_copy(
+    draft_id: str,
+    slide_index: int,
+    payload: CarouselSlideTextPayload,
+    _: None = Depends(_require_auth),
+):
+    updated_payload = await update_carousel_slide_text(draft_id, slide_index, payload.text)
     if updated_payload is None:
         raise HTTPException(status_code=404, detail="carousel_slide_not_found")
     draft = await get_draft(draft_id)

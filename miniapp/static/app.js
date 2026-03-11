@@ -147,6 +147,10 @@ function slideNoteId(index) {
   return `carouselSlideNote${index}`;
 }
 
+function slideTextId(index) {
+  return `carouselSlideText${index}`;
+}
+
 function renderSlides(draftId, slides = [], prompts = [], slideImages = [], promptNotes = []) {
   const slideItems = Array.isArray(slides) ? slides : [];
   const promptItems = Array.isArray(prompts) ? prompts : [];
@@ -172,7 +176,10 @@ function renderSlides(draftId, slides = [], prompts = [], slideImages = [], prom
             <article class="slide">
               <strong>Слайд ${index + 1}</strong>
               ${imgHtml}
-              <div class="detail-preview">${escapeHtml(slide)}</div>
+              <label class="prompt-note-field">
+                <span>Текст слайда</span>
+                <textarea id="${slideTextId(index)}" placeholder="Текст для этого слайда">${escapeHtml(slide)}</textarea>
+              </label>
               ${prompt ? `
                 <div class="prompt-card">
                   <div class="detail-preview prompt-preview">${escapeHtml(prompt)}</div>
@@ -181,18 +188,37 @@ function renderSlides(draftId, slides = [], prompts = [], slideImages = [], prom
                     <textarea id="${slideNoteId(index)}" placeholder="Например: теплее свет, крупнее объект, меньше деталей на фоне">${escapeHtml(note)}</textarea>
                   </label>
                   <div class="actions-row prompt-actions">
+                    <button class="secondary-button" type="button" onclick="saveCarouselSlideText(${JSON.stringify(draftId)}, ${index})">Сохранить текст слайда</button>
                     <button class="secondary-button" type="button" onclick='copyText(${JSON.stringify(prompt)})'>Скопировать промпт слайда</button>
                     <button class="secondary-button" type="button" onclick="regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, false)">Перегенерировать</button>
                     <button class="primary-button" type="button" onclick="regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, true)">Учесть замечание</button>
                   </div>
                 </div>
-              ` : ""}
+              ` : `
+                <div class="actions-row prompt-actions">
+                  <button class="secondary-button" type="button" onclick="saveCarouselSlideText(${JSON.stringify(draftId)}, ${index})">Сохранить текст слайда</button>
+                </div>
+              `}
             </article>
           `;
         }).join("")}
       </div>
     </section>
   `;
+}
+
+async function saveCarouselSlideText(draftId, slideIndex) {
+  const textField = document.getElementById(slideTextId(slideIndex));
+  const text = String(textField?.value || "").trim();
+  const draft = await fetchJson(`/api/carousel/${draftId}/slides/${slideIndex}/text`, {
+    method: "POST",
+    body: JSON.stringify({ text }),
+  });
+  state.selected = draft;
+  state.draftId = draft.draft_id;
+  state.drafts = state.drafts.map((item) => item.draft_id === draft.draft_id ? { ...item, ...draft } : item);
+  renderDraftList();
+  renderDraftDetail(draft);
 }
 
 async function regenerateCarouselSlide(draftId, slideIndex, withNote) {
@@ -1019,6 +1045,7 @@ window.updateDraft = async (action, payload) => {
   state.selected = d; renderDraftDetail(d); renderDraftList();
 };
 window.sendDraftToChat = sendDraftToChat;
+window.saveCarouselSlideText = saveCarouselSlideText;
 window.regenerateCarouselSlide = regenerateCarouselSlide;
 window.regenerateCarouselAll = regenerateCarouselAll;
 window.downloadCarouselPptx = downloadCarouselPptx;

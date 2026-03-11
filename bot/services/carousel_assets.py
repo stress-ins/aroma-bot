@@ -190,6 +190,26 @@ async def regenerate_all_carousel_slide_assets(draft_id: str) -> dict[str, objec
     return dict(updated.payload) if updated else None
 
 
+async def update_carousel_slide_text(
+    draft_id: str,
+    slide_index: int,
+    text: str,
+) -> dict[str, object] | None:
+    draft = await get_draft(draft_id)
+    if not draft or draft.kind != "carousel":
+        return None
+
+    slides: list[str] = list(draft.payload.get("slides", []))
+    if slide_index < 0 or slide_index >= len(slides):
+        return None
+
+    slides[slide_index] = text.strip()
+    payload = dict(draft.payload)
+    payload["slides"] = slides
+    updated = await update_draft(draft_id, payload=payload)
+    return dict(updated.payload) if updated else None
+
+
 def load_carousel_slide_images(draft_id: str, slide_images: list[dict | None]) -> list[bytes | None]:
     images: list[bytes | None] = []
     for item in slide_images:
