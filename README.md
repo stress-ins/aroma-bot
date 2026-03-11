@@ -103,6 +103,7 @@ systemctl start aroma-monitor
 | `/threads_account` | Проверка подключенного Threads-аккаунта |
 | `/threads_inbox` | Анализ inbox Threads: бот предлагает, на что стоит ответить, и черновики ответов |
 | `/carousel` | Карусель из 5 слайдов на основе трендов + картинки |
+| `/app` | Открыть Mini App workspace |
 | `/keywords` | Просмотр и редактирование ключевых слов |
 | `/status` | Какие источники активны |
 | `/help` | Список команд |
@@ -231,6 +232,7 @@ playwright install webkit chromium
 ```
 TELEGRAM_BOT_TOKEN=...
 REPORT_TARGET_CHAT_ID=...
+MINI_APP_URL=https://oauth.aromara.ru/miniapp
 ```
 
 Все опции:
