@@ -136,23 +136,7 @@ function bindPress(element, handler) {
   if (!element) {
     return;
   }
-
-  let lastTouchTs = 0;
-
-  element.addEventListener("pointerup", async (event) => {
-    if (event.pointerType !== "touch") {
-      return;
-    }
-    lastTouchTs = Date.now();
-    event.preventDefault();
-    await handler(event);
-  });
-
   element.addEventListener("click", async (event) => {
-    if (Date.now() - lastTouchTs < 700) {
-      event.preventDefault();
-      return;
-    }
     await handler(event);
   });
 }
