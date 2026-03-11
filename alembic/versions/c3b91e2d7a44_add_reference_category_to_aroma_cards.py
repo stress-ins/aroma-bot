@@ -18,9 +18,9 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column("aroma_cards", sa.Column("category", sa.String(length=32), nullable=True))
-    op.execute("UPDATE aroma_cards SET category = 'aroma' WHERE category IS NULL")
-    op.alter_column("aroma_cards", "category", nullable=False)
+    # SQLite doesn't support ALTER COLUMN SET NOT NULL well. 
+    # Adding with a server_default is safer.
+    op.add_column("aroma_cards", sa.Column("category", sa.String(length=32), nullable=False, server_default="aroma"))
     op.create_index(op.f("ix_aroma_cards_category"), "aroma_cards", ["category"], unique=False)
 
 
