@@ -808,6 +808,7 @@ from bot.handlers.planner import _parse_plan_entries
 from bot.services.drafts_store import DraftRecord
 from bot.services.miniapp_presenter import filter_drafts, payload_preview, serialize_draft
 from bot.services.miniapp_keywords import field_labels, serialize_topics
+from bot.services.miniapp_plan_actions import normalize_plan_format, normalize_plan_goal
 from bot.services.miniapp_plans import serialize_plan
 from bot.services.miniapp_reels import (
     serialize_reels_draft,
@@ -979,6 +980,13 @@ class TestMiniAppKeywords:
 
 
 class TestMiniAppPlans:
+    def test_normalize_plan_goal_and_format(self):
+        assert normalize_plan_goal("Вовлечение") == "engagement"
+        assert normalize_plan_goal("Экспертность") == "authority"
+        assert normalize_plan_format({"platform": "Threads", "format_label": "пост"}) == "threads"
+        assert normalize_plan_format({"platform": "Instagram", "format_label": "карусель"}) == "carousel"
+        assert normalize_plan_format({"platform": "Reels", "format_label": "рилс"}) == "reels"
+
     def test_serialize_plan_keeps_entries(self):
         plan = PlanRecord(
             plan_id="20260311120000",

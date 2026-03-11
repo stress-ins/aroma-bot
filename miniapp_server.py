@@ -10,6 +10,10 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from bot.agents import generate_content_draft
+from bot.agents.reels_agent import generate_reels_director_sync, generate_reels_scenario_sync
+from bot.services.drafts_store import save_draft
+from bot.services.miniapp_plan_actions import normalize_plan_format, normalize_plan_goal
 from bot.services.drafts_store import get_draft, list_recent_drafts, update_draft
 from bot.services.miniapp_keywords import add_keyword, delete_keyword, field_labels, serialize_topics
 from bot.services.miniapp_plans import serialize_plan
@@ -73,6 +77,10 @@ class ReelsFrameNotePayload(BaseModel):
 
 class ReelsFramePromptPayload(BaseModel):
     prompt: str = Field(default="")
+
+
+class PlanGeneratePayload(BaseModel):
+    entry_index: int
 
 
 @app.get("/")
@@ -177,6 +185,73 @@ async def plan_detail(plan_id: str):
     if not record:
         raise HTTPException(status_code=404, detail="plan_not_found")
     return serialize_plan(record)
+
+
+@app.post("/api/plans/{plan_id}/generate")
+async def plan_generate(plan_id: str, payload: PlanGeneratePayload, _: None = Depends(_require_auth)):
+    if not settings.anthropic_api_key:
+        raise HTTPException(status_code=400, detail="anthropic_not_configured")
+
+    record = get_plan(plan_id)
+    if not record:
+        raise HTTPException(status_code=404, detail="plan_not_found")
+    if payload.entry_index < 0 or payload.entry_index >= len(record.entries):
+        raise HTTPException(status_code=400, detail="invalid_entry_index")
+
+    entry = dict(record.entries[payload.entry_index])
+    topic = str(entry.get("topic", "")).strip()
+    if not topic:
+        raise HTTPException(status_code=400, detail="empty_topic")
+
+    target = normalize_plan_format(entry)
+    if target == "carousel":
+        raise HTTPException(status_code=400, detail="carousel_not_supported_yet")
+
+    if target == "reels":
+        import asyncio
+
+        loop = asyncio.get_event_loop()
+        scenario = await loop.run_in_executor(None, generate_reels_scenario_sync, topic)
+        frames = await loop.run_in_executor(None, generate_reels_director_sync, topic, scenario)
+        saved = save_draft(
+            kind="reels",
+            topic=topic,
+            source="/plan",
+            payload={
+                "scenario": scenario,
+                "storyboard": [
+                    {
+                        "timecode": frame.timecode,
+                        "scene": frame.scene,
+                        "angle": frame.angle,
+                        "gemini_prompt": frame.gemini_prompt,
+                    }
+                    for frame in frames
+                ],
+                "images_ready": 0,
+            },
+        )
+        draft = serialize_draft(saved)
+        return {"kind": "draft", "draft": draft}
+
+    goal_key = normalize_plan_goal(str(entry.get("goal", "")))
+    content_draft = await generate_content_draft(topic, goal_key, target)
+    saved = save_draft(
+        kind=target,
+        topic=topic,
+        source="/plan",
+        payload={
+            "angle": content_draft.angle,
+            "hook": content_draft.hook,
+            "caption": content_draft.caption,
+            "cta": content_draft.cta,
+            "hashtags": content_draft.hashtags,
+            "visual_prompt": content_draft.visual_prompt,
+            "slides": list(content_draft.slides),
+        },
+    )
+    draft = serialize_draft(saved)
+    return {"kind": "draft", "draft": draft}
 
 
 @app.get("/api/reels")

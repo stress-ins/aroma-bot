@@ -440,6 +440,17 @@ async function openPlan(planId) {
   renderPlanDetail(plan);
 }
 
+async function generateFromPlan(planId, entryIndex) {
+  const response = await fetchJson(`/api/plans/${planId}/generate`, {
+    method: "POST",
+    body: JSON.stringify({ entry_index: entryIndex }),
+  });
+  const draft = response.draft;
+  state.draftId = draft.draft_id;
+  setTab("drafts");
+  await loadDrafts();
+}
+
 function renderPlanDetail(plan) {
   state.selectedPlan = plan;
   elements.draftDetail.innerHTML = `
@@ -451,12 +462,15 @@ function renderPlanDetail(plan) {
       <section class="section">
         <h3>Entries</h3>
         <div class="plan-entries">
-          ${plan.entries.map((entry) => `
+          ${plan.entries.map((entry, index) => `
             <div class="plan-entry">
               <strong>${escapeHtml(entry.day_label || "")}</strong>
               <div>${escapeHtml(entry.platform || "")} / ${escapeHtml(entry.format_label || "")}</div>
               <div>${escapeHtml(entry.topic || "")}</div>
               <div class="meta">${escapeHtml(entry.goal || "")}</div>
+              <div class="actions-row">
+                <button class="secondary-button" type="button" data-plan-generate="${index}">Generate draft</button>
+              </div>
             </div>
           `).join("")}
         </div>
@@ -479,6 +493,12 @@ function renderPlanDetail(plan) {
       </section>
     </div>
   `;
+
+  elements.draftDetail.querySelectorAll("[data-plan-generate]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      await generateFromPlan(plan.plan_id, Number(button.dataset.planGenerate));
+    });
+  });
 }
 
 function keywordFieldMarkup(topicIdx, fieldKey, fieldLabel, words) {
