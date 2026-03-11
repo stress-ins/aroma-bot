@@ -263,11 +263,12 @@ async def cb_plan(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await _generate_reels_from_plan(query.message, context, entry)
         return
     if target == "carousel":
-        await query.message.reply_text(
-            f"📅 {entry.day_label}\n🎠 {entry.topic}\n\n"
-            "Этот пункт плана помечен как карусель.\n"
-            "Следующим этапом я свяжу его с полным /carousel-флоу. Пока можно вручную запустить /carousel."
+        from bot.handlers.carousel import _run_carousel
+
+        status = await query.message.reply_text(
+            f"📅 {entry.day_label}\n🎠 {entry.topic}\n\n⏳ Запускаю полный carousel-flow из плана..."
         )
+        await _run_carousel(query.message, context, entry.topic, status)
         return
 
     await _generate_content_from_plan(query.message, context, entry, target)
