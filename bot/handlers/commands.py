@@ -82,7 +82,7 @@ async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def open_mini_app(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    markup = build_mini_app_markup(label="🧭 Открыть Mini App", tab="drafts")
+    markup = build_mini_app_markup(label="🧭 Открыть Inbox в Mini App", tab="inbox")
     if markup is None:
         await update.message.reply_text(
             "⚠️ Mini App URL пока не настроен.\n\n"
@@ -90,7 +90,7 @@ async def open_mini_app(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         )
         return
     await update.message.reply_text(
-        "🧭 Mini App открыт как рабочая панель для черновиков, review и Reels.",
+        "🧭 Mini App откроет Inbox и дальше даст перейти в drafts, reels и review-очередь.",
         reply_markup=markup,
     )
 

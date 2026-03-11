@@ -15,6 +15,7 @@ from bot.agents.reels_agent import generate_reels_director_sync, generate_reels_
 from bot.handlers.threads import _format_trends
 from bot.services.drafts_store import save_draft, update_draft
 from bot.services.gemini_images import generate_gemini_image_sync
+from bot.services.mini_app import append_mini_app_button
 from bot.services.plans_store import save_plan
 from config import settings
 
@@ -221,7 +222,13 @@ async def cb_plan(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         update_draft(draft_id, status="approved")
         await query.message.reply_text(
             f"✅ Черновик из плана согласован.\n🗂 Draft ID: {draft_id}\n"
-            f"Позже оцени результат через /drafts {draft_id}"
+            f"Позже оцени результат через /drafts {draft_id}",
+            reply_markup=append_mini_app_button(
+                None,
+                label="🧭 Открыть Draft в Mini App",
+                draft_id=draft_id,
+                tab="reels" if str(review.get("mode", "")) == "reels" else "drafts",
+            ),
         )
         return
 
@@ -356,7 +363,12 @@ async def _generate_content_from_plan(message, context: ContextTypes.DEFAULT_TYP
     context.user_data["plan_awaiting_manual_edit"] = None
     await status.edit_text(
         f"{format_content_message(draft, entry.topic, goal_key, format_key)}\n\n🗂 Draft ID: {saved.draft_id}",
-        reply_markup=_content_review_keyboard(),
+        reply_markup=append_mini_app_button(
+            _content_review_keyboard(),
+            label="🧭 Открыть Draft в Mini App",
+            draft_id=saved.draft_id,
+            tab="drafts",
+        ),
     )
 
 
@@ -439,7 +451,12 @@ async def _generate_reels_from_plan(
     context.user_data["plan_awaiting_manual_edit"] = None
     await status.edit_text(
         f"{_reels_result_text(entry.topic, scenario, storyboard_lines, len(images))}\n\n🗂 Draft ID: {draft_id}",
-        reply_markup=_reels_review_keyboard(),
+        reply_markup=append_mini_app_button(
+            _reels_review_keyboard(),
+            label="🧭 Открыть Reels в Mini App",
+            draft_id=draft_id,
+            tab="reels",
+        ),
     )
 
     if images:
@@ -499,7 +516,12 @@ async def msg_plan_manual_edit(update: Update, context: ContextTypes.DEFAULT_TYP
     )
     await update.message.reply_text(
         f"{format_content_message(draft, entry.topic, _normalize_goal(entry.goal), str(review.get('format_key', 'instagram')))}\n\n🗂 Draft ID: {draft_id}",
-        reply_markup=_content_review_keyboard(),
+        reply_markup=append_mini_app_button(
+            _content_review_keyboard(),
+            label="🧭 Открыть Draft в Mini App",
+            draft_id=draft_id,
+            tab="drafts",
+        ),
     )
 
 
