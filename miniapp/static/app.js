@@ -297,6 +297,19 @@ async function saveReelsFrameNote(draftId, frameIndex, note) {
   renderReelsDetail(reel);
 }
 
+async function saveReelsFramePrompt(draftId, frameIndex, prompt) {
+  const reel = await fetchJson(`/api/reels/${draftId}/frames/${frameIndex}/prompt`, {
+    method: "POST",
+    body: JSON.stringify({ prompt }),
+  });
+  state.selectedReels = reel;
+  state.reels = state.reels.map((item) =>
+    item.draft_id === reel.draft_id ? { ...item, ...reel } : item
+  );
+  renderReels();
+  renderReelsDetail(reel);
+}
+
 function renderReelsDetail(reel) {
   state.selectedReels = reel;
   const frames = Array.isArray(reel.frames) ? reel.frames : [];
@@ -341,6 +354,23 @@ function renderReelsDetail(reel) {
               </label>
               <button class="primary-button" type="submit">Сохранить замечание</button>
             </form>
+            <form class="frame-prompt-form" data-frame-prompt-form="${escapeHtml(String(frame.frame_index))}">
+              <label>
+                Gemini prompt
+                <textarea name="prompt" placeholder="Уточни prompt для следующей версии кадра.">${escapeHtml(frame.gemini_prompt || "")}</textarea>
+              </label>
+              <button class="primary-button" type="submit">Сохранить prompt</button>
+            </form>
+            ${(frame.prompt_revisions || []).length ? `
+              <div class="revision-list">
+                ${(frame.prompt_revisions || []).map((revision, index) => `
+                  <div class="revision-item">
+                    <strong>Revision ${index + 1}</strong>
+                    <div>${escapeHtml(revision)}</div>
+                  </div>
+                `).join("")}
+              </div>
+            ` : ""}
           </div>
         </section>
       ` : ""}
@@ -356,6 +386,19 @@ function renderReelsDetail(reel) {
               ${shot.note ? `<div class="meta">Note: ${escapeHtml(shot.note)}</div>` : ""}
             </div>
           `).join("")}
+        </div>
+      </section>
+      <section class="section">
+        <h3>Production Notes</h3>
+        <div class="shot-list">
+          <div class="shot-item">
+            <strong>Required</strong>
+            <div>${(reel.production_notes?.required || []).map((item) => escapeHtml(item)).join("<br />") || "Нет"}</div>
+          </div>
+          <div class="shot-item">
+            <strong>Optional</strong>
+            <div>${(reel.production_notes?.optional || []).map((item) => escapeHtml(item)).join("<br />") || "Нет"}</div>
+          </div>
         </div>
       </section>
       <section class="section">
@@ -378,6 +421,15 @@ function renderReelsDetail(reel) {
       event.preventDefault();
       const note = noteForm.querySelector("textarea[name='note']").value.trim();
       await saveReelsFrameNote(reel.draft_id, state.selectedFrameIndex, note);
+    });
+  }
+
+  const promptForm = elements.draftDetail.querySelector("[data-frame-prompt-form]");
+  if (promptForm) {
+    promptForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const prompt = promptForm.querySelector("textarea[name='prompt']").value.trim();
+      await saveReelsFramePrompt(reel.draft_id, state.selectedFrameIndex, prompt);
     });
   }
 }
