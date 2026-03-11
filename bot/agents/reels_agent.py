@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 
 from config import settings
+
+logger = logging.getLogger(__name__)
 
 _BRAND_CONTEXT = """\
 Ты — сценарист Reels для специалиста по регуляции нервной системы через сенсорные практики \
@@ -106,11 +109,17 @@ class StoryboardFrame:
 
 
 def _parse_storyboard(raw: str) -> list[StoryboardFrame]:
+    normalized_lines: list[str] = []
+    for line in raw.splitlines():
+        probe = line.strip()
+        probe = probe.removeprefix("- ").strip()
+        probe = probe.replace("**", "").replace("__", "").strip()
+        normalized_lines.append(probe)
+
     frames: list[StoryboardFrame] = []
     for i in range(1, 5):
         timecode = scene = angle = prompt = ""
-        for line in raw.splitlines():
-            line = line.strip()
+        for line in normalized_lines:
             if line.startswith(f"КАДР{i}_ТАЙМКОД:"):
                 timecode = line.split(":", 1)[1].strip()
             elif line.startswith(f"КАДР{i}_СЦЕНА:"):
@@ -163,9 +172,21 @@ def generate_reels_director_sync(topic: str, script: str) -> list[StoryboardFram
 
     client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
     prompt = _DIRECTOR_PROMPT.format(topic=topic, script=script)
-    resp = client.messages.create(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=1400,
-        messages=[{"role": "user", "content": prompt}],
-    )
-    return _parse_storyboard(resp.content[0].text.strip())
+    last_raw = ""
+
+    for attempt in range(2):
+        resp = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=1400,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        last_raw = resp.content[0].text.strip()
+        frames = _parse_storyboard(last_raw)
+        if len(frames) >= 4:
+            return frames[:4]
+        logger.warning("Reels director parse returned %d frames on attempt %d", len(frames), attempt + 1)
+
+    logger.warning("Reels director fallback: returning %d parsed frames", len(frames))
+    if last_raw:
+        logger.warning("Reels director raw response preview: %s", last_raw[:800])
+    return frames[:4]
