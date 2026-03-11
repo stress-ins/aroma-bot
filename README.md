@@ -13,6 +13,7 @@
 - продакшен-путь бота на VPS: `/opt/aroma`
 - systemd-сервис бота: `aroma-bot`
 - Threads OAuth callback на VPS: `threads-oauth.service`
+- Mini App на VPS: `aroma-miniapp.service`
 
 Публичный сайт вынесен в отдельный репозиторий:
 
@@ -25,6 +26,7 @@
 
 - `https://aromara.ru` и `https://www.aromara.ru` → `nginx` → `127.0.0.1:3005` → `aromara-site`
 - `https://oauth.aromara.ru` → `nginx` → `127.0.0.1:8090` → `threads-oauth.service`
+- `https://app.aromara.ru` → `nginx` → `127.0.0.1:8091` → `aroma-miniapp.service`
 
 ## CI/CD
 
@@ -232,7 +234,7 @@ playwright install webkit chromium
 ```
 TELEGRAM_BOT_TOKEN=...
 REPORT_TARGET_CHAT_ID=...
-MINI_APP_URL=https://oauth.aromara.ru/miniapp
+MINI_APP_URL=https://app.aromara.ru
 ```
 
 Все опции:
