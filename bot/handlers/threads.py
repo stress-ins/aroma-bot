@@ -8,6 +8,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
 from telegram.ext import ContextTypes, CommandHandler, CallbackQueryHandler
 
+from bot.services.gemini_images import generate_gemini_image_sync
 from config import settings
 from bot.handlers.threads_manager import publish_threads_keyboard, threads_api_enabled
 
@@ -113,24 +114,7 @@ def _claude_post_and_prompt(topic: str) -> tuple[str, str]:
 
 
 def _gemini_image(prompt: str) -> bytes | None:
-    try:
-        from google import genai
-        from google.genai import types
-
-        client = genai.Client(api_key=settings.image_api_key)
-        response = client.models.generate_content(
-            model="gemini-3.1-flash-image-preview",
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                response_modalities=["IMAGE", "TEXT"]
-            ),
-        )
-        for part in response.candidates[0].content.parts:
-            if part.inline_data:
-                return part.inline_data.data
-    except Exception as exc:
-        logger.warning("Gemini image error: %s", str(exc)[:120])
-    return None
+    return generate_gemini_image_sync(prompt, log_context="Gemini image")
 
 
 def _topics_keyboard(topics: list[str]) -> InlineKeyboardMarkup:

@@ -11,6 +11,7 @@ from pathlib import Path
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
 from telegram.ext import ContextTypes, CommandHandler, CallbackQueryHandler, MessageHandler, filters
 
+from bot.services.gemini_images import generate_gemini_image_sync
 from config import settings
 from bot.handlers.threads import _format_trends, _claude_topics, _fix_dashes
 
@@ -373,21 +374,7 @@ def _qa_image_sync(
 # ── Gemini ──────────────────────────────────────────────────────────────────
 
 def _gemini_slide(prompt: str, key_index: int = 0) -> bytes | None:
-    try:
-        from google import genai
-        from google.genai import types
-        client = genai.Client(api_key=settings.image_api_key)
-        response = client.models.generate_content(
-            model="gemini-3.1-flash-image-preview",
-            contents=prompt,
-            config=types.GenerateContentConfig(response_modalities=["IMAGE", "TEXT"]),
-        )
-        for part in response.candidates[0].content.parts:
-            if part.inline_data:
-                return part.inline_data.data
-    except Exception as exc:
-        logger.warning("Gemini carousel error: %s", str(exc)[:160])
-    return None
+    return generate_gemini_image_sync(prompt, log_context="Gemini carousel")
 
 
 # ── PPTX ────────────────────────────────────────────────────────────────────
