@@ -45,13 +45,13 @@ def serialize_inbox_item(record: DraftRecord) -> dict[str, object]:
     }
 
 
-def list_inbox_items(limit: int = 100, kind_filter: str = "all") -> list[dict[str, object]]:
+async def list_inbox_items(limit: int = 100, kind_filter: str = "all") -> list[dict[str, object]]:
     normalized_kind = kind_filter.strip().lower() or "all"
     if normalized_kind not in INBOX_KINDS:
         normalized_kind = "all"
 
     items = []
-    for record in list_recent_drafts(limit=200):
+    for record in await list_recent_drafts(limit=200):
         if not is_review_status(record.status):
             continue
         item = serialize_inbox_item(record)
