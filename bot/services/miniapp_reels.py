@@ -15,6 +15,9 @@ def _build_shot_list(frames: list[dict[str, object]]) -> list[dict[str, object]]
                 "camera": str(frame.get("angle", "")),
                 "action": str(frame.get("scene", "")),
                 "note": str(frame.get("review_note", "")),
+                "asset_ready": bool(
+                    isinstance(frame.get("current_asset"), dict) and frame["current_asset"].get("url")
+                ),
             }
         )
     return shots

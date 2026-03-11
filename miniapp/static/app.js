@@ -722,6 +722,7 @@ function renderReelsDetail(reel) {
               <div>${escapeHtml(shot.timecode || "")}</div>
               <div>${escapeHtml(shot.action || "")}</div>
               <div class="meta">${escapeHtml(shot.camera || "")}</div>
+              <div class="meta">${shot.asset_ready ? "Asset ready" : "Asset missing"}</div>
               ${shot.note ? `<div class="meta">Note: ${escapeHtml(shot.note)}</div>` : ""}
             </div>
           `).join("")}

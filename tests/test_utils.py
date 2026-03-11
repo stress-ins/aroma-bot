@@ -831,6 +831,9 @@ from bot.services.miniapp_reels import (
     update_reels_frame_note,
     update_reels_frame_prompt,
 )
+from bot.services import drafts_store as drafts_store_module
+from bot.services import reels_assets as reels_assets_module
+from bot.services.drafts_store import save_draft
 from bot.services.reels_assets import regenerate_reels_frame_asset
 from bot.services.mini_app import build_draft_tab
 from bot.handlers.miniapp_bridge import parse_webapp_payload
@@ -1176,6 +1179,68 @@ class TestMiniAppReels:
 
     def test_regenerate_reels_frame_asset_returns_none_for_missing(self):
         assert regenerate_reels_frame_asset("missing-id", 0) is None
+
+    def test_build_reels_export_payload_counts_ready_frames(self, monkeypatch, tmp_path):
+        monkeypatch.setattr(drafts_store_module, "_DRAFTS_FILE", tmp_path / "drafts.json")
+        draft = save_draft(
+            kind="reels",
+            topic="Вечерний ритуал",
+            source="/reels",
+            payload={
+                "scenario": "Сценарий",
+                "images_ready": 1,
+                "storyboard": [
+                    {
+                        "timecode": "0-3 сек",
+                        "scene": "Свеча и флакон",
+                        "angle": "Макро",
+                        "gemini_prompt": "warm candle and bottle",
+                        "current_asset": {"url": "/generated/reels_assets/test/frame_1.png"},
+                    },
+                    {
+                        "timecode": "3-10 сек",
+                        "scene": "Руки на ткани",
+                        "angle": "Средний план",
+                        "gemini_prompt": "hands over linen",
+                    },
+                ],
+            },
+        )
+        payload = build_reels_export_payload(draft.draft_id)
+        assert payload is not None
+        assert payload["ready_frames"] == 1
+        assert payload["export_summary"]["missing_assets"] == 1
+
+    def test_regenerate_reels_frame_asset_updates_current_asset(self, monkeypatch, tmp_path):
+        monkeypatch.setattr(drafts_store_module, "_DRAFTS_FILE", tmp_path / "drafts.json")
+        monkeypatch.setattr(reels_assets_module, "ASSETS_DIR", tmp_path / "reels_assets")
+        monkeypatch.setattr(
+            reels_assets_module,
+            "generate_gemini_image_sync",
+            lambda prompt, log_context="": b"fake-image-bytes",
+        )
+        draft = save_draft(
+            kind="reels",
+            topic="Вечерний ритуал",
+            source="/reels",
+            payload={
+                "scenario": "Сценарий",
+                "images_ready": 0,
+                "storyboard": [
+                    {
+                        "timecode": "0-3 сек",
+                        "scene": "Свеча и флакон",
+                        "angle": "Макро",
+                        "gemini_prompt": "warm candle and bottle",
+                    }
+                ],
+            },
+        )
+        payload = regenerate_reels_frame_asset(draft.draft_id, 0)
+        assert payload is not None
+        current_asset = payload["storyboard"][0]["current_asset"]
+        assert current_asset["url"].startswith("/generated/reels_assets/")
+        assert payload["images_ready"] == 1
 
 
 # ---------------------------------------------------------------------------
