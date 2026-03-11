@@ -345,6 +345,23 @@ button, input, select, textarea { font: inherit; color: inherit; }
   color: var(--text);
 }
 
+.content-review-form {
+  display: grid;
+  gap: 10px;
+}
+
+.content-review-form textarea {
+  width: 100%;
+  min-height: 72px;
+  resize: vertical;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  padding: 9px 12px;
+  font-size: 14px;
+  color: var(--text);
+}
+
 .json-block {
   font-family: "SF Mono", "Fira Code", monospace;
   font-size: 12px;

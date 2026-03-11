@@ -805,6 +805,11 @@ class TestStoryboardParser:
 
 from bot.agents.planner import _PLAN_PROMPT, _BRAND_CONTEXT
 from bot.handlers.planner import _parse_plan_entries
+from bot.services.miniapp_content_review import (
+    is_content_review_draft,
+    polish_content_review_draft,
+    update_content_review_draft,
+)
 from bot.services.drafts_store import DraftRecord
 from bot.services.miniapp_presenter import filter_drafts, payload_preview, serialize_draft
 from bot.services.miniapp_keywords import field_labels, serialize_topics
@@ -976,6 +981,27 @@ class TestMiniAppKeywords:
         assert len(topics) >= 1
         assert "name" in topics[0]
         assert "fields" in topics[0]
+
+
+class TestMiniAppContentReview:
+    def test_recognizes_supported_content_kinds(self):
+        assert is_content_review_draft("threads") is True
+        assert is_content_review_draft("carousel") is False
+
+    def test_update_content_review_draft_returns_none_for_missing(self):
+        assert update_content_review_draft(
+            "missing-id",
+            topic="topic",
+            angle="angle",
+            hook="hook",
+            caption="caption",
+            cta="cta",
+            hashtags="#tag",
+            visual_prompt="warm visual",
+        ) is None
+
+    def test_polish_content_review_draft_returns_none_for_missing(self):
+        assert polish_content_review_draft("missing-id") is None
 
 
 class TestMiniAppPlans:

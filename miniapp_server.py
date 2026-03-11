@@ -10,6 +10,10 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from bot.services.miniapp_content_review import (
+    polish_content_review_draft,
+    update_content_review_draft,
+)
 from bot.services.drafts_store import get_draft, list_recent_drafts, update_draft
 from bot.services.miniapp_keywords import add_keyword, delete_keyword, field_labels, serialize_topics
 from bot.services.miniapp_plans import serialize_plan
@@ -59,6 +63,16 @@ class DraftStatusPayload(BaseModel):
 
 class DraftFeedbackPayload(BaseModel):
     feedback: str
+
+
+class DraftContentPayload(BaseModel):
+    topic: str = Field(default="")
+    angle: str = Field(default="")
+    hook: str = Field(default="")
+    caption: str = Field(default="")
+    cta: str = Field(default="")
+    hashtags: str = Field(default="")
+    visual_prompt: str = Field(default="")
 
 
 class KeywordPayload(BaseModel):
@@ -132,6 +146,39 @@ async def update_feedback(draft_id: str, payload: DraftFeedbackPayload, _: None 
     if feedback not in {"", "worked", "missed"}:
         raise HTTPException(status_code=400, detail="invalid_feedback")
     draft = update_draft(draft_id, feedback=feedback)
+    if not draft:
+        raise HTTPException(status_code=404, detail="draft_not_found")
+    return serialize_draft(draft)
+
+
+@app.post("/api/drafts/{draft_id}/content")
+async def update_content(draft_id: str, payload: DraftContentPayload, _: None = Depends(_require_auth)):
+    updated = update_content_review_draft(
+        draft_id,
+        topic=payload.topic,
+        angle=payload.angle,
+        hook=payload.hook,
+        caption=payload.caption,
+        cta=payload.cta,
+        hashtags=payload.hashtags,
+        visual_prompt=payload.visual_prompt,
+    )
+    if not updated:
+        raise HTTPException(status_code=404, detail="content_draft_not_found")
+    draft = get_draft(draft_id)
+    if not draft:
+        raise HTTPException(status_code=404, detail="draft_not_found")
+    return serialize_draft(draft)
+
+
+@app.post("/api/drafts/{draft_id}/content/polish")
+async def polish_content(draft_id: str, _: None = Depends(_require_auth)):
+    if not settings.anthropic_api_key:
+        raise HTTPException(status_code=400, detail="anthropic_not_configured")
+    updated = polish_content_review_draft(draft_id)
+    if not updated:
+        raise HTTPException(status_code=404, detail="content_draft_not_found")
+    draft = get_draft(draft_id)
     if not draft:
         raise HTTPException(status_code=404, detail="draft_not_found")
     return serialize_draft(draft)
