@@ -29,6 +29,10 @@ _FONT_REL_ID = "rIdDeldedaRegular"
 _SLIDE_EMU = 1080 * 9525
 
 # Per-slide visual rules: (narrative role, what to show, what NOT to show)
+# ── Per-arc visual rules ─────────────────────────────────────────────────────
+# Each arc defines per-slide (narrative_role, what_to_show, what_to_forbid).
+# Arc is auto-detected from topic + slide text by _detect_topic_arc_sync().
+
 _SLIDE_VISUAL_RULES: list[tuple[str, str, str]] = [
     (
         "hook — powerful first image that stops scrolling",
@@ -69,6 +73,125 @@ _SLIDE_VISUAL_RULES: list[tuple[str, str, str]] = [
         "Full brand aesthetic. Warm, human, not salesy.",
     ),
 ]
+
+_PLEASURE_VISUAL_RULES: list[tuple[str, str, str]] = [
+    (
+        "hook — irresistible invitation into joy",
+        "golden hour light, sense of motion and freedom, wide open space or landscape, "
+        "warm euphoric atmosphere, light flares, energy and delight",
+        "NO tension, NO dark tones, NO stress imagery, NO urban chaos.",
+    ),
+    (
+        "immersion — diving deeper into the experience",
+        "close sensory detail, warm texture, soft motion blur, organic warmth, "
+        "tactile richness — skin, fabric, natural surface — golden tones",
+        "NO problems, NO clutter, NO cold or muted palette.",
+    ),
+    (
+        "sensation — the peak feeling",
+        "abstract light and motion, golden or amber tones, open negative space, "
+        "euphoric softness, airy and luminous composition",
+        "NO harsh elements. Keep it soft, warm, expansive.",
+    ),
+    (
+        "connection — the intimate personal dimension",
+        "warm terracotta and beige, natural botanicals as sensory anchor, "
+        "gentle close-up, grounding yet joyful, tactile warmth",
+        "Warm brand aesthetic. Intimate but radiant.",
+    ),
+    (
+        "resonance — the feeling lingers",
+        "dried flowers, incense, essential oils, candles — full brand palette, "
+        "soft diffused light, celebratory warmth, open and inviting",
+        "Full brand aesthetic. Joyful, not clinical.",
+    ),
+    (
+        "call to action — share the pleasure",
+        "open hands or gesture of invitation, warm terracotta, sunlit or candlelit, "
+        "intimate and celebratory, soft natural light",
+        "Full brand aesthetic. Human, warm, joyful.",
+    ),
+]
+
+_EDUCATIONAL_VISUAL_RULES: list[tuple[str, str, str]] = [
+    (
+        "introduction — establishing the concept",
+        "clean minimal composition, single botanical element on neutral warm surface, "
+        "soft directional light, calm and inviting, uncluttered",
+        "NO dark tones, NO tension imagery. Stay informational and calm.",
+    ),
+    (
+        "context — the first layer of understanding",
+        "natural material close-up, texture detail in soft focus, "
+        "warm neutrals with terracotta accent, informational calm",
+        "Keep it calm and factual. No brand clutter yet.",
+    ),
+    (
+        "mechanism — how it works",
+        "abstract natural texture, light refraction through botanicals, "
+        "material transformation or layering, warm and minimal",
+        "Transitional mood. Abstract, not decorative.",
+    ),
+    (
+        "example — the concept in practice",
+        "dried herbs, essential oil bottle, terracotta bowl, hands interacting "
+        "with natural objects, soft natural light, brand palette emerging",
+        "Brand aesthetic beginning to show. Calm and demonstrative.",
+    ),
+    (
+        "benefit — the outcome",
+        "open, airy composition, single hero botanical, generous negative space, "
+        "warm terracotta tones, peaceful and resolved",
+        "Full brand aesthetic. Positive, calm, conclusive.",
+    ),
+    (
+        "call to action — apply the knowledge",
+        "hands holding a botanical object, warm terracotta and sage tones, "
+        "intimate and calm, soft natural light, grounded",
+        "Full brand aesthetic. Grounded and inviting.",
+    ),
+]
+
+_ARC_VISUAL_RULES: dict[str, list[tuple[str, str, str]]] = {
+    "problem_solution": _SLIDE_VISUAL_RULES,
+    "pleasure_journey": _PLEASURE_VISUAL_RULES,
+    "educational": _EDUCATIONAL_VISUAL_RULES,
+}
+
+_ARC_DESCRIPTIONS: dict[str, str] = {
+    "problem_solution": (
+        "The carousel follows a problem → solution arc. "
+        "Early slides live in the tension/stress world (dark, urban, unresolved). "
+        "Later slides transition into the brand's sensory remedy (warm, botanical, grounding). "
+        "DO NOT apply the brand aesthetic to early slides."
+    ),
+    "pleasure_journey": (
+        "The carousel celebrates pleasure and joy. "
+        "ALL slides share warm, euphoric, sensory-rich energy — no tension, no dark moments. "
+        "The arc is: invitation → immersion → peak sensation → intimacy → invitation to share. "
+        "Apply warm brand palette throughout, with energy increasing then softening."
+    ),
+    "educational": (
+        "The carousel explains a concept or benefit. "
+        "The visual arc moves from clean and minimal → progressively richer brand aesthetic. "
+        "Tone is calm, informational, and grounding throughout. No drama or tension."
+    ),
+}
+
+_ARC_DETECT_PROMPT = """\
+You are a content strategist. Read the topic and the first 3 slides of an Instagram carousel.
+Determine which emotional arc best fits this content. Choose exactly one:
+
+- problem_solution: content addresses a pain, challenge, stress, or obstacle — starts with tension, ends with relief
+- pleasure_journey: content is about joy, pleasure, excitement, sensory delight, or positive experience — all slides share warm positive energy
+- educational: neutral informational content — explaining concepts, mechanisms, or benefits without strong emotional charge
+
+Topic: {topic}
+
+Slides:
+{slides_text}
+
+Reply with exactly one word: problem_solution, pleasure_journey, or educational"""
 
 # Backward-compat shorthand used elsewhere
 _SLIDE_VISUAL_ROLES = [r[0] for r in _SLIDE_VISUAL_RULES]
@@ -159,16 +282,47 @@ def _claude_carousel_draft(topic: str) -> tuple[list[str], str]:
     return slides, img_prompt
 
 
-def _generate_slide_image_prompts_sync(slides: list[str], topic: str) -> list[str]:
-    """Generate one unique, detailed English image prompt per slide."""
+def _detect_topic_arc_sync(topic: str, slides: list[str]) -> str:
+    """Ask Claude to classify the carousel's emotional arc. Falls back to problem_solution."""
     import anthropic
+    slides_text = "\n".join(f"{i + 1}. {s}" for i, s in enumerate(slides[:3]))
+    prompt_text = _ARC_DETECT_PROMPT.format(topic=topic, slides_text=slides_text)
+    try:
+        client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+        resp = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=10,
+            messages=[{"role": "user", "content": prompt_text}],
+        )
+        arc = resp.content[0].text.strip().lower().replace("-", "_").split()[0]
+        if arc in _ARC_VISUAL_RULES:
+            logger.info("carousel: detected arc=%s for topic=%r", arc, topic)
+            return arc
+    except Exception:
+        logger.exception("carousel: arc detection failed, defaulting to problem_solution")
+    return "problem_solution"
+
+
+def _generate_slide_image_prompts_sync(slides: list[str], topic: str, arc: str | None = None) -> list[str]:
+    """Generate one unique, detailed English image prompt per slide.
+
+    The visual rules and system description adapt to the detected arc so that
+    a pleasure-focused topic never gets the dark 'problem' world in its first slides.
+    """
+    import anthropic
+
+    if arc is None:
+        arc = _detect_topic_arc_sync(topic, slides)
+
+    rules = _ARC_VISUAL_RULES.get(arc, _SLIDE_VISUAL_RULES)
+    arc_description = _ARC_DESCRIPTIONS.get(arc, _ARC_DESCRIPTIONS["problem_solution"])
 
     slides_desc_parts = []
     for i, text in enumerate(slides):
-        if i < len(_SLIDE_VISUAL_RULES):
-            role, show, forbid = _SLIDE_VISUAL_RULES[i]
+        if i < len(rules):
+            role, show, forbid = rules[i]
         else:
-            role, show, forbid = "supporting visual", "brand palette", ""
+            role, show, forbid = "closing visual", "full brand palette, warm tones", ""
         part = (
             f"Slide {i + 1} [{role}]\n"
             f"  Text: {text}\n"
@@ -180,10 +334,7 @@ def _generate_slide_image_prompts_sync(slides: list[str], topic: str) -> list[st
 
     prompt = (
         f'You are an art director for an Instagram carousel on the topic: "{topic}"\n\n'
-        "The carousel follows a narrative arc: problem → mechanism → insight → solution. "
-        "Each slide has its own visual world — early slides live in the problem space "
-        "(tension, stress, urban), later slides enter the brand's sensory world "
-        "(herbs, aromas, terracotta). DO NOT apply the brand aesthetic uniformly.\n\n"
+        f"{arc_description}\n\n"
         "Universal rules:\n"
         "- Palette: terracotta, beige, sage green, warm wood tones\n"
         "- Forbidden everywhere: stock photo look, plastic, harsh shadows, "
@@ -215,13 +366,12 @@ def _generate_slide_image_prompts_sync(slides: list[str], topic: str) -> list[st
                 parsed[i - 1] = line.split(":", 1)[1].strip()
                 break
 
-    # Fallback for any missing slides
     result: list[str] = []
     for i, slide in enumerate(slides):
         if i in parsed:
             result.append(parsed[i])
         else:
-            role_hint = _SLIDE_VISUAL_ROLES[i].split(" — ")[0] if i < len(_SLIDE_VISUAL_ROLES) else "supporting"
+            role_hint = (rules[i][0].split(" — ")[0] if i < len(rules) else "supporting")
             result.append(
                 f"terracotta and sage minimal lifestyle, {slide[:35]}, "
                 f"soft natural light, {role_hint}, dried herbs, "
@@ -230,8 +380,12 @@ def _generate_slide_image_prompts_sync(slides: list[str], topic: str) -> list[st
     return result
 
 
-def _generate_carousel_sync(topic: str) -> tuple[list[str], list[str]]:
-    """Draft → editor → 6 refined slides + per-slide image prompts. Retries once on failure."""
+def _generate_carousel_sync(topic: str) -> tuple[list[str], list[str], str]:
+    """Draft → editor → 6 refined slides + per-slide image prompts + detected arc.
+
+    Returns (slides, img_prompts, arc) where arc is one of:
+    'problem_solution', 'pleasure_journey', 'educational'.
+    """
     from bot.agents.carousel_editor import edit_carousel_sync
     import time
 
@@ -243,22 +397,23 @@ def _generate_carousel_sync(topic: str) -> tuple[list[str], list[str]]:
                 if attempt == 0:
                     time.sleep(3)
                     continue
-                return [], []
+                return [], [], "problem_solution"
             refined = edit_carousel_sync(raw_slides, topic)
             if not refined:
                 logger.warning("edit_carousel_sync empty on attempt %d, topic: %s", attempt + 1, topic)
                 if attempt == 0:
                     time.sleep(3)
                     continue
-                return [], []
-            img_prompts = _generate_slide_image_prompts_sync(refined, topic)
-            return refined, img_prompts
+                return [], [], "problem_solution"
+            arc = _detect_topic_arc_sync(topic, refined)
+            img_prompts = _generate_slide_image_prompts_sync(refined, topic, arc=arc)
+            return refined, img_prompts, arc
         except Exception:
             logger.exception("_generate_carousel_sync attempt %d failed for topic: %s", attempt + 1, topic)
             if attempt == 0:
                 time.sleep(3)
                 continue
-    return [], []
+    return [], [], "problem_solution"
 
 
 # ── Image analysis ──────────────────────────────────────────────────────────
@@ -949,7 +1104,7 @@ async def _run_carousel(query_or_message, context: ContextTypes.DEFAULT_TYPE,
         f"🎠 Тема: {topic}\n\n⏳ Генерирую черновик → прогоняю через редактора..."
     )
 
-    slides, img_prompts = await loop.run_in_executor(
+    slides, img_prompts, arc = await loop.run_in_executor(
         _executor, _generate_carousel_sync, topic
     )
 
@@ -963,6 +1118,7 @@ async def _run_carousel(query_or_message, context: ContextTypes.DEFAULT_TYPE,
 
     context.user_data["ca_slides"]           = slides
     context.user_data["ca_img_prompts"]      = img_prompts
+    context.user_data["ca_arc"]              = arc
     context.user_data["ca_topic"]            = topic
     context.user_data["ca_gemini_images"]    = []
     context.user_data["ca_awaiting_images"]  = False
