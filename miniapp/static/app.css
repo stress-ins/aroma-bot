@@ -725,6 +725,17 @@ button, input, select, textarea { font: inherit; color: inherit; }
   display: block;
 }
 
+.frame-loading {
+  margin-top: 10px;
+  padding: 24px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--text-secondary, #888);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
 /* ── Mobile ──────────────────────────────────────────────────────────────── */
 @media (max-width: 680px) {
   .shell { padding: 8px; gap: 8px; }
