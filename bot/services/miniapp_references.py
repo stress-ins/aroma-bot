@@ -17,6 +17,22 @@ SEED_FILE = BASE_DIR / "data" / "reference_cards_seed.json"
 EXTRA_SEED_FILE = BASE_DIR / "data" / "reference_cards_extra.json"
 REFERENCE_CATEGORIES = {"aroma", "practice", "sound"}
 REFERENCE_IMAGES_DIR = BASE_DIR / "assets" / "reference_images"
+INTERNAL_SEED_KEY = "__seed_payload"
+INTERNAL_OVERRIDES_KEY = "__manual_overrides"
+EDITABLE_FIELDS = (
+    "description",
+    "questions",
+    "nps_effect",
+    "therapeutic_properties",
+    "psychological_properties",
+    "history",
+    "volatility",
+    "botanical_family",
+    "origin_countries",
+    "extraction_method",
+    "key",
+)
+RESOURCE_FIELDS = ("plus", "minus")
 SHARED_IMAGE_OVERRIDES = {
     ("practice", "breath"): "nature.jpg",
     ("practice", "meditation"): "nature.jpg",
@@ -211,7 +227,7 @@ def _source_image(source_type: str, title: str, category: str) -> str:
 
 
 def _serialize_model(model: AromaCardModel) -> dict[str, object]:
-    payload = dict(model.payload or {})
+    payload = _public_payload(model.payload or {})
     payload.setdefault("resource_values", {"plus": "", "minus": ""})
     payload["slug"] = model.slug
     payload["name"] = model.name
@@ -225,6 +241,40 @@ def _serialize_model(model: AromaCardModel) -> dict[str, object]:
     )
     payload["image_alt"] = f"{model.name}: {_image_label(model.category)}"
     return payload
+
+
+def _public_payload(payload: dict[str, object]) -> dict[str, object]:
+    public = dict(payload or {})
+    public.pop(INTERNAL_SEED_KEY, None)
+    public.pop(INTERNAL_OVERRIDES_KEY, None)
+    return public
+
+
+def _seeded_payload(seed_payload: dict[str, object], overrides: set[str] | None = None) -> dict[str, object]:
+    payload = dict(seed_payload)
+    payload[INTERNAL_SEED_KEY] = dict(seed_payload)
+    payload[INTERNAL_OVERRIDES_KEY] = sorted(overrides or set())
+    return payload
+
+
+def _merge_seed_into_existing(existing_payload: dict[str, object], seed_payload: dict[str, object]) -> dict[str, object]:
+    current_public = _public_payload(existing_payload)
+    overrides = set(existing_payload.get(INTERNAL_OVERRIDES_KEY, []))
+    merged = dict(seed_payload)
+
+    for field in EDITABLE_FIELDS:
+        if field in overrides and field in current_public:
+            merged[field] = current_public.get(field, "")
+
+    seed_resources = dict(seed_payload.get("resource_values", {}) or {})
+    current_resources = dict(current_public.get("resource_values", {}) or {})
+    for field in RESOURCE_FIELDS:
+        if f"resource_values.{field}" in overrides:
+            seed_resources[field] = current_resources.get(field, "")
+    if seed_resources:
+        merged["resource_values"] = seed_resources
+
+    return _seeded_payload(merged, overrides)
 
 
 def _local_reference_image_url(category: str, slug: str) -> str | None:
@@ -285,8 +335,9 @@ async def seed_reference_cards_if_empty() -> None:
                 if list(existing.aliases or []) != aliases:
                     existing.aliases = aliases
                     changed = True
-                if dict(existing.payload or {}) != payload:
-                    existing.payload = payload
+                merged_payload = _merge_seed_into_existing(dict(existing.payload or {}), payload)
+                if dict(existing.payload or {}) != merged_payload:
+                    existing.payload = merged_payload
                     changed = True
                 if changed:
                     existing.updated_at = now
@@ -298,7 +349,7 @@ async def seed_reference_cards_if_empty() -> None:
                     name=str(item["name"]),
                     source_type=str(item.get("source_type", "herb")),
                     aliases=aliases,
-                    payload=payload,
+                    payload=_seeded_payload(payload),
                     created_at=now,
                     updated_at=now,
                 )
@@ -345,7 +396,10 @@ async def update_reference_card(category: str, slug: str, payload: dict[str, obj
         model = result.scalar_one_or_none()
         if not model:
             return None
-        current = dict(model.payload or {})
+        stored_payload = dict(model.payload or {})
+        current = _public_payload(stored_payload)
+        seed_payload = dict(stored_payload.get(INTERNAL_SEED_KEY) or current)
+        manual_overrides = set(stored_payload.get(INTERNAL_OVERRIDES_KEY, []))
         resource_values = payload.get("resource_values", {})
         if not isinstance(resource_values, dict):
             resource_values = {}
@@ -368,6 +422,23 @@ async def update_reference_card(category: str, slug: str, payload: dict[str, obj
                 },
             }
         )
+        for field in EDITABLE_FIELDS:
+            if current.get(field, "") == seed_payload.get(field, ""):
+                manual_overrides.discard(field)
+            else:
+                manual_overrides.add(field)
+
+        seed_resources = dict(seed_payload.get("resource_values", {}) or {})
+        current_resources = dict(current.get("resource_values", {}) or {})
+        for field in RESOURCE_FIELDS:
+            path = f"resource_values.{field}"
+            if current_resources.get(field, "") == seed_resources.get(field, ""):
+                manual_overrides.discard(path)
+            else:
+                manual_overrides.add(path)
+
+        current[INTERNAL_SEED_KEY] = seed_payload
+        current[INTERNAL_OVERRIDES_KEY] = sorted(manual_overrides)
         model.payload = current
         model.updated_at = datetime.now(timezone.utc)
         await session.commit()
