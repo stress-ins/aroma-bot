@@ -28,11 +28,11 @@ const MODE_TABS = {
     { id: "drafts", label: "Черновики" },
     { id: "plans", label: "Планы" },
     { id: "reels", label: "Рилсы" },
-  ],
-  handbook: [
-    { id: "aromas", label: "Ароматы" },
     { id: "keywords", label: "Ключи" },
     { id: "status", label: "Статус" },
+  ],
+  handbook: [
+    { id: "aromas", label: "Масла" },
   ],
 };
 
