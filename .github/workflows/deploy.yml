@@ -27,7 +27,7 @@ jobs:
       - name: Push to VPS bare repo
         run: |
           git remote add vps ssh://root@46.32.186.192/opt/aroma.git
-          git push vps HEAD:main
+          git push --force vps HEAD:main
 
       - name: Verify service
         run: ssh root@46.32.186.192 'systemctl is-active aroma-bot'
