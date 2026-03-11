@@ -833,6 +833,7 @@ from bot.services.miniapp_reels import (
 )
 from bot.services.reels_assets import regenerate_reels_frame_asset
 from bot.services.mini_app import build_draft_tab
+from bot.handlers.miniapp_bridge import parse_webapp_payload
 from bot.services.plans_store import PlanRecord
 
 
@@ -1136,6 +1137,17 @@ class TestMiniAppLinks:
     def test_build_draft_tab_prefers_reels_for_reels(self):
         assert build_draft_tab("reels") == "reels"
         assert build_draft_tab("threads") == "drafts"
+
+
+class TestMiniAppBridge:
+    def test_parse_webapp_payload_accepts_open_draft(self):
+        payload = parse_webapp_payload('{"action":"open_draft","draft_id":"abc123"}')
+        assert payload is not None
+        assert payload["action"] == "open_draft"
+        assert payload["draft_id"] == "abc123"
+
+    def test_parse_webapp_payload_rejects_bad_json(self):
+        assert parse_webapp_payload("not-json") is None
 
 
 class TestMiniAppReels:

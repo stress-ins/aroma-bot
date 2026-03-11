@@ -13,6 +13,7 @@ from bot.handlers.adapter import build_adapt_handler
 from bot.handlers.planner import build_plan_handler
 from bot.handlers.reels import build_reels_handler
 from bot.handlers.drafts import build_drafts_handler
+from bot.handlers.miniapp_bridge import build_miniapp_bridge_handler
 from bot.handlers.threads_manager import build_threads_manager_handler
 
 
@@ -31,6 +32,8 @@ def build_application() -> Application:
     app.add_handler(CommandHandler("status", status))
     app.add_handler(CommandHandler("help", help_cmd))
     app.add_handler(CommandHandler("app", open_mini_app))
+    for h in build_miniapp_bridge_handler():
+        app.add_handler(h)
     app.add_handler(build_keywords_handler())
     app.add_handler(CallbackQueryHandler(yt_thumbs_callback, pattern="^yt_thumbs$"))
     for h in build_threads_handler():
