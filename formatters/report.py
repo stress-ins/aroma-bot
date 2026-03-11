@@ -5,7 +5,6 @@ from datetime import datetime
 from analytics.base import SourceResult
 from formatters.sections import format_section, _esc
 from keywords.registry import ALL_HASHTAGS_EN, ALL_HASHTAGS_RU
-from config import settings
 
 # Which source_keys belong to which report
 RU_SOURCE_KEYS = {"google_trends_ru", "youtube_ru", "instagram_ru", "vk", "telegram_channels", "ai_recommendations", "wordstat", "tiktok_ru"}
@@ -43,8 +42,6 @@ def build_report(results: list[SourceResult], lang: str = "ru",
 
     for result in results:
         if result.source_key not in source_keys:
-            continue
-        if not settings.is_source_enabled(result.source_key):
             continue
         if not result.ok:
             continue
