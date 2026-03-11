@@ -1350,6 +1350,15 @@ class TestMiniAppRussianLocale:
         # Ensure CSS handles the 300ms delay/zoom
         assert "touch-action: manipulation;" in app_css
 
+    def test_mobile_detail_swipe_back_allows_full_width_swipe_and_skips_inputs(self):
+        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+
+        assert "function bindSwipeBack" in app_js
+        assert "isInteractiveTarget(event.target)" in app_js
+        assert 'closest("textarea, input, select, button, a, [contenteditable=\'true\']")' in app_js
+        assert "touch.clientX > 36" not in app_js
+        assert "dx > 72" in app_js
+
     def test_handbook_has_separate_reference_tabs(self):
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
     
