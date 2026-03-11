@@ -219,22 +219,36 @@ def _generate_carousel_sync(topic: str) -> tuple[list[str], list[str]]:
 
 def _find_text_zone(img_bytes: bytes) -> tuple[float, float]:
     """Return (top_fraction, height_fraction) for text box placement.
-    Picks the darker image third — lower brightness = better contrast for white text.
+    Scans 5 horizontal bands; picks the calmest (low variance) + darkest one —
+    low variance means no busy detail to compete with text,
+    dark means white text will be readable.
     """
     try:
-        from PIL import Image as _PILImage
-        img = _PILImage.open(io.BytesIO(img_bytes)).convert("L").resize((60, 60))
-        data = list(img.getdata())
-        top_avg = sum(data[:60 * 20]) / (60 * 20)
-        bot_avg = sum(data[60 * 40:]) / (60 * 20)
-        if top_avg < bot_avg - 25:
-            return 0.03, 0.34   # top third is darker
-        elif bot_avg < top_avg - 25:
-            return 0.63, 0.35   # bottom third is darker
-        else:
-            return 0.32, 0.36   # roughly equal → centre
+        from PIL import Image as _PIL, ImageStat, ImageFilter
+        img = _PIL.open(io.BytesIO(img_bytes)).convert("L").resize((90, 90))
+        img = img.filter(ImageFilter.GaussianBlur(2))
+        W, H = img.size  # 90, 90
+        n = 5
+        bh = H // n
+        best_score = float("inf")
+        best_band = 3  # safe default: bottom-ish
+        for b in range(n):
+            band = img.crop((0, b * bh, W, (b + 1) * bh))
+            stat = ImageStat.Stat(band)
+            avg = stat.mean[0]       # 0 = black, 255 = white
+            std = stat.stddev[0]     # 0 = uniform, high = busy
+            # Lower score = better: prefer calm (low std) and dark (low avg)
+            score = std * 1.5 + avg * 0.4
+            if score < best_score:
+                best_score = score
+                best_band = b
+        top_frac = best_band / n + 0.01
+        h_frac   = 1 / n + 0.04          # slightly taller than one band
+        if top_frac + h_frac > 0.97:
+            top_frac = 0.97 - h_frac
+        return top_frac, h_frac
     except Exception:
-        return 0.63, 0.35       # safe default: bottom
+        return 0.63, 0.32  # safe default: lower third
 
 
 def _apply_note_to_prompt(prompt: str, note: str) -> str:
@@ -407,10 +421,33 @@ def _build_pptx(slides: list[str], images: list[bytes | None] | None = None) -> 
             text_color = DARK
             top_frac, h_frac = 0.32, 0.36   # centre for plain background
 
+        pad     = Emu(55000)
         margin  = Emu(80000)
         box_top = Emu(int(_SLIDE_EMU * top_frac))
         box_h   = Emu(int(_SLIDE_EMU * h_frac))
-        txBox   = slide.shapes.add_textbox(
+
+        # Semi-transparent dark overlay behind text (only when image is present)
+        if img_bytes:
+            from pptx.oxml.ns import qn as _qn
+            from lxml import etree as _etree
+            overlay = slide.shapes.add_shape(
+                1,
+                margin - pad, box_top - pad,
+                Emu(_SLIDE_EMU) - margin * 2 + pad * 2, box_h + pad * 2,
+            )
+            overlay.fill.solid()
+            overlay.fill.fore_color.rgb = RGBColor(0x18, 0x0E, 0x08)
+            overlay.line.fill.background()
+            # Set 58% opacity via OOXML (val=58000 means 58% opaque)
+            sp_pr = overlay._element.spPr
+            solid = sp_pr.find(".//" + _qn("a:solidFill"))
+            if solid is not None:
+                clr = solid.find(_qn("a:srgbClr"))
+                if clr is not None:
+                    alpha_el = _etree.SubElement(clr, _qn("a:alpha"))
+                    alpha_el.set("val", "58000")
+
+        txBox = slide.shapes.add_textbox(
             margin, box_top, Emu(_SLIDE_EMU) - margin * 2, box_h
         )
         txBox.fill.background()
