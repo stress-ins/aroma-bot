@@ -1,6 +1,7 @@
 const state = {
   tab: new URLSearchParams(window.location.search).get("tab") || "drafts",
   draftId: new URLSearchParams(window.location.search).get("draft_id") || "",
+  inbox: [],
   drafts: [],
   plans: [],
   reels: [],
@@ -107,6 +108,12 @@ async function loadDrafts() {
   }
 }
 
+async function loadInbox() {
+  const data = await fetchJson("/api/inbox?limit=100");
+  state.inbox = data.items || [];
+  renderInbox();
+}
+
 async function loadStatus() {
   state.status = await fetchJson("/api/status");
   renderStatus();
@@ -144,6 +151,70 @@ function setTab(tab) {
   for (const node of [elements.kindFilter, elements.statusFilter, elements.feedbackFilter, elements.queryFilter]) {
     node.closest("label").hidden = !isDrafts;
   }
+}
+
+function renderInbox() {
+  elements.listTitle.textContent = "Approval Inbox";
+  const items = state.inbox || [];
+  elements.draftCount.textContent = `${items.length} review`;
+  elements.emptyState.hidden = items.length > 0;
+  elements.draftList.innerHTML = `
+    <div class="plans-list">
+      ${items.map((item) => `
+        <article class="draft-card">
+          <div class="draft-kind">${escapeHtml(item.kind)}</div>
+          <h3 class="draft-topic">${escapeHtml(item.topic)}</h3>
+          <div class="draft-preview">${escapeHtml(item.preview || "Без превью")}</div>
+          <div class="draft-meta">
+            <span class="tag">${escapeHtml(item.status)}</span>
+            <span class="tag">${escapeHtml(item.source)}</span>
+          </div>
+          <div class="actions-row">
+            <button type="button" data-inbox-open="${escapeHtml(item.draft_id)}">Open</button>
+            <button type="button" data-inbox-review="${escapeHtml(item.draft_id)}">In review</button>
+            <button type="button" data-inbox-approve="${escapeHtml(item.draft_id)}">Approve</button>
+          </div>
+        </article>
+      `).join("")}
+    </div>
+  `;
+  elements.draftDetail.innerHTML = `
+    <div class="detail-grid">
+      <section class="section">
+        <h3>Approval Pipeline</h3>
+        <div class="detail-preview">Здесь собраны все draft'ы, которые ещё не утверждены. Открой, переведи в in_review или сразу согласуй.</div>
+      </section>
+    </div>
+  `;
+
+  elements.draftList.querySelectorAll("[data-inbox-open]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const draftId = button.dataset.inboxOpen;
+      state.draftId = draftId;
+      setTab("drafts");
+      await loadDrafts();
+    });
+  });
+
+  elements.draftList.querySelectorAll("[data-inbox-review]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      await fetchJson(`/api/drafts/${button.dataset.inboxReview}/status`, {
+        method: "POST",
+        body: JSON.stringify({ status: "in_review" }),
+      });
+      await loadInbox();
+    });
+  });
+
+  elements.draftList.querySelectorAll("[data-inbox-approve]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      await fetchJson(`/api/drafts/${button.dataset.inboxApprove}/status`, {
+        method: "POST",
+        body: JSON.stringify({ status: "approved" }),
+      });
+      await loadInbox();
+    });
+  });
 }
 
 function renderDraftList() {
@@ -724,6 +795,10 @@ function bindFilters() {
 }
 
 async function loadCurrentTab() {
+  if (state.tab === "inbox") {
+    await loadInbox();
+    return;
+  }
   if (state.tab === "plans") {
     await loadPlans();
     return;

@@ -808,6 +808,7 @@ from bot.handlers.planner import _parse_plan_entries
 from bot.services.drafts_store import DraftRecord
 from bot.services.miniapp_presenter import filter_drafts, payload_preview, serialize_draft
 from bot.services.miniapp_keywords import field_labels, serialize_topics
+from bot.services.miniapp_inbox import is_review_status, list_inbox_items
 from bot.services.miniapp_plans import serialize_plan
 from bot.services.miniapp_reels import (
     serialize_reels_draft,
@@ -976,6 +977,17 @@ class TestMiniAppKeywords:
         assert len(topics) >= 1
         assert "name" in topics[0]
         assert "fields" in topics[0]
+
+
+class TestMiniAppInbox:
+    def test_review_status_filter(self):
+        assert is_review_status("draft") is True
+        assert is_review_status("in_review") is True
+        assert is_review_status("approved") is False
+
+    def test_list_inbox_items_returns_list(self):
+        items = list_inbox_items(limit=5)
+        assert isinstance(items, list)
 
 
 class TestMiniAppPlans:

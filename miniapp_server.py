@@ -11,6 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from bot.services.drafts_store import get_draft, list_recent_drafts, update_draft
+from bot.services.miniapp_inbox import list_inbox_items
 from bot.services.miniapp_keywords import add_keyword, delete_keyword, field_labels, serialize_topics
 from bot.services.miniapp_plans import serialize_plan
 from bot.services.miniapp_presenter import filter_drafts, serialize_draft
@@ -159,6 +160,15 @@ async def status():
         "digest_time": settings.daily_digest_time,
         "timezone": settings.timezone,
         "mini_app_url": settings.mini_app_url,
+    }
+
+
+@app.get("/api/inbox")
+async def inbox(limit: int = Query(default=50, ge=1, le=200)):
+    items = list_inbox_items(limit=limit)
+    return {
+        "items": items,
+        "total": len(items),
     }
 
 
