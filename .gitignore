@@ -8,3 +8,4 @@ venv/
 *.session-journal
 .instagrapi_session.json
 data/reels_assets/
+data/aroma.db\ndata/drafts.json\ndata/plans.json
