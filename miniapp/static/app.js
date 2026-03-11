@@ -310,6 +310,19 @@ async function saveReelsFramePrompt(draftId, frameIndex, prompt) {
   renderReelsDetail(reel);
 }
 
+async function regenerateReelsFrame(draftId, frameIndex) {
+  const reel = await fetchJson(`/api/reels/${draftId}/frames/${frameIndex}/regenerate`, {
+    method: "POST",
+    body: JSON.stringify({}),
+  });
+  state.selectedReels = reel;
+  state.reels = state.reels.map((item) =>
+    item.draft_id === reel.draft_id ? { ...item, ...reel } : item
+  );
+  renderReels();
+  renderReelsDetail(reel);
+}
+
 function renderReelsDetail(reel) {
   state.selectedReels = reel;
   const frames = Array.isArray(reel.frames) ? reel.frames : [];
@@ -347,6 +360,10 @@ function renderReelsDetail(reel) {
             <div>${escapeHtml(frame.scene || "")}</div>
             <div class="meta">${escapeHtml(frame.angle || "")}</div>
             ${payloadSection("Gemini Prompt", frame.gemini_prompt)}
+            ${frame.current_asset?.url ? `<img class="frame-image" src="${escapeHtml(frame.current_asset.url)}" alt="Frame asset" />` : ""}
+            <div class="actions-row">
+              <button class="secondary-button" type="button" data-frame-regenerate="${escapeHtml(String(frame.frame_index))}">Regenerate frame</button>
+            </div>
             <form class="frame-note-form" data-frame-note-form="${escapeHtml(String(frame.frame_index))}">
               <label>
                 Review note
@@ -367,6 +384,17 @@ function renderReelsDetail(reel) {
                   <div class="revision-item">
                     <strong>Revision ${index + 1}</strong>
                     <div>${escapeHtml(revision)}</div>
+                  </div>
+                `).join("")}
+              </div>
+            ` : ""}
+            ${(frame.asset_revisions || []).length ? `
+              <div class="asset-revisions">
+                ${(frame.asset_revisions || []).map((asset, index) => `
+                  <div class="asset-revision">
+                    <strong>Asset revision ${index + 1}</strong>
+                    <div class="meta">${escapeHtml(asset.generated_at || "")}</div>
+                    ${asset.url ? `<img class="frame-image" src="${escapeHtml(asset.url)}" alt="Frame revision" />` : ""}
                   </div>
                 `).join("")}
               </div>
@@ -430,6 +458,13 @@ function renderReelsDetail(reel) {
       event.preventDefault();
       const prompt = promptForm.querySelector("textarea[name='prompt']").value.trim();
       await saveReelsFramePrompt(reel.draft_id, state.selectedFrameIndex, prompt);
+    });
+  }
+
+  const regenButton = elements.draftDetail.querySelector("[data-frame-regenerate]");
+  if (regenButton) {
+    regenButton.addEventListener("click", async () => {
+      await regenerateReelsFrame(reel.draft_id, state.selectedFrameIndex);
     });
   }
 }
