@@ -319,7 +319,8 @@ select {
 
 .status-card,
 .keyword-topic,
-.plan-card {
+.plan-card,
+.reels-card {
   border: 1px solid var(--line);
   border-radius: 18px;
   padding: 14px;
@@ -348,6 +349,31 @@ select {
 
 .plan-entry {
   border-left: 3px solid rgba(108, 122, 67, 0.4);
+  padding-left: 12px;
+}
+
+.reels-frames {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.reels-frame {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.42);
+  cursor: pointer;
+  text-align: left;
+}
+
+.reels-frame.active {
+  border-color: rgba(180, 92, 61, 0.6);
+  background: rgba(180, 92, 61, 0.08);
+}
+
+.reels-focus {
+  border-left: 3px solid rgba(180, 92, 61, 0.42);
   padding-left: 12px;
 }
 
@@ -407,5 +433,9 @@ select {
 
   .hero {
     flex-direction: column;
+  }
+
+  .reels-frames {
+    grid-template-columns: 1fr;
   }
 }

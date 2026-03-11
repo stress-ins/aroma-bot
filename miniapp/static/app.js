@@ -3,8 +3,11 @@ const state = {
   draftId: new URLSearchParams(window.location.search).get("draft_id") || "",
   drafts: [],
   plans: [],
+  reels: [],
   selectedPlan: null,
   selected: null,
+  selectedReels: null,
+  selectedFrameIndex: 0,
   status: null,
   keywords: null,
 };
@@ -113,6 +116,12 @@ async function loadPlans() {
   const data = await fetchJson("/api/plans?limit=20");
   state.plans = data.items || [];
   renderPlans();
+}
+
+async function loadReels() {
+  const data = await fetchJson("/api/reels?limit=30");
+  state.reels = data.items || [];
+  renderReels();
 }
 
 async function loadKeywords() {
@@ -230,6 +239,104 @@ function renderPlans() {
   } else if (!items.length) {
     elements.draftDetail.innerHTML = `<div class="detail-empty">Планы пока не сгенерированы через /plan.</div>`;
   }
+}
+
+function renderReels() {
+  elements.listTitle.textContent = "Reels";
+  const items = state.reels || [];
+  elements.draftCount.textContent = `${items.length} reels`;
+  elements.emptyState.hidden = items.length > 0;
+  elements.draftList.innerHTML = `
+    <div class="plans-list">
+      ${items.map((reel) => `
+        <article class="reels-card">
+          <div class="draft-kind">reels draft</div>
+          <h3 class="draft-topic">${escapeHtml(reel.topic)}</h3>
+          <div class="draft-preview">${escapeHtml(reel.preview || "Без сценария")}</div>
+          <div class="draft-meta">
+            <span class="tag">${escapeHtml(reel.status)}</span>
+            <span class="tag">${escapeHtml(reel.images_ready)} images</span>
+            <span class="tag">${escapeHtml(reel.frame_count)} frames</span>
+          </div>
+          <button type="button" data-reels-open="${escapeHtml(reel.draft_id)}">Открыть</button>
+        </article>
+      `).join("")}
+    </div>
+  `;
+
+  elements.draftList.querySelectorAll("[data-reels-open]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      await openReels(button.dataset.reelsOpen);
+    });
+  });
+
+  if (items[0] && !state.selectedReels) {
+    renderReelsDetail(items[0]);
+  } else if (!items.length) {
+    elements.draftDetail.innerHTML = `<div class="detail-empty">Reels-черновики пока не сгенерированы.</div>`;
+  }
+}
+
+async function openReels(draftId) {
+  const reel = await fetchJson(`/api/reels/${draftId}`);
+  state.selectedReels = reel;
+  state.selectedFrameIndex = 0;
+  renderReelsDetail(reel);
+}
+
+function renderReelsDetail(reel) {
+  state.selectedReels = reel;
+  const frames = Array.isArray(reel.frames) ? reel.frames : [];
+  const frame = frames[state.selectedFrameIndex] || frames[0] || null;
+  elements.draftDetail.innerHTML = `
+    <div class="detail-grid">
+      <div class="detail-top">
+        <div>
+          <p class="eyebrow">reels • ${escapeHtml(reel.source || "")}</p>
+          <h2 class="detail-title">${escapeHtml(reel.topic)}</h2>
+          <div class="draft-meta">
+            <span class="tag">${escapeHtml(reel.status)}</span>
+            <span class="tag">${escapeHtml(reel.feedback || "no feedback")}</span>
+            <span class="tag">${escapeHtml(reel.images_ready)} images</span>
+          </div>
+        </div>
+      </div>
+      ${payloadSection("Scenario", reel.payload?.scenario || reel.preview)}
+      <section class="section">
+        <h3>Storyboard Frames</h3>
+        <div class="reels-frames">
+          ${frames.map((item, index) => `
+            <button class="reels-frame${index === state.selectedFrameIndex ? " active" : ""}" type="button" data-frame-open="${index}">
+              <strong>${escapeHtml(item.timecode || `Frame ${index + 1}`)}</strong>
+              <div>${escapeHtml(item.scene || "")}</div>
+            </button>
+          `).join("")}
+        </div>
+      </section>
+      ${frame ? `
+        <section class="section">
+          <h3>Focused Frame</h3>
+          <div class="reels-focus">
+            <strong>${escapeHtml(frame.timecode || "")}</strong>
+            <div>${escapeHtml(frame.scene || "")}</div>
+            <div class="meta">${escapeHtml(frame.angle || "")}</div>
+            ${payloadSection("Gemini Prompt", frame.gemini_prompt)}
+          </div>
+        </section>
+      ` : ""}
+      <section class="section">
+        <h3>Payload JSON</h3>
+        <pre class="json-block">${escapeHtml(JSON.stringify(reel.payload || {}, null, 2))}</pre>
+      </section>
+    </div>
+  `;
+
+  elements.draftDetail.querySelectorAll("[data-frame-open]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.selectedFrameIndex = Number(button.dataset.frameOpen);
+      renderReelsDetail(reel);
+    });
+  });
 }
 
 async function openPlan(planId) {
@@ -524,6 +631,10 @@ function bindFilters() {
 async function loadCurrentTab() {
   if (state.tab === "plans") {
     await loadPlans();
+    return;
+  }
+  if (state.tab === "reels") {
+    await loadReels();
     return;
   }
   if (state.tab === "status") {
