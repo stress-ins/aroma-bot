@@ -65,9 +65,10 @@ MONITOR_CHAT_ID=<твой chat_id>
 
 | Команда | Описание |
 |---------|----------|
-| `/status` | Статус всех сервисов: `aroma-bot`, `aromara-site`, `threads-oauth`, `nginx` |
+| `/status` | Статус всех сервисов: `aroma-bot`, `aroma-miniapp`, `aromara-site`, `threads-oauth`, `nginx` |
 | `/load` | Нагрузка на сервер: uptime, load avg, RAM, диск, swap |
 | `/logs [N]` | Последние N строк логов aroma-bot (по умолчанию 30, макс 100) |
+| `/errors` | Последние 5 строк с WARNING/ERROR из журнала aroma-bot |
 | `/restart` | Перезапустить aroma-bot |
 
 ### Управление сервисом на VPS
