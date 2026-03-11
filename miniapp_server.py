@@ -30,6 +30,7 @@ from bot.services.miniapp_generator import (
     is_valid_content_format,
     is_valid_content_goal,
 )
+from bot.services.miniapp_inbox import list_inbox_items
 from bot.services.miniapp_keywords import add_keyword, delete_keyword, field_labels, serialize_topics
 from bot.services.miniapp_plans import serialize_plan
 from bot.services.miniapp_presenter import filter_drafts, serialize_draft
@@ -325,6 +326,15 @@ async def generate_plan(_: None = Depends(_require_auth)):
         ],
     )
     return serialize_plan(record)
+
+
+@app.get("/api/inbox")
+async def inbox(limit: int = Query(default=50, ge=1, le=200), _: None = Depends(_require_auth)):
+    items = list_inbox_items(limit=limit)
+    return {
+        "items": items,
+        "total": len(items),
+    }
 
 
 @app.get("/api/plans")
