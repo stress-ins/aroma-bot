@@ -842,6 +842,7 @@ from bot.services import drafts_store as drafts_store_module
 from bot.services import reels_assets as reels_assets_module
 from bot.services.drafts_store import save_draft
 from bot.services.reels_assets import regenerate_reels_frame_asset
+from bot.services.carousel_assets import update_carousel_slide_text
 from bot.services.mini_app import build_draft_tab
 from bot.handlers.miniapp_bridge import parse_webapp_payload
 from bot.services.plans_store import PlanRecord
@@ -1189,6 +1190,20 @@ class TestMiniAppRussianLocale:
 
         assert ">Reels<" not in index_html
 
+    def test_index_does_not_render_legacy_hero_block(self):
+        index_html = Path("miniapp/index.html").read_text(encoding="utf-8")
+
+        assert 'class="hero"' not in index_html
+        assert "Черновики и рилсы" not in index_html
+        assert 'id="headerContent"' not in index_html
+
+    def test_index_has_bootstrap_fallback_panel(self):
+        index_html = Path("miniapp/index.html").read_text(encoding="utf-8")
+
+        assert 'id="bootFallback"' in index_html
+        assert 'id="bootFallbackReload"' in index_html
+        assert "Загружаю интерфейс" in index_html
+
     def test_create_workspace_dropdowns_use_russian_labels(self):
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
 
@@ -1350,9 +1365,30 @@ class TestMiniAppRussianLocale:
         # Ensure CSS handles the 300ms delay/zoom
         assert "touch-action: manipulation;" in app_css
 
-    def test_handbook_has_separate_reference_tabs(self):
+    def test_mobile_detail_swipe_back_allows_full_width_swipe_and_skips_inputs(self):
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
 
+        assert "function bindSwipeBack" in app_js
+        assert "isInteractiveTarget(event.target)" in app_js
+        assert 'closest("textarea, input, select, button, a, [contenteditable=\'true\']")' in app_js
+        assert "touch.clientX > 36" not in app_js
+        assert "dx > 72" in app_js
+
+    def test_bootstrap_guard_shows_visible_fallback_instead_of_blank_screen(self):
+        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+
+        assert "function showBootFallback" in app_js
+        assert "function hideBootFallback" in app_js
+        assert "bootstrapWatchdogTimer" in app_js
+        assert 'window.addEventListener("error"' in app_js
+        assert 'window.addEventListener("unhandledrejection"' in app_js
+        assert ".boot-fallback" in app_css
+        assert ".boot-fallback.is-error" in app_css
+
+    def test_handbook_has_separate_reference_tabs(self):
+        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+    
         assert 'id: "aromas"' in app_js
         assert 'label: "Ароматы"' in app_js
         assert 'id: "practices"' in app_js
@@ -1366,7 +1402,7 @@ class TestMiniAppRussianLocale:
 
         assert "Скопировать промпт кадра" in app_js
         assert "Скопировать промпт слайда" in app_js
-        assert "function copyText(value)" in app_js
+        assert "function copyText" in app_js
 
     def test_content_cards_force_left_alignment_and_mobile_button_stack(self):
         app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
@@ -1374,16 +1410,44 @@ class TestMiniAppRussianLocale:
         assert "text-align: left;" in app_css
         assert "flex: 1 1 100%;" in app_css
 
-    def test_reference_cards_support_edit_mode_and_icon_sections(self):
+    def test_carousel_detail_uses_actions_instead_of_raw_json(self):
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
-        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        server_py = Path("miniapp_server.py").read_text(encoding="utf-8")
 
-        assert "Редактировать карточку" in app_js
-        assert 'id="referenceEditForm"' in app_js
-        assert "function saveReference(event)" in app_js
-        assert "referenceSectionIcon(" in app_js
-        assert ".reference-section-icon" in app_css
-        assert ".reference-form-grid" in app_css
+        assert "JSON</h3>" not in app_js
+        assert "Перегенерировать все" in app_js
+        assert "Учесть замечание" in app_js
+        assert "Сохранить текст слайда" in app_js
+        assert "Текст слайда" in app_js
+        assert "Скачать PPTX" in app_js
+        assert "sendDraftToChat" in app_js
+        assert "bindSwipeBack" in app_js
+        assert "/api/carousel/{draft_id}/pptx" in server_py
+        assert "/api/carousel/{draft_id}/slides/{slide_index}/regenerate" in server_py
+        assert "/api/carousel/{draft_id}/slides/{slide_index}/text" in server_py
+
+
+class TestMiniAppCarousel:
+    async def test_update_carousel_slide_text_returns_none_for_missing(self):
+        assert await update_carousel_slide_text("missing-id", 0, "Новый слайд") is None
+
+    async def test_update_carousel_slide_text_updates_payload(self):
+        draft = await save_draft(
+            kind="carousel",
+            topic="Вечерний ритуал",
+            source="/carousel",
+            payload={
+                "slides": ["Старый текст", "Второй слайд"],
+                "img_prompts": ["prompt-1", "prompt-2"],
+                "img_prompt_notes": ["", ""],
+            },
+        )
+
+        payload = await update_carousel_slide_text(draft.draft_id, 0, "Новый текст слайда")
+
+        assert payload is not None
+        assert payload["slides"][0] == "Новый текст слайда"
+        assert payload["slides"][1] == "Второй слайд"
 class TestMiniAppReels:
     async def test_serialize_reels_draft_returns_none_for_missing(self):
         assert await serialize_reels_draft("missing-id") is None
