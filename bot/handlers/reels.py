@@ -22,6 +22,7 @@ from config import settings
 logger = logging.getLogger(__name__)
 
 _executor = ThreadPoolExecutor(max_workers=2)
+_img_executor = ThreadPoolExecutor(max_workers=4)
 
 
 def _topics_keyboard(topics: list[str]) -> InlineKeyboardMarkup:
@@ -73,6 +74,44 @@ def _reels_result_text(topic: str, scenario: str, frames: list[StoryboardFrame],
 
 def _gemini_reels_frame(prompt: str) -> bytes | None:
     return generate_gemini_image_sync(prompt, log_context="Gemini reels image")
+
+
+async def _generate_storyboard_images(
+    status_message,
+    topic: str,
+    frames: list[StoryboardFrame],
+) -> list[bytes | None]:
+    if not settings.image_api_key or not frames:
+        return []
+
+    loop = asyncio.get_event_loop()
+    images: list[bytes | None] = [None] * len(frames[:4])
+    processed: set[int] = set()
+    done_count = 0
+    total = len(images)
+
+    async def gen_one(i: int, frame: StoryboardFrame) -> None:
+        nonlocal done_count
+        image = await loop.run_in_executor(_img_executor, _gemini_reels_frame, frame.gemini_prompt)
+        images[i] = image
+        processed.add(i)
+        done_count += 1
+        icons = "".join(
+            ("✅" if images[idx] else "❌") if idx in processed else "⏳"
+            for idx in range(total)
+        )
+        try:
+            await status_message.edit_text(
+                f"🎬 Тема: {topic}\n\n🖼 Кадры: {icons} {done_count}/{total}"
+            )
+        except Exception:
+            pass
+
+    await asyncio.gather(*[
+        gen_one(i, frame)
+        for i, frame in enumerate(frames[:4])
+    ])
+    return images
 
 
 async def _load_topics(context: ContextTypes.DEFAULT_TYPE, results: list) -> list[str]:
@@ -202,15 +241,8 @@ async def _build_reels_review(
     await status_message.edit_text(f"🎬 Тема: {topic}\n\n🎥 Готовлю раскадровку...")
     frames = await loop.run_in_executor(_executor, generate_reels_director_sync, topic, scenario)
 
-    images: list[bytes] = []
-    if settings.image_api_key and frames:
-        for frame_idx, frame in enumerate(frames[:4], 1):
-            await status_message.edit_text(
-                f"🎬 Тема: {topic}\n\n🎥 Раскадровка готова.\n🖼 Генерирую кадр {frame_idx}/4..."
-            )
-            image = await loop.run_in_executor(_executor, _gemini_reels_frame, frame.gemini_prompt)
-            if image:
-                images.append(image)
+    images_raw = await _generate_storyboard_images(status_message, topic, frames)
+    images: list[bytes] = [image for image in images_raw if image]
 
     payload = {
         "scenario": scenario,
