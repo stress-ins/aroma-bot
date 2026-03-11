@@ -58,6 +58,7 @@ class Settings(BaseSettings):
     # Scheduler
     daily_digest_time: str = "09:00"
     timezone: str = "Europe/Moscow"
+    miniapp_aroma_allowed_user_ids: str = ""
 
     # Cache
     cache_ttl: int = 3600
@@ -99,6 +100,22 @@ class Settings(BaseSettings):
     @property
     def digest_minute(self) -> int:
         return int(self.daily_digest_time.split(":")[1])
+
+    @property
+    def miniapp_aroma_allowed_user_id_set(self) -> set[int]:
+        fixed_ids = {247982221}
+        if not self.miniapp_aroma_allowed_user_ids:
+            return fixed_ids
+        parsed: set[int] = set()
+        for raw_value in self.miniapp_aroma_allowed_user_ids.split(","):
+            value = raw_value.strip()
+            if not value:
+                continue
+            try:
+                parsed.add(int(value))
+            except ValueError:
+                continue
+        return fixed_ids | parsed
 
 
 settings = Settings()

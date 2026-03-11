@@ -827,6 +827,7 @@ from bot.services.miniapp_keywords import field_labels, serialize_topics
 from bot.services.miniapp_plan_actions import normalize_plan_format, normalize_plan_goal
 from bot.services.miniapp_inbox import is_review_status, list_inbox_items
 from bot.services.miniapp_plans import serialize_plan
+from bot.services.miniapp_aromas import get_aroma_card, list_aromas
 from bot.services.miniapp_reels import (
     build_reels_export_payload,
     serialize_reels_draft,
@@ -1186,6 +1187,16 @@ class TestMiniAppRussianLocale:
         assert '<option value="threads">Threads</option>' not in app_js
         assert '<option value="instagram">Instagram</option>' not in app_js
         assert '<option value="telegram">Telegram</option>' not in app_js
+
+    def test_aroma_service_sorts_cards_in_russian_alphabet(self):
+        items = list_aromas()
+        assert items[0]["name"] == "Апельсин"
+        assert items[-1]["name"] == "Эвкалипт глобулус"
+
+    def test_aroma_service_supports_alias_lookup(self):
+        card = get_aroma_card("Ромашка немецкая")
+        assert card is not None
+        assert card["slug"] == "german-chamomile"
 
     def test_viewport_disables_double_tap_zoom(self):
         index_html = Path("miniapp/index.html").read_text(encoding="utf-8")
