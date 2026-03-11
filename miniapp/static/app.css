@@ -354,6 +354,10 @@ textarea,
 
 .detail-grid { display: flex; flex-direction: column; gap: 12px; }
 
+.detail-panel {
+  --swipe-offset: 0px;
+}
+
 .detail-top {
   padding-bottom: 12px;
   border-bottom: 1px solid var(--border);
@@ -391,6 +395,9 @@ textarea,
 }
 
 .section h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -513,6 +520,36 @@ textarea,
   margin-bottom: 10px;
 }
 
+.ui-icon {
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  align-items: center;
+  justify-content: center;
+}
+
+.ui-icon svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.detail-panel.swipe-back-armed {
+  transform: translateX(var(--swipe-offset));
+  transition: transform 0.05s linear;
+}
+
+.detail-panel.swipe-back-exit {
+  transform: translateX(100%);
+  opacity: 0.82;
+  transition: transform 0.18s ease, opacity 0.18s ease;
+}
+
 /* ── Mobile Layout Fixes ─────────────────────────────────────────────────── */
 @media (max-width: 760px) {
   .back-button.visible {
@@ -535,6 +572,10 @@ textarea,
 .status-button,
 .feedback-button,
 .draft-card button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   border: 1px solid var(--border);
   background: var(--surface-2);
   color: var(--text);
@@ -555,6 +596,10 @@ textarea,
 }
 
 .primary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   border: 1px solid var(--brand-border);
   background: var(--brand);
   color: #fff;
@@ -839,6 +884,23 @@ textarea,
   border: 1px dashed var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface);
+}
+
+.prompt-disclosure {
+  display: grid;
+  gap: 8px;
+}
+
+.prompt-disclosure summary {
+  list-style: none;
+}
+
+.prompt-disclosure summary::-webkit-details-marker {
+  display: none;
+}
+
+.prompt-toggle {
+  margin-top: 8px;
 }
 
 .prompt-preview {
