@@ -31,9 +31,7 @@ const MODE_TABS = {
     { id: "status", label: "Статус" },
   ],
   handbook: [
-    { id: "aromas", label: "Ароматы" },
-    { id: "practices", label: "Практики" },
-    { id: "sounds", label: "Звуки" },
+    { id: "aromas", label: "Масла" },
   ],
 };
 
