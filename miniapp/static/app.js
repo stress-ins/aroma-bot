@@ -14,6 +14,8 @@ const state = {
   keywords: null,
 };
 
+let reelRefreshTimer = null;
+
 const elements = {
   draftList: document.getElementById("draftList"),
   draftDetail: document.getElementById("draftDetail"),
@@ -84,6 +86,37 @@ function _initDataHeader() {
   return initData ? { "X-Telegram-Init-Data": initData } : {};
 }
 
+function showRequestError(prefix, error) {
+  const message = error?.message || String(error || "unknown_error");
+  alert(`${prefix}: ${message}`);
+}
+
+function scheduleReelsRefresh(draftId, attempts = 4) {
+  if (!draftId || attempts <= 0) {
+    return;
+  }
+  window.clearTimeout(reelRefreshTimer);
+  reelRefreshTimer = window.setTimeout(async () => {
+    try {
+      const reel = await fetchJson(`/api/reels/${draftId}`);
+      const readyFrames = Array.isArray(reel.frames)
+        ? reel.frames.filter((item) => item.current_asset?.url).length
+        : 0;
+      state.selectedReels = reel;
+      state.reels = state.reels.map((item) =>
+        item.draft_id === reel.draft_id ? { ...item, ...reel } : item
+      );
+      renderReels();
+      renderReelsDetail(reel);
+      if (readyFrames < Math.min(reel.frame_count || 0, 2)) {
+        scheduleReelsRefresh(draftId, attempts - 1);
+      }
+    } catch (_error) {
+      scheduleReelsRefresh(draftId, attempts - 1);
+    }
+  }, 4000);
+}
+
 function sendDraftToChat(draftId) {
   const tg = window.Telegram?.WebApp;
   if (!tg?.sendData || !draftId) {
@@ -118,13 +151,20 @@ function sendPlanToChat(planId) {
 }
 
 async function fetchJson(url, options = {}) {
-  const extraHeaders = options.method === "POST" ? _initDataHeader() : {};
+  const extraHeaders = url.startsWith("/api/") ? _initDataHeader() : {};
   const response = await fetch(url, {
     headers: { "Content-Type": "application/json", ...extraHeaders },
     ...options,
   });
   if (!response.ok) {
-    throw new Error(`${response.status} ${response.statusText}`);
+    let detail = "";
+    try {
+      const payload = await response.json();
+      detail = payload?.detail ? ` (${payload.detail})` : "";
+    } catch (_error) {
+      detail = "";
+    }
+    throw new Error(`${response.status} ${response.statusText}${detail}`);
   }
   return response.json();
 }
@@ -286,8 +326,9 @@ function renderCreate() {
         setTab("reels");
         await loadReels();
         renderReelsDetail(reel);
+        scheduleReelsRefresh(reel.draft_id);
       } catch (err) {
-        alert("Ошибка генерации: " + (err.message || err));
+        showRequestError("Ошибка генерации", err);
       }
     });
   }
@@ -602,16 +643,20 @@ async function saveReelsFramePrompt(draftId, frameIndex, prompt) {
 }
 
 async function regenerateReelsFrame(draftId, frameIndex) {
-  const reel = await fetchJson(`/api/reels/${draftId}/frames/${frameIndex}/regenerate`, {
-    method: "POST",
-    body: JSON.stringify({}),
-  });
-  state.selectedReels = reel;
-  state.reels = state.reels.map((item) =>
-    item.draft_id === reel.draft_id ? { ...item, ...reel } : item
-  );
-  renderReels();
-  renderReelsDetail(reel);
+  try {
+    const reel = await fetchJson(`/api/reels/${draftId}/frames/${frameIndex}/regenerate`, {
+      method: "POST",
+      body: JSON.stringify({}),
+    });
+    state.selectedReels = reel;
+    state.reels = state.reels.map((item) =>
+      item.draft_id === reel.draft_id ? { ...item, ...reel } : item
+    );
+    renderReels();
+    renderReelsDetail(reel);
+  } catch (error) {
+    showRequestError("Не удалось сгенерировать кадр", error);
+  }
 }
 
 async function exportReelsProductionPack(draftId) {
