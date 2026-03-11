@@ -311,13 +311,15 @@ select {
 }
 
 .status-list,
-.keywords-list {
+.keywords-list,
+.plans-list {
   display: grid;
   gap: 10px;
 }
 
 .status-card,
-.keyword-topic {
+.keyword-topic,
+.plan-card {
   border: 1px solid var(--line);
   border-radius: 18px;
   padding: 14px;
@@ -335,6 +337,18 @@ select {
   display: grid;
   gap: 12px;
   margin-top: 12px;
+}
+
+.plan-entries,
+.related-drafts {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.plan-entry {
+  border-left: 3px solid rgba(108, 122, 67, 0.4);
+  padding-left: 12px;
 }
 
 .keyword-field {

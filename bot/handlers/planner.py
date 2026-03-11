@@ -15,6 +15,7 @@ from bot.agents.reels_agent import generate_reels_director_sync, generate_reels_
 from bot.handlers.threads import _format_trends
 from bot.services.drafts_store import save_draft, update_draft
 from bot.services.gemini_images import generate_gemini_image_sync
+from bot.services.plans_store import save_plan
 from config import settings
 
 logger = logging.getLogger(__name__)
@@ -181,12 +182,27 @@ async def cmd_plan(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         }
         for entry in entries
     ]
+    plan_record = save_plan(
+        plan,
+        entries=[
+            {
+                "day_label": entry.day_label,
+                "platform": entry.platform,
+                "format_label": entry.format_label,
+                "goal": entry.goal,
+                "topic": entry.topic,
+                "angle": entry.angle,
+            }
+            for entry in entries
+        ],
+    )
+    context.user_data["plan_id"] = plan_record.plan_id
 
     kwargs = {"parse_mode": "Markdown"}
     if entries:
         kwargs["reply_markup"] = _plan_actions_keyboard(entries)
     await status.edit_text(
-        f"📅 *Контент-план на неделю:*\n\n{plan}\n\nВыбери номер пункта ниже, и я сразу превращу его в материал.",
+        f"📅 *Контент-план на неделю:*\n\n{plan}\n\n🗂 Plan ID: `{plan_record.plan_id}`\n\nВыбери номер пункта ниже, и я сразу превращу его в материал.",
         **kwargs,
     )
 
