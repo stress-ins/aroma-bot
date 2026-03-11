@@ -800,7 +800,7 @@ async def _run_image_generation(
     for i, img in enumerate(images):
         if img:
             label = _SLIDE_LABELS[i] if i < len(_SLIDE_LABELS) else f"Слайд {i + 1}"
-            caption = f"<b>{_html.escape(label)}</b>\n{_html.escape(slides[i][:120])}"
+            caption = f"<b>{_html.escape(label)}</b>\n{_html.escape(slides[i])}"
             passed, reason = qa_results.get(i, (True, ""))
             if not passed and reason and reason.upper() != "OK":
                 caption += f"\n\n⚠️ <i>{_html.escape(reason)}</i>"
