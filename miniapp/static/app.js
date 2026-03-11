@@ -436,11 +436,17 @@ async function loadReferences(tabId = state.tab) {
   }
   const data = await fetchJson(`/api/references/${meta.category}`);
   state.referenceItems = data.items || [];
+  
+  // Do not automatically pick the first card if nothing is selected
   const selectedSlug = state.selectedReference?.category === meta.category
-    ? (state.selectedReference?.slug || state.referenceItems[0]?.slug || "")
-    : (state.referenceItems[0]?.slug || "");
-  if (selectedSlug) await openReference(selectedSlug, tabId);
-  else renderReferences();
+    ? state.selectedReference?.slug
+    : "";
+    
+  if (selectedSlug) {
+    await openReference(selectedSlug, tabId);
+  } else {
+    renderReferences();
+  }
 }
 
 async function openReference(slug, tabId = state.tab) {
@@ -471,8 +477,12 @@ function renderReferences() {
   const query = (state.referenceSearch || "").trim().toLowerCase();
   const filtered = items.filter((item) => `${item.name} ${item.description || ""}`.toLowerCase().includes(query));
   const reference = state.selectedReference;
+  
   elements.listTitle.textContent = meta.title;
-  elements.draftCount.textContent = meta.count(items);
+  elements.draftCount.textContent = query 
+    ? `Найдено ${filtered.length} из ${items.length}` 
+    : meta.count(items);
+    
   setEmptyState(filtered.length > 0, meta.empty);
 
   let listContainer = document.getElementById("referenceListContainer");
