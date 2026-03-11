@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from urllib.parse import urlencode
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 
 from config import settings
 
@@ -45,7 +45,7 @@ def build_mini_app_markup(
     if not url:
         return None
     return InlineKeyboardMarkup([[
-        InlineKeyboardButton(label, url=url),
+        InlineKeyboardButton(label, web_app=WebAppInfo(url=url)),
     ]])
 
 
