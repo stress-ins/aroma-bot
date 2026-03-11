@@ -1,97 +1,96 @@
 from __future__ import annotations
 
-import json
-from dataclasses import asdict, dataclass
+import logging
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
+from sqlalchemy import select, update
+from sqlalchemy.orm import selectinload
 
-_DRAFTS_FILE = Path(__file__).parent.parent.parent / "data" / "drafts.json"
+from db.session import AsyncSessionLocal
+from db.models import DraftModel
+
+logger = logging.getLogger(__name__)
 
 
-@dataclass
 class DraftRecord:
-    draft_id: str
-    kind: str
-    topic: str
-    source: str
-    created_at: str
-    status: str
-    feedback: str
-    payload: dict[str, Any]
+    def __init__(
+        self,
+        draft_id: str,
+        kind: str,
+        topic: str,
+        source: str,
+        created_at: str,
+        status: str,
+        feedback: str,
+        payload: dict[str, Any]
+    ):
+        self.draft_id = draft_id
+        self.kind = kind
+        self.topic = topic
+        self.source = source
+        self.created_at = created_at
+        self.status = status
+        self.feedback = feedback
+        self.payload = payload
 
-
-def _ensure_store() -> None:
-    _DRAFTS_FILE.parent.mkdir(parents=True, exist_ok=True)
-    if not _DRAFTS_FILE.exists():
-        _DRAFTS_FILE.write_text("[]", encoding="utf-8")
-
-
-def _load_records() -> list[DraftRecord]:
-    _ensure_store()
-    raw = json.loads(_DRAFTS_FILE.read_text(encoding="utf-8"))
-    records: list[DraftRecord] = []
-    for item in raw:
-        if not isinstance(item, dict):
-            continue
-        records.append(
-            DraftRecord(
-                draft_id=str(item.get("draft_id", "")),
-                kind=str(item.get("kind", "")),
-                topic=str(item.get("topic", "")),
-                source=str(item.get("source", "")),
-                created_at=str(item.get("created_at", "")),
-                status=str(item.get("status", "draft")),
-                feedback=str(item.get("feedback", "")),
-                payload=dict(item.get("payload", {})),
-            )
+    @classmethod
+    def from_model(cls, model: DraftModel) -> DraftRecord:
+        return cls(
+            draft_id=model.draft_id,
+            kind=model.kind,
+            topic=model.topic,
+            source=model.source,
+            created_at=model.created_at.isoformat() if isinstance(model.created_at, datetime) else str(model.created_at),
+            status=model.status,
+            feedback=model.feedback,
+            payload=model.payload,
         )
-    return records
 
 
-def _save_records(records: list[DraftRecord]) -> None:
-    _ensure_store()
-    data = [asdict(record) for record in records]
-    _DRAFTS_FILE.write_text(
-        json.dumps(data, ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
+async def save_draft(kind: str, topic: str, source: str, payload: dict[str, Any]) -> DraftRecord:
+    draft_id = uuid4().hex[:8]
+    created_at = datetime.now(timezone.utc)
+    
+    async with AsyncSessionLocal() as session:
+        model = DraftModel(
+            draft_id=draft_id,
+            kind=kind,
+            topic=topic.strip(),
+            source=source.strip(),
+            status="draft",
+            feedback="",
+            payload=payload,
+            created_at=created_at,
+        )
+        session.add(model)
+        await session.commit()
+        await session.refresh(model)
+        return DraftRecord.from_model(model)
 
 
-def save_draft(kind: str, topic: str, source: str, payload: dict[str, Any]) -> DraftRecord:
-    records = _load_records()
-    record = DraftRecord(
-        draft_id=uuid4().hex[:8],
-        kind=kind,
-        topic=topic.strip(),
-        source=source.strip(),
-        created_at=datetime.now(timezone.utc).isoformat(),
-        status="draft",
-        feedback="",
-        payload=payload,
-    )
-    records.insert(0, record)
-    _save_records(records[:200])
-    return record
+async def list_recent_drafts(limit: int = 10, kind: str | None = None) -> list[DraftRecord]:
+    async with AsyncSessionLocal() as session:
+        query = select(DraftModel).order_by(DraftModel.created_at.desc()).limit(limit)
+        if kind:
+            query = query.filter(DraftModel.kind == kind)
+        result = await session.execute(query)
+        models = result.scalars().all()
+        return [DraftRecord.from_model(m) for m in models]
 
 
-def list_recent_drafts(limit: int = 10, kind: str | None = None) -> list[DraftRecord]:
-    records = _load_records()
-    if kind:
-        records = [record for record in records if record.kind == kind]
-    return records[:limit]
+async def get_draft(draft_id: str) -> DraftRecord | None:
+    async with AsyncSessionLocal() as session:
+        query = select(DraftModel).filter(DraftModel.draft_id == draft_id)
+        result = await session.execute(query)
+        model = result.scalar_one_or_none()
+        if model:
+            return DraftRecord.from_model(model)
+        return None
 
 
-def get_draft(draft_id: str) -> DraftRecord | None:
-    for record in _load_records():
-        if record.draft_id == draft_id:
-            return record
-    return None
-
-
-def update_draft(
+async def update_draft(
     draft_id: str,
     *,
     topic: str | None = None,
@@ -99,23 +98,25 @@ def update_draft(
     feedback: str | None = None,
     payload: dict[str, Any] | None = None,
 ) -> DraftRecord | None:
-    records = _load_records()
-    updated: DraftRecord | None = None
-    for idx, record in enumerate(records):
-        if record.draft_id != draft_id:
-            continue
-        updated = DraftRecord(
-            draft_id=record.draft_id,
-            kind=record.kind,
-            topic=topic if topic is not None else record.topic,
-            source=record.source,
-            created_at=record.created_at,
-            status=status if status is not None else record.status,
-            feedback=feedback if feedback is not None else record.feedback,
-            payload=payload if payload is not None else record.payload,
-        )
-        records[idx] = updated
-        break
-    if updated:
-        _save_records(records)
-    return updated
+    async with AsyncSessionLocal() as session:
+        query = select(DraftModel).filter(DraftModel.draft_id == draft_id)
+        result = await session.execute(query)
+        model = result.scalar_one_or_none()
+        
+        if not model:
+            return None
+            
+        if topic is not None:
+            model.topic = topic
+        if status is not None:
+            model.status = status
+        if feedback is not None:
+            model.feedback = feedback
+        if payload is not None:
+            # SQLAlchemy JSON columns sometimes need explicit flagging to track mutations
+            # Reassigning a new dict usually works best
+            model.payload = dict(payload)
+            
+        await session.commit()
+        await session.refresh(model)
+        return DraftRecord.from_model(model)

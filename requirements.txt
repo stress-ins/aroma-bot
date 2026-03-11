@@ -35,3 +35,4 @@ uvicorn==0.32.0
 aiosqlite==0.22.1
 sqlalchemy==2.0.48
 alembic==1.14.1
+pytest-asyncio
