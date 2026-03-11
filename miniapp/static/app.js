@@ -91,7 +91,7 @@ function showRequestError(prefix, error) {
   alert(`${prefix}: ${message}`);
 }
 
-function scheduleReelsRefresh(draftId, attempts = 4) {
+function scheduleReelsRefresh(draftId, attempts = 10) {
   if (!draftId || attempts <= 0) {
     return;
   }
@@ -108,7 +108,7 @@ function scheduleReelsRefresh(draftId, attempts = 4) {
       );
       renderReels();
       renderReelsDetail(reel);
-      if (readyFrames < Math.min(reel.frame_count || 0, 2)) {
+      if (readyFrames < (reel.frame_count || 0)) {
         scheduleReelsRefresh(draftId, attempts - 1);
       }
     } catch (_error) {

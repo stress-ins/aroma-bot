@@ -297,7 +297,6 @@ async def generate_reels(
     background_tasks.add_task(
         populate_reels_frame_assets,
         saved.draft_id,
-        frame_indexes=[0, 1],
     )
     draft = serialize_reels_draft(saved.draft_id)
     if not draft:
