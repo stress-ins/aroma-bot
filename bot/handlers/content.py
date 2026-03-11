@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-import asyncio
 import logging
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, InputMediaPhoto
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import CallbackQueryHandler, CommandHandler, ContextTypes, MessageHandler, filters
 
 from bot.agents import (
@@ -11,13 +10,10 @@ from bot.agents import (
     GOAL_LABELS,
     format_content_message,
     format_label,
-    generate_content_draft,
-    generate_image_bytes,
+    generate_strategist_step,
     generate_topic_options,
+    generate_writer_step,
     goal_label,
-    make_single_image_prompt,
-    make_slide_prompts_no_text,
-    make_slide_prompts_with_text,
 )
 from config import settings
 from bot.handlers.threads_manager import publish_threads_keyboard, threads_api_enabled
@@ -29,10 +25,8 @@ SOURCE_LABELS = {
     "prompt": "Свой запрос",
 }
 
-DEFAULT_CAROUSEL_IMAGE_PROMPT = (
-    "warm sensory wellness scene, terracotta beige sage palette, natural textures, "
-    "soft light, calm atmospheric composition --ar 4:5 --style atmospheric"
-)
+# Formats available in /content (carousel redirects to /carousel)
+_CONTENT_FORMATS = {k: v for k, v in FORMAT_LABELS.items() if k != "carousel"}
 
 
 def _goals_keyboard() -> InlineKeyboardMarkup:
@@ -46,9 +40,10 @@ def _goals_keyboard() -> InlineKeyboardMarkup:
 def _formats_keyboard() -> InlineKeyboardMarkup:
     buttons = [
         InlineKeyboardButton(label, callback_data=f"ct:format:{key}")
-        for key, label in FORMAT_LABELS.items()
+        for key, label in _CONTENT_FORMATS.items()
     ]
-    return InlineKeyboardMarkup([buttons[:2], buttons[2:]])
+    buttons.append(InlineKeyboardButton("🎠 Карусель → /carousel", callback_data="ct:format:carousel"))
+    return InlineKeyboardMarkup([buttons[:2], [buttons[2]], [buttons[3]]])
 
 
 def _topics_keyboard(topics: list[str]) -> InlineKeyboardMarkup:
@@ -59,6 +54,13 @@ def _topics_keyboard(topics: list[str]) -> InlineKeyboardMarkup:
     rows = [topic_buttons[i:i + 5] for i in range(0, len(topic_buttons), 5)]
     rows.append([InlineKeyboardButton("🔄 Новые темы", callback_data="ct:topics:refresh")])
     return InlineKeyboardMarkup(rows)
+
+
+def _draft_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup([[
+        InlineKeyboardButton("🔄 Другой вариант", callback_data="ct:regen"),
+        InlineKeyboardButton("↩️ К темам", callback_data="ct:back:topics"),
+    ]])
 
 
 def _source_keyboard() -> InlineKeyboardMarkup:
@@ -83,26 +85,17 @@ def _topics_text(goal_key: str, format_key: str, topics: list[str], source_key: 
     )
 
 
-def _prompt_buttons() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup([[
-        InlineKeyboardButton("🖼 С текстом", callback_data="ct:prompt:text"),
-        InlineKeyboardButton("🖼 Без текста", callback_data="ct:prompt:notxt"),
-    ]])
-
-
 async def cmd_content(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not settings.anthropic_api_key:
         await update.message.reply_text("❌ Для /content нужен ANTHROPIC_API_KEY.")
         return
 
-    context.user_data.pop("content_goal", None)
-    context.user_data.pop("content_format", None)
-    context.user_data.pop("content_source", None)
-    context.user_data.pop("content_topics", None)
-    context.user_data.pop("content_custom_brief", None)
-    context.user_data.pop("content_awaiting_prompt", None)
-    context.user_data.pop("content_slides", None)
-    context.user_data.pop("content_img_prompt", None)
+    for key in (
+        "content_goal", "content_format", "content_source", "content_topics",
+        "content_custom_brief", "content_awaiting_prompt",
+        "content_last_topic", "content_last_goal", "content_last_format",
+    ):
+        context.user_data.pop(key, None)
 
     await update.message.reply_text(
         "🧠 Контент-агенты готовы.\n\nВыбери цель контента:",
@@ -118,6 +111,7 @@ async def cb_content(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     await query.answer()
     data = query.data
 
+    # ── Goal ──────────────────────────────────────────────────────────────────
     if data.startswith("ct:goal:"):
         goal_key = data.split(":")[2]
         context.user_data["content_goal"] = goal_key
@@ -127,11 +121,21 @@ async def cb_content(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         )
         return
 
+    # ── Format ────────────────────────────────────────────────────────────────
     if data.startswith("ct:format:"):
         format_key = data.split(":")[2]
         goal_key = context.user_data.get("content_goal")
         if not goal_key:
             await query.message.reply_text("❌ Сначала выбери цель через /content.")
+            return
+
+        if format_key == "carousel":
+            await query.message.edit_text(
+                f"🎯 Цель: {goal_label(goal_key)}\n\n"
+                "🎠 Для карусели используй команду /carousel\n\n"
+                "Там полный флоу: 6 слайдов с нарративной дугой, "
+                "картинки с QA-агентом, PPTX с умным позиционированием текста."
+            )
             return
 
         context.user_data["content_format"] = format_key
@@ -141,6 +145,7 @@ async def cb_content(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         )
         return
 
+    # ── Source ────────────────────────────────────────────────────────────────
     if data.startswith("ct:source:"):
         source_key = data.split(":")[2]
         goal_key = context.user_data.get("content_goal")
@@ -159,7 +164,7 @@ async def cb_content(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
                 f"🎯 Цель: {goal_label(goal_key)}\n"
                 f"🧩 Формат: {format_label(format_key)}\n"
                 f"🧭 Источник: {_source_label(source_key)}\n\n"
-                "Пришли одним сообщением свое направление.\n\n"
+                "Пришли одним сообщением своё направление.\n\n"
                 "Например:\n"
                 "- как через аромат мягко снимать офисный стресс\n"
                 "- контент для корпоративных клиентов про wellbeing\n"
@@ -168,7 +173,8 @@ async def cb_content(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
             return
 
         await query.message.edit_text(
-            f"🎯 Цель: {goal_label(goal_key)}\n🧩 Формат: {format_label(format_key)}\n🧭 Источник: {_source_label(source_key)}\n\n⏳ Собираю тренды и ищу темы..."
+            f"🎯 Цель: {goal_label(goal_key)}\n🧩 Формат: {format_label(format_key)}\n"
+            f"🧭 Источник: {_source_label(source_key)}\n\n⏳ Собираю тренды и ищу темы..."
         )
 
         results = cache.get("results")
@@ -188,6 +194,7 @@ async def cb_content(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         )
         return
 
+    # ── Refresh topics ────────────────────────────────────────────────────────
     if data == "ct:topics:refresh":
         goal_key = context.user_data.get("content_goal")
         format_key = context.user_data.get("content_format")
@@ -216,7 +223,7 @@ async def cb_content(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
                 f"🎯 Цель: {goal_label(goal_key)}\n"
                 f"🧩 Формат: {format_label(format_key)}\n"
                 f"🧭 Источник: {_source_label(source_key)}\n\n"
-                "Пришли заново свое направление одним сообщением."
+                "Пришли заново своё направление одним сообщением."
             )
             return
 
@@ -232,6 +239,22 @@ async def cb_content(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         )
         return
 
+    # ── Back to topics ────────────────────────────────────────────────────────
+    if data == "ct:back:topics":
+        topics = context.user_data.get("content_topics", [])
+        goal_key = context.user_data.get("content_goal")
+        format_key = context.user_data.get("content_format")
+        source_key = context.user_data.get("content_source", "trends")
+        if not topics or not goal_key or not format_key:
+            await query.message.reply_text("❌ Темы устарели. Запусти /content заново.")
+            return
+        await query.message.reply_text(
+            _topics_text(goal_key, format_key, topics, source_key),
+            reply_markup=_topics_keyboard(topics),
+        )
+        return
+
+    # ── Pick topic ────────────────────────────────────────────────────────────
     if data.startswith("ct:pick:"):
         topics: list[str] = context.user_data.get("content_topics", [])
         goal_key = context.user_data.get("content_goal")
@@ -243,72 +266,76 @@ async def cb_content(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
             return
 
         topic = topics[idx]
-        status = await query.message.reply_text(
-            f"✍️ Генерирую контент.\n\nЦель: {goal_label(goal_key)}\nФормат: {format_label(format_key)}\nТема: {topic}"
-        )
-        draft = await generate_content_draft(topic, goal_key, format_key)
-        message = format_content_message(draft, topic, goal_key, format_key)
-        await status.delete()
-        await query.message.reply_text(message)
+        context.user_data["content_last_topic"] = topic
+        context.user_data["content_last_goal"] = goal_key
+        context.user_data["content_last_format"] = format_key
 
-        if format_key == "threads" and draft.caption and threads_api_enabled():
-            context.user_data["threads_publish_text"] = draft.caption
-            await query.message.reply_text(
-                "Если текст готов, можешь отправить его прямо в Threads:",
-                reply_markup=publish_threads_keyboard(),
+        await _generate_and_show_draft(query.message, context, topic, goal_key, format_key)
+        return
+
+    # ── Regenerate same topic ─────────────────────────────────────────────────
+    if data == "ct:regen":
+        topic = context.user_data.get("content_last_topic")
+        goal_key = context.user_data.get("content_last_goal") or context.user_data.get("content_goal")
+        format_key = context.user_data.get("content_last_format") or context.user_data.get("content_format")
+        if not topic or not goal_key or not format_key:
+            await query.message.reply_text("❌ Контекст потерян. Запусти /content заново.")
+            return
+        await _generate_and_show_draft(query.message, context, topic, goal_key, format_key)
+        return
+
+
+async def _generate_and_show_draft(
+    msg, context: ContextTypes.DEFAULT_TYPE, topic: str, goal_key: str, format_key: str
+) -> None:
+    """Run 3-agent chain with per-step status updates, then show draft."""
+    status = await msg.reply_text(
+        f"🎯 {goal_label(goal_key)} · {format_label(format_key)}\n"
+        f"📌 {topic}\n\n"
+        "🧠 Стратег: ищет угол и хук..."
+    )
+
+    # Step 1: Strategist
+    try:
+        angle, hook = await generate_strategist_step(topic, goal_key, format_key)
+        angle_preview = (angle[:70] + "…") if len(angle) > 70 else angle
+        try:
+            await status.edit_text(
+                f"🎯 {goal_label(goal_key)} · {format_label(format_key)}\n"
+                f"📌 {topic}\n\n"
+                f"🧠 Угол: {angle_preview}\n\n"
+                "✍️ Автор: пишет текст..."
             )
+        except Exception:
+            pass
+    except Exception:
+        logger.exception("Strategist step failed")
+        angle, hook = "", ""
 
-        if format_key == "carousel" and draft.slides:
-            context.user_data["content_slides"] = draft.slides
-            base_prompt = draft.visual_prompt or DEFAULT_CAROUSEL_IMAGE_PROMPT
-            context.user_data["content_img_prompt"] = base_prompt
-
-            if not settings.image_api_key:
-                await query.message.reply_text(
-                    "⚠️ Автогенерация картинок недоступна.\nВыбери, какие промпты показать:",
-                    reply_markup=_prompt_buttons(),
-                )
-                return
-
-            media: list[InputMediaPhoto] = []
-            loop = asyncio.get_event_loop()
-            for slide_idx, slide in enumerate(draft.slides, 1):
-                image_prompt = make_single_image_prompt(base_prompt, slide, with_text=True)
-                image_bytes = await loop.run_in_executor(None, generate_image_bytes, image_prompt)
-                if image_bytes:
-                    media.append(InputMediaPhoto(media=image_bytes, caption=f"Слайд {slide_idx}: {slide}"))
-
-            if media and len(media) == len(draft.slides):
-                for start in range(0, len(media), 10):
-                    await query.message.reply_media_group(media[start:start + 10])
-                await query.message.reply_text(
-                    "Если захочешь вручную доработать визуалы в Canva, вот кнопки с prompt'ами:",
-                    reply_markup=_prompt_buttons(),
-                )
-            else:
-                await query.message.reply_text(
-                    "⚠️ Картинки не удалось сгенерировать автоматически.\nВыбери, какие промпты показать:",
-                    reply_markup=_prompt_buttons(),
-                )
+    # Step 2: Writer + Editor
+    try:
+        draft = await generate_writer_step(topic, goal_key, format_key, angle, hook)
+    except Exception:
+        logger.exception("Writer step failed")
+        await status.delete()
+        await msg.reply_text("❌ Не удалось сгенерировать контент. Попробуй позже.")
         return
 
-    if data == "ct:prompt:text":
-        slides = context.user_data.get("content_slides", [])
-        img_prompt = context.user_data.get("content_img_prompt", "")
-        if not slides or not img_prompt:
-            await query.message.reply_text("❌ Данные устарели. Сгенерируй карусель заново.")
-            return
-        await query.message.reply_text(make_slide_prompts_with_text(img_prompt, slides))
-        return
+    try:
+        await status.delete()
+    except Exception:
+        pass
 
-    if data == "ct:prompt:notxt":
-        slides = context.user_data.get("content_slides", [])
-        img_prompt = context.user_data.get("content_img_prompt", "")
-        if not slides or not img_prompt:
-            await query.message.reply_text("❌ Данные устарели. Сгенерируй карусель заново.")
-            return
-        await query.message.reply_text(make_slide_prompts_no_text(img_prompt, slides))
-        return
+    message = format_content_message(draft, topic, goal_key, format_key)
+    await msg.reply_text(message, reply_markup=_draft_keyboard())
+
+    # Threads publish button
+    if format_key == "threads" and draft.caption and threads_api_enabled():
+        context.user_data["threads_publish_text"] = draft.caption
+        await msg.reply_text(
+            "Если текст готов, можешь отправить его прямо в Threads:",
+            reply_markup=publish_threads_keyboard(),
+        )
 
 
 async def msg_content_prompt(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

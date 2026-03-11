@@ -30,11 +30,40 @@ FORMAT_LABELS = {
     "carousel": "Карусель",
 }
 
-FORMAT_GUIDANCE = {
-    "threads": "Короткий живой пост до 450 символов. Сильный хук, плотный ритм, финальный вопрос или CTA.",
-    "instagram": "Подпись до 900 символов. Можно чуть больше воздуха, но без длинных заходов.",
-    "telegram": "Пост до 1200 символов. Чуть глубже, чем в соцсетях, но все еще компактно и читабельно.",
-    "carousel": "5 слайдов: хук, 3 смысловых слайда, CTA. Каждый слайд короткий и визуально пригодный.",
+# Detailed per-platform writing rules for the Writer agent
+_PLATFORM_RULES_WRITER = {
+    "threads": """\
+Platform: Threads.
+STRICT LIMIT: 450 characters total including hashtags.
+Structure:
+- Line 1: the hook — verbatim or tightened, max 12 words, no greeting, no "Сегодня хочу"
+- Body: 2-3 dense sentences. Specific and concrete, no filler transitions
+- Last line: question to reader OR one-sentence CTA ("Напиши в ДМ если откликается")
+- New line, then 3-5 hashtags
+Forbidden: "В нашем мире", long intros, multiple CTAs, "подписывайся", empty filler""",
+
+    "instagram": """\
+Platform: Instagram caption.
+STRICT LIMIT: 900 characters (hashtags go on a separate line after a blank line, not counted in limit).
+Structure:
+- Line 1: hook (standalone line, max 15 words)
+- Blank line
+- Body: 2-4 short paragraphs, blank line between each
+- Use ✦ or one relevant emoji per section as a visual anchor — not decorative noise
+- One human CTA sentence before hashtags ("Если резонирует — напиши в ДМ" style)
+- Blank line, then 5-10 hashtags
+Forbidden: wall of text, hashtags in body, corporate tone, "подписывайся на нас", generic opener""",
+
+    "telegram": """\
+Platform: Telegram post.
+STRICT LIMIT: 1200 characters.
+Structure:
+- First line: **bold hook** (use markdown ** ** for bold)
+- Blank line
+- Body: 2-3 paragraphs, blank line between each — deeper and more personal than Instagram
+- Include one specific observation, example, or scenario
+- One understated CTA at the end
+NO hashtags in Telegram. Can use **bold** for 1-2 key phrases maximum.""",
 }
 
 BRAND_CONTEXT = """\
@@ -99,28 +128,28 @@ def parse_content_draft(raw: str) -> ContentDraft:
         line = line.strip()
         probe = line.removeprefix("- ").strip()
         probe = probe.replace("**", "").replace("__", "").strip()
-        if probe.startswith("ANGLE:"):
+        if probe.upper().startswith("ANGLE:"):
             draft.angle = _fix_dashes(probe.split(":", 1)[1].strip())
             current_field = "angle"
-        elif probe.startswith("HOOK:"):
+        elif probe.upper().startswith("HOOK:"):
             draft.hook = _fix_dashes(probe.split(":", 1)[1].strip())
             current_field = "hook"
-        elif probe.startswith("CAPTION:"):
+        elif probe.upper().startswith("CAPTION:"):
             draft.caption = _fix_dashes(probe.split(":", 1)[1].strip())
             current_field = "caption"
-        elif probe.startswith("CTA:"):
+        elif probe.upper().startswith("CTA:"):
             draft.cta = _fix_dashes(probe.split(":", 1)[1].strip())
             current_field = "cta"
-        elif probe.startswith("HASHTAGS:"):
+        elif probe.upper().startswith("HASHTAGS:"):
             draft.hashtags = _fix_dashes(probe.split(":", 1)[1].strip())
             current_field = "hashtags"
-        elif probe.startswith("VISUAL_PROMPT:"):
+        elif probe.upper().startswith("VISUAL_PROMPT:"):
             draft.visual_prompt = _fix_dashes(probe.split(":", 1)[1].strip())
             current_field = "visual_prompt"
         else:
             matched_slide = False
             for idx in range(1, 6):
-                if probe.startswith(f"SLIDE{idx}:"):
+                if probe.upper().startswith(f"SLIDE{idx}:"):
                     draft.slides.append(_fix_dashes(probe.split(":", 1)[1].strip()))
                     current_field = ""
                     matched_slide = True
@@ -144,13 +173,8 @@ def parse_content_draft(raw: str) -> ContentDraft:
 
 def _has_structured_content(draft: ContentDraft) -> bool:
     return any([
-        draft.angle,
-        draft.hook,
-        draft.caption,
-        draft.cta,
-        draft.hashtags,
-        draft.visual_prompt,
-        draft.slides,
+        draft.angle, draft.hook, draft.caption,
+        draft.cta, draft.hashtags, draft.visual_prompt, draft.slides,
     ])
 
 
@@ -202,13 +226,14 @@ def make_single_image_prompt(base: str, text: str, with_text: bool) -> str:
     return f"{base}, visual theme: {text[:90]}, clean minimal background, negative space for text, no typography"
 
 
+# ── Prompts ──────────────────────────────────────────────────────────────────
+
 def _topics_prompt(trends_text: str, goal_key: str, format_key: str) -> str:
     return f"""\
 {BRAND_CONTEXT}
-
 Роль: ты Content Strategist.
 Цель контента: {GOAL_GUIDANCE[goal_key]}
-Формат: {FORMAT_LABELS[format_key]}. {FORMAT_GUIDANCE[format_key]}
+Формат: {FORMAT_LABELS[format_key]}.
 
 Ниже сигналы из трендов:
 {trends_text}
@@ -229,13 +254,12 @@ def _topics_prompt(trends_text: str, goal_key: str, format_key: str) -> str:
 def _custom_topics_prompt(user_brief: str, goal_key: str, format_key: str) -> str:
     return f"""\
 {BRAND_CONTEXT}
-
 Роль: ты Content Strategist.
 Цель контента: {GOAL_GUIDANCE[goal_key]}
-Формат: {FORMAT_LABELS[format_key]}. {FORMAT_GUIDANCE[format_key]}
+Формат: {FORMAT_LABELS[format_key]}.
 
 Ниже пользовательское направление для контента:
-{user_brief}
+{user_brief[:2000]}
 
 Сгенерируй 10 тем.
 Требования:
@@ -250,64 +274,55 @@ def _custom_topics_prompt(user_brief: str, goal_key: str, format_key: str) -> st
 """
 
 
-def _draft_prompt(topic: str, goal_key: str, format_key: str) -> str:
-    base = f"""\
+def _strategist_prompt(topic: str, goal_key: str, format_key: str) -> str:
+    return f"""\
 {BRAND_CONTEXT}
-
-Роль: ты связка из 3 агентов:
-1. Trend Analyst - понимает, почему тема резонирует сейчас.
-2. Platform Writer - пишет нативно под площадку.
-3. Brand Guardian - убирает манипуляции, магическое мышление и медицинские обещания.
+Роль: ты Content Strategist. Твоя задача — найти угол и первую строку.
 
 Тема: {topic}
-Цель контента: {GOAL_GUIDANCE[goal_key]}
-Формат: {FORMAT_LABELS[format_key]}. {FORMAT_GUIDANCE[format_key]}
+Цель: {GOAL_GUIDANCE[goal_key]}
+Формат: {FORMAT_LABELS[format_key]}
 
-Собери готовый контент-пакет.
-Общие требования:
-- Писать по-русски.
-- От первого лица или в теплом экспертном голосе.
-- Без клише, без "просто позволь себе", без агрессивного прогрева.
-- Текст должен звучать современно и вручную.
-- CTA мягкий, но конкретный.
-- VISUAL_PROMPT пиши на английском, до 30 слов.
+Ответь строго в формате (два поля, на русском):
+ANGLE: [1-2 предложения — почему эта тема резонирует СЕЙЧАС с этой аудиторией и под эту цель]
+HOOK: [точная первая строка поста — останавливает скролл, без приветствий, без "Сегодня хочу поделиться"]
 """
-    if format_key == "carousel":
-        extra = """\
+
+
+def _writer_prompt(topic: str, goal_key: str, format_key: str, angle: str, hook: str) -> str:
+    rules = _PLATFORM_RULES_WRITER.get(format_key, _PLATFORM_RULES_WRITER["telegram"])
+    return f"""\
+{BRAND_CONTEXT}
+Роль: ты Platform Writer. Ты получил угол и хук от стратега. Напиши готовый пост.
+
+Тема: {topic}
+Цель: {GOAL_GUIDANCE[goal_key]}
+Стратегический угол: {angle}
+Первая строка (хук): {hook}
+
+{rules}
+
 Верни строго в формате:
-ANGLE: ...
-HOOK: ...
-SLIDE1: ...
-SLIDE2: ...
-SLIDE3: ...
-SLIDE4: ...
-SLIDE5: ...
-CTA: ...
-HASHTAGS: ...
-VISUAL_PROMPT: ...
+CAPTION: [полный текст поста, начиная с хука, с хэштегами согласно правилам платформы]
+CTA: [отдельный CTA если ещё не в тексте, иначе пусто]
+VISUAL_PROMPT: [на английском, до 25 слов, terracotta/beige/sage palette, soft light, atmospheric lifestyle]
 """
-    else:
-        extra = """\
-Верни строго в формате:
-ANGLE: ...
-HOOK: ...
-CAPTION: ...
-CTA: ...
-HASHTAGS: ...
-VISUAL_PROMPT: ...
-"""
-    return base + "\n" + extra
 
 
-def _call_claude(prompt: str, max_tokens: int) -> str:
+# ── Agent functions ──────────────────────────────────────────────────────────
+
+def _call_claude(prompt: str, max_tokens: int, system: str = "") -> str:
     import anthropic
 
     client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
-    response = client.messages.create(
+    kwargs: dict = dict(
         model="claude-haiku-4-5-20251001",
         max_tokens=max_tokens,
         messages=[{"role": "user", "content": prompt}],
     )
+    if system:
+        kwargs["system"] = system
+    response = client.messages.create(**kwargs)
     return response.content[0].text.strip()
 
 
@@ -326,22 +341,53 @@ def _generate_topics_sync(
     return parse_numbered_list(raw, limit=10)
 
 
-def _generate_draft_sync(topic: str, goal_key: str, format_key: str) -> ContentDraft:
+def _generate_strategist_sync(topic: str, goal_key: str, format_key: str) -> tuple[str, str]:
+    """Step 1: Strategist finds creative angle and hook line."""
+    raw = _call_claude(_strategist_prompt(topic, goal_key, format_key), max_tokens=250)
+    angle = ""
+    hook = ""
+    for line in raw.strip().splitlines():
+        line = line.strip()
+        cleaned = line.replace("**", "").replace("__", "").strip()
+        if cleaned.upper().startswith("ANGLE:"):
+            angle = _fix_dashes(cleaned.split(":", 1)[1].strip())
+        elif cleaned.upper().startswith("HOOK:"):
+            hook = _fix_dashes(cleaned.split(":", 1)[1].strip())
+    # Fallback: use raw output as angle if parsing failed
+    return angle or raw[:200], hook
+
+
+def _generate_writer_sync(
+    topic: str, goal_key: str, format_key: str, angle: str, hook: str
+) -> ContentDraft:
+    """Step 2: Writer produces platform-native draft. Step 3: Editor polishes."""
     from bot.agents.creative_team import edit_post_sync
 
-    raw = _call_claude(_draft_prompt(topic, goal_key, format_key), max_tokens=1200)
+    raw = _call_claude(
+        _writer_prompt(topic, goal_key, format_key, angle, hook), max_tokens=900
+    )
     draft = parse_content_draft(raw)
+    draft.angle = angle
+    if not draft.hook:
+        draft.hook = hook
+
     if not _has_structured_content(draft) and raw.strip():
         draft.caption = _fix_dashes(raw.strip())
 
-    # Editor pass: sharpen hook and caption
-    if format_key != "carousel":
-        if draft.hook:
-            draft.hook = edit_post_sync(draft.hook, topic, platform=format_key)
-        if draft.caption:
-            draft.caption = edit_post_sync(draft.caption, topic, platform=format_key)
+    # Step 3: Editor pass
+    if draft.caption:
+        draft.caption = edit_post_sync(draft.caption, topic, platform=format_key)
+
     return draft
 
+
+def _generate_draft_sync(topic: str, goal_key: str, format_key: str) -> ContentDraft:
+    """Full 3-agent chain: Strategist → Writer → Editor."""
+    angle, hook = _generate_strategist_sync(topic, goal_key, format_key)
+    return _generate_writer_sync(topic, goal_key, format_key, angle, hook)
+
+
+# ── Public async API ─────────────────────────────────────────────────────────
 
 async def generate_topic_options(
     results: list[SourceResult] | None,
@@ -355,7 +401,28 @@ async def generate_topic_options(
     )
 
 
+async def generate_strategist_step(
+    topic: str, goal_key: str, format_key: str
+) -> tuple[str, str]:
+    """Returns (angle, hook) — exposes step 1 for progress display in handler."""
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(
+        _executor, _generate_strategist_sync, topic, goal_key, format_key
+    )
+
+
+async def generate_writer_step(
+    topic: str, goal_key: str, format_key: str, angle: str, hook: str
+) -> ContentDraft:
+    """Returns ContentDraft — exposes step 2+3 for progress display in handler."""
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(
+        _executor, _generate_writer_sync, topic, goal_key, format_key, angle, hook
+    )
+
+
 async def generate_content_draft(topic: str, goal_key: str, format_key: str) -> ContentDraft:
+    """Full 3-agent chain as a single async call."""
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(_executor, _generate_draft_sync, topic, goal_key, format_key)
 
