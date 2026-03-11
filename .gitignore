@@ -7,5 +7,11 @@ venv/
 *.session
 *.session-journal
 .instagrapi_session.json
+
+# Data storage
 data/reels_assets/
-data/aroma.db\ndata/drafts.json\ndata/plans.json
+data/carousel_assets/
+data/*.db
+data/*.json
+!data/reference_cards_*.json
+!data/aroma_cards_seed.json
