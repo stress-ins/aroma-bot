@@ -7,6 +7,9 @@ const state = {
   referenceItems: [],
   referenceSearch: "",
   selectedReference: null,
+  referenceEditing: false,
+  referenceSaving: false,
+  referenceNotice: "",
   inbox: [],
   inboxKind: "all",
   drafts: [],
@@ -126,6 +129,33 @@ function escapeHtml(value) {
 function payloadSection(title, content) {
   if (!content) return "";
   return `<section class="section"><h3>${escapeHtml(title)}</h3><div class="detail-preview">${escapeHtml(content)}</div></section>`;
+}
+
+const REFERENCE_SECTION_META = {
+  passport: { title: "Паспорт карточки", icon: "passport" },
+  description: { title: "Описание", icon: "spark" },
+  questions: { title: "Какие вопросы поднимает", icon: "question" },
+  nps_effect: { title: "Действие на НПС", icon: "pulse" },
+  therapeutic_properties: { title: "Терапевтические свойства", icon: "leaf" },
+  psychological_properties: { title: "Психологические свойства", icon: "mind" },
+  plus: { title: 'Ресурс "+"', icon: "plus" },
+  minus: { title: 'Ресурс "-"', icon: "minus" },
+  history: { title: "Исторические сведения", icon: "clock" },
+};
+
+function referenceSectionIcon(kind) {
+  const icons = {
+    passport: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="16" rx="3"></rect><path d="M9 9h6M9 13h6M9 17h3"></path></svg>`,
+    spark: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z"></path></svg>`,
+    question: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.2 9a2.8 2.8 0 1 1 5.3 1.3c-.5.8-1.5 1.3-2 2.1-.3.4-.4.8-.4 1.4"></path><circle cx="12" cy="18" r="1"></circle></svg>`,
+    pulse: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l2-4 4 8 2-4h6"></path></svg>`,
+    leaf: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 5c-7 0-12 4-12 10 0 2.8 2.2 4 4.6 4C17 19 21 14 21 8.8 21 6.6 20.4 5.6 19 5Z"></path><path d="M9 17c1.8-2.6 4.7-4.8 8-6"></path></svg>`,
+    mind: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 9.5a3.5 3.5 0 1 1 6.7 1.5c1.3.5 2.3 1.7 2.3 3.2 0 1.9-1.6 3.3-3.5 3.3H11c-2.5 0-4.5-1.8-4.5-4 0-1.8 1.2-3.3 3-4Z"></path></svg>`,
+    plus: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>`,
+    minus: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"></path></svg>`,
+    clock: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M12 8v4l3 2"></path></svg>`,
+  };
+  return icons[kind] || icons.spark;
 }
 
 function promptSection(title, prompt, copyLabel = "Скопировать промпт") {
@@ -485,21 +515,160 @@ async function openReference(slug, tabId = state.tab) {
   if (!slug || !meta) return;
   state.selectedReference = await fetchJson(`/api/references/${meta.category}/${encodeURIComponent(slug)}`);
   state.selectedReference.category = meta.category;
+  state.referenceEditing = false;
+  state.referenceNotice = "";
   state.tab = tabId;
   elements.tabsContainer.querySelectorAll(".tab-button").forEach((b) => b.classList.toggle("active", b.dataset.tab === tabId));
   renderReferences();
   enterDetailView();
 }
 
-function renderReferencePassport(reference) {
-  const parts = [
-    reference.key ? `Ключ: ${reference.key}` : "",
-    reference.botanical_family ? `Семейство / тип: ${reference.botanical_family}` : "",
-    reference.origin_countries ? `Источник / традиция: ${reference.origin_countries}` : "",
-    reference.extraction_method ? `Форма / метод: ${reference.extraction_method}` : "",
-    reference.volatility ? `Длительность / летучесть: ${reference.volatility}` : "",
+function referencePassportItems(reference) {
+  return [
+    reference.key ? { label: "Ключ", value: reference.key } : null,
+    reference.botanical_family ? { label: "Семейство / тип", value: reference.botanical_family } : null,
+    reference.origin_countries ? { label: "Источник / традиция", value: reference.origin_countries } : null,
+    reference.extraction_method ? { label: "Форма / метод", value: reference.extraction_method } : null,
+    reference.volatility ? { label: "Летучесть", value: reference.volatility } : null,
   ].filter(Boolean);
-  return parts.join("\n");
+}
+
+function renderReferencePassport(reference) {
+  const parts = referencePassportItems(reference);
+  return parts.map((item) => `${item.label}: ${item.value}`).join("\n");
+}
+
+function renderReferencePassportBadges(reference) {
+  const parts = referencePassportItems(reference);
+  if (!parts.length) return "";
+  return `<div class="reference-badges">${parts.map((item) => `
+    <div class="reference-badge">
+      <span class="reference-badge-label">${escapeHtml(item.label)}</span>
+      <strong>${escapeHtml(item.value)}</strong>
+    </div>
+  `).join("")}</div>`;
+}
+
+function renderReferenceHero(reference, meta) {
+  return `
+    <section class="section reference-hero-card">
+      <div class="reference-hero-copy">
+        <p class="eyebrow">${escapeHtml(meta.label)} • справочник</p>
+        <h2 class="detail-title">${escapeHtml(reference.name)}</h2>
+        ${reference.key ? `<div class="reference-keyline">${escapeHtml(reference.key)}</div>` : ""}
+        ${reference.description ? `<div class="reference-summary">${escapeHtml(reference.description)}</div>` : ""}
+        ${renderReferencePassportBadges(reference)}
+      </div>
+      <div class="reference-hero-media">
+        <img class="aroma-image" src="${escapeHtml(reference.image_url)}" alt="${escapeHtml(reference.image_alt)}" loading="lazy" />
+        <div class="aroma-image-caption">${escapeHtml(reference.image_alt)}</div>
+      </div>
+    </section>
+  `;
+}
+
+function referenceSection(field, content) {
+  if (!content) return "";
+  const meta = REFERENCE_SECTION_META[field] || { title: field, icon: "spark" };
+  return `
+    <section class="section reference-section">
+      <h3 class="reference-section-title">
+        <span class="reference-section-icon">${referenceSectionIcon(meta.icon)}</span>
+        ${escapeHtml(meta.title)}
+      </h3>
+      <div class="detail-preview">${escapeHtml(content)}</div>
+    </section>
+  `;
+}
+
+function renderReferenceEditor(reference) {
+  return `
+    <section class="section reference-editor">
+      <div class="reference-editor-header">
+        <h3>Редактирование карточки</h3>
+        <p class="meta">Изменения сохраняются в базе и больше не перетираются seed-обновлениями.</p>
+      </div>
+      <form id="referenceEditForm" class="reference-form">
+        <label><span>Ключ</span><textarea name="key" rows="2">${escapeHtml(reference.key || "")}</textarea></label>
+        <label><span>Описание</span><textarea name="description" rows="4">${escapeHtml(reference.description || "")}</textarea></label>
+        <label><span>Какие вопросы поднимает</span><textarea name="questions" rows="6">${escapeHtml(reference.questions || "")}</textarea></label>
+        <label><span>Действие на НПС</span><textarea name="nps_effect" rows="4">${escapeHtml(reference.nps_effect || "")}</textarea></label>
+        <label><span>Терапевтические свойства</span><textarea name="therapeutic_properties" rows="5">${escapeHtml(reference.therapeutic_properties || "")}</textarea></label>
+        <label><span>Психологические свойства</span><textarea name="psychological_properties" rows="5">${escapeHtml(reference.psychological_properties || "")}</textarea></label>
+        <div class="reference-form-grid">
+          <label><span>Ресурс +</span><textarea name="resource_plus" rows="3">${escapeHtml(reference.resource_values?.plus || "")}</textarea></label>
+          <label><span>Ресурс -</span><textarea name="resource_minus" rows="3">${escapeHtml(reference.resource_values?.minus || "")}</textarea></label>
+        </div>
+        <label><span>Исторические сведения</span><textarea name="history" rows="5">${escapeHtml(reference.history || "")}</textarea></label>
+        <div class="reference-form-grid">
+          <label><span>Летучесть</span><input name="volatility" type="text" value="${escapeHtml(reference.volatility || "")}" /></label>
+          <label><span>Семейство / тип</span><input name="botanical_family" type="text" value="${escapeHtml(reference.botanical_family || "")}" /></label>
+          <label><span>Источник / традиция</span><input name="origin_countries" type="text" value="${escapeHtml(reference.origin_countries || "")}" /></label>
+          <label><span>Форма / метод</span><input name="extraction_method" type="text" value="${escapeHtml(reference.extraction_method || "")}" /></label>
+        </div>
+        <div class="actions-row reference-editor-actions">
+          <button class="primary-button" type="submit"${state.referenceSaving ? " disabled" : ""}>${state.referenceSaving ? "Сохраняю..." : "Сохранить карточку"}</button>
+          <button class="secondary-button" type="button" onclick="toggleReferenceEdit(false)">Отмена</button>
+        </div>
+      </form>
+    </section>
+  `;
+}
+
+function updateReferenceListItemFromCard(card) {
+  const item = state.referenceItems.find((entry) => entry.slug === card.slug);
+  if (!item) return;
+  item.name = card.name;
+  item.description = card.description || "";
+}
+
+async function saveReference(event) {
+  event.preventDefault();
+  if (!state.selectedReference || state.referenceSaving) return;
+  const form = event.currentTarget;
+  const payload = {
+    key: form.key.value.trim(),
+    description: form.description.value.trim(),
+    questions: form.questions.value.trim(),
+    nps_effect: form.nps_effect.value.trim(),
+    therapeutic_properties: form.therapeutic_properties.value.trim(),
+    psychological_properties: form.psychological_properties.value.trim(),
+    history: form.history.value.trim(),
+    volatility: form.volatility.value.trim(),
+    botanical_family: form.botanical_family.value.trim(),
+    origin_countries: form.origin_countries.value.trim(),
+    extraction_method: form.extraction_method.value.trim(),
+    resource_values: {
+      plus: form.resource_plus.value.trim(),
+      minus: form.resource_minus.value.trim(),
+    },
+  };
+
+  state.referenceSaving = true;
+  state.referenceNotice = "";
+  renderReferences();
+  try {
+    const updated = await fetchJson(
+      `/api/references/${state.selectedReference.category}/${encodeURIComponent(state.selectedReference.slug)}`,
+      { method: "PUT", body: JSON.stringify(payload) },
+    );
+    updated.category = state.selectedReference.category;
+    state.selectedReference = updated;
+    state.referenceEditing = false;
+    state.referenceNotice = "Карточка сохранена.";
+    updateReferenceListItemFromCard(updated);
+  } catch (error) {
+    state.referenceNotice = `Не удалось сохранить: ${error.message}`;
+  } finally {
+    state.referenceSaving = false;
+    renderReferences();
+  }
+}
+
+function toggleReferenceEdit(force) {
+  state.referenceEditing = typeof force === "boolean" ? force : !state.referenceEditing;
+  state.referenceNotice = "";
+  renderReferences();
 }
 
 function renderReferences() {
@@ -558,21 +727,26 @@ function renderReferences() {
   elements.draftDetail.innerHTML = `
     <div class="detail-grid">
       ${renderBackButton()}
-      <section class="section aroma-hero">
-        <img class="aroma-image" src="${escapeHtml(reference.image_url)}" alt="${escapeHtml(reference.image_alt)}" />
-        <div class="aroma-image-caption">${escapeHtml(reference.image_alt)}</div>
+      ${renderReferenceHero(reference, meta)}
+      <section class="section reference-toolbar">
+        <div class="actions-row">
+          <button class="secondary-button" type="button" onclick="toggleReferenceEdit()">${state.referenceEditing ? "Свернуть редактор" : "Редактировать карточку"}</button>
+        </div>
+        ${state.referenceNotice ? `<div class="reference-notice">${escapeHtml(state.referenceNotice)}</div>` : ""}
       </section>
-      ${aromaSection("Паспорт карточки", renderReferencePassport(reference))}
-      ${aromaSection("Описание", reference.description)}
-      ${aromaSection("Какие вопросы поднимает", reference.questions)}
-      ${aromaSection("Действие на НПС", reference.nps_effect)}
-      ${aromaSection("Терапевтические свойства", reference.therapeutic_properties)}
-      ${aromaSection("Психологические свойства", reference.psychological_properties)}
-      ${aromaSection('Ресурс "+"', reference.resource_values?.plus)}
-      ${aromaSection('Ресурс "-"', reference.resource_values?.minus)}
-      ${aromaSection("Исторические сведения", reference.history)}
+      ${state.referenceEditing ? renderReferenceEditor(reference) : ""}
+      ${referenceSection("passport", renderReferencePassport(reference))}
+      ${referenceSection("description", reference.description)}
+      ${referenceSection("questions", reference.questions)}
+      ${referenceSection("nps_effect", reference.nps_effect)}
+      ${referenceSection("therapeutic_properties", reference.therapeutic_properties)}
+      ${referenceSection("psychological_properties", reference.psychological_properties)}
+      ${referenceSection("plus", reference.resource_values?.plus)}
+      ${referenceSection("minus", reference.resource_values?.minus)}
+      ${referenceSection("history", reference.history)}
     </div>
   `;
+  document.getElementById("referenceEditForm")?.addEventListener("submit", saveReference);
   syncMobileNavigation();
 }
 
@@ -729,11 +903,6 @@ function renderCreateTool(toolId) {
 }
 
 function renderAromas() { renderReferences(); }
-
-function aromaSection(title, content) {
-  if (!content) return "";
-  return `<section class="section"><h3>${escapeHtml(title)}</h3><div class="detail-preview">${escapeHtml(content)}</div></section>`;
-}
 
 function renderAromasLocked() { renderReferencesLocked(); }
 
