@@ -22,7 +22,7 @@ from bot.services.miniapp_content_review import (
     polish_content_review_draft,
     update_content_review_draft,
 )
-from bot.services.miniapp_aromas import get_aroma_card, list_aromas
+from bot.services.miniapp_aromas import get_aroma_card, list_aromas, update_aroma_card
 from bot.services.miniapp_plan_actions import normalize_plan_format, normalize_plan_goal
 from bot.services.reels_assets import ASSETS_DIR, populate_reels_frame_assets, regenerate_reels_frame_asset
 from bot.services.drafts_store import get_draft, list_recent_drafts, update_draft
@@ -148,6 +148,21 @@ class CreateCarouselPayload(BaseModel):
 
 class PlanGeneratePayload(BaseModel):
     entry_index: int
+
+
+class AromaCardPayload(BaseModel):
+    description: str = Field(default="")
+    questions: str = Field(default="")
+    nps_effect: str = Field(default="")
+    therapeutic_properties: str = Field(default="")
+    psychological_properties: str = Field(default="")
+    history: str = Field(default="")
+    volatility: str = Field(default="")
+    botanical_family: str = Field(default="")
+    origin_countries: str = Field(default="")
+    extraction_method: str = Field(default="")
+    key: str = Field(default="")
+    resource_values: dict[str, str] = Field(default_factory=dict)
 
 
 @app.get("/")
@@ -283,12 +298,20 @@ async def aroma_access(x_telegram_init_data: str | None = Header(default=None)):
 
 @app.get("/api/aromas")
 async def aromas(_: int = Depends(_require_aroma_access)):
-    return {"items": list_aromas()}
+    return {"items": await list_aromas()}
 
 
 @app.get("/api/aromas/{slug}")
 async def aroma_detail(slug: str, _: int = Depends(_require_aroma_access)):
-    card = get_aroma_card(slug)
+    card = await get_aroma_card(slug)
+    if not card:
+        raise HTTPException(status_code=404, detail="aroma_not_found")
+    return card
+
+
+@app.put("/api/aromas/{slug}")
+async def aroma_update(slug: str, payload: AromaCardPayload, _: int = Depends(_require_aroma_access)):
+    card = await update_aroma_card(slug, payload.model_dump())
     if not card:
         raise HTTPException(status_code=404, detail="aroma_not_found")
     return card

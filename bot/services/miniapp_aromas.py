@@ -1,16 +1,19 @@
 from __future__ import annotations
 
+import json
+import re
+from datetime import datetime, timezone
+from pathlib import Path
 from urllib.parse import quote
 
+from sqlalchemy import select
 
-_THERAPEUTIC_PLACEHOLDER = "Раздел будет дополнен по вашей PDF-базе масел."
-_HISTORY_PLACEHOLDER = "Исторические сведения будут дополнены по вашей PDF-базе масел."
-_DEFAULT_QUESTIONS = (
-    "Какая тема этого масла сейчас наиболее откликается?\n"
-    "Где в вашей жизни не хватает этого ресурса?\n"
-    "Что меняется, если посмотреть на ситуацию через ресурс этого масла?"
-)
-_DEFAULT_RESOURCE_MINUS = "В минусе поднимаются темы, противоположные ресурсам этого масла."
+from db.models import AromaCardModel
+from db.session import AsyncSessionLocal
+
+
+BASE_DIR = Path(__file__).resolve().parents[2]
+SEED_FILE = BASE_DIR / "data" / "aroma_cards_seed.json"
 
 
 def _normalize(value: str) -> str:
@@ -49,101 +52,125 @@ def _source_image(source_type: str, title: str) -> str:
     return f"data:image/svg+xml;charset=UTF-8,{quote(svg)}"
 
 
-def _card(
-    *,
-    slug: str,
-    name: str,
-    source_type: str,
-    description: str,
-    questions: str = "",
-    aliases: tuple[str, ...] = (),
-    volatility: str = "Средняя",
-    resource_minus: str = "",
-    therapeutic: str = "",
-    history: str = "",
-) -> dict[str, object]:
-    prompt = questions.strip() or _DEFAULT_QUESTIONS
-    plus = description.strip()
-    minus = resource_minus.strip() or _DEFAULT_RESOURCE_MINUS
+def _serialize_model(model: AromaCardModel) -> dict[str, object]:
+    payload = dict(model.payload or {})
+    payload.setdefault("resource_values", {"plus": "", "minus": ""})
+    payload["slug"] = model.slug
+    payload["name"] = model.name
+    payload["aliases"] = list(model.aliases or [])
+    payload["source_type"] = model.source_type
+    payload["image_url"] = _source_image(model.source_type, model.name)
+    payload["image_alt"] = f"{model.name}: источник сырья"
+    payload["updated_at"] = model.updated_at.isoformat() if isinstance(model.updated_at, datetime) else str(model.updated_at)
+    return payload
+
+
+def _summary(model: AromaCardModel) -> dict[str, str]:
+    payload = dict(model.payload or {})
     return {
-        "slug": slug,
-        "name": name,
-        "aliases": list(aliases),
-        "description": description.strip(),
-        "questions": prompt,
-        "nps_effect": f"По текущей эмоциональной базе масло связано с темами: {description.strip()}",
-        "therapeutic_properties": therapeutic.strip() or _THERAPEUTIC_PLACEHOLDER,
-        "psychological_properties": description.strip(),
-        "resource_values": {"plus": plus, "minus": minus},
-        "history": history.strip() or _HISTORY_PLACEHOLDER,
-        "volatility": volatility,
-        "image_url": _source_image(source_type, name),
-        "image_alt": f"{name}: источник сырья",
+        "slug": model.slug,
+        "name": model.name,
+        "description": str(payload.get("description", "")),
     }
 
 
-_AROMA_CARDS = [
-    _card(slug="orange", name="Апельсин", source_type="citrus", volatility="Верхняя", description="Внутренний ребенок, радость, вера в себя.", questions="В какой сфере своей жизни вы не ощущаете радости?\nЧто вам мешает ее получать?\nХватает ли вам уверенности в себе?\nМожете назвать свои самые сильные 10 желаний?\nЧто вас огорчает в вашей жизни?", resource_minus="Потеря радости, контакт с желаниями ослаблен, снижается вера в себя."),
-    _card(slug="basil", name="Базилик", source_type="herb", description="Уверенность, заземленность, структура, ясность.", questions="В какой сфере своей жизни вы не чувствуете себя уверенно или не видите ясности ситуации?\nЧто бы вы хотели прояснить в своей жизни или что хотели бы структурировать?", resource_minus="Хаос, неуверенность, нехватка структуры и внутренней опоры."),
-    _card(slug="bergamot", name="Бергамот", source_type="citrus", volatility="Верхняя", description="Открытость новому, изменениям, любопытство, разрыв шаблонов, новые сценарии.", questions="Каких изменений в своей жизни вы больше всего боитесь?\nКакие изменения в вашей жизни произошли за недавний период, которые могли вызвать стресс?\nКак вы чаще всего реагируете, когда события развиваются не по вашему плану или когда вы попадаете в ситуации с неизвестными вам условиями?", resource_minus="Страх изменений, застревание в старых сценариях, напряжение перед новым."),
-    _card(slug="helichrysum", name="Бессмертник", source_type="flower", description='Выход есть, доверие жизни, восстановление после потрясений, потребность ощущать себя живым, присутствие, тотальность.', questions='В какой сфере жизни вы не видите "выхода" или ощущаете "хождение по кругу"?\nЧасто ли ситуации повторяются и это вас расстраивает?', resource_minus="Шок, ощущение безысходности, страх жизни или смерти, потеря смысла."),
-    _card(slug="vetiver", name="Ветивер", source_type="grass", volatility="Базовая", description='Щедрость, аристократизм, удовлетворенность в самореализации, укорененность, вера в свой потенциал.', questions="Доставляет ли вам ваша деятельность удовлетворение?\nИмеете ли вы возможность самореализовываться в той деятельности, которой занимаетесь?\nБыли ли в вашей жизни в недавний период потери близких и дорогих вам людей?\nПринимаете ли вы со стороны других людей проявление в ваш адрес щедрости и заботы?", resource_minus="Потеря опоры, неудовлетворенность самореализацией, сложность принимать заботу."),
-    _card(slug="clove", name="Гвоздика", source_type="spice", description='Тема "хорошая или плохая девочка", выбор между "хочу" и "должна", способность говорить нет без чувства стыда и вины.', questions='По какому принципу вы преимущественно живете: "хочу" или "должна / должен"?\nЛегко ли вам сказать другим "нет" без чувства вины или стыда?\nЧьи приоритеты у вас первичны?', resource_minus="Жизнь из долга, стыд за свои желания, трудность выстраивать отказ."),
-    _card(slug="geranium", name="Герань", source_type="flower", description="Баланс мужской и женской энергии, партнерство, контакт, чувственность, ранимость, агрессия как форма защиты.", questions="В какой сфере своей жизни вы должны быть сильным и не позволяете себе проявлять слабость?\nВ какой сфере своей жизни вы не можете позволить себе быть уязвимой или уязвимым и вынуждены защищаться?\nКакой жизненный опыт сделал вас более жесткой или закрытой?", resource_minus="Перекос в ролях, закрытость, защита через агрессию, запрет на уязвимость."),
-    _card(slug="grapefruit", name="Грейпфрут", source_type="citrus", volatility="Верхняя", description="Коммуникация, общение как ресурс, психологические таланты.", questions="Что в общении с людьми доставляет вам больше всего дискомфорта?", resource_minus="Сложность проявляться в общении, напряжение в коммуникации."),
-    _card(slug="jasmine", name="Жасмин", source_type="flower", description="Безусловная и условная любовь, открытое или закрытое сердце, заботливая любящая мама для внутреннего ребенка.", questions="Как вы думаете, за что вас любят?\nЗа что вы любите и за что не любите себя?", resource_minus="Закрытое сердце, условность любви, дефицит самопринятия."),
-    _card(slug="ylang-ylang", name="Иланг-иланг", source_type="flower", description="Гибкость, пластичность, баланс брать и давать, сексуальность, отпускание контроля.", questions="Как часто вы сталкиваетесь с ситуациями, в которых категорически не согласны с мнением или действием других людей?\nЧто при этом происходит?\nКаким принципом в жизни вы чаще руководствуетесь: отдавать или принимать?\nВ каких сферах жизни вы боитесь отпустить контроль?", resource_minus="Жесткость, перекос в балансе брать-давать, контроль, блокированная сексуальность."),
-    _card(slug="ginger", name="Имбирь", source_type="spice", description='Сила, уверенность, решительность, тема "переваривания" ситуации, гнев.', questions='Кого или какую ситуацию в своей жизни вы "не перевариваете"?\nГде или как часто вы вынуждены подавлять свой гнев?\nВ какой ситуации вы не решаетесь сделать шаг?', resource_minus="Подавленный гнев, нерешительность, чувство внутренней силы ослаблено."),
-    _card(slug="cedarwood", name="Кедр", source_type="tree", volatility="Базовая", description="Тема отца и мужчины, его поддержка и забота.", questions="Какие отношения у вас с вашим отцом?\nХватало ли вам его внимания, поддержки, заботы?\nЯвлялся ли он для вас авторитетом?\nЕсть ли у вас обида или претензии к отцу, которые вы ему не высказали?", resource_minus="Дефицит опоры на отцовскую фигуру, сложность с авторитетом и мужской поддержкой."),
-    _card(slug="cypress", name="Кипарис", source_type="tree", description="Духовная мудрость, интуиция.", questions='Часто ли бывают ситуации, когда вы предвидели или предчувствовали развитие событий, но не воспользовались этим?\nБыли ли в вашем детстве ситуации, когда вас упрекали в вашей "слишком умности"?', resource_minus="Недоверие собственной интуиции, сдерживание мудрости и внутреннего знания."),
-    _card(slug="copaiba", name="Копаиба", source_type="resin", volatility="Базовая", description='Целитель, исцеление тела и души, тема "жертвы".', questions="В какой сфере своей жизни вы ощущаете себя заложником обстоятельств?\nЕсть ли в вашей жизни ощущение, что все настроено против вас или ваша жизнь самая сложная?", resource_minus="Позиция жертвы, ощущение безвыходности, невозможность включить внутреннего целителя."),
-    _card(slug="cinnamon", name="Корица", source_type="spice", description="Страсть, сексуальность, вкус жизни.", questions="В какой сфере жизни вам не достает яркости, остроты и вкуса жизни?\nУдовлетворены ли вы своей сексуальностью или сексуальной стороной жизни?\nБыли ли в вашей жизни ситуации физического, эмоционального или сексуального насилия?", resource_minus="Тусклость, подавленная страсть, потеря вкуса к жизни."),
-    _card(slug="lavender", name="Лаванда", source_type="flower", description="Тема матери, ее любовь, поддержка, забота, учительство, гармония.", questions="Какие отношения у вас с вашей мамой?\nОщущаете ли вы ее любовь и поддержку?\nЯвляется ли ваша мама для вас авторитетом?", resource_minus="Дефицит материнской поддержки, нехватка гармонии и мягкой опоры."),
-    _card(slug="frankincense", name="Ладан", source_type="resin", volatility="Базовая", description="Триединство: тело, дух, душа. Центрирование.", questions="Есть ли в вашей жизни ощущение, что вашему телу хочется одного, душе другого, а в мыслях вы понимаете, что должны действовать по-другому?\nНасколько вы ощущаете себя центрированным?", resource_minus="Расфокусировка, потеря центра, внутренний разнобой между телом, душой и мыслями."),
-    _card(slug="lime", name="Лайм", source_type="citrus", volatility="Верхняя", description="Легкость, беззаботность.", questions="В каких сферах жизни вы проявляете себя слишком серьезно?\nГде или в чем вы не позволяете себе легкости и некоторой беззаботности?", resource_minus="Чрезмерная серьезность, невозможность расслабиться и играть."),
-    _card(slug="lemongrass", name="Лемонграсс", source_type="grass", description="Очищение, связи, привязки, ступень к изменениям.", resource_minus="Застревание в старых привязках, сложность начать перемены."),
-    _card(slug="lemon", name="Лимон", source_type="citrus", volatility="Верхняя", description="Здесь и сейчас, границы, целостность.", resource_minus="Сложно удерживать границы, внимание уходит из настоящего момента."),
-    _card(slug="marjoram", name="Майоран", source_type="herb", description="Сдержанность, смирение, самоценность, расслабление.", resource_minus="Напряжение, самокритика, дефицит самоценности и покоя."),
-    _card(slug="mandarin", name="Мандарин", source_type="citrus", volatility="Верхняя", description="Связь с внутренним ребенком, энергия удовольствия от реализации желаемого.", resource_minus="Отключение от удовольствия и от контакта со своим внутренним ребенком."),
-    _card(slug="juniper", name="Можжевельник", source_type="tree", description="Энергия, сила, поддержка, программы и задачи рода.", resource_minus="Истощение, ощущение отсутствия родовой поддержки и сил."),
-    _card(slug="peppermint", name="Мята перечная", source_type="herb", volatility="Верхняя", description="Энергетический щит от чужих энергоинформационных программ.", resource_minus="Чувствительность к чужому влиянию, ослабленные энергетические границы."),
-    _card(slug="neroli", name="Нероли", source_type="flower", description="Право на слабость, нежная сексуальность, вдохновение в творчестве.", resource_minus="Запрет на мягкость, сложность разрешить себе слабость и творческую чувствительность."),
-    _card(slug="patchouli", name="Пачули", source_type="herb", volatility="Базовая", description="Самоценность, изобилие, уверенность, заземленность.", resource_minus="Недостаток самоценности, тревога о материальном, нехватка устойчивости."),
-    _card(slug="balsam-fir", name="Пихта бальзамическая", source_type="tree", description="Программы прошлого, наши воспоминания, уроки и наши таланты.", aliases=("Пихта",), resource_minus="Застревание в прошлом, нераспакованные уроки и таланты."),
-    _card(slug="rose", name="Роза", source_type="flower", volatility="Базовая", description="Достоинство, Божественная любовь, королева или король.", resource_minus="Потеря достоинства, сомнение в своей ценности и праве на любовь."),
-    _card(slug="rosemary", name="Розмарин", source_type="herb", description="Закон порядка любви, связь со своим Высшим Я, тема авторитета.", resource_minus="Конфликт с авторитетом, нарушение внутреннего порядка и связи с высшим ориентиром."),
-    _card(slug="german-chamomile", name="Ромашка германская", source_type="flower", aliases=("Ромашка немецкая",), description='Контроль, "я сама" или "я сам", недоверие.', resource_minus="Гиперконтроль, недоверие, невозможность опереться на помощь."),
-    _card(slug="sandalwood", name="Сандал", source_type="tree", volatility="Базовая", description="Связь с подсознанием, медитативность, трансмутация программ, тема пожаров.", resource_minus="Потеря глубинного контакта с собой, трудность трансформировать старые программы."),
-    _card(slug="thyme", name="Тимьян", source_type="herb", description="Маркер страха или смелости, освобождение от страхов.", resource_minus="Страхи управляют решениями, смелость ослаблена."),
-    _card(slug="fennel", name="Фенхель", source_type="herb", description="Потенциал, открытость новому, внутренняя свобода, независимость от чужого мнения.", resource_minus="Зажатость, страх нового, зависимость от внешней оценки."),
-    _card(slug="citronella", name="Цитронелла", source_type="grass", volatility="Верхняя", description="Свобода от ограничений, творческое самовыражение, индивидуальный стиль.", resource_minus="Скованность, страх выделяться и самовыражаться."),
-    _card(slug="tea-tree", name="Чайное дерево", source_type="tree", description="Восприятие реальности, убеждения, через которые человек смотрит на мир: шаблоны или реальность.", resource_minus="Жесткие шаблоны восприятия, искажение реальности убеждениями."),
-    _card(slug="clary-sage", name="Шалфей мускатный", source_type="herb", description="Открытие возможностей, принятие женской энергии, внутренней анимы.", resource_minus="Закрытость к возможностям, конфликт с женской частью и чувствительностью."),
-    _card(slug="eucalyptus-globulus", name="Эвкалипт глобулус", source_type="tree", aliases=("Эвкалипт",), volatility="Верхняя", description="Социальные границы, правила на моей территории.", resource_minus="Нарушенные границы, сложность обозначить свои правила."),
-    _card(slug="oregano", name="Орегано", source_type="herb", description="Воля завершать разрушающие отношения или гнетущую работу, отпускание чрезмерной привязанности и зависимости, безопасность.", resource_minus="Не хватает воли закончить разрушительные связи, есть зависимость и чувство уязвимости."),
-    _card(slug="cassia", name="Кассия", source_type="spice", description="Помогает увидеть свои тени, снизить робость и стеснение, расстаться с зависимостями, почувствовать истинную ценность и смелость пробовать новое.", resource_minus="Застенчивость, зависимость, трудность признать свои таланты и ценность."),
-    _card(slug="blue-spruce", name="Голубая ель", source_type="tree", volatility="Базовая", description="Заземляет, дает глубокий мир и безопасность, помогает отпускать эмоциональные блоки, открывать сердце и доверять Вселенной, принимать свою уникальность и миссию.", resource_minus="Эмоциональные блоки, страх проявить свою уникальность, недоверие миру.", therapeutic="Влияние на ум: древесный аромат бодрит, дает душевное спокойствие и расслабляет тело, приносит ясность сознанию и уверенность в принятии решений.", history="В ваших материалах отмечено наблюдение доктора Коринны Ален о работе масла с забытыми и подавленными эмоциональными блоками."),
-    _card(slug="black-pepper", name="Черный перец", source_type="spice", description="Позитив, внутренняя сила, уверенность и защищенность, освобождение от гнетущих страхов, легкость во взаимоотношениях, доброе отношение к себе и другим.", resource_minus="Обиды, страхи, нервозность, критичность к себе и окружающим."),
-    _card(slug="spruce", name="Ель", source_type="tree", volatility="Базовая", description="Помогает избавиться от того, что больше не нужно.", resource_minus="Сложность отпустить лишнее и завершить отжившее."),
-    _card(slug="kunzea", name="Кунцея", source_type="herb", description="Перемены, трансформация, личностный рост, возможности и потенциал будущего, свобода.", resource_minus="Сопротивление переменам, страх будущего, блок роста."),
-]
+async def seed_aroma_cards_if_empty() -> None:
+    if not SEED_FILE.exists():
+        return
+    async with AsyncSessionLocal() as session:
+        existing = await session.execute(select(AromaCardModel.id).limit(1))
+        if existing.first():
+            return
+        raw_items = json.loads(SEED_FILE.read_text(encoding="utf-8"))
+        now = datetime.now(timezone.utc)
+        for item in raw_items:
+            session.add(
+                AromaCardModel(
+                    slug=str(item["slug"]),
+                    name=str(item["name"]),
+                    source_type=str(item.get("source_type", "herb")),
+                    aliases=list(item.get("aliases", [])),
+                    payload=dict(item),
+                    created_at=now,
+                    updated_at=now,
+                )
+            )
+        await session.commit()
 
 
-_AROMA_LOOKUP: dict[str, dict[str, object]] = {}
-for card in _AROMA_CARDS:
-    _AROMA_LOOKUP[str(card["slug"])] = card
-    _AROMA_LOOKUP[_normalize(str(card["name"]))] = card
-    for alias in card["aliases"]:
-        _AROMA_LOOKUP[_normalize(str(alias))] = card
+async def list_aromas() -> list[dict[str, str]]:
+    await seed_aroma_cards_if_empty()
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(select(AromaCardModel))
+        models = result.scalars().all()
+    models = sorted(models, key=lambda item: _normalize(item.name))
+    return [_summary(model) for model in models]
 
 
-def list_aromas() -> list[dict[str, str]]:
-    items = sorted(_AROMA_CARDS, key=lambda item: _normalize(str(item["name"])))
-    return [{"slug": str(item["slug"]), "name": str(item["name"]), "description": str(item["description"])} for item in items]
-
-
-def get_aroma_card(slug_or_name: str) -> dict[str, object] | None:
+async def get_aroma_card(slug_or_name: str) -> dict[str, object] | None:
+    await seed_aroma_cards_if_empty()
     key = _normalize(slug_or_name)
-    if slug_or_name in _AROMA_LOOKUP:
-        return _AROMA_LOOKUP[slug_or_name]
-    return _AROMA_LOOKUP.get(key)
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(select(AromaCardModel))
+        models = result.scalars().all()
+    for model in models:
+        aliases = [_normalize(alias) for alias in (model.aliases or [])]
+        if model.slug == slug_or_name or _normalize(model.name) == key or key in aliases:
+            return _serialize_model(model)
+    return None
+
+
+async def update_aroma_card(slug: str, payload: dict[str, object]) -> dict[str, object] | None:
+    await seed_aroma_cards_if_empty()
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(select(AromaCardModel).where(AromaCardModel.slug == slug))
+        model = result.scalar_one_or_none()
+        if not model:
+            return None
+        current = dict(model.payload or {})
+        resource_values = payload.get("resource_values", {})
+        if not isinstance(resource_values, dict):
+            resource_values = {}
+        current.update(
+            {
+                "description": str(payload.get("description", current.get("description", ""))).strip(),
+                "questions": str(payload.get("questions", current.get("questions", ""))).strip(),
+                "nps_effect": str(payload.get("nps_effect", current.get("nps_effect", ""))).strip(),
+                "therapeutic_properties": str(payload.get("therapeutic_properties", current.get("therapeutic_properties", ""))).strip(),
+                "psychological_properties": str(payload.get("psychological_properties", current.get("psychological_properties", ""))).strip(),
+                "history": str(payload.get("history", current.get("history", ""))).strip(),
+                "volatility": str(payload.get("volatility", current.get("volatility", ""))).strip(),
+                "botanical_family": str(payload.get("botanical_family", current.get("botanical_family", ""))).strip(),
+                "origin_countries": str(payload.get("origin_countries", current.get("origin_countries", ""))).strip(),
+                "extraction_method": str(payload.get("extraction_method", current.get("extraction_method", ""))).strip(),
+                "key": str(payload.get("key", current.get("key", ""))).strip(),
+                "resource_values": {
+                    "plus": str(resource_values.get("plus", current.get("resource_values", {}).get("plus", ""))).strip(),
+                    "minus": str(resource_values.get("minus", current.get("resource_values", {}).get("minus", ""))).strip(),
+                },
+            }
+        )
+        model.payload = current
+        model.updated_at = datetime.now(timezone.utc)
+        await session.commit()
+        await session.refresh(model)
+        return _serialize_model(model)
+
+
+async def replace_aroma_cards(seed_items: list[dict[str, object]]) -> None:
+    async with AsyncSessionLocal() as session:
+        await session.execute(AromaCardModel.__table__.delete())
+        now = datetime.now(timezone.utc)
+        for item in seed_items:
+            session.add(
+                AromaCardModel(
+                    slug=str(item["slug"]),
+                    name=str(item["name"]),
+                    source_type=str(item.get("source_type", "herb")),
+                    aliases=list(item.get("aliases", [])),
+                    payload=dict(item),
+                    created_at=now,
+                    updated_at=now,
+                )
+            )
+        await session.commit()

@@ -386,7 +386,8 @@ textarea,
 }
 
 .create-form textarea,
-.create-form select {
+.create-form select,
+.create-form input {
   width: 100%;
   border: 1px solid var(--border);
   background: var(--surface);
