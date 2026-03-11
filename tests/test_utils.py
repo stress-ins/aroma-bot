@@ -1351,7 +1351,7 @@ class TestMiniAppRussianLocale:
 
     def test_handbook_has_separate_reference_tabs(self):
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
-
+    
         assert 'id: "aromas"' in app_js
         assert 'label: "Ароматы"' in app_js
         assert 'id: "practices"' in app_js
@@ -1365,7 +1365,7 @@ class TestMiniAppRussianLocale:
 
         assert "Скопировать промпт кадра" in app_js
         assert "Скопировать промпт слайда" in app_js
-        assert "function copyText(value)" in app_js
+        assert "function copyText" in app_js
 
     def test_content_cards_force_left_alignment_and_mobile_button_stack(self):
         app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
@@ -1373,16 +1373,18 @@ class TestMiniAppRussianLocale:
         assert "text-align: left;" in app_css
         assert "flex: 1 1 100%;" in app_css
 
-    def test_reference_cards_support_edit_mode_and_icon_sections(self):
+    def test_carousel_detail_uses_actions_instead_of_raw_json(self):
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
-        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        server_py = Path("miniapp_server.py").read_text(encoding="utf-8")
 
-        assert "Редактировать карточку" in app_js
-        assert 'id="referenceEditForm"' in app_js
-        assert "function saveReference(event)" in app_js
-        assert "referenceSectionIcon(" in app_js
-        assert ".reference-section-icon" in app_css
-        assert ".reference-form-grid" in app_css
+        assert "JSON</h3>" not in app_js
+        assert "Перегенерировать все" in app_js
+        assert "Учесть замечание" in app_js
+        assert "Скачать PPTX" in app_js
+        assert "sendDraftToChat" in app_js
+        assert "bindSwipeBack" in app_js
+        assert "/api/carousel/{draft_id}/pptx" in server_py
+        assert "/api/carousel/{draft_id}/slides/{slide_index}/regenerate" in server_py
 class TestMiniAppReels:
     async def test_serialize_reels_draft_returns_none_for_missing(self):
         assert await serialize_reels_draft("missing-id") is None

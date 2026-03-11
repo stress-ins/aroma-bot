@@ -8,9 +8,6 @@ const state = {
   referenceItems: [],
   referenceSearch: "",
   selectedReference: null,
-  referenceEditing: false,
-  referenceSaving: false,
-  referenceNotice: "",
   inbox: [],
   inboxKind: "all",
   drafts: [],
@@ -44,6 +41,7 @@ const MODE_TABS = {
 
 let reelRefreshTimer = null;
 let carouselRefreshTimer = null;
+let swipeStart = null;
 
 const elements = {
   tabsContainer: document.getElementById("tabsContainer"),
@@ -132,33 +130,6 @@ function payloadSection(title, content) {
   return `<section class="section"><h3>${escapeHtml(title)}</h3><div class="detail-preview">${escapeHtml(content)}</div></section>`;
 }
 
-const REFERENCE_SECTION_META = {
-  passport: { title: "Паспорт карточки", icon: "passport" },
-  description: { title: "Описание", icon: "spark" },
-  questions: { title: "Какие вопросы поднимает", icon: "question" },
-  nps_effect: { title: "Действие на НПС", icon: "pulse" },
-  therapeutic_properties: { title: "Терапевтические свойства", icon: "leaf" },
-  psychological_properties: { title: "Психологические свойства", icon: "mind" },
-  plus: { title: 'Ресурс "+"', icon: "plus" },
-  minus: { title: 'Ресурс "-"', icon: "minus" },
-  history: { title: "Исторические сведения", icon: "clock" },
-};
-
-function referenceSectionIcon(kind) {
-  const icons = {
-    passport: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="16" rx="3"></rect><path d="M9 9h6M9 13h6M9 17h3"></path></svg>`,
-    spark: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z"></path></svg>`,
-    question: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.2 9a2.8 2.8 0 1 1 5.3 1.3c-.5.8-1.5 1.3-2 2.1-.3.4-.4.8-.4 1.4"></path><circle cx="12" cy="18" r="1"></circle></svg>`,
-    pulse: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l2-4 4 8 2-4h6"></path></svg>`,
-    leaf: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 5c-7 0-12 4-12 10 0 2.8 2.2 4 4.6 4C17 19 21 14 21 8.8 21 6.6 20.4 5.6 19 5Z"></path><path d="M9 17c1.8-2.6 4.7-4.8 8-6"></path></svg>`,
-    mind: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 9.5a3.5 3.5 0 1 1 6.7 1.5c1.3.5 2.3 1.7 2.3 3.2 0 1.9-1.6 3.3-3.5 3.3H11c-2.5 0-4.5-1.8-4.5-4 0-1.8 1.2-3.3 3-4Z"></path></svg>`,
-    plus: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>`,
-    minus: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"></path></svg>`,
-    clock: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M12 8v4l3 2"></path></svg>`,
-  };
-  return icons[kind] || icons.spark;
-}
-
 function promptSection(title, prompt, copyLabel = "Скопировать промпт") {
   if (!prompt) return "";
   return `
@@ -172,10 +143,15 @@ function promptSection(title, prompt, copyLabel = "Скопировать про
   `;
 }
 
-function renderSlides(slides = [], prompts = [], slideImages = []) {
+function slideNoteId(index) {
+  return `carouselSlideNote${index}`;
+}
+
+function renderSlides(draftId, slides = [], prompts = [], slideImages = [], promptNotes = []) {
   const slideItems = Array.isArray(slides) ? slides : [];
   const promptItems = Array.isArray(prompts) ? prompts : [];
   const imageItems = Array.isArray(slideImages) ? slideImages : [];
+  const noteItems = Array.isArray(promptNotes) ? promptNotes : [];
   if (!slideItems.length) return "";
   const readyCount = imageItems.filter(Boolean).length;
   const header = readyCount > 0
@@ -187,19 +163,27 @@ function renderSlides(slides = [], prompts = [], slideImages = []) {
       <div class="slides">
         ${slideItems.map((slide, index) => {
           const img = imageItems[index];
+          const prompt = String(promptItems[index] || "");
+          const note = String(noteItems[index] || "");
           const imgHtml = img?.url
             ? `<img class="frame-image" src="${escapeHtml(img.url)}" alt="Слайд ${index + 1}" />`
-            : `<div class="frame-loading">⏳ Картинка генерируется…</div>`;
+            : `<div class="frame-loading">Картинка недоступна или еще генерируется. Промпт показан ниже для ручной генерации.</div>`;
           return `
             <article class="slide">
               <strong>Слайд ${index + 1}</strong>
               ${imgHtml}
               <div class="detail-preview">${escapeHtml(slide)}</div>
-              ${promptItems[index] ? `
+              ${prompt ? `
                 <div class="prompt-card">
-                  <div class="detail-preview prompt-preview">${escapeHtml(promptItems[index])}</div>
+                  <div class="detail-preview prompt-preview">${escapeHtml(prompt)}</div>
+                  <label class="prompt-note-field">
+                    <span>Замечание к картинке</span>
+                    <textarea id="${slideNoteId(index)}" placeholder="Например: теплее свет, крупнее объект, меньше деталей на фоне">${escapeHtml(note)}</textarea>
+                  </label>
                   <div class="actions-row prompt-actions">
-                    <button class="secondary-button" type="button" onclick='copyText(${JSON.stringify(String(promptItems[index]))})'>Скопировать промпт слайда</button>
+                    <button class="secondary-button" type="button" onclick='copyText(${JSON.stringify(prompt)})'>Скопировать промпт слайда</button>
+                    <button class="secondary-button" type="button" onclick="regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, false)">Перегенерировать</button>
+                    <button class="primary-button" type="button" onclick="regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, true)">Учесть замечание</button>
                   </div>
                 </div>
               ` : ""}
@@ -209,6 +193,45 @@ function renderSlides(slides = [], prompts = [], slideImages = []) {
       </div>
     </section>
   `;
+}
+
+async function regenerateCarouselSlide(draftId, slideIndex, withNote) {
+  const noteField = document.getElementById(slideNoteId(slideIndex));
+  const note = withNote ? String(noteField?.value || "").trim() : "";
+  const draft = await fetchJson(`/api/carousel/${draftId}/slides/${slideIndex}/regenerate`, {
+    method: "POST",
+    body: JSON.stringify({ note }),
+  });
+  state.selected = draft;
+  state.draftId = draft.draft_id;
+  renderDraftDetail(draft);
+}
+
+async function regenerateCarouselAll(draftId) {
+  const draft = await fetchJson(`/api/carousel/${draftId}/regenerate-all`, { method: "POST", body: "{}" });
+  state.selected = draft;
+  state.draftId = draft.draft_id;
+  renderDraftDetail(draft);
+}
+
+async function sendDraftToChat(draftId) {
+  await fetchJson(`/api/drafts/${draftId}/send`, { method: "POST", body: "{}" });
+  const tg = window.Telegram?.WebApp;
+  if (tg?.showAlert) tg.showAlert("Черновик отправлен в чат");
+}
+
+async function downloadCarouselPptx(draftId) {
+  const response = await fetch(`/api/carousel/${draftId}/pptx`, { headers: _initDataHeader() });
+  if (!response.ok) throw new Error("pptx_export_failed");
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `carousel_${draftId}.pptx`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
 function renderReelsFrames(frames = []) {
@@ -327,6 +350,29 @@ function enterDetailView() {
   state.mobileView = "detail";
   syncMobileNavigation();
   window.scrollTo(0, 0);
+}
+
+function bindSwipeBack() {
+  const isMobile = window.matchMedia("(max-width: 760px)").matches;
+  if (!isMobile) return;
+  elements.detailPanel.addEventListener("touchstart", (event) => {
+    const touch = event.touches[0];
+    if (!touch || state.mobileView !== "detail" || touch.clientX > 36) {
+      swipeStart = null;
+      return;
+    }
+    swipeStart = { x: touch.clientX, y: touch.clientY };
+  }, { passive: true });
+  elements.detailPanel.addEventListener("touchend", (event) => {
+    if (!swipeStart || state.mobileView !== "detail") return;
+    const touch = event.changedTouches[0];
+    const dx = touch.clientX - swipeStart.x;
+    const dy = Math.abs(touch.clientY - swipeStart.y);
+    swipeStart = null;
+    if (dx > 80 && dy < 40) {
+      window.goBackToList();
+    }
+  }, { passive: true });
 }
 
 function bindTopicForm(form, config) {
@@ -549,160 +595,21 @@ async function openReference(slug, tabId = state.tab) {
   if (!slug || !meta) return;
   state.selectedReference = await fetchJson(`/api/references/${meta.category}/${encodeURIComponent(slug)}`);
   state.selectedReference.category = meta.category;
-  state.referenceEditing = false;
-  state.referenceNotice = "";
   state.tab = tabId;
   elements.tabsContainer.querySelectorAll(".tab-button").forEach((b) => b.classList.toggle("active", b.dataset.tab === tabId));
   renderReferences();
   enterDetailView();
 }
 
-function referencePassportItems(reference) {
-  return [
-    reference.key ? { label: "Ключ", value: reference.key } : null,
-    reference.botanical_family ? { label: "Семейство / тип", value: reference.botanical_family } : null,
-    reference.origin_countries ? { label: "Источник / традиция", value: reference.origin_countries } : null,
-    reference.extraction_method ? { label: "Форма / метод", value: reference.extraction_method } : null,
-    reference.volatility ? { label: "Летучесть", value: reference.volatility } : null,
-  ].filter(Boolean);
-}
-
 function renderReferencePassport(reference) {
-  const parts = referencePassportItems(reference);
-  return parts.map((item) => `${item.label}: ${item.value}`).join("\n");
-}
-
-function renderReferencePassportBadges(reference) {
-  const parts = referencePassportItems(reference);
-  if (!parts.length) return "";
-  return `<div class="reference-badges">${parts.map((item) => `
-    <div class="reference-badge">
-      <span class="reference-badge-label">${escapeHtml(item.label)}</span>
-      <strong>${escapeHtml(item.value)}</strong>
-    </div>
-  `).join("")}</div>`;
-}
-
-function renderReferenceHero(reference, meta) {
-  return `
-    <section class="section reference-hero-card">
-      <div class="reference-hero-copy">
-        <p class="eyebrow">${escapeHtml(meta.label)} • справочник</p>
-        <h2 class="detail-title">${escapeHtml(reference.name)}</h2>
-        ${reference.key ? `<div class="reference-keyline">${escapeHtml(reference.key)}</div>` : ""}
-        ${reference.description ? `<div class="reference-summary">${escapeHtml(reference.description)}</div>` : ""}
-        ${renderReferencePassportBadges(reference)}
-      </div>
-      <div class="reference-hero-media">
-        <img class="aroma-image" src="${escapeHtml(reference.image_url)}" alt="${escapeHtml(reference.image_alt)}" loading="lazy" />
-        <div class="aroma-image-caption">${escapeHtml(reference.image_alt)}</div>
-      </div>
-    </section>
-  `;
-}
-
-function referenceSection(field, content) {
-  if (!content) return "";
-  const meta = REFERENCE_SECTION_META[field] || { title: field, icon: "spark" };
-  return `
-    <section class="section reference-section">
-      <h3 class="reference-section-title">
-        <span class="reference-section-icon">${referenceSectionIcon(meta.icon)}</span>
-        ${escapeHtml(meta.title)}
-      </h3>
-      <div class="detail-preview">${escapeHtml(content)}</div>
-    </section>
-  `;
-}
-
-function renderReferenceEditor(reference) {
-  return `
-    <section class="section reference-editor">
-      <div class="reference-editor-header">
-        <h3>Редактирование карточки</h3>
-        <p class="meta">Изменения сохраняются в базе и больше не перетираются seed-обновлениями.</p>
-      </div>
-      <form id="referenceEditForm" class="reference-form">
-        <label><span>Ключ</span><textarea name="key" rows="2">${escapeHtml(reference.key || "")}</textarea></label>
-        <label><span>Описание</span><textarea name="description" rows="4">${escapeHtml(reference.description || "")}</textarea></label>
-        <label><span>Какие вопросы поднимает</span><textarea name="questions" rows="6">${escapeHtml(reference.questions || "")}</textarea></label>
-        <label><span>Действие на НПС</span><textarea name="nps_effect" rows="4">${escapeHtml(reference.nps_effect || "")}</textarea></label>
-        <label><span>Терапевтические свойства</span><textarea name="therapeutic_properties" rows="5">${escapeHtml(reference.therapeutic_properties || "")}</textarea></label>
-        <label><span>Психологические свойства</span><textarea name="psychological_properties" rows="5">${escapeHtml(reference.psychological_properties || "")}</textarea></label>
-        <div class="reference-form-grid">
-          <label><span>Ресурс +</span><textarea name="resource_plus" rows="3">${escapeHtml(reference.resource_values?.plus || "")}</textarea></label>
-          <label><span>Ресурс -</span><textarea name="resource_minus" rows="3">${escapeHtml(reference.resource_values?.minus || "")}</textarea></label>
-        </div>
-        <label><span>Исторические сведения</span><textarea name="history" rows="5">${escapeHtml(reference.history || "")}</textarea></label>
-        <div class="reference-form-grid">
-          <label><span>Летучесть</span><input name="volatility" type="text" value="${escapeHtml(reference.volatility || "")}" /></label>
-          <label><span>Семейство / тип</span><input name="botanical_family" type="text" value="${escapeHtml(reference.botanical_family || "")}" /></label>
-          <label><span>Источник / традиция</span><input name="origin_countries" type="text" value="${escapeHtml(reference.origin_countries || "")}" /></label>
-          <label><span>Форма / метод</span><input name="extraction_method" type="text" value="${escapeHtml(reference.extraction_method || "")}" /></label>
-        </div>
-        <div class="actions-row reference-editor-actions">
-          <button class="primary-button" type="submit"${state.referenceSaving ? " disabled" : ""}>${state.referenceSaving ? "Сохраняю..." : "Сохранить карточку"}</button>
-          <button class="secondary-button" type="button" onclick="toggleReferenceEdit(false)">Отмена</button>
-        </div>
-      </form>
-    </section>
-  `;
-}
-
-function updateReferenceListItemFromCard(card) {
-  const item = state.referenceItems.find((entry) => entry.slug === card.slug);
-  if (!item) return;
-  item.name = card.name;
-  item.description = card.description || "";
-}
-
-async function saveReference(event) {
-  event.preventDefault();
-  if (!state.selectedReference || state.referenceSaving) return;
-  const form = event.currentTarget;
-  const payload = {
-    key: form.key.value.trim(),
-    description: form.description.value.trim(),
-    questions: form.questions.value.trim(),
-    nps_effect: form.nps_effect.value.trim(),
-    therapeutic_properties: form.therapeutic_properties.value.trim(),
-    psychological_properties: form.psychological_properties.value.trim(),
-    history: form.history.value.trim(),
-    volatility: form.volatility.value.trim(),
-    botanical_family: form.botanical_family.value.trim(),
-    origin_countries: form.origin_countries.value.trim(),
-    extraction_method: form.extraction_method.value.trim(),
-    resource_values: {
-      plus: form.resource_plus.value.trim(),
-      minus: form.resource_minus.value.trim(),
-    },
-  };
-
-  state.referenceSaving = true;
-  state.referenceNotice = "";
-  renderReferences();
-  try {
-    const updated = await fetchJson(
-      `/api/references/${state.selectedReference.category}/${encodeURIComponent(state.selectedReference.slug)}`,
-      { method: "PUT", body: JSON.stringify(payload) },
-    );
-    updated.category = state.selectedReference.category;
-    state.selectedReference = updated;
-    state.referenceEditing = false;
-    state.referenceNotice = "Карточка сохранена.";
-    updateReferenceListItemFromCard(updated);
-  } catch (error) {
-    state.referenceNotice = `Не удалось сохранить: ${error.message}`;
-  } finally {
-    state.referenceSaving = false;
-    renderReferences();
-  }
-}
-
-function toggleReferenceEdit(force) {
-  state.referenceEditing = typeof force === "boolean" ? force : !state.referenceEditing;
-  state.referenceNotice = "";
-  renderReferences();
+  const parts = [
+    reference.key ? `Ключ: ${reference.key}` : "",
+    reference.botanical_family ? `Семейство / тип: ${reference.botanical_family}` : "",
+    reference.origin_countries ? `Источник / традиция: ${reference.origin_countries}` : "",
+    reference.extraction_method ? `Форма / метод: ${reference.extraction_method}` : "",
+    reference.volatility ? `Длительность / летучесть: ${reference.volatility}` : "",
+  ].filter(Boolean);
+  return parts.join("\n");
 }
 
 function renderReferences() {
@@ -761,26 +668,21 @@ function renderReferences() {
   elements.draftDetail.innerHTML = `
     <div class="detail-grid">
       ${renderBackButton()}
-      ${renderReferenceHero(reference, meta)}
-      <section class="section reference-toolbar">
-        <div class="actions-row">
-          <button class="secondary-button" type="button" onclick="toggleReferenceEdit()">${state.referenceEditing ? "Свернуть редактор" : "Редактировать карточку"}</button>
-        </div>
-        ${state.referenceNotice ? `<div class="reference-notice">${escapeHtml(state.referenceNotice)}</div>` : ""}
+      <section class="section aroma-hero">
+        <img class="aroma-image" src="${escapeHtml(reference.image_url)}" alt="${escapeHtml(reference.image_alt)}" />
+        <div class="aroma-image-caption">${escapeHtml(reference.image_alt)}</div>
       </section>
-      ${state.referenceEditing ? renderReferenceEditor(reference) : ""}
-      ${referenceSection("passport", renderReferencePassport(reference))}
-      ${referenceSection("description", reference.description)}
-      ${referenceSection("questions", reference.questions)}
-      ${referenceSection("nps_effect", reference.nps_effect)}
-      ${referenceSection("therapeutic_properties", reference.therapeutic_properties)}
-      ${referenceSection("psychological_properties", reference.psychological_properties)}
-      ${referenceSection("plus", reference.resource_values?.plus)}
-      ${referenceSection("minus", reference.resource_values?.minus)}
-      ${referenceSection("history", reference.history)}
+      ${aromaSection("Паспорт карточки", renderReferencePassport(reference))}
+      ${aromaSection("Описание", reference.description)}
+      ${aromaSection("Какие вопросы поднимает", reference.questions)}
+      ${aromaSection("Действие на НПС", reference.nps_effect)}
+      ${aromaSection("Терапевтические свойства", reference.therapeutic_properties)}
+      ${aromaSection("Психологические свойства", reference.psychological_properties)}
+      ${aromaSection('Ресурс "+"', reference.resource_values?.plus)}
+      ${aromaSection('Ресурс "-"', reference.resource_values?.minus)}
+      ${aromaSection("Исторические сведения", reference.history)}
     </div>
   `;
-  document.getElementById("referenceEditForm")?.addEventListener("submit", saveReference);
   syncMobileNavigation();
 }
 
@@ -949,6 +851,11 @@ function renderCreateTool(toolId) {
 
 function renderAromas() { renderReferences(); }
 
+function aromaSection(title, content) {
+  if (!content) return "";
+  return `<section class="section"><h3>${escapeHtml(title)}</h3><div class="detail-preview">${escapeHtml(content)}</div></section>`;
+}
+
 function renderAromasLocked() { renderReferencesLocked(); }
 
 function renderDraftList() {
@@ -988,15 +895,16 @@ function renderDraftDetail(d) {
         <div class="actions-row">
           <button class="secondary-button" onclick="updateDraft('status', {status:'approved'})">Согласовать</button>
           <button class="secondary-button" onclick="sendDraftToChat('${d.draft_id}')">В чат</button>
+          ${d.kind === "carousel" ? `<button class="secondary-button" onclick="downloadCarouselPptx('${d.draft_id}')">Скачать PPTX</button>` : ""}
+          ${d.kind === "carousel" ? `<button class="secondary-button" onclick="regenerateCarouselAll('${d.draft_id}')">Перегенерировать все</button>` : ""}
         </div>
       </div>
       ${payloadSection("Превью", d.preview)}
       ${payloadSection("Угол", p.angle)}
       ${payloadSection("Текст", mainText)}
       ${payloadSection("CTA", p.cta)}
-      ${renderSlides(p.slides, p.img_prompts, p.slide_images)}
+      ${renderSlides(d.draft_id, p.slides, p.img_prompts, p.slide_images, p.img_prompt_notes)}
       ${promptSection("Промпт для изображения", p.visual_prompt)}
-      <section class="section"><h3>JSON</h3><pre class="json-block">${escapeHtml(JSON.stringify(p, null, 2))}</pre></section>
     </div>
   `;
   if (d.kind === "carousel") {
@@ -1026,20 +934,30 @@ function setMode(m) {
 }
 
 function setTab(t) {
-  state.tab = t; state.mobileView = "list";
-  if (t === "create") {
-    state.selectedCreateTool = null;
-  }
+  state.tab = t; 
+  state.mobileView = "list"; 
+  state.selectedCreateTool = null; 
+  
   if (HANDBOOK_CATEGORY_META[t]) {
     state.referenceSearch = "";
     if (state.selectedReference?.category !== HANDBOOK_CATEGORY_META[t].category) {
       state.selectedReference = null;
     }
   }
-  const p = new URLSearchParams(window.location.search); p.set("tab", t);
+  
+  const p = new URLSearchParams(window.location.search);
+  p.set("tab", t);
   history.replaceState({}, "", `${window.location.pathname}?${p.toString()}`);
+  
   elements.tabsContainer.querySelectorAll(".tab-button").forEach(b => b.classList.toggle("active", b.dataset.tab === t));
   elements.filtersContainer.hidden = (t !== "drafts");
+  
+  // Clear panels immediately to prevent showing tools/content from previous tab
+  elements.listTitle.textContent = "Загрузка...";
+  elements.draftCount.textContent = "";
+  elements.draftList.innerHTML = "";
+  elements.draftDetail.innerHTML = `<div class="detail-empty">Загрузка...</div>`;
+  
   syncMobileNavigation();
 }
 
@@ -1056,6 +974,7 @@ async function loadCurrentTab() {
 
 async function bootstrap() {
   applyTelegramTheme();
+  bindSwipeBack();
   elements.modeContent.addEventListener("click", () => { setMode("content"); loadCurrentTab(); });
   elements.modeHandbook.addEventListener("click", () => { setMode("handbook"); loadCurrentTab(); });
 
@@ -1096,6 +1015,9 @@ window.updateDraft = async (action, payload) => {
   state.selected = d; renderDraftDetail(d); renderDraftList();
 };
 window.sendDraftToChat = sendDraftToChat;
+window.regenerateCarouselSlide = regenerateCarouselSlide;
+window.regenerateCarouselAll = regenerateCarouselAll;
+window.downloadCarouselPptx = downloadCarouselPptx;
 
 function renderInbox() {
   elements.listTitle.textContent = "Согласование";
@@ -1156,7 +1078,6 @@ function renderReelsDetail(r) {
       </div>
       ${payloadSection("Сценарий", r.payload?.scenario)}
       ${renderReelsFrames(r.frames)}
-      <section class="section"><h3>JSON</h3><pre class="json-block">${escapeHtml(JSON.stringify(r.payload, null, 2))}</pre></section>
     </div>
   `;
 }
