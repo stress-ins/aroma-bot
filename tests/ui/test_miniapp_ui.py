@@ -165,8 +165,6 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
         [sys.executable, "-m", "uvicorn", "miniapp_server:app", "--host", "127.0.0.1", "--port", str(port)],
         cwd=Path(__file__).resolve().parents[2],
         env=env,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
     )
     try:
         _wait_until_ready(base_url)
@@ -195,7 +193,9 @@ def page(miniapp_server: str):
 
 
 def test_mobile_tabs_and_drafts_render_in_russian(page):
-    tabs = page.locator(".tab-button").evaluate_all("(nodes) => nodes.map((node) => node.textContent.trim())")
+    tabs = page.locator(".tab-button").evaluate_all(
+        "(nodes) => nodes.filter((node) => !node.hidden).map((node) => node.textContent.trim())"
+    )
     assert tabs == ["Создать", "Согласование", "Черновики", "Планы", "Рилсы", "Статус", "Ключи"]
 
     kind_options = page.locator("#kindFilter option").evaluate_all("(nodes) => nodes.map((node) => node.textContent.trim())")
