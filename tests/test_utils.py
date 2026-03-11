@@ -1189,6 +1189,13 @@ class TestMiniAppRussianLocale:
 
         assert ">Reels<" not in index_html
 
+    def test_index_does_not_render_legacy_hero_block(self):
+        index_html = Path("miniapp/index.html").read_text(encoding="utf-8")
+
+        assert 'class="hero"' not in index_html
+        assert "Черновики и рилсы" not in index_html
+        assert 'id="headerContent"' not in index_html
+
     def test_create_workspace_dropdowns_use_russian_labels(self):
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
 
