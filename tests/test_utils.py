@@ -1187,6 +1187,21 @@ class TestMiniAppRussianLocale:
         assert '<option value="instagram">Instagram</option>' not in app_js
         assert '<option value="telegram">Telegram</option>' not in app_js
 
+    def test_viewport_disables_double_tap_zoom(self):
+        index_html = Path("miniapp/index.html").read_text(encoding="utf-8")
+
+        assert 'maximum-scale=1' in index_html
+        assert 'user-scalable=no' in index_html
+
+    def test_tab_switching_uses_touch_friendly_handler(self):
+        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+
+        assert "function bindPress" in app_js
+        assert 'element.addEventListener("pointerup"' in app_js
+        assert "bindPress(button" in app_js
+        assert "touch-action: manipulation;" in app_css
+
 
 class TestMiniAppReels:
     def test_serialize_reels_draft_returns_none_for_missing(self):
