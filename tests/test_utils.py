@@ -1146,6 +1146,17 @@ class TestMiniAppBridge:
         assert payload["action"] == "open_draft"
         assert payload["draft_id"] == "abc123"
 
+    def test_parse_webapp_payload_accepts_request_review(self):
+        payload = parse_webapp_payload('{"action":"request_review","draft_id":"abc123"}')
+        assert payload is not None
+        assert payload["action"] == "request_review"
+
+    def test_parse_webapp_payload_accepts_open_plan(self):
+        payload = parse_webapp_payload('{"action":"open_plan","plan_id":"20260311120000"}')
+        assert payload is not None
+        assert payload["action"] == "open_plan"
+        assert payload["plan_id"] == "20260311120000"
+
     def test_parse_webapp_payload_rejects_bad_json(self):
         assert parse_webapp_payload("not-json") is None
 
