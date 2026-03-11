@@ -8,13 +8,13 @@ from pathlib import Path
 from fastapi import Depends, FastAPI, Header, HTTPException, Query
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from bot.services.drafts_store import get_draft, list_recent_drafts, update_draft
 from bot.services.miniapp_keywords import add_keyword, delete_keyword, field_labels, serialize_topics
 from bot.services.miniapp_plans import serialize_plan
 from bot.services.miniapp_presenter import filter_drafts, serialize_draft
-from bot.services.miniapp_reels import list_reels_drafts, serialize_reels_draft
+from bot.services.miniapp_reels import list_reels_drafts, serialize_reels_draft, update_reels_frame_note
 from bot.services.plans_store import get_plan, list_recent_plans
 from config import settings
 
@@ -60,6 +60,10 @@ class KeywordPayload(BaseModel):
     topic_idx: int
     field: str
     word: str
+
+
+class ReelsFrameNotePayload(BaseModel):
+    note: str = Field(default="")
 
 
 @app.get("/")
@@ -180,6 +184,19 @@ async def reels_detail(draft_id: str):
     draft = serialize_reels_draft(draft_id)
     if not draft:
         raise HTTPException(status_code=404, detail="reels_not_found")
+    return draft
+
+
+@app.post("/api/reels/{draft_id}/frames/{frame_index}/note")
+async def reels_frame_note(
+    draft_id: str,
+    frame_index: int,
+    payload: ReelsFrameNotePayload,
+    _: None = Depends(_require_auth),
+):
+    draft = update_reels_frame_note(draft_id, frame_index, payload.note)
+    if not draft:
+        raise HTTPException(status_code=404, detail="reels_frame_not_found")
     return draft
 
 

@@ -284,6 +284,19 @@ async function openReels(draftId) {
   renderReelsDetail(reel);
 }
 
+async function saveReelsFrameNote(draftId, frameIndex, note) {
+  const reel = await fetchJson(`/api/reels/${draftId}/frames/${frameIndex}/note`, {
+    method: "POST",
+    body: JSON.stringify({ note }),
+  });
+  state.selectedReels = reel;
+  state.reels = state.reels.map((item) =>
+    item.draft_id === reel.draft_id ? { ...item, ...reel } : item
+  );
+  renderReels();
+  renderReelsDetail(reel);
+}
+
 function renderReelsDetail(reel) {
   state.selectedReels = reel;
   const frames = Array.isArray(reel.frames) ? reel.frames : [];
@@ -321,9 +334,30 @@ function renderReelsDetail(reel) {
             <div>${escapeHtml(frame.scene || "")}</div>
             <div class="meta">${escapeHtml(frame.angle || "")}</div>
             ${payloadSection("Gemini Prompt", frame.gemini_prompt)}
+            <form class="frame-note-form" data-frame-note-form="${escapeHtml(String(frame.frame_index))}">
+              <label>
+                Review note
+                <textarea name="note" placeholder="Например: темнее, ближе камера, меньше объектов в кадре.">${escapeHtml(frame.review_note || "")}</textarea>
+              </label>
+              <button class="primary-button" type="submit">Сохранить замечание</button>
+            </form>
           </div>
         </section>
       ` : ""}
+      <section class="section">
+        <h3>Shot List</h3>
+        <div class="shot-list">
+          ${(reel.shot_list || []).map((shot) => `
+            <div class="shot-item">
+              <strong>${escapeHtml(shot.title || "")}</strong>
+              <div>${escapeHtml(shot.timecode || "")}</div>
+              <div>${escapeHtml(shot.action || "")}</div>
+              <div class="meta">${escapeHtml(shot.camera || "")}</div>
+              ${shot.note ? `<div class="meta">Note: ${escapeHtml(shot.note)}</div>` : ""}
+            </div>
+          `).join("")}
+        </div>
+      </section>
       <section class="section">
         <h3>Payload JSON</h3>
         <pre class="json-block">${escapeHtml(JSON.stringify(reel.payload || {}, null, 2))}</pre>
@@ -337,6 +371,15 @@ function renderReelsDetail(reel) {
       renderReelsDetail(reel);
     });
   });
+
+  const noteForm = elements.draftDetail.querySelector("[data-frame-note-form]");
+  if (noteForm) {
+    noteForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const note = noteForm.querySelector("textarea[name='note']").value.trim();
+      await saveReelsFrameNote(reel.draft_id, state.selectedFrameIndex, note);
+    });
+  }
 }
 
 async function openPlan(planId) {
