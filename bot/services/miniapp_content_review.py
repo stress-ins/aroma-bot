@@ -12,7 +12,7 @@ def is_content_review_draft(kind: str) -> bool:
     return kind.strip().lower() in EDITABLE_KINDS
 
 
-def update_content_review_draft(
+async def update_content_review_draft(
     draft_id: str,
     *,
     topic: str,
@@ -23,7 +23,7 @@ def update_content_review_draft(
     hashtags: str,
     visual_prompt: str,
 ) -> dict[str, object] | None:
-    draft = get_draft(draft_id)
+    draft = await get_draft(draft_id)
     if not draft or not is_content_review_draft(draft.kind):
         return None
 
@@ -35,7 +35,7 @@ def update_content_review_draft(
     payload["hashtags"] = hashtags.strip()
     payload["visual_prompt"] = visual_prompt.strip()
 
-    updated = update_draft(
+    updated = await update_draft(
         draft_id,
         topic=topic.strip() or draft.topic,
         payload=payload,
@@ -44,8 +44,8 @@ def update_content_review_draft(
     return payload if updated else None
 
 
-def polish_content_review_draft(draft_id: str) -> dict[str, object] | None:
-    draft = get_draft(draft_id)
+async def polish_content_review_draft(draft_id: str) -> dict[str, object] | None:
+    draft = await get_draft(draft_id)
     if not draft or not is_content_review_draft(draft.kind):
         return None
 
@@ -62,5 +62,5 @@ def polish_content_review_draft(draft_id: str) -> dict[str, object] | None:
     else:
         payload["hook"] = polished.strip()
 
-    updated = update_draft(draft_id, payload=payload, status="draft")
+    updated = await update_draft(draft_id, payload=payload, status="draft")
     return payload if updated else None

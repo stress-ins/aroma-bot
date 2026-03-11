@@ -7,8 +7,10 @@ import subprocess
 import sys
 import time
 import urllib.request
+import sqlite3
 from base64 import b64decode
 from pathlib import Path
+from datetime import datetime, timezone
 
 import pytest
 from playwright.sync_api import Error, sync_playwright
@@ -40,82 +42,86 @@ def _wait_until_ready(base_url: str, timeout: float = 20.0) -> None:
 @pytest.fixture(scope="session")
 def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
     root = tmp_path_factory.mktemp("miniapp-ui")
-    drafts_file = root / "drafts.json"
+    db_file = root / "test_aroma.db"
     plans_file = root / "plans.json"
     assets_dir = root / "reels_assets"
+    
+    # Initialize SQLite schema manually for the test to avoid complex async setup in fixture
+    conn = sqlite3.connect(db_file)
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE drafts (
+            id INTEGER PRIMARY KEY,
+            draft_id VARCHAR(32) UNIQUE,
+            kind VARCHAR(64),
+            topic VARCHAR(255),
+            source VARCHAR(64),
+            status VARCHAR(32),
+            feedback VARCHAR(255),
+            payload JSON,
+            created_at DATETIME
+        )
+    """)
+    
     draft_id = "reels001"
     asset_file = assets_dir / draft_id / "frame_1.png"
     asset_file.parent.mkdir(parents=True, exist_ok=True)
     asset_file.write_bytes(_PNG_1X1)
 
-    drafts_file.write_text(
-        json.dumps(
-            [
-                {
-                    "draft_id": draft_id,
-                    "kind": "reels",
-                    "topic": "Вечерний ароматический ритуал",
-                    "source": "/miniapp",
-                    "created_at": "2026-03-11T18:00:00+00:00",
-                    "status": "draft",
-                    "feedback": "",
-                    "payload": {
-                        "scenario": "Короткий сценарий рилса про вечернее переключение.",
-                        "images_ready": 1,
-                        "storyboard": [
-                            {
-                                "timecode": "0-3 сек",
-                                "scene": "Руки закрывают ноутбук",
-                                "angle": "Крупный план",
-                                "gemini_prompt": "warm evening desk, close-up hands closing laptop",
-                                "current_asset": {
-                                    "url": f"/generated/reels_assets/{draft_id}/frame_1.png",
-                                    "filename": "frame_1.png",
-                                    "generated_at": "2026-03-11T18:00:00+00:00",
-                                },
-                            },
-                            {
-                                "timecode": "3-10 сек",
-                                "scene": "Ладони с ароматом у лица",
-                                "angle": "Средний план",
-                                "gemini_prompt": "soft inhale, essential oil ritual, calm light",
-                            },
-                            {
-                                "timecode": "10-20 сек",
-                                "scene": "Свеча и баночка масла на ткани",
-                                "angle": "Макро",
-                                "gemini_prompt": "macro candle and essential oil on linen",
-                            },
-                            {
-                                "timecode": "20-30 сек",
-                                "scene": "Спокойный финальный кадр с подписью",
-                                "angle": "Общий план",
-                                "gemini_prompt": "calm final frame, warm evening, minimal ritual",
-                            },
-                        ],
-                    },
+    reels_payload = {
+        "scenario": "Короткий сценарий рилса про вечернее переключение.",
+        "images_ready": 1,
+        "storyboard": [
+            {
+                "timecode": "0-3 сек",
+                "scene": "Руки закрывают ноутбук",
+                "angle": "Крупный план",
+                "gemini_prompt": "warm evening desk, close-up hands closing laptop",
+                "current_asset": {
+                    "url": f"/generated/reels_assets/{draft_id}/frame_1.png",
+                    "filename": "frame_1.png",
+                    "generated_at": "2026-03-11T18:00:00+00:00",
                 },
-                {
-                    "draft_id": "threads001",
-                    "kind": "threads",
-                    "topic": "Как мягко выйти из рабочего напряжения",
-                    "source": "/content",
-                    "created_at": "2026-03-11T17:30:00+00:00",
-                    "status": "in_review",
-                    "feedback": "worked",
-                    "payload": {
-                        "angle": "Через телесный переключатель, а не силу воли.",
-                        "hook": "Иногда телу нужен не совет, а сигнал безопасности.",
-                        "caption": "Короткий текст для Threads про переключение после работы.",
-                        "cta": "Если откликается, напиши мне.",
-                    },
-                },
-            ],
-            ensure_ascii=False,
-            indent=2,
-        ),
-        encoding="utf-8",
+            },
+            {
+                "timecode": "3-10 сек",
+                "scene": "Ладони с ароматом у лица",
+                "angle": "Средний план",
+                "gemini_prompt": "soft inhale, essential oil ritual, calm light",
+            },
+            {
+                "timecode": "10-20 сек",
+                "scene": "Свеча и баночка масла на ткани",
+                "angle": "Макро",
+                "gemini_prompt": "macro candle and essential oil on linen",
+            },
+            {
+                "timecode": "20-30 сек",
+                "scene": "Спокойный финальный кадр с подписью",
+                "angle": "Общий план",
+                "gemini_prompt": "calm final frame, warm evening, minimal ritual",
+            },
+        ],
+    }
+    
+    threads_payload = {
+        "angle": "Через телесный переключатель, а не силу воли.",
+        "hook": "Иногда телу нужен не совет, а сигнал безопасности.",
+        "caption": "Короткий текст для Threads про переключение после работы.",
+        "cta": "Если откликается, напиши мне.",
+    }
+
+    now = datetime.now(timezone.utc).isoformat()
+    cursor.execute(
+        "INSERT INTO drafts (draft_id, kind, topic, source, status, feedback, payload, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        (draft_id, "reels", "Вечерний ароматический ритуал", "/miniapp", "draft", "", json.dumps(reels_payload), now)
     )
+    cursor.execute(
+        "INSERT INTO drafts (draft_id, kind, topic, source, status, feedback, payload, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        ("threads001", "threads", "Как мягко выйти из рабочего напряжения", "/content", "in_review", "worked", json.dumps(threads_payload), now)
+    )
+    conn.commit()
+    conn.close()
 
     plans_file.write_text(
         json.dumps(
@@ -149,7 +155,7 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
         {
             "TELEGRAM_BOT_TOKEN": "test-token",
             "REPORT_TARGET_CHAT_ID": "test-chat",
-            "AROMA_DRAFTS_FILE": str(drafts_file),
+            "AROMA_DATABASE_URL": f"sqlite+aiosqlite:///{db_file}",
             "AROMA_PLANS_FILE": str(plans_file),
             "AROMA_REELS_ASSETS_DIR": str(assets_dir),
         }
