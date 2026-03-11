@@ -53,6 +53,7 @@ class Settings(BaseSettings):
     threads_access_token: str = ""
     threads_user_id: str = ""
     threads_username: str = ""
+    mini_app_url: str = ""
 
     # Scheduler
     daily_digest_time: str = "09:00"

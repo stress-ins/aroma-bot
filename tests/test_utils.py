@@ -806,6 +806,7 @@ class TestStoryboardParser:
 from bot.agents.planner import _PLAN_PROMPT, _BRAND_CONTEXT
 from bot.handlers.planner import _parse_plan_entries
 from bot.services.drafts_store import DraftRecord
+from bot.services.miniapp_presenter import filter_drafts, payload_preview, serialize_draft
 
 
 class TestPlannerConstants:
@@ -883,6 +884,77 @@ class TestDraftRecord:
 
         assert record.status == "approved"
         assert record.feedback == "worked"
+
+
+class TestMiniAppPresenter:
+    def test_filter_drafts_by_kind_status_and_query(self):
+        drafts = [
+            DraftRecord(
+                draft_id="aaa11111",
+                kind="reels",
+                topic="Вечерний ритуал",
+                source="/reels",
+                created_at="2026-03-11T07:00:00+00:00",
+                status="approved",
+                feedback="worked",
+                payload={"scenario": "script"},
+            ),
+            DraftRecord(
+                draft_id="bbb22222",
+                kind="threads",
+                topic="Утренний якорь",
+                source="/content",
+                created_at="2026-03-11T08:00:00+00:00",
+                status="draft",
+                feedback="",
+                payload={"caption": "caption"},
+            ),
+        ]
+
+        result = filter_drafts(
+            drafts,
+            kind="reels",
+            status="approved",
+            feedback="worked",
+            query="ритуал",
+        )
+
+        assert len(result) == 1
+        assert result[0].draft_id == "aaa11111"
+
+    def test_payload_preview_prefers_reels_scenario(self):
+        preview = payload_preview("reels", {"scenario": "Сценарий с таймкодами"})
+        assert "таймкодами" in preview
+
+    def test_payload_preview_uses_slides_for_carousel(self):
+        preview = payload_preview("carousel", {"slides": ["Слайд 1", "Слайд 2", "Слайд 3"]})
+        assert "Слайд 1" in preview
+        assert "Слайд 2" in preview
+
+    def test_serialize_draft_counts_storyboard_frames(self):
+        draft = DraftRecord(
+            draft_id="ccc33333",
+            kind="reels",
+            topic="Тёплый вечерний ролик",
+            source="/reels",
+            created_at="2026-03-11T09:00:00+00:00",
+            status="in_review",
+            feedback="",
+            payload={
+                "scenario": "text",
+                "storyboard": [
+                    {"timecode": "0-3"},
+                    {"timecode": "3-10"},
+                    {"timecode": "10-20"},
+                ],
+            },
+        )
+
+        data = serialize_draft(draft)
+
+        assert data["storyboard_count"] == 3
+        assert data["slides_count"] == 0
+        assert data["preview"] == "text"
 
 
 # ---------------------------------------------------------------------------
