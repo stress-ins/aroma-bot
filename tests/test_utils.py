@@ -809,6 +809,7 @@ from bot.services.drafts_store import DraftRecord
 from bot.services.miniapp_presenter import filter_drafts, payload_preview, serialize_draft
 from bot.services.miniapp_keywords import field_labels, serialize_topics
 from bot.services.miniapp_plans import serialize_plan
+from bot.services.miniapp_reels import serialize_reels_draft
 from bot.services.plans_store import PlanRecord
 
 
@@ -996,6 +997,11 @@ class TestMiniAppPlans:
         assert data["plan_id"] == "20260311120000"
         assert len(data["entries"]) == 1
         assert data["entries"][0]["platform"] == "Threads"
+
+
+class TestMiniAppReels:
+    def test_serialize_reels_draft_returns_none_for_missing(self):
+        assert serialize_reels_draft("missing-id") is None
 
 
 # ---------------------------------------------------------------------------

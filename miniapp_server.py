@@ -14,6 +14,7 @@ from bot.services.drafts_store import get_draft, list_recent_drafts, update_draf
 from bot.services.miniapp_keywords import add_keyword, delete_keyword, field_labels, serialize_topics
 from bot.services.miniapp_plans import serialize_plan
 from bot.services.miniapp_presenter import filter_drafts, serialize_draft
+from bot.services.miniapp_reels import list_reels_drafts, serialize_reels_draft
 from bot.services.plans_store import get_plan, list_recent_plans
 from config import settings
 
@@ -163,6 +164,23 @@ async def plan_detail(plan_id: str):
     if not record:
         raise HTTPException(status_code=404, detail="plan_not_found")
     return serialize_plan(record)
+
+
+@app.get("/api/reels")
+async def reels(limit: int = Query(default=30, ge=1, le=100)):
+    items = list_reels_drafts(limit=limit)
+    return {
+        "items": items,
+        "total": len(items),
+    }
+
+
+@app.get("/api/reels/{draft_id}")
+async def reels_detail(draft_id: str):
+    draft = serialize_reels_draft(draft_id)
+    if not draft:
+        raise HTTPException(status_code=404, detail="reels_not_found")
+    return draft
 
 
 @app.get("/api/keywords")
