@@ -814,6 +814,7 @@ from bot.services.miniapp_reels import (
     update_reels_frame_note,
     update_reels_frame_prompt,
 )
+from bot.services.reels_assets import regenerate_reels_frame_asset
 from bot.services.plans_store import PlanRecord
 
 
@@ -1012,6 +1013,9 @@ class TestMiniAppReels:
 
     def test_update_reels_frame_prompt_returns_none_for_missing(self):
         assert update_reels_frame_prompt("missing-id", 0, "new prompt") is None
+
+    def test_regenerate_reels_frame_asset_returns_none_for_missing(self):
+        assert regenerate_reels_frame_asset("missing-id", 0) is None
 
 
 # ---------------------------------------------------------------------------
