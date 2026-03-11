@@ -144,7 +144,7 @@ async def drafts(
     feedback: str = "",
     query: str = "",
 ):
-    records = list_recent_drafts(limit=200)
+    records = await list_recent_drafts(limit=200)
     filtered = filter_drafts(
         records,
         kind=kind,
@@ -153,17 +153,17 @@ async def drafts(
         query=query,
     )
     return {
-        "items": [serialize_draft(record) for record in filtered[:limit]],
+        "items": [await serialize_draft(record) for record in filtered[:limit]],
         "total": len(filtered),
     }
 
 
 @app.get("/api/drafts/{draft_id}")
 async def draft_detail(draft_id: str):
-    draft = get_draft(draft_id)
+    draft = await get_draft(draft_id)
     if not draft:
         raise HTTPException(status_code=404, detail="draft_not_found")
-    return serialize_draft(draft)
+    return await serialize_draft(draft)
 
 
 @app.post("/api/drafts/{draft_id}/status")
@@ -171,10 +171,10 @@ async def update_status(draft_id: str, payload: DraftStatusPayload, _: None = De
     status = payload.status.strip().lower()
     if status not in {"draft", "in_review", "approved", "published"}:
         raise HTTPException(status_code=400, detail="invalid_status")
-    draft = update_draft(draft_id, status=status)
+    draft = await update_draft(draft_id, status=status)
     if not draft:
         raise HTTPException(status_code=404, detail="draft_not_found")
-    return serialize_draft(draft)
+    return await serialize_draft(draft)
 
 
 @app.post("/api/drafts/{draft_id}/feedback")
@@ -182,15 +182,15 @@ async def update_feedback(draft_id: str, payload: DraftFeedbackPayload, _: None 
     feedback = payload.feedback.strip().lower()
     if feedback not in {"", "worked", "missed"}:
         raise HTTPException(status_code=400, detail="invalid_feedback")
-    draft = update_draft(draft_id, feedback=feedback)
+    draft = await update_draft(draft_id, feedback=feedback)
     if not draft:
         raise HTTPException(status_code=404, detail="draft_not_found")
-    return serialize_draft(draft)
+    return await serialize_draft(draft)
 
 
 @app.post("/api/drafts/{draft_id}/content")
 async def update_content(draft_id: str, payload: DraftContentPayload, _: None = Depends(_require_auth)):
-    updated = update_content_review_draft(
+    updated = await update_content_review_draft(
         draft_id,
         topic=payload.topic,
         angle=payload.angle,
@@ -202,23 +202,23 @@ async def update_content(draft_id: str, payload: DraftContentPayload, _: None = 
     )
     if not updated:
         raise HTTPException(status_code=404, detail="content_draft_not_found")
-    draft = get_draft(draft_id)
+    draft = await get_draft(draft_id)
     if not draft:
         raise HTTPException(status_code=404, detail="draft_not_found")
-    return serialize_draft(draft)
+    return await serialize_draft(draft)
 
 
 @app.post("/api/drafts/{draft_id}/content/polish")
 async def polish_content(draft_id: str, _: None = Depends(_require_auth)):
     if not settings.anthropic_api_key:
         raise HTTPException(status_code=400, detail="anthropic_not_configured")
-    updated = polish_content_review_draft(draft_id)
+    updated = await polish_content_review_draft(draft_id)
     if not updated:
         raise HTTPException(status_code=404, detail="content_draft_not_found")
-    draft = get_draft(draft_id)
+    draft = await get_draft(draft_id)
     if not draft:
         raise HTTPException(status_code=404, detail="draft_not_found")
-    return serialize_draft(draft)
+    return await serialize_draft(draft)
 
 
 @app.get("/api/status")
@@ -263,13 +263,13 @@ async def generate_content(payload: CreateContentPayload, _: None = Depends(_req
         raise HTTPException(status_code=400, detail="invalid_format")
 
     draft = await generate_content_draft(topic, goal_key, format_key)
-    saved = save_draft(
+    saved = await save_draft(
         kind=format_key,
         topic=topic,
         source="/miniapp",
         payload=build_content_payload(draft, goal_key=goal_key, format_key=format_key),
     )
-    return serialize_draft(saved)
+    return await serialize_draft(saved)
 
 
 @app.post("/api/generate/reels")
@@ -288,7 +288,7 @@ async def generate_reels(
     loop = asyncio.get_running_loop()
     scenario = await loop.run_in_executor(None, generate_reels_scenario_sync, topic)
     frames = await loop.run_in_executor(None, generate_reels_director_sync, topic, scenario)
-    saved = save_draft(
+    saved = await save_draft(
         kind="reels",
         topic=topic,
         source="/miniapp",
@@ -298,7 +298,7 @@ async def generate_reels(
         populate_reels_frame_assets,
         saved.draft_id,
     )
-    draft = serialize_reels_draft(saved.draft_id)
+    draft = await serialize_reels_draft(saved.draft_id)
     if not draft:
         raise HTTPException(status_code=500, detail="reels_not_saved")
     return draft
@@ -318,13 +318,13 @@ async def generate_carousel(payload: CreateCarouselPayload, _: None = Depends(_r
     if not slides:
         raise HTTPException(status_code=500, detail="carousel_generation_failed")
 
-    saved = save_draft(
+    saved = await save_draft(
         kind="carousel",
         topic=topic,
         source="/miniapp",
         payload={"slides": slides, "img_prompts": img_prompts},
     )
-    return serialize_draft(saved)
+    return await serialize_draft(saved)
 
 
 @app.post("/api/generate/plan")
@@ -361,12 +361,12 @@ async def generate_plan(_: None = Depends(_require_auth)):
             for entry in entries
         ],
     )
-    return serialize_plan(record)
+    return await serialize_plan(record)
 
 
 @app.get("/api/inbox")
 async def inbox(limit: int = Query(default=50, ge=1, le=200), kind: str = "", _: None = Depends(_require_auth)):
-    items = list_inbox_items(limit=limit, kind_filter=kind)
+    items = await list_inbox_items(limit=limit, kind_filter=kind)
     return {
         "items": items,
         "total": len(items),
@@ -378,7 +378,7 @@ async def inbox(limit: int = Query(default=50, ge=1, le=200), kind: str = "", _:
 async def plans(limit: int = Query(default=20, ge=1, le=100)):
     records = list_recent_plans(limit=limit)
     return {
-        "items": [serialize_plan(record) for record in records],
+        "items": [await serialize_plan(record) for record in records],
         "total": len(records),
     }
 
@@ -388,7 +388,7 @@ async def plan_detail(plan_id: str):
     record = get_plan(plan_id)
     if not record:
         raise HTTPException(status_code=404, detail="plan_not_found")
-    return serialize_plan(record)
+    return await serialize_plan(record)
 
 
 @app.post("/api/plans/{plan_id}/generate")
@@ -413,7 +413,7 @@ async def plan_generate(plan_id: str, payload: PlanGeneratePayload, _: None = De
         loop = asyncio.get_running_loop()
         scenario = await loop.run_in_executor(None, generate_reels_scenario_sync, topic)
         frames = await loop.run_in_executor(None, generate_reels_director_sync, topic, scenario)
-        saved = save_draft(
+        saved = await save_draft(
             kind="reels",
             topic=topic,
             source="/plan",
@@ -431,12 +431,12 @@ async def plan_generate(plan_id: str, payload: PlanGeneratePayload, _: None = De
                 "images_ready": 0,
             },
         )
-        draft = serialize_draft(saved)
+        draft = await serialize_draft(saved)
         return {"kind": "draft", "draft": draft}
 
     goal_key = normalize_plan_goal(str(entry.get("goal", "")))
     content_draft = await generate_content_draft(topic, goal_key, target)
-    saved = save_draft(
+    saved = await save_draft(
         kind=target,
         topic=topic,
         source="/plan",
@@ -450,7 +450,7 @@ async def plan_generate(plan_id: str, payload: PlanGeneratePayload, _: None = De
             "slides": list(content_draft.slides),
         },
     )
-    draft = serialize_draft(saved)
+    draft = await serialize_draft(saved)
     return {"kind": "draft", "draft": draft}
 
 
@@ -465,7 +465,7 @@ async def reels(limit: int = Query(default=30, ge=1, le=100)):
 
 @app.get("/api/reels/{draft_id}")
 async def reels_detail(draft_id: str):
-    draft = serialize_reels_draft(draft_id)
+    draft = await serialize_reels_draft(draft_id)
     if not draft:
         raise HTTPException(status_code=404, detail="reels_not_found")
     return draft
@@ -473,7 +473,7 @@ async def reels_detail(draft_id: str):
 
 @app.get("/api/reels/{draft_id}/export")
 async def reels_export(draft_id: str, _: None = Depends(_require_auth)):
-    payload = build_reels_export_payload(draft_id)
+    payload = await build_reels_export_payload(draft_id)
     if not payload:
         raise HTTPException(status_code=404, detail="reels_not_found")
     return payload
@@ -486,7 +486,7 @@ async def reels_frame_note(
     payload: ReelsFrameNotePayload,
     _: None = Depends(_require_auth),
 ):
-    draft = update_reels_frame_note(draft_id, frame_index, payload.note)
+    draft = await update_reels_frame_note(draft_id, frame_index, payload.note)
     if not draft:
         raise HTTPException(status_code=404, detail="reels_frame_not_found")
     return draft
@@ -502,7 +502,7 @@ async def reels_frame_prompt(
     prompt = payload.prompt.strip()
     if not prompt:
         raise HTTPException(status_code=400, detail="empty_prompt")
-    draft = update_reels_frame_prompt(draft_id, frame_index, prompt)
+    draft = await update_reels_frame_prompt(draft_id, frame_index, prompt)
     if not draft:
         raise HTTPException(status_code=404, detail="reels_frame_not_found")
     return draft
@@ -514,10 +514,10 @@ async def reels_frame_regenerate(
     frame_index: int,
     _: None = Depends(_require_auth),
 ):
-    regen_payload = regenerate_reels_frame_asset(draft_id, frame_index)
+    regen_payload = await regenerate_reels_frame_asset(draft_id, frame_index)
     if not regen_payload:
         raise HTTPException(status_code=503, detail="reels_frame_regenerate_failed")
-    draft = serialize_reels_draft(draft_id)
+    draft = await serialize_reels_draft(draft_id)
     if not draft:
         raise HTTPException(status_code=404, detail="reels_not_found")
     return draft
