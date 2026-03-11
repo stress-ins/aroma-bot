@@ -13,6 +13,7 @@ import pytest
 from bot.handlers.commands import _split_message
 from bot.handlers.content import _topics_text, _source_label
 from bot.agents.threads_replies import _extract_json
+from bot.services.miniapp_references import list_reference_cards
 
 
 class TestSplitMessage:
@@ -1170,12 +1171,19 @@ class TestMiniAppBridge:
 class TestMiniAppRussianLocale:
     def test_index_selects_and_tabs_use_russian_labels(self):
         index_html = Path("miniapp/index.html").read_text(encoding="utf-8")
+        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
 
-        assert ">Тредс<" in index_html
-        assert ">Инстаграм<" in index_html
-        assert ">Телеграм<" in index_html
-        assert ">Рилсы<" in index_html
-        assert 'data-tab="reels"' in index_html
+        # HTML should have basic structure and mode selectors
+        assert 'id="modeContent"' in index_html
+        assert 'id="modeHandbook"' in index_html
+
+        # Labels should be in JS for dynamic tab generation
+        assert '"Тредс"' in app_js
+        assert '"Инстаграм"' in app_js
+        assert '"Телеграм"' in app_js
+        assert '"Рилсы"' in app_js
+        assert '"reels"' in app_js
+
         assert ">Reels<" not in index_html
 
     def test_create_workspace_dropdowns_use_russian_labels(self):
@@ -1223,22 +1231,44 @@ class TestMiniAppRussianLocale:
         assert updated["description"] == "Обновленное описание"
         assert updated["resource_values"]["minus"] == "Минус"
 
+    async def test_reference_service_seeds_additional_practices(self):
+        items = await list_reference_cards("practice")
+        slugs = {item["slug"] for item in items}
+        assert "box-breathing" in slugs
+        assert "coherent-breathing" in slugs
+        assert "visualization-safe-place" in slugs
+        assert len(items) >= 12
+
+    async def test_reference_service_seeds_additional_sounds(self):
+        items = await list_reference_cards("sound")
+        slugs = {item["slug"] for item in items}
+        assert "gong" in slugs
+        assert "pink-noise" in slugs
+        assert "silence-practice" in slugs
+        assert len(items) >= 12
+
     def test_viewport_disables_double_tap_zoom(self):
         index_html = Path("miniapp/index.html").read_text(encoding="utf-8")
 
         assert 'maximum-scale=1' in index_html
         assert 'user-scalable=no' in index_html
 
-    def test_tab_switching_uses_touch_friendly_handler(self):
+    def test_tab_switching_uses_native_click_and_touch_action(self):
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
         app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
 
-        assert "function bindPress" in app_js
-        assert 'element.addEventListener("pointerup"' in app_js
-        assert "bindPress(button" in app_js
+        # We use standard click now, but ensure tabs switching logic is there
+        assert 'addEventListener("click"' in app_js
+        assert "setTab(" in app_js
+
+        # Ensure CSS handles the 300ms delay/zoom
         assert "touch-action: manipulation;" in app_css
 
+    def test_handbook_has_oils_tab(self):
+        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
 
+        assert '{ id: "aromas", label: "Масла" }' in app_js
+        assert 'id: "keywords"' in app_js  # Moved to content, but still exists
 class TestMiniAppReels:
     async def test_serialize_reels_draft_returns_none_for_missing(self):
         assert await serialize_reels_draft("missing-id") is None
