@@ -1326,3 +1326,45 @@ class TestEditPostFallback:
 
         result = ct.edit_post_sync("original text", "тема", "instagram")
         assert result == edited
+
+
+# ---------------------------------------------------------------------------
+# Carousel draft persistence (P2 fix)
+# ---------------------------------------------------------------------------
+
+class TestCarouselDraftPersistence:
+    """Carousel drafts must be saved to the database after generation."""
+
+    def test_carousel_inbox_category_is_content(self):
+        """Carousel kind falls into 'content' inbox category."""
+        from bot.services.drafts_store import DraftRecord
+        record = DraftRecord(
+            draft_id="carousel01",
+            kind="carousel",
+            topic="Сенсорный ритуал",
+            source="/carousel",
+            created_at="2026-03-11T10:00:00+00:00",
+            status="draft",
+            feedback="",
+            payload={"slides": ["Слайд 1", "Слайд 2"], "img_prompts": ["prompt"]},
+        )
+        assert inbox_category(record) == "content"
+
+    def test_carousel_draft_serializes(self):
+        """serialize_draft works for carousel kind records."""
+        from bot.services.drafts_store import DraftRecord
+        from bot.services.miniapp_presenter import serialize_draft
+        record = DraftRecord(
+            draft_id="carousel02",
+            kind="carousel",
+            topic="Утренний ритуал",
+            source="/carousel",
+            created_at="2026-03-11T10:00:00+00:00",
+            status="draft",
+            feedback="",
+            payload={"slides": ["Hook", "CTA"], "img_prompts": ["ph1", "ph2"]},
+        )
+        result = serialize_draft(record)
+        assert result["kind"] == "carousel"
+        assert result["topic"] == "Утренний ритуал"
+        assert result["payload"]["slides"] == ["Hook", "CTA"]

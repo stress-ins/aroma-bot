@@ -942,6 +942,18 @@ async def _run_carousel(query_or_message, context: ContextTypes.DEFAULT_TYPE,
     context.user_data["ca_awaiting_images"]  = False
     context.user_data["ca_user_image_ids"]   = []
 
+    try:
+        from bot.services.drafts_store import save_draft as _save_draft
+        saved = _save_draft(
+            kind="carousel",
+            topic=topic,
+            source="/carousel",
+            payload={"slides": slides, "img_prompts": img_prompts},
+        )
+        context.user_data["ca_draft_id"] = saved.draft_id
+    except Exception:
+        logger.exception("carousel: failed to save draft for topic: %s", topic)
+
     target = query_or_message if hasattr(query_or_message, "reply_text") else query_or_message.message
 
     keyboard = _text_review_keyboard(len(slides))
