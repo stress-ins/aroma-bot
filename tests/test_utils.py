@@ -1196,6 +1196,13 @@ class TestMiniAppRussianLocale:
         assert "Черновики и рилсы" not in index_html
         assert 'id="headerContent"' not in index_html
 
+    def test_index_has_bootstrap_fallback_panel(self):
+        index_html = Path("miniapp/index.html").read_text(encoding="utf-8")
+
+        assert 'id="bootFallback"' in index_html
+        assert 'id="bootFallbackReload"' in index_html
+        assert "Загружаю интерфейс" in index_html
+
     def test_create_workspace_dropdowns_use_russian_labels(self):
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
 
@@ -1365,6 +1372,18 @@ class TestMiniAppRussianLocale:
         assert 'closest("textarea, input, select, button, a, [contenteditable=\'true\']")' in app_js
         assert "touch.clientX > 36" not in app_js
         assert "dx > 72" in app_js
+
+    def test_bootstrap_guard_shows_visible_fallback_instead_of_blank_screen(self):
+        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+
+        assert "function showBootFallback" in app_js
+        assert "function hideBootFallback" in app_js
+        assert "bootstrapWatchdogTimer" in app_js
+        assert 'window.addEventListener("error"' in app_js
+        assert 'window.addEventListener("unhandledrejection"' in app_js
+        assert ".boot-fallback" in app_css
+        assert ".boot-fallback.is-error" in app_css
 
     def test_handbook_has_separate_reference_tabs(self):
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")

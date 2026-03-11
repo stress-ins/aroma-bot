@@ -42,6 +42,7 @@ const MODE_TABS = {
 let reelRefreshTimer = null;
 let carouselRefreshTimer = null;
 let swipeStart = null;
+let bootstrapWatchdogTimer = null;
 
 const elements = {
   tabsContainer: document.getElementById("tabsContainer"),
@@ -59,6 +60,10 @@ const elements = {
   queryFilter: document.getElementById("queryFilter"),
   modeContent: document.getElementById("modeContent"),
   modeHandbook: document.getElementById("modeHandbook"),
+  bootFallback: document.getElementById("bootFallback"),
+  bootFallbackTitle: document.getElementById("bootFallbackTitle"),
+  bootFallbackText: document.getElementById("bootFallbackText"),
+  bootFallbackReload: document.getElementById("bootFallbackReload"),
 };
 
 const RU_KIND_LABELS = {
@@ -316,6 +321,20 @@ function setEmptyState(hidden, text = "Ничего не найдено.") {
   elements.emptyState.hidden = hidden;
   elements.emptyState.textContent = text;
   elements.emptyState.style.display = hidden ? "none" : "block";
+}
+
+function showBootFallback(title, text, isError = false) {
+  if (!elements.bootFallback) return;
+  elements.bootFallback.hidden = false;
+  elements.bootFallback.classList.toggle("is-error", isError);
+  if (elements.bootFallbackTitle) elements.bootFallbackTitle.textContent = title;
+  if (elements.bootFallbackText) elements.bootFallbackText.textContent = text;
+}
+
+function hideBootFallback() {
+  if (!elements.bootFallback) return;
+  elements.bootFallback.hidden = true;
+  elements.bootFallback.classList.remove("is-error");
 }
 
 function showRequestError(prefix, error) {
@@ -1008,6 +1027,21 @@ async function loadCurrentTab() {
 }
 
 async function bootstrap() {
+  showBootFallback(
+    "Загружаю интерфейс",
+    "Если экран остаётся пустым дольше пары секунд, попробуйте открыть mini app ещё раз.",
+    false,
+  );
+  window.clearTimeout(bootstrapWatchdogTimer);
+  bootstrapWatchdogTimer = window.setTimeout(() => {
+    if (elements.tabsContainer.children.length === 0) {
+      showBootFallback(
+        "Интерфейс загружается слишком долго",
+        "Попробуйте обновить экран или открыть mini app ещё раз.",
+        true,
+      );
+    }
+  }, 1800);
   applyTelegramTheme();
   bindSwipeBack();
   elements.modeContent.addEventListener("click", () => { setMode("content"); loadCurrentTab(); });
@@ -1023,12 +1057,39 @@ async function bootstrap() {
   }
   try {
     await loadCurrentTab();
+    window.clearTimeout(bootstrapWatchdogTimer);
+    hideBootFallback();
   } catch (error) {
     console.error("miniapp bootstrap failed", error);
     elements.draftDetail.innerHTML = `<div class="detail-empty">Не удалось загрузить данные. Попробуйте открыть mini app еще раз.</div>`;
     setEmptyState(true, "Не удалось загрузить данные.");
+    showBootFallback(
+      "Не удалось загрузить интерфейс",
+      "Попробуйте обновить экран или открыть mini app ещё раз.",
+      true,
+    );
   }
 }
+
+if (elements.bootFallbackReload) {
+  elements.bootFallbackReload.addEventListener("click", () => window.location.reload());
+}
+
+window.addEventListener("error", () => {
+  showBootFallback(
+    "Интерфейс временно недоступен",
+    "Во время загрузки произошла ошибка. Попробуйте обновить экран.",
+    true,
+  );
+});
+
+window.addEventListener("unhandledrejection", () => {
+  showBootFallback(
+    "Интерфейс временно недоступен",
+    "Во время загрузки произошла ошибка. Попробуйте обновить экран.",
+    true,
+  );
+});
 
 bootstrap();
 
