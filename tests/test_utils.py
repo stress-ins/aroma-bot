@@ -1170,12 +1170,19 @@ class TestMiniAppBridge:
 class TestMiniAppRussianLocale:
     def test_index_selects_and_tabs_use_russian_labels(self):
         index_html = Path("miniapp/index.html").read_text(encoding="utf-8")
+        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
 
-        assert ">Тредс<" in index_html
-        assert ">Инстаграм<" in index_html
-        assert ">Телеграм<" in index_html
-        assert ">Рилсы<" in index_html
-        assert 'data-tab="reels"' in index_html
+        # HTML should have basic structure and mode selectors
+        assert 'id="modeContent"' in index_html
+        assert 'id="modeHandbook"' in index_html
+
+        # Labels should be in JS for dynamic tab generation
+        assert '"Тредс"' in app_js
+        assert '"Инстаграм"' in app_js
+        assert '"Телеграм"' in app_js
+        assert '"Рилсы"' in app_js
+        assert '"reels"' in app_js
+
         assert ">Reels<" not in index_html
 
     def test_create_workspace_dropdowns_use_russian_labels(self):
@@ -1229,15 +1236,16 @@ class TestMiniAppRussianLocale:
         assert 'maximum-scale=1' in index_html
         assert 'user-scalable=no' in index_html
 
-    def test_tab_switching_uses_touch_friendly_handler(self):
+    def test_tab_switching_uses_native_click_and_touch_action(self):
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
         app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
 
-        assert "function bindPress" in app_js
-        assert 'element.addEventListener("pointerup"' in app_js
-        assert "bindPress(button" in app_js
-        assert "touch-action: manipulation;" in app_css
+        # We use standard click now, but ensure tabs switching logic is there
+        assert 'addEventListener("click"' in app_js
+        assert "setTab(" in app_js
 
+        # Ensure CSS handles the 300ms delay/zoom
+        assert "touch-action: manipulation;" in app_css
 
 class TestMiniAppReels:
     async def test_serialize_reels_draft_returns_none_for_missing(self):
