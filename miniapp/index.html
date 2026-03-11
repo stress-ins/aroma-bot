@@ -20,13 +20,13 @@
 
       <section class="toolbar">
         <div class="tabs">
-          <button class="tab-button"        data-tab="create"   type="button">Create</button>
-          <button class="tab-button"        data-tab="inbox"    type="button">Inbox</button>
-          <button class="tab-button active" data-tab="drafts"   type="button">Drafts</button>
-          <button class="tab-button"        data-tab="plans"    type="button">Plan</button>
+          <button class="tab-button"        data-tab="create"   type="button">Создать</button>
+          <button class="tab-button"        data-tab="inbox"    type="button">Очередь</button>
+          <button class="tab-button active" data-tab="drafts"   type="button">Черновики</button>
+          <button class="tab-button"        data-tab="plans"    type="button">Планы</button>
           <button class="tab-button"        data-tab="reels"    type="button">Reels</button>
-          <button class="tab-button"        data-tab="status"   type="button">Status</button>
-          <button class="tab-button"        data-tab="keywords" type="button">Keywords</button>
+          <button class="tab-button"        data-tab="status"   type="button">Статус</button>
+          <button class="tab-button"        data-tab="keywords" type="button">Ключи</button>
         </div>
         <div class="toolbar-inner-filters">
           <label>
@@ -37,25 +37,25 @@
               <option value="instagram">Instagram</option>
               <option value="telegram">Telegram</option>
               <option value="reels">Reels</option>
-              <option value="carousel">Carousel</option>
+              <option value="carousel">Карусель</option>
             </select>
           </label>
           <label>
             Статус
             <select id="statusFilter">
               <option value="">Все</option>
-              <option value="draft">draft</option>
-              <option value="in_review">in_review</option>
-              <option value="approved">approved</option>
-              <option value="published">published</option>
+              <option value="draft">Черновик</option>
+              <option value="in_review">На ревью</option>
+              <option value="approved">Одобрен</option>
+              <option value="published">Опубликован</option>
             </select>
           </label>
           <label>
-            Feedback
+            Реакция
             <select id="feedbackFilter">
               <option value="">Все</option>
-              <option value="worked">worked</option>
-              <option value="missed">missed</option>
+              <option value="worked">Сработал</option>
+              <option value="missed">Не сработал</option>
             </select>
           </label>
           <label class="search">
@@ -68,7 +68,7 @@
       <main class="layout">
         <section class="panel list-panel">
           <div class="panel-header">
-            <h2 id="listTitle">Drafts</h2>
+            <h2 id="listTitle">Черновики</h2>
             <span id="draftCount" class="meta"></span>
           </div>
           <div id="draftList" class="draft-list"></div>
