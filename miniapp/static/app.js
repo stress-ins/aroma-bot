@@ -382,12 +382,17 @@ function enterDetailView() {
   window.scrollTo(0, 0);
 }
 
+function isInteractiveTarget(target) {
+  if (!target || !(target instanceof Element)) return false;
+  return Boolean(target.closest("textarea, input, select, button, a, [contenteditable='true']"));
+}
+
 function bindSwipeBack() {
   const isMobile = window.matchMedia("(max-width: 760px)").matches;
   if (!isMobile) return;
   elements.detailPanel.addEventListener("touchstart", (event) => {
     const touch = event.touches[0];
-    if (!touch || state.mobileView !== "detail" || touch.clientX > 36) {
+    if (!touch || state.mobileView !== "detail" || isInteractiveTarget(event.target)) {
       swipeStart = null;
       return;
     }
@@ -399,7 +404,7 @@ function bindSwipeBack() {
     const dx = touch.clientX - swipeStart.x;
     const dy = Math.abs(touch.clientY - swipeStart.y);
     swipeStart = null;
-    if (dx > 80 && dy < 40) {
+    if (dx > 72 && dy < 56 && dx > dy * 1.4) {
       window.goBackToList();
     }
   }, { passive: true });
