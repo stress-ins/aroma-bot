@@ -93,6 +93,28 @@ function sendDraftToChat(draftId) {
   }));
 }
 
+function requestDraftReview(draftId) {
+  const tg = window.Telegram?.WebApp;
+  if (!tg?.sendData || !draftId) {
+    return;
+  }
+  tg.sendData(JSON.stringify({
+    action: "request_review",
+    draft_id: String(draftId),
+  }));
+}
+
+function sendPlanToChat(planId) {
+  const tg = window.Telegram?.WebApp;
+  if (!tg?.sendData || !planId) {
+    return;
+  }
+  tg.sendData(JSON.stringify({
+    action: "open_plan",
+    plan_id: String(planId),
+  }));
+}
+
 async function fetchJson(url, options = {}) {
   const extraHeaders = options.method === "POST" ? _initDataHeader() : {};
   const response = await fetch(url, {
@@ -339,6 +361,7 @@ function renderReelsDetail(reel) {
         </div>
         <div class="actions-row">
           <button class="secondary-button" type="button" data-send-draft-chat="${escapeHtml(reel.draft_id)}">Send to chat</button>
+          <button class="secondary-button" type="button" data-request-review="${escapeHtml(reel.draft_id)}">Request review</button>
         </div>
       </div>
       ${payloadSection("Scenario", reel.payload?.scenario || reel.preview)}
@@ -436,6 +459,13 @@ function renderReelsDetail(reel) {
     });
   }
 
+  const requestReviewButton = elements.draftDetail.querySelector("[data-request-review]");
+  if (requestReviewButton) {
+    requestReviewButton.addEventListener("click", () => {
+      requestDraftReview(requestReviewButton.dataset.requestReview);
+    });
+  }
+
   const noteForm = elements.draftDetail.querySelector("[data-frame-note-form]");
   if (noteForm) {
     noteForm.addEventListener("submit", async (event) => {
@@ -468,6 +498,9 @@ function renderPlanDetail(plan) {
       <section class="section">
         <h3>Plan ID</h3>
         <div class="detail-preview">${escapeHtml(plan.plan_id)}</div>
+        <div class="actions-row">
+          <button class="secondary-button" type="button" data-send-plan-chat="${escapeHtml(plan.plan_id)}">Send plan to chat</button>
+        </div>
       </section>
       <section class="section">
         <h3>Entries</h3>
@@ -500,6 +533,13 @@ function renderPlanDetail(plan) {
       </section>
     </div>
   `;
+
+  const sendPlanButton = elements.draftDetail.querySelector("[data-send-plan-chat]");
+  if (sendPlanButton) {
+    sendPlanButton.addEventListener("click", () => {
+      sendPlanToChat(sendPlanButton.dataset.sendPlanChat);
+    });
+  }
 }
 
 function keywordFieldMarkup(topicIdx, fieldKey, fieldLabel, words) {
@@ -670,6 +710,7 @@ function renderDraftDetail(draft) {
           </div>
           <div class="actions-row">
             <button class="secondary-button" type="button" data-send-draft-chat="${escapeHtml(draft.draft_id)}">Send to chat</button>
+            <button class="secondary-button" type="button" data-request-review="${escapeHtml(draft.draft_id)}">Request review</button>
           </div>
         </div>
       </div>
@@ -707,6 +748,13 @@ function renderDraftDetail(draft) {
   if (sendDraftButton) {
     sendDraftButton.addEventListener("click", () => {
       sendDraftToChat(sendDraftButton.dataset.sendDraftChat);
+    });
+  }
+
+  const requestReviewButton = elements.draftDetail.querySelector("[data-request-review]");
+  if (requestReviewButton) {
+    requestReviewButton.addEventListener("click", () => {
+      requestDraftReview(requestReviewButton.dataset.requestReview);
     });
   }
 }
