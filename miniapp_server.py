@@ -200,7 +200,7 @@ async def reels_detail(draft_id: str):
 
 
 @app.get("/api/reels/{draft_id}/export")
-async def reels_export(draft_id: str):
+async def reels_export(draft_id: str, _: None = Depends(_require_auth)):
     payload = build_reels_export_payload(draft_id)
     if not payload:
         raise HTTPException(status_code=404, detail="reels_not_found")
