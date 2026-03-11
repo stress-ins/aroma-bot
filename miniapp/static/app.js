@@ -84,7 +84,7 @@ async function fetchJson(url, options = {}) {
 }
 
 async function loadDrafts() {
-  const data = await fetchJson(`/miniapp/api/drafts?${filtersToQueryString()}`);
+  const data = await fetchJson(`/api/drafts?${filtersToQueryString()}`);
   state.drafts = data.items || [];
   renderDraftList();
 
@@ -97,12 +97,12 @@ async function loadDrafts() {
 }
 
 async function loadStatus() {
-  state.status = await fetchJson("/miniapp/api/status");
+  state.status = await fetchJson("/api/status");
   renderStatus();
 }
 
 async function loadKeywords() {
-  state.keywords = await fetchJson("/miniapp/api/keywords");
+  state.keywords = await fetchJson("/api/keywords");
   renderKeywords();
 }
 
@@ -234,7 +234,7 @@ function renderKeywords() {
 
   elements.draftList.querySelectorAll("[data-remove-topic]").forEach((button) => {
     button.addEventListener("click", async () => {
-      await mutateKeyword("/miniapp/api/keywords/remove", {
+      await mutateKeyword("/api/keywords/remove", {
         topic_idx: Number(button.dataset.removeTopic),
         field: button.dataset.removeField,
         word: button.dataset.removeWord,
@@ -250,7 +250,7 @@ function renderKeywords() {
       if (!word) {
         return;
       }
-      await mutateKeyword("/miniapp/api/keywords/add", {
+      await mutateKeyword("/api/keywords/add", {
         topic_idx: Number(form.dataset.addTopic),
         field: form.dataset.addField,
         word,
@@ -383,7 +383,7 @@ function renderDraftDetail(draft) {
 }
 
 async function openDraft(draftId) {
-  const draft = await fetchJson(`/miniapp/api/drafts/${draftId}`);
+  const draft = await fetchJson(`/api/drafts/${draftId}`);
   setSelectedDraft(draft);
   renderDraftList();
   renderDraftDetail(draft);
@@ -393,7 +393,7 @@ async function updateDraft(action, payload) {
   if (!state.draftId) {
     return;
   }
-  const draft = await fetchJson(`/miniapp/api/drafts/${state.draftId}/${action}`, {
+  const draft = await fetchJson(`/api/drafts/${state.draftId}/${action}`, {
     method: "POST",
     body: JSON.stringify(payload),
   });

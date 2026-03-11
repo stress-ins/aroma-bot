@@ -86,7 +86,7 @@ async def open_mini_app(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     if markup is None:
         await update.message.reply_text(
             "⚠️ Mini App URL пока не настроен.\n\n"
-            "Нужно задать `MINI_APP_URL`, например `https://oauth.aromara.ru/miniapp`."
+            "Нужно задать `MINI_APP_URL`, например `https://app.aromara.ru`."
         )
         return
     await update.message.reply_text(
