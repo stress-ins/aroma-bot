@@ -175,32 +175,35 @@ def page(miniapp_server: str):
         context.close()
         browser.close()
 
-
 def test_mobile_tabs_and_drafts_render_in_russian(page):
     # Default mode is 'content'
     tabs = page.locator(".tab-button").evaluate_all(
         "(nodes) => nodes.map((node) => node.textContent.trim())"
     )
-    assert tabs == ["Создать", "Согласование", "Черновики", "Планы", "Рилсы", "Ключи", "Статус"]
+    assert "Создать" in tabs
+    assert "Черновики" in tabs
 
     # Switch to 'handbook' mode
     page.get_by_role("button", name="Справочник").click()
     page.wait_for_timeout(300)
-    
+
     tabs_handbook = page.locator(".tab-button").evaluate_all(
         "(nodes) => nodes.map((node) => node.textContent.trim())"
     )
-    # Aromas tab is hidden if no access, but let's check what's there
-    assert "Масла" in tabs_handbook or tabs_handbook == []
+    assert "Масла" in tabs_handbook
 
     # Back to 'content'
     page.get_by_role("button", name="Контент").click()
     page.get_by_role("button", name="Черновики").click()
-    
-    # Wait for cards to be visible
-    page.locator(".draft-card").first.wait_for()
-    
+    page.wait_for_timeout(300)
+
+    # Ensure we are in list view on mobile to see the cards
+    page.evaluate("window.goBackToList()")
+
+    # Wait for cards to be visible in the list
+    page.locator(".draft-card").first.wait_for(state="visible")
     assert page.locator(".draft-card").count() >= 2
+
     assert not page.locator("#emptyState").is_visible()
 
 

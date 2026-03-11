@@ -25,6 +25,7 @@ class AromaCardModel(Base):
     __tablename__ = "aroma_cards"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    category: Mapped[str] = mapped_column(String(32), default="aroma", index=True)
     slug: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     name: Mapped[str] = mapped_column(String(255), index=True)
     source_type: Mapped[str] = mapped_column(String(32), default="herb")

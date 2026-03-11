@@ -13,6 +13,7 @@ import pytest
 from bot.handlers.commands import _split_message
 from bot.handlers.content import _topics_text, _source_label
 from bot.agents.threads_replies import _extract_json
+from bot.services.miniapp_references import list_reference_cards
 
 
 class TestSplitMessage:
@@ -1230,6 +1231,22 @@ class TestMiniAppRussianLocale:
         assert updated["description"] == "Обновленное описание"
         assert updated["resource_values"]["minus"] == "Минус"
 
+    async def test_reference_service_seeds_additional_practices(self):
+        items = await list_reference_cards("practice")
+        slugs = {item["slug"] for item in items}
+        assert "box-breathing" in slugs
+        assert "coherent-breathing" in slugs
+        assert "visualization-safe-place" in slugs
+        assert len(items) >= 12
+
+    async def test_reference_service_seeds_additional_sounds(self):
+        items = await list_reference_cards("sound")
+        slugs = {item["slug"] for item in items}
+        assert "gong" in slugs
+        assert "pink-noise" in slugs
+        assert "silence-practice" in slugs
+        assert len(items) >= 12
+
     def test_viewport_disables_double_tap_zoom(self):
         index_html = Path("miniapp/index.html").read_text(encoding="utf-8")
 
@@ -1246,6 +1263,13 @@ class TestMiniAppRussianLocale:
 
         # Ensure CSS handles the 300ms delay/zoom
         assert "touch-action: manipulation;" in app_css
+
+    def test_handbook_has_separate_tabs_for_reference_sections(self):
+        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+
+        assert '{ id: "aromas", label: "Ароматы" }' in app_js
+        assert '{ id: "practices", label: "Практики" }' in app_js
+        assert '{ id: "sounds", label: "Звуки" }' in app_js
 
 class TestMiniAppReels:
     async def test_serialize_reels_draft_returns_none_for_missing(self):

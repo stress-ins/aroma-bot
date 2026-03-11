@@ -2,11 +2,10 @@ const state = {
   mode: "content", // 'content' or 'handbook'
   tab: new URLSearchParams(window.location.search).get("tab") || "drafts",
   draftId: new URLSearchParams(window.location.search).get("draft_id") || "",
-  aromaAccess: false,
-  aromas: [],
-  aromaSearch: "",
-  aromaEditing: false,
-  selectedAroma: null,
+  referenceAccess: false,
+  referenceItems: [],
+  referenceSearch: "",
+  selectedReference: null,
   inbox: [],
   inboxKind: "all",
   drafts: [],
@@ -32,7 +31,9 @@ const MODE_TABS = {
     { id: "status", label: "Статус" },
   ],
   handbook: [
-    { id: "aromas", label: "Масла" },
+    { id: "aromas", label: "Ароматы" },
+    { id: "practices", label: "Практики" },
+    { id: "sounds", label: "Звуки" },
   ],
 };
 
@@ -75,6 +76,42 @@ const RU_STATUS_LABELS = {
 const RU_FEEDBACK_LABELS = {
   worked: "Сработало",
   missed: "Не сработало",
+};
+
+const HANDBOOK_CATEGORY_META = {
+  aromas: {
+    category: "aroma",
+    label: "аромат",
+    title: "Ароматы",
+    searchLabel: "Поиск аромата",
+    searchPlaceholder: "Например: лаванда",
+    empty: "Ароматы не найдены.",
+    selectPrompt: "Выберите аромат из списка.",
+    locked: "Доступ к справочнику ароматов ограничен.",
+    count: (items) => `${items.length} карточек`,
+  },
+  practices: {
+    category: "practice",
+    label: "практика",
+    title: "Практики",
+    searchLabel: "Поиск практики",
+    searchPlaceholder: "Например: квадратное дыхание",
+    empty: "Практики не найдены.",
+    selectPrompt: "Выберите практику из списка.",
+    locked: "Доступ к справочнику практик ограничен.",
+    count: (items) => `${items.length} карточек`,
+  },
+  sounds: {
+    category: "sound",
+    label: "звук",
+    title: "Звуки",
+    searchLabel: "Поиск звука",
+    searchPlaceholder: "Например: гонг",
+    empty: "Звуки не найдены.",
+    selectPrompt: "Выберите звуковую карточку из списка.",
+    locked: "Доступ к справочнику звуков ограничен.",
+    count: (items) => `${items.length} карточек`,
+  },
 };
 
 function escapeHtml(value) {
@@ -280,61 +317,183 @@ async function loadKeywords() {
   renderKeywords();
 }
 
-async function loadAromaAccess() {
-  try {
-    const payload = await fetchJson("/api/aromas/access");
-    state.aromaAccess = Boolean(payload?.allowed);
-  } catch (_e) { state.aromaAccess = false; }
+function currentHandbookMeta() {
+  return HANDBOOK_CATEGORY_META[state.tab] || HANDBOOK_CATEGORY_META.aromas;
 }
 
-async function loadAromas() {
-  if (!state.aromaAccess) {
-    renderAromasLocked();
+async function loadReferenceAccess() {
+  try {
+    const payload = await fetchJson("/api/references/access");
+    state.referenceAccess = Boolean(payload?.allowed);
+  } catch (_e) { state.referenceAccess = false; }
+}
+
+async function loadReferences(tabId = state.tab) {
+  const meta = HANDBOOK_CATEGORY_META[tabId];
+  if (!meta) return;
+  if (!state.referenceAccess) {
+    renderReferencesLocked();
     return;
   }
-  const data = await fetchJson("/api/aromas");
-  state.aromas = data.items || [];
-  const selectedSlug = state.selectedAroma?.slug || state.aromas[0]?.slug || "";
-  if (selectedSlug) await openAroma(selectedSlug);
-  else renderAromas();
+  const data = await fetchJson(`/api/references/${meta.category}`);
+  state.referenceItems = data.items || [];
+  const selectedSlug = state.selectedReference?.category === meta.category
+    ? (state.selectedReference?.slug || state.referenceItems[0]?.slug || "")
+    : (state.referenceItems[0]?.slug || "");
+  if (selectedSlug) await openReference(selectedSlug, tabId);
+  else renderReferences();
+}
+
+async function openReference(slug, tabId = state.tab) {
+  const meta = HANDBOOK_CATEGORY_META[tabId];
+  if (!slug || !meta) return;
+  state.selectedReference = await fetchJson(`/api/references/${meta.category}/${encodeURIComponent(slug)}`);
+  state.selectedReference.category = meta.category;
+  state.tab = tabId;
+  elements.tabsContainer.querySelectorAll(".tab-button").forEach((b) => b.classList.toggle("active", b.dataset.tab === tabId));
+  renderReferences();
+  enterDetailView();
+}
+
+function renderReferencePassport(reference) {
+  const parts = [
+    reference.key ? `Ключ: ${reference.key}` : "",
+    reference.botanical_family ? `Семейство / тип: ${reference.botanical_family}` : "",
+    reference.origin_countries ? `Источник / традиция: ${reference.origin_countries}` : "",
+    reference.extraction_method ? `Форма / метод: ${reference.extraction_method}` : "",
+    reference.volatility ? `Длительность / летучесть: ${reference.volatility}` : "",
+  ].filter(Boolean);
+  return parts.join("\n");
+}
+
+function renderReferences() {
+  const meta = currentHandbookMeta();
+  const items = state.referenceItems || [];
+  const query = (state.referenceSearch || "").trim().toLowerCase();
+  const filtered = items.filter((item) => `${item.name} ${item.description || ""}`.toLowerCase().includes(query));
+  const reference = state.selectedReference;
+  elements.listTitle.textContent = meta.title;
+  elements.draftCount.textContent = meta.count(items);
+  setEmptyState(filtered.length > 0, meta.empty);
+
+  let listContainer = document.getElementById("referenceListContainer");
+  if (!listContainer) {
+    elements.draftList.innerHTML = `
+      <div class="aroma-search">
+        <label>${escapeHtml(meta.searchLabel)}<input id="referenceSearchInput" type="search" placeholder="${escapeHtml(meta.searchPlaceholder)}" value="${escapeHtml(state.referenceSearch)}" /></label>
+      </div>
+      <div id="referenceListContainer" class="plans-list"></div>
+    `;
+    listContainer = document.getElementById("referenceListContainer");
+    document.getElementById("referenceSearchInput")?.addEventListener("input", (e) => {
+      state.referenceSearch = e.target.value;
+      renderReferences();
+    });
+  } else {
+    const searchInput = document.getElementById("referenceSearchInput");
+    if (searchInput) {
+      searchInput.placeholder = meta.searchPlaceholder;
+      searchInput.value = state.referenceSearch;
+      const label = searchInput.closest("label");
+      if (label) {
+        label.firstChild.textContent = meta.searchLabel;
+      }
+    }
+  }
+
+  listContainer.innerHTML = filtered.map((item) => `
+    <article class="draft-card${item.slug === reference?.slug ? " active" : ""}" onclick="openReference('${item.slug}', '${state.tab}')">
+      <div class="draft-kind">${escapeHtml(meta.label)}</div>
+      <h3 class="draft-topic">${escapeHtml(item.name)}</h3>
+      <div class="draft-preview">${escapeHtml(item.description || "")}</div>
+    </article>
+  `).join("");
+
+  if (!reference) {
+    elements.draftDetail.innerHTML = `${renderBackButton()}<div class="detail-empty">${escapeHtml(meta.selectPrompt)}</div>`;
+    syncMobileNavigation();
+    return;
+  }
+
+  elements.draftDetail.innerHTML = `
+    <div class="detail-grid">
+      ${renderBackButton()}
+      <section class="section aroma-hero">
+        <img class="aroma-image" src="${escapeHtml(reference.image_url)}" alt="${escapeHtml(reference.image_alt)}" />
+        <div class="aroma-image-caption">${escapeHtml(reference.image_alt)}</div>
+      </section>
+      ${aromaSection("Паспорт карточки", renderReferencePassport(reference))}
+      ${aromaSection("Описание", reference.description)}
+      ${aromaSection("Какие вопросы поднимает", reference.questions)}
+      ${aromaSection("Действие на НПС", reference.nps_effect)}
+      ${aromaSection("Терапевтические свойства", reference.therapeutic_properties)}
+      ${aromaSection("Психологические свойства", reference.psychological_properties)}
+      ${aromaSection('Ресурс "+"', reference.resource_values?.plus)}
+      ${aromaSection('Ресурс "-"', reference.resource_values?.minus)}
+      ${aromaSection("Исторические сведения", reference.history)}
+    </div>
+  `;
+  syncMobileNavigation();
+}
+
+function renderReferencesLocked() {
+  const meta = currentHandbookMeta();
+  elements.listTitle.textContent = meta.title;
+  elements.draftCount.textContent = "";
+  setEmptyState(true);
+  elements.draftList.innerHTML = `<div class="detail-preview">${escapeHtml(meta.locked)}</div>`;
+  elements.draftDetail.innerHTML = `${renderBackButton()}<div class="detail-empty">${escapeHtml(meta.locked)}</div>`;
+  syncMobileNavigation();
 }
 
 async function openAroma(slug) {
   if (!slug) return;
-  state.aromaEditing = false;
-  state.selectedAroma = await fetchJson(`/api/aromas/${encodeURIComponent(slug)}`);
-  renderAromas();
-  enterDetailView();
+  await openReference(slug, "aromas");
 }
 
 function renderCreate() {
   elements.listTitle.textContent = "Инструменты";
   elements.draftCount.textContent = "4 типа";
   setEmptyState(true);
+  
+  const scrollToForm = (selector) => {
+    enterDetailView();
+    setTimeout(() => {
+      const el = document.querySelector(selector);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
+  };
+
   elements.draftList.innerHTML = `
     <div class="create-list">
-      <article class="create-card" onclick="document.querySelector('[data-create-content]').scrollIntoView({behavior:'smooth'})">
+      <article class="create-card" data-goto="content">
         <div class="draft-kind">контент</div>
         <h3 class="draft-topic">Пост для соцсетей</h3>
         <div class="draft-preview">Тредс, Инстаграм или Телеграм.</div>
       </article>
-      <article class="create-card" onclick="document.querySelector('[data-create-reels]').scrollIntoView({behavior:'smooth'})">
+      <article class="create-card" data-goto="reels">
         <div class="draft-kind">рилсы</div>
         <h3 class="draft-topic">Сценарий + раскадровка</h3>
         <div class="draft-preview">Сценарий и 4 кадра визуализации.</div>
       </article>
-      <article class="create-card" onclick="document.querySelector('[data-create-plan]').scrollIntoView({behavior:'smooth'})">
+      <article class="create-card" data-goto="plan">
         <div class="draft-kind">план</div>
         <h3 class="draft-topic">Контент-план</h3>
         <div class="draft-preview">Сбор трендов и план на неделю.</div>
       </article>
-      <article class="create-card" onclick="document.querySelector('[data-create-carousel]').scrollIntoView({behavior:'smooth'})">
+      <article class="create-card" data-goto="carousel">
         <div class="draft-kind">карусель</div>
         <h3 class="draft-topic">Карусель</h3>
         <div class="draft-preview">5 слайдов с промптами для картинок.</div>
       </article>
     </div>
   `;
+
+  elements.draftList.querySelector("[data-goto='content']").onclick = () => scrollToForm("[data-create-content]");
+  elements.draftList.querySelector("[data-goto='reels']").onclick = () => scrollToForm("[data-create-reels]");
+  elements.draftList.querySelector("[data-goto='plan']").onclick = () => scrollToForm("[data-create-plan]");
+  elements.draftList.querySelector("[data-goto='carousel']").onclick = () => scrollToForm("[data-create-carousel]");
+
   elements.draftDetail.innerHTML = `
     <div class="detail-grid">
       ${renderBackButton()}
@@ -403,72 +562,14 @@ function renderCreate() {
   }});
 }
 
-function renderAromas() {
-  const items = state.aromas || [];
-  const query = (state.aromaSearch || "").trim().toLowerCase();
-  const filtered = items.filter((i) => `${i.name} ${i.description || ""}`.toLowerCase().includes(query));
-  const aroma = state.selectedAroma;
-  elements.listTitle.textContent = "Справочник";
-  elements.draftCount.textContent = `${items.length} масел`;
-  setEmptyState(filtered.length > 0, "Масла не найдены.");
-
-  let listContainer = document.getElementById("aromaListContainer");
-  if (!listContainer) {
-    elements.draftList.innerHTML = `
-      <div class="aroma-search">
-        <label>Поиск масла<input id="aromaSearchInput" type="search" placeholder="Например: лаванда" value="${escapeHtml(state.aromaSearch)}" /></label>
-      </div>
-      <div id="aromaListContainer" class="plans-list"></div>
-    `;
-    listContainer = document.getElementById("aromaListContainer");
-    document.getElementById("aromaSearchInput")?.addEventListener("input", (e) => {
-      state.aromaSearch = e.target.value; renderAromas();
-    });
-  }
-
-  listContainer.innerHTML = filtered.map((i) => `
-    <article class="draft-card${i.slug === aroma?.slug ? " active" : ""}" onclick="openAroma('${i.slug}')">
-      <div class="draft-kind">масло</div>
-      <h3 class="draft-topic">${escapeHtml(i.name)}</h3>
-      <div class="draft-preview">${escapeHtml(i.description || "")}</div>
-    </article>
-  `).join("");
-
-  if (!aroma) {
-    elements.draftDetail.innerHTML = `${renderBackButton()}<div class="detail-empty">Выберите масло из списка.</div>`;
-    syncMobileNavigation();
-    return;
-  }
-
-  elements.draftDetail.innerHTML = `
-    <div class="detail-grid">
-      ${renderBackButton()}
-      <section class="section aroma-hero">
-        <img class="aroma-image" src="${escapeHtml(aroma.image_url)}" alt="${escapeHtml(aroma.image_alt)}" />
-        <div class="aroma-image-caption">${escapeHtml(aroma.image_alt)}</div>
-      </section>
-      ${aromaSection("Паспорт масла", `Ключ: ${aroma.key || ""}\nСемейство: ${aroma.botanical_family || ""}\nСтрана: ${aroma.origin_countries || ""}\nМетод: ${aroma.extraction_method || ""}`)}
-      ${aromaSection("Описание", aroma.description)}
-      ${aromaSection("Терапия", aroma.therapeutic_properties)}
-      ${aromaSection("Психология", aroma.psychological_properties)}
-      ${aromaSection('Ресурс "+"', aroma.resource_values?.plus)}
-      ${aromaSection('Ресурс "-"', aroma.resource_values?.minus)}
-    </div>
-  `;
-  syncMobileNavigation();
-}
+function renderAromas() { renderReferences(); }
 
 function aromaSection(title, content) {
   if (!content) return "";
   return `<section class="section"><h3>${escapeHtml(title)}</h3><div class="detail-preview">${escapeHtml(content)}</div></section>`;
 }
 
-function renderAromasLocked() {
-  elements.listTitle.textContent = "Ароматы"; setEmptyState(true);
-  elements.draftList.innerHTML = `<div class="detail-preview">Доступ ограничен.</div>`;
-  elements.draftDetail.innerHTML = `${renderBackButton()}<div class="detail-empty">Нет доступа.</div>`;
-  syncMobileNavigation();
-}
+function renderAromasLocked() { renderReferencesLocked(); }
 
 function renderDraftList() {
   elements.listTitle.textContent = "Черновики";
@@ -538,6 +639,12 @@ function setMode(m) {
 
 function setTab(t) {
   state.tab = t; state.mobileView = "list";
+  if (HANDBOOK_CATEGORY_META[t]) {
+    state.referenceSearch = "";
+    if (state.selectedReference?.category !== HANDBOOK_CATEGORY_META[t].category) {
+      state.selectedReference = null;
+    }
+  }
   const p = new URLSearchParams(window.location.search); p.set("tab", t);
   history.replaceState({}, "", `${window.location.pathname}?${p.toString()}`);
   elements.tabsContainer.querySelectorAll(".tab-button").forEach(b => b.classList.toggle("active", b.dataset.tab === t));
@@ -550,7 +657,7 @@ async function loadCurrentTab() {
   if (state.tab === "inbox") return await loadInbox();
   if (state.tab === "plans") return await loadPlans();
   if (state.tab === "reels") return await loadReels();
-  if (state.tab === "aromas") return await loadAromas();
+  if (HANDBOOK_CATEGORY_META[state.tab]) return await loadReferences(state.tab);
   if (state.tab === "status") return await loadStatus();
   if (state.tab === "keywords") return await loadKeywords();
   await loadDrafts();
@@ -563,7 +670,7 @@ async function bootstrap() {
   elements.refreshButton.addEventListener("click", () => loadCurrentTab());
   [elements.kindFilter, elements.statusFilter, elements.feedbackFilter].forEach(f => f.addEventListener("change", loadDrafts));
   elements.queryFilter.addEventListener("input", () => { clearTimeout(reelRefreshTimer); reelRefreshTimer = setTimeout(loadDrafts, 300); });
-  await loadAromaAccess();
+  await loadReferenceAccess();
   if (MODE_TABS.handbook.find(t => t.id === state.tab)) state.mode = "handbook";
   setMode(state.mode);
   await loadCurrentTab();
@@ -574,6 +681,7 @@ bootstrap();
 // Global Window functions
 window.openDraft = openDraft;
 window.openAroma = openAroma;
+window.openReference = openReference;
 window.openReels = async (id) => {
   const r = await fetchJson(`/api/reels/${id}`);
   state.selectedReels = r; renderReelsDetail(r); enterDetailView();
