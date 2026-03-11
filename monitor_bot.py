@@ -4,6 +4,7 @@ Commands (owner only):
   /status   — systemctl status for all services
   /load     — CPU / RAM / disk
   /logs     — last 30 lines of aroma-bot journal
+  /errors   — last 5 WARNING/ERROR lines from aroma-bot journal
   /restart  — restart aroma-bot
 """
 from __future__ import annotations
@@ -20,6 +21,7 @@ OWNER_CHAT_ID = 62912125
 
 SERVICES = [
     ("aroma-bot",       "🤖 Aroma Bot"),
+    ("aroma-miniapp",   "🧭 Mini App"),
     ("aromara-site",    "🌐 Сайт aromara.ru"),
     ("threads-oauth",   "🔑 Threads OAuth"),
     ("nginx",           "⚙️ Nginx"),
@@ -58,7 +60,8 @@ async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         "🛠 <b>Monitor Bot</b>\n\n"
         "/status — статус всех сервисов\n"
         "/load — нагрузка на сервер (CPU/RAM/диск)\n"
-        "/logs — последние 30 строк логов aroma-bot\n"
+        "/logs [N] — последние N строк логов aroma-bot (по умолч. 30)\n"
+        "/errors — последние 5 WARNING/ERROR из aroma-bot\n"
         "/restart — перезапустить aroma-bot\n"
     )
     await update.message.reply_text(text, parse_mode="HTML")
@@ -121,6 +124,21 @@ async def cmd_logs(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 @_owner_only
+async def cmd_errors(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    # Pull last 500 lines, filter WARNING/ERROR, take last 5 matches
+    raw = _run(
+        "journalctl -u aroma-bot -n 500 --no-pager --output=short "
+        "| grep -E ' (WARNING|ERROR|CRITICAL|warn|error) ' | tail -5"
+    )
+    if not raw:
+        await update.message.reply_text("✅ Ошибок и предупреждений не найдено.")
+        return
+    if len(raw) > 3800:
+        raw = "...(обрезано)...\n" + raw[-3800:]
+    await update.message.reply_text(f"<b>⚠️ Последние ошибки aroma-bot:</b>\n\n<pre>{raw}</pre>", parse_mode="HTML")
+
+
+@_owner_only
 async def cmd_restart(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text("⏳ Перезапускаю aroma-bot...")
     result = _run("systemctl restart aroma-bot && echo OK || echo FAIL")
@@ -146,6 +164,7 @@ def main() -> None:
     app.add_handler(CommandHandler("status", cmd_status))
     app.add_handler(CommandHandler("load", cmd_load))
     app.add_handler(CommandHandler("logs", cmd_logs))
+    app.add_handler(CommandHandler("errors", cmd_errors))
     app.add_handler(CommandHandler("restart", cmd_restart))
 
     logger.info("Monitor bot started")
