@@ -1,0 +1,33 @@
+name: Deploy
+
+on:
+  workflow_run:
+    workflows:
+      - Tests
+    types:
+      - completed
+
+jobs:
+  deploy:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout tested commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Configure SSH key
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.VPS_DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H 46.32.186.192 >> ~/.ssh/known_hosts
+
+      - name: Push to VPS bare repo
+        run: |
+          git remote add vps ssh://root@46.32.186.192/opt/aroma.git
+          git push vps HEAD:main
+
+      - name: Verify service
+        run: ssh root@46.32.186.192 'systemctl is-active aroma-bot'
