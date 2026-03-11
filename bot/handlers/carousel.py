@@ -244,6 +244,61 @@ def _apply_note_to_prompt(prompt: str, note: str) -> str:
     return f"{base}, {note.strip()} {flags}"
 
 
+def _qa_image_sync(img_bytes: bytes, prompt: str, note: str = "") -> tuple[bool, str]:
+    """Vision QA: check for hallucinations, forbidden elements, note compliance."""
+    import anthropic
+    import base64
+
+    note_check = (
+        f"\n4. The user requested: \"{note}\" — verify this is clearly reflected."
+        if note else ""
+    )
+    qa_prompt = (
+        f"You are a strict visual QA agent for Instagram carousel images.\n"
+        f"Image prompt used: {prompt}\n\n"
+        f"Check this image for issues:\n"
+        f"1. Physically impossible or hallucinated elements "
+        f"(e.g. lavender on fire, smoke from cold objects, plants underwater without context, "
+        f"impossible anatomy of plants/objects)\n"
+        f"2. Any visible text, watermarks, logos, or typography\n"
+        f"3. Any human faces (not allowed){note_check}\n\n"
+        f"Reply in this exact format (2 lines only):\n"
+        f"PASS or FAIL\n"
+        f"REASON: [one short sentence. If PASS write: OK]"
+    )
+    try:
+        client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+        resp = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=80,
+            messages=[{
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image",
+                        "source": {
+                            "type": "base64",
+                            "media_type": "image/jpeg",
+                            "data": base64.standard_b64encode(img_bytes).decode(),
+                        },
+                    },
+                    {"type": "text", "text": qa_prompt},
+                ],
+            }],
+        )
+        text = resp.content[0].text.strip()
+        passed = text.upper().startswith("PASS")
+        reason = ""
+        for line in text.splitlines():
+            if line.upper().startswith("REASON:"):
+                reason = line.split(":", 1)[1].strip()
+                break
+        return passed, reason
+    except Exception as exc:
+        logger.warning("QA vision error: %s", exc)
+        return True, ""  # Don't block on QA errors
+
+
 # ── Gemini ──────────────────────────────────────────────────────────────────
 
 def _gemini_slide(prompt: str, key_index: int = 0) -> bytes | None:
@@ -643,16 +698,52 @@ async def _run_image_generation(
     generated  = sum(1 for img in images if img)
     has_failed = generated < n
 
+    # ── QA phase ─────────────────────────────────────────────────────────
+    qa_results: dict[int, tuple[bool, str]] = {}
+    generated_indices = [i for i, img in enumerate(images) if img]
+    last_note = context.user_data.get("ca_last_note", "")
+
+    if generated_indices and settings.anthropic_api_key:
+        qa_icons = ["➖"] * n
+        for i in generated_indices:
+            qa_icons[i] = "⏳"
+        qa_progress = await msg.reply_text(
+            f"🔍 Проверяю: {''.join(qa_icons)} 0/{len(generated_indices)}"
+        )
+        qa_done = 0
+
+        async def qa_one(i: int) -> None:
+            nonlocal qa_done
+            prompt_i = img_prompts[i] if i < len(img_prompts) else ""
+            passed, reason = await loop.run_in_executor(
+                _executor, _qa_image_sync, images[i], prompt_i, last_note
+            )
+            qa_results[i] = (passed, reason)
+            qa_done += 1
+            qa_icons[i] = "✅" if passed else "⚠️"
+            try:
+                await qa_progress.edit_text(
+                    f"🔍 Проверяю: {''.join(qa_icons)} {qa_done}/{len(generated_indices)}"
+                )
+            except Exception:
+                pass
+
+        await asyncio.gather(*[qa_one(i) for i in generated_indices])
+        try:
+            await qa_progress.delete()
+        except Exception:
+            pass
+
     # Send all images in order
     for i, img in enumerate(images):
         if img:
             label = _SLIDE_LABELS[i] if i < len(_SLIDE_LABELS) else f"Слайд {i + 1}"
+            caption = f"<b>{_html.escape(label)}</b>\n{_html.escape(slides[i][:120])}"
+            passed, reason = qa_results.get(i, (True, ""))
+            if not passed and reason and reason.upper() != "OK":
+                caption += f"\n\n⚠️ <i>{_html.escape(reason)}</i>"
             try:
-                await msg.reply_photo(
-                    photo=img,
-                    caption=f"<b>{_html.escape(label)}</b>\n{_html.escape(slides[i][:120])}",
-                    parse_mode="HTML",
-                )
+                await msg.reply_photo(photo=img, caption=caption, parse_mode="HTML")
             except Exception:
                 pass
 
@@ -1125,6 +1216,7 @@ async def msg_carousel_topic(update: Update, context: ContextTypes.DEFAULT_TYPE)
         if not text:
             return
         context.user_data["ca_awaiting_img_note"] = None
+        context.user_data["ca_last_note"] = text
         slides     = context.user_data.get("ca_slides", [])
         img_prompts = list(context.user_data.get("ca_img_prompts", []))
         images     = context.user_data.get("ca_gemini_images", [])
