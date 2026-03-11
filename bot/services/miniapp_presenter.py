@@ -5,7 +5,7 @@ from typing import Any
 from bot.services.drafts_store import DraftRecord
 
 
-def filter_drafts(
+async def filter_drafts(
     records: list[DraftRecord],
     *,
     kind: str = "",
@@ -53,7 +53,7 @@ def payload_preview(kind: str, payload: dict[str, Any]) -> str:
     return ""
 
 
-def serialize_draft(record: DraftRecord) -> dict[str, Any]:
+async def serialize_draft(record: DraftRecord) -> dict[str, Any]:
     payload = dict(record.payload)
     return {
         "draft_id": record.draft_id,

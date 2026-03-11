@@ -42,12 +42,12 @@ def _build_production_notes(frames: list[dict[str, object]]) -> dict[str, list[s
     }
 
 
-def serialize_reels_draft(draft_id: str) -> dict[str, object] | None:
-    draft = get_draft(draft_id)
+async def serialize_reels_draft(draft_id: str) -> dict[str, object] | None:
+    draft = await get_draft(draft_id)
     if not draft or draft.kind != "reels":
         return None
 
-    data = serialize_draft(draft)
+    data = await serialize_draft(draft)
     storyboard_raw = draft.payload.get("storyboard", [])
     frames: list[dict[str, object]] = []
     if isinstance(storyboard_raw, list):
@@ -76,8 +76,8 @@ def serialize_reels_draft(draft_id: str) -> dict[str, object] | None:
     return data
 
 
-def list_reels_drafts(limit: int = 30) -> list[dict[str, object]]:
-    drafts = list_recent_drafts(limit=200, kind="reels")
+async def list_reels_drafts(limit: int = 30) -> list[dict[str, object]]:
+    drafts = await list_recent_drafts(limit=200, kind="reels")
     items: list[dict[str, object]] = []
     for draft in drafts[:limit]:
         data = serialize_reels_draft(draft.draft_id)
@@ -86,8 +86,8 @@ def list_reels_drafts(limit: int = 30) -> list[dict[str, object]]:
     return items
 
 
-def build_reels_export_payload(draft_id: str) -> dict[str, object] | None:
-    reel = serialize_reels_draft(draft_id)
+async def build_reels_export_payload(draft_id: str) -> dict[str, object] | None:
+    reel = await serialize_reels_draft(draft_id)
     if not reel:
         return None
 
@@ -118,8 +118,8 @@ def build_reels_export_payload(draft_id: str) -> dict[str, object] | None:
     }
 
 
-def update_reels_frame_note(draft_id: str, frame_index: int, note: str) -> dict[str, object] | None:
-    draft = get_draft(draft_id)
+async def update_reels_frame_note(draft_id: str, frame_index: int, note: str) -> dict[str, object] | None:
+    draft = await get_draft(draft_id)
     if not draft or draft.kind != "reels":
         return None
     storyboard = draft.payload.get("storyboard", [])
@@ -138,14 +138,14 @@ def update_reels_frame_note(draft_id: str, frame_index: int, note: str) -> dict[
 
     payload = dict(draft.payload)
     payload["storyboard"] = updated_storyboard
-    updated = update_draft(draft_id, payload=payload, status="draft")
+    updated = await update_draft(draft_id, payload=payload, status="draft")
     if not updated:
         return None
     return serialize_reels_draft(draft_id)
 
 
-def update_reels_frame_prompt(draft_id: str, frame_index: int, prompt: str) -> dict[str, object] | None:
-    draft = get_draft(draft_id)
+async def update_reels_frame_prompt(draft_id: str, frame_index: int, prompt: str) -> dict[str, object] | None:
+    draft = await get_draft(draft_id)
     if not draft or draft.kind != "reels":
         return None
     storyboard = draft.payload.get("storyboard", [])
@@ -170,7 +170,7 @@ def update_reels_frame_prompt(draft_id: str, frame_index: int, prompt: str) -> d
 
     payload = dict(draft.payload)
     payload["storyboard"] = updated_storyboard
-    updated = update_draft(draft_id, payload=payload, status="draft")
+    updated = await update_draft(draft_id, payload=payload, status="draft")
     if not updated:
         return None
     return serialize_reels_draft(draft_id)

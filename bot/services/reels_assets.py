@@ -35,13 +35,13 @@ def save_reels_frame_asset(draft_id: str, frame_index: int, image_bytes: bytes, 
     }
 
 
-def populate_reels_frame_assets(
+async def populate_reels_frame_assets(
     draft_id: str,
     *,
     frame_indexes: list[int] | None = None,
     overwrite_existing: bool = False,
 ) -> dict[str, object] | None:
-    draft = get_draft(draft_id)
+    draft = await get_draft(draft_id)
     if not draft or draft.kind != "reels":
         return None
     storyboard = draft.payload.get("storyboard", [])
@@ -53,7 +53,7 @@ def populate_reels_frame_assets(
     asset_count = 0
     generated_any = False
 
-    def persist_progress() -> bool:
+    async def persist_progress() -> bool:
         payload = dict(draft.payload)
         payload["storyboard"] = updated_storyboard + [
             dict(item) if isinstance(item, dict) else {}
@@ -66,7 +66,7 @@ def populate_reels_frame_assets(
             and isinstance(frame.get("current_asset"), dict)
             and frame["current_asset"].get("url")
         )
-        updated = update_draft(draft_id, payload=payload, status="draft")
+        updated = await update_draft(draft_id, payload=payload, status="draft")
         return updated is not None
 
     for idx, item in enumerate(storyboard):
@@ -94,7 +94,7 @@ def populate_reels_frame_assets(
                     frame["asset_revisions"] = revisions[-5:]
                     generated_any = True
                     updated_storyboard.append(frame)
-                    if not persist_progress():
+                    if not await persist_progress():
                         return None
                     if isinstance(frame.get("current_asset"), dict) and frame["current_asset"].get("url"):
                         asset_count += 1
@@ -109,7 +109,7 @@ def populate_reels_frame_assets(
     payload = dict(draft.payload)
     payload["storyboard"] = updated_storyboard
     payload["images_ready"] = asset_count
-    updated = update_draft(draft_id, payload=payload, status="draft")
+    updated = await update_draft(draft_id, payload=payload, status="draft")
     if not updated:
         return None
     if allowed_indexes and not generated_any and asset_count == 0:
@@ -117,12 +117,12 @@ def populate_reels_frame_assets(
     return payload
 
 
-def regenerate_reels_frame_asset(draft_id: str, frame_index: int) -> dict[str, object] | None:
-    draft = get_draft(draft_id)
+async def regenerate_reels_frame_asset(draft_id: str, frame_index: int) -> dict[str, object] | None:
+    draft = await get_draft(draft_id)
     storyboard = draft.payload.get("storyboard", []) if draft else []
     if not draft or draft.kind != "reels" or not isinstance(storyboard, list) or frame_index < 0 or frame_index >= len(storyboard):
         return None
-    return populate_reels_frame_assets(
+    return await populate_reels_frame_assets(
         draft_id,
         frame_indexes=[frame_index],
         overwrite_existing=True,
