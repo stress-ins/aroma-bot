@@ -1166,6 +1166,28 @@ class TestMiniAppBridge:
         assert parse_webapp_payload("not-json") is None
 
 
+class TestMiniAppRussianLocale:
+    def test_index_selects_and_tabs_use_russian_labels(self):
+        index_html = Path("miniapp/index.html").read_text(encoding="utf-8")
+
+        assert ">Тредс<" in index_html
+        assert ">Инстаграм<" in index_html
+        assert ">Телеграм<" in index_html
+        assert ">Рилсы<" in index_html
+        assert 'data-tab="reels"' in index_html
+        assert ">Reels<" not in index_html
+
+    def test_create_workspace_dropdowns_use_russian_labels(self):
+        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+
+        assert '<option value="threads">Тредс</option>' in app_js
+        assert '<option value="instagram">Инстаграм</option>' in app_js
+        assert '<option value="telegram">Телеграм</option>' in app_js
+        assert '<option value="threads">Threads</option>' not in app_js
+        assert '<option value="instagram">Instagram</option>' not in app_js
+        assert '<option value="telegram">Telegram</option>' not in app_js
+
+
 class TestMiniAppReels:
     def test_serialize_reels_draft_returns_none_for_missing(self):
         assert serialize_reels_draft("missing-id") is None

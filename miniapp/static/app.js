@@ -19,6 +19,7 @@ let reelRefreshTimer = null;
 const elements = {
   draftList: document.getElementById("draftList"),
   draftDetail: document.getElementById("draftDetail"),
+  detailPanel: document.querySelector(".detail-panel"),
   draftCount: document.getElementById("draftCount"),
   listTitle: document.getElementById("listTitle"),
   emptyState: document.getElementById("emptyState"),
@@ -28,6 +29,26 @@ const elements = {
   queryFilter: document.getElementById("queryFilter"),
   refreshButton: document.getElementById("refreshButton"),
   tabButtons: Array.from(document.querySelectorAll("[data-tab]")),
+};
+
+const RU_KIND_LABELS = {
+  threads: "Тредс",
+  instagram: "Инстаграм",
+  telegram: "Телеграм",
+  reels: "Рилсы",
+  carousel: "Карусель",
+};
+
+const RU_STATUS_LABELS = {
+  draft: "Черновик",
+  in_review: "На согласовании",
+  approved: "Согласовано",
+  published: "Опубликовано",
+};
+
+const RU_FEEDBACK_LABELS = {
+  worked: "Сработало",
+  missed: "Не сработало",
 };
 
 function escapeHtml(value) {
@@ -43,6 +64,75 @@ function payloadSection(title, content) {
     return "";
   }
   return `<section class="section"><h3>${escapeHtml(title)}</h3><div class="detail-preview">${escapeHtml(content)}</div></section>`;
+}
+
+function kindLabel(value) {
+  return RU_KIND_LABELS[String(value || "").toLowerCase()] || String(value || "");
+}
+
+function statusLabel(value) {
+  return RU_STATUS_LABELS[String(value || "").toLowerCase()] || String(value || "");
+}
+
+function feedbackLabel(value) {
+  const normalized = String(value || "").toLowerCase();
+  if (!normalized) {
+    return "Без реакции";
+  }
+  return RU_FEEDBACK_LABELS[normalized] || String(value || "");
+}
+
+function setEmptyState(hidden, text = "Ничего не найдено.") {
+  elements.emptyState.hidden = hidden;
+  elements.emptyState.textContent = text;
+  elements.emptyState.style.display = hidden ? "none" : "block";
+}
+
+function showRequestError(prefix, error) {
+  const message = error?.message || String(error || "unknown_error");
+  alert(`${prefix}: ${message}`);
+}
+
+function bindTopicForm(form, config) {
+  const topicField = form.querySelector("textarea[name='topic']");
+  const submitButton = form.querySelector("button[type='submit']");
+  if (!topicField || !submitButton) {
+    return;
+  }
+
+  const updateState = () => {
+    submitButton.disabled = !topicField.value.trim();
+  };
+
+  updateState();
+  topicField.addEventListener("input", updateState);
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const topic = topicField.value.trim();
+    if (!topic) {
+      topicField.focus();
+      return;
+    }
+    const originalText = submitButton.textContent;
+    submitButton.disabled = true;
+    submitButton.textContent = config.pendingText;
+    try {
+      await config.onSubmit(topic);
+    } finally {
+      submitButton.disabled = false;
+      submitButton.textContent = originalText;
+      updateState();
+    }
+  });
+}
+
+function syncDetailPanelState(isEmpty) {
+  if (!elements.detailPanel) {
+    return;
+  }
+  const hideOnMobile = Boolean(isEmpty) && window.matchMedia("(max-width: 760px)").matches;
+  elements.detailPanel.classList.toggle("is-empty-mobile", hideOnMobile);
+  elements.detailPanel.hidden = hideOnMobile;
 }
 
 function applyTelegramTheme() {
@@ -217,79 +307,95 @@ async function loadKeywords() {
 }
 
 function renderCreate() {
-  elements.listTitle.textContent = "Create";
-  elements.draftCount.textContent = "3 tools";
-  elements.emptyState.hidden = true;
+  elements.listTitle.textContent = "Создание";
+  elements.draftCount.textContent = "4 инструмента";
+  setEmptyState(true);
   elements.draftList.innerHTML = `
     <div class="create-list">
       <article class="create-card">
-        <div class="draft-kind">content</div>
-        <h3 class="draft-topic">Threads / Instagram / Telegram</h3>
-        <div class="draft-preview">Тема + цель + формат -> готовый draft в истории.</div>
+        <div class="draft-kind">контент</div>
+        <h3 class="draft-topic">Тредс / Инстаграм / Телеграм</h3>
+        <div class="draft-preview">Тема + цель + формат -> готовый черновик в истории.</div>
       </article>
-      <article class="create-card">
-        <div class="draft-kind">reels</div>
-        <h3 class="draft-topic">Scenario + storyboard</h3>
+        <article class="create-card">
+          <div class="draft-kind">рилсы</div>
+        <h3 class="draft-topic">Сценарий + раскадровка</h3>
         <div class="draft-preview">Только тема -> сценарий и 4 кадра раскадровки.</div>
       </article>
       <article class="create-card">
-        <div class="draft-kind">plan</div>
-        <h3 class="draft-topic">Weekly content plan</h3>
+        <div class="draft-kind">план</div>
+        <h3 class="draft-topic">Недельный контент-план</h3>
         <div class="draft-preview">Собирает тренды и сохраняет недельный план прямо в приложении.</div>
       </article>
       <article class="create-card">
+<<<<<<< HEAD
+        <div class="draft-kind">карусель</div>
+        <h3 class="draft-topic">Карусель Инстаграм</h3>
+        <div class="draft-preview">Тема -> 5 слайдов + промпты для картинок, сохраняется в черновики.</div>
+=======
         <div class="draft-kind">carousel</div>
         <h3 class="draft-topic">Карусель Instagram</h3>
         <div class="draft-preview">Тема → 5 слайдов + промпты для картинок, сохраняется в черновики.</div>
+>>>>>>> origin/main
       </article>
     </div>
   `;
   elements.draftDetail.innerHTML = `
     <div class="detail-grid">
       <section class="section">
-        <h3>Create Content</h3>
+        <h3>Создать контент</h3>
         <form class="create-form" data-create-content>
           <label>
-            Topic
+            Тема
             <textarea name="topic" placeholder="Например: как мягко переключиться после рабочего дня"></textarea>
           </label>
           <div class="field-grid">
             <label>
-              Goal
+              Цель
               <select name="goal_key">
-                <option value="trust">trust</option>
-                <option value="authority">authority</option>
-                <option value="engagement">engagement</option>
-                <option value="sales">sales</option>
+                <option value="trust">Доверие</option>
+                <option value="authority">Экспертность</option>
+                <option value="engagement">Вовлечённость</option>
+                <option value="sales">Продажи</option>
               </select>
             </label>
             <label>
-              Format
+              Формат
               <select name="format_key">
-                <option value="threads">threads</option>
-                <option value="instagram">instagram</option>
-                <option value="telegram">telegram</option>
+                <option value="threads">Тредс</option>
+                <option value="instagram">Инстаграм</option>
+                <option value="telegram">Телеграм</option>
               </select>
             </label>
           </div>
-          <button class="primary-button" type="submit">Generate content</button>
+          <button class="primary-button" type="submit">Создать контент</button>
         </form>
       </section>
       <section class="section">
-        <h3>Create Reels</h3>
+        <h3>Создать рилс</h3>
         <form class="create-form" data-create-reels>
           <label>
-            Topic
+            Тема
             <textarea name="topic" placeholder="Например: вечерний сенсорный ритуал на 30 секунд"></textarea>
           </label>
-          <button class="primary-button" type="submit">Generate reels</button>
+          <button class="primary-button" type="submit">Создать рилс</button>
         </form>
       </section>
       <section class="section">
-        <h3>Create Plan</h3>
+        <h3>Создать план</h3>
         <form class="create-form" data-create-plan>
-          <div class="detail-preview">Собирает актуальные тренды и сохраняет недельный контент-план в Plan workspace.</div>
-          <button class="primary-button" type="submit">Generate weekly plan</button>
+          <div class="detail-preview">Собирает актуальные тренды и сохраняет недельный контент-план в разделе «Планы».</div>
+          <button class="primary-button" type="submit">Собрать недельный план</button>
+        </form>
+      </section>
+      <section class="section">
+        <h3>Создать карусель</h3>
+        <form class="create-form" data-create-carousel>
+          <label>
+            Тема
+            <textarea name="topic" placeholder="Например: вечерний ритуал для перезагрузки нервной системы"></textarea>
+          </label>
+          <button class="primary-button" type="submit">Создать карусель</button>
         </form>
       </section>
       <section class="section">
@@ -304,12 +410,13 @@ function renderCreate() {
       </section>
     </div>
   `;
+  syncDetailPanelState(false);
 
   const contentForm = elements.draftDetail.querySelector("[data-create-content]");
   if (contentForm) {
-    contentForm.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      const topic = contentForm.querySelector("textarea[name='topic']").value.trim();
+    bindTopicForm(contentForm, {
+      pendingText: "Создаю...",
+      onSubmit: async (topic) => {
       const goalKey = contentForm.querySelector("select[name='goal_key']").value;
       const formatKey = contentForm.querySelector("select[name='format_key']").value;
       try {
@@ -321,16 +428,17 @@ function renderCreate() {
         setTab("drafts");
         await loadDrafts();
       } catch (err) {
-        alert("Ошибка генерации: " + (err.message || err));
+        showRequestError("Ошибка создания контента", err);
       }
+      },
     });
   }
 
   const reelsForm = elements.draftDetail.querySelector("[data-create-reels]");
   if (reelsForm) {
-    reelsForm.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      const topic = reelsForm.querySelector("textarea[name='topic']").value.trim();
+    bindTopicForm(reelsForm, {
+      pendingText: "Создаю...",
+      onSubmit: async (topic) => {
       try {
         const reel = await fetchJson("/api/generate/reels", {
           method: "POST",
@@ -343,8 +451,13 @@ function renderCreate() {
         renderReelsDetail(reel);
         scheduleReelsRefresh(reel.draft_id);
       } catch (err) {
+<<<<<<< HEAD
+        showRequestError("Ошибка создания рилса", err);
+=======
         showRequestError("Ошибка генерации", err);
+>>>>>>> origin/main
       }
+      },
     });
   }
 
@@ -362,13 +475,30 @@ function renderCreate() {
         await loadPlans();
         renderPlanDetail(plan);
       } catch (err) {
-        alert("Ошибка генерации: " + (err.message || err));
+        showRequestError("Ошибка создания плана", err);
       }
     });
   }
 
   const carouselForm = elements.draftDetail.querySelector("[data-create-carousel]");
   if (carouselForm) {
+<<<<<<< HEAD
+    bindTopicForm(carouselForm, {
+      pendingText: "Создаю...",
+      onSubmit: async (topic) => {
+        try {
+          const draft = await fetchJson("/api/generate/carousel", {
+            method: "POST",
+            body: JSON.stringify({ topic }),
+          });
+          state.draftId = draft.draft_id;
+          setTab("drafts");
+          await loadDrafts();
+        } catch (err) {
+          showRequestError("Ошибка создания карусели", err);
+        }
+      },
+=======
     carouselForm.addEventListener("submit", async (event) => {
       event.preventDefault();
       const topic = carouselForm.querySelector("textarea[name='topic']").value.trim();
@@ -389,6 +519,7 @@ function renderCreate() {
         btn.disabled = false;
         btn.textContent = "Сгенерировать";
       }
+>>>>>>> origin/main
     });
   }
 }
@@ -427,18 +558,18 @@ function inboxSectionMarkup(title, items) {
       <h3>${escapeHtml(title)}</h3>
       ${items.map((item) => `
         <article class="draft-card">
-          <div class="draft-kind">${escapeHtml(item.kind)}</div>
+          <div class="draft-kind">${escapeHtml(kindLabel(item.kind))}</div>
           <h4 class="draft-topic">${escapeHtml(item.topic)}</h4>
           <div class="draft-preview">${escapeHtml(item.preview || "Без превью")}</div>
           <div class="draft-meta">
-            <span class="tag">${escapeHtml(item.status)}</span>
-            <span class="tag">${escapeHtml(item.source)}</span>
+            <span class="tag">${escapeHtml(statusLabel(item.status))}</span>
+            <span class="tag">${escapeHtml(kindLabel(item.source))}</span>
           </div>
           <div class="meta">${escapeHtml(item.review_reason || "")}</div>
           <div class="actions-row">
-            <button type="button" data-inbox-open="${escapeHtml(item.draft_id)}">Open</button>
-            <button type="button" data-inbox-review="${escapeHtml(item.draft_id)}">In review</button>
-            <button type="button" data-inbox-approve="${escapeHtml(item.draft_id)}">Approve</button>
+            <button type="button" data-inbox-open="${escapeHtml(item.draft_id)}">Открыть</button>
+            <button type="button" data-inbox-review="${escapeHtml(item.draft_id)}">На согласование</button>
+            <button type="button" data-inbox-approve="${escapeHtml(item.draft_id)}">Согласовать</button>
           </div>
         </article>
       `).join("")}
@@ -447,37 +578,38 @@ function inboxSectionMarkup(title, items) {
 }
 
 function renderInbox() {
-  elements.listTitle.textContent = "Approval Inbox";
+  elements.listTitle.textContent = "Согласование";
   const items = state.inbox || [];
   const grouped = groupInboxItems(items);
-  elements.draftCount.textContent = `${items.length} review`;
-  elements.emptyState.hidden = items.length > 0;
+  elements.draftCount.textContent = `${items.length} на проверке`;
+  setEmptyState(items.length > 0, "В очереди согласования пока пусто.");
   elements.draftList.innerHTML = `
     <div class="inbox-toolbar">
       <label>
-        Queue type
+        Тип очереди
         <select id="inboxKindFilter">
-          <option value="all"${state.inboxKind === "all" ? " selected" : ""}>All</option>
-          <option value="content"${state.inboxKind === "content" ? " selected" : ""}>Content</option>
-          <option value="reels"${state.inboxKind === "reels" ? " selected" : ""}>Reels</option>
-          <option value="plan"${state.inboxKind === "plan" ? " selected" : ""}>Plan-derived</option>
+          <option value="all"${state.inboxKind === "all" ? " selected" : ""}>Все</option>
+          <option value="content"${state.inboxKind === "content" ? " selected" : ""}>Контент</option>
+          <option value="reels"${state.inboxKind === "reels" ? " selected" : ""}>Рилсы</option>
+          <option value="plan"${state.inboxKind === "plan" ? " selected" : ""}>Из плана</option>
         </select>
       </label>
     </div>
     <div class="plans-list">
-      ${inboxSectionMarkup("Plan-derived", grouped.plan)}
-      ${inboxSectionMarkup("Reels", grouped.reels)}
-      ${inboxSectionMarkup("Content", grouped.content)}
+      ${inboxSectionMarkup("Из плана", grouped.plan)}
+      ${inboxSectionMarkup("Рилсы", grouped.reels)}
+      ${inboxSectionMarkup("Контент", grouped.content)}
     </div>
   `;
   elements.draftDetail.innerHTML = `
     <div class="detail-grid">
       <section class="section">
-        <h3>Approval Pipeline</h3>
-        <div class="detail-preview">Inbox показывает, что именно ждёт review, и почему: новый draft, item из плана или reels-черновик.</div>
+        <h3>Очередь согласования</h3>
+        <div class="detail-preview">Здесь видно, что ждёт проверки: новый черновик, материал из плана или рилс-черновик.</div>
       </section>
     </div>
   `;
+  syncDetailPanelState(false);
 
   const inboxKindFilter = document.getElementById("inboxKindFilter");
   if (inboxKindFilter) {
@@ -519,22 +651,22 @@ function renderInbox() {
 }
 
 function renderDraftList() {
-  elements.listTitle.textContent = "Drafts";
+  elements.listTitle.textContent = "Черновики";
   elements.draftList.innerHTML = "";
   elements.draftCount.textContent = `${state.drafts.length} шт`;
-  elements.emptyState.hidden = state.drafts.length > 0;
+  setEmptyState(state.drafts.length > 0);
 
   for (const draft of state.drafts) {
     const article = document.createElement("article");
     article.className = `draft-card${draft.draft_id === state.draftId ? " active" : ""}`;
     article.innerHTML = `
-      <div class="draft-kind">${escapeHtml(draft.kind)}</div>
+      <div class="draft-kind">${escapeHtml(kindLabel(draft.kind))}</div>
       <h3 class="draft-topic">${escapeHtml(draft.topic)}</h3>
       <div class="draft-preview">${escapeHtml(draft.preview || "Без превью")}</div>
       <div class="draft-meta">
-        <span class="tag">${escapeHtml(draft.status)}</span>
-        <span class="tag">${escapeHtml(draft.feedback || "no feedback")}</span>
-        <span class="tag">${escapeHtml(draft.source)}</span>
+        <span class="tag">${escapeHtml(statusLabel(draft.status))}</span>
+        <span class="tag">${escapeHtml(feedbackLabel(draft.feedback))}</span>
+        <span class="tag">${escapeHtml(kindLabel(draft.source))}</span>
       </div>
     `;
     const button = document.createElement("button");
@@ -544,21 +676,22 @@ function renderDraftList() {
     article.appendChild(button);
     elements.draftList.appendChild(article);
   }
+  syncDetailPanelState(state.drafts.length === 0);
 }
 
 function renderStatus() {
-  elements.listTitle.textContent = "Status";
+  elements.listTitle.textContent = "Статус";
   const status = state.status;
   const items = status?.items || [];
-  elements.draftCount.textContent = `${items.length} sources`;
-  elements.emptyState.hidden = items.length > 0;
+  elements.draftCount.textContent = `${items.length} источников`;
+  setEmptyState(items.length > 0, "Источники не найдены.");
   elements.draftList.innerHTML = `
     <div class="status-list">
       ${items.map((item) => `
         <article class="status-card">
           <strong>${escapeHtml(item.source)}</strong>
           <span class="${item.enabled ? "status-good" : "status-bad"}">
-            ${item.enabled ? "enabled" : "disabled"}
+            ${item.enabled ? "включён" : "выключен"}
           </span>
         </article>
       `).join("")}
@@ -567,32 +700,33 @@ function renderStatus() {
   elements.draftDetail.innerHTML = `
     <div class="detail-grid">
       <section class="section">
-        <h3>Digest</h3>
+        <h3>Дайджест</h3>
         <div class="detail-preview">Время: ${escapeHtml(status?.digest_time || "")}\nТаймзона: ${escapeHtml(status?.timezone || "")}</div>
       </section>
       <section class="section">
-        <h3>Mini App URL</h3>
+        <h3>Адрес Mini App</h3>
         <div class="detail-preview">${escapeHtml(status?.mini_app_url || "не настроен")}</div>
       </section>
     </div>
   `;
+  syncDetailPanelState(false);
 }
 
 function renderPlans() {
-  elements.listTitle.textContent = "Plans";
+  elements.listTitle.textContent = "Планы";
   const items = state.plans || [];
-  elements.draftCount.textContent = `${items.length} plans`;
-  elements.emptyState.hidden = items.length > 0;
+  elements.draftCount.textContent = `${items.length} планов`;
+  setEmptyState(items.length > 0, "Планы пока не созданы.");
   elements.draftList.innerHTML = `
     <div class="plans-list">
       ${items.map((plan) => `
         <article class="plan-card">
-          <div class="draft-kind">weekly plan</div>
+          <div class="draft-kind">недельный план</div>
           <h3 class="draft-topic">${escapeHtml(plan.plan_id)}</h3>
           <div class="draft-preview">${escapeHtml((plan.raw_text || "").slice(0, 220) || "Без текста плана")}</div>
           <div class="draft-meta">
-            <span class="tag">${escapeHtml(plan.entries.length)} entries</span>
-            <span class="tag">${escapeHtml(plan.related_drafts.length)} drafts</span>
+            <span class="tag">${escapeHtml(plan.entries.length)} записей</span>
+            <span class="tag">${escapeHtml(plan.related_drafts.length)} черновиков</span>
           </div>
           <button type="button" data-plan-open="${escapeHtml(plan.plan_id)}">Открыть</button>
         </article>
@@ -609,26 +743,29 @@ function renderPlans() {
   if (items[0] && !state.selectedPlan) {
     renderPlanDetail(items[0]);
   } else if (!items.length) {
-    elements.draftDetail.innerHTML = `<div class="detail-empty">Планы пока не сгенерированы через /plan.</div>`;
+    elements.draftDetail.innerHTML = `<div class="detail-empty">Планы пока не созданы.</div>`;
+    syncDetailPanelState(true);
+    return;
   }
+  syncDetailPanelState(!items.length && !state.selectedPlan);
 }
 
 function renderReels() {
-  elements.listTitle.textContent = "Reels";
+  elements.listTitle.textContent = "Рилсы";
   const items = state.reels || [];
-  elements.draftCount.textContent = `${items.length} reels`;
-  elements.emptyState.hidden = items.length > 0;
+  elements.draftCount.textContent = `${items.length} рилсов`;
+  setEmptyState(items.length > 0, "Рилсы пока не созданы.");
   elements.draftList.innerHTML = `
     <div class="plans-list">
       ${items.map((reel) => `
         <article class="reels-card">
-          <div class="draft-kind">reels draft</div>
+          <div class="draft-kind">рилс-черновик</div>
           <h3 class="draft-topic">${escapeHtml(reel.topic)}</h3>
           <div class="draft-preview">${escapeHtml(reel.preview || "Без сценария")}</div>
           <div class="draft-meta">
-            <span class="tag">${escapeHtml(reel.status)}</span>
-            <span class="tag">${escapeHtml(reel.images_ready)} images</span>
-            <span class="tag">${escapeHtml(reel.frame_count)} frames</span>
+            <span class="tag">${escapeHtml(statusLabel(reel.status))}</span>
+            <span class="tag">${escapeHtml(reel.images_ready)} кадров готово</span>
+            <span class="tag">${escapeHtml(reel.frame_count)} кадров</span>
           </div>
           <button type="button" data-reels-open="${escapeHtml(reel.draft_id)}">Открыть</button>
         </article>
@@ -645,8 +782,11 @@ function renderReels() {
   if (items[0] && !state.selectedReels) {
     renderReelsDetail(items[0]);
   } else if (!items.length) {
-    elements.draftDetail.innerHTML = `<div class="detail-empty">Reels-черновики пока не сгенерированы.</div>`;
+    elements.draftDetail.innerHTML = `<div class="detail-empty">Рилсы пока не созданы.</div>`;
+    syncDetailPanelState(true);
+    return;
   }
+  syncDetailPanelState(!items.length && !state.selectedReels);
 }
 
 async function openReels(draftId) {
@@ -682,7 +822,10 @@ async function saveReelsFramePrompt(draftId, frameIndex, prompt) {
   renderReelsDetail(reel);
 }
 
-async function regenerateReelsFrame(draftId, frameIndex) {
+async function regenerateReelsFrame(draftId, frameIndex, button) {
+  const originalText = button.innerText;
+  button.disabled = true;
+  button.innerText = "Генерирую...";
   try {
     const reel = await fetchJson(`/api/reels/${draftId}/frames/${frameIndex}/regenerate`, {
       method: "POST",
@@ -695,7 +838,10 @@ async function regenerateReelsFrame(draftId, frameIndex) {
     renderReels();
     renderReelsDetail(reel);
   } catch (error) {
-    showRequestError("Не удалось сгенерировать кадр", error);
+    showRequestError("Не удалось пересобрать кадр", error);
+  } finally {
+    button.disabled = false;
+    button.innerText = originalText;
   }
 }
 
@@ -720,40 +866,40 @@ function renderReelsDetail(reel) {
     <div class="detail-grid">
       <div class="detail-top">
         <div>
-          <p class="eyebrow">reels • ${escapeHtml(reel.source || "")}</p>
+          <p class="eyebrow">рилс • ${escapeHtml(kindLabel(reel.source || ""))}</p>
           <h2 class="detail-title">${escapeHtml(reel.topic)}</h2>
           <div class="draft-meta">
-            <span class="tag">${escapeHtml(reel.status)}</span>
-            <span class="tag">${escapeHtml(reel.feedback || "no feedback")}</span>
-            <span class="tag">${escapeHtml(reel.images_ready)} images</span>
+            <span class="tag">${escapeHtml(statusLabel(reel.status))}</span>
+            <span class="tag">${escapeHtml(feedbackLabel(reel.feedback))}</span>
+            <span class="tag">${escapeHtml(reel.images_ready)} кадров готово</span>
           </div>
           <div class="actions-row">
-            <button class="status-button" data-reel-status="draft">draft</button>
-            <button class="status-button" data-reel-status="in_review">in_review</button>
-            <button class="status-button" data-reel-status="approved">approved</button>
-            <button class="status-button" data-reel-status="published">published</button>
+            <button class="status-button" data-reel-status="draft">Черновик</button>
+            <button class="status-button" data-reel-status="in_review">На согласовании</button>
+            <button class="status-button" data-reel-status="approved">Согласовано</button>
+            <button class="status-button" data-reel-status="published">Опубликовано</button>
           </div>
           <div class="actions-row">
-            <button class="feedback-button" data-reel-feedback="worked">worked</button>
-            <button class="feedback-button" data-reel-feedback="missed">missed</button>
-            <button class="feedback-button" data-reel-feedback="">clear</button>
+            <button class="feedback-button" data-reel-feedback="worked">Сработало</button>
+            <button class="feedback-button" data-reel-feedback="missed">Не сработало</button>
+            <button class="feedback-button" data-reel-feedback="">Сбросить</button>
           </div>
           <div class="actions-row">
-            <button class="secondary-button" type="button" data-reel-export="${escapeHtml(reel.draft_id)}">Export production pack</button>
+            <button class="secondary-button" type="button" data-reel-export="${escapeHtml(reel.draft_id)}">Экспорт JSON</button>
           </div>
         </div>
         <div class="actions-row">
-          <button class="secondary-button" type="button" data-send-draft-chat="${escapeHtml(reel.draft_id)}">Send to chat</button>
-          <button class="secondary-button" type="button" data-request-review="${escapeHtml(reel.draft_id)}">Request review</button>
+          <button class="secondary-button" type="button" data-send-draft-chat="${escapeHtml(reel.draft_id)}">Отправить в чат</button>
+          <button class="secondary-button" type="button" data-request-review="${escapeHtml(reel.draft_id)}">Запросить согласование</button>
         </div>
       </div>
-      ${payloadSection("Scenario", reel.payload?.scenario || reel.preview)}
+      ${payloadSection("Сценарий", reel.payload?.scenario || reel.preview)}
       <section class="section">
-        <h3>Storyboard Frames</h3>
+        <h3>Кадры</h3>
         <div class="reels-frames">
           ${frames.map((item, index) => `
             <button class="reels-frame${index === state.selectedFrameIndex ? " active" : ""}" type="button" data-frame-open="${index}">
-              <strong>${escapeHtml(item.timecode || `Frame ${index + 1}`)}</strong>
+              <strong>${escapeHtml(item.timecode || `Кадр ${index + 1}`)}</strong>
               <div>${escapeHtml(item.scene || "")}</div>
             </button>
           `).join("")}
@@ -761,37 +907,37 @@ function renderReelsDetail(reel) {
       </section>
       ${frame ? `
         <section class="section">
-          <h3>Focused Frame</h3>
+          <h3>Выбранный кадр</h3>
           <div class="reels-focus">
             <strong>${escapeHtml(frame.timecode || "")}</strong>
             <div>${escapeHtml(frame.scene || "")}</div>
             <div class="meta">${escapeHtml(frame.angle || "")}</div>
-            ${payloadSection("Gemini Prompt", frame.gemini_prompt)}
+            ${payloadSection("Промпт Gemini", frame.gemini_prompt)}
             ${frame.current_asset?.url
-              ? `<img class="frame-image" src="${escapeHtml(frame.current_asset.url)}" alt="Frame asset" />`
+              ? `<img class="frame-image" src="${escapeHtml(frame.current_asset.url)}" alt="Кадр ассет" />`
               : `<div class="frame-loading">⏳ Кадр генерируется…</div>`}
             <div class="actions-row">
-              <button class="secondary-button" type="button" data-frame-regenerate="${escapeHtml(String(frame.frame_index))}">Regenerate frame</button>
+              <button class="secondary-button" type="button" data-frame-regenerate="${escapeHtml(String(frame.frame_index))}">Пересобрать кадр</button>
             </div>
             <form class="frame-note-form" data-frame-note-form="${escapeHtml(String(frame.frame_index))}">
               <label>
-                Review note
+                Замечание
                 <textarea name="note" placeholder="Например: темнее, ближе камера, меньше объектов в кадре.">${escapeHtml(frame.review_note || "")}</textarea>
               </label>
               <button class="primary-button" type="submit">Сохранить замечание</button>
             </form>
             <form class="frame-prompt-form" data-frame-prompt-form="${escapeHtml(String(frame.frame_index))}">
               <label>
-                Gemini prompt
+                Промпт Gemini
                 <textarea name="prompt" placeholder="Уточни prompt для следующей версии кадра.">${escapeHtml(frame.gemini_prompt || "")}</textarea>
               </label>
-              <button class="primary-button" type="submit">Сохранить prompt</button>
+              <button class="primary-button" type="submit">Сохранить промпт</button>
             </form>
             ${(frame.prompt_revisions || []).length ? `
               <div class="revision-list">
                 ${(frame.prompt_revisions || []).map((revision, index) => `
                   <div class="revision-item">
-                    <strong>Revision ${index + 1}</strong>
+                    <strong>Версия ${index + 1}</strong>
                     <div>${escapeHtml(revision)}</div>
                   </div>
                 `).join("")}
@@ -801,9 +947,9 @@ function renderReelsDetail(reel) {
               <div class="asset-revisions">
                 ${(frame.asset_revisions || []).map((asset, index) => `
                   <div class="asset-revision">
-                    <strong>Asset revision ${index + 1}</strong>
+                    <strong>Версия кадра ${index + 1}</strong>
                     <div class="meta">${escapeHtml(asset.generated_at || "")}</div>
-                    ${asset.url ? `<img class="frame-image" src="${escapeHtml(asset.url)}" alt="Frame revision" />` : ""}
+                    ${asset.url ? `<img class="frame-image" src="${escapeHtml(asset.url)}" alt="Версия кадра" />` : ""}
                   </div>
                 `).join("")}
               </div>
@@ -812,7 +958,7 @@ function renderReelsDetail(reel) {
         </section>
       ` : ""}
       <section class="section">
-        <h3>Shot List</h3>
+        <h3>Шот-лист</h3>
         <div class="shot-list">
           ${(reel.shot_list || []).map((shot) => `
             <div class="shot-item">
@@ -820,44 +966,45 @@ function renderReelsDetail(reel) {
               <div>${escapeHtml(shot.timecode || "")}</div>
               <div>${escapeHtml(shot.action || "")}</div>
               <div class="meta">${escapeHtml(shot.camera || "")}</div>
-              <div class="meta">${shot.asset_ready ? "Asset ready" : "Asset missing"}</div>
-              ${shot.note ? `<div class="meta">Note: ${escapeHtml(shot.note)}</div>` : ""}
+              <div class="meta">${shot.asset_ready ? "Кадр готов" : "Кадр ещё не готов"}</div>
+              ${shot.note ? `<div class="meta">Замечание: ${escapeHtml(shot.note)}</div>` : ""}
             </div>
           `).join("")}
         </div>
       </section>
       <section class="section">
-        <h3>Production Notes</h3>
+        <h3>Продакшн-заметки</h3>
         <div class="shot-list">
           <div class="shot-item">
-            <strong>Required</strong>
+            <strong>Обязательно</strong>
             <div>${(reel.production_notes?.required || []).map((item) => escapeHtml(item)).join("<br />") || "Нет"}</div>
           </div>
           <div class="shot-item">
-            <strong>Optional</strong>
+            <strong>Опционально</strong>
             <div>${(reel.production_notes?.optional || []).map((item) => escapeHtml(item)).join("<br />") || "Нет"}</div>
           </div>
         </div>
       </section>
       <section class="section">
-        <h3>Export Readiness</h3>
+        <h3>Готовность к экспорту</h3>
         <div class="shot-list">
           <div class="shot-item">
-            <strong>Frames ready</strong>
+            <strong>Готово кадров</strong>
             <div>${escapeHtml(String((reel.frames || []).filter((item) => item.current_asset?.url).length))} / ${escapeHtml(String(reel.frame_count || 0))}</div>
           </div>
           <div class="shot-item">
-            <strong>Current export</strong>
-            <div>JSON production pack with scenario, shot list, notes, prompts and asset URLs.</div>
+            <strong>Что экспортируется</strong>
+            <div>JSON с сценарием, шот-листом, замечаниями, промптами и URL кадров.</div>
           </div>
         </div>
       </section>
       <section class="section">
-        <h3>Payload JSON</h3>
+        <h3>JSON-данные</h3>
         <pre class="json-block">${escapeHtml(JSON.stringify(reel.payload || {}, null, 2))}</pre>
       </section>
     </div>
   `;
+  syncDetailPanelState(false);
 
   elements.draftDetail.querySelectorAll("[data-frame-open]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -908,7 +1055,7 @@ function renderReelsDetail(reel) {
   const regenButton = elements.draftDetail.querySelector("[data-frame-regenerate]");
   if (regenButton) {
     regenButton.addEventListener("click", async () => {
-      await regenerateReelsFrame(reel.draft_id, state.selectedFrameIndex);
+      await regenerateReelsFrame(reel.draft_id, state.selectedFrameIndex, regenButton);
     });
   }
 
@@ -965,46 +1112,47 @@ function renderPlanDetail(plan) {
   elements.draftDetail.innerHTML = `
     <div class="detail-grid">
       <section class="section">
-        <h3>Plan ID</h3>
+        <h3>ID плана</h3>
         <div class="detail-preview">${escapeHtml(plan.plan_id)}</div>
         <div class="actions-row">
-          <button class="secondary-button" type="button" data-send-plan-chat="${escapeHtml(plan.plan_id)}">Send plan to chat</button>
+          <button class="secondary-button" type="button" data-send-plan-chat="${escapeHtml(plan.plan_id)}">Отправить в чат</button>
         </div>
       </section>
       <section class="section">
-        <h3>Entries</h3>
+        <h3>Записи</h3>
         <div class="plan-entries">
           ${plan.entries.map((entry, index) => `
             <div class="plan-entry">
               <strong>${escapeHtml(entry.day_label || "")}</strong>
-              <div>${escapeHtml(entry.platform || "")} / ${escapeHtml(entry.format_label || "")}</div>
+              <div>${escapeHtml(kindLabel(entry.platform || ""))} / ${escapeHtml(entry.format_label || "")}</div>
               <div>${escapeHtml(entry.topic || "")}</div>
               <div class="meta">${escapeHtml(entry.goal || "")}</div>
               <div class="actions-row">
-                <button class="secondary-button" type="button" data-plan-generate="${index}">Generate draft</button>
+                <button class="secondary-button" type="button" data-plan-generate="${index}">Создать черновик</button>
               </div>
             </div>
           `).join("")}
         </div>
       </section>
       <section class="section">
-        <h3>Related Drafts</h3>
+        <h3>Связанные черновики</h3>
         <div class="related-drafts">
           ${plan.related_drafts.length ? plan.related_drafts.map((draft) => `
             <div class="plan-entry">
-              <strong>${escapeHtml(draft.kind)}</strong>
+              <strong>${escapeHtml(kindLabel(draft.kind))}</strong>
               <div>${escapeHtml(draft.topic)}</div>
-              <div class="meta">Draft ID: ${escapeHtml(draft.draft_id)} / ${escapeHtml(draft.status)}</div>
+              <div class="meta">ID: ${escapeHtml(draft.draft_id)} / ${escapeHtml(statusLabel(draft.status))}</div>
             </div>
-          `).join("") : '<div class="detail-preview">По этому плану пока не созданы draft’ы.</div>'}
+          `).join("") : '<div class="detail-preview">По этому плану пока не созданы черновики.</div>'}
         </div>
       </section>
       <section class="section">
-        <h3>Raw Plan</h3>
+        <h3>Исходный план</h3>
         <pre class="json-block">${escapeHtml(plan.raw_text || "")}</pre>
       </section>
     </div>
   `;
+  syncDetailPanelState(false);
 
   elements.draftDetail.querySelectorAll("[data-plan-generate]").forEach((button) => {
     button.addEventListener("click", async () => {
@@ -1041,11 +1189,11 @@ function keywordFieldMarkup(topicIdx, fieldKey, fieldLabel, words) {
 }
 
 function renderKeywords() {
-  elements.listTitle.textContent = "Keywords";
+  elements.listTitle.textContent = "Ключи";
   const items = state.keywords?.items || [];
   const labels = state.keywords?.field_labels || {};
-  elements.draftCount.textContent = `${items.length} topics`;
-  elements.emptyState.hidden = items.length > 0;
+  elements.draftCount.textContent = `${items.length} тем`;
+  setEmptyState(items.length > 0, "Словари пока пусты.");
   elements.draftList.innerHTML = `
     <div class="keywords-list">
       ${items.map((topic) => `
@@ -1063,7 +1211,7 @@ function renderKeywords() {
   elements.draftDetail.innerHTML = `
     <div class="detail-grid">
       <section class="section">
-        <h3>Keywords Workspace</h3>
+        <h3>Словари</h3>
         <div class="detail-preview">Здесь можно редактировать словари тем и хэштегов без команды /keywords в чате.</div>
       </section>
     </div>
@@ -1111,11 +1259,11 @@ function storyboardMarkup(items) {
   }
   return `
     <section class="section">
-      <h3>Storyboard</h3>
+      <h3>Раскадровка</h3>
       <div class="storyboard">
         ${items.map((frame) => `
           <div class="storyboard-frame">
-            <strong>${escapeHtml(frame.timecode || "Frame")}</strong>
+            <strong>${escapeHtml(frame.timecode || "Кадр")}</strong>
             <div>${escapeHtml(frame.scene || "")}</div>
             <div class="meta">${escapeHtml(frame.angle || "")}</div>
           </div>
@@ -1131,11 +1279,11 @@ function slidesMarkup(items) {
   }
   return `
     <section class="section">
-      <h3>Slides</h3>
+      <h3>Слайды</h3>
       <div class="slides">
         ${items.map((slide, index) => `
           <div class="slide">
-            <strong>Slide ${index + 1}</strong>
+            <strong>Слайд ${index + 1}</strong>
             <div>${escapeHtml(slide)}</div>
           </div>
         `).join("")}
@@ -1155,9 +1303,10 @@ function setSelectedDraft(draft) {
 function renderEmptyDetail() {
   elements.draftDetail.innerHTML = `
     <div class="detail-empty">
-      Выбери draft слева, чтобы открыть детали, сценарий, слайды и статусы.
+      Выбери черновик слева, чтобы открыть детали, сценарий, слайды и статусы.
     </div>
   `;
+  syncDetailPanelState(true);
 }
 
 function isContentReviewDraft(draft) {
@@ -1170,76 +1319,76 @@ function renderDraftDetail(draft) {
     <div class="detail-grid">
       <div class="detail-top">
         <div>
-          <p class="eyebrow">${escapeHtml(draft.kind)} • ${escapeHtml(draft.source)}</p>
+          <p class="eyebrow">${escapeHtml(kindLabel(draft.kind))} • ${escapeHtml(kindLabel(draft.source))}</p>
           <h2 class="detail-title">${escapeHtml(draft.topic)}</h2>
           <div class="draft-meta">
-            <span class="tag">${escapeHtml(draft.status)}</span>
-            <span class="tag">${escapeHtml(draft.feedback || "no feedback")}</span>
+            <span class="tag">${escapeHtml(statusLabel(draft.status))}</span>
+            <span class="tag">${escapeHtml(feedbackLabel(draft.feedback))}</span>
             <span class="tag">${escapeHtml(draft.draft_id)}</span>
           </div>
         </div>
         <div class="actions">
           <div class="actions-row">
-            <button class="status-button" data-status="draft">draft</button>
-            <button class="status-button" data-status="in_review">in_review</button>
-            <button class="status-button" data-status="approved">approved</button>
-            <button class="status-button" data-status="published">published</button>
+            <button class="status-button" data-status="draft">Черновик</button>
+            <button class="status-button" data-status="in_review">На согласовании</button>
+            <button class="status-button" data-status="approved">Согласовано</button>
+            <button class="status-button" data-status="published">Опубликовано</button>
           </div>
           <div class="actions-row">
-            <button class="feedback-button" data-feedback="worked">worked</button>
-            <button class="feedback-button" data-feedback="missed">missed</button>
-            <button class="feedback-button" data-feedback="">clear</button>
+            <button class="feedback-button" data-feedback="worked">Сработало</button>
+            <button class="feedback-button" data-feedback="missed">Не сработало</button>
+            <button class="feedback-button" data-feedback="">Сбросить</button>
           </div>
           <div class="actions-row">
-            <button class="secondary-button" type="button" data-send-draft-chat="${escapeHtml(draft.draft_id)}">Send to chat</button>
-            <button class="secondary-button" type="button" data-request-review="${escapeHtml(draft.draft_id)}">Request review</button>
+            <button class="secondary-button" type="button" data-send-draft-chat="${escapeHtml(draft.draft_id)}">Отправить в чат</button>
+            <button class="secondary-button" type="button" data-request-review="${escapeHtml(draft.draft_id)}">Запросить согласование</button>
           </div>
         </div>
       </div>
-      ${payloadSection("Preview", draft.preview)}
-      ${payloadSection("Angle", payload.angle)}
-      ${payloadSection("Hook", payload.hook)}
-      ${payloadSection("Caption", payload.caption)}
-      ${payloadSection("Scenario", payload.scenario)}
-      ${payloadSection("CTA", payload.cta)}
-      ${payloadSection("Hashtags", payload.hashtags)}
-      ${payloadSection("Visual Prompt", payload.visual_prompt)}
+      ${payloadSection("Превью", draft.preview)}
+      ${payloadSection("Угол", payload.angle)}
+      ${payloadSection("Хук", payload.hook)}
+      ${payloadSection("Подпись", payload.caption)}
+      ${payloadSection("Сценарий", payload.scenario)}
+      ${payloadSection("Призыв к действию", payload.cta)}
+      ${payloadSection("Хэштеги", payload.hashtags)}
+      ${payloadSection("Визуальный промпт", payload.visual_prompt)}
       ${isContentReviewDraft(draft) ? `
         <section class="section">
-          <h3>Content Review</h3>
+          <h3>Редактирование контента</h3>
           <form class="content-review-form" data-content-review-form>
             <label>
-              Topic
+              Тема
               <textarea name="topic">${escapeHtml(draft.topic || "")}</textarea>
             </label>
             <label>
-              Angle
+              Угол
               <textarea name="angle">${escapeHtml(payload.angle || "")}</textarea>
             </label>
             <label>
-              Hook
+              Хук
               <textarea name="hook">${escapeHtml(payload.hook || "")}</textarea>
             </label>
             <label>
-              Caption
+              Подпись
               <textarea name="caption">${escapeHtml(payload.caption || "")}</textarea>
             </label>
             <label>
-              CTA
+              Призыв к действию
               <textarea name="cta">${escapeHtml(payload.cta || "")}</textarea>
             </label>
             <label>
-              Hashtags
+              Хэштеги
               <textarea name="hashtags">${escapeHtml(payload.hashtags || "")}</textarea>
             </label>
             <label>
-              Visual Prompt
+              Визуальный промпт
               <textarea name="visual_prompt">${escapeHtml(payload.visual_prompt || "")}</textarea>
             </label>
             <div class="actions-row">
-              <button class="primary-button" type="submit">Save content</button>
-              <button class="secondary-button" type="button" data-content-polish>Polish text</button>
-              <button class="secondary-button" type="button" data-content-approve>Approve</button>
+              <button class="primary-button" type="submit">Сохранить</button>
+              <button class="secondary-button" type="button" data-content-polish>Улучшить текст</button>
+              <button class="secondary-button" type="button" data-content-approve>Согласовать</button>
             </div>
           </form>
         </section>
@@ -1247,12 +1396,13 @@ function renderDraftDetail(draft) {
       ${slidesMarkup(payload.slides)}
       ${storyboardMarkup(payload.storyboard)}
       <section class="section">
-        <h3>Payload JSON</h3>
+        <h3>JSON-данные</h3>
         <pre class="json-block">${escapeHtml(JSON.stringify(payload, null, 2))}</pre>
       </section>
     </div>
   `;
   elements.draftDetail.innerHTML = detailHtml;
+  syncDetailPanelState(false);
 
   elements.draftDetail.querySelectorAll("[data-status]").forEach((button) => {
     button.addEventListener("click", async () => {
