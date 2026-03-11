@@ -30,5 +30,7 @@ jobs:
           git remote add vps ssh://root@46.32.186.192/opt/aroma.git
           git push --force vps HEAD:main
 
-      - name: Verify service
-        run: ssh root@46.32.186.192 'systemctl is-active aroma-bot'
+      - name: Verify services
+        run: |
+          ssh root@46.32.186.192 'systemctl is-active aroma-bot'
+          ssh root@46.32.186.192 'systemctl is-active aroma-miniapp && echo "miniapp active" || echo "miniapp not running (skip)"'

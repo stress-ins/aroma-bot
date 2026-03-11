@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import hashlib
+import hmac
+import urllib.parse
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, Header, HTTPException, Query
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -18,6 +21,26 @@ from config import settings
 BASE_DIR = Path(__file__).parent
 MINIAPP_DIR = BASE_DIR / "miniapp"
 STATIC_DIR = MINIAPP_DIR / "static"
+
+
+def _verify_init_data(init_data: str) -> bool:
+    """Validate Telegram WebApp initData using HMAC-SHA256."""
+    try:
+        parsed = dict(urllib.parse.parse_qsl(init_data, strict_parsing=True))
+        received_hash = parsed.pop("hash", "")
+        check_string = "\n".join(f"{k}={v}" for k, v in sorted(parsed.items()))
+        secret_key = hmac.new(b"WebAppData", settings.telegram_bot_token.encode(), hashlib.sha256).digest()
+        expected_hash = hmac.new(secret_key, check_string.encode(), hashlib.sha256).hexdigest()
+        return hmac.compare_digest(expected_hash, received_hash)
+    except Exception:
+        return False
+
+
+def _require_auth(x_telegram_init_data: str | None = Header(default=None)) -> None:
+    """FastAPI dependency: validate Telegram initData header on mutating endpoints."""
+    if not x_telegram_init_data or not _verify_init_data(x_telegram_init_data):
+        raise HTTPException(status_code=403, detail="forbidden")
+
 
 app = FastAPI()
 
@@ -79,7 +102,7 @@ async def draft_detail(draft_id: str):
 
 
 @app.post("/api/drafts/{draft_id}/status")
-async def update_status(draft_id: str, payload: DraftStatusPayload):
+async def update_status(draft_id: str, payload: DraftStatusPayload, _: None = Depends(_require_auth)):
     status = payload.status.strip().lower()
     if status not in {"draft", "in_review", "approved", "published"}:
         raise HTTPException(status_code=400, detail="invalid_status")
@@ -90,7 +113,7 @@ async def update_status(draft_id: str, payload: DraftStatusPayload):
 
 
 @app.post("/api/drafts/{draft_id}/feedback")
-async def update_feedback(draft_id: str, payload: DraftFeedbackPayload):
+async def update_feedback(draft_id: str, payload: DraftFeedbackPayload, _: None = Depends(_require_auth)):
     feedback = payload.feedback.strip().lower()
     if feedback not in {"", "worked", "missed"}:
         raise HTTPException(status_code=400, detail="invalid_feedback")
@@ -151,7 +174,7 @@ async def keywords():
 
 
 @app.post("/api/keywords/add")
-async def keyword_add(payload: KeywordPayload):
+async def keyword_add(payload: KeywordPayload, _: None = Depends(_require_auth)):
     word = payload.word.strip()
     if not word:
         raise HTTPException(status_code=400, detail="empty_word")
@@ -160,7 +183,7 @@ async def keyword_add(payload: KeywordPayload):
 
 
 @app.post("/api/keywords/remove")
-async def keyword_remove(payload: KeywordPayload):
+async def keyword_remove(payload: KeywordPayload, _: None = Depends(_require_auth)):
     word = payload.word.strip()
     if not word:
         raise HTTPException(status_code=400, detail="empty_word")
