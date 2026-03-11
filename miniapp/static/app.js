@@ -3,7 +3,7 @@ const state = {
   tab: new URLSearchParams(window.location.search).get("tab") || "drafts",
   draftId: new URLSearchParams(window.location.search).get("draft_id") || "",
   selectedCreateTool: null,
-  referenceAccess: false,
+  referenceAccess: null,
   referenceItems: [],
   referenceSearch: "",
   selectedReference: null,
@@ -390,11 +390,25 @@ function scheduleCarouselRefresh(draftId, attempts = 12) {
 }
 
 async function fetchJson(url, options = {}) {
+  const { timeout = 12000, ...fetchOptions } = options;
   const extraHeaders = url.startsWith("/api/") ? _initDataHeader() : {};
-  const response = await fetch(url, {
-    headers: { "Content-Type": "application/json", ...extraHeaders },
-    ...options,
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeout);
+  let response;
+  try {
+    response = await fetch(url, {
+      headers: { "Content-Type": "application/json", ...extraHeaders },
+      signal: controller.signal,
+      ...fetchOptions,
+    });
+  } catch (error) {
+    clearTimeout(timer);
+    if (error?.name === "AbortError") {
+      throw new Error("request_timeout");
+    }
+    throw error;
+  }
+  clearTimeout(timer);
   if (!response.ok) {
     let detail = "";
     try {
@@ -452,15 +466,20 @@ function currentHandbookMeta() {
 }
 
 async function loadReferenceAccess() {
+  if (state.referenceAccess !== null) return state.referenceAccess;
   try {
     const payload = await fetchJson("/api/references/access");
     state.referenceAccess = Boolean(payload?.allowed);
   } catch (_e) { state.referenceAccess = false; }
+  return state.referenceAccess;
 }
 
 async function loadReferences(tabId = state.tab) {
   const meta = HANDBOOK_CATEGORY_META[tabId];
   if (!meta) return;
+  if (state.referenceAccess === null) {
+    await loadReferenceAccess();
+  }
   if (!state.referenceAccess) {
     renderReferencesLocked();
     return;
@@ -848,10 +867,18 @@ async function bootstrap() {
   [elements.kindFilter, elements.statusFilter, elements.feedbackFilter].forEach(f => f.addEventListener("change", loadDrafts));
 
   elements.queryFilter.addEventListener("input", () => { clearTimeout(reelRefreshTimer); reelRefreshTimer = setTimeout(loadDrafts, 300); });
-  await loadReferenceAccess();
   if (MODE_TABS.handbook.find(t => t.id === state.tab)) state.mode = "handbook";
   setMode(state.mode);
-  await loadCurrentTab();
+  if (state.mode === "content") {
+    void loadReferenceAccess();
+  }
+  try {
+    await loadCurrentTab();
+  } catch (error) {
+    console.error("miniapp bootstrap failed", error);
+    elements.draftDetail.innerHTML = `<div class="detail-empty">Не удалось загрузить данные. Попробуйте открыть mini app еще раз.</div>`;
+    setEmptyState(true, "Не удалось загрузить данные.");
+  }
 }
 
 bootstrap();
