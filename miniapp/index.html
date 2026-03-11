@@ -12,14 +12,6 @@
   </head>
   <body>
     <div class="shell">
-
-      <header class="hero">
-        <div id="headerContent">
-          <p class="eyebrow">Арома помощник</p>
-          <h1>Черновики и рилсы</h1>
-        </div>
-      </header>
-
       <section class="mode-selector">
         <button id="modeContent" class="mode-button active" type="button">Контент</button>
         <button id="modeHandbook" class="mode-button" type="button">Справочник</button>
@@ -64,6 +56,17 @@
             <input id="queryFilter" type="search" placeholder="Тема, формат, источник" />
           </label>
         </div>
+      </section>
+
+      <section id="bootFallback" class="panel boot-fallback">
+        <div class="boot-fallback-copy">
+          <p class="eyebrow">Загрузка</p>
+          <h2 id="bootFallbackTitle">Загружаю интерфейс</h2>
+          <p id="bootFallbackText">
+            Если экран остаётся пустым дольше пары секунд, попробуйте открыть mini app ещё раз.
+          </p>
+        </div>
+        <button id="bootFallbackReload" class="secondary-button" type="button">Обновить экран</button>
       </section>
 
       <main class="layout" id="mainLayout">

@@ -3,14 +3,14 @@ from __future__ import annotations
 import json
 import os
 import socket
+import sqlite3
 import subprocess
 import sys
 import time
 import urllib.request
-import sqlite3
 from base64 import b64decode
-from pathlib import Path
 from datetime import datetime, timezone
+from pathlib import Path
 
 import pytest
 from playwright.sync_api import Error, sync_playwright
@@ -45,11 +45,11 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
     db_file = root / "test_aroma.db"
     plans_file = root / "plans.json"
     assets_dir = root / "reels_assets"
-    
-    # Initialize SQLite schema manually for the test to avoid complex async setup in fixture
+
     conn = sqlite3.connect(db_file)
     cursor = conn.cursor()
-    cursor.execute("""
+    cursor.execute(
+        """
         CREATE TABLE drafts (
             id INTEGER PRIMARY KEY,
             draft_id VARCHAR(32) UNIQUE,
@@ -61,8 +61,24 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
             payload JSON,
             created_at DATETIME
         )
-    """)
-    
+        """
+    )
+    cursor.execute(
+        """
+        CREATE TABLE aroma_cards (
+            id INTEGER PRIMARY KEY,
+            category VARCHAR(32) DEFAULT 'aroma',
+            slug VARCHAR(64) UNIQUE,
+            name VARCHAR(255),
+            source_type VARCHAR(32),
+            aliases JSON,
+            payload JSON,
+            created_at DATETIME,
+            updated_at DATETIME
+        )
+        """
+    )
+
     draft_id = "reels001"
     asset_file = assets_dir / draft_id / "frame_1.png"
     asset_file.parent.mkdir(parents=True, exist_ok=True)
@@ -85,7 +101,6 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
             }
         ],
     }
-    
     threads_payload = {
         "angle": "Через телесный переключатель, а не силу воли.",
         "hook": "Иногда телу нужен не совет, а сигнал безопасности.",
@@ -93,7 +108,6 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
         "cta": "Если откликается, напиши мне.",
         "visual_prompt": "warm calm evening ritual, soft light, cozy interior",
     }
-
     carousel_payload = {
         "slides": [
             "Стресс часто начинается с перегрузки ощущений.",
@@ -103,21 +117,34 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
             "calm sensory ritual, soft amber light, minimalist editorial photo",
             "wellness still life, aroma bottle, warm shadows, premium composition",
         ],
+        "slide_images": [
+            {
+                "url": "/generated/carousel_assets/carousel001/slide_1.png",
+                "filename": "slide_1.png",
+                "generated_at": "2026-03-11T18:00:00+00:00",
+            },
+            None,
+        ],
+        "img_prompt_notes": ["", ""],
         "cta": "Напиши, если хочешь такую карусель под свой проект.",
     }
 
     now = datetime.now(timezone.utc).isoformat()
     cursor.execute(
         "INSERT INTO drafts (draft_id, kind, topic, source, status, feedback, payload, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-        (draft_id, "reels", "Вечерний ароматический ритуал", "/miniapp", "draft", "", json.dumps(reels_payload), now)
+        (draft_id, "reels", "Вечерний ароматический ритуал", "/miniapp", "draft", "", json.dumps(reels_payload), now),
     )
     cursor.execute(
         "INSERT INTO drafts (draft_id, kind, topic, source, status, feedback, payload, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-        ("threads001", "threads", "Как мягко выйти из рабочего напряжения", "/content", "in_review", "worked", json.dumps(threads_payload), now)
+        ("threads001", "threads", "Как мягко выйти из рабочего напряжения", "/content", "in_review", "worked", json.dumps(threads_payload), now),
     )
     cursor.execute(
         "INSERT INTO drafts (draft_id, kind, topic, source, status, feedback, payload, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-        ("carousel001", "carousel", "Сенсорная карусель для вечернего ритуала", "/miniapp", "draft", "", json.dumps(carousel_payload), now)
+        ("carousel001", "carousel", "Сенсорная карусель для вечернего ритуала", "/miniapp", "draft", "", json.dumps(carousel_payload), now),
+    )
+    cursor.execute(
+        "INSERT INTO aroma_cards (slug, name, category, source_type, aliases, payload, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        ("lavender", "Лаванда", "aroma", "herb", json.dumps([]), json.dumps({}), now, now),
     )
     conn.commit()
     conn.close()
@@ -157,6 +184,8 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
             "AROMA_DATABASE_URL": f"sqlite+aiosqlite:///{db_file}",
             "AROMA_PLANS_FILE": str(plans_file),
             "AROMA_REELS_ASSETS_DIR": str(assets_dir),
+            "MINIAPP_AROMA_ALLOWED_USER_IDS": "12345",
+            "AROMA_BYPASS_AUTH": "1",
         }
     )
 
@@ -185,22 +214,25 @@ def page(miniapp_server: str):
             browser = playwright.chromium.launch()
         except Error as exc:
             pytest.skip(f"Playwright browser is not available: {exc}")
-        context = browser.new_context(viewport={"width": 430, "height": 932}, is_mobile=True)
+        context = browser.new_context(
+            viewport={"width": 430, "height": 932},
+            is_mobile=True,
+            extra_http_headers={"X-Telegram-Init-Data": "user=%7B%22id%22%3A12345%2C%22username%22%3A%22test%22%7D"},
+        )
         page = context.new_page()
         page.goto(miniapp_server, wait_until="networkidle")
         yield page
         context.close()
         browser.close()
 
+
 def test_mobile_tabs_and_drafts_render_in_russian(page):
-    # Default mode is 'content'
     tabs = page.locator(".tab-button").evaluate_all(
         "(nodes) => nodes.map((node) => node.textContent.trim())"
     )
     assert "Создать" in tabs
     assert "Черновики" in tabs
 
-    # Switch to 'handbook' mode
     page.get_by_role("button", name="Справочник").click()
     page.wait_for_timeout(300)
 
@@ -209,18 +241,13 @@ def test_mobile_tabs_and_drafts_render_in_russian(page):
     )
     assert tabs_handbook == ["Ароматы", "Практики", "Звуки"]
 
-    # Back to 'content'
     page.get_by_role("button", name="Контент").click()
     page.get_by_role("button", name="Черновики").click()
     page.wait_for_timeout(300)
-
-    # Ensure we are in list view on mobile to see the cards
     page.evaluate("window.goBackToList()")
 
-    # Wait for cards to be visible in the list
     page.locator(".draft-card").first.wait_for(state="visible")
     assert page.locator(".draft-card").count() >= 2
-
     assert not page.locator("#emptyState").is_visible()
 
 
@@ -229,9 +256,9 @@ def test_reels_tab_opens_storyboard_without_empty_state(page):
     page.wait_for_load_state("networkidle")
 
     assert page.locator(".reels-card").count() == 1
-    page.locator(".reels-card").click() # Open detail
+    page.locator(".reels-card").click()
     page.wait_for_timeout(300)
-    
+
     assert not page.locator("#emptyState").is_visible()
     assert page.locator(".detail-title").inner_text().strip() == "Вечерний ароматический ритуал"
     assert page.get_by_role("button", name="Скопировать промпт кадра").is_visible()
@@ -239,7 +266,6 @@ def test_reels_tab_opens_storyboard_without_empty_state(page):
 
 
 def test_mobile_layout_has_no_overlapping_controls(page):
-    # Check main tabs in Content mode
     for tab_name in ["Черновики", "Рилсы", "Создать"]:
         page.get_by_role("button", name=tab_name).click()
         page.wait_for_timeout(300)
@@ -331,4 +357,22 @@ def test_carousel_detail_shows_prompt_copy_buttons(page):
     page.wait_for_timeout(300)
 
     assert page.get_by_role("button", name="Скопировать промпт слайда").count() >= 1
+    assert page.get_by_role("button", name="Сохранить текст слайда").count() >= 1
     assert page.locator(".slide").count() >= 2
+
+
+def test_create_tool_selection_isolates_form(page):
+    page.get_by_role("button", name="Создать").click()
+    page.wait_for_timeout(300)
+
+    page.get_by_role("heading", name="Карусель").click()
+    page.wait_for_timeout(300)
+
+    assert page.get_by_role("heading", name="Создать карусель").is_visible()
+    assert page.get_by_role("heading", name="Создать контент").count() == 0
+
+    if page.locator(".back-button").is_visible():
+        page.locator(".back-button").click()
+        page.wait_for_timeout(300)
+        assert page.get_by_text("Инструменты").is_visible()
+        assert page.get_by_text("Пост для соцсетей").is_visible()
