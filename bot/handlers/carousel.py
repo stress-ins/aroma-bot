@@ -617,6 +617,32 @@ def _text_review_keyboard(n_slides: int) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(buttons)
 
 
+def _persist_carousel_draft(
+    context: ContextTypes.DEFAULT_TYPE,
+    topic: str,
+    slides: list[str],
+    img_prompts: list[str],
+) -> str | None:
+    from bot.services.drafts_store import save_draft as _save_draft, update_draft as _update_draft
+
+    payload = {"slides": slides, "img_prompts": img_prompts}
+    existing_draft_id = str(context.user_data.get("ca_draft_id", "")).strip()
+    if existing_draft_id:
+        updated = _update_draft(existing_draft_id, topic=topic, status="draft", payload=payload)
+        if updated:
+            context.user_data["ca_draft_id"] = updated.draft_id
+            return updated.draft_id
+
+    saved = _save_draft(
+        kind="carousel",
+        topic=topic,
+        source="/carousel",
+        payload=payload,
+    )
+    context.user_data["ca_draft_id"] = saved.draft_id
+    return saved.draft_id
+
+
 def _review_keyboard(n_slides: int, has_failed: bool = False) -> InlineKeyboardMarkup:
     """Keyboard for post-image review. Optionally shows retry-failed button."""
     row = [InlineKeyboardButton(str(i + 1), callback_data=f"ca:edit:{i}") for i in range(n_slides)]
@@ -941,6 +967,11 @@ async def _run_carousel(query_or_message, context: ContextTypes.DEFAULT_TYPE,
     context.user_data["ca_gemini_images"]    = []
     context.user_data["ca_awaiting_images"]  = False
     context.user_data["ca_user_image_ids"]   = []
+
+    try:
+        _persist_carousel_draft(context, topic, slides, img_prompts)
+    except Exception:
+        logger.exception("carousel: failed to save draft for topic: %s", topic)
 
     target = query_or_message if hasattr(query_or_message, "reply_text") else query_or_message.message
 
