@@ -101,6 +101,9 @@ app = FastAPI()
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="miniapp-static")
 app.mount("/generated/reels_assets", StaticFiles(directory=ASSETS_DIR), name="reels-generated-assets")
 app.mount("/generated/carousel_assets", StaticFiles(directory=CAROUSEL_ASSETS_DIR), name="carousel-generated-assets")
+
+# Ensure directory exists to prevent Starlette from crashing on mount
+REFERENCE_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/reference-images", StaticFiles(directory=REFERENCE_IMAGES_DIR), name="reference-images")
 
 
