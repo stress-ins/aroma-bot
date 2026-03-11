@@ -14,8 +14,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from sqlalchemy import select
 from db.session import AsyncSessionLocal
-from sqlalchemy import text
+from db.models import AromaCardModel
 
 # Exported card data (payload already contains all edits)
 CARDS_JSON = Path(__file__).parent.parent / "scripts" / "aroma_cards_data.json"
@@ -29,57 +30,56 @@ async def main() -> None:
     cards = json.loads(CARDS_JSON.read_text(encoding="utf-8"))
     print(f"Loaded {len(cards)} cards from {CARDS_JSON.name}")
 
-    async with AsyncSessionLocal() as s:
+    async with AsyncSessionLocal() as session:
         updated = 0
-        skipped = 0
-        for card in cards:
-            # Check if row exists
-            row = await s.execute(
-                text("SELECT id FROM aroma_cards WHERE slug = :slug"),
-                {"slug": card["slug"]},
-            )
-            existing = row.fetchone()
+        inserted = 0
+        
+        for card_data in cards:
+            slug = card_data["slug"]
+            
+            # Check if row exists using model
+            stmt = select(AromaCardModel).filter(AromaCardModel.slug == slug)
+            result = await session.execute(stmt)
+            model = result.scalar_one_or_none()
 
-            if existing:
-                await s.execute(
-                    text(
-                        "UPDATE aroma_cards SET "
-                        "name=:name, source_type=:source_type, aliases=:aliases, "
-                        "payload=:payload, category=:category, "
-                        "updated_at=CURRENT_TIMESTAMP "
-                        "WHERE slug=:slug"
-                    ),
-                    {
-                        "name": card["name"],
-                        "source_type": card["source_type"],
-                        "aliases": card["aliases"],
-                        "payload": card["payload"],
-                        "category": card["category"],
-                        "slug": card["slug"],
-                    },
-                )
+            # Ensure aliases is a list
+            aliases = card_data.get("aliases", [])
+            if isinstance(aliases, str):
+                try:
+                    aliases = json.loads(aliases)
+                except:
+                    aliases = []
+
+            # Ensure payload is a dict
+            payload = card_data.get("payload", {})
+            if isinstance(payload, str):
+                try:
+                    payload = json.loads(payload)
+                except:
+                    payload = {}
+
+            if model:
+                model.name = card_data["name"]
+                model.source_type = card_data["source_type"]
+                model.aliases = aliases
+                model.payload = payload
+                model.category = card_data.get("category", "aroma")
                 updated += 1
             else:
-                await s.execute(
-                    text(
-                        "INSERT INTO aroma_cards (slug, name, source_type, aliases, payload, category) "
-                        "VALUES (:slug, :name, :source_type, :aliases, :payload, :category)"
-                    ),
-                    {
-                        "slug": card["slug"],
-                        "name": card["name"],
-                        "source_type": card["source_type"],
-                        "aliases": card["aliases"],
-                        "payload": card["payload"],
-                        "category": card["category"],
-                    },
+                new_card = AromaCardModel(
+                    slug=slug,
+                    name=card_data["name"],
+                    source_type=card_data["source_type"],
+                    aliases=aliases,
+                    payload=payload,
+                    category=card_data.get("category", "aroma"),
                 )
-                updated += 1
-                skipped += 1  # actually inserted
+                session.add(new_card)
+                inserted += 1
 
-        await s.commit()
+        await session.commit()
 
-    print(f"Done: {updated} cards upserted ({updated - skipped} updated, {skipped} inserted)")
+    print(f"Done: {updated + inserted} cards processed ({updated} updated, {inserted} inserted)")
 
 
 if __name__ == "__main__":
