@@ -74,9 +74,15 @@ function filtersToQueryString() {
   return params.toString();
 }
 
+function _initDataHeader() {
+  const initData = window.Telegram?.WebApp?.initData;
+  return initData ? { "X-Telegram-Init-Data": initData } : {};
+}
+
 async function fetchJson(url, options = {}) {
+  const extraHeaders = options.method === "POST" ? _initDataHeader() : {};
   const response = await fetch(url, {
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...extraHeaders },
     ...options,
   });
   if (!response.ok) {

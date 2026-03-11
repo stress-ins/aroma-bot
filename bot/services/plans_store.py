@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import os
+import tempfile
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -44,10 +46,16 @@ def _load_records() -> list[PlanRecord]:
 
 def _save_records(records: list[PlanRecord]) -> None:
     _ensure_store()
-    _PLANS_FILE.write_text(
-        json.dumps([asdict(record) for record in records], ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
+    data = json.dumps([asdict(record) for record in records], ensure_ascii=False, indent=2)
+    # Atomic write: write to temp file, then replace — prevents corruption on concurrent writes
+    fd, tmp_path = tempfile.mkstemp(dir=_PLANS_FILE.parent, suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(data)
+        os.replace(tmp_path, _PLANS_FILE)
+    except Exception:
+        os.unlink(tmp_path)
+        raise
 
 
 def save_plan(raw_text: str, entries: list[dict[str, str]]) -> PlanRecord:
