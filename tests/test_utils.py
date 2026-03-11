@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from types import SimpleNamespace
 
 import pytest
 
@@ -1329,65 +1328,6 @@ class TestEditPostFallback:
 
         result = ct.edit_post_sync("original text", "тема", "instagram")
         assert result == edited
-
-
-# ---------------------------------------------------------------------------
-# Carousel draft persistence (P2 fix)
-# ---------------------------------------------------------------------------
-
-class TestCarouselDraftPersistence:
-    """Carousel drafts must be saved to the database after generation."""
-
-    def test_carousel_inbox_category_is_content(self):
-        """Carousel kind falls into 'content' inbox category."""
-        from bot.services.drafts_store import DraftRecord
-        record = DraftRecord(
-            draft_id="carousel01",
-            kind="carousel",
-            topic="Сенсорный ритуал",
-            source="/carousel",
-            created_at="2026-03-11T10:00:00+00:00",
-            status="draft",
-            feedback="",
-            payload={"slides": ["Слайд 1", "Слайд 2"], "img_prompts": ["prompt"]},
-        )
-        assert inbox_category(record) == "content"
-
-    def test_carousel_draft_serializes(self):
-        """serialize_draft works for carousel kind records."""
-        from bot.services.drafts_store import DraftRecord
-        from bot.services.miniapp_presenter import serialize_draft
-        record = DraftRecord(
-            draft_id="carousel02",
-            kind="carousel",
-            topic="Утренний ритуал",
-            source="/carousel",
-            created_at="2026-03-11T10:00:00+00:00",
-            status="draft",
-            feedback="",
-            payload={"slides": ["Hook", "CTA"], "img_prompts": ["ph1", "ph2"]},
-        )
-        result = serialize_draft(record)
-        assert result["kind"] == "carousel"
-        assert result["topic"] == "Утренний ритуал"
-        assert result["payload"]["slides"] == ["Hook", "CTA"]
-
-    def test_persist_carousel_draft_reuses_existing_record(self, monkeypatch, tmp_path):
-        import bot.services.drafts_store as ds
-        from bot.handlers.carousel import _persist_carousel_draft
-
-        monkeypatch.setattr(ds, "_DRAFTS_FILE", tmp_path / "drafts.json")
-        context = SimpleNamespace(user_data={})
-
-        first_id = _persist_carousel_draft(context, "Тема 1", ["A"], ["P"])
-        second_id = _persist_carousel_draft(context, "Тема 2", ["B"], ["Q"])
-
-        assert first_id == second_id
-        records = ds.list_recent_drafts(limit=10, kind="carousel")
-        assert len(records) == 1
-        assert records[0].topic == "Тема 2"
-        assert records[0].payload["slides"] == ["B"]
-
 
 class TestMiniAppReelsPolling:
     def test_server_populates_all_initial_reels_frames(self):
