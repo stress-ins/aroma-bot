@@ -8,6 +8,7 @@ from bot.agents.reels_agent import StoryboardFrame
 from bot.handlers.content import _draft_keyboard
 from bot.handlers.reels import _review_keyboard, _reels_result_text
 from bot.services.drafts_store import get_draft, list_recent_drafts, update_draft
+from bot.services.mini_app import append_mini_app_button, build_mini_app_markup
 
 
 def _feedback_label(feedback: str) -> str:
@@ -54,7 +55,10 @@ async def cmd_drafts(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     if context.args:
         await _open_draft(update, context, context.args[0].strip())
         return
-    await update.message.reply_text(_drafts_text())
+    await update.message.reply_text(
+        _drafts_text(),
+        reply_markup=build_mini_app_markup(label="🧭 Открыть Drafts в Mini App", tab="drafts"),
+    )
 
 
 async def _open_draft(update: Update, context: ContextTypes.DEFAULT_TYPE, draft_id: str) -> None:
@@ -85,6 +89,12 @@ async def _open_draft(update: Update, context: ContextTypes.DEFAULT_TYPE, draft_
             kwargs["reply_markup"] = _feedback_keyboard(draft.draft_id, draft.feedback)
         else:
             kwargs["reply_markup"] = _review_keyboard()
+        kwargs["reply_markup"] = append_mini_app_button(
+            kwargs.get("reply_markup"),
+            label="🧭 Открыть в Mini App",
+            draft_id=draft.draft_id,
+            tab="reels",
+        )
         await update.message.reply_text(
             f"{_reels_result_text(draft.topic, str(draft.payload.get('scenario', '')), storyboard, int(draft.payload.get('images_ready', 0)))}\n\n🗂 Draft ID: {draft.draft_id}\nСтатус: {draft.status}",
             **kwargs,
@@ -113,6 +123,12 @@ async def _open_draft(update: Update, context: ContextTypes.DEFAULT_TYPE, draft_
             kwargs["reply_markup"] = _feedback_keyboard(draft.draft_id, draft.feedback)
         else:
             kwargs["reply_markup"] = _draft_keyboard()
+        kwargs["reply_markup"] = append_mini_app_button(
+            kwargs.get("reply_markup"),
+            label="🧭 Открыть в Mini App",
+            draft_id=draft.draft_id,
+            tab="drafts",
+        )
         await update.message.reply_text(
             f"{format_content_message(content_draft, draft.topic, goal_key, format_key)}\n\n🗂 Draft ID: {draft.draft_id}\nСтатус: {draft.status}",
             **kwargs,
@@ -121,7 +137,12 @@ async def _open_draft(update: Update, context: ContextTypes.DEFAULT_TYPE, draft_
 
     await update.message.reply_text(
         f"🗂 Draft ID: {draft.draft_id}\nТип: {draft.kind}\nТема: {draft.topic}\nСтатус: {draft.status}\nFeedback: {_feedback_label(draft.feedback)}",
-        reply_markup=_feedback_keyboard(draft.draft_id, draft.feedback) if draft.status == "approved" else None,
+        reply_markup=append_mini_app_button(
+            _feedback_keyboard(draft.draft_id, draft.feedback) if draft.status == "approved" else None,
+            label="🧭 Открыть в Mini App",
+            draft_id=draft.draft_id,
+            tab="drafts",
+        ),
     )
 
 
