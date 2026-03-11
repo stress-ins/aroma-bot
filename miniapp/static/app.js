@@ -323,6 +323,19 @@ async function regenerateReelsFrame(draftId, frameIndex) {
   renderReelsDetail(reel);
 }
 
+async function exportReelsProductionPack(draftId) {
+  const payload = await fetchJson(`/api/reels/${draftId}/export`);
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${draftId}-production-pack.json`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 function renderReelsDetail(reel) {
   state.selectedReels = reel;
   const frames = Array.isArray(reel.frames) ? reel.frames : [];
@@ -337,6 +350,9 @@ function renderReelsDetail(reel) {
             <span class="tag">${escapeHtml(reel.status)}</span>
             <span class="tag">${escapeHtml(reel.feedback || "no feedback")}</span>
             <span class="tag">${escapeHtml(reel.images_ready)} images</span>
+          </div>
+          <div class="actions-row">
+            <button class="secondary-button" type="button" data-reel-export="${escapeHtml(reel.draft_id)}">Export production pack</button>
           </div>
         </div>
       </div>
@@ -430,6 +446,19 @@ function renderReelsDetail(reel) {
         </div>
       </section>
       <section class="section">
+        <h3>Export Readiness</h3>
+        <div class="shot-list">
+          <div class="shot-item">
+            <strong>Frames ready</strong>
+            <div>${escapeHtml(String((reel.frames || []).filter((item) => item.current_asset?.url).length))} / ${escapeHtml(String(reel.frame_count || 0))}</div>
+          </div>
+          <div class="shot-item">
+            <strong>Current export</strong>
+            <div>JSON production pack with scenario, shot list, notes, prompts and asset URLs.</div>
+          </div>
+        </div>
+      </section>
+      <section class="section">
         <h3>Payload JSON</h3>
         <pre class="json-block">${escapeHtml(JSON.stringify(reel.payload || {}, null, 2))}</pre>
       </section>
@@ -442,6 +471,13 @@ function renderReelsDetail(reel) {
       renderReelsDetail(reel);
     });
   });
+
+  const exportButton = elements.draftDetail.querySelector("[data-reel-export]");
+  if (exportButton) {
+    exportButton.addEventListener("click", async () => {
+      await exportReelsProductionPack(reel.draft_id);
+    });
+  }
 
   const noteForm = elements.draftDetail.querySelector("[data-frame-note-form]");
   if (noteForm) {

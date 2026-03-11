@@ -83,6 +83,38 @@ def list_reels_drafts(limit: int = 30) -> list[dict[str, object]]:
     return items
 
 
+def build_reels_export_payload(draft_id: str) -> dict[str, object] | None:
+    reel = serialize_reels_draft(draft_id)
+    if not reel:
+        return None
+
+    frames = reel.get("frames", [])
+    ready_frames = 0
+    if isinstance(frames, list):
+        for frame in frames:
+            if isinstance(frame, dict) and isinstance(frame.get("current_asset"), dict) and frame["current_asset"].get("url"):
+                ready_frames += 1
+
+    return {
+        "draft_id": reel.get("draft_id", draft_id),
+        "topic": reel.get("topic", ""),
+        "status": reel.get("status", ""),
+        "source": reel.get("source", ""),
+        "scenario": reel.get("payload", {}).get("scenario", "") if isinstance(reel.get("payload"), dict) else "",
+        "images_ready": reel.get("images_ready", 0),
+        "frame_count": reel.get("frame_count", 0),
+        "ready_frames": ready_frames,
+        "frames": frames,
+        "shot_list": reel.get("shot_list", []),
+        "production_notes": reel.get("production_notes", {"required": [], "optional": []}),
+        "export_summary": {
+            "ready": ready_frames == int(reel.get("frame_count", 0) or 0),
+            "generated_assets": ready_frames,
+            "missing_assets": max(int(reel.get("frame_count", 0) or 0) - ready_frames, 0),
+        },
+    }
+
+
 def update_reels_frame_note(draft_id: str, frame_index: int, note: str) -> dict[str, object] | None:
     draft = get_draft(draft_id)
     if not draft or draft.kind != "reels":
