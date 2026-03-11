@@ -50,6 +50,7 @@ body {
 }
 
 button, input, select, textarea { font: inherit; color: inherit; }
+[hidden] { display: none !important; }
 
 /* ── Shell ──────────────────────────────────────────────────────────────── */
 .shell {
@@ -195,6 +196,10 @@ button, input, select, textarea { font: inherit; color: inherit; }
   align-items: start;
 }
 
+.detail-panel.is-empty-mobile {
+  display: block;
+}
+
 .panel {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -297,6 +302,15 @@ button, input, select, textarea { font: inherit; color: inherit; }
   font-size: 14px;
   text-align: center;
   padding: 24px;
+}
+
+.frame-image {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  border-radius: var(--radius-md);
+  margin-top: 12px;
+  border: 1px solid var(--border);
 }
 
 .empty {
@@ -557,6 +571,54 @@ button, input, select, textarea { font: inherit; color: inherit; }
   border-left: 3px solid var(--brand-border);
   padding-left: 12px;
   font-size: 14px;
+}
+
+@media (max-width: 760px) {
+  .shell {
+    padding: 10px;
+  }
+
+  .hero {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .hero h1 {
+    font-size: 18px;
+  }
+
+  .ghost-button,
+  .secondary-button,
+  .status-button,
+  .feedback-button,
+  .draft-card button,
+  .primary-button {
+    min-height: 42px;
+  }
+
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-panel.is-empty-mobile {
+    display: none;
+  }
+
+  .panel {
+    padding: 12px;
+  }
+
+  .field-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .reels-frames {
+    grid-template-columns: 1fr;
+  }
+
+  .inbox-toolbar {
+    flex-direction: column;
+  }
 }
 
 /* ── Shot list ───────────────────────────────────────────────────────────── */
