@@ -13,7 +13,7 @@ import pytest
 from bot.handlers.commands import _split_message
 from bot.handlers.content import _topics_text, _source_label
 from bot.agents.threads_replies import _extract_json
-from bot.services.miniapp_references import list_reference_cards
+from bot.services.miniapp_references import get_reference_card, list_reference_cards
 
 
 class TestSplitMessage:
@@ -1246,6 +1246,24 @@ class TestMiniAppRussianLocale:
         assert "pink-noise" in slugs
         assert "silence-practice" in slugs
         assert len(items) >= 12
+
+    async def test_reference_service_uses_exact_photo_overrides_for_selected_oils(self):
+        orange = await get_aroma_card("orange")
+        lavender = await get_aroma_card("lavender")
+
+        assert orange is not None
+        assert lavender is not None
+        assert orange["image_url"] in {"/reference-images/aromas/orange.jpg", "/reference-images/aromas/orange.png"}
+        assert lavender["image_url"] in {"/reference-images/aromas/lavender.jpg", "/reference-images/aromas/lavender.png"}
+
+    async def test_reference_service_uses_shared_photo_fallbacks_for_practices_and_sounds(self):
+        practice = await get_reference_card("practice", "box-breathing")
+        sound = await get_reference_card("sound", "gong")
+
+        assert practice is not None
+        assert sound is not None
+        assert practice["image_url"] == "/reference-images/shared/nature.jpg"
+        assert sound["image_url"] == "/reference-images/shared/instrument.jpg"
 
     def test_viewport_disables_double_tap_zoom(self):
         index_html = Path("miniapp/index.html").read_text(encoding="utf-8")

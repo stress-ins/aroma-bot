@@ -16,6 +16,19 @@ BASE_DIR = Path(__file__).resolve().parents[2]
 SEED_FILE = BASE_DIR / "data" / "reference_cards_seed.json"
 EXTRA_SEED_FILE = BASE_DIR / "data" / "reference_cards_extra.json"
 REFERENCE_CATEGORIES = {"aroma", "practice", "sound"}
+REFERENCE_IMAGES_DIR = BASE_DIR / "assets" / "reference_images"
+SHARED_IMAGE_OVERRIDES = {
+    ("practice", "breath"): "nature.jpg",
+    ("practice", "meditation"): "nature.jpg",
+    ("practice", "body"): "nature.jpg",
+    ("sound", "instrument"): "instrument.jpg",
+    ("sound", "sound"): "sound.jpg",
+    ("sound", "voice"): "voice.jpg",
+}
+SLUG_SHARED_OVERRIDES = {
+    ("sound", "nature-sounds"): "nature.jpg",
+    ("sound", "silence-practice"): "nature.jpg",
+}
 
 
 def _normalize(value: str) -> str:
@@ -205,9 +218,31 @@ def _serialize_model(model: AromaCardModel) -> dict[str, object]:
     payload["category"] = model.category
     payload["aliases"] = list(model.aliases or [])
     payload["source_type"] = model.source_type
-    payload["image_url"] = _source_image(model.source_type, model.name, model.category)
+    payload["image_url"] = (
+        _local_reference_image_url(model.category, model.slug)
+        or _shared_reference_image_url(model.category, model.slug, model.source_type)
+        or _source_image(model.source_type, model.name, model.category)
+    )
     payload["image_alt"] = f"{model.name}: {_image_label(model.category)}"
     return payload
+
+
+def _local_reference_image_url(category: str, slug: str) -> str | None:
+    for extension in ("jpg", "jpeg", "png", "webp"):
+        candidate = REFERENCE_IMAGES_DIR / f"{category}s" / f"{slug}.{extension}"
+        if candidate.exists():
+            return f"/reference-images/{category}s/{slug}.{extension}"
+    return None
+
+
+def _shared_reference_image_url(category: str, slug: str, source_type: str) -> str | None:
+    shared_name = SLUG_SHARED_OVERRIDES.get((category, slug)) or SHARED_IMAGE_OVERRIDES.get((category, source_type))
+    if not shared_name:
+        return None
+    candidate = REFERENCE_IMAGES_DIR / "shared" / shared_name
+    if candidate.exists():
+        return f"/reference-images/shared/{shared_name}"
+    return None
 
 
 def _load_seed_items() -> list[dict[str, object]]:

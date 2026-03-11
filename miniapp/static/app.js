@@ -2,6 +2,7 @@ const state = {
   mode: "content", // 'content' or 'handbook'
   tab: new URLSearchParams(window.location.search).get("tab") || "drafts",
   draftId: new URLSearchParams(window.location.search).get("draft_id") || "",
+  selectedCreateTool: null,
   referenceAccess: false,
   referenceItems: [],
   referenceSearch: "",
@@ -38,6 +39,7 @@ const MODE_TABS = {
 };
 
 let reelRefreshTimer = null;
+let carouselRefreshTimer = null;
 
 const elements = {
   tabsContainer: document.getElementById("tabsContainer"),
@@ -53,7 +55,6 @@ const elements = {
   statusFilter: document.getElementById("statusFilter"),
   feedbackFilter: document.getElementById("feedbackFilter"),
   queryFilter: document.getElementById("queryFilter"),
-  refreshButton: document.getElementById("refreshButton"),
   modeContent: document.getElementById("modeContent"),
   modeHandbook: document.getElementById("modeHandbook"),
 };
@@ -140,28 +141,40 @@ function promptSection(title, prompt, copyLabel = "Скопировать про
   `;
 }
 
-function renderSlides(slides = [], prompts = []) {
+function renderSlides(slides = [], prompts = [], slideImages = []) {
   const slideItems = Array.isArray(slides) ? slides : [];
   const promptItems = Array.isArray(prompts) ? prompts : [];
+  const imageItems = Array.isArray(slideImages) ? slideImages : [];
   if (!slideItems.length) return "";
+  const readyCount = imageItems.filter(Boolean).length;
+  const header = readyCount > 0
+    ? `Слайды карусели <span class="meta">${readyCount} / ${slideItems.length} с картинкой</span>`
+    : "Слайды карусели";
   return `
     <section class="section">
-      <h3>Слайды карусели</h3>
+      <h3>${header}</h3>
       <div class="slides">
-        ${slideItems.map((slide, index) => `
-          <article class="slide">
-            <strong>Слайд ${index + 1}</strong>
-            <div class="detail-preview">${escapeHtml(slide)}</div>
-            ${promptItems[index] ? `
-              <div class="prompt-card">
-                <div class="detail-preview prompt-preview">${escapeHtml(promptItems[index])}</div>
-                <div class="actions-row prompt-actions">
-                  <button class="secondary-button" type="button" onclick='copyText(${JSON.stringify(String(promptItems[index]))})'>Скопировать промпт слайда</button>
+        ${slideItems.map((slide, index) => {
+          const img = imageItems[index];
+          const imgHtml = img?.url
+            ? `<img class="frame-image" src="${escapeHtml(img.url)}" alt="Слайд ${index + 1}" />`
+            : `<div class="frame-loading">⏳ Картинка генерируется…</div>`;
+          return `
+            <article class="slide">
+              <strong>Слайд ${index + 1}</strong>
+              ${imgHtml}
+              <div class="detail-preview">${escapeHtml(slide)}</div>
+              ${promptItems[index] ? `
+                <div class="prompt-card">
+                  <div class="detail-preview prompt-preview">${escapeHtml(promptItems[index])}</div>
+                  <div class="actions-row prompt-actions">
+                    <button class="secondary-button" type="button" onclick='copyText(${JSON.stringify(String(promptItems[index]))})'>Скопировать промпт слайда</button>
+                  </div>
                 </div>
-              </div>
-            ` : ""}
-          </article>
-        `).join("")}
+              ` : ""}
+            </article>
+          `;
+        }).join("")}
       </div>
     </section>
   `;
@@ -356,6 +369,24 @@ function scheduleReelsRefresh(draftId, attempts = 10) {
       if (readyFrames < (reel.frame_count || 0)) scheduleReelsRefresh(draftId, attempts - 1);
     } catch (_e) { scheduleReelsRefresh(draftId, attempts - 1); }
   }, 4000);
+}
+
+function scheduleCarouselRefresh(draftId, attempts = 12) {
+  if (!draftId || attempts <= 0) return;
+  window.clearTimeout(carouselRefreshTimer);
+  carouselRefreshTimer = window.setTimeout(async () => {
+    try {
+      const draft = await fetchJson(`/api/carousel/${draftId}`);
+      const payload = draft.payload || {};
+      const slideImages = Array.isArray(payload.slide_images) ? payload.slide_images : [];
+      const slideCount = Array.isArray(payload.slides) ? payload.slides.length : 0;
+      const readyCount = slideImages.filter(Boolean).length;
+      state.selected = draft;
+      state.drafts = state.drafts.map((d) => d.draft_id === draft.draft_id ? { ...d, ...draft } : d);
+      renderDraftDetail(draft);
+      if (readyCount < slideCount) scheduleCarouselRefresh(draftId, attempts - 1);
+    } catch (_e) { scheduleCarouselRefresh(draftId, attempts - 1); }
+  }, 5000);
 }
 
 async function fetchJson(url, options = {}) {
@@ -565,32 +596,24 @@ function renderCreate() {
   elements.draftCount.textContent = "4 типа";
   setEmptyState(true);
   
-  const scrollToForm = (selector) => {
-    enterDetailView();
-    setTimeout(() => {
-      const el = document.querySelector(selector);
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 50);
-  };
-
   elements.draftList.innerHTML = `
     <div class="create-list">
-      <article class="create-card" data-goto="content">
+      <article class="create-card${state.selectedCreateTool === 'content' ? ' active' : ''}" onclick="renderCreateTool('content')">
         <div class="draft-kind">контент</div>
         <h3 class="draft-topic">Пост для соцсетей</h3>
         <div class="draft-preview">Тредс, Инстаграм или Телеграм.</div>
       </article>
-      <article class="create-card" data-goto="reels">
+      <article class="create-card${state.selectedCreateTool === 'reels' ? ' active' : ''}" onclick="renderCreateTool('reels')">
         <div class="draft-kind">рилсы</div>
         <h3 class="draft-topic">Сценарий + раскадровка</h3>
         <div class="draft-preview">Сценарий и 4 кадра визуализации.</div>
       </article>
-      <article class="create-card" data-goto="plan">
+      <article class="create-card${state.selectedCreateTool === 'plan' ? ' active' : ''}" onclick="renderCreateTool('plan')">
         <div class="draft-kind">план</div>
         <h3 class="draft-topic">Контент-план</h3>
         <div class="draft-preview">Сбор трендов и план на неделю.</div>
       </article>
-      <article class="create-card" data-goto="carousel">
+      <article class="create-card${state.selectedCreateTool === 'carousel' ? ' active' : ''}" onclick="renderCreateTool('carousel')">
         <div class="draft-kind">карусель</div>
         <h3 class="draft-topic">Карусель</h3>
         <div class="draft-preview">5 слайдов с промптами для картинок.</div>
@@ -598,14 +621,30 @@ function renderCreate() {
     </div>
   `;
 
-  elements.draftList.querySelector("[data-goto='content']").onclick = () => scrollToForm("[data-create-content]");
-  elements.draftList.querySelector("[data-goto='reels']").onclick = () => scrollToForm("[data-create-reels]");
-  elements.draftList.querySelector("[data-goto='plan']").onclick = () => scrollToForm("[data-create-plan]");
-  elements.draftList.querySelector("[data-goto='carousel']").onclick = () => scrollToForm("[data-create-carousel]");
+  if (!state.selectedCreateTool) {
+    elements.draftDetail.innerHTML = `<div class="detail-empty">Выберите инструмент слева.</div>`;
+    syncMobileNavigation();
+    return;
+  }
 
-  elements.draftDetail.innerHTML = `
-    <div class="detail-grid">
-      ${renderBackButton()}
+  renderCreateTool(state.selectedCreateTool);
+}
+
+function renderCreateTool(toolId) {
+  state.selectedCreateTool = toolId;
+  
+  // Update active state in the list
+  elements.draftList.querySelectorAll(".create-card").forEach(card => {
+    const isTarget = (toolId === 'content' && card.querySelector('.draft-kind').textContent === 'контент') ||
+                     (toolId === 'reels' && card.querySelector('.draft-kind').textContent === 'рилсы') ||
+                     (toolId === 'plan' && card.querySelector('.draft-kind').textContent === 'план') ||
+                     (toolId === 'carousel' && card.querySelector('.draft-kind').textContent === 'карусель');
+    card.classList.toggle("active", isTarget);
+  });
+
+  let formHtml = '';
+  if (toolId === 'content') {
+    formHtml = `
       <section class="section">
         <h3>Создать контент</h3>
         <form class="create-form" data-create-content>
@@ -617,6 +656,9 @@ function renderCreate() {
           <button class="primary-button" type="submit">Сгенерировать текст</button>
         </form>
       </section>
+    `;
+  } else if (toolId === 'reels') {
+    formHtml = `
       <section class="section">
         <h3>Создать рилс</h3>
         <form class="create-form" data-create-reels>
@@ -624,6 +666,9 @@ function renderCreate() {
           <button class="primary-button" type="submit">Сгенерировать раскадровку</button>
         </form>
       </section>
+    `;
+  } else if (toolId === 'plan') {
+    formHtml = `
       <section class="section">
         <h3>Создать план</h3>
         <form class="create-form" data-create-plan>
@@ -631,6 +676,9 @@ function renderCreate() {
           <button class="primary-button" type="submit">Собрать план на неделю</button>
         </form>
       </section>
+    `;
+  } else if (toolId === 'carousel') {
+    formHtml = `
       <section class="section">
         <h3>Создать карусель</h3>
         <form class="create-form" data-create-carousel>
@@ -638,10 +686,19 @@ function renderCreate() {
           <button class="primary-button" type="submit">Сгенерировать карусель</button>
         </form>
       </section>
+    `;
+  }
+
+  elements.draftDetail.innerHTML = `
+    <div class="detail-grid">
+      ${renderBackButton()}
+      ${formHtml}
     </div>
   `;
-  syncMobileNavigation();
+  
+  enterDetailView();
 
+  // Re-bind forms
   const cForm = elements.draftDetail.querySelector("[data-create-content]");
   if (cForm) bindTopicForm(cForm, { pendingText: "Создаю...", onSubmit: async (t) => {
     const g = cForm.querySelector("select[name='goal_key']").value;
@@ -723,11 +780,16 @@ function renderDraftDetail(d) {
       ${payloadSection("Угол", p.angle)}
       ${payloadSection("Текст", mainText)}
       ${payloadSection("CTA", p.cta)}
-      ${renderSlides(p.slides, p.img_prompts)}
+      ${renderSlides(p.slides, p.img_prompts, p.slide_images)}
       ${promptSection("Промпт для изображения", p.visual_prompt)}
       <section class="section"><h3>JSON</h3><pre class="json-block">${escapeHtml(JSON.stringify(p, null, 2))}</pre></section>
     </div>
   `;
+  if (d.kind === "carousel") {
+    const readyCount = (p.slide_images || []).filter(Boolean).length;
+    const slideCount = (p.slides || []).length;
+    if (readyCount < slideCount) scheduleCarouselRefresh(d.draft_id);
+  }
 }
 
 function renderEmptyDetail() {
@@ -751,6 +813,9 @@ function setMode(m) {
 
 function setTab(t) {
   state.tab = t; state.mobileView = "list";
+  if (t === "create") {
+    state.selectedCreateTool = null;
+  }
   if (HANDBOOK_CATEGORY_META[t]) {
     state.referenceSearch = "";
     if (state.selectedReference?.category !== HANDBOOK_CATEGORY_META[t].category) {
@@ -779,8 +844,9 @@ async function bootstrap() {
   applyTelegramTheme();
   elements.modeContent.addEventListener("click", () => { setMode("content"); loadCurrentTab(); });
   elements.modeHandbook.addEventListener("click", () => { setMode("handbook"); loadCurrentTab(); });
-  elements.refreshButton.addEventListener("click", () => loadCurrentTab());
+
   [elements.kindFilter, elements.statusFilter, elements.feedbackFilter].forEach(f => f.addEventListener("change", loadDrafts));
+
   elements.queryFilter.addEventListener("input", () => { clearTimeout(reelRefreshTimer); reelRefreshTimer = setTimeout(loadDrafts, 300); });
   await loadReferenceAccess();
   if (MODE_TABS.handbook.find(t => t.id === state.tab)) state.mode = "handbook";
