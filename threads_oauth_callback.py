@@ -8,7 +8,9 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from bot.services.drafts_store import get_draft, list_recent_drafts, update_draft
+from bot.services.miniapp_keywords import add_keyword, delete_keyword, field_labels, serialize_topics
 from bot.services.miniapp_presenter import filter_drafts, serialize_draft
+from config import settings
 
 
 BASE_DIR = Path(__file__).parent
@@ -26,6 +28,12 @@ class DraftStatusPayload(BaseModel):
 
 class DraftFeedbackPayload(BaseModel):
     feedback: str
+
+
+class KeywordPayload(BaseModel):
+    topic_idx: int
+    field: str
+    word: str
 
 
 @app.get("/")
@@ -71,6 +79,72 @@ async def miniapp_draft_detail(draft_id: str):
     if not draft:
         raise HTTPException(status_code=404, detail="draft_not_found")
     return serialize_draft(draft)
+
+
+@app.get("/miniapp/api/status")
+async def miniapp_status():
+    sources = [
+        "google_trends_ru",
+        "google_trends_en",
+        "youtube",
+        "reddit",
+        "telegram_channels",
+        "twitter",
+        "instagram",
+        "vk",
+        "wordstat",
+        "tiktok",
+        "tiktok_ru",
+        "threads",
+        "ai_recommendations",
+    ]
+    items = [
+        {
+            "source": source,
+            "enabled": settings.is_source_enabled(source),
+        }
+        for source in sources
+    ]
+    return {
+        "items": items,
+        "digest_time": settings.daily_digest_time,
+        "timezone": settings.timezone,
+        "mini_app_url": settings.mini_app_url,
+    }
+
+
+@app.get("/miniapp/api/keywords")
+async def miniapp_keywords():
+    return {
+        "items": serialize_topics(),
+        "field_labels": field_labels(),
+    }
+
+
+@app.post("/miniapp/api/keywords/add")
+async def miniapp_keyword_add(payload: KeywordPayload):
+    word = payload.word.strip()
+    if not word:
+        raise HTTPException(status_code=400, detail="empty_word")
+    add_keyword(payload.topic_idx, payload.field, word)
+    return {
+        "ok": True,
+        "items": serialize_topics(),
+        "field_labels": field_labels(),
+    }
+
+
+@app.post("/miniapp/api/keywords/remove")
+async def miniapp_keyword_remove(payload: KeywordPayload):
+    word = payload.word.strip()
+    if not word:
+        raise HTTPException(status_code=400, detail="empty_word")
+    delete_keyword(payload.topic_idx, payload.field, word)
+    return {
+        "ok": True,
+        "items": serialize_topics(),
+        "field_labels": field_labels(),
+    }
 
 
 @app.post("/miniapp/api/drafts/{draft_id}/status")

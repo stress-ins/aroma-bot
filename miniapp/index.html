@@ -25,6 +25,11 @@
       </header>
 
       <section class="toolbar">
+        <div class="tabs">
+          <button class="tab-button active" data-tab="drafts" type="button">Drafts</button>
+          <button class="tab-button" data-tab="status" type="button">Status</button>
+          <button class="tab-button" data-tab="keywords" type="button">Keywords</button>
+        </div>
         <label>
           Тип
           <select id="kindFilter">
@@ -63,7 +68,7 @@
       <main class="layout">
         <section class="panel list-panel">
           <div class="panel-header">
-            <h2>Drafts</h2>
+            <h2 id="listTitle">Drafts</h2>
             <span id="draftCount" class="meta"></span>
           </div>
           <div id="draftList" class="draft-list"></div>
