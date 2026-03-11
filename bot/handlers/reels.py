@@ -6,7 +6,7 @@ import logging
 from concurrent.futures import ThreadPoolExecutor
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto, Update
-from telegram.ext import CallbackQueryHandler, CommandHandler, ContextTypes
+from telegram.ext import CallbackQueryHandler, CommandHandler, ContextTypes, MessageHandler, filters
 
 from bot.agents.reels_agent import (
     StoryboardFrame,
@@ -15,6 +15,7 @@ from bot.agents.reels_agent import (
     generate_reels_topics_sync,
 )
 from bot.handlers.threads import _format_trends
+from bot.services.drafts_store import save_draft, update_draft
 from bot.services.gemini_images import generate_gemini_image_sync
 from config import settings
 
@@ -33,6 +34,18 @@ def _topics_keyboard(topics: list[str]) -> InlineKeyboardMarkup:
 def _topics_text(topics: list[str]) -> str:
     items = "\n".join(f"{i + 1}. {t}" for i, t in enumerate(topics))
     return f"🎬 *Темы для Reels:*\n\n{items}\n\nНажми номер — получишь детальный сценарий:"
+
+
+def _review_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("🔄 Новая раскадровка", callback_data="rl:review:storyboard"),
+            InlineKeyboardButton("✏️ Свой сценарий", callback_data="rl:review:manual"),
+        ],
+        [
+            InlineKeyboardButton("✅ Согласовать", callback_data="rl:review:approve"),
+        ],
+    ])
 
 
 def _storyboard_text(frames: list[StoryboardFrame]) -> str:
@@ -91,6 +104,8 @@ async def cmd_reels(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         return
 
     context.user_data["rl_topics"] = topics
+    context.user_data.pop("rl_review", None)
+    context.user_data.pop("rl_awaiting_manual_edit", None)
     await status.edit_text(
         _topics_text(topics),
         parse_mode="Markdown",
@@ -123,6 +138,43 @@ async def cb_reels(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         )
         return
 
+    if data == "rl:review:manual":
+        review = context.user_data.get("rl_review")
+        if not review:
+            await query.message.reply_text("❌ Черновик Reels не найден. Сгенерируй заново.")
+            return
+        context.user_data["rl_awaiting_manual_edit"] = True
+        await query.message.reply_text(
+            "✏️ Пришли новый сценарий целиком одним сообщением.\n"
+            "Потом я оставлю кнопки на согласование и пересборку раскадровки."
+        )
+        return
+
+    if data == "rl:review:approve":
+        review = context.user_data.get("rl_review")
+        if not review:
+            await query.message.reply_text("❌ Черновик Reels не найден. Сгенерируй заново.")
+            return
+        draft_id = review.get("draft_id", "")
+        if draft_id:
+            update_draft(draft_id, status="approved")
+        await query.message.reply_text(f"✅ Reels-черновик согласован.\n🗂 Draft ID: {draft_id}")
+        return
+
+    if data == "rl:review:storyboard":
+        review = context.user_data.get("rl_review")
+        if not review:
+            await query.message.reply_text("❌ Черновик Reels не найден. Сгенерируй заново.")
+            return
+        topic = review.get("topic", "")
+        scenario = review.get("scenario", "")
+        if not topic or not scenario:
+            await query.message.reply_text("❌ Контекст потерян. Сгенерируй заново.")
+            return
+        status = await query.message.reply_text("🎥 Пересобираю раскадровку...")
+        await _build_reels_review(status, query.message, context, topic, scenario, existing_draft_id=review.get("draft_id", ""))
+        return
+
     if data.startswith("rl:pick:"):
         idx = int(data.split(":")[2])
         topics: list[str] = context.user_data.get("rl_topics", [])
@@ -131,41 +183,107 @@ async def cb_reels(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             return
 
         topic = topics[idx]
-        status = await query.message.reply_text(
-            f"🎬 Тема: {topic}\n\n⏳ Пишу сценарий..."
-        )
-
+        status = await query.message.reply_text(f"🎬 Тема: {topic}\n\n⏳ Пишу сценарий...")
         loop = asyncio.get_event_loop()
         scenario = await loop.run_in_executor(_executor, generate_reels_scenario_sync, topic)
-        await status.edit_text(f"🎬 Тема: {topic}\n\n🎥 Готовлю раскадровку...")
-        frames = await loop.run_in_executor(_executor, generate_reels_director_sync, topic, scenario)
+        await _build_reels_review(status, query.message, context, topic, scenario)
 
-        images: list[bytes] = []
-        if settings.image_api_key and frames:
-            for frame_idx, frame in enumerate(frames[:4], 1):
-                await status.edit_text(
-                    f"🎬 Тема: {topic}\n\n🎥 Раскадровка готова.\n🖼 Генерирую кадр {frame_idx}/4..."
-                )
-                image = await loop.run_in_executor(_executor, _gemini_reels_frame, frame.gemini_prompt)
-                if image:
-                    images.append(image)
 
-        await status.edit_text(_reels_result_text(topic, scenario, frames, len(images)))
+async def _build_reels_review(
+    status_message,
+    reply_target,
+    context: ContextTypes.DEFAULT_TYPE,
+    topic: str,
+    scenario: str,
+    *,
+    existing_draft_id: str = "",
+) -> None:
+    loop = asyncio.get_event_loop()
+    await status_message.edit_text(f"🎬 Тема: {topic}\n\n🎥 Готовлю раскадровку...")
+    frames = await loop.run_in_executor(_executor, generate_reels_director_sync, topic, scenario)
 
-        if images:
-            media: list[InputMediaPhoto] = []
-            for frame_idx, image in enumerate(images, 1):
-                photo = io.BytesIO(image)
-                photo.name = f"reels_storyboard_{frame_idx}.png"
-                caption = None
-                if frame_idx == 1:
-                    caption = f"Reels storyboard: {topic}"
-                media.append(InputMediaPhoto(media=photo, caption=caption))
-            await query.message.reply_media_group(media)
+    images: list[bytes] = []
+    if settings.image_api_key and frames:
+        for frame_idx, frame in enumerate(frames[:4], 1):
+            await status_message.edit_text(
+                f"🎬 Тема: {topic}\n\n🎥 Раскадровка готова.\n🖼 Генерирую кадр {frame_idx}/4..."
+            )
+            image = await loop.run_in_executor(_executor, _gemini_reels_frame, frame.gemini_prompt)
+            if image:
+                images.append(image)
+
+    payload = {
+        "scenario": scenario,
+        "storyboard": [
+            {
+                "timecode": frame.timecode,
+                "scene": frame.scene,
+                "angle": frame.angle,
+                "gemini_prompt": frame.gemini_prompt,
+            }
+            for frame in frames
+        ],
+        "images_ready": len(images),
+    }
+    if existing_draft_id:
+        updated = update_draft(existing_draft_id, topic=topic, status="draft", payload=payload)
+        draft_id = updated.draft_id if updated else existing_draft_id
+    else:
+        saved = save_draft(kind="reels", topic=topic, source="/reels", payload=payload)
+        draft_id = saved.draft_id
+
+    context.user_data["rl_review"] = {
+        "draft_id": draft_id,
+        "topic": topic,
+        "scenario": scenario,
+        "storyboard": payload["storyboard"],
+    }
+    context.user_data["rl_awaiting_manual_edit"] = False
+
+    await status_message.edit_text(
+        f"{_reels_result_text(topic, scenario, frames, len(images))}\n\n🗂 Draft ID: {draft_id}",
+        reply_markup=_review_keyboard(),
+    )
+
+    if images:
+        media: list[InputMediaPhoto] = []
+        for frame_idx, image in enumerate(images, 1):
+            photo = io.BytesIO(image)
+            photo.name = f"reels_storyboard_{frame_idx}.png"
+            caption = f"Reels storyboard: {topic}" if frame_idx == 1 else None
+            media.append(InputMediaPhoto(media=photo, caption=caption))
+        await reply_target.reply_media_group(media)
+
+
+async def msg_reels_manual_edit(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not context.user_data.get("rl_awaiting_manual_edit"):
+        return
+
+    review = context.user_data.get("rl_review")
+    text = (update.message.text or "").strip()
+    if not review:
+        context.user_data["rl_awaiting_manual_edit"] = False
+        await update.message.reply_text("❌ Контекст редактирования потерян. Сгенерируй Reels заново.")
+        return
+    if len(text) < 20:
+        await update.message.reply_text("❌ Сценарий слишком короткий. Пришли полную версию.")
+        return
+
+    context.user_data["rl_awaiting_manual_edit"] = False
+    status = await update.message.reply_text("✏️ Сохраняю сценарий и пересобираю раскадровку...")
+    await _build_reels_review(
+        status,
+        update.message,
+        context,
+        str(review.get("topic", "")),
+        text,
+        existing_draft_id=str(review.get("draft_id", "")),
+    )
 
 
 def build_reels_handler():
     return [
         CommandHandler("reels", cmd_reels),
         CallbackQueryHandler(cb_reels, pattern="^rl:"),
+        MessageHandler(filters.TEXT & ~filters.COMMAND, msg_reels_manual_edit),
     ]

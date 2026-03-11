@@ -6,6 +6,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import CallbackQueryHandler, CommandHandler, ContextTypes, MessageHandler, filters
 
 from bot.agents import (
+    ContentDraft,
     FORMAT_LABELS,
     GOAL_LABELS,
     format_content_message,
@@ -17,6 +18,7 @@ from bot.agents import (
 )
 from config import settings
 from bot.handlers.threads_manager import publish_threads_keyboard, threads_api_enabled
+from bot.services.drafts_store import save_draft, update_draft
 
 logger = logging.getLogger(__name__)
 
@@ -57,10 +59,16 @@ def _topics_keyboard(topics: list[str]) -> InlineKeyboardMarkup:
 
 
 def _draft_keyboard() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup([[
-        InlineKeyboardButton("🔄 Другой вариант", callback_data="ct:regen"),
-        InlineKeyboardButton("↩️ К темам", callback_data="ct:back:topics"),
-    ]])
+    return InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("🔄 Другой вариант", callback_data="ct:regen"),
+            InlineKeyboardButton("✏️ Свой текст", callback_data="ct:edit:manual"),
+        ],
+        [
+            InlineKeyboardButton("✅ Согласовать", callback_data="ct:approve"),
+            InlineKeyboardButton("↩️ К темам", callback_data="ct:back:topics"),
+        ],
+    ])
 
 
 def _source_keyboard() -> InlineKeyboardMarkup:
@@ -94,6 +102,7 @@ async def cmd_content(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         "content_goal", "content_format", "content_source", "content_topics",
         "content_custom_brief", "content_awaiting_prompt",
         "content_last_topic", "content_last_goal", "content_last_format",
+        "content_last_draft_id", "content_review_draft", "content_awaiting_manual_edit",
     ):
         context.user_data.pop(key, None)
 
@@ -284,6 +293,30 @@ async def cb_content(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         await _generate_and_show_draft(query.message, context, topic, goal_key, format_key)
         return
 
+    if data == "ct:edit:manual":
+        draft: dict = context.user_data.get("content_review_draft", {})
+        if not draft:
+            await query.message.reply_text("❌ Черновик не найден. Сгенерируй контент заново.")
+            return
+        context.user_data["content_awaiting_manual_edit"] = True
+        await query.message.reply_text(
+            "✏️ Пришли новый основной текст одним сообщением.\n"
+            "Я заменю блок TEXT и оставлю review-кнопки."
+        )
+        return
+
+    if data == "ct:approve":
+        draft: dict = context.user_data.get("content_review_draft", {})
+        draft_id = context.user_data.get("content_last_draft_id")
+        if not draft or not draft_id:
+            await query.message.reply_text("❌ Черновик не найден. Сгенерируй контент заново.")
+            return
+        updated = update_draft(draft_id, status="approved", payload=draft)
+        await query.message.reply_text(
+            f"✅ Черновик согласован.\n🗂 Draft ID: {(updated.draft_id if updated else draft_id)}"
+        )
+        return
+
 
 async def _generate_and_show_draft(
     msg, context: ContextTypes.DEFAULT_TYPE, topic: str, goal_key: str, format_key: str
@@ -326,8 +359,36 @@ async def _generate_and_show_draft(
     except Exception:
         pass
 
+    saved = save_draft(
+        kind=format_key,
+        topic=topic,
+        source="/content",
+        payload={
+            "goal_key": goal_key,
+            "format_key": format_key,
+            "angle": draft.angle,
+            "hook": draft.hook,
+            "caption": draft.caption,
+            "cta": draft.cta,
+            "hashtags": draft.hashtags,
+            "visual_prompt": draft.visual_prompt,
+            "slides": draft.slides,
+        },
+    )
+    context.user_data["content_last_draft_id"] = saved.draft_id
+    context.user_data["content_review_draft"] = {
+        "goal_key": goal_key,
+        "format_key": format_key,
+        "angle": draft.angle,
+        "hook": draft.hook,
+        "caption": draft.caption,
+        "cta": draft.cta,
+        "hashtags": draft.hashtags,
+        "visual_prompt": draft.visual_prompt,
+        "slides": draft.slides,
+    }
     message = format_content_message(draft, topic, goal_key, format_key)
-    await msg.reply_text(message, reply_markup=_draft_keyboard())
+    await msg.reply_text(f"{message}\n\n🗂 Draft ID: {saved.draft_id}", reply_markup=_draft_keyboard())
 
     # Threads publish button
     if format_key == "threads" and draft.caption and threads_api_enabled():
@@ -339,6 +400,43 @@ async def _generate_and_show_draft(
 
 
 async def msg_content_prompt(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if context.user_data.get("content_awaiting_manual_edit"):
+        draft_payload: dict = context.user_data.get("content_review_draft", {})
+        draft_id = context.user_data.get("content_last_draft_id")
+        topic = context.user_data.get("content_last_topic")
+        goal_key = context.user_data.get("content_last_goal")
+        format_key = context.user_data.get("content_last_format")
+        text = (update.message.text or "").strip()
+
+        if not draft_payload or not draft_id or not topic or not goal_key or not format_key:
+            context.user_data["content_awaiting_manual_edit"] = False
+            await update.message.reply_text("❌ Контекст редактирования потерян. Сгенерируй контент заново.")
+            return
+        if len(text) < 5:
+            await update.message.reply_text("❌ Текст слишком короткий. Пришли полную версию.")
+            return
+
+        draft_payload["caption"] = text
+        context.user_data["content_review_draft"] = draft_payload
+        context.user_data["content_awaiting_manual_edit"] = False
+        update_draft(draft_id, status="draft", payload=draft_payload)
+
+        draft = ContentDraft(
+            angle=str(draft_payload.get("angle", "")),
+            hook=str(draft_payload.get("hook", "")),
+            caption=str(draft_payload.get("caption", "")),
+            cta=str(draft_payload.get("cta", "")),
+            hashtags=str(draft_payload.get("hashtags", "")),
+            visual_prompt=str(draft_payload.get("visual_prompt", "")),
+            slides=list(draft_payload.get("slides", [])),
+        )
+        message = format_content_message(draft, topic, goal_key, format_key)
+        await update.message.reply_text(
+            f"{message}\n\n🗂 Draft ID: {draft_id}",
+            reply_markup=_draft_keyboard(),
+        )
+        return
+
     if not context.user_data.get("content_awaiting_prompt"):
         return
 
