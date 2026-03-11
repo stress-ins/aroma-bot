@@ -710,7 +710,7 @@ class TestAdapterAgent:
 # reels agent — generate_reels_topics_sync parsing logic
 # ---------------------------------------------------------------------------
 
-from bot.agents.reels_agent import generate_reels_topics_sync, generate_reels_scenario_sync
+from bot.agents.reels_agent import _parse_storyboard, generate_reels_topics_sync, generate_reels_scenario_sync
 
 
 def _parse_reels_topics(raw: str) -> list[str]:
@@ -741,6 +741,50 @@ class TestReelsTopicsParser:
         raw = "Вот темы:\n1. Тема одна\nТекст\n2. Тема два"
         topics = _parse_reels_topics(raw)
         assert len(topics) == 2
+
+
+class TestStoryboardParser:
+    def test_parses_all_storyboard_frames(self):
+        raw = """\
+КАДР1_ТАЙМКОД: 0-3 сек
+КАДР1_СЦЕНА: Свеча, масло и ветка шалфея на льняной ткани.
+КАДР1_РАКУРС: Крупный план сверху, лёгкий наезд камеры.
+КАДР1_ПРОМПТ: cinematic still, terracotta candle, sage branch, beige linen, soft natural light
+
+КАДР2_ТАЙМКОД: 3-10 сек
+КАДР2_СЦЕНА: Руки открывают флакон масла рядом с чашкой чая.
+КАДР2_РАКУРС: Средний план сбоку, плавное движение.
+КАДР2_ПРОМПТ: hands opening essential oil bottle near tea cup, sage and beige palette
+
+КАДР3_ТАЙМКОД: 10-20 сек
+КАДР3_СЦЕНА: Поющая чаша и текстура дерева в мягком свете.
+КАДР3_РАКУРС: Низкий угол, статичный кадр.
+КАДР3_ПРОМПТ: singing bowl on warm wood, terracotta beige sage palette, cinematic
+
+КАДР4_ТАЙМКОД: 20-30 сек
+КАДР4_СЦЕНА: Завершающий натюрморт с блокнотом и свечой.
+КАДР4_РАКУРС: Фронтальный средний план, спокойный фокус.
+КАДР4_ПРОМПТ: calm final still life with notebook and candle, soft natural light, no people
+"""
+        frames = _parse_storyboard(raw)
+
+        assert len(frames) == 4
+        assert frames[0].timecode == "0-3 сек"
+        assert "шалфея" in frames[0].scene
+        assert "opening essential oil bottle" in frames[1].gemini_prompt
+        assert frames[3].angle == "Фронтальный средний план, спокойный фокус."
+
+    def test_skips_empty_frames(self):
+        raw = """\
+КАДР1_ТАЙМКОД: 0-3 сек
+КАДР1_СЦЕНА: Крупный хук с флаконом.
+КАДР1_РАКУРС: Макро.
+КАДР1_ПРОМПТ: macro shot of essential oil bottle
+"""
+        frames = _parse_storyboard(raw)
+
+        assert len(frames) == 1
+        assert frames[0].timecode == "0-3 сек"
 
 
 # ---------------------------------------------------------------------------

@@ -5,6 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 
 from analytics.base import SourceResult
+from bot.services.gemini_images import generate_gemini_image_sync
 from config import settings
 
 _executor = ThreadPoolExecutor(max_workers=2)
@@ -428,19 +429,4 @@ async def generate_content_draft(topic: str, goal_key: str, format_key: str) -> 
 
 
 def generate_image_bytes(prompt: str) -> bytes | None:
-    try:
-        from google import genai
-        from google.genai import types
-
-        client = genai.Client(api_key=settings.image_api_key)
-        response = client.models.generate_content(
-            model="gemini-3.1-flash-image-preview",
-            contents=prompt,
-            config=types.GenerateContentConfig(response_modalities=["IMAGE", "TEXT"]),
-        )
-        for part in response.candidates[0].content.parts:
-            if part.inline_data:
-                return part.inline_data.data
-    except Exception:
-        return None
-    return None
+    return generate_gemini_image_sync(prompt, log_context="Gemini content image")
