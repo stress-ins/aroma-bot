@@ -10,6 +10,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from bot.services.reels_assets import _ASSETS_DIR, regenerate_reels_frame_asset
 from bot.services.drafts_store import get_draft, list_recent_drafts, update_draft
 from bot.services.miniapp_keywords import add_keyword, delete_keyword, field_labels, serialize_topics
 from bot.services.miniapp_plans import serialize_plan
@@ -46,6 +47,7 @@ def _require_auth(x_telegram_init_data: str | None = Header(default=None)) -> No
 app = FastAPI()
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="miniapp-static")
+app.mount("/generated/reels_assets", StaticFiles(directory=_ASSETS_DIR), name="reels-generated-assets")
 
 
 class DraftStatusPayload(BaseModel):
@@ -197,6 +199,21 @@ async def reels_frame_note(
     draft = update_reels_frame_note(draft_id, frame_index, payload.note)
     if not draft:
         raise HTTPException(status_code=404, detail="reels_frame_not_found")
+    return draft
+
+
+@app.post("/api/reels/{draft_id}/frames/{frame_index}/regenerate")
+async def reels_frame_regenerate(
+    draft_id: str,
+    frame_index: int,
+    _: None = Depends(_require_auth),
+):
+    payload = regenerate_reels_frame_asset(draft_id, frame_index)
+    if not payload:
+        raise HTTPException(status_code=404, detail="reels_frame_regenerate_failed")
+    draft = serialize_reels_draft(draft_id)
+    if not draft:
+        raise HTTPException(status_code=404, detail="reels_not_found")
     return draft
 
 

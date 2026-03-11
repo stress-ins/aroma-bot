@@ -40,6 +40,8 @@ def serialize_reels_draft(draft_id: str) -> dict[str, object] | None:
                     "angle": str(frame.get("angle", "")),
                     "gemini_prompt": str(frame.get("gemini_prompt", "")),
                     "review_note": str(frame.get("review_note", "")),
+                    "current_asset": dict(frame.get("current_asset", {})) if isinstance(frame.get("current_asset"), dict) else {},
+                    "asset_revisions": list(frame.get("asset_revisions", [])) if isinstance(frame.get("asset_revisions"), list) else [],
                 }
             )
 

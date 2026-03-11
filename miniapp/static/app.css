@@ -377,6 +377,34 @@ select {
   padding-left: 12px;
 }
 
+.frame-image {
+  width: 100%;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  margin-top: 12px;
+  display: block;
+}
+
+.secondary-button {
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.65);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+.asset-revisions {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.asset-revision {
+  border-left: 3px solid rgba(108, 122, 67, 0.4);
+  padding-left: 12px;
+}
+
 .shot-list {
   display: grid;
   gap: 10px;

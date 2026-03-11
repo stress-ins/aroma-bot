@@ -810,6 +810,7 @@ from bot.services.miniapp_presenter import filter_drafts, payload_preview, seria
 from bot.services.miniapp_keywords import field_labels, serialize_topics
 from bot.services.miniapp_plans import serialize_plan
 from bot.services.miniapp_reels import serialize_reels_draft, update_reels_frame_note
+from bot.services.reels_assets import regenerate_reels_frame_asset
 from bot.services.plans_store import PlanRecord
 
 
@@ -1005,6 +1006,9 @@ class TestMiniAppReels:
 
     def test_update_reels_frame_note_returns_none_for_missing(self):
         assert update_reels_frame_note("missing-id", 0, "темнее") is None
+
+    def test_regenerate_reels_frame_asset_returns_none_for_missing(self):
+        assert regenerate_reels_frame_asset("missing-id", 0) is None
 
 
 # ---------------------------------------------------------------------------
