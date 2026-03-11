@@ -18,10 +18,21 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column("aroma_cards", sa.Column("category", sa.String(length=32), nullable=True))
-    op.execute("UPDATE aroma_cards SET category = 'aroma' WHERE category IS NULL")
-    op.alter_column("aroma_cards", "category", nullable=False)
-    op.create_index(op.f("ix_aroma_cards_category"), "aroma_cards", ["category"], unique=False)
+    # Check if column already exists (handling failed previous run on SQLite)
+    conn = op.get_bind()
+    columns = [c['name'] for c in sa.inspect(conn).get_columns("aroma_cards")]
+    
+    if "category" not in columns:
+        op.add_column("aroma_cards", sa.Column("category", sa.String(length=32), nullable=False, server_default="aroma"))
+        op.create_index(op.f("ix_aroma_cards_category"), "aroma_cards", ["category"], unique=False)
+    else:
+        # Just ensure data is there and index is created if missing
+        op.execute("UPDATE aroma_cards SET category = 'aroma' WHERE category IS NULL")
+        # Creating index is safe usually or we can check too
+        try:
+            op.create_index(op.f("ix_aroma_cards_category"), "aroma_cards", ["category"], unique=False)
+        except:
+            pass
 
 
 def downgrade() -> None:

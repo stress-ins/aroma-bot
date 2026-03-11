@@ -91,6 +91,19 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
         "hook": "Иногда телу нужен не совет, а сигнал безопасности.",
         "caption": "Короткий текст для Threads про переключение после работы.",
         "cta": "Если откликается, напиши мне.",
+        "visual_prompt": "warm calm evening ritual, soft light, cozy interior",
+    }
+
+    carousel_payload = {
+        "slides": [
+            "Стресс часто начинается с перегрузки ощущений.",
+            "Запах и звук помогают мягко вернуть фокус.",
+        ],
+        "img_prompts": [
+            "calm sensory ritual, soft amber light, minimalist editorial photo",
+            "wellness still life, aroma bottle, warm shadows, premium composition",
+        ],
+        "cta": "Напиши, если хочешь такую карусель под свой проект.",
     }
 
     now = datetime.now(timezone.utc).isoformat()
@@ -101,6 +114,10 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
     cursor.execute(
         "INSERT INTO drafts (draft_id, kind, topic, source, status, feedback, payload, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
         ("threads001", "threads", "Как мягко выйти из рабочего напряжения", "/content", "in_review", "worked", json.dumps(threads_payload), now)
+    )
+    cursor.execute(
+        "INSERT INTO drafts (draft_id, kind, topic, source, status, feedback, payload, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        ("carousel001", "carousel", "Сенсорная карусель для вечернего ритуала", "/miniapp", "draft", "", json.dumps(carousel_payload), now)
     )
     conn.commit()
     conn.close()
@@ -190,7 +207,7 @@ def test_mobile_tabs_and_drafts_render_in_russian(page):
     tabs_handbook = page.locator(".tab-button").evaluate_all(
         "(nodes) => nodes.map((node) => node.textContent.trim())"
     )
-    assert "Масла" in tabs_handbook
+    assert tabs_handbook == ["Ароматы", "Практики", "Звуки"]
 
     # Back to 'content'
     page.get_by_role("button", name="Контент").click()
@@ -217,6 +234,8 @@ def test_reels_tab_opens_storyboard_without_empty_state(page):
     
     assert not page.locator("#emptyState").is_visible()
     assert page.locator(".detail-title").inner_text().strip() == "Вечерний ароматический ритуал"
+    assert page.get_by_role("button", name="Скопировать промпт кадра").is_visible()
+    assert page.locator(".frame-image").count() == 1
 
 
 def test_mobile_layout_has_no_overlapping_controls(page):
@@ -259,3 +278,57 @@ def test_mobile_layout_has_no_overlapping_controls(page):
             """
         )
         assert overlaps == []
+
+
+def test_mobile_detail_actions_do_not_overlap(page):
+    page.get_by_role("button", name="Черновики").click()
+    page.wait_for_timeout(300)
+    page.evaluate("window.goBackToList()")
+    page.locator(".draft-card").first.wait_for(state="visible")
+    page.locator(".draft-card").first.click()
+    page.wait_for_timeout(300)
+
+    overlaps = page.evaluate(
+        """
+        () => {
+          const root = document.querySelector('#draftDetail');
+          const controls = [...root.querySelectorAll('button, select, input, textarea')]
+            .filter((node) => {
+              const style = getComputedStyle(node);
+              const rect = node.getBoundingClientRect();
+              return !node.hidden && style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+            })
+            .map((node) => ({
+              text: (node.innerText || node.value || node.textContent || '').trim().slice(0, 50),
+              x: node.getBoundingClientRect().x,
+              y: node.getBoundingClientRect().y,
+              w: node.getBoundingClientRect().width,
+              h: node.getBoundingClientRect().height,
+            }));
+          const bad = [];
+          for (let i = 0; i < controls.length; i++) {
+            for (let j = i + 1; j < controls.length; j++) {
+              const a = controls[i];
+              const b = controls[j];
+              const ix = Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x));
+              const iy = Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
+              if ((ix * iy) > 100) bad.push({ a: a.text, b: b.text, area: ix * iy });
+            }
+          }
+          return bad;
+        }
+        """
+    )
+    assert overlaps == []
+
+
+def test_carousel_detail_shows_prompt_copy_buttons(page):
+    page.get_by_role("button", name="Черновики").click()
+    page.wait_for_timeout(300)
+    page.evaluate("window.goBackToList()")
+    page.get_by_text("Сенсорная карусель для вечернего ритуала").first.wait_for(state="visible")
+    page.get_by_text("Сенсорная карусель для вечернего ритуала").first.click()
+    page.wait_for_timeout(300)
+
+    assert page.get_by_role("button", name="Скопировать промпт слайда").count() >= 1
+    assert page.locator(".slide").count() >= 2

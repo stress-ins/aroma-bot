@@ -281,7 +281,18 @@ TIMEZONE=Europe/Moscow
 
 ```bash
 source .venv/bin/activate
+# Применить миграции БД
+alembic upgrade head
+# Запустить бота
 python main.py
+```
+
+### 4. Работа с БД (Alembic)
+
+Если вы изменили модели в `db/models.py`, нужно создать и применить миграцию:
+```bash
+alembic revision --autogenerate -m "описание изменений"
+alembic upgrade head
 ```
 
 Фоновый запуск:
@@ -305,38 +316,18 @@ aroma/
 ├── main.py
 ├── config.py
 ├── .env
+├── db/
+│   ├── models.py             # SQLAlchemy модели (DraftModel)
+│   └── session.py            # Настройка асинхронного engine и сессий
+├── alembic/                  # Миграции базы данных
+├── data/
+│   └── aroma.db              # SQLite база данных (хранилище черновиков и планов)
 ├── analytics/
-│   ├── aggregator.py         # параллельный запуск всех коллекторов
-│   ├── google_trends.py      # EN + RU
-│   ├── youtube.py            # EN + RU, AI-выжимки через Claude
-│   ├── instagram.py          # EN + RU (instagrapi)
-│   ├── tiktok.py             # EN + RU (TikTokApi + Playwright)
-│   ├── wordstat.py           # Яндекс Wordstat API (объёмы + динамика)
-│   ├── vk.py
-│   ├── reddit.py
-│   ├── twitter.py
-│   ├── telegram_channels.py
-│   └── ai_recommendations.py # Claude haiku
+...
 ├── bot/
-│   ├── agents/
-│   │   └── content.py         # brand context + агентный пайплайн для /content
-│   ├── application.py
-│   └── handlers/
-│       ├── content.py         # /content (цель → формат → тема)
-│       ├── commands.py       # /trends (+ кнопка обложек YouTube)
-│       ├── keywords.py       # /keywords
-│       └── threads.py        # /threads (темы + пост + картинка)
-├── keywords/
-│   ├── registry.py
-│   ├── store.py
-│   └── custom.json
-├── formatters/
-│   ├── report.py             # RU_SOURCE_KEYS / EN_SOURCE_KEYS
-│   └── sections.py
-├── scheduler/
-│   └── jobs.py
-└── cache/
-    └── store.py              # TTL-кеш 1 час, ключи: digest, results
+│   ├── services/
+│   │   ├── drafts_store.py   # Асинхронный интерфейс к БД черновиков
+│   │   └── reels_assets.py   # Управление медиа-файлами для Reels
 ```
 
 ---
