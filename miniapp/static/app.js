@@ -1,19 +1,24 @@
 const state = {
+  tab: new URLSearchParams(window.location.search).get("tab") || "drafts",
   draftId: new URLSearchParams(window.location.search).get("draft_id") || "",
   drafts: [],
   selected: null,
+  status: null,
+  keywords: null,
 };
 
 const elements = {
   draftList: document.getElementById("draftList"),
   draftDetail: document.getElementById("draftDetail"),
   draftCount: document.getElementById("draftCount"),
+  listTitle: document.getElementById("listTitle"),
   emptyState: document.getElementById("emptyState"),
   kindFilter: document.getElementById("kindFilter"),
   statusFilter: document.getElementById("statusFilter"),
   feedbackFilter: document.getElementById("feedbackFilter"),
   queryFilter: document.getElementById("queryFilter"),
   refreshButton: document.getElementById("refreshButton"),
+  tabButtons: Array.from(document.querySelectorAll("[data-tab]")),
 };
 
 function escapeHtml(value) {
@@ -91,7 +96,35 @@ async function loadDrafts() {
   }
 }
 
+async function loadStatus() {
+  state.status = await fetchJson("/miniapp/api/status");
+  renderStatus();
+}
+
+async function loadKeywords() {
+  state.keywords = await fetchJson("/miniapp/api/keywords");
+  renderKeywords();
+}
+
+function setTab(tab) {
+  state.tab = tab;
+  const params = new URLSearchParams(window.location.search);
+  params.set("tab", tab);
+  if (state.draftId) {
+    params.set("draft_id", state.draftId);
+  }
+  history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`);
+  for (const button of elements.tabButtons) {
+    button.classList.toggle("active", button.dataset.tab === tab);
+  }
+  const isDrafts = tab === "drafts";
+  for (const node of [elements.kindFilter, elements.statusFilter, elements.feedbackFilter, elements.queryFilter]) {
+    node.closest("label").hidden = !isDrafts;
+  }
+}
+
 function renderDraftList() {
+  elements.listTitle.textContent = "Drafts";
   elements.draftList.innerHTML = "";
   elements.draftCount.textContent = `${state.drafts.length} шт`;
   elements.emptyState.hidden = state.drafts.length > 0;
@@ -116,6 +149,123 @@ function renderDraftList() {
     article.appendChild(button);
     elements.draftList.appendChild(article);
   }
+}
+
+function renderStatus() {
+  elements.listTitle.textContent = "Status";
+  const status = state.status;
+  const items = status?.items || [];
+  elements.draftCount.textContent = `${items.length} sources`;
+  elements.emptyState.hidden = items.length > 0;
+  elements.draftList.innerHTML = `
+    <div class="status-list">
+      ${items.map((item) => `
+        <article class="status-card">
+          <strong>${escapeHtml(item.source)}</strong>
+          <span class="${item.enabled ? "status-good" : "status-bad"}">
+            ${item.enabled ? "enabled" : "disabled"}
+          </span>
+        </article>
+      `).join("")}
+    </div>
+  `;
+  elements.draftDetail.innerHTML = `
+    <div class="detail-grid">
+      <section class="section">
+        <h3>Digest</h3>
+        <div class="detail-preview">Время: ${escapeHtml(status?.digest_time || "")}\nТаймзона: ${escapeHtml(status?.timezone || "")}</div>
+      </section>
+      <section class="section">
+        <h3>Mini App URL</h3>
+        <div class="detail-preview">${escapeHtml(status?.mini_app_url || "не настроен")}</div>
+      </section>
+    </div>
+  `;
+}
+
+function keywordFieldMarkup(topicIdx, fieldKey, fieldLabel, words) {
+  return `
+    <div class="keyword-field">
+      <strong>${escapeHtml(fieldLabel)}</strong>
+      <div class="keyword-items">
+        ${words.map((word) => `
+          <span class="keyword-chip">
+            <span>${escapeHtml(word)}</span>
+            <button type="button" data-remove-topic="${topicIdx}" data-remove-field="${fieldKey}" data-remove-word="${escapeHtml(word)}">✕</button>
+          </span>
+        `).join("")}
+      </div>
+      <form class="keyword-form" data-add-topic="${topicIdx}" data-add-field="${fieldKey}">
+        <input type="text" name="word" placeholder="Добавить слово" />
+        <button type="submit">Добавить</button>
+      </form>
+    </div>
+  `;
+}
+
+function renderKeywords() {
+  elements.listTitle.textContent = "Keywords";
+  const items = state.keywords?.items || [];
+  const labels = state.keywords?.field_labels || {};
+  elements.draftCount.textContent = `${items.length} topics`;
+  elements.emptyState.hidden = items.length > 0;
+  elements.draftList.innerHTML = `
+    <div class="keywords-list">
+      ${items.map((topic) => `
+        <article class="keyword-topic">
+          <h3 class="draft-topic">${escapeHtml(topic.name)}</h3>
+          <div class="keyword-fields">
+            ${Object.entries(topic.fields).map(([fieldKey, words]) =>
+              keywordFieldMarkup(topic.topic_idx, fieldKey, labels[fieldKey] || fieldKey, words)
+            ).join("")}
+          </div>
+        </article>
+      `).join("")}
+    </div>
+  `;
+  elements.draftDetail.innerHTML = `
+    <div class="detail-grid">
+      <section class="section">
+        <h3>Keywords Workspace</h3>
+        <div class="detail-preview">Здесь можно редактировать словари тем и хэштегов без команды /keywords в чате.</div>
+      </section>
+    </div>
+  `;
+
+  elements.draftList.querySelectorAll("[data-remove-topic]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      await mutateKeyword("/miniapp/api/keywords/remove", {
+        topic_idx: Number(button.dataset.removeTopic),
+        field: button.dataset.removeField,
+        word: button.dataset.removeWord,
+      });
+    });
+  });
+
+  elements.draftList.querySelectorAll("[data-add-topic]").forEach((form) => {
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const input = form.querySelector("input[name='word']");
+      const word = input.value.trim();
+      if (!word) {
+        return;
+      }
+      await mutateKeyword("/miniapp/api/keywords/add", {
+        topic_idx: Number(form.dataset.addTopic),
+        field: form.dataset.addField,
+        word,
+      });
+      input.value = "";
+    });
+  });
+}
+
+async function mutateKeyword(url, payload) {
+  state.keywords = await fetchJson(url, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  renderKeywords();
 }
 
 function storyboardMarkup(items) {
@@ -267,13 +417,32 @@ function bindFilters() {
   });
 
   elements.refreshButton.addEventListener("click", loadDrafts);
+  for (const button of elements.tabButtons) {
+    button.addEventListener("click", async () => {
+      setTab(button.dataset.tab);
+      await loadCurrentTab();
+    });
+  }
+}
+
+async function loadCurrentTab() {
+  if (state.tab === "status") {
+    await loadStatus();
+    return;
+  }
+  if (state.tab === "keywords") {
+    await loadKeywords();
+    return;
+  }
+  await loadDrafts();
 }
 
 async function bootstrap() {
   applyTelegramTheme();
   bindFilters();
   try {
-    await loadDrafts();
+    setTab(state.tab);
+    await loadCurrentTab();
   } catch (error) {
     elements.draftDetail.innerHTML = `
       <div class="detail-empty">

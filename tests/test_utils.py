@@ -807,6 +807,7 @@ from bot.agents.planner import _PLAN_PROMPT, _BRAND_CONTEXT
 from bot.handlers.planner import _parse_plan_entries
 from bot.services.drafts_store import DraftRecord
 from bot.services.miniapp_presenter import filter_drafts, payload_preview, serialize_draft
+from bot.services.miniapp_keywords import field_labels, serialize_topics
 
 
 class TestPlannerConstants:
@@ -955,6 +956,19 @@ class TestMiniAppPresenter:
         assert data["storyboard_count"] == 3
         assert data["slides_count"] == 0
         assert data["preview"] == "text"
+
+
+class TestMiniAppKeywords:
+    def test_field_labels_exposes_ru_and_en_fields(self):
+        labels = field_labels()
+        assert "kw_ru" in labels
+        assert "tag_en" in labels
+
+    def test_serialize_topics_returns_named_topics(self):
+        topics = serialize_topics()
+        assert len(topics) >= 1
+        assert "name" in topics[0]
+        assert "fields" in topics[0]
 
 
 # ---------------------------------------------------------------------------

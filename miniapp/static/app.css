@@ -101,11 +101,32 @@ select {
 
 .toolbar {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: 1.15fr repeat(4, minmax(0, 1fr));
   gap: 12px;
   border-radius: 20px;
   padding: 16px;
   margin-top: 14px;
+}
+
+.tabs {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  overflow-x: auto;
+}
+
+.tab-button {
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.55);
+  border-radius: 999px;
+  padding: 10px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tab-button.active {
+  background: rgba(180, 92, 61, 0.14);
+  border-color: rgba(180, 92, 61, 0.46);
 }
 
 .toolbar label {
@@ -287,6 +308,77 @@ select {
 
 .status-bad {
   color: var(--bad);
+}
+
+.status-list,
+.keywords-list {
+  display: grid;
+  gap: 10px;
+}
+
+.status-card,
+.keyword-topic {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.48);
+}
+
+.status-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.keyword-fields {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.keyword-field {
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+
+.keyword-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.keyword-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 999px;
+  padding: 7px 10px;
+  background: rgba(108, 122, 67, 0.1);
+}
+
+.keyword-chip button,
+.keyword-form button {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--brand);
+}
+
+.keyword-form {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.keyword-form input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 12px;
+  padding: 9px 12px;
 }
 
 @media (max-width: 980px) {
