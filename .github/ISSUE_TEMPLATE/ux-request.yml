@@ -1,0 +1,53 @@
+name: UX Request
+description: Propose or refine a Telegram bot or Mini App user flow
+title: "[UX] "
+labels:
+  - ux
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What is broken, unclear, slow, or missing in the current experience?
+      placeholder: Users do not understand what to do after /plan generates content ideas.
+    validations:
+      required: true
+  - type: textarea
+    id: audience
+    attributes:
+      label: User and Context
+      description: Who is the user and in what moment are they using this flow?
+      placeholder: Content creator in Telegram, on mobile, trying to turn a weekly plan into production-ready drafts.
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired Outcome
+      description: What should the user be able to achieve?
+      placeholder: Generate, review, approve, and reopen a draft without losing context.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: Commands, screens, callbacks, or Mini App sections involved.
+      placeholder: /plan, /drafts, reel review callbacks, Mini App draft inbox.
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria
+      description: Concrete conditions for success.
+      placeholder: |
+        1. User can open the draft from plan output.
+        2. User can approve or send back for edits.
+        3. The state survives bot restart.
+    validations:
+      required: true
+  - type: textarea
+    id: artifacts
+    attributes:
+      label: Artifacts
+      description: Links to references, Figma, screenshots, or examples.
+      placeholder: Figma link, Telegram screenshots, competitor references.
