@@ -860,6 +860,7 @@ class TestDraftRecord:
             source="/reels",
             created_at="2026-03-11T07:00:00+00:00",
             status="draft",
+            feedback="",
             payload={"scenario": "test"},
         )
 
@@ -876,10 +877,12 @@ class TestDraftRecord:
             source="/content",
             created_at="2026-03-11T07:00:00+00:00",
             status="approved",
+            feedback="worked",
             payload={"caption": "ok"},
         )
 
         assert record.status == "approved"
+        assert record.feedback == "worked"
 
 
 # ---------------------------------------------------------------------------

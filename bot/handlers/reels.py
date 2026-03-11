@@ -286,7 +286,10 @@ async def cb_reels(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         draft_id = review.get("draft_id", "")
         if draft_id:
             update_draft(draft_id, status="approved")
-        await query.message.reply_text(f"✅ Reels-черновик согласован.\n🗂 Draft ID: {draft_id}")
+        await query.message.reply_text(
+            f"✅ Reels-черновик согласован.\n🗂 Draft ID: {draft_id}\n"
+            f"Позже оцени результат через /drafts {draft_id}"
+        )
         return
 
     if data == "rl:review:storyboard":

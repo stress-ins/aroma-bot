@@ -1,13 +1,35 @@
 from __future__ import annotations
 
-from telegram import Update
-from telegram.ext import CommandHandler, ContextTypes
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.ext import CallbackQueryHandler, CommandHandler, ContextTypes
 
 from bot.agents import ContentDraft, format_content_message
 from bot.agents.reels_agent import StoryboardFrame
 from bot.handlers.content import _draft_keyboard
 from bot.handlers.reels import _review_keyboard, _reels_result_text
-from bot.services.drafts_store import get_draft, list_recent_drafts
+from bot.services.drafts_store import get_draft, list_recent_drafts, update_draft
+
+
+def _feedback_label(feedback: str) -> str:
+    return {
+        "worked": "сработало",
+        "missed": "не сработало",
+    }.get(feedback, "нет")
+
+
+def _feedback_keyboard(draft_id: str, feedback: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton(
+                "✅ Сработало" + (" •" if feedback == "worked" else ""),
+                callback_data=f"dr:feedback:worked:{draft_id}",
+            ),
+            InlineKeyboardButton(
+                "⚠️ Не сработало" + (" •" if feedback == "missed" else ""),
+                callback_data=f"dr:feedback:missed:{draft_id}",
+            ),
+        ],
+    ])
 
 
 def _drafts_text(limit: int = 10) -> str:
@@ -22,7 +44,7 @@ def _drafts_text(limit: int = 10) -> str:
     for idx, draft in enumerate(drafts, 1):
         lines.append(
             f"{idx}. [{draft.kind}] {draft.topic}\n"
-            f"ID: {draft.draft_id} · Источник: {draft.source} · Статус: {draft.status}"
+            f"ID: {draft.draft_id} · Источник: {draft.source} · Статус: {draft.status} · Feedback: {_feedback_label(draft.feedback)}"
         )
     lines.append("\nОткрыть: /drafts <ID>")
     return "\n\n".join(lines)
@@ -58,9 +80,14 @@ async def _open_draft(update: Update, context: ContextTypes.DEFAULT_TYPE, draft_
             "storyboard": draft.payload.get("storyboard", []),
             "images": [],
         }
+        kwargs = {}
+        if draft.status == "approved":
+            kwargs["reply_markup"] = _feedback_keyboard(draft.draft_id, draft.feedback)
+        else:
+            kwargs["reply_markup"] = _review_keyboard()
         await update.message.reply_text(
             f"{_reels_result_text(draft.topic, str(draft.payload.get('scenario', '')), storyboard, int(draft.payload.get('images_ready', 0)))}\n\n🗂 Draft ID: {draft.draft_id}\nСтатус: {draft.status}",
-            reply_markup=_review_keyboard(),
+            **kwargs,
         )
         return
 
@@ -81,18 +108,48 @@ async def _open_draft(update: Update, context: ContextTypes.DEFAULT_TYPE, draft_
         context.user_data["content_last_goal"] = goal_key
         context.user_data["content_last_format"] = format_key
         context.user_data["content_review_draft"] = dict(draft.payload)
+        kwargs = {}
+        if draft.status == "approved":
+            kwargs["reply_markup"] = _feedback_keyboard(draft.draft_id, draft.feedback)
+        else:
+            kwargs["reply_markup"] = _draft_keyboard()
         await update.message.reply_text(
             f"{format_content_message(content_draft, draft.topic, goal_key, format_key)}\n\n🗂 Draft ID: {draft.draft_id}\nСтатус: {draft.status}",
-            reply_markup=_draft_keyboard(),
+            **kwargs,
         )
         return
 
     await update.message.reply_text(
-        f"🗂 Draft ID: {draft.draft_id}\nТип: {draft.kind}\nТема: {draft.topic}\nСтатус: {draft.status}"
+        f"🗂 Draft ID: {draft.draft_id}\nТип: {draft.kind}\nТема: {draft.topic}\nСтатус: {draft.status}\nFeedback: {_feedback_label(draft.feedback)}",
+        reply_markup=_feedback_keyboard(draft.draft_id, draft.feedback) if draft.status == "approved" else None,
     )
+
+
+async def cb_drafts(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query
+    await query.answer()
+    data = query.data
+
+    if not data.startswith("dr:feedback:"):
+        return
+
+    _, _, feedback, draft_id = data.split(":", 3)
+    draft = update_draft(draft_id, feedback=feedback)
+    if not draft:
+        await query.message.reply_text("❌ Черновик не найден.")
+        return
+
+    await query.message.reply_text(
+        f"📊 Feedback сохранён: {_feedback_label(feedback)}\n🗂 Draft ID: {draft_id}"
+    )
+    try:
+        await query.message.edit_reply_markup(_feedback_keyboard(draft_id, feedback))
+    except Exception:
+        pass
 
 
 def build_drafts_handler():
     return [
         CommandHandler("drafts", cmd_drafts),
+        CallbackQueryHandler(cb_drafts, pattern="^dr:"),
     ]
