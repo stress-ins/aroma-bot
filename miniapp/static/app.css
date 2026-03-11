@@ -77,29 +77,50 @@ textarea,
 /* ── Header ─────────────────────────────────────────────────────────────── */
 .hero {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  flex-direction: column;
+  gap: 2px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 14px 16px;
+  padding: 12px 16px;
   box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+}
+
+.hero::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  right: -5%;
+  width: 120px;
+  height: 120px;
+  background: radial-gradient(circle, var(--brand-bg) 0%, transparent 70%);
+  opacity: 0.4;
+  z-index: 0;
+  pointer-events: none;
 }
 
 .eyebrow {
-  font-size: 11px;
-  letter-spacing: 0.10em;
+  position: relative;
+  z-index: 1;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--sage);
-  margin-bottom: 3px;
+  color: var(--brand);
+  opacity: 0.8;
 }
 
 .hero h1 {
-  font-family: var(--font-serif);
-  font-size: 17px;
-  font-weight: normal;
-  line-height: 1.2;
+  position: relative;
+  z-index: 1;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
 }
 
 .hero-copy { display: none; }
@@ -728,15 +749,6 @@ textarea,
 @media (max-width: 760px) {
   .shell {
     padding: 10px;
-  }
-
-  .hero {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .hero h1 {
-    font-size: 18px;
   }
 
   .ghost-button,
