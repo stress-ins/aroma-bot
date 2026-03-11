@@ -704,6 +704,7 @@ async def _run_image_generation(
     last_note = context.user_data.get("ca_last_note", "")
 
     if generated_indices and settings.anthropic_api_key:
+        # ── QA round 1 ───────────────────────────────────────────────────
         qa_icons = ["➖"] * n
         for i in generated_indices:
             qa_icons[i] = "⏳"
@@ -729,6 +730,67 @@ async def _run_image_generation(
                 pass
 
         await asyncio.gather(*[qa_one(i) for i in generated_indices])
+
+        # ── Auto-rerender failed QA images ───────────────────────────────
+        failed_qa = [i for i, (passed, _) in qa_results.items() if not passed]
+        if failed_qa:
+            for i in failed_qa:
+                _, reason = qa_results[i]
+                fix_note = f"fix: {reason}" if reason and reason.upper() != "OK" else "avoid impossible elements"
+                old_prompt = img_prompts[i] if i < len(img_prompts) else _FALLBACK_IMG_PROMPT
+                img_prompts[i] = _apply_note_to_prompt(old_prompt, fix_note)
+                qa_icons[i] = "🔄"
+
+            try:
+                await qa_progress.edit_text(
+                    f"🔄 Перерендер: {''.join(qa_icons)} — исправляю {len(failed_qa)} сл."
+                )
+            except Exception:
+                pass
+
+            regen_done = 0
+
+            async def regen_one(i: int) -> None:
+                nonlocal regen_done
+                img = await loop.run_in_executor(_img_executor, _gemini_slide, img_prompts[i], i)
+                images[i] = img
+                regen_done += 1
+                qa_icons[i] = "⏳" if img else "❌"
+                try:
+                    await qa_progress.edit_text(
+                        f"🔄 Перерендер: {''.join(qa_icons)} {regen_done}/{len(failed_qa)}"
+                    )
+                except Exception:
+                    pass
+
+            await asyncio.gather(*[regen_one(i) for i in failed_qa])
+
+            # ── QA round 2 ───────────────────────────────────────────────
+            regenned = [i for i in failed_qa if images[i]]
+            qa2_done = 0
+
+            async def qa_two(i: int) -> None:
+                nonlocal qa2_done
+                prompt_i = img_prompts[i] if i < len(img_prompts) else ""
+                passed, reason = await loop.run_in_executor(
+                    _executor, _qa_image_sync, images[i], prompt_i, last_note
+                )
+                qa_results[i] = (passed, reason)
+                qa2_done += 1
+                qa_icons[i] = "✅" if passed else "⚠️"
+                try:
+                    await qa_progress.edit_text(
+                        f"🔍 Повторная проверка: {''.join(qa_icons)} {qa2_done}/{len(regenned)}"
+                    )
+                except Exception:
+                    pass
+
+            if regenned:
+                await asyncio.gather(*[qa_two(i) for i in regenned])
+
+            context.user_data["ca_img_prompts"] = img_prompts
+            context.user_data["ca_gemini_images"] = images
+
         try:
             await qa_progress.delete()
         except Exception:
