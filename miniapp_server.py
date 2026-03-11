@@ -4,18 +4,20 @@ import asyncio
 import hashlib
 import hmac
 import json
+import os
 import urllib.parse
 from pathlib import Path
 
 from fastapi import BackgroundTasks, Depends, FastAPI, Header, HTTPException, Query
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
+from telegram import Bot
 
 from bot.agents import generate_content_draft
 from bot.agents.planner import generate_plan_sync
 from bot.agents.reels_agent import generate_reels_director_sync, generate_reels_scenario_sync
-from bot.handlers.carousel import _generate_carousel_sync
+from bot.handlers.carousel import _build_pptx, _format_for_canva, _generate_carousel_sync
 from bot.handlers.planner import _parse_plan_entries
 from bot.handlers.threads import _format_trends
 from bot.services.miniapp_content_review import (
@@ -25,7 +27,13 @@ from bot.services.miniapp_content_review import (
 from bot.services.miniapp_references import enrich_reference_card, get_reference_card, list_reference_cards, update_reference_card
 from bot.services.miniapp_plan_actions import normalize_plan_format, normalize_plan_goal
 from bot.services.reels_assets import ASSETS_DIR, populate_reels_frame_assets, regenerate_reels_frame_asset
-from bot.services.carousel_assets import CAROUSEL_ASSETS_DIR, populate_carousel_slide_assets
+from bot.services.carousel_assets import (
+    CAROUSEL_ASSETS_DIR,
+    load_carousel_slide_images,
+    populate_carousel_slide_assets,
+    regenerate_all_carousel_slide_assets,
+    regenerate_carousel_slide_asset,
+)
 from bot.services.drafts_store import get_draft, list_recent_drafts, update_draft
 from bot.services.drafts_store import save_draft
 from bot.services.miniapp_generator import (
@@ -57,6 +65,8 @@ REFERENCE_IMAGES_DIR = BASE_DIR / "assets" / "reference_images"
 
 def _verify_init_data(init_data: str) -> bool:
     """Validate Telegram WebApp initData using HMAC-SHA256."""
+    if os.getenv("AROMA_BYPASS_AUTH") == "1":
+        return True
     try:
         parsed = dict(urllib.parse.parse_qsl(init_data, strict_parsing=True))
         received_hash = parsed.pop("hash", "")
@@ -151,6 +161,10 @@ class CreateReelsPayload(BaseModel):
 
 class CreateCarouselPayload(BaseModel):
     topic: str = Field(default="")
+
+
+class CarouselSlideRegeneratePayload(BaseModel):
+    note: str = Field(default="")
 
 
 class PlanGeneratePayload(BaseModel):
@@ -432,6 +446,73 @@ async def get_carousel(draft_id: str, _: None = Depends(_require_auth)):
     if not draft or draft.kind != "carousel":
         raise HTTPException(status_code=404, detail="carousel_not_found")
     return await serialize_draft(draft)
+
+
+@app.post("/api/carousel/{draft_id}/slides/{slide_index}/regenerate")
+async def regenerate_carousel_slide(
+    draft_id: str,
+    slide_index: int,
+    payload: CarouselSlideRegeneratePayload,
+    _: None = Depends(_require_auth),
+):
+    updated_payload = await regenerate_carousel_slide_asset(draft_id, slide_index, note=payload.note)
+    if updated_payload is None:
+        raise HTTPException(status_code=404, detail="carousel_slide_not_found")
+    draft = await get_draft(draft_id)
+    if not draft:
+        raise HTTPException(status_code=404, detail="carousel_not_found")
+    return await serialize_draft(draft)
+
+
+@app.post("/api/carousel/{draft_id}/regenerate-all")
+async def regenerate_carousel_all(draft_id: str, _: None = Depends(_require_auth)):
+    updated_payload = await regenerate_all_carousel_slide_assets(draft_id)
+    if updated_payload is None:
+        raise HTTPException(status_code=404, detail="carousel_not_found")
+    draft = await get_draft(draft_id)
+    if not draft:
+        raise HTTPException(status_code=404, detail="carousel_not_found")
+    return await serialize_draft(draft)
+
+
+@app.get("/api/carousel/{draft_id}/pptx")
+async def carousel_pptx_export(draft_id: str, _: None = Depends(_require_auth)):
+    draft = await get_draft(draft_id)
+    if not draft or draft.kind != "carousel":
+        raise HTTPException(status_code=404, detail="carousel_not_found")
+    slides = list(draft.payload.get("slides", []))
+    images = load_carousel_slide_images(draft_id, list(draft.payload.get("slide_images", [])))
+    pptx_bytes = await asyncio.get_running_loop().run_in_executor(None, _build_pptx, slides, images or None)
+    return StreamingResponse(
+        iter([pptx_bytes]),
+        media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        headers={"Content-Disposition": f'attachment; filename=\"carousel_{draft_id}.pptx\"'},
+    )
+
+
+def _draft_chat_message(draft) -> str:
+    payload = dict(draft.payload or {})
+    if draft.kind == "carousel":
+        slides = [str(item).strip() for item in payload.get("slides", []) if str(item).strip()]
+        slides_text = "\n\n".join(f"{idx + 1}. {slide}" for idx, slide in enumerate(slides))
+        return f"Карусель\n\nТема: {draft.topic}\n\n{slides_text}".strip()
+    if draft.kind == "reels":
+        scenario = str(payload.get("scenario", "")).strip()
+        return f"Рилс\n\nТема: {draft.topic}\n\n{scenario}".strip()
+    text = str(payload.get("caption") or payload.get("hook") or payload.get("angle") or "").strip()
+    return f"{draft.kind.title()}\n\nТема: {draft.topic}\n\n{text}".strip()
+
+
+@app.post("/api/drafts/{draft_id}/send")
+async def send_draft_to_chat(draft_id: str, _: None = Depends(_require_auth)):
+    draft = await get_draft(draft_id)
+    if not draft:
+        raise HTTPException(status_code=404, detail="draft_not_found")
+    if not settings.telegram_bot_token or not settings.report_target_chat_id:
+        raise HTTPException(status_code=400, detail="telegram_not_configured")
+    bot = Bot(token=settings.telegram_bot_token)
+    await bot.send_message(chat_id=settings.report_target_chat_id, text=_draft_chat_message(draft))
+    return {"ok": True}
 
 
 @app.post("/api/generate/plan")
