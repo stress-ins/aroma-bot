@@ -1,6 +1,7 @@
 """Tests for utility functions: message splitting, dash fixing, topic/carousel parsing."""
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -13,7 +14,8 @@ import pytest
 from bot.handlers.commands import _split_message
 from bot.handlers.content import _topics_text, _source_label
 from bot.agents.threads_replies import _extract_json
-from bot.services.miniapp_references import get_reference_card, list_reference_cards
+from bot.services.miniapp_references import get_reference_card, list_reference_cards, seed_reference_cards_if_empty
+import bot.services.miniapp_references as miniapp_references
 
 
 class TestSplitMessage:
@@ -1265,6 +1267,71 @@ class TestMiniAppRussianLocale:
         assert practice["image_url"] == "/reference-images/shared/nature.jpg"
         assert sound["image_url"] == "/reference-images/shared/instrument.jpg"
 
+    async def test_seed_does_not_overwrite_manual_reference_edits(self, monkeypatch, tmp_path):
+        seed_file = tmp_path / "seed.json"
+        extra_seed_file = tmp_path / "extra.json"
+        seed_file.write_text(
+            json.dumps(
+                [
+                    {
+                        "category": "practice",
+                        "slug": "box-breathing",
+                        "name": "Квадратное дыхание",
+                        "source_type": "breath",
+                        "description": "Базовое описание из seed.",
+                        "questions": "Базовый вопрос из seed.",
+                        "resource_values": {"plus": "Плюс seed", "minus": "Минус seed"},
+                    }
+                ],
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
+        extra_seed_file.write_text("[]", encoding="utf-8")
+        monkeypatch.setattr(miniapp_references, "SEED_FILE", seed_file)
+        monkeypatch.setattr(miniapp_references, "EXTRA_SEED_FILE", extra_seed_file)
+
+        await seed_reference_cards_if_empty()
+        updated = await miniapp_references.update_reference_card(
+            "practice",
+            "box-breathing",
+            {
+                "description": "Ручное описание из mini app.",
+                "questions": "Ручной вопрос из mini app.",
+                "resource_values": {"plus": "Ручной плюс", "minus": "Минус seed"},
+            },
+        )
+        assert updated is not None
+        assert updated["description"] == "Ручное описание из mini app."
+
+        seed_file.write_text(
+            json.dumps(
+                [
+                    {
+                        "category": "practice",
+                        "slug": "box-breathing",
+                        "name": "Квадратное дыхание",
+                        "source_type": "breath",
+                        "description": "Новое описание из seed.",
+                        "questions": "Новый вопрос из seed.",
+                        "nps_effect": "Новый НПС из seed.",
+                        "resource_values": {"plus": "Плюс seed v2", "minus": "Минус seed v2"},
+                    }
+                ],
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
+
+        await seed_reference_cards_if_empty()
+        card = await get_reference_card("practice", "box-breathing")
+        assert card is not None
+        assert card["description"] == "Ручное описание из mini app."
+        assert card["questions"] == "Ручной вопрос из mini app."
+        assert card["resource_values"]["plus"] == "Ручной плюс"
+        assert card["resource_values"]["minus"] == "Минус seed v2"
+        assert card["nps_effect"] == "Новый НПС из seed."
+
     def test_viewport_disables_double_tap_zoom(self):
         index_html = Path("miniapp/index.html").read_text(encoding="utf-8")
 
@@ -1305,6 +1372,17 @@ class TestMiniAppRussianLocale:
 
         assert "text-align: left;" in app_css
         assert "flex: 1 1 100%;" in app_css
+
+    def test_reference_cards_support_edit_mode_and_icon_sections(self):
+        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+
+        assert "Редактировать карточку" in app_js
+        assert 'id="referenceEditForm"' in app_js
+        assert "function saveReference(event)" in app_js
+        assert "referenceSectionIcon(" in app_js
+        assert ".reference-section-icon" in app_css
+        assert ".reference-form-grid" in app_css
 class TestMiniAppReels:
     async def test_serialize_reels_draft_returns_none_for_missing(self):
         assert await serialize_reels_draft("missing-id") is None
