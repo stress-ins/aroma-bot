@@ -386,7 +386,8 @@ textarea,
 }
 
 .create-form textarea,
-.create-form select {
+.create-form select,
+.create-form input {
   width: 100%;
   border: 1px solid var(--border);
   background: var(--surface);
@@ -483,6 +484,43 @@ textarea,
 
 /* ── Status list ─────────────────────────────────────────────────────────── */
 .status-list, .keywords-list, .plans-list { display: flex; flex-direction: column; gap: 8px; }
+.aroma-search {
+  margin-bottom: 10px;
+}
+
+.aroma-search label {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--hint);
+}
+
+.aroma-search input {
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  color: var(--text);
+}
+
+.aroma-hero {
+  overflow: hidden;
+}
+
+.aroma-image {
+  display: block;
+  width: 100%;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.aroma-image-caption {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
 .inbox-toolbar {
   display: flex;
   gap: 8px;

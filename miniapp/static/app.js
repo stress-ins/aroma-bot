@@ -1,6 +1,11 @@
 const state = {
   tab: new URLSearchParams(window.location.search).get("tab") || "drafts",
   draftId: new URLSearchParams(window.location.search).get("draft_id") || "",
+  aromaAccess: false,
+  aromas: [],
+  aromaSearch: "",
+  aromaEditing: false,
+  selectedAroma: null,
   inbox: [],
   inboxKind: "all",
   drafts: [],
@@ -29,6 +34,7 @@ const elements = {
   queryFilter: document.getElementById("queryFilter"),
   refreshButton: document.getElementById("refreshButton"),
   tabButtons: Array.from(document.querySelectorAll("[data-tab]")),
+  aromaTabButton: document.querySelector('[data-tab="aromas"]'),
 };
 
 const RU_KIND_LABELS = {
@@ -331,6 +337,43 @@ async function loadKeywords() {
   renderKeywords();
 }
 
+async function loadAromaAccess() {
+  try {
+    const payload = await fetchJson("/api/aromas/access");
+    state.aromaAccess = Boolean(payload?.allowed);
+  } catch (_error) {
+    state.aromaAccess = false;
+  }
+  if (elements.aromaTabButton) {
+    elements.aromaTabButton.hidden = !state.aromaAccess;
+  }
+}
+
+async function loadAromas() {
+  if (!state.aromaAccess) {
+    renderAromasLocked();
+    return;
+  }
+  const data = await fetchJson("/api/aromas");
+  state.aromas = data.items || [];
+  const selectedSlug = state.selectedAroma?.slug || state.aromas[0]?.slug || "";
+  if (!selectedSlug) {
+    state.selectedAroma = null;
+    renderAromas();
+    return;
+  }
+  await openAroma(selectedSlug);
+}
+
+async function openAroma(slug) {
+  if (!slug) {
+    return;
+  }
+  state.aromaEditing = false;
+  state.selectedAroma = await fetchJson(`/api/aromas/${encodeURIComponent(slug)}`);
+  renderAromas();
+}
+
 function renderCreate() {
   elements.listTitle.textContent = "Создание";
   elements.draftCount.textContent = "4 инструмента";
@@ -516,7 +559,176 @@ function renderCreate() {
   }
 }
 
+function aromaSection(title, content) {
+  return `
+    <section class="section">
+      <h3>${escapeHtml(title)}</h3>
+      <div class="detail-preview">${escapeHtml(content || "Нет данных.")}</div>
+    </section>
+  `;
+}
+
+function renderAromasLocked() {
+  elements.listTitle.textContent = "Ароматы";
+  elements.draftCount.textContent = "";
+  setEmptyState(true);
+  elements.draftList.innerHTML = `
+    <div class="detail-preview">Доступ к ароматическому помощнику открыт только для выбранных Telegram-пользователей.</div>
+  `;
+  elements.draftDetail.innerHTML = `<div class="detail-empty">Нет доступа к карточкам масел.</div>`;
+  syncDetailPanelState(false);
+}
+
+function renderAromas() {
+  const items = state.aromas || [];
+  const query = state.aromaSearch.trim().toLowerCase();
+  const filtered = items.filter((item) => {
+    const haystack = `${item.name} ${item.description || ""}`.toLowerCase();
+    return !query || haystack.includes(query);
+  });
+  const aroma = state.selectedAroma;
+  elements.listTitle.textContent = "Ароматы";
+  elements.draftCount.textContent = `${items.length} масел`;
+  setEmptyState(filtered.length > 0, "Масла не найдены.");
+  elements.draftList.innerHTML = `
+    <div class="aroma-search">
+      <label>
+        Поиск масла
+        <input id="aromaSearchInput" type="search" placeholder="Например: лаванда" value="${escapeHtml(state.aromaSearch)}" />
+      </label>
+    </div>
+    <div class="plans-list">
+      ${filtered.map((item) => `
+        <article class="draft-card${item.slug === aroma?.slug ? " active" : ""}">
+          <div class="draft-kind">масло</div>
+          <h3 class="draft-topic">${escapeHtml(item.name)}</h3>
+          <div class="draft-preview">${escapeHtml(item.description || "")}</div>
+          <button type="button" data-aroma-open="${escapeHtml(item.slug)}">Открыть</button>
+        </article>
+      `).join("")}
+    </div>
+  `;
+
+  const searchInput = document.getElementById("aromaSearchInput");
+  if (searchInput) {
+    searchInput.addEventListener("input", () => {
+      state.aromaSearch = searchInput.value;
+      renderAromas();
+    });
+  }
+
+  elements.draftList.querySelectorAll("[data-aroma-open]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      await openAroma(button.dataset.aromaOpen);
+    });
+  });
+
+  if (!aroma) {
+    elements.draftDetail.innerHTML = `<div class="detail-empty">Выберите масло слева.</div>`;
+    syncDetailPanelState(false);
+    return;
+  }
+
+  if (state.aromaEditing) {
+    const resourceValues = aroma.resource_values || {};
+    elements.draftDetail.innerHTML = `
+      <div class="detail-grid">
+        <section class="section">
+          <h3>Редактирование карточки</h3>
+          <form class="create-form" id="aromaEditForm">
+            <label>Описание действия масла<textarea name="description">${escapeHtml(aroma.description || "")}</textarea></label>
+            <label>Какие вопросы вызывает масло<textarea name="questions">${escapeHtml(aroma.questions || "")}</textarea></label>
+            <label>Действие на НПС<textarea name="nps_effect">${escapeHtml(aroma.nps_effect || "")}</textarea></label>
+            <label>Терапевтические свойства<textarea name="therapeutic_properties">${escapeHtml(aroma.therapeutic_properties || "")}</textarea></label>
+            <label>Психологические свойства<textarea name="psychological_properties">${escapeHtml(aroma.psychological_properties || "")}</textarea></label>
+            <label>Ресурсные значения "+"<textarea name="resource_plus">${escapeHtml(resourceValues.plus || "")}</textarea></label>
+            <label>Ресурсные значения "-"<textarea name="resource_minus">${escapeHtml(resourceValues.minus || "")}</textarea></label>
+            <label>Исторические сведения<textarea name="history">${escapeHtml(aroma.history || "")}</textarea></label>
+            <label>Летучесть<input name="volatility" value="${escapeHtml(aroma.volatility || "")}" /></label>
+            <label>Ботаническое семейство<input name="botanical_family" value="${escapeHtml(aroma.botanical_family || "")}" /></label>
+            <label>Страна происхождения<input name="origin_countries" value="${escapeHtml(aroma.origin_countries || "")}" /></label>
+            <label>Способ получения<input name="extraction_method" value="${escapeHtml(aroma.extraction_method || "")}" /></label>
+            <label>Ключ масла<input name="key" value="${escapeHtml(aroma.key || "")}" /></label>
+            <div class="actions-row">
+              <button class="primary-button" type="submit">Сохранить</button>
+              <button class="secondary-button" type="button" id="cancelAromaEdit">Отмена</button>
+            </div>
+          </form>
+        </section>
+      </div>
+    `;
+    const form = document.getElementById("aromaEditForm");
+    form?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const formData = new FormData(form);
+      state.selectedAroma = await fetchJson(`/api/aromas/${encodeURIComponent(aroma.slug)}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          description: formData.get("description") || "",
+          questions: formData.get("questions") || "",
+          nps_effect: formData.get("nps_effect") || "",
+          therapeutic_properties: formData.get("therapeutic_properties") || "",
+          psychological_properties: formData.get("psychological_properties") || "",
+          history: formData.get("history") || "",
+          volatility: formData.get("volatility") || "",
+          botanical_family: formData.get("botanical_family") || "",
+          origin_countries: formData.get("origin_countries") || "",
+          extraction_method: formData.get("extraction_method") || "",
+          key: formData.get("key") || "",
+          resource_values: {
+            plus: formData.get("resource_plus") || "",
+            minus: formData.get("resource_minus") || "",
+          },
+        }),
+      });
+      state.aromaEditing = false;
+      state.aromas = state.aromas.map((item) =>
+        item.slug === state.selectedAroma.slug
+          ? { ...item, name: state.selectedAroma.name, description: state.selectedAroma.description }
+          : item
+      );
+      renderAromas();
+    });
+    document.getElementById("cancelAromaEdit")?.addEventListener("click", () => {
+      state.aromaEditing = false;
+      renderAromas();
+    });
+    syncDetailPanelState(false);
+    return;
+  }
+
+  elements.draftDetail.innerHTML = `
+    <div class="detail-grid">
+      <section class="section aroma-hero">
+        <img class="aroma-image" src="${escapeHtml(aroma.image_url)}" alt="${escapeHtml(aroma.image_alt)}" />
+        <div class="aroma-image-caption">${escapeHtml(aroma.image_alt)}</div>
+      </section>
+      ${aromaSection("Паспорт масла", `Ключ: ${aroma.key || ""}\nБотаническое семейство: ${aroma.botanical_family || ""}\nСтрана происхождения: ${aroma.origin_countries || ""}\nСпособ получения: ${aroma.extraction_method || ""}`)}
+      ${aromaSection("Описание действия масла", aroma.description)}
+      ${aromaSection("Какие вопросы вызывает масло", aroma.questions)}
+      ${aromaSection("Действие на НПС", aroma.nps_effect)}
+      ${aromaSection("Терапевтические свойства", aroma.therapeutic_properties)}
+      ${aromaSection("Психологические свойства", aroma.psychological_properties)}
+      ${aromaSection('Ресурсные значения "+"', aroma.resource_values?.plus)}
+      ${aromaSection('Ресурсные значения "-"', aroma.resource_values?.minus)}
+      ${aromaSection("Исторические сведения", aroma.history)}
+      ${aromaSection("Летучесть", aroma.volatility)}
+      <div class="actions-row">
+        <button type="button" class="secondary-button" id="editAromaCard">Редактировать карточку</button>
+      </div>
+    </div>
+  `;
+  document.getElementById("editAromaCard")?.addEventListener("click", () => {
+    state.aromaEditing = true;
+    renderAromas();
+  });
+  syncDetailPanelState(false);
+}
+
 function setTab(tab) {
+  if (tab === "aromas" && !state.aromaAccess) {
+    tab = "drafts";
+  }
   state.tab = tab;
   const params = new URLSearchParams(window.location.search);
   params.set("tab", tab);
@@ -1534,6 +1746,10 @@ async function loadCurrentTab() {
     await loadReels();
     return;
   }
+  if (state.tab === "aromas") {
+    await loadAromas();
+    return;
+  }
   if (state.tab === "status") {
     await loadStatus();
     return;
@@ -1549,6 +1765,7 @@ async function bootstrap() {
   applyTelegramTheme();
   bindFilters();
   try {
+    await loadAromaAccess();
     setTab(state.tab);
     await loadCurrentTab();
   } catch (error) {

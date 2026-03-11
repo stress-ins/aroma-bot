@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import hmac
+import json
 import urllib.parse
 from pathlib import Path
 
@@ -21,6 +22,7 @@ from bot.services.miniapp_content_review import (
     polish_content_review_draft,
     update_content_review_draft,
 )
+from bot.services.miniapp_aromas import get_aroma_card, list_aromas, update_aroma_card
 from bot.services.miniapp_plan_actions import normalize_plan_format, normalize_plan_goal
 from bot.services.reels_assets import ASSETS_DIR, populate_reels_frame_assets, regenerate_reels_frame_asset
 from bot.services.drafts_store import get_draft, list_recent_drafts, update_draft
@@ -64,10 +66,32 @@ def _verify_init_data(init_data: str) -> bool:
         return False
 
 
+def _telegram_user_id_from_init_data(init_data: str) -> int | None:
+    try:
+        parsed = dict(urllib.parse.parse_qsl(init_data, strict_parsing=True))
+        raw_user = parsed.get("user", "")
+        if not raw_user:
+            return None
+        payload = json.loads(raw_user)
+        user_id = payload.get("id")
+        return int(user_id) if user_id is not None else None
+    except Exception:
+        return None
+
+
 def _require_auth(x_telegram_init_data: str | None = Header(default=None)) -> None:
     """FastAPI dependency: validate Telegram initData header on mutating endpoints."""
     if not x_telegram_init_data or not _verify_init_data(x_telegram_init_data):
         raise HTTPException(status_code=403, detail="forbidden")
+
+
+def _require_aroma_access(x_telegram_init_data: str | None = Header(default=None)) -> int:
+    if not x_telegram_init_data or not _verify_init_data(x_telegram_init_data):
+        raise HTTPException(status_code=403, detail="forbidden")
+    user_id = _telegram_user_id_from_init_data(x_telegram_init_data)
+    if user_id is None or user_id not in settings.miniapp_aroma_allowed_user_id_set:
+        raise HTTPException(status_code=403, detail="aroma_access_denied")
+    return user_id
 
 
 app = FastAPI()
@@ -126,6 +150,21 @@ class PlanGeneratePayload(BaseModel):
     entry_index: int
 
 
+class AromaCardPayload(BaseModel):
+    description: str = Field(default="")
+    questions: str = Field(default="")
+    nps_effect: str = Field(default="")
+    therapeutic_properties: str = Field(default="")
+    psychological_properties: str = Field(default="")
+    history: str = Field(default="")
+    volatility: str = Field(default="")
+    botanical_family: str = Field(default="")
+    origin_countries: str = Field(default="")
+    extraction_method: str = Field(default="")
+    key: str = Field(default="")
+    resource_values: dict[str, str] = Field(default_factory=dict)
+
+
 @app.get("/")
 async def index():
     return FileResponse(MINIAPP_DIR / "index.html")
@@ -145,7 +184,7 @@ async def drafts(
     query: str = "",
 ):
     records = await list_recent_drafts(limit=200)
-    filtered = filter_drafts(
+    filtered = await filter_drafts(
         records,
         kind=kind,
         status=status,
@@ -244,6 +283,38 @@ async def status():
         "timezone": settings.timezone,
         "mini_app_url": settings.mini_app_url,
     }
+
+
+@app.get("/api/aromas/access")
+async def aroma_access(x_telegram_init_data: str | None = Header(default=None)):
+    if not x_telegram_init_data or not _verify_init_data(x_telegram_init_data):
+        return {"allowed": False}
+    user_id = _telegram_user_id_from_init_data(x_telegram_init_data)
+    return {
+        "allowed": bool(user_id in settings.miniapp_aroma_allowed_user_id_set if user_id is not None else False),
+        "user_id": user_id,
+    }
+
+
+@app.get("/api/aromas")
+async def aromas(_: int = Depends(_require_aroma_access)):
+    return {"items": await list_aromas()}
+
+
+@app.get("/api/aromas/{slug}")
+async def aroma_detail(slug: str, _: int = Depends(_require_aroma_access)):
+    card = await get_aroma_card(slug)
+    if not card:
+        raise HTTPException(status_code=404, detail="aroma_not_found")
+    return card
+
+
+@app.put("/api/aromas/{slug}")
+async def aroma_update(slug: str, payload: AromaCardPayload, _: int = Depends(_require_aroma_access)):
+    card = await update_aroma_card(slug, payload.model_dump())
+    if not card:
+        raise HTTPException(status_code=404, detail="aroma_not_found")
+    return card
 
 
 @app.post("/api/generate/content")
@@ -456,7 +527,7 @@ async def plan_generate(plan_id: str, payload: PlanGeneratePayload, _: None = De
 
 @app.get("/api/reels")
 async def reels(limit: int = Query(default=30, ge=1, le=100)):
-    items = list_reels_drafts(limit=limit)
+    items = await list_reels_drafts(limit=limit)
     return {
         "items": items,
         "total": len(items),
