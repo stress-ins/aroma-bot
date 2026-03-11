@@ -4,6 +4,7 @@ const state = {
   aromaAccess: false,
   aromas: [],
   aromaSearch: "",
+  aromaEditing: false,
   selectedAroma: null,
   inbox: [],
   inboxKind: "all",
@@ -368,6 +369,7 @@ async function openAroma(slug) {
   if (!slug) {
     return;
   }
+  state.aromaEditing = false;
   state.selectedAroma = await fetchJson(`/api/aromas/${encodeURIComponent(slug)}`);
   renderAromas();
 }
@@ -627,12 +629,81 @@ function renderAromas() {
     return;
   }
 
+  if (state.aromaEditing) {
+    const resourceValues = aroma.resource_values || {};
+    elements.draftDetail.innerHTML = `
+      <div class="detail-grid">
+        <section class="section">
+          <h3>Редактирование карточки</h3>
+          <form class="create-form" id="aromaEditForm">
+            <label>Описание действия масла<textarea name="description">${escapeHtml(aroma.description || "")}</textarea></label>
+            <label>Какие вопросы вызывает масло<textarea name="questions">${escapeHtml(aroma.questions || "")}</textarea></label>
+            <label>Действие на НПС<textarea name="nps_effect">${escapeHtml(aroma.nps_effect || "")}</textarea></label>
+            <label>Терапевтические свойства<textarea name="therapeutic_properties">${escapeHtml(aroma.therapeutic_properties || "")}</textarea></label>
+            <label>Психологические свойства<textarea name="psychological_properties">${escapeHtml(aroma.psychological_properties || "")}</textarea></label>
+            <label>Ресурсные значения "+"<textarea name="resource_plus">${escapeHtml(resourceValues.plus || "")}</textarea></label>
+            <label>Ресурсные значения "-"<textarea name="resource_minus">${escapeHtml(resourceValues.minus || "")}</textarea></label>
+            <label>Исторические сведения<textarea name="history">${escapeHtml(aroma.history || "")}</textarea></label>
+            <label>Летучесть<input name="volatility" value="${escapeHtml(aroma.volatility || "")}" /></label>
+            <label>Ботаническое семейство<input name="botanical_family" value="${escapeHtml(aroma.botanical_family || "")}" /></label>
+            <label>Страна происхождения<input name="origin_countries" value="${escapeHtml(aroma.origin_countries || "")}" /></label>
+            <label>Способ получения<input name="extraction_method" value="${escapeHtml(aroma.extraction_method || "")}" /></label>
+            <label>Ключ масла<input name="key" value="${escapeHtml(aroma.key || "")}" /></label>
+            <div class="actions-row">
+              <button class="primary-button" type="submit">Сохранить</button>
+              <button class="secondary-button" type="button" id="cancelAromaEdit">Отмена</button>
+            </div>
+          </form>
+        </section>
+      </div>
+    `;
+    const form = document.getElementById("aromaEditForm");
+    form?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const formData = new FormData(form);
+      state.selectedAroma = await fetchJson(`/api/aromas/${encodeURIComponent(aroma.slug)}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          description: formData.get("description") || "",
+          questions: formData.get("questions") || "",
+          nps_effect: formData.get("nps_effect") || "",
+          therapeutic_properties: formData.get("therapeutic_properties") || "",
+          psychological_properties: formData.get("psychological_properties") || "",
+          history: formData.get("history") || "",
+          volatility: formData.get("volatility") || "",
+          botanical_family: formData.get("botanical_family") || "",
+          origin_countries: formData.get("origin_countries") || "",
+          extraction_method: formData.get("extraction_method") || "",
+          key: formData.get("key") || "",
+          resource_values: {
+            plus: formData.get("resource_plus") || "",
+            minus: formData.get("resource_minus") || "",
+          },
+        }),
+      });
+      state.aromaEditing = false;
+      state.aromas = state.aromas.map((item) =>
+        item.slug === state.selectedAroma.slug
+          ? { ...item, name: state.selectedAroma.name, description: state.selectedAroma.description }
+          : item
+      );
+      renderAromas();
+    });
+    document.getElementById("cancelAromaEdit")?.addEventListener("click", () => {
+      state.aromaEditing = false;
+      renderAromas();
+    });
+    syncDetailPanelState(false);
+    return;
+  }
+
   elements.draftDetail.innerHTML = `
     <div class="detail-grid">
       <section class="section aroma-hero">
         <img class="aroma-image" src="${escapeHtml(aroma.image_url)}" alt="${escapeHtml(aroma.image_alt)}" />
         <div class="aroma-image-caption">${escapeHtml(aroma.image_alt)}</div>
       </section>
+      ${aromaSection("Паспорт масла", `Ключ: ${aroma.key || ""}\nБотаническое семейство: ${aroma.botanical_family || ""}\nСтрана происхождения: ${aroma.origin_countries || ""}\nСпособ получения: ${aroma.extraction_method || ""}`)}
       ${aromaSection("Описание действия масла", aroma.description)}
       ${aromaSection("Какие вопросы вызывает масло", aroma.questions)}
       ${aromaSection("Действие на НПС", aroma.nps_effect)}
@@ -642,8 +713,15 @@ function renderAromas() {
       ${aromaSection('Ресурсные значения "-"', aroma.resource_values?.minus)}
       ${aromaSection("Исторические сведения", aroma.history)}
       ${aromaSection("Летучесть", aroma.volatility)}
+      <div class="actions-row">
+        <button type="button" class="secondary-button" id="editAromaCard">Редактировать карточку</button>
+      </div>
     </div>
   `;
+  document.getElementById("editAromaCard")?.addEventListener("click", () => {
+    state.aromaEditing = true;
+    renderAromas();
+  });
   syncDetailPanelState(false);
 }
 
