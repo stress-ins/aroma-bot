@@ -31,6 +31,10 @@ def build_mini_app_url(*, draft_id: str | None = None, tab: str | None = None) -
     return f"{base}?{urlencode(params)}"
 
 
+def build_draft_tab(kind: str) -> str:
+    return "reels" if kind.strip().lower() == "reels" else "drafts"
+
+
 def build_mini_app_markup(
     *,
     label: str = "🧭 Mini App",
