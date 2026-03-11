@@ -361,8 +361,6 @@ async def plan_generate(plan_id: str, payload: PlanGeneratePayload, _: None = De
         raise HTTPException(status_code=400, detail="empty_topic")
 
     target = normalize_plan_format(entry)
-    if target == "carousel":
-        raise HTTPException(status_code=400, detail="carousel_not_supported_yet")
 
     if target == "reels":
         loop = asyncio.get_running_loop()
