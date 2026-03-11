@@ -32,16 +32,28 @@
 
 Показывать таблицу в конце каждого ответа с выполненными задачами.
 
-**После любого изменения функциональности ОБЯЗАТЕЛЬНО обновить:**
-- `README.md` — команды, описание фич, файловая структура
-- `HELP_TEXT` и `WELCOME_TEXT` в `bot/handlers/commands.py` если добавлена новая команда
+## Архитектура и База Данных
+
+**Хранение данных:**
+- Вместо JSON используется **SQLite** через **SQLAlchemy (Async)**.
+- База данных: `data/aroma.db` (исключена из git).
+- Модели: `db/models.py`.
+- Сессии: `db/session.py` (использовать `AsyncSessionLocal`).
+
+**Миграции (Alembic):**
+- Все изменения схемы БД делаются через миграции.
+- Создать миграцию: `.venv/bin/alembic revision --autogenerate -m "описание"`
+- Применить миграции: `.venv/bin/alembic upgrade head`
+
+**Важное правило для Drafts:**
+- Все функции в `bot/services/drafts_store.py` (`save_draft`, `get_draft`, `list_recent_drafts`, `update_draft`) являются **асинхронными**.
+- Всегда вызывать их через `await`.
 
 **Тесты:**
-- Тесты находятся в `tests/` и запускаются командой: `.venv/bin/python -m pytest tests/ -v`
-- После любого изменения логики: запустить тесты и убедиться что все проходят
-- При добавлении новой функции: добавить тесты в соответствующий файл в `tests/`
-  - `tests/test_formatters.py` — форматтеры, MarkdownV2, отчёты
-  - `tests/test_utils.py` — утилиты, парсинг ответов Claude, вспомогательные функции
+- Тесты находятся в `tests/` и запускаются командой: `.venv/bin/pytest`
+- Проект использует `pytest-asyncio`. Настройки в `pytest.ini`.
+- UI-тесты используют **Playwright**. Запуск: `.venv/bin/pytest tests/ui/`
+- Перед запуском UI-тестов нужно установить браузеры: `playwright install chromium`
 
 ## Проект
 

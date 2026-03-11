@@ -31,7 +31,9 @@ const MODE_TABS = {
     { id: "status", label: "Статус" },
   ],
   handbook: [
-    { id: "aromas", label: "Масла" },
+    { id: "aromas", label: "Ароматы" },
+    { id: "practices", label: "Практики" },
+    { id: "sounds", label: "Звуки" },
   ],
 };
 
@@ -125,6 +127,80 @@ function payloadSection(title, content) {
   return `<section class="section"><h3>${escapeHtml(title)}</h3><div class="detail-preview">${escapeHtml(content)}</div></section>`;
 }
 
+function promptSection(title, prompt, copyLabel = "Скопировать промпт") {
+  if (!prompt) return "";
+  return `
+    <section class="section">
+      <h3>${escapeHtml(title)}</h3>
+      <div class="detail-preview prompt-preview">${escapeHtml(prompt)}</div>
+      <div class="actions-row prompt-actions">
+        <button class="secondary-button" type="button" onclick='copyText(${JSON.stringify(String(prompt))})'>${escapeHtml(copyLabel)}</button>
+      </div>
+    </section>
+  `;
+}
+
+function renderSlides(slides = [], prompts = []) {
+  const slideItems = Array.isArray(slides) ? slides : [];
+  const promptItems = Array.isArray(prompts) ? prompts : [];
+  if (!slideItems.length) return "";
+  return `
+    <section class="section">
+      <h3>Слайды карусели</h3>
+      <div class="slides">
+        ${slideItems.map((slide, index) => `
+          <article class="slide">
+            <strong>Слайд ${index + 1}</strong>
+            <div class="detail-preview">${escapeHtml(slide)}</div>
+            ${promptItems[index] ? `
+              <div class="prompt-card">
+                <div class="detail-preview prompt-preview">${escapeHtml(promptItems[index])}</div>
+                <div class="actions-row prompt-actions">
+                  <button class="secondary-button" type="button" onclick='copyText(${JSON.stringify(String(promptItems[index]))})'>Скопировать промпт слайда</button>
+                </div>
+              </div>
+            ` : ""}
+          </article>
+        `).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function renderReelsFrames(frames = []) {
+  const frameItems = Array.isArray(frames) ? frames : [];
+  if (!frameItems.length) return "";
+  return `
+    <section class="section">
+      <h3>Кадры и промпты</h3>
+      <div class="storyboard">
+        ${frameItems.map((frame, index) => {
+          const prompt = frame.gemini_prompt || "";
+          const assetUrl = frame.current_asset?.url || "";
+          return `
+            <article class="storyboard-frame">
+              <strong>Кадр ${index + 1}${frame.timecode ? ` • ${escapeHtml(frame.timecode)}` : ""}</strong>
+              ${frame.scene ? `<div class="detail-preview">${escapeHtml(frame.scene)}</div>` : ""}
+              ${frame.angle ? `<div class="detail-preview frame-meta-line">Ракурс: ${escapeHtml(frame.angle)}</div>` : ""}
+              ${assetUrl
+                ? `<img class="frame-image" src="${escapeHtml(assetUrl)}" alt="Кадр ${index + 1}" />`
+                : `<div class="frame-loading">Картинка ещё не готова. Используйте промпт ниже для ручной генерации.</div>`}
+              ${prompt ? `
+                <div class="prompt-card">
+                  <div class="detail-preview prompt-preview">${escapeHtml(prompt)}</div>
+                  <div class="actions-row prompt-actions">
+                    <button class="secondary-button" type="button" onclick='copyText(${JSON.stringify(String(prompt))})'>Скопировать промпт кадра</button>
+                  </div>
+                </div>
+              ` : ""}
+            </article>
+          `;
+        }).join("")}
+      </div>
+    </section>
+  `;
+}
+
 function kindLabel(value) {
   return RU_KIND_LABELS[String(value || "").toLowerCase()] || String(value || "");
 }
@@ -148,6 +224,31 @@ function setEmptyState(hidden, text = "Ничего не найдено.") {
 function showRequestError(prefix, error) {
   const message = error?.message || String(error || "unknown_error");
   alert(`${prefix}: ${message}`);
+}
+
+async function copyText(value) {
+  const text = String(value || "").trim();
+  if (!text) return;
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      const field = document.createElement("textarea");
+      field.value = text;
+      field.setAttribute("readonly", "readonly");
+      field.style.position = "absolute";
+      field.style.left = "-9999px";
+      document.body.appendChild(field);
+      field.select();
+      document.execCommand("copy");
+      document.body.removeChild(field);
+    }
+  } catch (error) {
+    showRequestError("Не удалось скопировать промпт", error);
+    return;
+  }
+  const tg = window.Telegram?.WebApp;
+  if (tg?.showAlert) tg.showAlert("Промпт скопирован");
 }
 
 function syncMobileNavigation() {
@@ -595,6 +696,7 @@ async function openDraft(id) {
 
 function renderDraftDetail(d) {
   const p = d.payload || {};
+  const mainText = p.caption || p.scenario || "";
   elements.draftDetail.innerHTML = `
     <div class="detail-grid">
       ${renderBackButton()}
@@ -609,8 +711,10 @@ function renderDraftDetail(d) {
       </div>
       ${payloadSection("Превью", d.preview)}
       ${payloadSection("Угол", p.angle)}
-      ${payloadSection("Текст", p.caption || p.scenario)}
+      ${payloadSection("Текст", mainText)}
       ${payloadSection("CTA", p.cta)}
+      ${renderSlides(p.slides, p.img_prompts)}
+      ${promptSection("Промпт для изображения", p.visual_prompt)}
       <section class="section"><h3>JSON</h3><pre class="json-block">${escapeHtml(JSON.stringify(p, null, 2))}</pre></section>
     </div>
   `;
@@ -680,6 +784,7 @@ bootstrap();
 window.openDraft = openDraft;
 window.openAroma = openAroma;
 window.openReference = openReference;
+window.copyText = copyText;
 window.openReels = async (id) => {
   const r = await fetchJson(`/api/reels/${id}`);
   state.selectedReels = r; renderReelsDetail(r); enterDetailView();
@@ -743,8 +848,16 @@ function renderReelsDetail(r) {
   elements.draftDetail.innerHTML = `
     <div class="detail-grid">
       ${renderBackButton()}
-      <h2 class="detail-title">${escapeHtml(r.topic)}</h2>
+      <div class="detail-top">
+        <p class="eyebrow">Рилсы • ${escapeHtml(r.source || "/miniapp")}</p>
+        <h2 class="detail-title">${escapeHtml(r.topic)}</h2>
+        <div class="draft-meta">
+          <span class="tag">${escapeHtml(statusLabel(r.status || "draft"))}</span>
+          <span class="tag">${escapeHtml(`${r.images_ready || 0}/${r.frame_count || 0} кадров`)}</span>
+        </div>
+      </div>
       ${payloadSection("Сценарий", r.payload?.scenario)}
+      ${renderReelsFrames(r.frames)}
       <section class="section"><h3>JSON</h3><pre class="json-block">${escapeHtml(JSON.stringify(r.payload, null, 2))}</pre></section>
     </div>
   `;

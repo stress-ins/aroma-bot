@@ -80,7 +80,7 @@ async def list_reels_drafts(limit: int = 30) -> list[dict[str, object]]:
     drafts = await list_recent_drafts(limit=200, kind="reels")
     items: list[dict[str, object]] = []
     for draft in drafts[:limit]:
-        data = serialize_reels_draft(draft.draft_id)
+        data = await serialize_reels_draft(draft.draft_id)
         if data:
             items.append(data)
     return items

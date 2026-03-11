@@ -1264,11 +1264,29 @@ class TestMiniAppRussianLocale:
         # Ensure CSS handles the 300ms delay/zoom
         assert "touch-action: manipulation;" in app_css
 
-    def test_handbook_has_oils_tab(self):
+    def test_handbook_has_separate_reference_tabs(self):
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
 
-        assert '{ id: "aromas", label: "Масла" }' in app_js
-        assert 'id: "keywords"' in app_js  # Moved to content, but still exists
+        assert 'id: "aromas"' in app_js
+        assert 'label: "Ароматы"' in app_js
+        assert 'id: "practices"' in app_js
+        assert 'label: "Практики"' in app_js
+        assert 'id: "sounds"' in app_js
+        assert 'label: "Звуки"' in app_js
+        assert 'id: "keywords"' in app_js
+
+    def test_content_detail_supports_prompt_copy_actions(self):
+        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+
+        assert "Скопировать промпт кадра" in app_js
+        assert "Скопировать промпт слайда" in app_js
+        assert "function copyText(value)" in app_js
+
+    def test_content_cards_force_left_alignment_and_mobile_button_stack(self):
+        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+
+        assert "text-align: left;" in app_css
+        assert "flex: 1 1 100%;" in app_css
 class TestMiniAppReels:
     async def test_serialize_reels_draft_returns_none_for_missing(self):
         assert await serialize_reels_draft("missing-id") is None
