@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>Aroma Workspace</title>
+    <title>Арома помощник</title>
     <link rel="stylesheet" href="/static/app.css" />
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
   </head>
@@ -12,8 +12,8 @@
 
       <header class="hero">
         <div>
-          <p class="eyebrow">Aroma Workspace</p>
-          <h1>Черновики и Reels</h1>
+          <p class="eyebrow">Арома помощник</p>
+          <h1>Черновики и рилсы</h1>
         </div>
         <button id="refreshButton" class="ghost-button" type="button">Обновить</button>
       </header>
@@ -21,10 +21,10 @@
       <section class="toolbar">
         <div class="tabs">
           <button class="tab-button"        data-tab="create"   type="button">Создать</button>
-          <button class="tab-button"        data-tab="inbox"    type="button">Очередь</button>
+          <button class="tab-button"        data-tab="inbox"    type="button">Согласование</button>
           <button class="tab-button active" data-tab="drafts"   type="button">Черновики</button>
           <button class="tab-button"        data-tab="plans"    type="button">Планы</button>
-          <button class="tab-button"        data-tab="reels"    type="button">Reels</button>
+          <button class="tab-button"        data-tab="reels"    type="button">Рилсы</button>
           <button class="tab-button"        data-tab="status"   type="button">Статус</button>
           <button class="tab-button"        data-tab="keywords" type="button">Ключи</button>
         </div>
@@ -33,10 +33,10 @@
             Тип
             <select id="kindFilter">
               <option value="">Все</option>
-              <option value="threads">Threads</option>
-              <option value="instagram">Instagram</option>
-              <option value="telegram">Telegram</option>
-              <option value="reels">Reels</option>
+              <option value="threads">Тредс</option>
+              <option value="instagram">Инстаграм</option>
+              <option value="telegram">Телеграм</option>
+              <option value="reels">Рилсы</option>
               <option value="carousel">Карусель</option>
             </select>
           </label>
@@ -45,17 +45,17 @@
             <select id="statusFilter">
               <option value="">Все</option>
               <option value="draft">Черновик</option>
-              <option value="in_review">На ревью</option>
-              <option value="approved">Одобрен</option>
-              <option value="published">Опубликован</option>
+              <option value="in_review">На согласовании</option>
+              <option value="approved">Согласовано</option>
+              <option value="published">Опубликовано</option>
             </select>
           </label>
           <label>
-            Реакция
+            Результат
             <select id="feedbackFilter">
               <option value="">Все</option>
-              <option value="worked">Сработал</option>
-              <option value="missed">Не сработал</option>
+              <option value="worked">Сработало</option>
+              <option value="missed">Не сработало</option>
             </select>
           </label>
           <label class="search">
