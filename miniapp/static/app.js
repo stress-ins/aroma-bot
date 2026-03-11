@@ -328,15 +328,9 @@ function renderCreate() {
         <div class="draft-preview">Собирает тренды и сохраняет недельный план прямо в приложении.</div>
       </article>
       <article class="create-card">
-<<<<<<< HEAD
         <div class="draft-kind">карусель</div>
         <h3 class="draft-topic">Карусель Инстаграм</h3>
         <div class="draft-preview">Тема -> 5 слайдов + промпты для картинок, сохраняется в черновики.</div>
-=======
-        <div class="draft-kind">carousel</div>
-        <h3 class="draft-topic">Карусель Instagram</h3>
-        <div class="draft-preview">Тема → 5 слайдов + промпты для картинок, сохраняется в черновики.</div>
->>>>>>> origin/main
       </article>
     </div>
   `;
@@ -451,11 +445,7 @@ function renderCreate() {
         renderReelsDetail(reel);
         scheduleReelsRefresh(reel.draft_id);
       } catch (err) {
-<<<<<<< HEAD
         showRequestError("Ошибка создания рилса", err);
-=======
-        showRequestError("Ошибка генерации", err);
->>>>>>> origin/main
       }
       },
     });
@@ -482,7 +472,6 @@ function renderCreate() {
 
   const carouselForm = elements.draftDetail.querySelector("[data-create-carousel]");
   if (carouselForm) {
-<<<<<<< HEAD
     bindTopicForm(carouselForm, {
       pendingText: "Создаю...",
       onSubmit: async (topic) => {
@@ -498,28 +487,6 @@ function renderCreate() {
           showRequestError("Ошибка создания карусели", err);
         }
       },
-=======
-    carouselForm.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      const topic = carouselForm.querySelector("textarea[name='topic']").value.trim();
-      const btn = carouselForm.querySelector("button[type='submit']");
-      btn.disabled = true;
-      btn.textContent = "⏳ Генерируется...";
-      try {
-        const draft = await fetchJson("/api/generate/carousel", {
-          method: "POST",
-          body: JSON.stringify({ topic }),
-        });
-        state.draftId = draft.draft_id;
-        setTab("drafts");
-        await loadDrafts();
-      } catch (err) {
-        showRequestError("Ошибка генерации карусели", err);
-      } finally {
-        btn.disabled = false;
-        btn.textContent = "Сгенерировать";
-      }
->>>>>>> origin/main
     });
   }
 }

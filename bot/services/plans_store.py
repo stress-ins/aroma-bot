@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
-_PLANS_FILE = Path(__file__).parent.parent.parent / "data" / "plans.json"
+_PLANS_FILE = Path(os.getenv("AROMA_PLANS_FILE", Path(__file__).parent.parent.parent / "data" / "plans.json"))
 
 
 @dataclass

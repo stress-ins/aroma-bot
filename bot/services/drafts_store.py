@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -8,7 +9,7 @@ from typing import Any
 from uuid import uuid4
 
 
-_DRAFTS_FILE = Path(__file__).parent.parent.parent / "data" / "drafts.json"
+_DRAFTS_FILE = Path(os.getenv("AROMA_DRAFTS_FILE", Path(__file__).parent.parent.parent / "data" / "drafts.json"))
 
 
 @dataclass
