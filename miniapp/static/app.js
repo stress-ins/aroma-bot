@@ -237,6 +237,11 @@ function renderCreate() {
         <h3 class="draft-topic">Weekly content plan</h3>
         <div class="draft-preview">Собирает тренды и сохраняет недельный план прямо в приложении.</div>
       </article>
+      <article class="create-card">
+        <div class="draft-kind">carousel</div>
+        <h3 class="draft-topic">Карусель Instagram</h3>
+        <div class="draft-preview">Тема → 5 слайдов + промпты для картинок, сохраняется в черновики.</div>
+      </article>
     </div>
   `;
   elements.draftDetail.innerHTML = `
@@ -285,6 +290,16 @@ function renderCreate() {
         <form class="create-form" data-create-plan>
           <div class="detail-preview">Собирает актуальные тренды и сохраняет недельный контент-план в Plan workspace.</div>
           <button class="primary-button" type="submit">Generate weekly plan</button>
+        </form>
+      </section>
+      <section class="section">
+        <h3>Создать карусель</h3>
+        <form class="create-form" data-create-carousel>
+          <label>
+            Тема
+            <textarea name="topic" placeholder="Например: вечерний ритуал для перезагрузки нервной системы"></textarea>
+          </label>
+          <button class="primary-button" type="submit">Сгенерировать</button>
         </form>
       </section>
     </div>
@@ -348,6 +363,31 @@ function renderCreate() {
         renderPlanDetail(plan);
       } catch (err) {
         alert("Ошибка генерации: " + (err.message || err));
+      }
+    });
+  }
+
+  const carouselForm = elements.draftDetail.querySelector("[data-create-carousel]");
+  if (carouselForm) {
+    carouselForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const topic = carouselForm.querySelector("textarea[name='topic']").value.trim();
+      const btn = carouselForm.querySelector("button[type='submit']");
+      btn.disabled = true;
+      btn.textContent = "⏳ Генерируется...";
+      try {
+        const draft = await fetchJson("/api/generate/carousel", {
+          method: "POST",
+          body: JSON.stringify({ topic }),
+        });
+        state.draftId = draft.draft_id;
+        setTab("drafts");
+        await loadDrafts();
+      } catch (err) {
+        showRequestError("Ошибка генерации карусели", err);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Сгенерировать";
       }
     });
   }
@@ -688,6 +728,17 @@ function renderReelsDetail(reel) {
             <span class="tag">${escapeHtml(reel.images_ready)} images</span>
           </div>
           <div class="actions-row">
+            <button class="status-button" data-reel-status="draft">draft</button>
+            <button class="status-button" data-reel-status="in_review">in_review</button>
+            <button class="status-button" data-reel-status="approved">approved</button>
+            <button class="status-button" data-reel-status="published">published</button>
+          </div>
+          <div class="actions-row">
+            <button class="feedback-button" data-reel-feedback="worked">worked</button>
+            <button class="feedback-button" data-reel-feedback="missed">missed</button>
+            <button class="feedback-button" data-reel-feedback="">clear</button>
+          </div>
+          <div class="actions-row">
             <button class="secondary-button" type="button" data-reel-export="${escapeHtml(reel.draft_id)}">Export production pack</button>
           </div>
         </div>
@@ -716,7 +767,9 @@ function renderReelsDetail(reel) {
             <div>${escapeHtml(frame.scene || "")}</div>
             <div class="meta">${escapeHtml(frame.angle || "")}</div>
             ${payloadSection("Gemini Prompt", frame.gemini_prompt)}
-            ${frame.current_asset?.url ? `<img class="frame-image" src="${escapeHtml(frame.current_asset.url)}" alt="Frame asset" />` : ""}
+            ${frame.current_asset?.url
+              ? `<img class="frame-image" src="${escapeHtml(frame.current_asset.url)}" alt="Frame asset" />`
+              : `<div class="frame-loading">⏳ Кадр генерируется…</div>`}
             <div class="actions-row">
               <button class="secondary-button" type="button" data-frame-regenerate="${escapeHtml(String(frame.frame_index))}">Regenerate frame</button>
             </div>
@@ -858,6 +911,36 @@ function renderReelsDetail(reel) {
       await regenerateReelsFrame(reel.draft_id, state.selectedFrameIndex);
     });
   }
+
+  elements.draftDetail.querySelectorAll("[data-reel-status]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const updated = await fetchJson(`/api/drafts/${reel.draft_id}/status`, {
+        method: "POST",
+        body: JSON.stringify({ status: button.dataset.reelStatus }),
+      });
+      state.selectedReels = { ...reel, ...updated };
+      state.reels = state.reels.map((item) =>
+        item.draft_id === reel.draft_id ? { ...item, ...updated } : item
+      );
+      renderReels();
+      renderReelsDetail(state.selectedReels);
+    });
+  });
+
+  elements.draftDetail.querySelectorAll("[data-reel-feedback]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const updated = await fetchJson(`/api/drafts/${reel.draft_id}/feedback`, {
+        method: "POST",
+        body: JSON.stringify({ feedback: button.dataset.reelFeedback }),
+      });
+      state.selectedReels = { ...reel, ...updated };
+      state.reels = state.reels.map((item) =>
+        item.draft_id === reel.draft_id ? { ...item, ...updated } : item
+      );
+      renderReels();
+      renderReelsDetail(state.selectedReels);
+    });
+  });
 }
 
 async function openPlan(planId) {

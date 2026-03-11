@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field
 from bot.agents import generate_content_draft
 from bot.agents.planner import generate_plan_sync
 from bot.agents.reels_agent import generate_reels_director_sync, generate_reels_scenario_sync
+from bot.handlers.carousel import _generate_carousel_sync
 from bot.handlers.planner import _parse_plan_entries
 from bot.handlers.threads import _format_trends
 from bot.services.miniapp_content_review import (
@@ -114,6 +115,10 @@ class CreateContentPayload(BaseModel):
 
 
 class CreateReelsPayload(BaseModel):
+    topic: str = Field(default="")
+
+
+class CreateCarouselPayload(BaseModel):
     topic: str = Field(default="")
 
 
@@ -298,6 +303,29 @@ async def generate_reels(
     if not draft:
         raise HTTPException(status_code=500, detail="reels_not_saved")
     return draft
+
+
+@app.post("/api/generate/carousel")
+async def generate_carousel(payload: CreateCarouselPayload, _: None = Depends(_require_auth)):
+    if not settings.anthropic_api_key:
+        raise HTTPException(status_code=400, detail="anthropic_not_configured")
+
+    topic = payload.topic.strip()
+    if not topic:
+        raise HTTPException(status_code=400, detail="empty_topic")
+
+    loop = asyncio.get_running_loop()
+    slides, img_prompts = await loop.run_in_executor(None, _generate_carousel_sync, topic)
+    if not slides:
+        raise HTTPException(status_code=500, detail="carousel_generation_failed")
+
+    saved = save_draft(
+        kind="carousel",
+        topic=topic,
+        source="/miniapp",
+        payload={"slides": slides, "img_prompts": img_prompts},
+    )
+    return serialize_draft(saved)
 
 
 @app.post("/api/generate/plan")
