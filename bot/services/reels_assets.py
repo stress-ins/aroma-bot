@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
@@ -10,7 +11,7 @@ from bot.services.gemini_images import generate_gemini_image_sync
 
 logger = logging.getLogger(__name__)
 
-ASSETS_DIR = Path(__file__).parent.parent.parent / "data" / "reels_assets"
+ASSETS_DIR = Path(os.getenv("AROMA_REELS_ASSETS_DIR", Path(__file__).parent.parent.parent / "data" / "reels_assets"))
 ASSETS_DIR.mkdir(parents=True, exist_ok=True)
 
 
