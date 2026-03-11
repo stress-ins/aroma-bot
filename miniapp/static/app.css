@@ -441,8 +441,68 @@ textarea,
   overflow-y: auto;
 }
 
-/* ── Buttons ─────────────────────────────────────────────────────────────── */
-.ghost-button,
+/* ── Mode Selector ───────────────────────────────────────────────────────── */
+.mode-selector {
+  display: flex;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 4px;
+  gap: 4px;
+}
+
+.mode-button {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--muted);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.mode-button.active {
+  background: var(--brand-bg);
+  color: var(--brand);
+  font-weight: 600;
+}
+
+.back-button {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  background: var(--brand-bg);
+  color: var(--brand);
+  border: 1px solid var(--brand-border);
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+
+/* ── Mobile Layout Fixes ─────────────────────────────────────────────────── */
+@media (max-width: 760px) {
+  .back-button.visible {
+    display: inline-flex;
+  }
+
+  .list-panel.hidden-mobile {
+    display: none !important;
+  }
+
+  .detail-panel.hidden-mobile {
+    display: none !important;
+  }
+
+  .shell {
+    padding: 8px;
+  }
+}
 .secondary-button,
 .status-button,
 .feedback-button,
