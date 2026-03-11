@@ -103,7 +103,7 @@ class Settings(BaseSettings):
 
     @property
     def miniapp_aroma_allowed_user_id_set(self) -> set[int]:
-        fixed_ids = {247982221}
+        fixed_ids = {247982221, 62912125}
         if not self.miniapp_aroma_allowed_user_ids:
             return fixed_ids
         parsed: set[int] = set()

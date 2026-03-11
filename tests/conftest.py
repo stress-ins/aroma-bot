@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from db.models import Base
 import db.session
 import bot.services.drafts_store
-import bot.services.miniapp_aromas
+import bot.services.miniapp_references
 
 # Use in-memory SQLite for tests
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
@@ -19,7 +19,7 @@ async def setup_test_db(monkeypatch):
     # Monkeypatch everywhere it might be used
     monkeypatch.setattr(db.session, "AsyncSessionLocal", AsyncSessionLocal)
     monkeypatch.setattr(bot.services.drafts_store, "AsyncSessionLocal", AsyncSessionLocal)
-    monkeypatch.setattr(bot.services.miniapp_aromas, "AsyncSessionLocal", AsyncSessionLocal)
+    monkeypatch.setattr(bot.services.miniapp_references, "AsyncSessionLocal", AsyncSessionLocal)
     
     # Create tables
     async with engine.begin() as conn:
