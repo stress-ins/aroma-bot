@@ -920,7 +920,7 @@ class TestDraftRecord:
 
 
 class TestMiniAppPresenter:
-    def test_filter_drafts_by_kind_status_and_query(self):
+    async def test_filter_drafts_by_kind_status_and_query(self):
         drafts = [
             DraftRecord(
                 draft_id="aaa11111",
@@ -944,7 +944,7 @@ class TestMiniAppPresenter:
             ),
         ]
 
-        result = filter_drafts(
+        result = await filter_drafts(
             drafts,
             kind="reels",
             status="approved",
@@ -964,7 +964,7 @@ class TestMiniAppPresenter:
         assert "Слайд 1" in preview
         assert "Слайд 2" in preview
 
-    def test_serialize_draft_counts_storyboard_frames(self):
+    async def test_serialize_draft_counts_storyboard_frames(self):
         draft = DraftRecord(
             draft_id="ccc33333",
             kind="reels",
@@ -983,7 +983,7 @@ class TestMiniAppPresenter:
             },
         )
 
-        data = serialize_draft(draft)
+        data = await serialize_draft(draft)
 
         assert data["storyboard_count"] == 3
         assert data["slides_count"] == 0
@@ -1052,8 +1052,8 @@ class TestMiniAppContentReview:
         assert is_content_review_draft("threads") is True
         assert is_content_review_draft("carousel") is False
 
-    def test_update_content_review_draft_returns_none_for_missing(self):
-        assert update_content_review_draft(
+    async def test_update_content_review_draft_returns_none_for_missing(self):
+        assert await update_content_review_draft(
             "missing-id",
             topic="topic",
             angle="angle",
@@ -1064,8 +1064,8 @@ class TestMiniAppContentReview:
             visual_prompt="warm visual",
         ) is None
 
-    def test_polish_content_review_draft_returns_none_for_missing(self):
-        assert polish_content_review_draft("missing-id") is None
+    async def test_polish_content_review_draft_returns_none_for_missing(self):
+        assert await polish_content_review_draft("missing-id") is None
 
 
 class TestMiniAppInbox:
@@ -1101,8 +1101,8 @@ class TestMiniAppInbox:
         assert inbox_category(reels_record) == "reels"
         assert "Reels" in inbox_reason(reels_record)
 
-    def test_list_inbox_items_returns_list(self):
-        items = list_inbox_items(limit=5, kind_filter="content")
+    async def test_list_inbox_items_returns_list(self):
+        items = await list_inbox_items(limit=5, kind_filter="content")
         assert isinstance(items, list)
 
 
@@ -1114,7 +1114,7 @@ class TestMiniAppPlans:
         assert normalize_plan_format({"platform": "Instagram", "format_label": "карусель"}) == "carousel"
         assert normalize_plan_format({"platform": "Reels", "format_label": "рилс"}) == "reels"
 
-    def test_serialize_plan_keeps_entries(self):
+    async def test_serialize_plan_keeps_entries(self):
         plan = PlanRecord(
             plan_id="20260311120000",
             created_at="2026-03-11T12:00:00+00:00",
@@ -1131,7 +1131,7 @@ class TestMiniAppPlans:
             ],
         )
 
-        data = serialize_plan(plan)
+        data = await serialize_plan(plan)
 
         assert data["plan_id"] == "20260311120000"
         assert len(data["entries"]) == 1
@@ -1204,24 +1204,23 @@ class TestMiniAppRussianLocale:
 
 
 class TestMiniAppReels:
-    def test_serialize_reels_draft_returns_none_for_missing(self):
-        assert serialize_reels_draft("missing-id") is None
+    async def test_serialize_reels_draft_returns_none_for_missing(self):
+        assert await serialize_reels_draft("missing-id") is None
 
-    def test_build_reels_export_payload_returns_none_for_missing(self):
-        assert build_reels_export_payload("missing-id") is None
+    async def test_build_reels_export_payload_returns_none_for_missing(self):
+        assert await build_reels_export_payload("missing-id") is None
 
-    def test_update_reels_frame_note_returns_none_for_missing(self):
-        assert update_reels_frame_note("missing-id", 0, "темнее") is None
+    async def test_update_reels_frame_note_returns_none_for_missing(self):
+        assert await update_reels_frame_note("missing-id", 0, "темнее") is None
 
-    def test_update_reels_frame_prompt_returns_none_for_missing(self):
-        assert update_reels_frame_prompt("missing-id", 0, "new prompt") is None
+    async def test_update_reels_frame_prompt_returns_none_for_missing(self):
+        assert await update_reels_frame_prompt("missing-id", 0, "new prompt") is None
 
-    def test_regenerate_reels_frame_asset_returns_none_for_missing(self):
-        assert regenerate_reels_frame_asset("missing-id", 0) is None
+    async def test_regenerate_reels_frame_asset_returns_none_for_missing(self):
+        assert await regenerate_reels_frame_asset("missing-id", 0) is None
 
-    def test_build_reels_export_payload_counts_ready_frames(self, monkeypatch, tmp_path):
-        monkeypatch.setattr(drafts_store_module, "_DRAFTS_FILE", tmp_path / "drafts.json")
-        draft = save_draft(
+    async def test_build_reels_export_payload_counts_ready_frames(self, monkeypatch, tmp_path):
+        draft = await save_draft(
             kind="reels",
             topic="Вечерний ритуал",
             source="/reels",
@@ -1245,20 +1244,19 @@ class TestMiniAppReels:
                 ],
             },
         )
-        payload = build_reels_export_payload(draft.draft_id)
+        payload = await build_reels_export_payload(draft.draft_id)
         assert payload is not None
         assert payload["ready_frames"] == 1
         assert payload["export_summary"]["missing_assets"] == 1
 
-    def test_regenerate_reels_frame_asset_updates_current_asset(self, monkeypatch, tmp_path):
-        monkeypatch.setattr(drafts_store_module, "_DRAFTS_FILE", tmp_path / "drafts.json")
+    async def test_regenerate_reels_frame_asset_updates_current_asset(self, monkeypatch, tmp_path):
         monkeypatch.setattr(reels_assets_module, "ASSETS_DIR", tmp_path / "reels_assets")
         monkeypatch.setattr(
             reels_assets_module,
             "generate_gemini_image_sync",
             lambda prompt, log_context="": b"fake-image-bytes",
         )
-        draft = save_draft(
+        draft = await save_draft(
             kind="reels",
             topic="Вечерний ритуал",
             source="/reels",
@@ -1275,7 +1273,7 @@ class TestMiniAppReels:
                 ],
             },
         )
-        payload = regenerate_reels_frame_asset(draft.draft_id, 0)
+        payload = await regenerate_reels_frame_asset(draft.draft_id, 0)
         assert payload is not None
         current_asset = payload["storyboard"][0]["current_asset"]
         assert current_asset["url"].startswith("/generated/reels_assets/")
