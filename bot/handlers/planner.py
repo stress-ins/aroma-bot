@@ -203,7 +203,10 @@ async def cb_plan(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             await query.message.reply_text("❌ Черновик из плана не найден. Сгенерируй его заново.")
             return
         update_draft(draft_id, status="approved")
-        await query.message.reply_text(f"✅ Черновик из плана согласован.\n🗂 Draft ID: {draft_id}")
+        await query.message.reply_text(
+            f"✅ Черновик из плана согласован.\n🗂 Draft ID: {draft_id}\n"
+            f"Позже оцени результат через /drafts {draft_id}"
+        )
         return
 
     if data == "pl:review:manual":

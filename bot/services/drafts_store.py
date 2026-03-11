@@ -19,6 +19,7 @@ class DraftRecord:
     source: str
     created_at: str
     status: str
+    feedback: str
     payload: dict[str, Any]
 
 
@@ -43,6 +44,7 @@ def _load_records() -> list[DraftRecord]:
                 source=str(item.get("source", "")),
                 created_at=str(item.get("created_at", "")),
                 status=str(item.get("status", "draft")),
+                feedback=str(item.get("feedback", "")),
                 payload=dict(item.get("payload", {})),
             )
         )
@@ -67,6 +69,7 @@ def save_draft(kind: str, topic: str, source: str, payload: dict[str, Any]) -> D
         source=source.strip(),
         created_at=datetime.now(timezone.utc).isoformat(),
         status="draft",
+        feedback="",
         payload=payload,
     )
     records.insert(0, record)
@@ -93,6 +96,7 @@ def update_draft(
     *,
     topic: str | None = None,
     status: str | None = None,
+    feedback: str | None = None,
     payload: dict[str, Any] | None = None,
 ) -> DraftRecord | None:
     records = _load_records()
@@ -107,6 +111,7 @@ def update_draft(
             source=record.source,
             created_at=record.created_at,
             status=status if status is not None else record.status,
+            feedback=feedback if feedback is not None else record.feedback,
             payload=payload if payload is not None else record.payload,
         )
         records[idx] = updated

@@ -313,7 +313,8 @@ async def cb_content(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
             return
         updated = update_draft(draft_id, status="approved", payload=draft)
         await query.message.reply_text(
-            f"✅ Черновик согласован.\n🗂 Draft ID: {(updated.draft_id if updated else draft_id)}"
+            f"✅ Черновик согласован.\n🗂 Draft ID: {(updated.draft_id if updated else draft_id)}\n"
+            f"Позже оцени результат через /drafts {(updated.draft_id if updated else draft_id)}"
         )
         return
 
