@@ -310,6 +310,32 @@ async function saveReelsFramePrompt(draftId, frameIndex, prompt) {
   renderReelsDetail(reel);
 }
 
+async function regenerateReelsFrame(draftId, frameIndex) {
+  const reel = await fetchJson(`/api/reels/${draftId}/frames/${frameIndex}/regenerate`, {
+    method: "POST",
+    body: JSON.stringify({}),
+  });
+  state.selectedReels = reel;
+  state.reels = state.reels.map((item) =>
+    item.draft_id === reel.draft_id ? { ...item, ...reel } : item
+  );
+  renderReels();
+  renderReelsDetail(reel);
+}
+
+async function exportReelsProductionPack(draftId) {
+  const payload = await fetchJson(`/api/reels/${draftId}/export`);
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${draftId}-production-pack.json`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 function renderReelsDetail(reel) {
   state.selectedReels = reel;
   const frames = Array.isArray(reel.frames) ? reel.frames : [];
@@ -324,6 +350,9 @@ function renderReelsDetail(reel) {
             <span class="tag">${escapeHtml(reel.status)}</span>
             <span class="tag">${escapeHtml(reel.feedback || "no feedback")}</span>
             <span class="tag">${escapeHtml(reel.images_ready)} images</span>
+          </div>
+          <div class="actions-row">
+            <button class="secondary-button" type="button" data-reel-export="${escapeHtml(reel.draft_id)}">Export production pack</button>
           </div>
         </div>
       </div>
@@ -347,6 +376,10 @@ function renderReelsDetail(reel) {
             <div>${escapeHtml(frame.scene || "")}</div>
             <div class="meta">${escapeHtml(frame.angle || "")}</div>
             ${payloadSection("Gemini Prompt", frame.gemini_prompt)}
+            ${frame.current_asset?.url ? `<img class="frame-image" src="${escapeHtml(frame.current_asset.url)}" alt="Frame asset" />` : ""}
+            <div class="actions-row">
+              <button class="secondary-button" type="button" data-frame-regenerate="${escapeHtml(String(frame.frame_index))}">Regenerate frame</button>
+            </div>
             <form class="frame-note-form" data-frame-note-form="${escapeHtml(String(frame.frame_index))}">
               <label>
                 Review note
@@ -371,6 +404,17 @@ function renderReelsDetail(reel) {
                 `).join("")}
               </div>
             ` : ""}
+            ${(frame.asset_revisions || []).length ? `
+              <div class="asset-revisions">
+                ${(frame.asset_revisions || []).map((asset, index) => `
+                  <div class="asset-revision">
+                    <strong>Asset revision ${index + 1}</strong>
+                    <div class="meta">${escapeHtml(asset.generated_at || "")}</div>
+                    ${asset.url ? `<img class="frame-image" src="${escapeHtml(asset.url)}" alt="Frame revision" />` : ""}
+                  </div>
+                `).join("")}
+              </div>
+            ` : ""}
           </div>
         </section>
       ` : ""}
@@ -378,16 +422,17 @@ function renderReelsDetail(reel) {
         <h3>Shot List</h3>
         <div class="shot-list">
           ${(reel.shot_list || []).map((shot) => `
-            <div class="shot-item">
-              <strong>${escapeHtml(shot.title || "")}</strong>
-              <div>${escapeHtml(shot.timecode || "")}</div>
-              <div>${escapeHtml(shot.action || "")}</div>
-              <div class="meta">${escapeHtml(shot.camera || "")}</div>
-              ${shot.note ? `<div class="meta">Note: ${escapeHtml(shot.note)}</div>` : ""}
-            </div>
-          `).join("")}
-        </div>
-      </section>
+          <div class="shot-item">
+            <strong>${escapeHtml(shot.title || "")}</strong>
+            <div>${escapeHtml(shot.timecode || "")}</div>
+            <div>${escapeHtml(shot.action || "")}</div>
+            <div class="meta">${escapeHtml(shot.camera || "")}</div>
+            <div class="meta">${shot.asset_ready ? "Asset ready" : "Asset missing"}</div>
+            ${shot.note ? `<div class="meta">Note: ${escapeHtml(shot.note)}</div>` : ""}
+          </div>
+        `).join("")}
+      </div>
+    </section>
       <section class="section">
         <h3>Production Notes</h3>
         <div class="shot-list">
@@ -398,6 +443,19 @@ function renderReelsDetail(reel) {
           <div class="shot-item">
             <strong>Optional</strong>
             <div>${(reel.production_notes?.optional || []).map((item) => escapeHtml(item)).join("<br />") || "Нет"}</div>
+          </div>
+        </div>
+      </section>
+      <section class="section">
+        <h3>Export Readiness</h3>
+        <div class="shot-list">
+          <div class="shot-item">
+            <strong>Frames ready</strong>
+            <div>${escapeHtml(String((reel.frames || []).filter((item) => item.current_asset?.url).length))} / ${escapeHtml(String(reel.frame_count || 0))}</div>
+          </div>
+          <div class="shot-item">
+            <strong>Current export</strong>
+            <div>JSON production pack with scenario, shot list, notes, prompts and asset URLs.</div>
           </div>
         </div>
       </section>
@@ -415,6 +473,13 @@ function renderReelsDetail(reel) {
     });
   });
 
+  const exportButton = elements.draftDetail.querySelector("[data-reel-export]");
+  if (exportButton) {
+    exportButton.addEventListener("click", async () => {
+      await exportReelsProductionPack(reel.draft_id);
+    });
+  }
+
   const noteForm = elements.draftDetail.querySelector("[data-frame-note-form]");
   if (noteForm) {
     noteForm.addEventListener("submit", async (event) => {
@@ -430,6 +495,13 @@ function renderReelsDetail(reel) {
       event.preventDefault();
       const prompt = promptForm.querySelector("textarea[name='prompt']").value.trim();
       await saveReelsFramePrompt(reel.draft_id, state.selectedFrameIndex, prompt);
+    });
+  }
+
+  const regenButton = elements.draftDetail.querySelector("[data-frame-regenerate]");
+  if (regenButton) {
+    regenButton.addEventListener("click", async () => {
+      await regenerateReelsFrame(reel.draft_id, state.selectedFrameIndex);
     });
   }
 }

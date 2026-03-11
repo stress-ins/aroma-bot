@@ -805,16 +805,21 @@ class TestStoryboardParser:
 
 from bot.agents.planner import _PLAN_PROMPT, _BRAND_CONTEXT
 from bot.handlers.planner import _parse_plan_entries
+from bot.services import drafts_store as drafts_store_module
 from bot.services.drafts_store import DraftRecord
 from bot.services.miniapp_presenter import filter_drafts, payload_preview, serialize_draft
 from bot.services.miniapp_keywords import field_labels, serialize_topics
 from bot.services.miniapp_plans import serialize_plan
 from bot.services.miniapp_reels import (
+    build_reels_export_payload,
     serialize_reels_draft,
     update_reels_frame_note,
     update_reels_frame_prompt,
 )
+from bot.services import reels_assets as reels_assets_module
+from bot.services.drafts_store import save_draft
 from bot.services.plans_store import PlanRecord
+from bot.services.reels_assets import regenerate_reels_frame_asset
 
 
 class TestPlannerConstants:
@@ -1007,11 +1012,83 @@ class TestMiniAppReels:
     def test_serialize_reels_draft_returns_none_for_missing(self):
         assert serialize_reels_draft("missing-id") is None
 
+    def test_build_reels_export_payload_returns_none_for_missing(self):
+        assert build_reels_export_payload("missing-id") is None
+
     def test_update_reels_frame_note_returns_none_for_missing(self):
         assert update_reels_frame_note("missing-id", 0, "темнее") is None
 
     def test_update_reels_frame_prompt_returns_none_for_missing(self):
         assert update_reels_frame_prompt("missing-id", 0, "new prompt") is None
+
+    def test_regenerate_reels_frame_asset_returns_none_for_missing(self):
+        assert regenerate_reels_frame_asset("missing-id", 0) is None
+
+    def test_build_reels_export_payload_counts_ready_frames(self, monkeypatch, tmp_path):
+        monkeypatch.setattr(drafts_store_module, "_DRAFTS_FILE", tmp_path / "drafts.json")
+        draft = save_draft(
+            kind="reels",
+            topic="Вечерний ритуал",
+            source="/reels",
+            payload={
+                "scenario": "Сценарий",
+                "images_ready": 1,
+                "storyboard": [
+                    {
+                        "timecode": "0-3 сек",
+                        "scene": "Свеча и флакон",
+                        "angle": "Макро",
+                        "gemini_prompt": "warm candle and bottle",
+                        "current_asset": {"url": "/generated/reels_assets/test/frame_1.png"},
+                    },
+                    {
+                        "timecode": "3-10 сек",
+                        "scene": "Руки на ткани",
+                        "angle": "Средний план",
+                        "gemini_prompt": "hands over linen",
+                    },
+                ],
+            },
+        )
+
+        payload = build_reels_export_payload(draft.draft_id)
+
+        assert payload is not None
+        assert payload["ready_frames"] == 1
+        assert payload["export_summary"]["missing_assets"] == 1
+
+    def test_regenerate_reels_frame_asset_updates_current_asset(self, monkeypatch, tmp_path):
+        monkeypatch.setattr(drafts_store_module, "_DRAFTS_FILE", tmp_path / "drafts.json")
+        monkeypatch.setattr(reels_assets_module, "ASSETS_DIR", tmp_path / "reels_assets")
+        monkeypatch.setattr(
+            reels_assets_module,
+            "generate_gemini_image_sync",
+            lambda prompt, log_context="": b"fake-image-bytes",
+        )
+        draft = save_draft(
+            kind="reels",
+            topic="Вечерний ритуал",
+            source="/reels",
+            payload={
+                "scenario": "Сценарий",
+                "images_ready": 0,
+                "storyboard": [
+                    {
+                        "timecode": "0-3 сек",
+                        "scene": "Свеча и флакон",
+                        "angle": "Макро",
+                        "gemini_prompt": "warm candle and bottle",
+                    }
+                ],
+            },
+        )
+
+        payload = regenerate_reels_frame_asset(draft.draft_id, 0)
+
+        assert payload is not None
+        current_asset = payload["storyboard"][0]["current_asset"]
+        assert current_asset["url"].startswith("/generated/reels_assets/")
+        assert payload["images_ready"] == 1
 
 
 # ---------------------------------------------------------------------------

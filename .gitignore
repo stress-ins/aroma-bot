@@ -7,3 +7,4 @@ venv/
 *.session
 *.session-journal
 .instagrapi_session.json
+data/reels_assets/
