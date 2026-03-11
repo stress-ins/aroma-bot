@@ -786,12 +786,26 @@ class TestStoryboardParser:
         assert len(frames) == 1
         assert frames[0].timecode == "0-3 сек"
 
+    def test_parses_markdown_wrapped_fields(self):
+        raw = """\
+- **КАДР1_ТАЙМКОД:** 0-3 сек
+- **КАДР1_СЦЕНА:** Свеча и шалфей на ткани.
+- **КАДР1_РАКУРС:** Макро сверху.
+- **КАДР1_ПРОМПТ:** cinematic still with candle and sage
+"""
+        frames = _parse_storyboard(raw)
+
+        assert len(frames) == 1
+        assert frames[0].scene == "Свеча и шалфей на ткани."
+
 
 # ---------------------------------------------------------------------------
 # planner agent — generate_plan_sync format check (structure/constants)
 # ---------------------------------------------------------------------------
 
 from bot.agents.planner import _PLAN_PROMPT, _BRAND_CONTEXT
+from bot.handlers.planner import _parse_plan_entries
+from bot.services.drafts_store import DraftRecord
 
 
 class TestPlannerConstants:
@@ -803,6 +817,56 @@ class TestPlannerConstants:
 
     def test_brand_context_mentions_ароматерапия(self):
         assert "ароматерапия" in _BRAND_CONTEXT.lower() or "сенсорн" in _BRAND_CONTEXT.lower()
+
+
+class TestPlanParser:
+    def test_parses_three_plan_entries(self):
+        raw = """\
+📅 Понедельник
+Платформа: Threads
+Формат: пост
+Цель: Доверие
+Тема: Почему запахи помогают замедлиться вечером.
+Угол: Через знакомую офисную перегрузку.
+
+📅 Среда
+Платформа: Instagram
+Формат: карусель
+Цель: Экспертность
+Тема: Как мягко вернуть тело в состояние опоры.
+Угол: Разобрать 3 сенсорных якоря.
+
+📅 Пятница
+Платформа: Reels
+Формат: рилс
+Цель: Вовлечение
+Тема: Вечерний ритуал на 30 секунд.
+Угол: Быстрая практика перед сном.
+"""
+        entries = _parse_plan_entries(raw)
+
+        assert len(entries) == 3
+        assert entries[0].platform == "Threads"
+        assert entries[1].format_label == "карусель"
+        assert entries[2].topic == "Вечерний ритуал на 30 секунд."
+
+
+class TestDraftRecord:
+    def test_draft_record_keeps_fields(self):
+        record = DraftRecord(
+            draft_id="abc12345",
+            kind="reels",
+            topic="Вечерний ритуал",
+            source="/reels",
+            created_at="2026-03-11T07:00:00+00:00",
+            status="draft",
+            payload={"scenario": "test"},
+        )
+
+        assert record.kind == "reels"
+        assert record.source == "/reels"
+        assert record.status == "draft"
+        assert record.payload["scenario"] == "test"
 
 
 # ---------------------------------------------------------------------------
