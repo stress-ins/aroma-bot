@@ -14,7 +14,12 @@ from bot.services.drafts_store import get_draft, list_recent_drafts, update_draf
 from bot.services.miniapp_keywords import add_keyword, delete_keyword, field_labels, serialize_topics
 from bot.services.miniapp_plans import serialize_plan
 from bot.services.miniapp_presenter import filter_drafts, serialize_draft
-from bot.services.miniapp_reels import list_reels_drafts, serialize_reels_draft, update_reels_frame_note
+from bot.services.miniapp_reels import (
+    list_reels_drafts,
+    serialize_reels_draft,
+    update_reels_frame_note,
+    update_reels_frame_prompt,
+)
 from bot.services.plans_store import get_plan, list_recent_plans
 from config import settings
 
@@ -64,6 +69,10 @@ class KeywordPayload(BaseModel):
 
 class ReelsFrameNotePayload(BaseModel):
     note: str = Field(default="")
+
+
+class ReelsFramePromptPayload(BaseModel):
+    prompt: str = Field(default="")
 
 
 @app.get("/")
@@ -195,6 +204,22 @@ async def reels_frame_note(
     _: None = Depends(_require_auth),
 ):
     draft = update_reels_frame_note(draft_id, frame_index, payload.note)
+    if not draft:
+        raise HTTPException(status_code=404, detail="reels_frame_not_found")
+    return draft
+
+
+@app.post("/api/reels/{draft_id}/frames/{frame_index}/prompt")
+async def reels_frame_prompt(
+    draft_id: str,
+    frame_index: int,
+    payload: ReelsFramePromptPayload,
+    _: None = Depends(_require_auth),
+):
+    prompt = payload.prompt.strip()
+    if not prompt:
+        raise HTTPException(status_code=400, detail="empty_prompt")
+    draft = update_reels_frame_prompt(draft_id, frame_index, prompt)
     if not draft:
         raise HTTPException(status_code=404, detail="reels_frame_not_found")
     return draft

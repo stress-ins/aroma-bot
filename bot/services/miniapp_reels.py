@@ -20,6 +20,25 @@ def _build_shot_list(frames: list[dict[str, object]]) -> list[dict[str, object]]
     return shots
 
 
+def _build_production_notes(frames: list[dict[str, object]]) -> dict[str, list[str]]:
+    required = []
+    optional = []
+    for frame in frames:
+        title = f"{frame.get('timecode', '')}: {frame.get('scene', '')}".strip(": ")
+        camera = str(frame.get("angle", "")).strip()
+        note = str(frame.get("review_note", "")).strip()
+        if title:
+            required.append(title)
+        if camera:
+            optional.append(f"Камера: {camera}")
+        if note:
+            optional.append(f"Note: {note}")
+    return {
+        "required": required[:6],
+        "optional": optional[:8],
+    }
+
+
 def serialize_reels_draft(draft_id: str) -> dict[str, object] | None:
     draft = get_draft(draft_id)
     if not draft or draft.kind != "reels":
@@ -40,6 +59,7 @@ def serialize_reels_draft(draft_id: str) -> dict[str, object] | None:
                     "angle": str(frame.get("angle", "")),
                     "gemini_prompt": str(frame.get("gemini_prompt", "")),
                     "review_note": str(frame.get("review_note", "")),
+                    "prompt_revisions": list(frame.get("prompt_revisions", [])) if isinstance(frame.get("prompt_revisions"), list) else [],
                 }
             )
 
@@ -47,6 +67,7 @@ def serialize_reels_draft(draft_id: str) -> dict[str, object] | None:
     data["frame_count"] = len(frames)
     data["images_ready"] = int(draft.payload.get("images_ready", 0) or 0)
     data["shot_list"] = _build_shot_list(frames)
+    data["production_notes"] = _build_production_notes(frames)
     return data
 
 
@@ -76,6 +97,38 @@ def update_reels_frame_note(draft_id: str, frame_index: int, note: str) -> dict[
         frame = dict(item)
         if idx == frame_index:
             frame["review_note"] = note.strip()
+        updated_storyboard.append(frame)
+
+    payload = dict(draft.payload)
+    payload["storyboard"] = updated_storyboard
+    updated = update_draft(draft_id, payload=payload, status="draft")
+    if not updated:
+        return None
+    return serialize_reels_draft(draft_id)
+
+
+def update_reels_frame_prompt(draft_id: str, frame_index: int, prompt: str) -> dict[str, object] | None:
+    draft = get_draft(draft_id)
+    if not draft or draft.kind != "reels":
+        return None
+    storyboard = draft.payload.get("storyboard", [])
+    if not isinstance(storyboard, list) or frame_index < 0 or frame_index >= len(storyboard):
+        return None
+
+    updated_storyboard: list[dict[str, object]] = []
+    for idx, item in enumerate(storyboard):
+        if not isinstance(item, dict):
+            updated_storyboard.append({})
+            continue
+        frame = dict(item)
+        if idx == frame_index:
+            current_prompt = str(frame.get("gemini_prompt", "")).strip()
+            new_prompt = prompt.strip()
+            revisions = list(frame.get("prompt_revisions", [])) if isinstance(frame.get("prompt_revisions"), list) else []
+            if current_prompt and current_prompt != new_prompt:
+                revisions.append(current_prompt)
+            frame["gemini_prompt"] = new_prompt
+            frame["prompt_revisions"] = revisions[-5:]
         updated_storyboard.append(frame)
 
     payload = dict(draft.payload)
