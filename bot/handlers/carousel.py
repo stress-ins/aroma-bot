@@ -303,10 +303,23 @@ def _apply_note_to_prompt(prompt: str, note: str) -> str:
     return f"{base}, {note.strip()} {flags}"
 
 
-def _qa_image_sync(img_bytes: bytes, prompt: str, note: str = "") -> tuple[bool, str]:
-    """Vision QA: check for hallucinations, forbidden elements, note compliance."""
+def _qa_image_sync(
+    img_bytes: bytes, prompt: str, note: str = "", slide_idx: int = -1
+) -> tuple[bool, str]:
+    """Vision QA: check for hallucinations, forbidden elements, slide rules, note compliance."""
     import anthropic
     import base64
+
+    # Per-slide visual rules check
+    slide_rules = ""
+    if 0 <= slide_idx < len(_SLIDE_VISUAL_RULES):
+        role, show, forbid = _SLIDE_VISUAL_RULES[slide_idx]
+        slide_rules = (
+            f"\n3. Slide-specific rules for slide {slide_idx + 1} ({role}):\n"
+            f"   - Must show: {show}\n"
+            f"   - Must NOT contain: {forbid}\n"
+            f"   Fail if the image clearly violates the forbidden elements for this slide position."
+        )
 
     note_check = (
         f"\n4. The user requested: \"{note}\" — verify this is clearly reflected."
@@ -317,10 +330,9 @@ def _qa_image_sync(img_bytes: bytes, prompt: str, note: str = "") -> tuple[bool,
         f"Image prompt used: {prompt}\n\n"
         f"Check this image for issues:\n"
         f"1. Physically impossible or hallucinated elements "
-        f"(e.g. lavender on fire, smoke from cold objects, plants underwater without context, "
-        f"impossible anatomy of plants/objects)\n"
-        f"2. Any visible text, watermarks, logos, or typography\n"
-        f"3. Any human faces (not allowed){note_check}\n\n"
+        f"(e.g. lavender on fire, smoke from cold objects, impossible anatomy of objects)\n"
+        f"2. Any visible text, watermarks, logos, or typography"
+        f"{slide_rules}{note_check}\n\n"
         f"Reply in this exact format (2 lines only):\n"
         f"PASS or FAIL\n"
         f"REASON: [one short sentence. If PASS write: OK]"
@@ -799,7 +811,7 @@ async def _run_image_generation(
             nonlocal qa_done
             prompt_i = img_prompts[i] if i < len(img_prompts) else ""
             passed, reason = await loop.run_in_executor(
-                _executor, _qa_image_sync, images[i], prompt_i, last_note
+                _executor, _qa_image_sync, images[i], prompt_i, last_note, i
             )
             qa_results[i] = (passed, reason)
             qa_done += 1
@@ -855,7 +867,7 @@ async def _run_image_generation(
                 nonlocal qa2_done
                 prompt_i = img_prompts[i] if i < len(img_prompts) else ""
                 passed, reason = await loop.run_in_executor(
-                    _executor, _qa_image_sync, images[i], prompt_i, last_note
+                    _executor, _qa_image_sync, images[i], prompt_i, last_note, i
                 )
                 qa_results[i] = (passed, reason)
                 qa2_done += 1
