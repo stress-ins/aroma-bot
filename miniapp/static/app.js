@@ -444,16 +444,6 @@ function renderCreate() {
           <button class="primary-button" type="submit">Создать карусель</button>
         </form>
       </section>
-      <section class="section">
-        <h3>Создать карусель</h3>
-        <form class="create-form" data-create-carousel>
-          <label>
-            Тема
-            <textarea name="topic" placeholder="Например: вечерний ритуал для перезагрузки нервной системы"></textarea>
-          </label>
-          <button class="primary-button" type="submit">Сгенерировать</button>
-        </form>
-      </section>
     </div>
   `;
   syncDetailPanelState(false);
@@ -565,7 +555,7 @@ function renderAromasLocked() {
 
 function renderAromas() {
   const items = state.aromas || [];
-  const query = state.aromaSearch.trim().toLowerCase();
+  const query = (state.aromaSearch || "").trim().toLowerCase();
   const filtered = items.filter((item) => {
     const haystack = `${item.name} ${item.description || ""}`.toLowerCase();
     return !query || haystack.includes(query);
@@ -574,32 +564,36 @@ function renderAromas() {
   elements.listTitle.textContent = "Ароматы";
   elements.draftCount.textContent = `${items.length} масел`;
   setEmptyState(filtered.length > 0, "Масла не найдены.");
-  elements.draftList.innerHTML = `
-    <div class="aroma-search">
-      <label>
-        Поиск масла
-        <input id="aromaSearchInput" type="search" placeholder="Например: лаванда" value="${escapeHtml(state.aromaSearch)}" />
-      </label>
-    </div>
-    <div class="plans-list">
-      ${filtered.map((item) => `
-        <article class="draft-card${item.slug === aroma?.slug ? " active" : ""}">
-          <div class="draft-kind">масло</div>
-          <h3 class="draft-topic">${escapeHtml(item.name)}</h3>
-          <div class="draft-preview">${escapeHtml(item.description || "")}</div>
-          <button type="button" data-aroma-open="${escapeHtml(item.slug)}">Открыть</button>
-        </article>
-      `).join("")}
-    </div>
-  `;
 
-  const searchInput = document.getElementById("aromaSearchInput");
-  if (searchInput) {
-    searchInput.addEventListener("input", () => {
-      state.aromaSearch = searchInput.value;
-      renderAromas();
-    });
+  let listContainer = document.getElementById("aromaListContainer");
+  if (!listContainer) {
+    elements.draftList.innerHTML = `
+      <div class="aroma-search">
+        <label>
+          Поиск масла
+          <input id="aromaSearchInput" type="search" placeholder="Например: лаванда" value="${escapeHtml(state.aromaSearch)}" />
+        </label>
+      </div>
+      <div id="aromaListContainer" class="plans-list"></div>
+    `;
+    listContainer = document.getElementById("aromaListContainer");
+    const searchInput = document.getElementById("aromaSearchInput");
+    if (searchInput) {
+      searchInput.addEventListener("input", () => {
+        state.aromaSearch = searchInput.value;
+        renderAromas();
+      });
+    }
   }
+
+  listContainer.innerHTML = filtered.map((item) => `
+    <article class="draft-card${item.slug === aroma?.slug ? " active" : ""}">
+      <div class="draft-kind">масло</div>
+      <h3 class="draft-topic">${escapeHtml(item.name)}</h3>
+      <div class="draft-preview">${escapeHtml(item.description || "")}</div>
+      <button type="button" data-aroma-open="${escapeHtml(item.slug)}">Открыть</button>
+    </article>
+  `).join("");
 
   elements.draftList.querySelectorAll("[data-aroma-open]").forEach((button) => {
     button.addEventListener("click", async () => {
@@ -725,7 +719,12 @@ function setTab(tab) {
   }
   const isDrafts = tab === "drafts";
   for (const node of [elements.kindFilter, elements.statusFilter, elements.feedbackFilter, elements.queryFilter]) {
-    node.closest("label").hidden = !isDrafts;
+    if (node) {
+      const label = node.closest("label");
+      if (label) {
+        label.hidden = !isDrafts;
+      }
+    }
   }
 }
 
