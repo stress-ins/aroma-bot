@@ -1484,3 +1484,11 @@ class TestMiniAppReelsPolling:
         assert "void loadReferenceAccess();" in source
         assert "await loadReferenceAccess();" not in bootstrap_section
         assert 'throw new Error("request_timeout")' in source
+
+    def test_reference_access_timeout_stays_retriable(self):
+        source = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+
+        assert "referenceAccessError" in source
+        assert 'state.referenceAccess = null;' in source
+        assert "renderReferencesUnavailable()" in source
+        assert "reference_access_denied" in source

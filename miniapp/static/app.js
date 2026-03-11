@@ -4,6 +4,7 @@ const state = {
   draftId: new URLSearchParams(window.location.search).get("draft_id") || "",
   selectedCreateTool: null,
   referenceAccess: null,
+  referenceAccessError: "",
   referenceItems: [],
   referenceSearch: "",
   selectedReference: null,
@@ -470,7 +471,17 @@ async function loadReferenceAccess() {
   try {
     const payload = await fetchJson("/api/references/access");
     state.referenceAccess = Boolean(payload?.allowed);
-  } catch (_e) { state.referenceAccess = false; }
+    state.referenceAccessError = "";
+  } catch (error) {
+    const message = String(error?.message || "");
+    if (message.includes("reference_access_denied") || message.includes("403 Forbidden")) {
+      state.referenceAccess = false;
+      state.referenceAccessError = "";
+    } else {
+      state.referenceAccess = null;
+      state.referenceAccessError = message || "reference_temporarily_unavailable";
+    }
+  }
   return state.referenceAccess;
 }
 
@@ -479,6 +490,10 @@ async function loadReferences(tabId = state.tab) {
   if (!meta) return;
   if (state.referenceAccess === null) {
     await loadReferenceAccess();
+  }
+  if (state.referenceAccess === null) {
+    renderReferencesUnavailable();
+    return;
   }
   if (!state.referenceAccess) {
     renderReferencesLocked();
@@ -602,6 +617,17 @@ function renderReferencesLocked() {
   setEmptyState(true);
   elements.draftList.innerHTML = `<div class="detail-preview">${escapeHtml(meta.locked)}</div>`;
   elements.draftDetail.innerHTML = `${renderBackButton()}<div class="detail-empty">${escapeHtml(meta.locked)}</div>`;
+  syncMobileNavigation();
+}
+
+function renderReferencesUnavailable() {
+  const meta = currentHandbookMeta();
+  const message = "Справочник временно недоступен. Попробуйте открыть раздел ещё раз.";
+  elements.listTitle.textContent = meta.title;
+  elements.draftCount.textContent = "";
+  setEmptyState(true);
+  elements.draftList.innerHTML = `<div class="detail-preview">${escapeHtml(message)}</div>`;
+  elements.draftDetail.innerHTML = `${renderBackButton()}<div class="detail-empty">${escapeHtml(message)}</div>`;
   syncMobileNavigation();
 }
 
