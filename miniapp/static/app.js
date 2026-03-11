@@ -177,24 +177,24 @@ async function loadKeywords() {
 }
 
 function renderCreate() {
-  elements.listTitle.textContent = "Create";
-  elements.draftCount.textContent = "3 tools";
+  elements.listTitle.textContent = "Создать";
+  elements.draftCount.textContent = "3 инструмента";
   elements.emptyState.hidden = true;
   elements.draftList.innerHTML = `
     <div class="create-list">
       <article class="create-card">
-        <div class="draft-kind">content</div>
+        <div class="draft-kind">контент</div>
         <h3 class="draft-topic">Threads / Instagram / Telegram</h3>
         <div class="draft-preview">Тема + цель + формат -> готовый draft в истории.</div>
       </article>
       <article class="create-card">
         <div class="draft-kind">reels</div>
-        <h3 class="draft-topic">Scenario + storyboard</h3>
+        <h3 class="draft-topic">Сценарий + раскадровка</h3>
         <div class="draft-preview">Только тема -> сценарий и 4 кадра раскадровки.</div>
       </article>
       <article class="create-card">
-        <div class="draft-kind">plan</div>
-        <h3 class="draft-topic">Weekly content plan</h3>
+        <div class="draft-kind">план</div>
+        <h3 class="draft-topic">Недельный контент-план</h3>
         <div class="draft-preview">Собирает тренды и сохраняет недельный план прямо в приложении.</div>
       </article>
     </div>
@@ -202,49 +202,49 @@ function renderCreate() {
   elements.draftDetail.innerHTML = `
     <div class="detail-grid">
       <section class="section">
-        <h3>Create Content</h3>
+        <h3>Создать контент</h3>
         <form class="create-form" data-create-content>
           <label>
-            Topic
+            Тема
             <textarea name="topic" placeholder="Например: как мягко переключиться после рабочего дня"></textarea>
           </label>
           <div class="field-grid">
             <label>
-              Goal
+              Цель
               <select name="goal_key">
-                <option value="trust">trust</option>
-                <option value="authority">authority</option>
-                <option value="engagement">engagement</option>
-                <option value="sales">sales</option>
+                <option value="trust">Доверие</option>
+                <option value="authority">Экспертность</option>
+                <option value="engagement">Вовлечённость</option>
+                <option value="sales">Продажи</option>
               </select>
             </label>
             <label>
-              Format
+              Формат
               <select name="format_key">
-                <option value="threads">threads</option>
-                <option value="instagram">instagram</option>
-                <option value="telegram">telegram</option>
+                <option value="threads">Threads</option>
+                <option value="instagram">Instagram</option>
+                <option value="telegram">Telegram</option>
               </select>
             </label>
           </div>
-          <button class="primary-button" type="submit">Generate content</button>
+          <button class="primary-button" type="submit">Сгенерировать</button>
         </form>
       </section>
       <section class="section">
-        <h3>Create Reels</h3>
+        <h3>Создать Reels</h3>
         <form class="create-form" data-create-reels>
           <label>
-            Topic
+            Тема
             <textarea name="topic" placeholder="Например: вечерний сенсорный ритуал на 30 секунд"></textarea>
           </label>
-          <button class="primary-button" type="submit">Generate reels</button>
+          <button class="primary-button" type="submit">Сгенерировать</button>
         </form>
       </section>
       <section class="section">
-        <h3>Create Plan</h3>
+        <h3>Создать план</h3>
         <form class="create-form" data-create-plan>
           <div class="detail-preview">Собирает актуальные тренды и сохраняет недельный контент-план в Plan workspace.</div>
-          <button class="primary-button" type="submit">Generate weekly plan</button>
+          <button class="primary-button" type="submit">Сгенерировать план</button>
         </form>
       </section>
     </div>
@@ -355,9 +355,9 @@ function inboxSectionMarkup(title, items) {
           </div>
           <div class="meta">${escapeHtml(item.review_reason || "")}</div>
           <div class="actions-row">
-            <button type="button" data-inbox-open="${escapeHtml(item.draft_id)}">Open</button>
-            <button type="button" data-inbox-review="${escapeHtml(item.draft_id)}">In review</button>
-            <button type="button" data-inbox-approve="${escapeHtml(item.draft_id)}">Approve</button>
+            <button type="button" data-inbox-open="${escapeHtml(item.draft_id)}">Открыть</button>
+            <button type="button" data-inbox-review="${escapeHtml(item.draft_id)}">На ревью</button>
+            <button type="button" data-inbox-approve="${escapeHtml(item.draft_id)}">Одобрить</button>
           </div>
         </article>
       `).join("")}
@@ -366,33 +366,33 @@ function inboxSectionMarkup(title, items) {
 }
 
 function renderInbox() {
-  elements.listTitle.textContent = "Approval Inbox";
+  elements.listTitle.textContent = "Очередь одобрения";
   const items = state.inbox || [];
   const grouped = groupInboxItems(items);
-  elements.draftCount.textContent = `${items.length} review`;
+  elements.draftCount.textContent = `${items.length} на ревью`;
   elements.emptyState.hidden = items.length > 0;
   elements.draftList.innerHTML = `
     <div class="inbox-toolbar">
       <label>
-        Queue type
+        Тип очереди
         <select id="inboxKindFilter">
-          <option value="all"${state.inboxKind === "all" ? " selected" : ""}>All</option>
-          <option value="content"${state.inboxKind === "content" ? " selected" : ""}>Content</option>
+          <option value="all"${state.inboxKind === "all" ? " selected" : ""}>Все</option>
+          <option value="content"${state.inboxKind === "content" ? " selected" : ""}>Контент</option>
           <option value="reels"${state.inboxKind === "reels" ? " selected" : ""}>Reels</option>
-          <option value="plan"${state.inboxKind === "plan" ? " selected" : ""}>Plan-derived</option>
+          <option value="plan"${state.inboxKind === "plan" ? " selected" : ""}>Из плана</option>
         </select>
       </label>
     </div>
     <div class="plans-list">
-      ${inboxSectionMarkup("Plan-derived", grouped.plan)}
+      ${inboxSectionMarkup("Из плана", grouped.plan)}
       ${inboxSectionMarkup("Reels", grouped.reels)}
-      ${inboxSectionMarkup("Content", grouped.content)}
+      ${inboxSectionMarkup("Контент", grouped.content)}
     </div>
   `;
   elements.draftDetail.innerHTML = `
     <div class="detail-grid">
       <section class="section">
-        <h3>Approval Pipeline</h3>
+        <h3>Очередь одобрения</h3>
         <div class="detail-preview">Inbox показывает, что именно ждёт review, и почему: новый draft, item из плана или reels-черновик.</div>
       </section>
     </div>
@@ -438,7 +438,7 @@ function renderInbox() {
 }
 
 function renderDraftList() {
-  elements.listTitle.textContent = "Drafts";
+  elements.listTitle.textContent = "Черновики";
   elements.draftList.innerHTML = "";
   elements.draftCount.textContent = `${state.drafts.length} шт`;
   elements.emptyState.hidden = state.drafts.length > 0;
@@ -452,7 +452,7 @@ function renderDraftList() {
       <div class="draft-preview">${escapeHtml(draft.preview || "Без превью")}</div>
       <div class="draft-meta">
         <span class="tag">${escapeHtml(draft.status)}</span>
-        <span class="tag">${escapeHtml(draft.feedback || "no feedback")}</span>
+        <span class="tag">${escapeHtml(draft.feedback || "без реакции")}</span>
         <span class="tag">${escapeHtml(draft.source)}</span>
       </div>
     `;
@@ -466,10 +466,10 @@ function renderDraftList() {
 }
 
 function renderStatus() {
-  elements.listTitle.textContent = "Status";
+  elements.listTitle.textContent = "Статус";
   const status = state.status;
   const items = status?.items || [];
-  elements.draftCount.textContent = `${items.length} sources`;
+  elements.draftCount.textContent = `${items.length} источников`;
   elements.emptyState.hidden = items.length > 0;
   elements.draftList.innerHTML = `
     <div class="status-list">
@@ -477,7 +477,7 @@ function renderStatus() {
         <article class="status-card">
           <strong>${escapeHtml(item.source)}</strong>
           <span class="${item.enabled ? "status-good" : "status-bad"}">
-            ${item.enabled ? "enabled" : "disabled"}
+            ${item.enabled ? "включён" : "выключен"}
           </span>
         </article>
       `).join("")}
@@ -486,7 +486,7 @@ function renderStatus() {
   elements.draftDetail.innerHTML = `
     <div class="detail-grid">
       <section class="section">
-        <h3>Digest</h3>
+        <h3>Дайджест</h3>
         <div class="detail-preview">Время: ${escapeHtml(status?.digest_time || "")}\nТаймзона: ${escapeHtml(status?.timezone || "")}</div>
       </section>
       <section class="section">
@@ -498,20 +498,20 @@ function renderStatus() {
 }
 
 function renderPlans() {
-  elements.listTitle.textContent = "Plans";
+  elements.listTitle.textContent = "Планы";
   const items = state.plans || [];
-  elements.draftCount.textContent = `${items.length} plans`;
+  elements.draftCount.textContent = `${items.length} планов`;
   elements.emptyState.hidden = items.length > 0;
   elements.draftList.innerHTML = `
     <div class="plans-list">
       ${items.map((plan) => `
         <article class="plan-card">
-          <div class="draft-kind">weekly plan</div>
+          <div class="draft-kind">недельный план</div>
           <h3 class="draft-topic">${escapeHtml(plan.plan_id)}</h3>
           <div class="draft-preview">${escapeHtml((plan.raw_text || "").slice(0, 220) || "Без текста плана")}</div>
           <div class="draft-meta">
-            <span class="tag">${escapeHtml(plan.entries.length)} entries</span>
-            <span class="tag">${escapeHtml(plan.related_drafts.length)} drafts</span>
+            <span class="tag">${escapeHtml(plan.entries.length)} записей</span>
+            <span class="tag">${escapeHtml(plan.related_drafts.length)} черновиков</span>
           </div>
           <button type="button" data-plan-open="${escapeHtml(plan.plan_id)}">Открыть</button>
         </article>
@@ -541,13 +541,13 @@ function renderReels() {
     <div class="plans-list">
       ${items.map((reel) => `
         <article class="reels-card">
-          <div class="draft-kind">reels draft</div>
+          <div class="draft-kind">reels-черновик</div>
           <h3 class="draft-topic">${escapeHtml(reel.topic)}</h3>
           <div class="draft-preview">${escapeHtml(reel.preview || "Без сценария")}</div>
           <div class="draft-meta">
             <span class="tag">${escapeHtml(reel.status)}</span>
-            <span class="tag">${escapeHtml(reel.images_ready)} images</span>
-            <span class="tag">${escapeHtml(reel.frame_count)} frames</span>
+            <span class="tag">${escapeHtml(reel.images_ready)} изображений</span>
+            <span class="tag">${escapeHtml(reel.frame_count)} кадров</span>
           </div>
           <button type="button" data-reels-open="${escapeHtml(reel.draft_id)}">Открыть</button>
         </article>
@@ -639,25 +639,25 @@ function renderReelsDetail(reel) {
           <h2 class="detail-title">${escapeHtml(reel.topic)}</h2>
           <div class="draft-meta">
             <span class="tag">${escapeHtml(reel.status)}</span>
-            <span class="tag">${escapeHtml(reel.feedback || "no feedback")}</span>
-            <span class="tag">${escapeHtml(reel.images_ready)} images</span>
+            <span class="tag">${escapeHtml(reel.feedback || "без реакции")}</span>
+            <span class="tag">${escapeHtml(reel.images_ready)} изображений</span>
           </div>
           <div class="actions-row">
-            <button class="secondary-button" type="button" data-reel-export="${escapeHtml(reel.draft_id)}">Export production pack</button>
+            <button class="secondary-button" type="button" data-reel-export="${escapeHtml(reel.draft_id)}">Скачать production pack</button>
           </div>
         </div>
         <div class="actions-row">
-          <button class="secondary-button" type="button" data-send-draft-chat="${escapeHtml(reel.draft_id)}">Send to chat</button>
-          <button class="secondary-button" type="button" data-request-review="${escapeHtml(reel.draft_id)}">Request review</button>
+          <button class="secondary-button" type="button" data-send-draft-chat="${escapeHtml(reel.draft_id)}">Отправить в чат</button>
+          <button class="secondary-button" type="button" data-request-review="${escapeHtml(reel.draft_id)}">Запросить ревью</button>
         </div>
       </div>
-      ${payloadSection("Scenario", reel.payload?.scenario || reel.preview)}
+      ${payloadSection("Сценарий", reel.payload?.scenario || reel.preview)}
       <section class="section">
-        <h3>Storyboard Frames</h3>
+        <h3>Кадры раскадровки</h3>
         <div class="reels-frames">
           ${frames.map((item, index) => `
             <button class="reels-frame${index === state.selectedFrameIndex ? " active" : ""}" type="button" data-frame-open="${index}">
-              <strong>${escapeHtml(item.timecode || `Frame ${index + 1}`)}</strong>
+              <strong>${escapeHtml(item.timecode || `Кадр ${index + 1}`)}</strong>
               <div>${escapeHtml(item.scene || "")}</div>
             </button>
           `).join("")}
@@ -665,19 +665,19 @@ function renderReelsDetail(reel) {
       </section>
       ${frame ? `
         <section class="section">
-          <h3>Focused Frame</h3>
+          <h3>Выбранный кадр</h3>
           <div class="reels-focus">
             <strong>${escapeHtml(frame.timecode || "")}</strong>
             <div>${escapeHtml(frame.scene || "")}</div>
             <div class="meta">${escapeHtml(frame.angle || "")}</div>
             ${payloadSection("Gemini Prompt", frame.gemini_prompt)}
-            ${frame.current_asset?.url ? `<img class="frame-image" src="${escapeHtml(frame.current_asset.url)}" alt="Frame asset" />` : ""}
+            ${frame.current_asset?.url ? `<img class="frame-image" src="${escapeHtml(frame.current_asset.url)}" alt="Кадр ассет" />` : ""}
             <div class="actions-row">
-              <button class="secondary-button" type="button" data-frame-regenerate="${escapeHtml(String(frame.frame_index))}">Regenerate frame</button>
+              <button class="secondary-button" type="button" data-frame-regenerate="${escapeHtml(String(frame.frame_index))}">Перегенерировать кадр</button>
             </div>
             <form class="frame-note-form" data-frame-note-form="${escapeHtml(String(frame.frame_index))}">
               <label>
-                Review note
+                Замечание к ревью
                 <textarea name="note" placeholder="Например: темнее, ближе камера, меньше объектов в кадре.">${escapeHtml(frame.review_note || "")}</textarea>
               </label>
               <button class="primary-button" type="submit">Сохранить замечание</button>
@@ -693,7 +693,7 @@ function renderReelsDetail(reel) {
               <div class="revision-list">
                 ${(frame.prompt_revisions || []).map((revision, index) => `
                   <div class="revision-item">
-                    <strong>Revision ${index + 1}</strong>
+                    <strong>Ревизия ${index + 1}</strong>
                     <div>${escapeHtml(revision)}</div>
                   </div>
                 `).join("")}
@@ -703,9 +703,9 @@ function renderReelsDetail(reel) {
               <div class="asset-revisions">
                 ${(frame.asset_revisions || []).map((asset, index) => `
                   <div class="asset-revision">
-                    <strong>Asset revision ${index + 1}</strong>
+                    <strong>Версия ассета ${index + 1}</strong>
                     <div class="meta">${escapeHtml(asset.generated_at || "")}</div>
-                    ${asset.url ? `<img class="frame-image" src="${escapeHtml(asset.url)}" alt="Frame revision" />` : ""}
+                    ${asset.url ? `<img class="frame-image" src="${escapeHtml(asset.url)}" alt="Версия кадра" />` : ""}
                   </div>
                 `).join("")}
               </div>
@@ -714,7 +714,7 @@ function renderReelsDetail(reel) {
         </section>
       ` : ""}
       <section class="section">
-        <h3>Shot List</h3>
+        <h3>Список кадров</h3>
         <div class="shot-list">
           ${(reel.shot_list || []).map((shot) => `
             <div class="shot-item">
@@ -722,35 +722,35 @@ function renderReelsDetail(reel) {
               <div>${escapeHtml(shot.timecode || "")}</div>
               <div>${escapeHtml(shot.action || "")}</div>
               <div class="meta">${escapeHtml(shot.camera || "")}</div>
-              <div class="meta">${shot.asset_ready ? "Asset ready" : "Asset missing"}</div>
-              ${shot.note ? `<div class="meta">Note: ${escapeHtml(shot.note)}</div>` : ""}
+              <div class="meta">${shot.asset_ready ? "Ассет готов" : "Ассет отсутствует"}</div>
+              ${shot.note ? `<div class="meta">Заметка: ${escapeHtml(shot.note)}</div>` : ""}
             </div>
           `).join("")}
         </div>
       </section>
       <section class="section">
-        <h3>Production Notes</h3>
+        <h3>Заметки производства</h3>
         <div class="shot-list">
           <div class="shot-item">
-            <strong>Required</strong>
+            <strong>Обязательное</strong>
             <div>${(reel.production_notes?.required || []).map((item) => escapeHtml(item)).join("<br />") || "Нет"}</div>
           </div>
           <div class="shot-item">
-            <strong>Optional</strong>
+            <strong>Опциональное</strong>
             <div>${(reel.production_notes?.optional || []).map((item) => escapeHtml(item)).join("<br />") || "Нет"}</div>
           </div>
         </div>
       </section>
       <section class="section">
-        <h3>Export Readiness</h3>
+        <h3>Готовность к экспорту</h3>
         <div class="shot-list">
           <div class="shot-item">
-            <strong>Frames ready</strong>
+            <strong>Кадры готовы</strong>
             <div>${escapeHtml(String((reel.frames || []).filter((item) => item.current_asset?.url).length))} / ${escapeHtml(String(reel.frame_count || 0))}</div>
           </div>
           <div class="shot-item">
-            <strong>Current export</strong>
-            <div>JSON production pack with scenario, shot list, notes, prompts and asset URLs.</div>
+            <strong>Текущий экспорт</strong>
+            <div>JSON-пакет со сценарием, списком кадров, заметками, промптами и ссылками на ассеты.</div>
           </div>
         </div>
       </section>
@@ -840,11 +840,11 @@ function renderPlanDetail(plan) {
         <h3>Plan ID</h3>
         <div class="detail-preview">${escapeHtml(plan.plan_id)}</div>
         <div class="actions-row">
-          <button class="secondary-button" type="button" data-send-plan-chat="${escapeHtml(plan.plan_id)}">Send plan to chat</button>
+          <button class="secondary-button" type="button" data-send-plan-chat="${escapeHtml(plan.plan_id)}">Отправить план в чат</button>
         </div>
       </section>
       <section class="section">
-        <h3>Entries</h3>
+        <h3>Записи</h3>
         <div class="plan-entries">
           ${plan.entries.map((entry, index) => `
             <div class="plan-entry">
@@ -853,14 +853,14 @@ function renderPlanDetail(plan) {
               <div>${escapeHtml(entry.topic || "")}</div>
               <div class="meta">${escapeHtml(entry.goal || "")}</div>
               <div class="actions-row">
-                <button class="secondary-button" type="button" data-plan-generate="${index}">Generate draft</button>
+                <button class="secondary-button" type="button" data-plan-generate="${index}">Создать черновик</button>
               </div>
             </div>
           `).join("")}
         </div>
       </section>
       <section class="section">
-        <h3>Related Drafts</h3>
+        <h3>Связанные черновики</h3>
         <div class="related-drafts">
           ${plan.related_drafts.length ? plan.related_drafts.map((draft) => `
             <div class="plan-entry">
@@ -868,11 +868,11 @@ function renderPlanDetail(plan) {
               <div>${escapeHtml(draft.topic)}</div>
               <div class="meta">Draft ID: ${escapeHtml(draft.draft_id)} / ${escapeHtml(draft.status)}</div>
             </div>
-          `).join("") : '<div class="detail-preview">По этому плану пока не созданы draft’ы.</div>'}
+          `).join("") : ‘<div class="detail-preview">По этому плану пока не созданы draft\’ы.</div>’}
         </div>
       </section>
       <section class="section">
-        <h3>Raw Plan</h3>
+        <h3>Исходный текст плана</h3>
         <pre class="json-block">${escapeHtml(plan.raw_text || "")}</pre>
       </section>
     </div>
@@ -913,10 +913,10 @@ function keywordFieldMarkup(topicIdx, fieldKey, fieldLabel, words) {
 }
 
 function renderKeywords() {
-  elements.listTitle.textContent = "Keywords";
+  elements.listTitle.textContent = "Ключевые слова";
   const items = state.keywords?.items || [];
   const labels = state.keywords?.field_labels || {};
-  elements.draftCount.textContent = `${items.length} topics`;
+  elements.draftCount.textContent = `${items.length} тем`;
   elements.emptyState.hidden = items.length > 0;
   elements.draftList.innerHTML = `
     <div class="keywords-list">
@@ -935,7 +935,7 @@ function renderKeywords() {
   elements.draftDetail.innerHTML = `
     <div class="detail-grid">
       <section class="section">
-        <h3>Keywords Workspace</h3>
+        <h3>Управление ключевыми словами</h3>
         <div class="detail-preview">Здесь можно редактировать словари тем и хэштегов без команды /keywords в чате.</div>
       </section>
     </div>
@@ -983,11 +983,11 @@ function storyboardMarkup(items) {
   }
   return `
     <section class="section">
-      <h3>Storyboard</h3>
+      <h3>Раскадровка</h3>
       <div class="storyboard">
         ${items.map((frame) => `
           <div class="storyboard-frame">
-            <strong>${escapeHtml(frame.timecode || "Frame")}</strong>
+            <strong>${escapeHtml(frame.timecode || "Кадр")}</strong>
             <div>${escapeHtml(frame.scene || "")}</div>
             <div class="meta">${escapeHtml(frame.angle || "")}</div>
           </div>
@@ -1003,11 +1003,11 @@ function slidesMarkup(items) {
   }
   return `
     <section class="section">
-      <h3>Slides</h3>
+      <h3>Слайды</h3>
       <div class="slides">
         ${items.map((slide, index) => `
           <div class="slide">
-            <strong>Slide ${index + 1}</strong>
+            <strong>Слайд ${index + 1}</strong>
             <div>${escapeHtml(slide)}</div>
           </div>
         `).join("")}
@@ -1046,54 +1046,54 @@ function renderDraftDetail(draft) {
           <h2 class="detail-title">${escapeHtml(draft.topic)}</h2>
           <div class="draft-meta">
             <span class="tag">${escapeHtml(draft.status)}</span>
-            <span class="tag">${escapeHtml(draft.feedback || "no feedback")}</span>
+            <span class="tag">${escapeHtml(draft.feedback || "без реакции")}</span>
             <span class="tag">${escapeHtml(draft.draft_id)}</span>
           </div>
         </div>
         <div class="actions">
           <div class="actions-row">
-            <button class="status-button" data-status="draft">draft</button>
-            <button class="status-button" data-status="in_review">in_review</button>
-            <button class="status-button" data-status="approved">approved</button>
-            <button class="status-button" data-status="published">published</button>
+            <button class="status-button" data-status="draft">Черновик</button>
+            <button class="status-button" data-status="in_review">На ревью</button>
+            <button class="status-button" data-status="approved">Одобрен</button>
+            <button class="status-button" data-status="published">Опубликован</button>
           </div>
           <div class="actions-row">
-            <button class="feedback-button" data-feedback="worked">worked</button>
-            <button class="feedback-button" data-feedback="missed">missed</button>
-            <button class="feedback-button" data-feedback="">clear</button>
+            <button class="feedback-button" data-feedback="worked">Сработал</button>
+            <button class="feedback-button" data-feedback="missed">Не сработал</button>
+            <button class="feedback-button" data-feedback="">Сбросить</button>
           </div>
           <div class="actions-row">
-            <button class="secondary-button" type="button" data-send-draft-chat="${escapeHtml(draft.draft_id)}">Send to chat</button>
-            <button class="secondary-button" type="button" data-request-review="${escapeHtml(draft.draft_id)}">Request review</button>
+            <button class="secondary-button" type="button" data-send-draft-chat="${escapeHtml(draft.draft_id)}">Отправить в чат</button>
+            <button class="secondary-button" type="button" data-request-review="${escapeHtml(draft.draft_id)}">Запросить ревью</button>
           </div>
         </div>
       </div>
-      ${payloadSection("Preview", draft.preview)}
-      ${payloadSection("Angle", payload.angle)}
-      ${payloadSection("Hook", payload.hook)}
-      ${payloadSection("Caption", payload.caption)}
-      ${payloadSection("Scenario", payload.scenario)}
+      ${payloadSection("Превью", draft.preview)}
+      ${payloadSection("Угол подачи", payload.angle)}
+      ${payloadSection("Хук", payload.hook)}
+      ${payloadSection("Подпись", payload.caption)}
+      ${payloadSection("Сценарий", payload.scenario)}
       ${payloadSection("CTA", payload.cta)}
-      ${payloadSection("Hashtags", payload.hashtags)}
-      ${payloadSection("Visual Prompt", payload.visual_prompt)}
+      ${payloadSection("Хэштеги", payload.hashtags)}
+      ${payloadSection("Визуальный промпт", payload.visual_prompt)}
       ${isContentReviewDraft(draft) ? `
         <section class="section">
-          <h3>Content Review</h3>
+          <h3>Правки контента</h3>
           <form class="content-review-form" data-content-review-form>
             <label>
-              Topic
+              Тема
               <textarea name="topic">${escapeHtml(draft.topic || "")}</textarea>
             </label>
             <label>
-              Angle
+              Угол подачи
               <textarea name="angle">${escapeHtml(payload.angle || "")}</textarea>
             </label>
             <label>
-              Hook
+              Хук
               <textarea name="hook">${escapeHtml(payload.hook || "")}</textarea>
             </label>
             <label>
-              Caption
+              Подпись
               <textarea name="caption">${escapeHtml(payload.caption || "")}</textarea>
             </label>
             <label>
@@ -1101,17 +1101,17 @@ function renderDraftDetail(draft) {
               <textarea name="cta">${escapeHtml(payload.cta || "")}</textarea>
             </label>
             <label>
-              Hashtags
+              Хэштеги
               <textarea name="hashtags">${escapeHtml(payload.hashtags || "")}</textarea>
             </label>
             <label>
-              Visual Prompt
+              Визуальный промпт
               <textarea name="visual_prompt">${escapeHtml(payload.visual_prompt || "")}</textarea>
             </label>
             <div class="actions-row">
-              <button class="primary-button" type="submit">Save content</button>
-              <button class="secondary-button" type="button" data-content-polish>Polish text</button>
-              <button class="secondary-button" type="button" data-content-approve>Approve</button>
+              <button class="primary-button" type="submit">Сохранить</button>
+              <button class="secondary-button" type="button" data-content-polish>Улучшить текст</button>
+              <button class="secondary-button" type="button" data-content-approve>Одобрить</button>
             </div>
           </form>
         </section>
