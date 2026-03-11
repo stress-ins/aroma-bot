@@ -7,6 +7,7 @@ from telegram.ext import ContextTypes, MessageHandler, filters
 
 from bot.handlers.drafts import open_draft_by_id
 from bot.handlers.planner import open_plan_by_id
+from bot.services.drafts_store import update_draft
 
 
 def parse_webapp_payload(raw: str) -> dict[str, str] | None:
@@ -46,7 +47,11 @@ async def handle_miniapp_webapp_data(update: Update, context: ContextTypes.DEFAU
         if not draft_id:
             await message.reply_text("❌ Draft ID не передан из Mini App.")
             return
-        await message.reply_text("📝 Запрос на review из Mini App.")
+        draft = update_draft(draft_id, status="in_review")
+        if not draft:
+            await message.reply_text("❌ Черновик не найден.")
+            return
+        await message.reply_text("📝 Черновик переведён в review.")
         await open_draft_by_id(update, context, draft_id)
         return
 
