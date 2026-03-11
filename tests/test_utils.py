@@ -16,6 +16,7 @@ from bot.handlers.content import _topics_text, _source_label
 from bot.agents.threads_replies import _extract_json
 from bot.services.miniapp_references import get_reference_card, list_reference_cards, seed_reference_cards_if_empty
 import bot.services.miniapp_references as miniapp_references
+from scripts.patch_aroma_cards import _coerce_aliases, _coerce_payload
 
 
 class TestSplitMessage:
@@ -1570,3 +1571,12 @@ class TestMiniAppReelsPolling:
         assert 'state.referenceAccess = null;' in source
         assert "renderReferencesUnavailable()" in source
         assert "reference_access_denied" in source
+
+class TestPatchAromaCardsScript:
+    def test_coerce_aliases_accepts_exported_json_string(self):
+        assert _coerce_aliases('["orange", "sweet orange"]') == ["orange", "sweet orange"]
+
+    def test_coerce_payload_accepts_exported_json_string(self):
+        payload = _coerce_payload('{"slug":"orange","resource_values":{"plus":"joy"}}')
+        assert payload["slug"] == "orange"
+        assert payload["resource_values"]["plus"] == "joy"

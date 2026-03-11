@@ -10,6 +10,7 @@ without touching drafts or any other data.
 import asyncio
 import json
 import sys
+from collections.abc import Mapping
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -19,6 +20,22 @@ from sqlalchemy import text
 
 # Exported card data (payload already contains all edits)
 CARDS_JSON = Path(__file__).parent.parent / "scripts" / "aroma_cards_data.json"
+
+
+def _coerce_aliases(value: object) -> list[str]:
+    if isinstance(value, str):
+        value = json.loads(value)
+    if isinstance(value, list):
+        return [str(item) for item in value]
+    raise ValueError(f"aliases must be a list, got {type(value).__name__}")
+
+
+def _coerce_payload(value: object) -> dict[str, object]:
+    if isinstance(value, str):
+        value = json.loads(value)
+    if isinstance(value, Mapping):
+        return dict(value)
+    raise ValueError(f"payload must be an object, got {type(value).__name__}")
 
 
 async def main() -> None:
@@ -33,6 +50,8 @@ async def main() -> None:
         updated = 0
         skipped = 0
         for card in cards:
+            aliases = _coerce_aliases(card.get("aliases", []))
+            payload = _coerce_payload(card.get("payload", {}))
             # Check if row exists
             row = await s.execute(
                 text("SELECT id FROM aroma_cards WHERE slug = :slug"),
@@ -52,8 +71,8 @@ async def main() -> None:
                     {
                         "name": card["name"],
                         "source_type": card["source_type"],
-                        "aliases": card["aliases"],
-                        "payload": card["payload"],
+                        "aliases": aliases,
+                        "payload": payload,
                         "category": card["category"],
                         "slug": card["slug"],
                     },
@@ -69,8 +88,8 @@ async def main() -> None:
                         "slug": card["slug"],
                         "name": card["name"],
                         "source_type": card["source_type"],
-                        "aliases": card["aliases"],
-                        "payload": card["payload"],
+                        "aliases": aliases,
+                        "payload": payload,
                         "category": card["category"],
                     },
                 )
