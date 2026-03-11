@@ -822,6 +822,7 @@ from bot.services.miniapp_generator import (
 from bot.services.miniapp_presenter import filter_drafts, payload_preview, serialize_draft
 from bot.services.miniapp_keywords import field_labels, serialize_topics
 from bot.services.miniapp_plan_actions import normalize_plan_format, normalize_plan_goal
+from bot.services.miniapp_inbox import is_review_status, list_inbox_items
 from bot.services.miniapp_plans import serialize_plan
 from bot.services.miniapp_reels import (
     build_reels_export_payload,
@@ -1057,6 +1058,17 @@ class TestMiniAppContentReview:
 
     def test_polish_content_review_draft_returns_none_for_missing(self):
         assert polish_content_review_draft("missing-id") is None
+
+
+class TestMiniAppInbox:
+    def test_review_status_filter(self):
+        assert is_review_status("draft") is True
+        assert is_review_status("in_review") is True
+        assert is_review_status("approved") is False
+
+    def test_list_inbox_items_returns_list(self):
+        items = list_inbox_items(limit=5)
+        assert isinstance(items, list)
 
 
 class TestMiniAppPlans:
