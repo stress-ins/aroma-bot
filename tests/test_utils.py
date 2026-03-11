@@ -1425,7 +1425,7 @@ class TestMiniAppRussianLocale:
         assert "Сохранить текст слайда" in app_js
         assert "Текст слайда" in app_js
         assert "Скачать PPTX" in app_js
-        assert "Показать промт" in app_js
+        assert "Показать промпт" in app_js
         assert "tg.openLink(downloadUrl)" in app_js
         assert "init_data" in server_py
         assert "sendDraftToChat" in app_js
@@ -1564,6 +1564,14 @@ class TestCreativeTeamConstants:
 
     def test_editor_system_mentions_cta(self):
         assert "cta" in _EDITOR_SYSTEM.lower() or "призыв" in _EDITOR_SYSTEM.lower() or "CTA" in _EDITOR_SYSTEM
+
+    def test_editor_system_forbids_literary_metaphors_and_slogan_rhythm(self):
+        lowered = _EDITOR_SYSTEM.lower()
+
+        assert "плечи в камне" in lowered
+        assert "минует логику" in lowered
+        assert "литературные метафоры" in lowered
+        assert "живую разговорную речь" in lowered
 
 
 class TestEditPostFallback:
