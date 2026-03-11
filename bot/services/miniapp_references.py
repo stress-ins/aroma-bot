@@ -30,6 +30,132 @@ def _image_label(category: str) -> str:
     }.get(category, "справочник")
 
 
+def _source_illustration_key(source_type: str, title: str) -> str:
+    normalized = _normalize(title)
+    if any(token in normalized for token in ("апельсин", "orange", "мандарин", "mandarin", "лимон", "lemon", "лайм", "lime", "грейпфрут", "grapefruit", "бергамот", "bergamot")):
+        return "citrus-slice"
+    if any(token in normalized for token in ("лаванда", "lavender")):
+        return "lavender-sprig"
+    if any(token in normalized for token in ("мята", "peppermint", "базилик", "basil", "лемонграсс", "fennel")):
+        return "leafy-herb"
+    if any(token in normalized for token in ("эвкалипт", "eucalyptus", "кедр", "cedar", "кипарис", "cypress", "пихта", "fir", "ель", "spruce", "можжевельник", "juniper")):
+        return "branch"
+    if any(token in normalized for token in ("роза", "rose", "жасмин", "jasmine", "нероли", "neroli", "ромашка", "chamomile", "иланг", "ylang", "герань", "geranium")):
+        return "flower"
+    if any(token in normalized for token in ("ладан", "frankincense", "копаиба", "copaiba", "сандал", "sandal", "пачули", "patchouli")):
+        return "resin-drop"
+    if any(token in normalized for token in ("корица", "cinnamon", "гвоздика", "clove", "имбирь", "ginger", "перец", "cassia", "oregano", "тимьян", "thyme")):
+        return "spice"
+
+    fallback = {
+        "citrus": "citrus-slice",
+        "flower": "flower",
+        "tree": "branch",
+        "resin": "resin-drop",
+        "spice": "spice",
+        "herb": "leafy-herb",
+        "grass": "leafy-herb",
+        "breath": "breath-wave",
+        "meditation": "meditation-stone",
+        "body": "body-line",
+        "sound": "sound-wave",
+        "instrument": "sound-bowl",
+        "voice": "voice-wave",
+    }
+    return fallback.get(source_type, "leafy-herb")
+
+
+def _source_motif_svg(source_type: str, title: str) -> str:
+    motif = _source_illustration_key(source_type, title)
+    if motif == "citrus-slice":
+        return """
+      <circle cx='498' cy='242' r='92' fill='#f39b2f' />
+      <circle cx='498' cy='242' r='76' fill='#ffd67f' />
+      <circle cx='498' cy='242' r='18' fill='#fff6df' />
+      <path d='M498 166v152M422 242h152M444 188l108 108M552 188l-108 108' stroke='#fff6df' stroke-width='10' stroke-linecap='round' />
+      <ellipse cx='420' cy='132' rx='34' ry='16' fill='#6f9f55' transform='rotate(-18 420 132)' />
+        """.strip()
+    if motif == "lavender-sprig":
+        return """
+      <path d='M468 322c22-54 44-118 48-164' stroke='#638356' stroke-width='10' stroke-linecap='round' />
+      <path d='M508 182c-22-18-18-44 6-54 18 16 18 41-6 54Z' fill='#8f78c7' />
+      <path d='M490 208c-22-18-18-44 6-54 18 16 18 41-6 54Z' fill='#8066bc' />
+      <path d='M520 214c-22-18-18-44 6-54 18 16 18 41-6 54Z' fill='#9a85d2' />
+      <path d='M484 242c-22-18-18-44 6-54 18 16 18 41-6 54Z' fill='#8f78c7' />
+      <path d='M514 248c-22-18-18-44 6-54 18 16 18 41-6 54Z' fill='#8066bc' />
+      <path d='M478 276c-22-18-18-44 6-54 18 16 18 41-6 54Z' fill='#9a85d2' />
+        """.strip()
+    if motif == "leafy-herb":
+        return """
+      <path d='M486 324c-8-64 6-130 32-184' stroke='#5d8c63' stroke-width='10' stroke-linecap='round' />
+      <ellipse cx='460' cy='252' rx='40' ry='18' fill='#7eaf7d' transform='rotate(-34 460 252)' />
+      <ellipse cx='526' cy='220' rx='42' ry='18' fill='#88bb86' transform='rotate(28 526 220)' />
+      <ellipse cx='452' cy='188' rx='38' ry='16' fill='#6c9d6c' transform='rotate(-48 452 188)' />
+      <ellipse cx='534' cy='164' rx='38' ry='16' fill='#79aa79' transform='rotate(24 534 164)' />
+        """.strip()
+    if motif == "branch":
+        return """
+      <path d='M454 320c20-76 36-126 70-184' stroke='#6e8f55' stroke-width='12' stroke-linecap='round' />
+      <path d='M484 258c-18-12-38-14-60-6 12-24 30-34 54-30' fill='#88aa67' />
+      <path d='M520 230c-12-18-28-30-50-36 24-6 44 0 60 18' fill='#7d9c5f' />
+      <path d='M500 184c-12-18-28-30-50-36 24-6 44 0 60 18' fill='#95b474' />
+        """.strip()
+    if motif == "flower":
+        return """
+      <circle cx='498' cy='236' r='20' fill='#f2c86a' />
+      <ellipse cx='498' cy='180' rx='28' ry='42' fill='#d78aa7' />
+      <ellipse cx='550' cy='236' rx='42' ry='28' fill='#e5a0ba' />
+      <ellipse cx='498' cy='292' rx='28' ry='42' fill='#cf7f9e' />
+      <ellipse cx='446' cy='236' rx='42' ry='28' fill='#e9afc5' />
+      <path d='M498 320c0-34-2-58 8-88' stroke='#6d9558' stroke-width='10' stroke-linecap='round' />
+        """.strip()
+    if motif == "resin-drop":
+        return """
+      <path d='M500 140c36 50 64 86 64 132 0 42-28 76-64 76s-64-34-64-76c0-46 28-82 64-132Z' fill='#c98a55' />
+      <path d='M500 176c24 34 40 58 40 92 0 22-16 42-40 42' fill='none' stroke='#efc59a' stroke-width='10' stroke-linecap='round' />
+        """.strip()
+    if motif == "spice":
+        return """
+      <rect x='428' y='214' width='132' height='22' rx='11' fill='#b86f40' transform='rotate(-12 494 225)' />
+      <rect x='438' y='252' width='126' height='22' rx='11' fill='#c67f4f' transform='rotate(10 501 263)' />
+      <circle cx='548' cy='178' r='16' fill='#8b4e2e' />
+      <circle cx='520' cy='162' r='12' fill='#9b5b39' />
+        """.strip()
+    if motif == "sound-wave":
+        return """
+      <path d='M430 262c24-28 40-42 68-56 34-18 64-22 122-18' stroke='#6479c0' stroke-width='12' stroke-linecap='round' fill='none' />
+      <path d='M446 298c28-22 56-34 88-38 26-4 52-2 86 8' stroke='#8ea0dd' stroke-width='10' stroke-linecap='round' fill='none' />
+        """.strip()
+    if motif == "sound-bowl":
+        return """
+      <path d='M424 262c18 44 56 70 104 70s86-26 104-70H424Z' fill='#a67d58' />
+      <rect x='486' y='332' width='24' height='34' rx='10' fill='#8a6748' />
+      <rect x='454' y='364' width='88' height='16' rx='8' fill='#7a5b42' />
+        """.strip()
+    if motif == "voice-wave":
+        return """
+      <circle cx='454' cy='244' r='28' fill='#b874aa' />
+      <path d='M500 244c18-28 34-40 62-46 18-4 36-2 56 8' stroke='#b874aa' stroke-width='10' stroke-linecap='round' fill='none' />
+      <path d='M506 276c22-10 44-14 66-10 16 2 30 8 44 18' stroke='#d199c7' stroke-width='8' stroke-linecap='round' fill='none' />
+        """.strip()
+    if motif == "breath-wave":
+        return """
+      <path d='M414 252c44-28 76-42 114-42 42 0 82 14 132 44' stroke='#6ea7d0' stroke-width='12' stroke-linecap='round' fill='none' />
+      <path d='M432 294c34 12 62 18 92 18 44 0 82-12 128-38' stroke='#9ec9e5' stroke-width='10' stroke-linecap='round' fill='none' />
+        """.strip()
+    if motif == "meditation-stone":
+        return """
+      <ellipse cx='492' cy='316' rx='104' ry='26' fill='#dcccb8' />
+      <ellipse cx='494' cy='278' rx='74' ry='22' fill='#b9a48a' />
+      <ellipse cx='500' cy='238' rx='46' ry='18' fill='#8f7d69' />
+        """.strip()
+    if motif == "body-line":
+        return """
+      <path d='M498 164c20 0 34 16 34 36 0 18-12 32-28 36l8 92c2 18-12 34-30 34-18 0-32-16-30-34l8-92c-16-4-28-18-28-36 0-20 14-36 34-36Z' fill='#d7a0a0' />
+        """.strip()
+    return ""
+
+
 def _source_image(source_type: str, title: str, category: str) -> str:
     palette = {
         "citrus": ("#f6a623", "#ffe3a1", "цитрус"),
@@ -48,6 +174,7 @@ def _source_image(source_type: str, title: str, category: str) -> str:
     }
     primary, secondary, label = palette.get(source_type, palette["herb"])
     card_label = _image_label(category)
+    motif = _source_motif_svg(source_type, title)
     svg = f"""
     <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 640 420'>
       <defs>
@@ -61,9 +188,10 @@ def _source_image(source_type: str, title: str, category: str) -> str:
       <circle cx='118' cy='330' r='80' fill='{primary}' fill-opacity='0.11' />
       <rect x='54' y='58' width='220' height='34' rx='17' fill='{primary}' fill-opacity='0.18' />
       <text x='74' y='81' font-size='18' font-family='Arial' fill='{primary}'>{label}</text>
-      <text x='54' y='196' font-size='42' font-family='Arial' font-weight='700' fill='#2d241e'>{title}</text>
-      <text x='54' y='244' font-size='22' font-family='Arial' fill='#6a5a4a'>{card_label}</text>
-      <path d='M470 286c-45-79-133-118-219-98 61 8 120 44 159 99H220v37h248c31 0 41-20 34-38l-32-70Z' fill='{primary}' fill-opacity='0.8' />
+      <text x='54' y='176' font-size='42' font-family='Arial' font-weight='700' fill='#2d241e'>{title}</text>
+      <text x='54' y='224' font-size='22' font-family='Arial' fill='#6a5a4a'>{card_label}</text>
+      <text x='54' y='262' font-size='18' font-family='Arial' fill='#8a7565'>Что является источником этого масла</text>
+      {motif}
     </svg>
     """.strip()
     return f"data:image/svg+xml;charset=UTF-8,{quote(svg)}"
