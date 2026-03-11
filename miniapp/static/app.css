@@ -202,6 +202,30 @@ textarea,
   box-shadow: var(--shadow-sm);
 }
 
+.boot-fallback {
+  display: grid;
+  gap: 12px;
+}
+
+.boot-fallback-copy {
+  display: grid;
+  gap: 6px;
+}
+
+.boot-fallback h2 {
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.boot-fallback p {
+  color: var(--muted);
+}
+
+.boot-fallback.is-error {
+  border-color: rgba(176, 58, 46, 0.28);
+  background: linear-gradient(180deg, var(--surface) 0%, rgba(176, 58, 46, 0.08) 100%);
+}
+
 .panel-header {
   display: flex;
   align-items: center;
