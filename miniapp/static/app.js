@@ -132,18 +132,75 @@ function escapeHtml(value) {
 
 function payloadSection(title, content) {
   if (!content) return "";
-  return `<section class="section"><h3>${escapeHtml(title)}</h3><div class="detail-preview">${escapeHtml(content)}</div></section>`;
+  return `<section class="section"><h3>${sectionHeadingIcon(title)}${escapeHtml(title)}</h3><div class="detail-preview">${escapeHtml(content)}</div></section>`;
+}
+
+function uiIcon(name) {
+  const icons = {
+    card: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2"></rect><path d="M8 9h8M8 13h5"></path></svg>`,
+    slides: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2"></rect><path d="M8 9h8M8 13h6"></path></svg>`,
+    prompt: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8h10M7 12h8M7 16h6"></path><path d="M5 5h14v14H5z"></path></svg>`,
+    regenerate: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6v6h-6"></path><path d="M20 12a8 8 0 1 1-2.3-5.7L20 8"></path></svg>`,
+    chat: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14v9H9l-4 3V7Z"></path></svg>`,
+    pptx: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h7l5 5v11H7z"></path><path d="M14 4v5h5"></path></svg>`,
+    note: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 17.5V20h2.5L18 10.5 15.5 8 6 17.5Z"></path><path d="M14.5 9l2.5 2.5"></path></svg>`,
+    back: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>`,
+    eye: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"></path><circle cx="12" cy="12" r="3"></circle></svg>`,
+    approve: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5 9 16l10-10"></path></svg>`,
+    sparkle: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 1.7 4.3L18 9l-4.3 1.7L12 15l-1.7-4.3L6 9l4.3-1.7L12 3Z"></path><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15Z"></path></svg>`,
+    text: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M12 7v10M8 17h8"></path></svg>`,
+    nps: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6-4.35-6-10a3.5 3.5 0 0 1 6-2.4A3.5 3.5 0 0 1 18 11c0 5.65-6 10-6 10Z"></path></svg>`,
+    therapy: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v16M4 12h16"></path></svg>`,
+    psyche: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4a6 6 0 0 1 6 6c0 3-2 4-3 5s-1 2-1 3h-4c0-1-1-2-1-3s-3-2-3-5a6 6 0 0 1 6-6Z"></path><path d="M10 21h4"></path></svg>`,
+    plus: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6v12M6 12h12"></path></svg>`,
+    minus: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12"></path></svg>`,
+    history: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.3-5.7L4 9"></path><path d="M12 8v5l3 2"></path></svg>`,
+    passport: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="4" width="12" height="16" rx="2"></rect><path d="M9 8h6M9 12h6M9 16h4"></path></svg>`,
+    reel: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="6" width="16" height="12" rx="2"></rect><path d="M8 6v12M16 6v12"></path></svg>`,
+  };
+  return `<span class="ui-icon ui-icon-${escapeHtml(name)}">${icons[name] || icons.prompt}</span>`;
+}
+
+function sectionHeadingIcon(title) {
+  const iconMap = {
+    "Превью": "card",
+    "Угол": "sparkle",
+    "Текст": "text",
+    "CTA": "chat",
+    "Паспорт карточки": "passport",
+    "Описание": "card",
+    "Какие вопросы поднимает": "prompt",
+    "Действие на НПС": "nps",
+    "Терапевтические свойства": "therapy",
+    "Психологические свойства": "psyche",
+    'Ресурс "+"': "plus",
+    'Ресурс "-"': "minus",
+    "Исторические сведения": "history",
+    "Промпт для изображения": "prompt",
+    "Сценарий": "reel",
+    "Кадры и промпты": "slides",
+  };
+  return uiIcon(iconMap[title] || "card");
+}
+
+function actionLabel(icon, text) {
+  return `${uiIcon(icon)}<span>${escapeHtml(text)}</span>`;
 }
 
 function promptSection(title, prompt, copyLabel = "Скопировать промпт") {
   if (!prompt) return "";
   return `
     <section class="section">
-      <h3>${escapeHtml(title)}</h3>
-      <div class="detail-preview prompt-preview">${escapeHtml(prompt)}</div>
-      <div class="actions-row prompt-actions">
-        <button class="secondary-button" type="button" onclick='copyText(${JSON.stringify(String(prompt))})'>${escapeHtml(copyLabel)}</button>
-      </div>
+      <h3>${uiIcon("prompt")}${escapeHtml(title)}</h3>
+      <details class="prompt-disclosure">
+        <summary class="secondary-button prompt-toggle">${actionLabel("eye", "Показать промпт")}</summary>
+        <div class="prompt-card">
+          <div class="detail-preview prompt-preview">${escapeHtml(prompt)}</div>
+          <div class="actions-row prompt-actions">
+            <button class="secondary-button" type="button" onclick='copyText(${JSON.stringify(String(prompt))})'>${actionLabel("prompt", copyLabel)}</button>
+          </div>
+        </div>
+      </details>
     </section>
   `;
 }
@@ -168,15 +225,16 @@ function renderSlides(draftId, slides = [], prompts = [], slideImages = [], prom
     : "Слайды карусели";
   return `
     <section class="section">
-      <h3>${header}</h3>
+      <h3>${uiIcon("slides")}${header}</h3>
       <div class="slides">
         ${slideItems.map((slide, index) => {
           const img = imageItems[index];
           const prompt = String(promptItems[index] || "");
           const note = String(noteItems[index] || "");
+          const showPromptOpen = !img?.url;
           const imgHtml = img?.url
             ? `<img class="frame-image" src="${escapeHtml(img.url)}" alt="Слайд ${index + 1}" />`
-            : `<div class="frame-loading">Картинка недоступна или еще генерируется. Промпт показан ниже для ручной генерации.</div>`;
+            : `<div class="frame-loading">Картинка недоступна или еще генерируется. Откройте промт ниже для ручной генерации.</div>`;
           return `
             <article class="slide">
               <strong>Слайд ${index + 1}</strong>
@@ -186,22 +244,25 @@ function renderSlides(draftId, slides = [], prompts = [], slideImages = [], prom
                 <textarea id="${slideTextId(index)}" placeholder="Текст для этого слайда">${escapeHtml(slide)}</textarea>
               </label>
               ${prompt ? `
-                <div class="prompt-card">
-                  <div class="detail-preview prompt-preview">${escapeHtml(prompt)}</div>
-                  <label class="prompt-note-field">
-                    <span>Замечание к картинке</span>
-                    <textarea id="${slideNoteId(index)}" placeholder="Например: теплее свет, крупнее объект, меньше деталей на фоне">${escapeHtml(note)}</textarea>
-                  </label>
-                  <div class="actions-row prompt-actions">
-                    <button class="secondary-button" type="button" onclick="saveCarouselSlideText(${JSON.stringify(draftId)}, ${index})">Сохранить текст слайда</button>
-                    <button class="secondary-button" type="button" onclick='copyText(${JSON.stringify(prompt)})'>Скопировать промпт слайда</button>
-                    <button class="secondary-button" type="button" onclick="regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, false)">Перегенерировать</button>
-                    <button class="primary-button" type="button" onclick="regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, true)">Учесть замечание</button>
+                <details class="prompt-disclosure"${showPromptOpen ? " open" : ""}>
+                  <summary class="secondary-button prompt-toggle">${actionLabel("eye", "Показать промпт")}</summary>
+                  <div class="prompt-card">
+                    <div class="detail-preview prompt-preview">${escapeHtml(prompt)}</div>
+                    <label class="prompt-note-field">
+                      <span>Замечание к картинке</span>
+                      <textarea id="${slideNoteId(index)}" placeholder="Например: теплее свет, крупнее объект, меньше деталей на фоне">${escapeHtml(note)}</textarea>
+                    </label>
+                    <div class="actions-row prompt-actions">
+                      <button class="secondary-button" type="button" onclick="saveCarouselSlideText(${JSON.stringify(draftId)}, ${index})">${actionLabel("text", "Сохранить текст слайда")}</button>
+                      <button class="secondary-button" type="button" onclick='copyText(${JSON.stringify(prompt)})'>${actionLabel("prompt", "Скопировать промпт слайда")}</button>
+                      <button class="secondary-button" type="button" onclick="regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, false)">${actionLabel("regenerate", "Перегенерировать")}</button>
+                      <button class="primary-button" type="button" onclick="regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, true)">${actionLabel("note", "Учесть замечание")}</button>
+                    </div>
                   </div>
-                </div>
+                </details>
               ` : `
                 <div class="actions-row prompt-actions">
-                  <button class="secondary-button" type="button" onclick="saveCarouselSlideText(${JSON.stringify(draftId)}, ${index})">Сохранить текст слайда</button>
+                  <button class="secondary-button" type="button" onclick="saveCarouselSlideText(${JSON.stringify(draftId)}, ${index})">${actionLabel("text", "Сохранить текст слайда")}</button>
                 </div>
               `}
             </article>
@@ -210,6 +271,27 @@ function renderSlides(draftId, slides = [], prompts = [], slideImages = [], prom
       </div>
     </section>
   `;
+}
+
+function clearBackgroundRefreshes() {
+  window.clearTimeout(reelRefreshTimer);
+  window.clearTimeout(carouselRefreshTimer);
+  reelRefreshTimer = null;
+  carouselRefreshTimer = null;
+}
+
+function isCurrentDraftDetail(draftId) {
+  return state.mode === "content" && state.tab === "drafts" && state.mobileView === "detail" && state.draftId === draftId;
+}
+
+function isCurrentReelsDetail(draftId) {
+  return state.mode === "content" && state.tab === "reels" && state.mobileView === "detail" && state.selectedReels?.draft_id === draftId;
+}
+
+function _authQueryString() {
+  const initData = window.Telegram?.WebApp?.initData;
+  if (!initData) return "";
+  return `?init_data=${encodeURIComponent(initData)}`;
 }
 
 async function saveCarouselSlideText(draftId, slideIndex) {
@@ -223,7 +305,7 @@ async function saveCarouselSlideText(draftId, slideIndex) {
   state.draftId = draft.draft_id;
   state.drafts = state.drafts.map((item) => item.draft_id === draft.draft_id ? { ...item, ...draft } : item);
   renderDraftList();
-  renderDraftDetail(draft);
+  if (isCurrentDraftDetail(draft.draft_id)) renderDraftDetail(draft);
 }
 
 async function regenerateCarouselSlide(draftId, slideIndex, withNote) {
@@ -237,7 +319,7 @@ async function regenerateCarouselSlide(draftId, slideIndex, withNote) {
   state.draftId = draft.draft_id;
   state.drafts = state.drafts.map((item) => item.draft_id === draft.draft_id ? { ...item, ...draft } : item);
   renderDraftList();
-  renderDraftDetail(draft);
+  if (isCurrentDraftDetail(draft.draft_id)) renderDraftDetail(draft);
 }
 
 async function regenerateCarouselAll(draftId) {
@@ -246,7 +328,7 @@ async function regenerateCarouselAll(draftId) {
   state.draftId = draft.draft_id;
   state.drafts = state.drafts.map((item) => item.draft_id === draft.draft_id ? { ...item, ...draft } : item);
   renderDraftList();
-  renderDraftDetail(draft);
+  if (isCurrentDraftDetail(draft.draft_id)) renderDraftDetail(draft);
 }
 
 async function sendDraftToChat(draftId) {
@@ -256,17 +338,13 @@ async function sendDraftToChat(draftId) {
 }
 
 async function downloadCarouselPptx(draftId) {
-  const response = await fetch(`/api/carousel/${draftId}/pptx`, { headers: _initDataHeader() });
-  if (!response.ok) throw new Error("pptx_export_failed");
-  const blob = await response.blob();
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `carousel_${draftId}.pptx`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  const downloadUrl = `${window.location.origin}/api/carousel/${draftId}/pptx${_authQueryString()}`;
+  const tg = window.Telegram?.WebApp;
+  if (tg?.openLink) {
+    tg.openLink(downloadUrl);
+    return;
+  }
+  window.open(downloadUrl, "_blank", "noopener,noreferrer");
 }
 
 function renderReelsFrames(frames = []) {
@@ -274,11 +352,12 @@ function renderReelsFrames(frames = []) {
   if (!frameItems.length) return "";
   return `
     <section class="section">
-      <h3>Кадры и промпты</h3>
+      <h3>${sectionHeadingIcon("Кадры и промпты")}Кадры и промпты</h3>
       <div class="storyboard">
         ${frameItems.map((frame, index) => {
           const prompt = frame.gemini_prompt || "";
           const assetUrl = frame.current_asset?.url || "";
+          const showPromptOpen = !assetUrl;
           return `
             <article class="storyboard-frame">
               <strong>Кадр ${index + 1}${frame.timecode ? ` • ${escapeHtml(frame.timecode)}` : ""}</strong>
@@ -286,14 +365,17 @@ function renderReelsFrames(frames = []) {
               ${frame.angle ? `<div class="detail-preview frame-meta-line">Ракурс: ${escapeHtml(frame.angle)}</div>` : ""}
               ${assetUrl
                 ? `<img class="frame-image" src="${escapeHtml(assetUrl)}" alt="Кадр ${index + 1}" />`
-                : `<div class="frame-loading">Картинка ещё не готова. Используйте промпт ниже для ручной генерации.</div>`}
+                : `<div class="frame-loading">Картинка ещё не готова. Откройте промт ниже для ручной генерации.</div>`}
               ${prompt ? `
-                <div class="prompt-card">
-                  <div class="detail-preview prompt-preview">${escapeHtml(prompt)}</div>
-                  <div class="actions-row prompt-actions">
-                    <button class="secondary-button" type="button" onclick='copyText(${JSON.stringify(String(prompt))})'>Скопировать промпт кадра</button>
+                <details class="prompt-disclosure"${showPromptOpen ? " open" : ""}>
+                  <summary class="secondary-button prompt-toggle">${actionLabel("eye", "Показать промпт")}</summary>
+                  <div class="prompt-card">
+                    <div class="detail-preview prompt-preview">${escapeHtml(prompt)}</div>
+                    <div class="actions-row prompt-actions">
+                      <button class="secondary-button" type="button" onclick='copyText(${JSON.stringify(String(prompt))})'>${actionLabel("prompt", "Скопировать промпт кадра")}</button>
+                    </div>
                   </div>
-                </div>
+                </details>
               ` : ""}
             </article>
           `;
@@ -387,11 +469,17 @@ function syncMobileNavigation() {
 function renderBackButton() {
   const isMobile = window.matchMedia("(max-width: 760px)").matches;
   if (!isMobile) return "";
-  return `<button class="back-button visible" onclick="goBackToList()">← Назад к списку</button>`;
+  return `<button class="back-button visible" onclick="goBackToList(true)">${uiIcon("back")}<span>Назад к списку</span></button>`;
 }
 
-window.goBackToList = () => {
+window.goBackToList = (animated = false) => {
+  if (animated) {
+    animateBackToList();
+    return;
+  }
   state.mobileView = "list";
+  elements.detailPanel.classList.remove("swipe-back-exit", "swipe-back-armed");
+  elements.detailPanel.style.removeProperty("--swipe-offset");
   syncMobileNavigation();
 };
 
@@ -417,6 +505,16 @@ function bindSwipeBack() {
     }
     swipeStart = { x: touch.clientX, y: touch.clientY };
   }, { passive: true });
+  elements.detailPanel.addEventListener("touchmove", (event) => {
+    if (!swipeStart || state.mobileView !== "detail" || isInteractiveTarget(event.target)) return;
+    const touch = event.touches[0];
+    const dx = Math.max(0, touch.clientX - swipeStart.x);
+    const dy = Math.abs(touch.clientY - swipeStart.y);
+    if (dx > 10 && dy < 72) {
+      elements.detailPanel.classList.add("swipe-back-armed");
+      elements.detailPanel.style.setProperty("--swipe-offset", `${Math.min(dx, 96)}px`);
+    }
+  }, { passive: true });
   elements.detailPanel.addEventListener("touchend", (event) => {
     if (!swipeStart || state.mobileView !== "detail") return;
     const touch = event.changedTouches[0];
@@ -424,9 +522,23 @@ function bindSwipeBack() {
     const dy = Math.abs(touch.clientY - swipeStart.y);
     swipeStart = null;
     if (dx > 72 && dy < 56 && dx > dy * 1.4) {
-      window.goBackToList();
+      window.goBackToList(true);
+      return;
     }
+    elements.detailPanel.classList.remove("swipe-back-armed");
+    elements.detailPanel.style.removeProperty("--swipe-offset");
   }, { passive: true });
+}
+
+function animateBackToList() {
+  elements.detailPanel.classList.remove("swipe-back-armed");
+  elements.detailPanel.classList.add("swipe-back-exit");
+  window.setTimeout(() => {
+    state.mobileView = "list";
+    elements.detailPanel.classList.remove("swipe-back-exit");
+    elements.detailPanel.style.removeProperty("--swipe-offset");
+    syncMobileNavigation();
+  }, 180);
 }
 
 function bindTopicForm(form, config) {
@@ -493,10 +605,12 @@ function scheduleReelsRefresh(draftId, attempts = 10) {
     try {
       const reel = await fetchJson(`/api/reels/${draftId}`);
       const readyFrames = Array.isArray(reel.frames) ? reel.frames.filter((i) => i.current_asset?.url).length : 0;
-      state.selectedReels = reel;
       state.reels = state.reels.map((i) => i.draft_id === reel.draft_id ? { ...i, ...reel } : i);
-      renderReels();
-      renderReelsDetail(reel);
+      if (isCurrentReelsDetail(reel.draft_id)) {
+        state.selectedReels = reel;
+        renderReels();
+        renderReelsDetail(reel);
+      }
       if (readyFrames < (reel.frame_count || 0)) scheduleReelsRefresh(draftId, attempts - 1);
     } catch (_e) { scheduleReelsRefresh(draftId, attempts - 1); }
   }, 4000);
@@ -512,9 +626,12 @@ function scheduleCarouselRefresh(draftId, attempts = 12) {
       const slideImages = Array.isArray(payload.slide_images) ? payload.slide_images : [];
       const slideCount = Array.isArray(payload.slides) ? payload.slides.length : 0;
       const readyCount = slideImages.filter(Boolean).length;
-      state.selected = draft;
       state.drafts = state.drafts.map((d) => d.draft_id === draft.draft_id ? { ...d, ...draft } : d);
-      renderDraftDetail(draft);
+      if (isCurrentDraftDetail(draft.draft_id)) {
+        state.selected = draft;
+        renderDraftList();
+        renderDraftDetail(draft);
+      }
       if (readyCount < slideCount) scheduleCarouselRefresh(draftId, attempts - 1);
     } catch (_e) { scheduleCarouselRefresh(draftId, attempts - 1); }
   }, 5000);
@@ -666,6 +783,15 @@ function renderReferencePassport(reference) {
   return parts.join("\n");
 }
 
+function renderReferenceImage(reference) {
+  return `
+    <section class="section aroma-hero">
+      <img class="aroma-image" src="${escapeHtml(reference.image_url)}" alt="${escapeHtml(reference.image_alt)}" />
+      <div class="aroma-image-caption">${escapeHtml(reference.image_alt)}</div>
+    </section>
+  `;
+}
+
 function renderReferences() {
   const meta = currentHandbookMeta();
   const items = state.referenceItems || [];
@@ -722,10 +848,7 @@ function renderReferences() {
   elements.draftDetail.innerHTML = `
     <div class="detail-grid">
       ${renderBackButton()}
-      <section class="section aroma-hero">
-        <img class="aroma-image" src="${escapeHtml(reference.image_url)}" alt="${escapeHtml(reference.image_alt)}" />
-        <div class="aroma-image-caption">${escapeHtml(reference.image_alt)}</div>
-      </section>
+      ${renderReferenceImage(reference)}
       ${aromaSection("Паспорт карточки", renderReferencePassport(reference))}
       ${aromaSection("Описание", reference.description)}
       ${aromaSection("Какие вопросы поднимает", reference.questions)}
@@ -907,7 +1030,7 @@ function renderAromas() { renderReferences(); }
 
 function aromaSection(title, content) {
   if (!content) return "";
-  return `<section class="section"><h3>${escapeHtml(title)}</h3><div class="detail-preview">${escapeHtml(content)}</div></section>`;
+  return `<section class="section"><h3>${sectionHeadingIcon(title)}${escapeHtml(title)}</h3><div class="detail-preview">${escapeHtml(content)}</div></section>`;
 }
 
 function renderAromasLocked() { renderReferencesLocked(); }
@@ -947,10 +1070,10 @@ function renderDraftDetail(d) {
         <h2 class="detail-title">${escapeHtml(d.topic)}</h2>
         <div class="draft-meta"><span class="tag">${escapeHtml(statusLabel(d.status))}</span></div>
         <div class="actions-row">
-          <button class="secondary-button" onclick="updateDraft('status', {status:'approved'})">Согласовать</button>
-          <button class="secondary-button" onclick="sendDraftToChat('${d.draft_id}')">В чат</button>
-          ${d.kind === "carousel" ? `<button class="secondary-button" onclick="downloadCarouselPptx('${d.draft_id}')">Скачать PPTX</button>` : ""}
-          ${d.kind === "carousel" ? `<button class="secondary-button" onclick="regenerateCarouselAll('${d.draft_id}')">Перегенерировать все</button>` : ""}
+          <button class="secondary-button" onclick="updateDraft('status', {status:'approved'})">${actionLabel("approve", "Согласовать")}</button>
+          <button class="secondary-button" onclick="sendDraftToChat('${d.draft_id}')">${actionLabel("chat", "В чат")}</button>
+          ${d.kind === "carousel" ? `<button class="secondary-button" onclick="downloadCarouselPptx('${d.draft_id}')">${actionLabel("pptx", "Скачать PPTX")}</button>` : ""}
+          ${d.kind === "carousel" ? `<button class="secondary-button" onclick="regenerateCarouselAll('${d.draft_id}')">${actionLabel("regenerate", "Перегенерировать все")}</button>` : ""}
         </div>
       </div>
       ${payloadSection("Превью", d.preview)}
@@ -974,6 +1097,7 @@ function renderEmptyDetail() {
 }
 
 function setMode(m) {
+  clearBackgroundRefreshes();
   state.mode = m;
   elements.modeContent.classList.toggle("active", m === "content");
   elements.modeHandbook.classList.toggle("active", m === "handbook");
@@ -988,6 +1112,7 @@ function setMode(m) {
 }
 
 function setTab(t) {
+  clearBackgroundRefreshes();
   state.tab = t; 
   state.mobileView = "list"; 
   state.selectedCreateTool = null; 
@@ -1099,6 +1224,7 @@ window.openAroma = openAroma;
 window.openReference = openReference;
 window.copyText = copyText;
 window.openReels = async (id) => {
+  clearBackgroundRefreshes();
   const r = await fetchJson(`/api/reels/${id}`);
   state.selectedReels = r; renderReelsDetail(r); enterDetailView();
 };
@@ -1166,7 +1292,7 @@ function renderReelsDetail(r) {
     <div class="detail-grid">
       ${renderBackButton()}
       <div class="detail-top">
-        <p class="eyebrow">Рилсы • ${escapeHtml(r.source || "/miniapp")}</p>
+        <p class="eyebrow">${uiIcon("reel")}Рилсы • ${escapeHtml(r.source || "/miniapp")}</p>
         <h2 class="detail-title">${escapeHtml(r.topic)}</h2>
         <div class="draft-meta">
           <span class="tag">${escapeHtml(statusLabel(r.status || "draft"))}</span>

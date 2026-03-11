@@ -98,6 +98,16 @@ def _require_auth(x_telegram_init_data: str | None = Header(default=None)) -> No
         raise HTTPException(status_code=403, detail="forbidden")
 
 
+def _resolve_init_data(
+    x_telegram_init_data: str | None = Header(default=None),
+    init_data: str | None = Query(default=None),
+) -> str:
+    candidate = x_telegram_init_data or init_data
+    if not candidate or not _verify_init_data(candidate):
+        raise HTTPException(status_code=403, detail="forbidden")
+    return candidate
+
+
 def _require_reference_access(x_telegram_init_data: str | None = Header(default=None)) -> int:
     if not x_telegram_init_data or not _verify_init_data(x_telegram_init_data):
         raise HTTPException(status_code=403, detail="forbidden")
@@ -497,7 +507,7 @@ async def regenerate_carousel_all(draft_id: str, _: None = Depends(_require_auth
 
 
 @app.get("/api/carousel/{draft_id}/pptx")
-async def carousel_pptx_export(draft_id: str, _: None = Depends(_require_auth)):
+async def carousel_pptx_export(draft_id: str, _: str = Depends(_resolve_init_data)):
     draft = await get_draft(draft_id)
     if not draft or draft.kind != "carousel":
         raise HTTPException(status_code=404, detail="carousel_not_found")

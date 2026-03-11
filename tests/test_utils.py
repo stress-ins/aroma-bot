@@ -1367,12 +1367,17 @@ class TestMiniAppRussianLocale:
 
     def test_mobile_detail_swipe_back_allows_full_width_swipe_and_skips_inputs(self):
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
 
         assert "function bindSwipeBack" in app_js
+        assert "function animateBackToList" in app_js
         assert "isInteractiveTarget(event.target)" in app_js
         assert 'closest("textarea, input, select, button, a, [contenteditable=\'true\']")' in app_js
         assert "touch.clientX > 36" not in app_js
         assert "dx > 72" in app_js
+        assert "swipe-back-exit" in app_js
+        assert ".detail-panel.swipe-back-exit" in app_css
+        assert ".detail-panel.swipe-back-armed" in app_css
 
     def test_bootstrap_guard_shows_visible_fallback_instead_of_blank_screen(self):
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
@@ -1420,6 +1425,9 @@ class TestMiniAppRussianLocale:
         assert "Сохранить текст слайда" in app_js
         assert "Текст слайда" in app_js
         assert "Скачать PPTX" in app_js
+        assert "Показать промт" in app_js
+        assert "tg.openLink(downloadUrl)" in app_js
+        assert "init_data" in server_py
         assert "sendDraftToChat" in app_js
         assert "bindSwipeBack" in app_js
         assert "/api/carousel/{draft_id}/pptx" in server_py
@@ -1635,6 +1643,17 @@ class TestMiniAppReelsPolling:
         assert 'state.referenceAccess = null;' in source
         assert "renderReferencesUnavailable()" in source
         assert "reference_access_denied" in source
+
+    def test_background_refresh_does_not_reroute_handbook_view(self):
+        source = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+
+        assert "function clearBackgroundRefreshes" in source
+        assert "function isCurrentDraftDetail" in source
+        assert "function isCurrentReelsDetail" in source
+        assert "if (isCurrentDraftDetail(draft.draft_id)) {" in source
+        assert "if (isCurrentReelsDetail(reel.draft_id)) {" in source
+        assert "clearBackgroundRefreshes();" in source.split("function setMode", 1)[1]
+        assert "clearBackgroundRefreshes();" in source.split("function setTab", 1)[1]
 
 class TestPatchAromaCardsScript:
     def test_coerce_aliases_accepts_exported_json_string(self):
