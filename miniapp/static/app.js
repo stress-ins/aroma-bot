@@ -129,6 +129,142 @@ async function loadKeywords() {
   renderKeywords();
 }
 
+function renderCreate() {
+  elements.listTitle.textContent = "Create";
+  elements.draftCount.textContent = "3 tools";
+  elements.emptyState.hidden = true;
+  elements.draftList.innerHTML = `
+    <div class="create-list">
+      <article class="create-card">
+        <div class="draft-kind">content</div>
+        <h3 class="draft-topic">Threads / Instagram / Telegram</h3>
+        <div class="draft-preview">Тема + цель + формат -> готовый draft в истории.</div>
+      </article>
+      <article class="create-card">
+        <div class="draft-kind">reels</div>
+        <h3 class="draft-topic">Scenario + storyboard</h3>
+        <div class="draft-preview">Только тема -> сценарий и 4 кадра раскадровки.</div>
+      </article>
+      <article class="create-card">
+        <div class="draft-kind">plan</div>
+        <h3 class="draft-topic">Weekly content plan</h3>
+        <div class="draft-preview">Собирает тренды и сохраняет недельный план прямо в приложении.</div>
+      </article>
+    </div>
+  `;
+  elements.draftDetail.innerHTML = `
+    <div class="detail-grid">
+      <section class="section">
+        <h3>Create Content</h3>
+        <form class="create-form" data-create-content>
+          <label>
+            Topic
+            <textarea name="topic" placeholder="Например: как мягко переключиться после рабочего дня"></textarea>
+          </label>
+          <div class="field-grid">
+            <label>
+              Goal
+              <select name="goal_key">
+                <option value="trust">trust</option>
+                <option value="authority">authority</option>
+                <option value="engagement">engagement</option>
+                <option value="sales">sales</option>
+              </select>
+            </label>
+            <label>
+              Format
+              <select name="format_key">
+                <option value="threads">threads</option>
+                <option value="instagram">instagram</option>
+                <option value="telegram">telegram</option>
+              </select>
+            </label>
+          </div>
+          <button class="primary-button" type="submit">Generate content</button>
+        </form>
+      </section>
+      <section class="section">
+        <h3>Create Reels</h3>
+        <form class="create-form" data-create-reels>
+          <label>
+            Topic
+            <textarea name="topic" placeholder="Например: вечерний сенсорный ритуал на 30 секунд"></textarea>
+          </label>
+          <button class="primary-button" type="submit">Generate reels</button>
+        </form>
+      </section>
+      <section class="section">
+        <h3>Create Plan</h3>
+        <form class="create-form" data-create-plan>
+          <div class="detail-preview">Собирает актуальные тренды и сохраняет недельный контент-план в Plan workspace.</div>
+          <button class="primary-button" type="submit">Generate weekly plan</button>
+        </form>
+      </section>
+    </div>
+  `;
+
+  const contentForm = elements.draftDetail.querySelector("[data-create-content]");
+  if (contentForm) {
+    contentForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const topic = contentForm.querySelector("textarea[name='topic']").value.trim();
+      const goalKey = contentForm.querySelector("select[name='goal_key']").value;
+      const formatKey = contentForm.querySelector("select[name='format_key']").value;
+      try {
+        const draft = await fetchJson("/api/generate/content", {
+          method: "POST",
+          body: JSON.stringify({ topic, goal_key: goalKey, format_key: formatKey }),
+        });
+        state.draftId = draft.draft_id;
+        setTab("drafts");
+        await loadDrafts();
+      } catch (err) {
+        alert("Ошибка генерации: " + (err.message || err));
+      }
+    });
+  }
+
+  const reelsForm = elements.draftDetail.querySelector("[data-create-reels]");
+  if (reelsForm) {
+    reelsForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const topic = reelsForm.querySelector("textarea[name='topic']").value.trim();
+      try {
+        const reel = await fetchJson("/api/generate/reels", {
+          method: "POST",
+          body: JSON.stringify({ topic }),
+        });
+        state.selectedReels = reel;
+        state.selectedFrameIndex = 0;
+        setTab("reels");
+        await loadReels();
+        renderReelsDetail(reel);
+      } catch (err) {
+        alert("Ошибка генерации: " + (err.message || err));
+      }
+    });
+  }
+
+  const planForm = elements.draftDetail.querySelector("[data-create-plan]");
+  if (planForm) {
+    planForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      try {
+        const plan = await fetchJson("/api/generate/plan", {
+          method: "POST",
+          body: JSON.stringify({}),
+        });
+        state.selectedPlan = plan;
+        setTab("plans");
+        await loadPlans();
+        renderPlanDetail(plan);
+      } catch (err) {
+        alert("Ошибка генерации: " + (err.message || err));
+      }
+    });
+  }
+}
+
 function setTab(tab) {
   state.tab = tab;
   const params = new URLSearchParams(window.location.search);
@@ -785,7 +921,9 @@ function bindFilters() {
     timer = window.setTimeout(loadDrafts, 250);
   });
 
-  elements.refreshButton.addEventListener("click", loadDrafts);
+  elements.refreshButton.addEventListener("click", async () => {
+    await loadCurrentTab();
+  });
   for (const button of elements.tabButtons) {
     button.addEventListener("click", async () => {
       setTab(button.dataset.tab);
@@ -795,6 +933,10 @@ function bindFilters() {
 }
 
 async function loadCurrentTab() {
+  if (state.tab === "create") {
+    renderCreate();
+    return;
+  }
   if (state.tab === "plans") {
     await loadPlans();
     return;
