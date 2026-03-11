@@ -1,0 +1,211 @@
+[
+  {
+    "draft_id": "9008be53",
+    "kind": "reels",
+    "topic": "мягкий вечерний ритуал с ароматом для снятия рабочего напряжения",
+    "source": "/miniapp",
+    "created_at": "2026-03-11T17:26:00.982082+00:00",
+    "status": "draft",
+    "feedback": "",
+    "payload": {
+      "topic": "мягкий вечерний ритуал с ароматом для снятия рабочего напряжения",
+      "scenario": "# СЦЕНАРИЙ REELS: «ВЕЧЕРНИЙ СБРОС»\n\n---\n\n## ХРОНОМЕТРАЖ: 0-3 сек | ХУК\n\n**Видеоряд:**\n- Крупный план: руки держат закрытую баночку с эфирным маслом (терракотовая упаковка, натуральное освещение из окна)\n- Плавный зум на маслице\n- Деталь: масло начинает открываться (движение медленное, размеренное)\n\n**Текст на экране:**\n*«Работа уходит. Ты остаёшься»* — белый, изящный шрифт, по центру\n\n**Закадровый голос:**\n«После восьми часов в потоке организму нужен сигнал: сейчас мы переходим в другой режим».\n\n---\n\n## ХРОНОМЕТРАЖ: 3-10 сек | ОСНОВНАЯ ЧАСТЬ\n\n**Видеоряд:**\n- Открытая баночка, капля масла падает на ладонь\n- Руки подносят ладонь к лицу (закрытые глаза, глубокий вдох)\n- Переход: те же руки растирают масло между ладонями\n- На фоне зажигается свеча из терракоты\n\n**Текст на экране:**\n*«Ароматический якорь для нервной системы»*\n(появляется постепенно, синхронно с вдохом)\n\n**Закадровый голос:**\n«Аромат — это прямой путь к лимбической системе. За три вдоха ваше тело получает сигнал: опасности нет, можно расслабиться».\n\n---\n\n## ХРОНОМЕТРАЖ: 10-20 сек | РАЗВИТИЕ / ПРАКТИКА\n\n**Видеоряд:**\n- Руки прижимают к лицу (ладони образуют чашечку)\n- Медленный, осознанный вдох через нос (видно, как грудная клетка расширяется)\n- Выдох через рот (едва заметный пар/влага)\n- Кадр отодвигается: силуэт человека в полусвете, рядом горит свеча, на столе травы и гонг в расфокусе\n\n**Текст на экране:**\n*«Три полных вдоха»*\n*«Плечи опускаются»*\n*«Челюсть расслабляется»*\n(каждый текст появляется в момент действия)\n\n**Закадровый голос:**\n«Выбирайте масла с базовыми нотками — ветивер, сандал, римская ромашка. Они не стимулируют, а якорят».\n\n---\n\n## ХРОНОМЕТРАЖ: 20-30 сек | CTA\n\n**Видеоряд:**\n- Руки кладут ладони на сердце\n- Общий кадр: спокойное лицо, мягкий свет, в углу размыто горящая свеча\n- Медленный зум на руки на сердце (терракотовый свет)\n- Финальный кадр: надпись, фон — природная текстура (льняная ткань)\n\n**Текст на экране:**\n*«Попробуй вечером»*\n*«Напиши, какой аромат сработал»*\n*«В комментариях ⬇️»*\n\n**Закадровый голос:**\n«Это не волшебство — это химия вашего мозга. Начните с одного масла, проведите три вечера подряд. Ваша нервная система запомнит».\n\n---\n\n## ОПИСАНИЕ ДЛЯ ПОСТА\n\nВечер начинается не с усталости, а с переключения. Простой 3-минутный ритуал с эфирным маслом — это сигнал для вашего организма о переходе из режима «боевой готовности» в режим восстановления. Попробуйте, и телу не придётся час спустя «отключаться» насильно.\n\n**#аромасенсорика #регуляцияНС #вечернийритуал #эфирныемасла #сенсорныепрактики #медленнаяжизнь #осознанность #натуральноеблаго #",
+      "storyboard": [
+        {
+          "timecode": "0-3 сек",
+          "scene": "Закрытая терракотовая баночка с эфирным маслом в руках, держится обеими ладонями на уровне груди. Мягкий естественный свет из окна падает слева, создавая мягкие тени. На размытом фоне деревянный стол светлого тона. Капля масла видна сквозь прозрачную крышечку. Минималистичная, чистая композиция.",
+          "angle": "Крупный план рук с баночкой, плавный вертикальный зум на масло. Камера движется медленно, размеренно, синхронизируясь с дыханием.",
+          "gemini_prompt": "Close-up of terracotta essential oil bottle held in hands, soft golden hour sunlight streaming from left, wooden table surface blurred in background, warm beige tones, minimalist aesthetic, atmospheric lighting, vertical composition, cinematic still, no text overlay",
+          "current_asset": {
+            "filename": "frame_1_498f3595.png",
+            "generated_at": "2026-03-11T17:26:24.819080+00:00",
+            "url": "/generated/reels_assets/9008be53/frame_1_498f3595.png",
+            "prompt": "Close-up of terracotta essential oil bottle held in hands, soft golden hour sunlight streaming from left, wooden table surface blurred in background, warm beige tones, minimalist aesthetic, atmospheric lighting, vertical composition, cinematic still, no text overlay"
+          },
+          "asset_revisions": []
+        },
+        {
+          "timecode": "3-10 сек",
+          "scene": "Открытая баночка в центре кадра, прозрачная капля эфирного масла падает на открытую ладонь. Ладони поднимаются к лицу (лицо не видно, только подбородок и руки). На фоне размыто зажигается невысокая терракотовая свеча со льняным фитилём. Мягкое золотистое свечение начинает доминировать в освещении.",
+          "angle": "Средний план, угол немного снизу (показывает жест подноса к лицу). Свеча в расфокусе на 45 градусов в глубине. Переход от дневного света к свечному теплу.",
+          "gemini_prompt": "Essential oil drop falling onto open palm, hands bringing palms toward face for inhalation, blurred terracotta candle glowing in background, warm golden candlelight mixing with natural light, beige and sage color palette, aromatic ritual moment, atmospheric cinematic still, vertical mobile composition, sensory intimacy, no faces"
+        },
+        {
+          "timecode": "10-20 сек",
+          "scene": "Руки сложены чашечкой около лица, ладони закрывают нос и рот (дыхательная практика — вдох через сложенные руки). Видна грудная клетка в момент глубокого вдоха. На столе перед человеком: высушенные травы (шалфей, ромашка), маленькая терракотовая чаша, медный гонг в нежном расфокусе. Свеча горит мягко слева. Все в полусвете, тёплые терракотовые и беж-серые тона.",
+          "angle": "Средний общий план, камера на уровне груди, силуэт человека в полусвете. Фокус на руках и теле, фон мягко размыт.",
+          "gemini_prompt": "Hands cupped around face for conscious breathing, grounding ritual moment, dried sage and chamomile herbs visible on table, small terracotta bowl, blurred copper gong in background, warm candlelight creating soft shadows, person in half-silhouette, terracotta and beige color palette, intimate atmospheric scene, meditative mood, vertical composition, cinematic still photography"
+        },
+        {
+          "timecode": "20-30 сек",
+          "scene": "Обе руки положены на сердце (область груди), ладони лежат друг на друге. Лицо спокойное, глаза полузакрыты или закрыты. Вокруг — мягкий терракотовый и золотистый свет от свечи. На фоне (слегка в расфокусе): льняная ткань натурального беж-серого цвета, горящая терракотовая свеча, размытые травы. Завершающий момент ритуала — заземление и интеграция.",
+          "angle": "Крупный план груди и рук, снято немного сверху под углом 30 градусов. Мягкий зум на сложенные руки на сердце. Теплое, интимное освещение.",
+          "gemini_prompt": "Hands placed on heart in grounding gesture, person in meditative state, warm terracotta and golden candlelight, linen fabric background in natural beige tones, burning candle blurred beside, dried herbs and sage visible, evening ritual completion moment, atmospheric cinematic close-up, soft intimate lighting, vertical composition, sensory wellness aesthetic, no faces visible"
+        }
+      ],
+      "images_ready": 1
+    }
+  },
+  {
+    "draft_id": "bf3dc82a",
+    "kind": "reels",
+    "topic": "вечерний ароматический якорь для выхода из рабочего ритма",
+    "source": "/miniapp",
+    "created_at": "2026-03-11T17:22:36.634381+00:00",
+    "status": "draft",
+    "feedback": "",
+    "payload": {
+      "topic": "вечерний ароматический якорь для выхода из рабочего ритма",
+      "scenario": "# СЦЕНАРИЙ REELS: ВЕЧЕРНИЙ АРОМАТИЧЕСКИЙ ЯКОРЬ\n\n---\n\n## ХРОНОМЕТРАЖ: 0-3 сек | ХУК\n\n**Видеоряд:**\n- Крупный план: рука закрывает ноутбук (звук клика)\n- Переход на свечу с эфирным маслом — дымок поднимается в мягком свете золотого часа\n- Лицо человека в профиль, глаза закрываются\n\n**Текст на экране:**\n\"Как выйти из рабочего ритма за 60 секунд\"\n\n**Закадровый голос:**\n\"Твой мозг ещё работает после восьми часов, даже когда ты закрыл ноутбук. Есть способ его заметить.\"\n\n---\n\n## ХРОНОМЕТРАЖ: 3-10 сек | ОСНОВНАЯ ЧАСТЬ\n\n**Видеоряд:**\n- Руки в замедленной съёмке открывают баночку с маслом (видны травы внутри)\n- Крупный план: масло капает на аромакамень\n- Пар поднимается, мягкая подсветка терракотовой свечой\n\n**Текст на экране:**\n\"Ароматический якорь — сигнал переходу\"\n\n**Закадровый голос:**\n\"Запах — самый быстрый способ связи мозга с нервной системой. Когда ты одно и то же масло используешь в одно и то же время, у тела появляется якорь: 'Режим работы закончился'.\"\n\n---\n\n## ХРОНОМЕТРАЖ: 10-20 сек | РАЗВИТИЕ / ПРАКТИКА\n\n**Видеоряд:**\n- Человек сидит на полу с подушками, вдыхает аромат (руки у лица, лицо расслаблено)\n- Крупный план: травы в ступке, семена сандала, лаванда\n- Свеча горит, тень танцует на стене из природных материалов (макраме, керамика)\n\n**Текст на экране:**\n\"Три глубоких вдоха — и тело понимает\"\n\n**Закадровый голос:**\n\"Это может быть шалфей с апельсином, лаванда с геранью или любой запах, который напоминает тебе о спокойствии. Главное — повторять этот ритуал ежедневно в одно время. Через неделю нервная система будет сама переключаться.\"\n\n---\n\n## ХРОНОМЕТРАЖ: 20-30 сек | CTA\n\n**Видеоряд:**\n- Широкий кадр: стол с маслами, травами, свечой — минимальная композиция\n- Руки складываются на груди человека (жест закрытия)\n- Затухающий свет, фокус на горящем фитиле\n\n**Текст на экране:**\n\"Выбери свой якорь в истории\"\n\n**Закадровый голос:**\n\"Это работает, потому что это не развлечение — это договор с собой. Какой аромат станет твоим сигналом перезагрузки?\"\n\n---\n\n## ОПИСАНИЕ ДЛЯ ПОСТА:\n\nРабочий режим не выключается сам. Ароматический якорь — это не магия, а прямой сигнал нервной системе: \"Переход в другой ритм\". За 60 секунд, одно и то же масло, один и тот же час — и через неделю твоё тело будет знать, когда пора выходить. Какой запах напоминает тебе о покое?\n\n**#АроматерапияДляНервнойСистемы #ВечернийРитуал #ЯкорьСпокойствия #СенсорныеПрактики #ЭфирныеМасла #РегуляцияНС #МедитацияДома #ПереходВЦикл**\n\n---\n\n## МУЗЫКАЛЬНОЕ НАСТРОЕНИЕ:\n\n**Ambient с органическими звуками.** Медленный темп (50-60 BPM), минимум инструментов: звучат засушенные травы (шелест), низкие струнные (виолончель или контрабас), горячий воск",
+      "storyboard": [
+        {
+          "timecode": "0-3 сек",
+          "scene": "Крупный план закрывающегося ноутбука (чёрный экран), затем быстрый переход на горящую свечу в терракотовом подсвечнике с поднимающимся дымком эфирного масла. Мягкой золотой свет от часа заката падает на керамическую чашу с маслом. На фоне размытые контуры рук человека в профиль, глаза закрываются.",
+          "angle": "Динамичный переход от верхнего плана (ноутбук) к макросъёмке свечи (крупный план пламени и дыма), затем отвод на среднее расстояние для силуэта профиля. Камера движется слева направо, создавая ощущение перехода.",
+          "gemini_prompt": "Close-up of terracotta candle holder with burning wick and rising aromatic smoke, soft golden hour light, minimalist ceramic bowl with essential oil, warm atmospheric lighting, no people, cinematic still, beige and sage color palette, organic textures, vertical composition",
+          "current_asset": {
+            "filename": "frame_1_bad623c0.png",
+            "generated_at": "2026-03-11T17:24:00.096981+00:00",
+            "url": "/generated/reels_assets/bf3dc82a/frame_1_bad623c0.png",
+            "prompt": "Close-up of terracotta candle holder with burning wick and rising aromatic smoke, soft golden hour light, minimalist ceramic bowl with essential oil, warm atmospheric lighting, no people, cinematic still, beige and sage color palette, organic textures, vertical composition"
+          },
+          "asset_revisions": []
+        },
+        {
+          "timecode": "3-10 сек",
+          "scene": "Замедленная съёмка: руки открывают стеклянную баночку с эфирным маслом (видны высушенные травы и лепестки внутри), затем капля масла падает на пористый аромакамень. Пар мягко поднимается в свете. На столе вокруг: керамическая ступка, ветки сушёной лаванды, семена сандала, минимум предметов.",
+          "angle": "Макросъёмка в замедленном режиме (50-60% от нормальной скорости). Сначала вид сверху на открывающуюся баночку, затем наклон под углом 45° для съёмки падающей капли, затем широкий план на столе с аромакамнем в центре. Мягкая боковая подсветка создаёт тени.",
+          "gemini_prompt": "Slow-motion flat lay: glass jar with dried herbs and lavender opening, single drop of essential oil falling on porous aroma stone, terracotta mortar with sage leaves and sandalwood seeds scattered nearby, soft warm side lighting, steam rising, beige linen surface, wooden table, atmospheric cinematic, no people, vertical",
+          "current_asset": {
+            "filename": "frame_2_376df50a.png",
+            "generated_at": "2026-03-11T17:24:20.615044+00:00",
+            "url": "/generated/reels_assets/bf3dc82a/frame_2_376df50a.png",
+            "prompt": "Slow-motion flat lay: glass jar with dried herbs and lavender opening, single drop of essential oil falling on porous aroma stone, terracotta mortar with sage leaves and sandalwood seeds scattered nearby, soft warm side lighting, steam rising, beige linen surface, wooden table, atmospheric cinematic, no people, vertical"
+          },
+          "asset_revisions": []
+        },
+        {
+          "timecode": "10-20 сек",
+          "scene": "Человек сидит на полу на льняных подушках в позе медитации, лицо расслаблено, руки поднесены к лицу для глубокого вдоха. Фон: стена с макраме, керамическая посуда, горящая свеча отбрасывает танцующие тени на натуральные текстуры. На полу разложены травы (сушённая лаванда, шалфей), аромакамень светится в центре композиции.",
+          "angle": "Средний план под углом 40° сбоку, фокус на лице и руках (но без четкого лица — силуэт или размытие, согласно brief). Затем макрокадр на травах и камне с боковым светом. Завершение сценой с широким планом комнаты (макраме и керамика в размытости на фоне).",
+          "gemini_prompt": "Serene still life: dried lavender and sage herbs scattered on beige linen, burning aroma stone with gentle steam, soft candlelight creating dancing shadows on macramé wall tapestry and ceramic vessels, warm terracotta and sage tones, no faces, atmospheric meditation setting, natural materials, cinematic mood lighting, vertical composition"
+        },
+        {
+          "timecode": "20-30 сек",
+          "scene": "Минималистичная композиция на столе: стеклянная баночка с маслом, керамическая ступка с травами, горящая свеча в центре, сложенные руки (только кисти видны) на груди человека ниже. Фокус на пламени свечи — оно ярко горит в центре кадра. Свет медленно затухает (диммирование), фитиль становится последним видимым элементом.",
+          "angle": "Верхний план (birds eye view) на стол с композицией, затем переход к плану сбоку на сложенные руки и свечу. Глубина резкости: главное — пламя в центре, остальное слегка размыто. На финал — крупный план только фитиля с затухающим светом.",
+          "gemini_prompt": "Minimalist tabletop composition: glass bottle of essential oil, ceramic mortar with dried herbs, burning candle in terracotta holder at center, folded hands below holding close to chest, warm"
+        }
+      ],
+      "images_ready": 2
+    }
+  },
+  {
+    "draft_id": "f7781716",
+    "kind": "reels",
+    "topic": "ароматический ритуал для мягкого завершения рабочего дня",
+    "source": "/miniapp",
+    "created_at": "2026-03-11T17:17:02.424594+00:00",
+    "status": "draft",
+    "feedback": "",
+    "payload": {
+      "topic": "ароматический ритуал для мягкого завершения рабочего дня",
+      "scenario": "# Сценарий Reels: Ароматический ритуал завершения дня\n\n---\n\n## ХРОНОМЕТРАЖ: 0–3 сек | Хук\n\n**Видеоряд:**\n- Крупный план: руки закрывают ноутбук / убирают рабочий предмет со стола\n- Переход на диффузор с эфирным маслом (свет прямой, подсвечивающий мелкие частицы пара)\n- Быстрый съёмка: первая капля масла падает в воду\n\n**Текст на экране:**\n> работа закончена  \n> нервная система — нет\n\n**Закадровый голос:**\n«Ты выключил рабочий чат, но тело всё ещё в режиме \"включено\". Знаешь это?»\n\n---\n\n## ХРОНОМЕТРАЖ: 3–10 сек | Основная часть\n\n**Видеоряд:**\n- Широкий план: рабочее пространство (письменный стол, блокнот, свеча терракотового цвета зажигается)\n- Средний план: руки зажигают спичку, видно пламя\n- Крупный план: дымок от свечи, фокус на движении дыма\n- Переход на засушенные травы в миске — шалфей, лаванда\n\n**Текст на экране:**\n> сигнал для организма:  \n> режим смены активности\n\n**Закадровый голос:**\n«Ароматический ритуал — это якорь. Сигнал для нервной системы: \"Смена сценария\". Не просто закрытие вкладок, а физическое переключение.»\n\n---\n\n## ХРОНОМЕТРАЖ: 10–20 сек | Развитие / практика\n\n**Видеоряд:**\n- Крупный план: руки подносят руки к диффузору, вдыхают пар (нос близко к выходу пара, но безопасно)\n- Замедленная съёмка: расслабление лица, плечи опускаются\n- Средний план: человек сидит, закрыв глаза, одна рука на груди\n- Вставка текстуры: макро засушенных цветков в свете (неглубокая резкость)\n\n**Текст на экране:**\n> 3 глубоких вдоха  \n> замечаем: запах → расслабление мышц → снижение пульса\n\n**Закадровый голос:**\n«Три вдоха через запах активируют парасимпатическую нервную систему. Это не волшебство — это физиология. Ароматические молекулы напрямую идут в лимбическую систему.»\n\n---\n\n## ХРОНОМЕТРАЖ: 20–30 сек | CTA\n\n**Видеоряд:**\n- Средний план: человек открывает глаза, улыбается спокойно\n- Вид сверху: на столе стоят диффузор, свеча, чашка с травами\n- Финальный кадр: фокус на горящей свече в полутьме (теплый, низкий свет)\n\n**Текст на экране:**\n> выбери свой ритуал  \n> сохрани его\n\n**Закадровый голос:**\n«Повторение создаёт привычку. А привычка — это доверие своего тела к смене режимов. Твоя система научится отпускать день быстрее.»\n\n**Подпись в углу:** \n> сохрани этот пост\n\n---\n\n## ОПИСАНИЕ ДЛЯ ПОСТА\n\nРабочий день закончился, но твоё тело ещё работает на стрессе? Ароматический ритуал — это якорь для нервной системы, простой способ физически переключиться. Три вдоха через запах активируют парасимпатику и сигнализируют организму о смене режима. Повторение создаёт привычку, привычка — расслабление.\n\n**#RegulationNervousSystem #AromaTherapy #SensoryPractice #WorkLifeBalance #MindfulnessRitual #AromaticWellness #ParasympatheticActivation #EveningRoutine #ХолистическийПодход #Регуляция",
+      "storyboard": [
+        {
+          "timecode": "0-3 сек",
+          "scene": "Крупный план закрывающегося ноутбука на минималистичном столе, рядом — эфирный диффузор с видимым паром, освещённым боковым светом. Видна первая капля масла, падающая в воду диффузора. Фон размыт, нейтральный.",
+          "angle": "Верхний угол 45°, камера близко к диффузору, акцент на капле масла и мелких частицах пара в воздухе",
+          "gemini_prompt": "Close-up of essential oil diffuser with visible vapor mist, single drop of oil falling into water, warm side lighting highlighting steam particles, minimalist wooden desk with closed laptop in soft focus background, terracotta and sage color palette, atmospheric cinematic still, soft natural golden hour light, vertical composition, no people",
+          "current_asset": {
+            "filename": "frame_1_d0a76dd4.png",
+            "generated_at": "2026-03-11T17:18:15.708345+00:00",
+            "url": "/generated/reels_assets/f7781716/frame_1_d0a76dd4.png",
+            "prompt": "Close-up of essential oil diffuser with visible vapor mist, single drop of oil falling into water, warm side lighting highlighting steam particles, minimalist wooden desk with closed laptop in soft focus background, terracotta and sage color palette, atmospheric cinematic still, soft natural golden hour light, vertical composition, no people"
+          },
+          "asset_revisions": []
+        },
+        {
+          "timecode": "3-10 сек",
+          "scene": "Рабочий стол с зажигающейся свечой в терракотовом подсвечнике, спичка создаёт пламя, дымок от свечи поднимается вверх. На столе — засушенные травы (шалфей, лаванда) в керамической миске естественных бежевых тонов. Мягкое естественное освещение.",
+          "angle": "Средний план, динамичный ракурс 40°, фокус на пламени и поднимающемся дыме, глубина резкости размывает травы и миску",
+          "gemini_prompt": "Lit candle in terracotta holder on wooden desk with dried herbs and sage in ceramic bowl, match igniting flame, smoke rising, warm golden candlelight creating atmospheric glow, beige and terracotta tones, natural dried flowers visible, cinematic still life, soft moody lighting, vertical composition, no people, cozy evening ritual aesthetic",
+          "current_asset": {
+            "filename": "frame_2_94283bcb.png",
+            "generated_at": "2026-03-11T17:18:31.381348+00:00",
+            "url": "/generated/reels_assets/f7781716/frame_2_94283bcb.png",
+            "prompt": "Lit candle in terracotta holder on wooden desk with dried herbs and sage in ceramic bowl, match igniting flame, smoke rising, warm golden candlelight creating atmospheric glow, beige and terracotta tones, natural dried flowers visible, cinematic still life, soft moody lighting, vertical composition, no people, cozy evening ritual aesthetic"
+          },
+          "asset_revisions": []
+        },
+        {
+          "timecode": "10-20 сек",
+          "scene": "Замедленная съёмка: руки подносят лицо к диффузору (вдох пара), затем руки опускаются, человек сидит с закрытыми глазами, одна рука лежит на груди, плечи расслаблены. Видны засушенные цветки в макро-съёмке (неглубокая резкость на текстуре лепестков).",
+          "angle": "Альтернирующий план: крупный план вдоха пара → средний план расслабленной позы → макро-текстура засушенных цветков с боковым светом",
+          "gemini_prompt": "Macro detail of dried lavender and sage flowers with shallow depth of field, warm soft backlighting, texture of dried petals in focus, beige and sage color tones, peaceful wellness aesthetic, close-up botanical detail, cinematic still, no people visible, atmospheric intimate lighting, vertical composition",
+          "current_asset": {
+            "filename": "frame_3_3d7f4b90.png",
+            "generated_at": "2026-03-11T17:21:16.383425+00:00",
+            "url": "/generated/reels_assets/f7781716/frame_3_3d7f4b90.png",
+            "prompt": "Macro detail of dried lavender and sage flowers with shallow depth of field, warm soft backlighting, texture of dried petals in focus, beige and sage color tones, peaceful wellness aesthetic, close-up botanical detail, cinematic still, no people visible, atmospheric intimate lighting, vertical composition"
+          },
+          "asset_revisions": []
+        },
+        {
+          "timecode": "20-30 сек",
+          "scene": "Вид сверху на минималистичный стол: горящая свеча в терракотовом подсвечнике, диффузор с паром, керамическая миска с травами, всё расположено гармонично на деревянной поверхности. Финальный кадр: горящая свеча в полутьме с тёплым низким светом, мягкий фокус на пламени.",
+          "angle": "Вид сверху (top-down 90°) → переход на крупный план горящей свечи с боковым естественным светом (почти силуэтный эффект)",
+          "gemini_prompt": "Flat lay overhead view of evening ritual setup with lit terracotta candle, essential oil diffuser with steam, ceramic bowl of dried herbs, wooden surface, warm golden ambient lighting, beige sage terracotta palette, minimal aesthetic, then close-up of burning candle flame in soft twilight, moody atmospheric lighting, no people, cozy wellness evening ritual, vertical composition, cinematic still",
+          "current_asset": {
+            "filename": "frame_4_7201f56f.png",
+            "generated_at": "2026-03-11T17:23:39.064394+00:00",
+            "url": "/generated/reels_assets/f7781716/frame_4_7201f56f.png",
+            "prompt": "Flat lay overhead view of evening ritual setup with lit terracotta candle, essential oil diffuser with steam, ceramic bowl of dried herbs, wooden surface, warm golden ambient lighting, beige sage terracotta palette, minimal aesthetic, then close-up of burning candle flame in soft twilight, moody atmospheric lighting, no people, cozy wellness evening ritual, vertical composition, cinematic still"
+          },
+          "asset_revisions": []
+        }
+      ],
+      "images_ready": 4
+    }
+  },
+  {
+    "draft_id": "b4a34825",
+    "kind": "reels",
+    "topic": "вечерний ароматический ритуал для переключения после работы",
+    "source": "/miniapp",
+    "created_at": "2026-03-11T17:06:05.142355+00:00",
+    "status": "draft",
+    "feedback": "",
+    "payload": {
+      "topic": "вечерний ароматический ритуал для переключения после работы",
+      "scenario": "# СЦЕНАРИЙ REELS: ВЕЧЕРНИЙ АРОМАТИЧЕСКИЙ РИТУАЛ\n\n---\n\n## ХРОНОМЕТРАЖ: 0–3 сек | ХУК\n\n**Видеоряд:**\n- Крупный план: руки закрывают ноутбук (звук щелчка)\n- Быстрый переход: дымка эфирного масла в луче вечернего солнца\n- На фоне: свеча с терракотовым абажуром, веточки сушёного шалфея\n\n**Текст на экране:**\n> РАБОТА ЗАКОНЧЕНА.  \n> ТЕПЕРЬ — ПЕРЕКЛЮЧЕНИЕ.\n\n**Закадровый голос:**\n«Ваша нервная система всё ещё в режиме \"боевая готовность\". Этот ритуал её отпустит».\n\n---\n\n## ХРОНОМЕТРАЖ: 3–10 сек | ОСНОВНАЯ ЧАСТЬ\n\n**Видеоряд:**\n- Руки берут флакон эфирного масла (лаванда, герань или апельсин)\n- Медленное добавление капель в диффузор/чашу с водой\n- Крупный план: первый клубок ароматического пара поднимается вверх\n- Вставка: человек закрывает глаза, делает глубокий вдох через нос\n\n**Текст на экране:**\n> ШАГ 1: ВЫБЕРИ АРОМАТ  \n> Что нужно вашей нервной системе —  \n> успокоение или мягкое пробуждение?\n\n**Закадровый голос:**\n«Выбирайте не по предпочтениям ума, а по ощущениям тела. Лаванда и герань замедляют пульс. Апельсин и лимон мягко повышают осознанность».\n\n---\n\n## ХРОНОМЕТРАЖ: 10–20 сек | РАЗВИТИЕ / ПРАКТИКА\n\n**Видеоряд:**\n- Руки зажигают свечу тонкой лучинкой\n- Медленная панорама: растения в горшках, текстильные элементы интерьера\n- Человек садится на пол или подушку, спина прямая\n- Крупный план: лицо в профиль — вдох через нос, выдох через рот\n- Руки лежат на коленях ладонями вверх\n\n**Текст на экране:**\n> ШАГ 2: 3 ВДОХА-ВЫДОХА  \n> Вдох 4 счёта — выдох 6 счётов.  \n> Это сигнал парасимпатике: опасность минула.\n\n**Закадровый голос:**\n«На вдохе аромат входит, активирует рецепторы лимбической системы. На выдохе — отпускаем остаток дня. Повторяем три раза. Этого достаточно для переключения».\n\n---\n\n## ХРОНОМЕТРАЖ: 20–30 сек | CTA\n\n**Видеоряд:**\n- Отдалённый кадр: человек сидит в полутьме, свеча горит рядом\n- Лёгкая белая вуаль на фоне (ткань в ветре или дым)\n- Завершающий кадр: руки подносят кружку с чаем к лицу\n\n**Текст на экране:**\n> ГОТОВО.  \n> Вы в другом режиме.  \n> \n> Сохраняйте себе этот ритуал —  \n> он займёт 5 минут, изменит всё.\n\n**Закадровый голос:**\n«Повторяйте эту практику каждый вечер. Ваша нервная система научится переключаться быстрее. Это не медитация — это физиология, которая работает».\n\n---\n\n## ОПИСАНИЕ ДЛЯ ПОСТА\n\nВечер после работы — это не просто усталость. Это симпатическая нервная система, которая забыла отключиться. Простой ароматический ритуал в 5 минут даёт телу сигнал: угроза миновала, можно расслабиться. Выбирайте аромат по ощущениям, дышите медленнее обычного, позвольте переходу случи",
+      "storyboard": [
+        {
+          "timecode": "0-3 сек",
+          "scene": "Крупный план закрывающегося ноутбука со звуком щелчка, переходящий в дымку эфирного масла в луче вечернего солнца. На фоне терракотовый абажур свечи и веточки сушёного шалфея, разложенные на светлой деревянной поверхности.",
+          "angle": "Сверху вниз (overhead shot) на замыкающиеся руки с ноутбуком, затем быстрый переход в крупный план дымки в лучах света — динамичный, контрастный.",
+          "gemini_prompt": "Overhead shot of closed laptop with hands, transitioning to close-up of aromatic mist rising in golden evening sunlight. Terracotta candle holder with dried sage branches, wooden desk surface. Warm beige and sage green tones, soft natural light, cinematic, atmospheric still, luxury wellness aesthetic, no people, no text."
+        },
+        {
+          "timecode": "3-10 сек",
+          "scene": "Руки держат стеклянный флакон эфирного масла (лаванда/герань), медленно добавляют капли в керамический диффузор или деревянную чашу с водой. Крупный план восходящего ароматического пара, освещённого мягким вечерним светом.",
+          "angle": "Макросъёмка — фокус на каплях масла и пара, затем отдалённо на руки и диффузор, медленное движение вверх вслед за дымкой.",
+          "gemini_prompt": "Macro close-up of essential oil drops falling into ceramic diffuser with water, rising aromatic mist illuminated by soft golden hour light. Hands with delicate fingers, minimalist aesthetic. Terracotta, beige, and sage green palette, natural textures, wooden surface. Cinematic, atmospheric, luxury wellness, no faces, no text."
+        },
+        {
+          "timecode": "",
+          "scene": "Человек сидит на полу или на подушке с прямой спиной, руки лежат на коленях ладонями вверх. Вокруг — горшочные растения, мягкие текстильные элементы (льняные ткани, подушки), горящая свеча рядом. Профильный вид, момент глубокого вдоха — лицо спокойно, закрыты глаза.",
+          "angle": "Боковой профиль в полутьме, камера на уровне груди. Мягкий свет от свечи и заходящего солнца падает на лицо и руки. Глубокий фокус на ладонях и дыхании.",
+          "gemini_prompt": "Side profile of meditating figure in lotus position on floor cushion, hands resting on knees with palms up. Potted plants, linen fabrics, burning candle with soft glow. Golden hour light, sage green and terracotta tones, beige textures, serene atmosphere. Cinematic, no faces visible, peaceful wellness aesthetic, atmospheric still, no text."
+        },
+        {
+          "timecode": "20-30 сек",
+          "scene": "Отдалённый кадр сидящего человека в полутьме, горящая свеча рядом, тонкий слой белой вуали или лёгкой ткани на фоне (иллюзия движения, ветра или дыма). Завершающий момент: руки поднимают кружку с чаем к лицу, пар от чая смешивается с ароматическим дымом.",
+          "angle": "Среднее расстояние, слегка отдалённо (wide shot), мягкий низкий ключ освещения. Камера фиксирует финальный момент спокойствия — силуэт в тёплом свечении, атмосферное окончание.",
+          "gemini_prompt": "Wide shot of silhouette in dimmed warm lighting, sitting peacefully with steaming tea cup, burning candle nearby, white gauze fabric in soft focus background suggesting movement. Golden amber and beige tones, sage accents, intimate candlelit atmosphere. Cinematic, atmospheric, luxury wellness ritual, no faces, serene evening mood, no text, portrait vertical composition."
+        }
+      ],
+      "images_ready": 0
+    }
+  }
+]
