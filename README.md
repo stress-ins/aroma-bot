@@ -1,5 +1,8 @@
 # 🌿 Aroma Trends Bot
 
+[![Tests](https://github.com/stress-ins/aroma-bot/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/stress-ins/aroma-bot/actions/workflows/test.yml)
+[![Deploy](https://github.com/stress-ins/aroma-bot/actions/workflows/deploy.yml/badge.svg?branch=main)](https://github.com/stress-ins/aroma-bot/actions/workflows/deploy.yml)
+
 Телеграм-бот для мониторинга трендов в ароматерапии, ольфактотерапии, медитации гонг и звуковом целительстве. Собирает данные из 10+ источников, формирует два отчёта (🇷🇺 и 🇬🇧), генерирует темы постов для Threads и карусели с картинками через AI.
 
 ## Репозитории и продакшен-роли
@@ -10,6 +13,7 @@
 - продакшен-путь бота на VPS: `/opt/aroma`
 - systemd-сервис бота: `aroma-bot`
 - Threads OAuth callback на VPS: `threads-oauth.service`
+- Mini App на VPS: `aroma-miniapp.service`
 
 Публичный сайт вынесен в отдельный репозиторий:
 
@@ -22,6 +26,22 @@
 
 - `https://aromara.ru` и `https://www.aromara.ru` → `nginx` → `127.0.0.1:3005` → `aromara-site`
 - `https://oauth.aromara.ru` → `nginx` → `127.0.0.1:8090` → `threads-oauth.service`
+- `https://app.aromara.ru` → `nginx` → `127.0.0.1:8091` → `aroma-miniapp.service`
+
+## CI/CD
+
+- `push` в `main` и `pull_request` запускают GitHub Actions workflow `Tests`
+- `Tests` ставит зависимости и гоняет `pytest` для ключевых тестовых наборов
+- после успешного `Tests` workflow `Deploy` автоматически пушит проверенный commit в VPS bare repo `/opt/aroma.git`
+- post-receive hook на VPS обновляет `/opt/aroma` и перезапускает `aroma-bot`
+- финальный шаг деплоя проверяет `systemctl is-active aroma-bot`
+
+## Team Workflow
+
+- все изменения делаем из feature-веток через pull request
+- `main` используем только как merge-ветку после review и зелёных тестов
+- UX-задачи заводим через GitHub issue template `UX Request`
+- для Telegram Mini App первый продуктовый и UX-объём зафиксирован в [docs/telegram-mini-app-ux-brief.md](/Users/p.kutsenko/Library/Mobile%20Documents/com~apple~CloudDocs/python/aroma/docs/telegram-mini-app-ux-brief.md)
 
 ---
 
@@ -85,6 +105,7 @@ systemctl start aroma-monitor
 | `/threads_account` | Проверка подключенного Threads-аккаунта |
 | `/threads_inbox` | Анализ inbox Threads: бот предлагает, на что стоит ответить, и черновики ответов |
 | `/carousel` | Карусель из 5 слайдов на основе трендов + картинки |
+| `/app` | Открыть Mini App workspace |
 | `/keywords` | Просмотр и редактирование ключевых слов |
 | `/status` | Какие источники активны |
 | `/help` | Список команд |
@@ -213,6 +234,7 @@ playwright install webkit chromium
 ```
 TELEGRAM_BOT_TOKEN=...
 REPORT_TARGET_CHAT_ID=...
+MINI_APP_URL=https://app.aromara.ru
 ```
 
 Все опции:

@@ -8,6 +8,7 @@ from telegram.constants import ParseMode
 from telegram.ext import ContextTypes, CallbackQueryHandler
 
 from config import settings
+from bot.services.mini_app import build_mini_app_markup
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +28,7 @@ WELCOME_TEXT = (
     "*/plan* — контент\\-план на неделю\n"
     "*/reels* — сценарий для Reels\n"
     "*/drafts* — последние сохранённые черновики\n"
+    "*/app* — открыть Mini App с черновиками\n"
     "*/status* — какие источники активны\n"
     "*/help* — список команд"
 )
@@ -43,6 +45,7 @@ HELP_TEXT = (
     "*/plan* — контент\\-план на неделю на основе трендов\n"
     "*/reels* — детальный сценарий для Reels \\(15\\-30 сек\\)\n"
     "*/drafts* — история последних черновиков\n"
+    "*/app* — открыть Mini App с черновиками\n"
     "*/keywords* — просмотр и редактирование ключевых слов\n"
     "*/status* — проверить источники данных\n"
     "*/start* — приветствие\n"
@@ -66,6 +69,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
         WELCOME_TEXT,
         parse_mode=ParseMode.MARKDOWN_V2,
+        reply_markup=build_mini_app_markup(label="🧭 Открыть Mini App", tab="drafts"),
     )
 
 
@@ -73,6 +77,21 @@ async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
         HELP_TEXT,
         parse_mode=ParseMode.MARKDOWN_V2,
+        reply_markup=build_mini_app_markup(label="🧭 Открыть Mini App", tab="drafts"),
+    )
+
+
+async def open_mini_app(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    markup = build_mini_app_markup(label="🧭 Открыть Mini App", tab="drafts")
+    if markup is None:
+        await update.message.reply_text(
+            "⚠️ Mini App URL пока не настроен.\n\n"
+            "Нужно задать `MINI_APP_URL`, например `https://app.aromara.ru`."
+        )
+        return
+    await update.message.reply_text(
+        "🧭 Mini App открыт как рабочая панель для черновиков, review и Reels.",
+        reply_markup=markup,
     )
 
 

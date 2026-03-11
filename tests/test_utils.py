@@ -806,6 +806,10 @@ class TestStoryboardParser:
 from bot.agents.planner import _PLAN_PROMPT, _BRAND_CONTEXT
 from bot.handlers.planner import _parse_plan_entries
 from bot.services.drafts_store import DraftRecord
+from bot.services.miniapp_presenter import filter_drafts, payload_preview, serialize_draft
+from bot.services.miniapp_keywords import field_labels, serialize_topics
+from bot.services.miniapp_plans import serialize_plan
+from bot.services.plans_store import PlanRecord
 
 
 class TestPlannerConstants:
@@ -883,6 +887,115 @@ class TestDraftRecord:
 
         assert record.status == "approved"
         assert record.feedback == "worked"
+
+
+class TestMiniAppPresenter:
+    def test_filter_drafts_by_kind_status_and_query(self):
+        drafts = [
+            DraftRecord(
+                draft_id="aaa11111",
+                kind="reels",
+                topic="Вечерний ритуал",
+                source="/reels",
+                created_at="2026-03-11T07:00:00+00:00",
+                status="approved",
+                feedback="worked",
+                payload={"scenario": "script"},
+            ),
+            DraftRecord(
+                draft_id="bbb22222",
+                kind="threads",
+                topic="Утренний якорь",
+                source="/content",
+                created_at="2026-03-11T08:00:00+00:00",
+                status="draft",
+                feedback="",
+                payload={"caption": "caption"},
+            ),
+        ]
+
+        result = filter_drafts(
+            drafts,
+            kind="reels",
+            status="approved",
+            feedback="worked",
+            query="ритуал",
+        )
+
+        assert len(result) == 1
+        assert result[0].draft_id == "aaa11111"
+
+    def test_payload_preview_prefers_reels_scenario(self):
+        preview = payload_preview("reels", {"scenario": "Сценарий с таймкодами"})
+        assert "таймкодами" in preview
+
+    def test_payload_preview_uses_slides_for_carousel(self):
+        preview = payload_preview("carousel", {"slides": ["Слайд 1", "Слайд 2", "Слайд 3"]})
+        assert "Слайд 1" in preview
+        assert "Слайд 2" in preview
+
+    def test_serialize_draft_counts_storyboard_frames(self):
+        draft = DraftRecord(
+            draft_id="ccc33333",
+            kind="reels",
+            topic="Тёплый вечерний ролик",
+            source="/reels",
+            created_at="2026-03-11T09:00:00+00:00",
+            status="in_review",
+            feedback="",
+            payload={
+                "scenario": "text",
+                "storyboard": [
+                    {"timecode": "0-3"},
+                    {"timecode": "3-10"},
+                    {"timecode": "10-20"},
+                ],
+            },
+        )
+
+        data = serialize_draft(draft)
+
+        assert data["storyboard_count"] == 3
+        assert data["slides_count"] == 0
+        assert data["preview"] == "text"
+
+
+class TestMiniAppKeywords:
+    def test_field_labels_exposes_ru_and_en_fields(self):
+        labels = field_labels()
+        assert "kw_ru" in labels
+        assert "tag_en" in labels
+
+    def test_serialize_topics_returns_named_topics(self):
+        topics = serialize_topics()
+        assert len(topics) >= 1
+        assert "name" in topics[0]
+        assert "fields" in topics[0]
+
+
+class TestMiniAppPlans:
+    def test_serialize_plan_keeps_entries(self):
+        plan = PlanRecord(
+            plan_id="20260311120000",
+            created_at="2026-03-11T12:00:00+00:00",
+            raw_text="📅 Понедельник\nПлатформа: Threads",
+            entries=[
+                {
+                    "day_label": "Понедельник",
+                    "platform": "Threads",
+                    "format_label": "пост",
+                    "goal": "Доверие",
+                    "topic": "Почему запахи помогают замедлиться вечером.",
+                    "angle": "Через офисную перегрузку.",
+                }
+            ],
+        )
+
+        data = serialize_plan(plan)
+
+        assert data["plan_id"] == "20260311120000"
+        assert len(data["entries"]) == 1
+        assert data["entries"][0]["platform"] == "Threads"
 
 
 # ---------------------------------------------------------------------------
