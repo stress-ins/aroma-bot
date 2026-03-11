@@ -2,6 +2,8 @@ const state = {
   tab: new URLSearchParams(window.location.search).get("tab") || "drafts",
   draftId: new URLSearchParams(window.location.search).get("draft_id") || "",
   drafts: [],
+  plans: [],
+  selectedPlan: null,
   selected: null,
   status: null,
   keywords: null,
@@ -101,6 +103,12 @@ async function loadStatus() {
   renderStatus();
 }
 
+async function loadPlans() {
+  const data = await fetchJson("/api/plans?limit=20");
+  state.plans = data.items || [];
+  renderPlans();
+}
+
 async function loadKeywords() {
   state.keywords = await fetchJson("/api/keywords");
   renderKeywords();
@@ -178,6 +186,88 @@ function renderStatus() {
       <section class="section">
         <h3>Mini App URL</h3>
         <div class="detail-preview">${escapeHtml(status?.mini_app_url || "не настроен")}</div>
+      </section>
+    </div>
+  `;
+}
+
+function renderPlans() {
+  elements.listTitle.textContent = "Plans";
+  const items = state.plans || [];
+  elements.draftCount.textContent = `${items.length} plans`;
+  elements.emptyState.hidden = items.length > 0;
+  elements.draftList.innerHTML = `
+    <div class="plans-list">
+      ${items.map((plan) => `
+        <article class="plan-card">
+          <div class="draft-kind">weekly plan</div>
+          <h3 class="draft-topic">${escapeHtml(plan.plan_id)}</h3>
+          <div class="draft-preview">${escapeHtml((plan.raw_text || "").slice(0, 220) || "Без текста плана")}</div>
+          <div class="draft-meta">
+            <span class="tag">${escapeHtml(plan.entries.length)} entries</span>
+            <span class="tag">${escapeHtml(plan.related_drafts.length)} drafts</span>
+          </div>
+          <button type="button" data-plan-open="${escapeHtml(plan.plan_id)}">Открыть</button>
+        </article>
+      `).join("")}
+    </div>
+  `;
+
+  elements.draftList.querySelectorAll("[data-plan-open]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      await openPlan(button.dataset.planOpen);
+    });
+  });
+
+  if (items[0] && !state.selectedPlan) {
+    renderPlanDetail(items[0]);
+  } else if (!items.length) {
+    elements.draftDetail.innerHTML = `<div class="detail-empty">Планы пока не сгенерированы через /plan.</div>`;
+  }
+}
+
+async function openPlan(planId) {
+  const plan = await fetchJson(`/api/plans/${planId}`);
+  state.selectedPlan = plan;
+  renderPlanDetail(plan);
+}
+
+function renderPlanDetail(plan) {
+  state.selectedPlan = plan;
+  elements.draftDetail.innerHTML = `
+    <div class="detail-grid">
+      <section class="section">
+        <h3>Plan ID</h3>
+        <div class="detail-preview">${escapeHtml(plan.plan_id)}</div>
+      </section>
+      <section class="section">
+        <h3>Entries</h3>
+        <div class="plan-entries">
+          ${plan.entries.map((entry) => `
+            <div class="plan-entry">
+              <strong>${escapeHtml(entry.day_label || "")}</strong>
+              <div>${escapeHtml(entry.platform || "")} / ${escapeHtml(entry.format_label || "")}</div>
+              <div>${escapeHtml(entry.topic || "")}</div>
+              <div class="meta">${escapeHtml(entry.goal || "")}</div>
+            </div>
+          `).join("")}
+        </div>
+      </section>
+      <section class="section">
+        <h3>Related Drafts</h3>
+        <div class="related-drafts">
+          ${plan.related_drafts.length ? plan.related_drafts.map((draft) => `
+            <div class="plan-entry">
+              <strong>${escapeHtml(draft.kind)}</strong>
+              <div>${escapeHtml(draft.topic)}</div>
+              <div class="meta">Draft ID: ${escapeHtml(draft.draft_id)} / ${escapeHtml(draft.status)}</div>
+            </div>
+          `).join("") : '<div class="detail-preview">По этому плану пока не созданы draft’ы.</div>'}
+        </div>
+      </section>
+      <section class="section">
+        <h3>Raw Plan</h3>
+        <pre class="json-block">${escapeHtml(plan.raw_text || "")}</pre>
       </section>
     </div>
   `;
@@ -426,6 +516,10 @@ function bindFilters() {
 }
 
 async function loadCurrentTab() {
+  if (state.tab === "plans") {
+    await loadPlans();
+    return;
+  }
   if (state.tab === "status") {
     await loadStatus();
     return;

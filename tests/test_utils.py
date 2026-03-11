@@ -808,6 +808,8 @@ from bot.handlers.planner import _parse_plan_entries
 from bot.services.drafts_store import DraftRecord
 from bot.services.miniapp_presenter import filter_drafts, payload_preview, serialize_draft
 from bot.services.miniapp_keywords import field_labels, serialize_topics
+from bot.services.miniapp_plans import serialize_plan
+from bot.services.plans_store import PlanRecord
 
 
 class TestPlannerConstants:
@@ -969,6 +971,31 @@ class TestMiniAppKeywords:
         assert len(topics) >= 1
         assert "name" in topics[0]
         assert "fields" in topics[0]
+
+
+class TestMiniAppPlans:
+    def test_serialize_plan_keeps_entries(self):
+        plan = PlanRecord(
+            plan_id="20260311120000",
+            created_at="2026-03-11T12:00:00+00:00",
+            raw_text="📅 Понедельник\nПлатформа: Threads",
+            entries=[
+                {
+                    "day_label": "Понедельник",
+                    "platform": "Threads",
+                    "format_label": "пост",
+                    "goal": "Доверие",
+                    "topic": "Почему запахи помогают замедлиться вечером.",
+                    "angle": "Через офисную перегрузку.",
+                }
+            ],
+        )
+
+        data = serialize_plan(plan)
+
+        assert data["plan_id"] == "20260311120000"
+        assert len(data["entries"]) == 1
+        assert data["entries"][0]["platform"] == "Threads"
 
 
 # ---------------------------------------------------------------------------
