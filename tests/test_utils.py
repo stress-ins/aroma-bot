@@ -366,7 +366,7 @@ _IMG_PROMPTS = [
 ]
 
 
-from bot.agents.carousel_editor import edit_carousel_sync
+from bot.agents.carousel_editor import _EDITOR_PROMPT as _CAROUSEL_EDITOR_PROMPT, edit_carousel_sync
 
 
 def _parse_editor_output(raw: str) -> list[str]:
@@ -400,6 +400,13 @@ class TestCarouselEditor:
 
     def test_empty_returns_empty(self):
         assert _parse_editor_output("") == []
+
+    def test_editor_prompt_demands_soft_logical_human_flow(self):
+        lowered = _CAROUSEL_EDITOR_PROMPT.lower()
+        assert "логично продолжать предыдущий" in lowered
+        assert "мягко, понятно и по-человечески" in lowered
+        assert "не руби фразы ради эффекта" in lowered
+        assert "понятно, мягко, логично" in lowered
 
 
 class TestBuildPptx:
