@@ -1506,6 +1506,18 @@ class TestMiniAppRussianLocale:
         assert "font-size: 18px;" in app_css
         assert "min-height: 62px;" in app_css
 
+    def test_create_cards_use_icons_and_top_switcher_gap_is_balanced(self):
+        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+
+        assert '".topbar + .toolbar"' in app_css or ".topbar + .toolbar" in app_css
+        assert 'data-tool="content"' in app_js
+        assert 'data-tool="reels"' in app_js
+        assert 'data-tool="plan"' in app_js
+        assert 'data-tool="carousel"' in app_js
+        assert 'contentKindIcon("content")' in app_js
+        assert 'contentKindIcon("plan")' in app_js
+
     def test_carousel_detail_uses_actions_instead_of_raw_json(self):
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
         server_py = Path("miniapp_server.py").read_text(encoding="utf-8")

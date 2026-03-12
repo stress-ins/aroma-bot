@@ -266,6 +266,8 @@ function actionLabel(icon, text) {
 
 function contentKindIcon(kind) {
   const glyphMap = {
+    content: "✍️",
+    plan: "🗓️",
     reels: "🎬",
     carousel: "🖼️",
     threads: "✍️",
@@ -1441,23 +1443,23 @@ function renderCreate() {
   
   elements.draftList.innerHTML = `
     <div class="create-list">
-      <article class="create-card${state.selectedCreateTool === 'content' ? ' active' : ''}" onclick="renderCreateTool('content')">
-        <div class="draft-kind">контент</div>
+      <article class="create-card${state.selectedCreateTool === 'content' ? ' active' : ''}" data-tool="content" onclick="renderCreateTool('content')">
+        <div class="draft-kind">${contentKindIcon("content")}<span>контент</span></div>
         <h3 class="draft-topic">Пост для соцсетей</h3>
         <div class="draft-preview">Тредс, Инстаграм или Телеграм.</div>
       </article>
-      <article class="create-card${state.selectedCreateTool === 'reels' ? ' active' : ''}" onclick="renderCreateTool('reels')">
-        <div class="draft-kind">рилсы</div>
+      <article class="create-card${state.selectedCreateTool === 'reels' ? ' active' : ''}" data-tool="reels" onclick="renderCreateTool('reels')">
+        <div class="draft-kind">${contentKindIcon("reels")}<span>рилсы</span></div>
         <h3 class="draft-topic">Сценарий + раскадровка</h3>
         <div class="draft-preview">Сценарий и 4 кадра визуализации.</div>
       </article>
-      <article class="create-card${state.selectedCreateTool === 'plan' ? ' active' : ''}" onclick="renderCreateTool('plan')">
-        <div class="draft-kind">план</div>
+      <article class="create-card${state.selectedCreateTool === 'plan' ? ' active' : ''}" data-tool="plan" onclick="renderCreateTool('plan')">
+        <div class="draft-kind">${contentKindIcon("plan")}<span>план</span></div>
         <h3 class="draft-topic">Контент-план</h3>
         <div class="draft-preview">Сбор трендов и план на неделю.</div>
       </article>
-      <article class="create-card${state.selectedCreateTool === 'carousel' ? ' active' : ''}" onclick="renderCreateTool('carousel')">
-        <div class="draft-kind">карусель</div>
+      <article class="create-card${state.selectedCreateTool === 'carousel' ? ' active' : ''}" data-tool="carousel" onclick="renderCreateTool('carousel')">
+        <div class="draft-kind">${contentKindIcon("carousel")}<span>карусель</span></div>
         <h3 class="draft-topic">Карусель</h3>
         <div class="draft-preview">5 слайдов с промптами для картинок.</div>
       </article>
@@ -1478,11 +1480,7 @@ function renderCreateTool(toolId) {
   
   // Update active state in the list
   elements.draftList.querySelectorAll(".create-card").forEach(card => {
-    const isTarget = (toolId === 'content' && card.querySelector('.draft-kind').textContent === 'контент') ||
-                     (toolId === 'reels' && card.querySelector('.draft-kind').textContent === 'рилсы') ||
-                     (toolId === 'plan' && card.querySelector('.draft-kind').textContent === 'план') ||
-                     (toolId === 'carousel' && card.querySelector('.draft-kind').textContent === 'карусель');
-    card.classList.toggle("active", isTarget);
+    card.classList.toggle("active", card.dataset.tool === toolId);
   });
 
   let formHtml = '';
