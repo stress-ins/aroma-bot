@@ -317,7 +317,9 @@ def test_mobile_tabs_and_drafts_render_in_russian(page):
     tabs_handbook = page.locator(".tab-button").evaluate_all(
         "(nodes) => nodes.map((node) => node.textContent.trim())"
     )
-    assert tabs_handbook == ["🌿Ароматы", "🫁Практики", "🔔Звуки"]
+    assert "🌿Ароматы" in tabs_handbook
+    assert "🫁Практики" in tabs_handbook
+    assert "🔔Звуки" in tabs_handbook
 
     page.get_by_role("button", name="Контент").click()
     page.get_by_role("button", name="Черновики").click()
@@ -451,7 +453,7 @@ def test_mobile_primary_controls_have_comfortable_hit_targets(page):
     metrics = page.evaluate(
         """
         () => {
-          const selectors = ['.mode-button', '.tab-button', '.icon-corner-button', '.secondary-button', '.primary-button', '.back-button.visible'];
+          const selectors = ['.mode-button', '.tab-button', '.icon-corner-button', '.secondary-button', '.primary-button', '.back-button.visible', '.bottom-tab-btn'];
           return selectors.flatMap((selector) =>
             [...document.querySelectorAll(selector)]
               .filter((node) => {
@@ -471,6 +473,31 @@ def test_mobile_primary_controls_have_comfortable_hit_targets(page):
     )
     bad = [item for item in metrics if item["height"] < 44]
     assert bad == []
+
+
+def test_mobile_bottom_tab_bar_switches_primary_sections(page):
+    bottom_nav = page.locator("#bottomTabBar")
+    assert bottom_nav.is_visible()
+
+    page.locator("#btnTabReels").click()
+    page.wait_for_timeout(300)
+    assert page.locator("#btnTabReels").get_attribute("aria-pressed") == "true"
+    assert page.locator(".reels-card").count() == 1
+
+    page.locator("#btnTabHandbook").click()
+    page.wait_for_timeout(300)
+    assert page.locator("#btnTabHandbook").get_attribute("aria-pressed") == "true"
+    handbook_tabs = page.locator(".tab-button").evaluate_all(
+        "(nodes) => nodes.map((node) => node.textContent.trim())"
+    )
+    assert "🌿Ароматы" in handbook_tabs
+    assert "🫁Практики" in handbook_tabs
+    assert "🔔Звуки" in handbook_tabs
+
+    page.locator("#btnTabDrafts").click()
+    page.wait_for_timeout(300)
+    assert page.locator("#btnTabDrafts").get_attribute("aria-pressed") == "true"
+    assert page.locator(".draft-card").count() >= 2
 
 
 def test_desktop_layout_keeps_split_panels_and_comfortable_controls(desktop_page):

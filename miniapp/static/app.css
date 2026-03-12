@@ -1040,6 +1040,70 @@ textarea,
   margin-bottom: 4px;
 }
 
+.bottom-tab-bar {
+  display: none;
+}
+
+.bottom-tab-bar[hidden] {
+  display: none !important;
+}
+
+.bottom-tab-bar-inner {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  width: min(100%, 720px);
+  margin: 0 auto;
+  padding: 8px;
+  border: 1px solid rgba(60, 40, 20, 0.08);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 12px 30px rgba(28, 21, 16, 0.12);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.bottom-tab-btn {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  min-height: 56px;
+  padding: 8px 4px;
+  border: 0;
+  border-radius: 16px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard), transform var(--duration-fast) var(--ease-standard);
+}
+
+.bottom-tab-btn .ui-icon {
+  width: 18px;
+  height: 18px;
+  flex-basis: 18px;
+}
+
+.bottom-tab-btn .ui-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.bottom-tab-btn span:last-child {
+  font-size: 11px;
+  line-height: 1.1;
+  font-weight: 600;
+  text-align: center;
+}
+
+.bottom-tab-btn.active {
+  background: linear-gradient(180deg, rgba(180, 92, 61, 0.18), rgba(180, 92, 61, 0.10));
+  color: var(--brand);
+}
+
+.bottom-tab-btn:active {
+  transform: scale(0.96);
+}
+
 .ui-icon {
   display: inline-flex;
   width: 16px;
@@ -1094,8 +1158,27 @@ textarea,
 
 /* ── Mobile Layout Fixes ─────────────────────────────────────────────────── */
 @media (max-width: 760px) {
+  body.is-mobile-layout {
+    padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  }
+
   .back-button.visible {
     display: inline-flex;
+  }
+
+  .bottom-tab-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: block;
+    padding: 10px 10px calc(10px + env(safe-area-inset-bottom, 0px));
+    z-index: 30;
+    pointer-events: none;
+  }
+
+  .bottom-tab-bar .bottom-tab-bar-inner {
+    pointer-events: auto;
   }
 
   .list-panel.hidden-mobile {

@@ -80,6 +80,7 @@ const elements = {
   bootFallbackText: document.getElementById("bootFallbackText"),
   bootFallbackReload: document.getElementById("bootFallbackReload"),
 };
+  bottomTabBar: document.getElementById("bottomTabBar"),
 
 const RU_KIND_LABELS = {
   threads: "Тредс",
@@ -1513,8 +1514,27 @@ function syncMobileNavigation() {
   }
 }
 
+function syncBottomTabBar() {
+  const tabBar = elements.bottomTabBar;
+  if (!tabBar) return;
+
+  const isMobile = window.matchMedia("(max-width: 760px)").matches;
+  tabBar.hidden = !isMobile;
+  if (!isMobile) return;
+
+  const activeTab = state.mode === "handbook" ? "aromas" : state.tab;
+  tabBar.querySelectorAll(".bottom-tab-btn").forEach((button) => {
+    const isActive = button.dataset.tab === activeTab;
+    button.classList.toggle("active", isActive);
+    button.setAttribute("aria-pressed", isActive ? "true" : "false");
+  });
+}
+
 function renderBackButton() {
   const isMobile = window.matchMedia("(max-width: 760px)").matches;
+  document.body.classList.toggle("is-mobile-layout", isMobile);
+  document.body.classList.toggle("is-detail-view", isMobile && state.mobileView === "detail");
+  syncBottomTabBar();
   if (!isMobile) return "";
   return `<button class="back-button visible" onclick="goBackToList(true)">${uiIcon("back")}<span>Назад к списку</span></button>`;
 }
@@ -1646,6 +1666,46 @@ function bindSwipeBack() {
     const dx = Math.max(0, touch.clientX - swipeStart.x);
     const dy = Math.abs(touch.clientY - swipeStart.y);
     if (dx > 10 && dy < 72) {
+
+function bindTextareaAutoExpand() {
+  const resizeTextarea = (field) => {
+    if (!(field instanceof HTMLTextAreaElement)) return;
+    field.style.height = "auto";
+    field.style.height = `${field.scrollHeight}px`;
+  };
+
+  const bindField = (field) => {
+    if (!(field instanceof HTMLTextAreaElement)) return;
+    if (field.dataset.autoExpandBound === "true") {
+      resizeTextarea(field);
+      return;
+    }
+    field.dataset.autoExpandBound = "true";
+    resizeTextarea(field);
+    field.addEventListener("input", () => resizeTextarea(field));
+  };
+
+  document.querySelectorAll("textarea").forEach(bindField);
+
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      mutation.addedNodes.forEach((node) => {
+        if (!(node instanceof Element)) return;
+        if (node.matches("textarea")) {
+          bindField(node);
+          return;
+        }
+        node.querySelectorAll?.("textarea").forEach(bindField);
+      });
+    });
+  });
+
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+  });
+}
+
       elements.detailPanel.classList.add("swipe-back-armed");
       elements.detailPanel.style.setProperty("--swipe-offset", `${Math.min(dx, 96)}px`);
     }
@@ -2362,6 +2422,10 @@ async function openPlan(id) {
   state.plans = state.plans.map((item) => item.plan_id === p.plan_id ? { ...item, ...p } : item);
   renderPlanDetail(p);
   enterDetailView();
+  const params = new URLSearchParams(window.location.search);
+  params.set("tab", state.tab);
+  params.set("draft_id", id);
+  history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`);
 }
 
 async function generateDraftFromPlan(planId, entryIndex, button) {
@@ -2385,6 +2449,45 @@ async function generateDraftFromPlan(planId, entryIndex, button) {
     : await apply();
   if (draft?.draft_id) {
     const tg = window.Telegram?.WebApp;
+function bindBottomTabBar() {
+  const tabBar = elements.bottomTabBar;
+  if (!tabBar) return;
+
+  tabBar.querySelectorAll(".bottom-tab-btn").forEach((button) => {
+    button.addEventListener("click", () => {
+      const targetTab = button.dataset.tab;
+      if (!targetTab) return;
+
+      if (targetTab === "aromas") {
+        if (state.mode === "handbook" && state.mobileView === "detail") {
+          window.goBackToList(false);
+          return;
+        }
+        if (state.mode !== "handbook") {
+          setMode("handbook");
+        }
+        setTab("aromas");
+        void safeLoadCurrentTab("Не удалось загрузить справочник");
+        return;
+      }
+
+      if (state.mode === "content" && state.tab === targetTab && state.mobileView === "detail") {
+        window.goBackToList(false);
+        return;
+      }
+
+      if (state.mode !== "content") {
+        setMode("content");
+      }
+      setTab(targetTab);
+      void safeLoadCurrentTab("Не удалось загрузить вкладку");
+    });
+  });
+
+  window.addEventListener("resize", syncBottomTabBar);
+  syncBottomTabBar();
+}
+
     if (tg?.showAlert) tg.showAlert("Черновик создан и привязан к плану");
   }
 }
@@ -2580,6 +2683,7 @@ function setTab(t) {
   p.set("tab", t);
   history.replaceState({}, "", `${window.location.pathname}?${p.toString()}`);
   
+  syncMobileNavigation();
   elements.tabsContainer.querySelectorAll(".tab-button").forEach(b => b.classList.toggle("active", b.dataset.tab === t));
   elements.filtersContainer.hidden = (t !== "drafts");
   
@@ -2599,6 +2703,7 @@ async function loadCurrentTab() {
   if (state.tab === "reels") return await loadReels();
   if (HANDBOOK_CATEGORY_META[state.tab]) return await loadReferences(state.tab);
   if (state.tab === "settings") return await loadSettings();
+  p.delete("draft_id");
   if (state.tab === "status") return await loadStatus();
   if (state.tab === "keywords") return await loadKeywords();
   await loadDrafts();
@@ -2762,6 +2867,7 @@ async function bootstrap() {
         void safeLoadCurrentTab("Не удалось обновить черновики");
       }
     }, 300);
+  bindBottomTabBar();
   });
   if (MODE_TABS.handbook.find(t => t.id === state.tab)) state.mode = "handbook";
   setMode(state.mode);
