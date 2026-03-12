@@ -303,11 +303,13 @@ def test_overview_lists_use_consistent_card_meta(page):
     assert page.locator(".reels-card .draft-meta .tag").count() >= 2
 
 
-def test_create_tab_uses_guided_empty_state_before_tool_selection(page):
-    page.get_by_role("button", name="Создать").click()
-    page.wait_for_timeout(250)
+def test_create_tab_uses_guided_empty_state_before_tool_selection(desktop_page):
+    desktop_page.get_by_role("button", name="Создать").click()
+    desktop_page.wait_for_timeout(250)
 
-    assert page.locator(".create-card").count() == 4
+    assert desktop_page.locator(".create-card").count() == 4
+    assert desktop_page.locator(".guided-state").is_visible()
+    assert desktop_page.get_by_text("Выберите формат для старта").is_visible()
 
 
 def test_draft_search_empty_state_offers_guidance(page):

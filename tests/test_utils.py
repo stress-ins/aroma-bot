@@ -1738,9 +1738,10 @@ class TestMiniAppRussianLocale:
 
         assert "JSON</h3>" not in app_js
         assert "Перегенерировать все" in app_js
-        assert "Сохранить текст слайда" in app_js
+        assert "Сохранить подпись" in app_js
         assert "Перегенерировать картинку" in app_js
-        assert "Текст слайда" in app_js
+        assert "Подпись слайда" in app_js
+        assert "После правки нажмите «Сохранить подпись»" in app_js
         assert "Скачать PPTX" in app_js
         assert "Показать промпт" in app_js
         assert "tg.openLink(downloadUrl)" in app_js
