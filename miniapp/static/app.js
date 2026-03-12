@@ -1,8 +1,10 @@
 import { createCarouselModule } from "./js/carousel.js";
+import { createCreateModule } from "./js/create.js";
 import { createDraftsModule } from "./js/drafts.js";
 import { createPlansModule } from "./js/plans.js";
 import { createReferencesModule } from "./js/references.js";
 import { createReelsModule } from "./js/reels.js";
+import { createSettingsModule } from "./js/settings.js";
 import { createShellModule } from "./js/shell.js";
 
 const state = {
@@ -901,52 +903,16 @@ async function copyText(value) {
   else showUiNotice("Промпт скопирован", "success");
 }
 
-function keywordFieldEntries(topic) {
-  const labels = state.keywords?.field_labels || {};
-  const fields = topic?.fields || {};
-  return Object.entries(fields).map(([field, items]) => ({
-    field,
-    label: labels[field] || field,
-    items: Array.isArray(items) ? items : [],
-  }));
-}
-
 async function addKeywordItem(topicIdx, field, form, button) {
-  const input = form?.querySelector("input[name='word']");
-  const word = String(input?.value || "").trim();
-  if (!word) {
-    input?.focus();
-    return;
-  }
-  await withButtonFeedback(button, "Добавляю...", async () => {
-    const payload = await fetchJson("/api/keywords/add", {
-      method: "POST",
-      body: JSON.stringify({ topic_idx: topicIdx, field, word }),
-    });
-    state.keywords = payload;
-    renderKeywords();
-  }, "Добавлено");
-  showUiNotice("Ключ добавлен", "success");
+  return addKeywordItemImpl(topicIdx, field, form, button);
 }
 
 async function removeKeywordItem(topicIdx, field, word, button) {
-  const confirmed = await confirmAction(`Удалить ключ "${word}"?`);
-  if (!confirmed) return;
-  await withButtonFeedback(button, "Удаляю...", async () => {
-    const payload = await fetchJson("/api/keywords/remove", {
-      method: "POST",
-      body: JSON.stringify({ topic_idx: topicIdx, field, word }),
-    });
-    state.keywords = payload;
-    renderKeywords();
-  }, "Удалено");
-  showUiNotice("Ключ удален", "success");
+  return removeKeywordItemImpl(topicIdx, field, word, button);
 }
 
 function openKeywordTopic(topicIdx) {
-  state.selectedKeywordTopicIdx = Number(topicIdx);
-  renderKeywords();
-  enterDetailView();
+  return openKeywordTopicImpl(topicIdx);
 }
 
 const {
@@ -1049,53 +1015,6 @@ const {
   scheduleReelsRefresh,
   callbacks: reelsCallbacks,
 });
-
-function bindTopicForm(form, config) {
-  const topicField = form.querySelector("textarea[name='topic']");
-  const submitButton = form.querySelector("button[type='submit']");
-  if (!topicField || !submitButton) return;
-
-  const updateState = () => {
-    submitButton.disabled = !topicField.value.trim();
-  };
-
-  updateState();
-  topicField.addEventListener("input", updateState);
-  form.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const topic = topicField.value.trim();
-    if (!topic) {
-      topicField.focus();
-      return;
-    }
-    const originalHtml = submitButton.innerHTML;
-    submitButton.disabled = true;
-    submitButton.classList.add("is-busy");
-    submitButton.innerHTML = `<span class="button-spinner" aria-hidden="true"></span><span>${escapeHtml(config.pendingText)}</span>`;
-    try {
-      await config.onSubmit(topic);
-      submitButton.classList.add("did-complete");
-      submitButton.innerHTML = `<span>${escapeHtml(config.doneText || "Готово")}</span>`;
-      window.setTimeout(() => {
-        submitButton.classList.remove("did-complete");
-        submitButton.innerHTML = originalHtml;
-        updateState();
-      }, 900);
-      return;
-    } catch (error) {
-      submitButton.classList.add("did-error");
-      showRequestError(config.errorPrefix || "Не удалось выполнить действие", error);
-      window.setTimeout(() => {
-        submitButton.classList.remove("did-error");
-        submitButton.innerHTML = originalHtml;
-        updateState();
-      }, 1200);
-    } finally {
-      submitButton.disabled = false;
-      submitButton.classList.remove("is-busy");
-    }
-  });
-}
 
 function applyTelegramTheme() {
   const tg = window.Telegram?.WebApp;
@@ -1252,213 +1171,19 @@ async function loadReels() {
 }
 
 async function loadKeywords() {
-  state.keywords = await fetchJson("/api/keywords");
-  renderKeywords();
+  return loadKeywordsImpl();
 }
 
 async function loadSettings() {
-  if (state.settingsSection === "keywords") {
-    if (!state.keywords) {
-      state.keywords = await fetchJson("/api/keywords");
-    }
-    renderKeywords();
-    return;
-  }
-  if (!state.status) {
-    state.status = await fetchJson("/api/status");
-  }
-  renderStatus();
-}
-
-function renderSettingsSwitcher(activeSection) {
-  return `
-    <section class="settings-switcher">
-      <button class="tab-button${activeSection === "status" ? " active" : ""}" type="button" onclick="openSettingsSection('status')">${uiIcon("gear")}<span>Статус</span></button>
-      <button class="tab-button${activeSection === "keywords" ? " active" : ""}" type="button" onclick="openSettingsSection('keywords')">${uiIcon("text")}<span>Ключи</span></button>
-    </section>
-  `;
+  return loadSettingsImpl();
 }
 
 function renderCreate() {
-  elements.listTitle.textContent = "Инструменты";
-  elements.draftCount.textContent = "4 типа";
-  setEmptyState(true);
-  
-  elements.draftList.innerHTML = `
-    <div class="create-list">
-      <article ${interactiveCardAttrs("Выбрать инструмент Пост для соцсетей")} class="create-card${state.selectedCreateTool === 'content' ? ' active' : ''} interactive-card" data-tool="content" onclick="renderCreateTool('content')">
-        <div class="draft-kind">${contentKindIcon("content")}<span>контент</span></div>
-        <h3 class="draft-topic">Пост для соцсетей</h3>
-        <div class="draft-preview">Тредс, Инстаграм или Телеграм.</div>
-      </article>
-      <article ${interactiveCardAttrs("Выбрать инструмент Сценарий и раскадровка")} class="create-card${state.selectedCreateTool === 'reels' ? ' active' : ''} interactive-card" data-tool="reels" onclick="renderCreateTool('reels')">
-        <div class="draft-kind">${contentKindIcon("reels")}<span>рилсы</span></div>
-        <h3 class="draft-topic">Сценарий + раскадровка</h3>
-        <div class="draft-preview">Сценарий и 4 кадра визуализации.</div>
-      </article>
-      <article ${interactiveCardAttrs("Выбрать инструмент Контент-план")} class="create-card${state.selectedCreateTool === 'plan' ? ' active' : ''} interactive-card" data-tool="plan" onclick="renderCreateTool('plan')">
-        <div class="draft-kind">${contentKindIcon("plan")}<span>план</span></div>
-        <h3 class="draft-topic">Контент-план</h3>
-        <div class="draft-preview">Сбор трендов и план на неделю.</div>
-      </article>
-      <article ${interactiveCardAttrs("Выбрать инструмент Карусель")} class="create-card${state.selectedCreateTool === 'carousel' ? ' active' : ''} interactive-card" data-tool="carousel" onclick="renderCreateTool('carousel')">
-        <div class="draft-kind">${contentKindIcon("carousel")}<span>карусель</span></div>
-        <h3 class="draft-topic">Карусель</h3>
-        <div class="draft-preview">5 слайдов с промптами для картинок.</div>
-      </article>
-    </div>
-  `;
-
-  if (!state.selectedCreateTool) {
-    elements.draftDetail.innerHTML = `<div class="detail-empty">${renderGuidedState({
-      eyebrow: "Создать",
-      title: "Выберите формат для старта",
-      body: "Слева доступны быстрые сценарии для контента, рилса, плана недели и карусели.",
-    })}</div>`;
-    syncMobileNavigation();
-    return;
-  }
-
-  renderCreateTool(state.selectedCreateTool);
+  return renderCreateImpl();
 }
 
 function renderCreateTool(toolId) {
-  state.selectedCreateTool = toolId;
-  
-  // Update active state in the list
-  elements.draftList.querySelectorAll(".create-card").forEach(card => {
-    card.classList.toggle("active", card.dataset.tool === toolId);
-  });
-
-  let formHtml = '';
-  if (toolId === 'content') {
-    formHtml = `
-      <section class="section create-tool-panel">
-        <h3>Создать контент</h3>
-        <form class="create-form" data-create-content>
-          <label>Тема<textarea name="topic" placeholder="Например: как мягко переключиться после рабочего дня"></textarea></label>
-          <p class="field-help">Сформулируйте тему как готовую мысль. Так черновик сразу получится ближе к нужной подаче.</p>
-          <div class="field-grid">
-            <label>Цель<select name="goal_key"><option value="trust">Доверие</option><option value="authority">Экспертность</option><option value="engagement">Вовлечённость</option><option value="sales">Продажи</option></select></label>
-            <label>Формат<select name="format_key"><option value="threads">Тредс</option><option value="instagram">Инстаграм</option><option value="telegram">Телеграм</option></select></label>
-          </div>
-          <button class="primary-button" type="submit">Собрать черновик</button>
-        </form>
-      </section>
-    `;
-  } else if (toolId === 'reels') {
-    formHtml = `
-      <section class="section create-tool-panel">
-        <h3>Создать рилс</h3>
-        <form class="create-form" data-create-reels>
-          <label>Тема<textarea name="topic" placeholder="Например: вечерний сенсорный ритуал"></textarea></label>
-          <p class="field-help">Описывайте тему через сцену, состояние или ритуал. Так легче получить usable сценарий и кадры.</p>
-          <button class="primary-button" type="submit">Собрать сценарий и кадры</button>
-        </form>
-      </section>
-    `;
-  } else if (toolId === 'plan') {
-    formHtml = `
-      <section class="section create-tool-panel">
-        <h3>Создать план</h3>
-        <form class="create-form" data-create-plan>
-          <div class="detail-preview">Собирает актуальные тренды и сохраняет недельный план с карточками, из которых можно сразу запускать черновики.</div>
-          <button class="primary-button" type="submit">Собрать план на неделю</button>
-        </form>
-      </section>
-    `;
-  } else if (toolId === 'carousel') {
-    formHtml = `
-      <section class="section create-tool-panel">
-        <h3>Создать карусель</h3>
-        <form class="create-form" data-create-carousel>
-          <label>Тема<textarea name="topic" placeholder="Например: утренний ритуал с маслами"></textarea></label>
-          <p class="field-help">Лучше работает тема с обещанием результата: что человек поймет, почувствует или сможет сделать после карусели.</p>
-          <button class="primary-button" type="submit">Собрать карусель</button>
-        </form>
-      </section>
-    `;
-  }
-
-  elements.draftDetail.innerHTML = `
-    <div class="detail-grid">
-      ${renderBackButton()}
-      ${formHtml}
-    </div>
-  `;
-  
-  enterDetailView();
-
-  // Re-bind forms
-  const cForm = elements.draftDetail.querySelector("[data-create-content]");
-  if (cForm) bindTopicForm(cForm, { pendingText: "Создаю...", onSubmit: async (t) => {
-    const g = cForm.querySelector("select[name='goal_key']").value;
-    const f = cForm.querySelector("select[name='format_key']").value;
-    const pending = openPendingDraftCreation(f, t);
-    try {
-      const d = await fetchJson("/api/generate/content", {
-        method: "POST",
-        timeout: 45000,
-        body: JSON.stringify({ topic: t, goal_key: g, format_key: f }),
-      });
-      finalizePendingDraftCreation(d);
-      await openDraft(d.draft_id);
-    } catch (error) {
-      if (error?.message === "request_timeout") {
-        await recoverPendingDraftCreation(f, t, pending.draft_id);
-        return;
-      }
-      throw error;
-    }
-  }});
-
-  const rForm = elements.draftDetail.querySelector("[data-create-reels]");
-  if (rForm) bindTopicForm(rForm, { pendingText: "Создаю...", onSubmit: async (t) => {
-    const pending = openPendingReelsCreation(t);
-    try {
-      const r = await fetchJson("/api/generate/reels", {
-        method: "POST",
-        timeout: 45000,
-        body: JSON.stringify({ topic: t }),
-      });
-      finalizePendingReelsCreation(r);
-      await openReels(r.draft_id);
-    } catch (error) {
-      if (error?.message === "request_timeout") {
-        await recoverPendingReelsCreation(t, pending.draft_id);
-        return;
-      }
-      throw error;
-    }
-  }});
-
-  const pForm = elements.draftDetail.querySelector("[data-create-plan]");
-  if (pForm) pForm.addEventListener("submit", async (e) => {
-    e.preventDefault(); const b = pForm.querySelector("button"); b.disabled = true; b.textContent = "Собираю...";
-    try { const p = await fetchJson("/api/generate/plan", { method: "POST", body: JSON.stringify({}) });
-      state.selectedPlan = p; setTab("plans"); await loadPlans(); renderPlanDetail(p); enterDetailView();
-    } finally { b.disabled = false; b.textContent = "Собрать план на неделю"; }
-  });
-
-  const carForm = elements.draftDetail.querySelector("[data-create-carousel]");
-  if (carForm) bindTopicForm(carForm, { pendingText: "Создаю...", onSubmit: async (t) => {
-    const pending = openPendingDraftCreation("carousel", t);
-    try {
-      const d = await fetchJson("/api/generate/carousel", {
-        method: "POST",
-        timeout: 45000,
-        body: JSON.stringify({ topic: t }),
-      });
-      finalizePendingDraftCreation(d);
-      await openDraft(d.draft_id);
-    } catch (error) {
-      if (error?.message === "request_timeout") {
-        await recoverPendingDraftCreation("carousel", t, pending.draft_id);
-        return;
-      }
-      throw error;
-    }
-  }});
+  return renderCreateToolImpl(toolId);
 }
 
 const {
@@ -1540,6 +1265,60 @@ const {
     renderDraftList: (...args) => renderDraftList(...args),
     renderDraftDetail: (...args) => renderDraftDetail(...args),
   },
+});
+
+const {
+  addKeywordItem: addKeywordItemImpl,
+  removeKeywordItem: removeKeywordItemImpl,
+  openKeywordTopic: openKeywordTopicImpl,
+  loadKeywords: loadKeywordsImpl,
+  loadSettings: loadSettingsImpl,
+  renderStatus: renderStatusImpl,
+  renderKeywords: renderKeywordsImpl,
+} = createSettingsModule({
+  state,
+  elements,
+  escapeHtml,
+  uiIcon,
+  actionLabel,
+  interactiveCardAttrs,
+  renderBackButton,
+  renderGuidedState,
+  withButtonFeedback,
+  fetchJson,
+  confirmAction,
+  showUiNotice,
+  setEmptyState,
+  syncMobileNavigation,
+  enterDetailView,
+});
+
+const {
+  renderCreate: renderCreateImpl,
+  renderCreateTool: renderCreateToolImpl,
+} = createCreateModule({
+  state,
+  elements,
+  interactiveCardAttrs,
+  contentKindIcon,
+  renderGuidedState,
+  renderBackButton,
+  setEmptyState,
+  syncMobileNavigation,
+  enterDetailView,
+  fetchJson,
+  showRequestError,
+  openPendingDraftCreation,
+  finalizePendingDraftCreation,
+  recoverPendingDraftCreation,
+  openPendingReelsCreation,
+  finalizePendingReelsCreation,
+  recoverPendingReelsCreation,
+  openDraft,
+  openReels,
+  setTab,
+  loadPlans,
+  renderPlanDetail,
 });
 
 function aromaSection(title, content) {
@@ -1902,6 +1681,7 @@ window.polishContentDraft = polishContentDraft;
 window.openKeywordTopic = openKeywordTopic;
 window.addKeywordItem = addKeywordItem;
 window.removeKeywordItem = removeKeywordItem;
+window.renderCreateTool = renderCreateTool;
 window.openCreateTool = (toolId = "content") => {
   setMode("content");
   setTab("create");
@@ -1943,24 +1723,7 @@ function renderInbox() {
 }
 
 function renderStatus() {
-  const items = state.status?.items || [];
-  const inSettings = state.tab === "settings";
-  elements.listTitle.textContent = inSettings ? "Настройки" : "Статус";
-  elements.draftCount.textContent = `${items.length} источников`;
-  elements.draftList.innerHTML = `
-    ${inSettings ? renderSettingsSwitcher("status") : ""}
-    ${items.map(i => `
-    <article class="status-card"><strong>${escapeHtml(i.source)}</strong> <span class="${i.enabled ? 'status-good' : 'status-bad'}">${i.enabled ? 'вкл' : 'выкл'}</span></article>
-  `).join("")}
-  `;
-  elements.draftDetail.innerHTML = renderBackButton() + `<div class="detail-empty">${renderGuidedState({
-    eyebrow: inSettings ? "Настройки" : "Статус",
-    title: inSettings ? "Откройте источник слева" : "Проверьте состояние источников",
-    body: inSettings
-      ? "Здесь будут переключатели mini app и системные параметры каждого источника."
-      : "Слева собраны все подключенные источники и их текущее состояние.",
-  })}</div>`;
-  syncMobileNavigation();
+  return renderStatusImpl();
 }
 
 function renderPlans() {
@@ -2037,67 +1800,6 @@ function renderReelsDetail(r) {
 }
 
 function renderKeywords() {
-  const inSettings = state.tab === "settings";
-  const topics = state.keywords?.items || [];
-  const selectedTopic = topics.find((topic) => topic.topic_idx === state.selectedKeywordTopicIdx) || null;
-  elements.listTitle.textContent = inSettings ? "Настройки" : "Ключи";
-  elements.draftCount.textContent = `${topics.length} тем`;
-  setEmptyState(topics.length > 0, {
-    eyebrow: "Ключи",
-    title: "Темы еще не появились",
-    body: "Когда словарь загрузится, здесь можно будет редактировать RU/EN ключи и теги.",
-  });
-  elements.draftList.innerHTML = `
-    ${inSettings ? renderSettingsSwitcher("keywords") : ""}
-    ${topics.map(t => `
-    <article ${interactiveCardAttrs(`Открыть тему ${t.name}`)} class="keyword-topic${t.topic_idx === state.selectedKeywordTopicIdx ? " active" : ""} interactive-card" onclick="openKeywordTopic(${t.topic_idx})">
-      <h3>${escapeHtml(t.name)}</h3>
-      <div class="draft-meta">
-        <span class="tag">${escapeHtml(`${Object.values(t.fields || {}).reduce((sum, items) => sum + (Array.isArray(items) ? items.length : 0), 0)} ключей`)}</span>
-      </div>
-    </article>
-  `).join("")}
-  `;
-  if (!selectedTopic) {
-    elements.draftDetail.innerHTML = renderBackButton() + `<div class="detail-empty">${renderGuidedState({
-      eyebrow: "Ключи",
-      title: "Откройте тему для редактирования",
-      body: "Внутри темы можно добавлять и удалять RU/EN ключи и теги без выхода из mini app.",
-    })}</div>`;
-    syncMobileNavigation();
-    return;
-  }
-  elements.draftDetail.innerHTML = `
-    <div class="detail-grid">
-      ${renderBackButton()}
-      <div class="detail-top">
-        <p class="eyebrow">${uiIcon("text")}<span>Ключи</span></p>
-        <h2 class="detail-title">${escapeHtml(selectedTopic.name)}</h2>
-      </div>
-      <section class="section">
-        <h3>${uiIcon("card")}Редактор ключей</h3>
-        <div class="keyword-fields">
-          ${keywordFieldEntries(selectedTopic).map(({ field, label, items }) => `
-            <div class="keyword-field">
-              <strong>${escapeHtml(label)}</strong>
-              <div class="keyword-items">
-                ${items.map((item) => `
-                  <span class="keyword-chip">
-                    <span>${escapeHtml(item)}</span>
-                    <button type="button" aria-label="Удалить ${escapeHtml(item)}" onclick='removeKeywordItem(${selectedTopic.topic_idx}, ${JSON.stringify(String(field))}, ${JSON.stringify(String(item))}, this)'>×</button>
-                  </span>
-                `).join("") || `<span class="plan-entry-hint">Пока пусто.</span>`}
-              </div>
-              <form class="keyword-form" onsubmit='event.preventDefault(); addKeywordItem(${selectedTopic.topic_idx}, ${JSON.stringify(String(field))}, this, this.querySelector("button"));'>
-                <input name="word" type="text" placeholder="Добавить значение" />
-                <button class="secondary-button" type="submit">${actionLabel("plus", "Добавить")}</button>
-              </form>
-            </div>
-          `).join("")}
-        </div>
-      </section>
-    </div>
-  `;
-  syncMobileNavigation();
+  return renderKeywordsImpl();
 }
 bootstrap();
