@@ -5,6 +5,7 @@ import { createDraftsModule } from "./js/drafts.js";
 import { createPlansModule } from "./js/plans.js";
 import { createReferencesModule } from "./js/references.js";
 import { createReelsModule } from "./js/reels.js";
+import { createRuntimeModule } from "./js/runtime.js";
 import { createSettingsModule } from "./js/settings.js";
 import { createShellModule } from "./js/shell.js";
 
@@ -1304,6 +1305,56 @@ const {
 });
 
 const {
+  loadCurrentTab: loadCurrentTabImpl,
+  safeLoadCurrentTab: safeLoadCurrentTabImpl,
+  bootstrap: bootstrapImpl,
+  retryCurrentTab: retryCurrentTabImpl,
+  bindBootFallbackReload,
+  bindStartupErrorFallbacks,
+} = createRuntimeModule({
+  state,
+  elements,
+  MODE_TABS,
+  HANDBOOK_CATEGORY_META,
+  appState: {
+    isBootstrapped: () => appBootstrapped,
+    setBootstrapped: (value) => { appBootstrapped = value; },
+    startupLoadInFlight: () => startupLoadInFlight,
+    setStartupLoadInFlight: (value) => { startupLoadInFlight = value; },
+  },
+  timers: {
+    getBootstrapWatchdog: () => bootstrapWatchdogTimer,
+    setBootstrapWatchdog: (value) => { bootstrapWatchdogTimer = value; },
+    getReelRefresh: () => reelRefreshTimer,
+    setReelRefresh: (value) => { reelRefreshTimer = value; },
+  },
+  applyTelegramTheme,
+  bindTextareaAutoExpand,
+  bindTapAnimation,
+  bindSwipeBack,
+  bindKeyboardDismiss,
+  bindCardKeyboardActivation,
+  bindKeyboardViewportAssist,
+  bindBottomTabBar,
+  setMode,
+  setTab,
+  loadReferenceAccess,
+  loadDrafts,
+  loadInbox,
+  loadPlans,
+  loadReels,
+  loadReferences,
+  loadSettings,
+  loadStatus,
+  loadKeywords,
+  renderCreate,
+  showBootFallback,
+  hideBootFallback,
+  showRuntimeWarning,
+  renderPanelLoader,
+});
+
+const {
   loadInbox: loadInboxImpl,
   loadReels: loadReelsImpl,
   openReels: openReelsImpl,
@@ -1432,73 +1483,10 @@ function setTab(t) {
   syncMobileNavigation();
 }
 
-async function loadCurrentTab() {
-  if (state.tab === "create") return renderCreate();
-  if (state.tab === "inbox") return await loadInbox();
-  if (state.tab === "plans") return await loadPlans();
-  if (state.tab === "reels") return await loadReels();
-  if (HANDBOOK_CATEGORY_META[state.tab]) return await loadReferences(state.tab);
-  if (state.tab === "settings") return await loadSettings();
-  if (state.tab === "status") return await loadStatus();
-  if (state.tab === "keywords") return await loadKeywords();
-  await loadDrafts();
-}
+async function loadCurrentTab() { return loadCurrentTabImpl(); }
 
 async function safeLoadCurrentTab(prefix = "Не удалось загрузить раздел") {
-  try {
-    await loadCurrentTab();
-    hideBootFallback();
-    return true;
-  } catch (error) {
-    console.error("miniapp runtime tab load failed", error);
-    showRuntimeWarning(prefix, error);
-    return false;
-  }
-}
-
-async function loadInitialScreen() {
-  if (startupLoadInFlight) return false;
-  startupLoadInFlight = true;
-  showBootFallback(
-    "Загружаю интерфейс",
-    "Если экран остаётся пустым дольше пары секунд, попробуйте открыть mini app ещё раз.",
-    false,
-  );
-  bootstrapWatchdogTimer = window.setTimeout(() => {
-    if (!appBootstrapped) {
-      showBootFallback(
-        "Интерфейс загружается слишком долго",
-        "Похоже, стартовый экран отвечает медленнее обычного. Можно повторить загрузку.",
-        true,
-      );
-    }
-  }, 1800);
-
-  const result = await Promise.race([
-    safeLoadCurrentTab("Не удалось загрузить вкладку"),
-    new Promise((resolve) => {
-      window.clearTimeout(bootstrapWatchdogTimer);
-      bootstrapWatchdogTimer = window.setTimeout(() => resolve("timeout"), 8000);
-    }),
-  ]);
-
-  startupLoadInFlight = false;
-  window.clearTimeout(bootstrapWatchdogTimer);
-
-  if (result === true) {
-    appBootstrapped = true;
-    hideBootFallback();
-    return true;
-  }
-  if (result === "timeout") {
-    showBootFallback(
-      "Интерфейс загружается слишком долго",
-      "Мы не дождались первого ответа. Попробуйте повторить загрузку.",
-      true,
-    );
-    return false;
-  }
-  return false;
+  return safeLoadCurrentTabImpl(prefix);
 }
 
 function openPendingReelsCreation(topic) { return openPendingReelsCreationImpl(topic); }
@@ -1507,78 +1495,12 @@ function finalizePendingReelsCreation(draft) { return finalizePendingReelsCreati
 
 async function recoverPendingReelsCreation(topic, pendingDraftId) { return recoverPendingReelsCreationImpl(topic, pendingDraftId); }
 
-async function bootstrap() {
-  applyTelegramTheme();
-  bindTextareaAutoExpand();
-  bindTapAnimation();
-  bindSwipeBack();
-  bindKeyboardDismiss();
-  bindCardKeyboardActivation();
-  bindKeyboardViewportAssist();
-  elements.modeContent.addEventListener("click", () => { setMode("content"); void safeLoadCurrentTab("Не удалось загрузить раздел контента"); });
-  elements.modeHandbook.addEventListener("click", () => { setMode("handbook"); void safeLoadCurrentTab("Не удалось загрузить справочник"); });
-  elements.settingsButton?.addEventListener("click", () => {
-    state.settingsSection = state.settingsSection || "status";
-    setMode("content");
-    setTab("settings");
-    void safeLoadCurrentTab("Не удалось загрузить настройки");
-  });
+async function bootstrap() { return bootstrapImpl(); }
 
-  [elements.kindFilter, elements.statusFilter, elements.feedbackFilter].forEach(f => f.addEventListener("change", loadDrafts));
+bindBootFallbackReload();
+bindStartupErrorFallbacks();
 
-  elements.queryFilter.addEventListener("input", () => {
-    clearTimeout(reelRefreshTimer);
-    reelRefreshTimer = setTimeout(() => {
-      if (state.tab === "drafts") {
-        void safeLoadCurrentTab("Не удалось обновить черновики");
-      }
-    }, 300);
-  });
-  bindBottomTabBar();
-  if (MODE_TABS.handbook.find(t => t.id === state.tab)) state.mode = "handbook";
-  setMode(state.mode);
-  if (state.mode === "content") {
-    void loadReferenceAccess();
-  }
-  try {
-    await loadInitialScreen();
-  } catch (error) {
-    console.error("miniapp bootstrap fallback failed", error);
-  }
-}
-
-if (elements.bootFallbackReload) {
-  elements.bootFallbackReload.addEventListener("click", () => {
-    if (appBootstrapped) {
-      window.retryCurrentTab();
-      return;
-    }
-    window.location.reload();
-  });
-}
-
-window.retryCurrentTab = () => {
-  elements.draftList.innerHTML = renderPanelLoader("Повторяю загрузку");
-  void safeLoadCurrentTab("Не удалось загрузить вкладку");
-};
-
-window.addEventListener("error", () => {
-  if (appBootstrapped) return;
-  showBootFallback(
-    "Интерфейс временно недоступен",
-    "Во время загрузки произошла ошибка. Попробуйте обновить экран.",
-    true,
-  );
-});
-
-window.addEventListener("unhandledrejection", () => {
-  if (appBootstrapped) return;
-  showBootFallback(
-    "Интерфейс временно недоступен",
-    "Во время загрузки произошла ошибка. Попробуйте обновить экран.",
-    true,
-  );
-});
+window.retryCurrentTab = retryCurrentTabImpl;
 
 window.openDraft = openDraft;
 window.openAroma = openAroma;
