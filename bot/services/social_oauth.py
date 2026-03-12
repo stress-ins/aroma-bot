@@ -24,13 +24,15 @@ THREADS_DEFAULT_SCOPES = (
     "threads_manage_insights",
 )
 
-INSTAGRAM_AUTHORIZE_URL = "https://www.instagram.com/oauth/authorize"
-INSTAGRAM_TOKEN_URL = "https://api.instagram.com/oauth/access_token"
-INSTAGRAM_LONG_LIVED_TOKEN_URL = "https://graph.instagram.com/access_token"
-INSTAGRAM_ME_URL = "https://graph.instagram.com/me"
+INSTAGRAM_AUTHORIZE_URL = "https://www.facebook.com/dialog/oauth"
+INSTAGRAM_TOKEN_URL = "https://graph.facebook.com/oauth/access_token"
+INSTAGRAM_LONG_LIVED_TOKEN_URL = "https://graph.facebook.com/oauth/access_token"
+INSTAGRAM_ME_ACCOUNTS_URL = "https://graph.facebook.com/me/accounts"
 INSTAGRAM_DEFAULT_SCOPES = (
-    "instagram_business_basic",
-    "instagram_business_content_publish",
+    "instagram_basic",
+    "instagram_content_publish",
+    "pages_show_list",
+    "pages_read_engagement",
 )
 
 
@@ -91,8 +93,6 @@ def build_instagram_authorize_url(
         "redirect_uri": redirect_uri,
         "response_type": "code",
         "scope": ",".join(scopes),
-        "enable_fb_login": "0",
-        "force_authentication": "1",
     }
     if state:
         params["state"] = state
@@ -171,60 +171,84 @@ def exchange_instagram_code(
     client: httpx.Client | None = None,
 ) -> OAuthTokenBundle:
     def _work(session: httpx.Client) -> OAuthTokenBundle:
-        token_response = session.post(
+        token_response = session.get(
             INSTAGRAM_TOKEN_URL,
-            data={
+            params={
                 "client_id": client_id,
                 "client_secret": client_secret,
-                "grant_type": "authorization_code",
                 "redirect_uri": redirect_uri,
                 "code": code,
             },
         )
         short_payload = _parse_json_response(token_response, "Instagram code exchange")
-        short_token = str(short_payload.get("access_token", "")).strip()
-        if not short_token:
+        user_token = str(short_payload.get("access_token", "")).strip()
+        if not user_token:
             raise OAuthExchangeError("Instagram code exchange did not return access_token")
-        user_id = str(short_payload.get("user_id", "")).strip()
+        facebook_user_id = str(short_payload.get("user_id", "")).strip()
 
         long_response = session.get(
             INSTAGRAM_LONG_LIVED_TOKEN_URL,
             params={
-                "grant_type": "ig_exchange_token",
+                "grant_type": "fb_exchange_token",
+                "client_id": client_id,
                 "client_secret": client_secret,
-                "access_token": short_token,
+                "fb_exchange_token": user_token,
             },
         )
-        long_payload = _parse_json_response(long_response, "Instagram long-lived token exchange")
-        long_token = str(long_payload.get("access_token", "")).strip()
-        if not long_token:
-            raise OAuthExchangeError("Instagram long-lived exchange did not return access_token")
+        long_payload = _parse_json_response(long_response, "Instagram long-lived user token exchange")
+        long_user_token = str(long_payload.get("access_token", "")).strip()
+        if not long_user_token:
+            raise OAuthExchangeError("Instagram long-lived user token exchange did not return access_token")
 
-        username = ""
-        try:
-            profile_response = session.get(
-                INSTAGRAM_ME_URL,
-                params={
-                    "fields": "user_id,username",
-                    "access_token": long_token,
-                },
+        pages_response = session.get(
+            INSTAGRAM_ME_ACCOUNTS_URL,
+            params={
+                "fields": "id,name,access_token,instagram_business_account{id,username}",
+                "access_token": long_user_token,
+            },
+        )
+        pages_payload = _parse_json_response(pages_response, "Instagram page lookup")
+        pages = pages_payload.get("data")
+        if not isinstance(pages, list):
+            raise OAuthExchangeError("Instagram page lookup did not return pages")
+
+        selected_page: dict[str, Any] | None = None
+        selected_account: dict[str, Any] | None = None
+        for item in pages:
+            if not isinstance(item, dict):
+                continue
+            business_account = item.get("instagram_business_account")
+            if isinstance(business_account, dict) and str(business_account.get("id", "")).strip():
+                selected_page = item
+                selected_account = business_account
+                break
+
+        if not selected_page or not selected_account:
+            raise OAuthExchangeError(
+                "Instagram page lookup did not find a connected instagram_business_account. "
+                "Проверьте, что Instagram Business/Creator аккаунт привязан к Facebook Page."
             )
-            profile_payload = _parse_json_response(profile_response, "Instagram profile lookup")
-            username = str(profile_payload.get("username", "")).strip()
-            user_id = str(profile_payload.get("user_id") or profile_payload.get("id") or user_id).strip()
-        except OAuthExchangeError:
-            pass
 
-        if not user_id:
-            raise OAuthExchangeError("Instagram exchange did not return user id")
+        page_token = str(selected_page.get("access_token", "")).strip()
+        business_account_id = str(selected_account.get("id", "")).strip()
+        if not page_token:
+            raise OAuthExchangeError("Instagram page lookup did not return page access token")
+        if not business_account_id:
+            raise OAuthExchangeError("Instagram page lookup did not return instagram_business_account id")
 
         return OAuthTokenBundle(
             service="instagram",
-            short_lived_token=short_token,
-            access_token=long_token,
+            short_lived_token=user_token,
+            access_token=page_token,
             expires_in=_coerce_int(long_payload.get("expires_in")),
-            user_id=user_id,
-            username=username,
+            user_id=business_account_id,
+            username=str(selected_account.get("username", "")).strip(),
+            metadata={
+                "facebook_user_id": facebook_user_id,
+                "page_id": str(selected_page.get("id", "")).strip(),
+                "page_name": str(selected_page.get("name", "")).strip(),
+                "instagram_business_account_id": business_account_id,
+            },
         )
 
     if client is not None:
@@ -313,6 +337,9 @@ def bundle_env_updates(bundle: OAuthTokenBundle) -> dict[str, str]:
         return {
             "INSTAGRAM_ACCESS_TOKEN": bundle.access_token,
             "INSTAGRAM_USER_ID": bundle.user_id,
+            "INSTAGRAM_BUSINESS_ACCOUNT_ID": str(
+                bundle.metadata.get("instagram_business_account_id") or bundle.user_id
+            ),
         }
     raise OAuthExchangeError(f"Unsupported service: {bundle.service}")
 
