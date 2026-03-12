@@ -208,6 +208,7 @@ function uiIcon(name) {
     chat: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14v9H9l-4 3V7Z"></path></svg>`,
     pptx: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h7l5 5v11H7z"></path><path d="M14 4v5h5"></path></svg>`,
     note: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 17.5V20h2.5L18 10.5 15.5 8 6 17.5Z"></path><path d="M14.5 9l2.5 2.5"></path></svg>`,
+    reject: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10"></path><path d="M17 7 7 17"></path></svg>`,
     trash: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"></path><path d="M9 7V5h6v2"></path><path d="M7 7l1 12h8l1-12"></path><path d="M10 11v5M14 11v5"></path></svg>`,
     back: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>`,
     gear: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v3"></path><path d="M12 18v3"></path><path d="m4.9 4.9 2.1 2.1"></path><path d="m17 17 2.1 2.1"></path><path d="M3 12h3"></path><path d="M18 12h3"></path><path d="m4.9 19.1 2.1-2.1"></path><path d="m17 7 2.1-2.1"></path><circle cx="12" cy="12" r="3.5"></circle></svg>`,
@@ -254,14 +255,16 @@ function actionLabel(icon, text) {
 }
 
 function contentKindIcon(kind) {
-  const iconMap = {
-    reels: "reel",
-    carousel: "slides",
-    threads: "text",
-    instagram: "card",
-    telegram: "chat",
+  const glyphMap = {
+    reels: "🎬",
+    carousel: "🖼️",
+    threads: "✍️",
+    instagram: "📸",
+    telegram: "✈️",
   };
-  return uiIcon(iconMap[String(kind || "").toLowerCase()] || "card");
+  const normalized = String(kind || "").toLowerCase();
+  const glyph = glyphMap[normalized] || "•";
+  return `<span class="kind-glyph kind-glyph-${escapeHtml(normalized)}" aria-hidden="true">${glyph}</span>`;
 }
 
 function promptSection(title, prompt, copyLabel = "Скопировать промпт") {
@@ -293,6 +296,34 @@ function renderDetailLoader(label = "Открываю карточку") {
         <strong>${escapeHtml(label)}</strong>
         <span>Подгружаю данные и собираю экран.</span>
       </div>
+    </div>
+  `;
+}
+
+function renderPanelLoader(label = "Загружаю данные") {
+  return `
+    <div class="detail-loader-card panel-loader-card" aria-live="polite">
+      <div class="brand-loader" aria-hidden="true">
+        <span class="brand-loader-ring"></span>
+        <span class="brand-loader-letter">A</span>
+      </div>
+      <div class="detail-loader-copy">
+        <strong>${escapeHtml(label)}</strong>
+        <span>Собираю и обновляю содержимое раздела.</span>
+      </div>
+    </div>
+  `;
+}
+
+function renderPanelError(title, message) {
+  return `
+    <div class="boot-fallback boot-fallback-inline is-error">
+      <div class="boot-fallback-copy">
+        <p class="eyebrow">Загрузка</p>
+        <h2>${escapeHtml(title)}</h2>
+        <p>${escapeHtml(message)}</p>
+      </div>
+      <button class="secondary-button" type="button" onclick="retryCurrentTab()">Повторить</button>
     </div>
   `;
 }
@@ -790,7 +821,17 @@ function showRequestError(prefix, error) {
 
 function showRuntimeWarning(prefix, error) {
   hideBootFallback();
-  showRequestError(prefix, error);
+  const message = error?.message || String(error || "unknown_error");
+  const humanMessage = message === "request_timeout"
+    ? "Сервер отвечает слишком долго. Попробуйте повторить загрузку."
+    : message;
+  setEmptyState(true);
+  elements.listTitle.textContent = "Загрузка";
+  elements.draftCount.textContent = "";
+  elements.draftList.innerHTML = renderPanelError(prefix, humanMessage);
+  if (!elements.draftDetail.innerHTML.trim()) {
+    elements.draftDetail.innerHTML = renderDetailLoader("Подождите ещё немного");
+  }
 }
 
 async function copyText(value) {
@@ -863,19 +904,29 @@ function isInteractiveTarget(target) {
   return Boolean(target.closest("textarea, input, select, button, a, [contenteditable='true']"));
 }
 
+function isSelectableTextTarget(target) {
+  if (!target || !(target instanceof Element)) return false;
+  return Boolean(target.closest(".detail-preview, .detail-markdown, .draft-preview, .draft-topic, .detail-title, .section"));
+}
+
+function hasActiveTextSelection() {
+  const selection = window.getSelection?.();
+  return Boolean(selection && String(selection).trim().length > 0);
+}
+
 function bindSwipeBack() {
   const isMobile = window.matchMedia("(max-width: 760px)").matches;
   if (!isMobile) return;
   elements.detailPanel.addEventListener("touchstart", (event) => {
     const touch = event.touches[0];
-    if (!touch || state.mobileView !== "detail" || isInteractiveTarget(event.target)) {
+    if (!touch || state.mobileView !== "detail" || isInteractiveTarget(event.target) || isSelectableTextTarget(event.target) || hasActiveTextSelection()) {
       swipeStart = null;
       return;
     }
     swipeStart = { x: touch.clientX, y: touch.clientY };
   }, { passive: true });
   elements.detailPanel.addEventListener("touchmove", (event) => {
-    if (!swipeStart || state.mobileView !== "detail" || isInteractiveTarget(event.target)) return;
+    if (!swipeStart || state.mobileView !== "detail" || isInteractiveTarget(event.target) || isSelectableTextTarget(event.target) || hasActiveTextSelection()) return;
     const touch = event.touches[0];
     const dx = Math.max(0, touch.clientX - swipeStart.x);
     const dy = Math.abs(touch.clientY - swipeStart.y);
@@ -885,7 +936,7 @@ function bindSwipeBack() {
     }
   }, { passive: true });
   elements.detailPanel.addEventListener("touchend", (event) => {
-    if (!swipeStart || state.mobileView !== "detail") return;
+    if (!swipeStart || state.mobileView !== "detail" || hasActiveTextSelection()) return;
     const touch = event.changedTouches[0];
     const dx = touch.clientX - swipeStart.x;
     const dy = Math.abs(touch.clientY - swipeStart.y);
@@ -928,14 +979,16 @@ function bindTopicForm(form, config) {
       topicField.focus();
       return;
     }
-    const originalText = submitButton.textContent;
+    const originalHtml = submitButton.innerHTML;
     submitButton.disabled = true;
-    submitButton.textContent = config.pendingText;
+    submitButton.classList.add("is-busy");
+    submitButton.innerHTML = `<span class="button-spinner" aria-hidden="true"></span><span>${escapeHtml(config.pendingText)}</span>`;
     try {
       await config.onSubmit(topic);
     } finally {
       submitButton.disabled = false;
-      submitButton.textContent = originalText;
+      submitButton.classList.remove("is-busy");
+      submitButton.innerHTML = originalHtml;
       updateState();
     }
   });
@@ -1038,7 +1091,7 @@ async function fetchJson(url, options = {}) {
 }
 
 async function loadDrafts() {
-  const data = await fetchJson(`/api/drafts?${filtersToQueryString()}`);
+  const data = await fetchJson(`/api/drafts?${filtersToQueryString()}`, { timeout: 20000 });
   state.drafts = data.items || [];
   renderDraftList();
   const preferredId = state.draftId || "";
@@ -1337,7 +1390,7 @@ function renderCreateTool(toolId) {
   let formHtml = '';
   if (toolId === 'content') {
     formHtml = `
-      <section class="section">
+      <section class="section create-tool-panel">
         <h3>Создать контент</h3>
         <form class="create-form" data-create-content>
           <label>Тема<textarea name="topic" placeholder="Например: как мягко переключиться после рабочего дня"></textarea></label>
@@ -1351,7 +1404,7 @@ function renderCreateTool(toolId) {
     `;
   } else if (toolId === 'reels') {
     formHtml = `
-      <section class="section">
+      <section class="section create-tool-panel">
         <h3>Создать рилс</h3>
         <form class="create-form" data-create-reels>
           <label>Тема<textarea name="topic" placeholder="Например: вечерний сенсорный ритуал"></textarea></label>
@@ -1361,7 +1414,7 @@ function renderCreateTool(toolId) {
     `;
   } else if (toolId === 'plan') {
     formHtml = `
-      <section class="section">
+      <section class="section create-tool-panel">
         <h3>Создать план</h3>
         <form class="create-form" data-create-plan>
           <div class="detail-preview">Собирает актуальные тренды и сохраняет недельный план.</div>
@@ -1371,7 +1424,7 @@ function renderCreateTool(toolId) {
     `;
   } else if (toolId === 'carousel') {
     formHtml = `
-      <section class="section">
+      <section class="section create-tool-panel">
         <h3>Создать карусель</h3>
         <form class="create-form" data-create-carousel>
           <label>Тема<textarea name="topic" placeholder="Например: утренний ритуал с маслами"></textarea></label>
@@ -1455,6 +1508,25 @@ async function openDraft(id) {
   renderDraftList(); renderDraftDetail(d); enterDetailView();
 }
 
+async function openReels(id) {
+  elements.draftDetail.innerHTML = `${renderBackButton()}${renderDetailLoader("Открываю рилс")}`;
+  enterDetailView();
+  clearBackgroundRefreshes();
+  const r = await fetchJson(`/api/reels/${id}`);
+  state.selectedReels = r;
+  renderReelsDetail(r);
+  enterDetailView();
+}
+
+async function openPlan(id) {
+  elements.draftDetail.innerHTML = `${renderBackButton()}${renderDetailLoader("Открываю план")}`;
+  enterDetailView();
+  const p = await fetchJson(`/api/plans/${id}`);
+  state.selectedPlan = p;
+  renderPlanDetail(p);
+  enterDetailView();
+}
+
 function renderDraftDetail(d) {
   const p = d.payload || {};
   const mainText = p.caption || p.scenario || "";
@@ -1467,7 +1539,7 @@ function renderDraftDetail(d) {
         <div class="draft-meta"><span class="tag">${escapeHtml(statusLabel(d.status))}</span></div>
         <div class="actions-row">
           <button class="secondary-button" onclick="updateDraft('status', {status:'approved'})">${actionLabel("approve", "Согласовать")}</button>
-          <button class="secondary-button" onclick="updateDraft('status', {status:'rejected'})">${actionLabel("note", "Не согласовано")}</button>
+          <button class="secondary-button" onclick="updateDraft('status', {status:'rejected'})">${actionLabel("reject", "Не согласовано")}</button>
           <button class="secondary-button" onclick="sendDraftToChat('${d.draft_id}')">${actionLabel("chat", "В чат")}</button>
           ${d.kind === "carousel" ? `<button class="secondary-button" onclick="downloadCarouselPptx('${d.draft_id}')">${actionLabel("pptx", "Скачать PPTX")}</button>` : ""}
           ${d.kind === "carousel" ? `<button class="secondary-button" onclick="regenerateCarouselAll('${d.draft_id}')">${actionLabel("regenerate", "Перегенерировать все")}</button>` : ""}
@@ -1534,7 +1606,7 @@ function setTab(t) {
   // Clear panels immediately to prevent showing tools/content from previous tab
   elements.listTitle.textContent = "Загрузка...";
   elements.draftCount.textContent = "";
-  elements.draftList.innerHTML = "";
+  elements.draftList.innerHTML = renderPanelLoader("Загружаю раздел");
   elements.draftDetail.innerHTML = renderDetailLoader("Загружаю раздел");
   
   syncMobileNavigation();
@@ -1601,29 +1673,33 @@ async function bootstrap() {
   });
   if (MODE_TABS.handbook.find(t => t.id === state.tab)) state.mode = "handbook";
   setMode(state.mode);
+  appBootstrapped = true;
   if (state.mode === "content") {
     void loadReferenceAccess();
   }
   try {
-    await loadCurrentTab();
+    await safeLoadCurrentTab("Не удалось загрузить вкладку");
     window.clearTimeout(bootstrapWatchdogTimer);
     hideBootFallback();
-    appBootstrapped = true;
   } catch (error) {
-    console.error("miniapp bootstrap failed", error);
-    elements.draftDetail.innerHTML = `<div class="detail-empty">Не удалось загрузить данные. Попробуйте открыть mini app еще раз.</div>`;
-    setEmptyState(true, "Не удалось загрузить данные.");
-    showBootFallback(
-      "Не удалось загрузить интерфейс",
-      "Попробуйте обновить экран или открыть mini app ещё раз.",
-      true,
-    );
+    console.error("miniapp bootstrap fallback failed", error);
   }
 }
 
 if (elements.bootFallbackReload) {
-  elements.bootFallbackReload.addEventListener("click", () => window.location.reload());
+  elements.bootFallbackReload.addEventListener("click", () => {
+    if (appBootstrapped) {
+      window.retryCurrentTab();
+      return;
+    }
+    window.location.reload();
+  });
 }
+
+window.retryCurrentTab = () => {
+  elements.draftList.innerHTML = renderPanelLoader("Повторяю загрузку");
+  void safeLoadCurrentTab("Не удалось загрузить вкладку");
+};
 
 window.addEventListener("error", () => {
   if (appBootstrapped) return;
@@ -1650,19 +1726,8 @@ window.openDraft = openDraft;
 window.openAroma = openAroma;
 window.openReference = openReference;
 window.copyText = copyText;
-window.openReels = async (id) => {
-  elements.draftDetail.innerHTML = `${renderBackButton()}${renderDetailLoader("Открываю рилс")}`;
-  enterDetailView();
-  clearBackgroundRefreshes();
-  const r = await fetchJson(`/api/reels/${id}`);
-  state.selectedReels = r; renderReelsDetail(r); enterDetailView();
-};
-window.openPlan = async (id) => {
-  elements.draftDetail.innerHTML = `${renderBackButton()}${renderDetailLoader("Открываю план")}`;
-  enterDetailView();
-  const p = await fetchJson(`/api/plans/${id}`);
-  state.selectedPlan = p; renderPlanDetail(p); enterDetailView();
-};
+window.openReels = openReels;
+window.openPlan = openPlan;
 window.updateDraft = async (action, payload) => {
   const currentDraftId = state.draftId || state.selectedReels?.draft_id || "";
   if (!currentDraftId) return;
@@ -1768,7 +1833,7 @@ function renderReelsDetail(r) {
           <button class="secondary-button" type="button" onclick="saveReelsScenario('${r.draft_id}', this)">${actionLabel("text", "Сохранить концепцию")}</button>
           <button class="secondary-button" type="button" onclick="regenerateReelsStoryboard('${r.draft_id}', this)">${actionLabel("regenerate", "Пересобрать рилс")}</button>
           <button class="secondary-button" type="button" onclick="regenerateAllReelsFrames('${r.draft_id}', this)">${actionLabel("reel", "Сгенерировать кадры")}</button>
-          <button class="secondary-button" type="button" onclick="updateDraft('status', {status:'rejected'})">${actionLabel("note", "Не согласовано")}</button>
+          <button class="secondary-button" type="button" onclick="updateDraft('status', {status:'rejected'})">${actionLabel("reject", "Не согласовано")}</button>
           <button class="secondary-button" type="button" onclick="sendDraftToChat('${r.draft_id}')">${actionLabel("chat", "В чат")}</button>
           <button class="secondary-button" type="button" onclick="deleteDraft('${r.draft_id}', 'reels')">${actionLabel("trash", "Удалить")}</button>
         </div>

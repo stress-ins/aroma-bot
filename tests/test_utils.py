@@ -830,7 +830,7 @@ from bot.services.miniapp_generator import (
     is_valid_content_goal,
 )
 from bot.services.miniapp_inbox import inbox_category, inbox_reason, is_review_status, list_inbox_items
-from bot.services.miniapp_presenter import filter_drafts, payload_preview, serialize_draft
+from bot.services.miniapp_presenter import filter_drafts, payload_preview, serialize_draft, serialize_draft_summary
 from bot.services.miniapp_keywords import field_labels, serialize_topics
 from bot.services.miniapp_plan_actions import normalize_plan_format, normalize_plan_goal
 from bot.services.miniapp_inbox import is_review_status, list_inbox_items
@@ -1012,6 +1012,23 @@ class TestMiniAppPresenter:
         assert data["storyboard_count"] == 3
         assert data["slides_count"] == 0
         assert data["preview"] == "text"
+
+    async def test_serialize_draft_summary_omits_full_payload(self):
+        draft = DraftRecord(
+            draft_id="sum33333",
+            kind="threads",
+            topic="Короткий пост",
+            source="/content",
+            created_at="2026-03-11T09:00:00+00:00",
+            status="draft",
+            feedback="",
+            payload={"caption": "Текст поста", "visual_prompt": "heavy"},
+        )
+
+        data = await serialize_draft_summary(draft)
+
+        assert data["preview"] == "Текст поста"
+        assert "payload" not in data
 
 
 class TestMiniAppKeywords:
@@ -1409,6 +1426,8 @@ class TestMiniAppRussianLocale:
         assert 'window.addEventListener("unhandledrejection"' in app_js
         assert ".boot-fallback" in app_css
         assert ".boot-fallback.is-error" in app_css
+        assert 'await safeLoadCurrentTab("Не удалось загрузить вкладку")' in app_js
+        assert "appBootstrapped = true;" in app_js
 
     def test_handbook_has_separate_reference_tabs(self):
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
@@ -1438,6 +1457,36 @@ class TestMiniAppRussianLocale:
 
         assert "text-align: left;" in app_css
         assert "flex: 1 1 100%;" in app_css
+
+    def test_swipe_back_ignores_text_selection_and_selectable_copy(self):
+        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+
+        assert "function isSelectableTextTarget" in app_js
+        assert "function hasActiveTextSelection" in app_js
+        assert 'target.closest(".detail-preview, .detail-markdown, .draft-preview, .draft-topic, .detail-title, .section")' in app_js
+        assert "hasActiveTextSelection()" in app_js
+
+    def test_draft_cards_have_stronger_readability_styles(self):
+        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+
+        assert ".kind-glyph" in app_css
+        assert "padding: 4px 10px;" in app_css
+        assert "font-size: 17px;" in app_css
+        assert "font-size: 18px;" in app_css
+        assert "🎬" in app_js
+        assert "🖼️" in app_js
+        assert "✍️" in app_js
+
+    def test_create_tool_panel_is_scaled_up_for_mobile(self):
+        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+
+        assert "create-tool-panel" in app_js
+        assert ".create-tool-panel" in app_css
+        assert "min-height: 132px;" in app_css
+        assert "font-size: 18px;" in app_css
+        assert "min-height: 62px;" in app_css
 
     def test_carousel_detail_uses_actions_instead_of_raw_json(self):
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
@@ -1484,6 +1533,7 @@ class TestMiniAppRussianLocale:
         html = Path("miniapp/index.html").read_text(encoding="utf-8")
 
         assert "Не согласовано" in app_js
+        assert 'actionLabel("reject", "Не согласовано")' in app_js
         assert "Удалить" in app_js
         assert "deleteDraft" in app_js
         assert "rejected" in app_js
@@ -1508,6 +1558,22 @@ class TestMiniAppRussianLocale:
         assert "Открываю рилс" in app_js
         assert "brand-loader-letter" in app_css
         assert "brand-loader-spin" in app_css
+
+    def test_drafts_tab_uses_inline_a_loader_and_timeout_state(self):
+        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        server_py = Path("miniapp_server.py").read_text(encoding="utf-8")
+
+        assert "function renderPanelLoader" in app_js
+        assert "function renderPanelError" in app_js
+        assert 'elements.draftList.innerHTML = renderPanelLoader("Загружаю раздел")' in app_js
+        assert 'message === "request_timeout"' in app_js
+        assert 'fetchJson(`/api/drafts?${filtersToQueryString()}`, { timeout: 20000 })' in app_js
+        assert "window.retryCurrentTab" in app_js
+        assert "if (appBootstrapped) {" in app_js
+        assert "serialize_draft_summary" in server_py
+        assert ".panel-loader-card" in app_css
+        assert ".boot-fallback-inline" in app_css
 
     def test_drafts_do_not_auto_open_first_item_on_boot(self):
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
@@ -1819,6 +1885,17 @@ class TestThreadsPrompts:
         assert "if (isCurrentReelsDetail(reel.draft_id)) {" in source
         assert "clearBackgroundRefreshes();" in source.split("function setMode", 1)[1]
         assert "clearBackgroundRefreshes();" in source.split("function setTab", 1)[1]
+
+    def test_create_flows_route_into_detail_cards(self):
+        source = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+
+        assert 'state.draftId = d.draft_id; setTab("drafts"); await loadDrafts();' in source
+        assert 'state.selectedReels = r; state.selectedFrameIndex = 0; setTab("reels"); await loadReels(); await openReels(r.draft_id);' in source
+        assert 'state.selectedPlan = p; setTab("plans"); await loadPlans(); renderPlanDetail(p); enterDetailView();' in source
+        assert "async function openReels(id) {" in source
+        assert "async function openPlan(id) {" in source
+        assert "window.openReels = openReels;" in source
+        assert "window.openPlan = openPlan;" in source
 
 class TestPatchAromaCardsScript:
     def test_coerce_aliases_accepts_exported_json_string(self):

@@ -47,7 +47,7 @@ from bot.services.miniapp_generator import (
 from bot.services.miniapp_inbox import list_inbox_items
 from bot.services.miniapp_keywords import add_keyword, delete_keyword, field_labels, serialize_topics
 from bot.services.miniapp_plans import serialize_plan
-from bot.services.miniapp_presenter import filter_drafts, serialize_draft
+from bot.services.miniapp_presenter import filter_drafts, serialize_draft, serialize_draft_summary
 from bot.services.miniapp_reels import (
     build_reels_export_payload,
     list_reels_drafts,
@@ -250,7 +250,7 @@ async def drafts(
         query=query,
     )
     return {
-        "items": [await serialize_draft(record) for record in filtered[:limit]],
+        "items": [await serialize_draft_summary(record) for record in filtered[:limit]],
         "total": len(filtered),
     }
 
