@@ -1741,13 +1741,22 @@ class TestMiniAppRussianLocale:
         assert 'category: "concept"' in app_js
         assert 'searchLabel: "Поиск темы"' in app_js
         assert 'return `PDF ${match[1].replaceAll("_", ".")}`;' in app_js
-        assert 'founder: "Автор"' in app_js
-        assert 'chakra: "Чакра"' in app_js
+        assert 'function conceptTypeMeta(sourceType)' in app_js
+        assert 'founder: { label: "Автор", icon: "◍" }' in app_js
+        assert 'chakra: { label: "Чакра", icon: "✦" }' in app_js
         assert 'class="draft-card overview-card reference-card' in app_js
+        assert 'class="concept-kind-mark" aria-hidden="true"' in app_js
+        assert 'tone-${escapeHtml(item.tone)}' in app_js
+        assert 'reference-hero-card is-theory' in app_js
+        assert 'reference-card${state.tab === "concepts" ? " is-theory concept-card" : ""}' in app_js
         assert 'reference.chakra_focus ? `Фокус / чакры: ${reference.chakra_focus}` : ""' in app_js
         assert 'reference.course_source ? `Источник курса: ${formatCourseSourceLabel(reference.course_source)}` : ""' in app_js
         assert '${aromaSection("Материалы курса", reference.course_notes)}' in app_js
         assert ".reference-card .overview-card-date" in app_css
+        assert ".reference-hero-card.is-theory" in app_css
+        assert ".reference-badge.tone-course" in app_css
+        assert ".concept-kind-mark" in app_css
+        assert ".concept-card::before" in app_css
 
     def test_content_detail_supports_prompt_copy_actions(self):
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
