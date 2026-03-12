@@ -147,7 +147,7 @@ def _reels_result_text(topic: str, scenario: str, storyboard_lines: list[str], i
 
 
 async def open_plan_by_id(update: Update, context: ContextTypes.DEFAULT_TYPE, plan_id: str) -> None:
-    record = get_plan(plan_id)
+    record = await get_plan(plan_id)
     if not record:
         await update.effective_message.reply_text("❌ План с таким ID не найден.")
         return
@@ -223,7 +223,7 @@ async def cmd_plan(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         }
         for entry in entries
     ]
-    plan_record = save_plan(
+    plan_record = await save_plan(
         plan,
         entries=[
             {

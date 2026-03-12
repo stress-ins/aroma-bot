@@ -21,6 +21,16 @@ class DraftModel(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
+class PlanModel(Base):
+    __tablename__ = "plans"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    plan_id: Mapped[str] = mapped_column(String(32), unique=True, index=True)
+    raw_text: Mapped[str] = mapped_column(String)
+    entries: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
 class AromaCardModel(Base):
     __tablename__ = "aroma_cards"
 
