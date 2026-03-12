@@ -1529,6 +1529,8 @@ class TestMiniAppRussianLocale:
         assert "box-breathing" in slugs
         assert "coherent-breathing" in slugs
         assert "visualization-safe-place" in slugs
+        assert "pelvic-wave" in slugs
+        assert "woodcutter" in slugs
         assert len(items) >= 12
 
     async def test_reference_service_seeds_additional_sounds(self):
@@ -1538,6 +1540,55 @@ class TestMiniAppRussianLocale:
         assert "pink-noise" in slugs
         assert "silence-practice" in slugs
         assert len(items) >= 12
+
+    async def test_reference_service_seeds_pdf_based_aroma_cards_and_course_metadata(self):
+        items = await list_reference_cards("aroma")
+        slugs = {item["slug"] for item in items}
+
+        assert "ho-wood" in slugs
+        assert "black-spruce" in slugs
+        assert "bay-laurel" in slugs
+        assert "pink-pepper" in slugs
+        assert "fragonia" in slugs
+        assert "myrrh" in slugs
+
+        bergamot = await get_aroma_card("bergamot")
+        cedar = await get_aroma_card("Кедр атласский")
+        laurel = await get_aroma_card("bay-laurel")
+
+        assert bergamot is not None
+        assert cedar is not None
+        assert laurel is not None
+
+        assert "Citrus bergamia" in bergamot["aliases"]
+        assert bergamot["course_source"] == "rudn_olfactotherapy_2l"
+        assert "снижает уровень контроля" in bergamot["course_notes"].lower()
+
+        assert cedar["slug"] == "cedarwood"
+        assert "Кедр атласский" in cedar["aliases"]
+        assert cedar["chakra_focus"] == "1-я чакра Муладхара"
+        assert cedar["polarity"] == "Янг"
+
+        assert laurel["name"] == "Лавр благородный"
+        assert laurel["chakra_focus"] == "3-я и 5-я чакры"
+
+    async def test_reference_service_seeds_pdf_based_concept_cards(self):
+        items = await list_reference_cards("concept")
+        slugs = {item["slug"] for item in items}
+
+        assert "olfactotherapy" in slugs
+        assert "gilles-fournil" in slugs
+        assert "chakra-system" in slugs
+        assert "muladhara-chakra" in slugs
+        assert "svadhisthana-chakra" in slugs
+        assert "manipura-chakra" in slugs
+
+        concept = await get_reference_card("concept", "limbic-system-and-olfactory-library")
+        assert concept is not None
+        assert concept["source_type"] == "system"
+        assert concept["course_source"] == "rudn_olfactotherapy_1l"
+        assert "лимбичес" in concept["name"].lower()
+        assert "эмоциональ" in concept["description"].lower()
 
     async def test_reference_service_uses_exact_photo_overrides_for_selected_oils(self):
         orange = await get_aroma_card("orange")
@@ -1675,11 +1726,28 @@ class TestMiniAppRussianLocale:
     
         assert 'id: "aromas"' in app_js
         assert 'label: "Ароматы"' in app_js
+        assert 'id: "concepts"' in app_js
+        assert 'label: "Теория"' in app_js
         assert 'id: "practices"' in app_js
         assert 'label: "Практики"' in app_js
         assert 'id: "sounds"' in app_js
         assert 'label: "Звуки"' in app_js
         assert 'id="settingsButton"' in html
+
+    def test_handbook_concepts_have_meta_and_render_course_fields(self):
+        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+
+        assert 'category: "concept"' in app_js
+        assert 'searchLabel: "Поиск темы"' in app_js
+        assert 'return `PDF ${match[1].replaceAll("_", ".")}`;' in app_js
+        assert 'founder: "Автор"' in app_js
+        assert 'chakra: "Чакра"' in app_js
+        assert 'class="draft-card overview-card reference-card' in app_js
+        assert 'reference.chakra_focus ? `Фокус / чакры: ${reference.chakra_focus}` : ""' in app_js
+        assert 'reference.course_source ? `Источник курса: ${formatCourseSourceLabel(reference.course_source)}` : ""' in app_js
+        assert '${aromaSection("Материалы курса", reference.course_notes)}' in app_js
+        assert ".reference-card .overview-card-date" in app_css
 
     def test_content_detail_supports_prompt_copy_actions(self):
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
