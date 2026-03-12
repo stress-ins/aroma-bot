@@ -148,6 +148,7 @@ class DraftContentPayload(BaseModel):
     cta: str = Field(default="")
     hashtags: str = Field(default="")
     visual_prompt: str = Field(default="")
+    editor_notes: str = Field(default="")
 
 
 class KeywordPayload(BaseModel):
@@ -240,6 +241,7 @@ async def drafts(
     status: str = "",
     feedback: str = "",
     query: str = "",
+    _: None = Depends(_require_auth),
 ):
     records = await list_recent_drafts(limit=200)
     filtered = await filter_drafts(
@@ -256,7 +258,7 @@ async def drafts(
 
 
 @app.get("/api/drafts/{draft_id}")
-async def draft_detail(draft_id: str):
+async def draft_detail(draft_id: str, _: None = Depends(_require_auth)):
     draft = await get_draft(draft_id)
     if not draft:
         raise HTTPException(status_code=404, detail="draft_not_found")
@@ -304,6 +306,7 @@ async def update_content(draft_id: str, payload: DraftContentPayload, _: None = 
         cta=payload.cta,
         hashtags=payload.hashtags,
         visual_prompt=payload.visual_prompt,
+        editor_notes=payload.editor_notes,
     )
     if not updated:
         raise HTTPException(status_code=404, detail="content_draft_not_found")
@@ -327,7 +330,7 @@ async def polish_content(draft_id: str, _: None = Depends(_require_auth)):
 
 
 @app.get("/api/status")
-async def status():
+async def status(_: None = Depends(_require_auth)):
     sources = [
         "google_trends_ru",
         "google_trends_en",
@@ -640,7 +643,7 @@ async def inbox(limit: int = Query(default=50, ge=1, le=200), kind: str = "", _:
 
 
 @app.get("/api/plans")
-async def plans(limit: int = Query(default=20, ge=1, le=100)):
+async def plans(limit: int = Query(default=20, ge=1, le=100), _: None = Depends(_require_auth)):
     records = list_recent_plans(limit=limit)
     return {
         "items": [await serialize_plan(record) for record in records],
@@ -649,7 +652,7 @@ async def plans(limit: int = Query(default=20, ge=1, le=100)):
 
 
 @app.get("/api/plans/{plan_id}")
-async def plan_detail(plan_id: str):
+async def plan_detail(plan_id: str, _: None = Depends(_require_auth)):
     record = get_plan(plan_id)
     if not record:
         raise HTTPException(status_code=404, detail="plan_not_found")
@@ -720,7 +723,7 @@ async def plan_generate(plan_id: str, payload: PlanGeneratePayload, _: None = De
 
 
 @app.get("/api/reels")
-async def reels(limit: int = Query(default=30, ge=1, le=100)):
+async def reels(limit: int = Query(default=30, ge=1, le=100), _: None = Depends(_require_auth)):
     items = await list_reels_drafts(limit=limit)
     return {
         "items": items,
@@ -729,7 +732,7 @@ async def reels(limit: int = Query(default=30, ge=1, le=100)):
 
 
 @app.get("/api/reels/{draft_id}")
-async def reels_detail(draft_id: str):
+async def reels_detail(draft_id: str, _: None = Depends(_require_auth)):
     draft = await serialize_reels_draft(draft_id)
     if not draft:
         raise HTTPException(status_code=404, detail="reels_not_found")
@@ -845,7 +848,7 @@ async def reels_frame_fields(
 
 
 @app.get("/api/keywords")
-async def keywords():
+async def keywords(_: None = Depends(_require_auth)):
     return {
         "items": serialize_topics(),
         "field_labels": field_labels(),
