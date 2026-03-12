@@ -16,10 +16,12 @@ from fastapi.testclient import TestClient
 from bot.handlers.commands import _split_message
 from bot.handlers.content import _topics_text, _source_label
 from bot.agents.threads_replies import _extract_json
+from bot.services.social_oauth import build_oauth_state
 from bot.services.miniapp_references import get_reference_card, list_reference_cards, seed_reference_cards_if_empty
 import bot.services.miniapp_references as miniapp_references
 from scripts.patch_aroma_cards import _coerce_aliases, _coerce_payload
 from threads_oauth_callback import app as oauth_callback_app
+import threads_oauth_callback as oauth_callback_module
 
 
 class TestSplitMessage:
@@ -274,18 +276,72 @@ class TestContentImagePrompts:
 
 
 class TestOAuthCallbacks:
-    def test_threads_callback_renders_code(self):
-        client = TestClient(oauth_callback_app)
-        response = client.get("/threads/callback?code=abc123&state=state1")
-        assert response.status_code == 200
-        assert "Threads OAuth code received" in response.text
-        assert "abc123" in response.text
+    def test_threads_callback_renders_connected_status(self, monkeypatch, tmp_path):
+        monkeypatch.setattr(oauth_callback_module.settings, "telegram_bot_token", "telegram-secret")
+        monkeypatch.setattr(oauth_callback_module.settings, "threads_app_id", "threads-app-id")
+        monkeypatch.setattr(oauth_callback_module.settings, "threads_app_secret", "threads-secret")
+        monkeypatch.setattr(oauth_callback_module, "ENV_FILE", tmp_path / ".env")
+        monkeypatch.setattr(
+            oauth_callback_module,
+            "_exchange_bundle",
+            lambda _service, _code: oauth_callback_module.OAuthTokenBundle(
+                service="threads",
+                short_lived_token="short",
+                access_token="long",
+                expires_in=3600,
+                user_id="123",
+                username="stress_ins",
+            ),
+        )
+        notifications: list[tuple[str, str]] = []
+        monkeypatch.setattr(oauth_callback_module, "_notify", lambda chat_id, text: notifications.append((chat_id, text)))
+        restarted = {"called": False}
+        monkeypatch.setattr(oauth_callback_module, "_restart_aroma_bot", lambda: restarted.__setitem__("called", True))
 
-    def test_instagram_callback_renders_code(self):
+        state = build_oauth_state(
+            secret="telegram-secret",
+            service="threads",
+            chat_id=42,
+            user_id=99,
+        )
         client = TestClient(oauth_callback_app)
-        response = client.get("/instagram/callback?code=ig123")
+        response = client.get(f"/threads/callback?code=abc123&state={state}")
         assert response.status_code == 200
-        assert "Instagram OAuth code received" in response.text
+        assert "Threads connected" in response.text
+        assert restarted["called"] is True
+        assert notifications == [("42", "✅ Threads подключён.\nАккаунт: @stress_ins\nUser ID: 123")]
+        assert "THREADS_ACCESS_TOKEN=long" in (tmp_path / ".env").read_text(encoding="utf-8")
+
+    def test_instagram_callback_renders_connected_status(self, monkeypatch, tmp_path):
+        monkeypatch.setattr(oauth_callback_module.settings, "telegram_bot_token", "telegram-secret")
+        monkeypatch.setattr(oauth_callback_module.settings, "instagram_app_id", "instagram-app-id")
+        monkeypatch.setattr(oauth_callback_module.settings, "instagram_app_secret", "instagram-secret")
+        monkeypatch.setattr(oauth_callback_module, "ENV_FILE", tmp_path / ".env")
+        monkeypatch.setattr(
+            oauth_callback_module,
+            "_exchange_bundle",
+            lambda _service, _code: oauth_callback_module.OAuthTokenBundle(
+                service="instagram",
+                short_lived_token="short",
+                access_token="long",
+                expires_in=3600,
+                user_id="777",
+                username="aromara.ru",
+            ),
+        )
+        monkeypatch.setattr(oauth_callback_module, "_notify", lambda *_args, **_kwargs: None)
+        monkeypatch.setattr(oauth_callback_module, "_restart_aroma_bot", lambda: None)
+        state = build_oauth_state(
+            secret="telegram-secret",
+            service="instagram",
+            chat_id=42,
+            user_id=99,
+        )
+        client = TestClient(oauth_callback_app)
+        response = client.get(f"/instagram/callback?code=ig123&state={state}")
+        assert response.status_code == 200
+        assert "Instagram connected" in response.text
+        assert "INSTAGRAM_ACCESS_TOKEN=long" in (tmp_path / ".env").read_text(encoding="utf-8")
 
     def test_threads_deauthorize_returns_ok(self):
         client = TestClient(oauth_callback_app)

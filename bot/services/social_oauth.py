@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+import base64
+import hashlib
+import hmac
+import json
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -33,6 +38,10 @@ class OAuthExchangeError(RuntimeError):
     pass
 
 
+class OAuthStateError(RuntimeError):
+    pass
+
+
 @dataclass
 class OAuthTokenBundle:
     service: str
@@ -42,6 +51,14 @@ class OAuthTokenBundle:
     user_id: str
     username: str = ""
     metadata: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class OAuthConnectState:
+    service: str
+    chat_id: str
+    user_id: str
+    issued_at: int
 
 
 def build_threads_authorize_url(
@@ -241,6 +258,83 @@ def update_env_file(env_path: str | Path, updates: dict[str, str]) -> None:
     path.write_text(output, encoding="utf-8")
 
 
+def build_oauth_state(*, secret: str, service: str, chat_id: int | str, user_id: int | str) -> str:
+    payload = {
+        "service": service,
+        "chat_id": str(chat_id),
+        "user_id": str(user_id),
+        "issued_at": int(time.time()),
+    }
+    body = json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")
+    signature = hmac.new(secret.encode("utf-8"), body, hashlib.sha256).digest()
+    return _urlsafe_b64encode(body) + "." + _urlsafe_b64encode(signature)
+
+
+def parse_oauth_state(*, state: str, secret: str, max_age_seconds: int = 3600) -> OAuthConnectState:
+    try:
+        encoded_body, encoded_signature = state.split(".", 1)
+    except ValueError as exc:
+        raise OAuthStateError("Malformed OAuth state") from exc
+
+    body = _urlsafe_b64decode(encoded_body)
+    signature = _urlsafe_b64decode(encoded_signature)
+    expected_signature = hmac.new(secret.encode("utf-8"), body, hashlib.sha256).digest()
+    if not hmac.compare_digest(signature, expected_signature):
+        raise OAuthStateError("Invalid OAuth state signature")
+
+    try:
+        payload = json.loads(body.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise OAuthStateError("Invalid OAuth state payload") from exc
+
+    issued_at = _coerce_int(payload.get("issued_at"))
+    if issued_at is None:
+        raise OAuthStateError("OAuth state is missing issued_at")
+    if int(time.time()) - issued_at > max_age_seconds:
+        raise OAuthStateError("OAuth state expired")
+
+    service = str(payload.get("service", "")).strip()
+    chat_id = str(payload.get("chat_id", "")).strip()
+    user_id = str(payload.get("user_id", "")).strip()
+    if not service or not chat_id or not user_id:
+        raise OAuthStateError("OAuth state is incomplete")
+
+    return OAuthConnectState(service=service, chat_id=chat_id, user_id=user_id, issued_at=issued_at)
+
+
+def bundle_env_updates(bundle: OAuthTokenBundle) -> dict[str, str]:
+    if bundle.service == "threads":
+        return {
+            "THREADS_ACCESS_TOKEN": bundle.access_token,
+            "THREADS_USER_ID": bundle.user_id,
+            "THREADS_USERNAME": bundle.username,
+        }
+    if bundle.service == "instagram":
+        return {
+            "INSTAGRAM_ACCESS_TOKEN": bundle.access_token,
+            "INSTAGRAM_USER_ID": bundle.user_id,
+        }
+    raise OAuthExchangeError(f"Unsupported service: {bundle.service}")
+
+
+def notify_telegram_chat(*, bot_token: str, chat_id: str, text: str, client: httpx.Client | None = None) -> None:
+    if not bot_token or not chat_id:
+        return
+
+    def _work(session: httpx.Client) -> None:
+        response = session.post(
+            f"https://api.telegram.org/bot{bot_token}/sendMessage",
+            json={"chat_id": chat_id, "text": text},
+        )
+        response.raise_for_status()
+
+    if client is not None:
+        _work(client)
+        return
+    with httpx.Client(timeout=15.0) as session:
+        _work(session)
+
+
 def _parse_json_response(response: httpx.Response, context: str) -> dict[str, Any]:
     try:
         payload = response.json()
@@ -270,3 +364,15 @@ def _coerce_int(value: Any) -> int | None:
         return int(value)
     except (TypeError, ValueError):
         return None
+
+
+def _urlsafe_b64encode(data: bytes) -> str:
+    return base64.urlsafe_b64encode(data).decode("ascii").rstrip("=")
+
+
+def _urlsafe_b64decode(data: str) -> bytes:
+    padding = "=" * (-len(data) % 4)
+    try:
+        return base64.urlsafe_b64decode(data + padding)
+    except (ValueError, base64.binascii.Error) as exc:
+        raise OAuthStateError("Invalid OAuth state encoding") from exc
