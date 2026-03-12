@@ -51,6 +51,8 @@
 - Все функции в `bot/services/drafts_store.py` и `bot/services/plans_store.py` являются **асинхронными**.
 - `Drafts` и `Plans` хранятся в SQLite как основной source of truth, а не в JSON-файлах.
 - Всегда вызывать store-функции через `await`.
+- JSON-файлы в `data/` и `scripts/` допустимы только как seed/import-артефакты для справочника и одноразовых утилит.
+- Нельзя добавлять новые runtime-paths для `Drafts`/`Plans` через JSON без отдельного архитектурного решения.
 
 **Тесты:**
 - Тесты находятся в `tests/` и запускаются командой: `.venv/bin/pytest`

@@ -341,7 +341,9 @@ aroma/
 │   └── session.py            # Настройка асинхронного engine и сессий
 ├── alembic/                  # Миграции базы данных
 ├── data/
-│   └── aroma.db              # SQLite база данных (хранилище черновиков и планов)
+│   ├── aroma.db              # SQLite база данных (runtime source of truth)
+│   ├── aroma_cards_seed.json # Seed-данные для справочника
+│   └── reference_cards_*.json# Seed/extra данные для справочника
 ├── analytics/
 ...
 ├── bot/
@@ -350,6 +352,13 @@ aroma/
 │   │   ├── plans_store.py    # Асинхронный интерфейс к БД планов
 │   │   └── reels_assets.py   # Управление медиа-файлами для Reels
 ```
+
+### Хранение данных
+
+- `Drafts` и `Plans` живут в SQLite и читаются через `bot/services/drafts_store.py` и `bot/services/plans_store.py`.
+- JSON-файлы в `data/` и `scripts/` не являются runtime-хранилищем для draft/plan flow.
+- JSON в проекте используется только как seed/import-источник для справочника и вспомогательных офлайн-скриптов.
+- Если меняется схема данных, source of truth должен обновляться через модели и Alembic-миграции, а не через новые JSON-paths.
 
 ---
 

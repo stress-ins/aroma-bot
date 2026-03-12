@@ -226,6 +226,7 @@ def main() -> None:
     items.extend(EXTRA_CARDS)
     items.sort(key=lambda item: item["name"].lower().replace("ё", "е"))
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
+    # This JSON is a generated seed/import artifact, not a runtime store.
     OUTPUT.write_text(json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"saved {len(items)} cards to {OUTPUT}")
 
