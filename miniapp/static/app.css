@@ -93,6 +93,10 @@ textarea,
   align-items: center;
 }
 
+.topbar + .toolbar {
+  margin-top: -2px;
+}
+
 .toolbar {
   background: var(--surface);
   border: 1px solid var(--border);
