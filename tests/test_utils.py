@@ -1892,6 +1892,15 @@ class TestMiniAppRussianLocale:
         assert ".panel-loader-card" in app_css
         assert ".boot-fallback-inline" in app_css
 
+    def test_index_uses_dynamic_asset_versioning(self):
+        html = Path("miniapp/index.html").read_text(encoding="utf-8")
+        server_py = Path("miniapp_server.py").read_text(encoding="utf-8")
+
+        assert "__ASSET_VERSION__" in html
+        assert "def _asset_version()" in server_py
+        assert 'html.replace("__ASSET_VERSION__", _asset_version())' in server_py
+        assert "HTMLResponse" in server_py
+
     def test_detail_buttons_have_visual_feedback_and_notes_survive_refresh(self):
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
         app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
