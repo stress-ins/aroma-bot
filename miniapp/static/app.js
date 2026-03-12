@@ -52,6 +52,7 @@ let bootstrapWatchdogTimer = null;
 let appBootstrapped = false;
 let uiNoticeTimer = null;
 let detailEntryTimer = null;
+let keyboardViewportTimer = null;
 const carouselNoteSaveTimers = {};
 const reelsNoteSaveTimers = {};
 const reelsPromptSaveTimers = {};
@@ -1544,6 +1545,48 @@ function bindCardKeyboardActivation() {
   });
 }
 
+function ensureFieldAboveKeyboard(target, behavior = "smooth") {
+  if (!(target instanceof HTMLElement)) return;
+  const viewportHeight = window.visualViewport?.height || window.innerHeight || 0;
+  if (!viewportHeight) return;
+  const rect = target.getBoundingClientRect();
+  const visibleTop = 84;
+  const visibleBottom = viewportHeight - 20;
+  if (rect.top >= visibleTop && rect.bottom <= visibleBottom) return;
+  target.scrollIntoView({
+    behavior,
+    block: rect.top < visibleTop ? "start" : "center",
+    inline: "nearest",
+  });
+}
+
+function bindKeyboardViewportAssist() {
+  const schedule = (target, delay = 0, behavior = "smooth") => {
+    if (!(target instanceof HTMLElement)) return;
+    window.clearTimeout(keyboardViewportTimer);
+    keyboardViewportTimer = window.setTimeout(() => ensureFieldAboveKeyboard(target, behavior), delay);
+  };
+
+  document.addEventListener("focusin", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) return;
+    if (!target.matches("textarea, input, select, [contenteditable='true']")) return;
+    schedule(target, 0, "auto");
+    schedule(target, 120, "smooth");
+    schedule(target, 260, "smooth");
+  });
+
+  const viewport = window.visualViewport;
+  if (!viewport) return;
+  const handleViewportChange = () => {
+    const active = document.activeElement;
+    if (!(active instanceof HTMLElement)) return;
+    if (!active.matches("textarea, input, select, [contenteditable='true']")) return;
+    schedule(active, 40, "smooth");
+  };
+  viewport.addEventListener("resize", handleViewportChange);
+  viewport.addEventListener("scroll", handleViewportChange);
+}
 function bindSwipeBack() {
   const isMobile = window.matchMedia("(max-width: 760px)").matches;
   if (!isMobile) return;
@@ -2524,6 +2567,7 @@ async function bootstrap() {
   bindSwipeBack();
   bindKeyboardDismiss();
   bindCardKeyboardActivation();
+  bindKeyboardViewportAssist();
   elements.modeContent.addEventListener("click", () => { setMode("content"); void safeLoadCurrentTab("Не удалось загрузить раздел контента"); });
   elements.modeHandbook.addEventListener("click", () => { setMode("handbook"); void safeLoadCurrentTab("Не удалось загрузить справочник"); });
   elements.settingsButton?.addEventListener("click", () => {

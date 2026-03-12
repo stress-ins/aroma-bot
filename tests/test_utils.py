@@ -2007,6 +2007,12 @@ class TestMiniAppRussianLocale:
         assert 'document.addEventListener("touchstart", dismiss, { passive: true });' in app_js
         assert 'document.addEventListener("mousedown", dismiss, { passive: true });' in app_js
         assert "bindKeyboardDismiss();" in app_js
+        assert "function bindKeyboardViewportAssist()" in app_js
+        assert "function ensureFieldAboveKeyboard(target, behavior = \"smooth\")" in app_js
+        assert "window.visualViewport?.height" in app_js
+        assert "viewport.addEventListener(\"resize\", handleViewportChange);" in app_js
+        assert "bindKeyboardViewportAssist();" in app_js
+        assert "scroll-margin-bottom: 180px;" in Path("miniapp/static/app.css").read_text(encoding="utf-8")
         assert "await openDraft(d.draft_id);" in app_js
 
     def test_create_flow_uses_pending_card_and_timeout_recovery(self):
@@ -2371,8 +2377,8 @@ class TestThreadsPrompts:
         index_html = Path("miniapp/index.html").read_text(encoding="utf-8")
         server_py = Path("miniapp_server.py").read_text(encoding="utf-8")
 
-        assert "app.css?v=4" in index_html
-        assert "app.js?v=4" in index_html
+        assert "app.css?v=4" in index_html or "app.css?v=__ASSET_VERSION__" in index_html
+        assert "app.js?v=4" in index_html or "app.js?v=__ASSET_VERSION__" in index_html
         assert "Cache-Control" in server_py
         assert "no-store, max-age=0" in server_py
 
