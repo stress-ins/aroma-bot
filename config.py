@@ -63,6 +63,8 @@ class Settings(BaseSettings):
     instagram_user_id: str = ""
     instagram_business_account_id: str = ""
     mini_app_url: str = ""
+    carousel_forbidden_phrases: str = ""
+    carousel_forbidden_visual_motifs: str = ""
 
     # Scheduler
     daily_digest_time: str = "09:00"
@@ -125,6 +127,24 @@ class Settings(BaseSettings):
             except ValueError:
                 continue
         return fixed_ids | parsed
+
+    @staticmethod
+    def _split_settings_list(raw: str) -> list[str]:
+        parts: list[str] = []
+        for chunk in raw.replace("\r", "\n").split("\n"):
+            for item in chunk.split(","):
+                value = item.strip()
+                if value:
+                    parts.append(value)
+        return parts
+
+    @property
+    def carousel_forbidden_phrases_list(self) -> list[str]:
+        return self._split_settings_list(self.carousel_forbidden_phrases)
+
+    @property
+    def carousel_forbidden_visual_motifs_list(self) -> list[str]:
+        return self._split_settings_list(self.carousel_forbidden_visual_motifs)
 
 
 settings = Settings()

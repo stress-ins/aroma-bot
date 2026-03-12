@@ -28,6 +28,15 @@ _FONT_REL_ID = "rIdDeldedaRegular"
 # ── Layout constants ────────────────────────────────────────────────────────
 _SLIDE_EMU = 1080 * 9525
 
+_DEFAULT_FORBIDDEN_VISUAL_MOTIFS = [
+    "hands joined together",
+    "prayer pose",
+    "praying hands",
+    "cult ritual circle",
+    "sect-like worship",
+    "two cupped hands around one object",
+]
+
 # Per-slide visual rules: (narrative role, what to show, what NOT to show)
 # ── Per-arc visual rules ─────────────────────────────────────────────────────
 # Each arc defines per-slide (narrative_role, what_to_show, what_to_forbid).
@@ -62,15 +71,17 @@ _SLIDE_VISUAL_RULES: list[tuple[str, str, str]] = [
     ),
     (
         "solution — the sensory practice, the remedy in action",
-        "dried herbs, essential oil bottle, incense smoke, hands holding terracotta bowl, "
+        "dried herbs, essential oil bottle, incense smoke, terracotta bowl on linen, "
         "candles, dried flowers, sage bundle — full brand palette, tactile and grounding",
-        "Full brand aesthetic. This is the moment of healing.",
+        "Full brand aesthetic. This is the moment of healing. "
+        "NO prayer pose, NO clasped hands, NO two hands joined around one object.",
     ),
     (
         "call to action — warm human invitation",
-        "close human gesture, hands outstretched or open, warm terracotta and beige, "
-        "soft natural light, intimate and inviting composition",
-        "Full brand aesthetic. Warm, human, not salesy.",
+        "warm terracotta and beige, soft natural light, intimate and inviting composition, "
+        "single human presence, a table scene, doorway light or one relaxed hand near a botanical object",
+        "Full brand aesthetic. Warm, human, not salesy. "
+        "NO prayer pose, NO joined hands, NO sect-like ritual gesture.",
     ),
 ]
 
@@ -107,9 +118,9 @@ _PLEASURE_VISUAL_RULES: list[tuple[str, str, str]] = [
     ),
     (
         "call to action — share the pleasure",
-        "open hands or gesture of invitation, warm terracotta, sunlit or candlelit, "
-        "intimate and celebratory, soft natural light",
-        "Full brand aesthetic. Human, warm, joyful.",
+        "warm terracotta, sunlit or candlelit, intimate and celebratory, soft natural light, "
+        "single human presence or still life invitation scene",
+        "Full brand aesthetic. Human, warm, joyful. NO prayer pose, NO joined hands.",
     ),
 ]
 
@@ -134,9 +145,9 @@ _EDUCATIONAL_VISUAL_RULES: list[tuple[str, str, str]] = [
     ),
     (
         "example — the concept in practice",
-        "dried herbs, essential oil bottle, terracotta bowl, hands interacting "
-        "with natural objects, soft natural light, brand palette emerging",
-        "Brand aesthetic beginning to show. Calm and demonstrative.",
+        "dried herbs, essential oil bottle, terracotta bowl, natural objects on a table, "
+        "soft natural light, brand palette emerging",
+        "Brand aesthetic beginning to show. Calm and demonstrative. NO prayer pose, NO joined hands.",
     ),
     (
         "benefit — the outcome",
@@ -146,9 +157,9 @@ _EDUCATIONAL_VISUAL_RULES: list[tuple[str, str, str]] = [
     ),
     (
         "call to action — apply the knowledge",
-        "hands holding a botanical object, warm terracotta and sage tones, "
-        "intimate and calm, soft natural light, grounded",
-        "Full brand aesthetic. Grounded and inviting.",
+        "warm terracotta and sage tones, intimate and calm, soft natural light, grounded, "
+        "single botanical object or relaxed one-hand presence",
+        "Full brand aesthetic. Grounded and inviting. NO prayer pose, NO joined hands.",
     ),
 ]
 
@@ -303,6 +314,23 @@ def _detect_topic_arc_sync(topic: str, slides: list[str]) -> str:
     return "problem_solution"
 
 
+def _forbidden_visual_motifs() -> list[str]:
+    seen: set[str] = set()
+    result: list[str] = []
+    for motif in [*_DEFAULT_FORBIDDEN_VISUAL_MOTIFS, *getattr(settings, "carousel_forbidden_visual_motifs_list", [])]:
+        value = str(motif).strip()
+        lowered = value.lower()
+        if not value or lowered in seen:
+            continue
+        seen.add(lowered)
+        result.append(value)
+    return result
+
+
+def _forbidden_visual_motifs_text() -> str:
+    return ", ".join(_forbidden_visual_motifs())
+
+
 def _generate_slide_image_prompts_sync(slides: list[str], topic: str, arc: str | None = None) -> list[str]:
     """Generate one unique, detailed English image prompt per slide.
 
@@ -339,6 +367,7 @@ def _generate_slide_image_prompts_sync(slides: list[str], topic: str, arc: str |
         "- Palette: terracotta, beige, sage green, warm wood tones\n"
         "- Forbidden everywhere: stock photo look, plastic, harsh shadows, "
         "white/grey plain backgrounds, human faces, any text or typography\n"
+        f"- Also forbidden everywhere: {_forbidden_visual_motifs_text()}\n"
         "- Required: leave a large clear area (at least 1/3 of frame) — blurred bg, "
         "flat surface, or negative space — so text overlay is readable\n\n"
         "Generate one image prompt per slide. Each must:\n"
@@ -488,6 +517,7 @@ def _qa_image_sync(
         f"1. Physically impossible or hallucinated elements "
         f"(e.g. lavender on fire, smoke from cold objects, impossible anatomy of objects)\n"
         f"2. Any visible text, watermarks, logos, or typography"
+        f"\n2b. Any forbidden visual motifs such as: {_forbidden_visual_motifs_text()}"
         f"{slide_rules}{note_check}\n\n"
         f"Reply in this exact format (2 lines only):\n"
         f"PASS or FAIL\n"

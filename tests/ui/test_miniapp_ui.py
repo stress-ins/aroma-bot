@@ -518,6 +518,60 @@ def test_mobile_bottom_tab_bar_switches_primary_sections(page):
     assert page.locator(".draft-card").count() >= 2
 
 
+def test_mobile_swipe_back_from_left_edge_works_over_interactive_controls(page):
+    page.get_by_role("button", name="Черновики").click()
+    page.wait_for_timeout(250)
+    page.get_by_text("Сенсорная карусель для вечернего ритуала").first.click()
+    page.wait_for_timeout(300)
+
+    page.evaluate(
+        """
+        () => {
+          const button = document.querySelector('#draftDetail .prompt-actions .secondary-button');
+          if (!button) throw new Error('detail action button not found');
+          const makeEvent = (type, touches, changedTouches = touches) => {
+            const event = new Event(type, { bubbles: true, cancelable: true });
+            Object.defineProperty(event, 'touches', { value: touches });
+            Object.defineProperty(event, 'changedTouches', { value: changedTouches });
+            return event;
+          };
+          const start = [{ clientX: 12, clientY: 180 }];
+          const move = [{ clientX: 120, clientY: 184 }];
+          button.dispatchEvent(makeEvent('touchstart', start));
+          button.dispatchEvent(makeEvent('touchmove', move));
+          button.dispatchEvent(makeEvent('touchend', [], move));
+        }
+        """
+    )
+    page.wait_for_timeout(260)
+
+    assert page.locator("#listPanel").evaluate("(node) => !node.classList.contains('hidden-mobile')")
+    assert page.locator("#detailPanel").evaluate("(node) => node.classList.contains('hidden-mobile')")
+    assert page.get_by_text("Сенсорная карусель для вечернего ритуала").first.is_visible()
+
+
+def test_dark_theme_class_styles_bottom_tab_bar(page):
+    page.evaluate("document.body.classList.add('tg-theme-dark')")
+    page.wait_for_timeout(50)
+
+    theme_state = page.evaluate(
+        """
+        () => {
+          const tabBar = document.querySelector('.bottom-tab-bar-inner');
+          return {
+            bodyDark: document.body.classList.contains('tg-theme-dark'),
+            tabBarBackground: getComputedStyle(tabBar).backgroundColor,
+            tabBarBorder: getComputedStyle(tabBar).borderColor,
+          };
+        }
+        """
+    )
+
+    assert theme_state["bodyDark"] is True
+    assert "37, 30, 24" in theme_state["tabBarBackground"]
+    assert "255, 230, 200" in theme_state["tabBarBorder"]
+
+
 def test_desktop_layout_keeps_split_panels_and_comfortable_controls(desktop_page):
     desktop_page.get_by_role("button", name="Черновики").click()
     desktop_page.wait_for_timeout(200)
@@ -620,6 +674,50 @@ def test_mobile_carousel_actions_use_two_columns(page):
         "(node) => getComputedStyle(node).gridTemplateColumns"
     )
     assert columns.count(" ") >= 1
+
+
+def test_reels_storyboard_regenerate_enters_pending_images_state(page):
+    pending_reel = {
+        "draft_id": "reels001",
+        "kind": "reels",
+        "topic": "Вечерний ароматический ритуал",
+        "source": "/miniapp",
+        "status": "draft",
+        "feedback": "",
+        "created_at": "2026-03-11T18:00:00+00:00",
+        "preview": "Короткий сценарий рилса про вечернее переключение.",
+        "scenario": "Обновленный сценарий",
+        "frame_count": 4,
+        "images_ready": 0,
+        "generation_pending": True,
+        "generation_stage": "images",
+        "generation_message": "Генерирую кадры для рилса.",
+        "frames": [],
+        "shot_list": [],
+        "production_notes": {"required": [], "optional": []},
+        "payload": {},
+    }
+
+    def handle_route(route):
+        url = route.request.url
+        if url.endswith("/api/reels/reels001/storyboard/regenerate"):
+            route.fulfill(status=200, content_type="application/json", body=json.dumps(pending_reel, ensure_ascii=False))
+            return
+        if url.endswith("/api/reels/reels001"):
+            route.fulfill(status=200, content_type="application/json", body=json.dumps(pending_reel, ensure_ascii=False))
+            return
+        route.continue_()
+
+    page.route("**/*", handle_route)
+    page.locator("#btnTabReels").click()
+    page.wait_for_timeout(250)
+    page.locator(".reels-card").first.click()
+    page.wait_for_timeout(250)
+    page.get_by_role("button", name="Пересобрать структуру рилса").click()
+    page.wait_for_timeout(450)
+
+    assert page.get_by_text("Генерирую кадры для рилса.").count() >= 1
+    assert page.get_by_text("0/4 кадров").count() >= 1
 
 
 def test_create_tool_selection_isolates_form(page):
