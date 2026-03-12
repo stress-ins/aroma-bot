@@ -1262,7 +1262,7 @@ async def cb_carousel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             await query.message.reply_text("❌ Данные устарели. Сгенерируй карусель заново.")
             return
         if not img_prompts:
-            gen_msg = await query.message.reply_text("⏳ Генерирую промты для картинок...")
+            gen_msg = await query.message.reply_text("⏳ Генерирую промпты для картинок...")
             loop = asyncio.get_event_loop()
             img_prompts = await loop.run_in_executor(
                 _executor, _generate_slide_image_prompts_sync, slides, topic
