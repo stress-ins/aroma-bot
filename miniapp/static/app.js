@@ -99,13 +99,13 @@ const RU_FEEDBACK_LABELS = {
 const HANDBOOK_CATEGORY_META = {
   aromas: {
     category: "aroma",
-    label: "масло",
-    title: "Масла",
-    searchLabel: "Поиск масла",
+    label: "аромат",
+    title: "Ароматы",
+    searchLabel: "Поиск аромата",
     searchPlaceholder: "Например: лаванда",
-    empty: "Масла не найдены.",
-    selectPrompt: "Выберите масло из списка.",
-    locked: "Доступ к справочнику масел ограничен.",
+    empty: "Ароматы не найдены.",
+    selectPrompt: "Выберите аромат из списка.",
+    locked: "Доступ к справочнику ароматов ограничен.",
     count: (items) => `${items.length} карточек`,
   },
   practices: {
