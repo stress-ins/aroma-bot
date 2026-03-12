@@ -1,4 +1,5 @@
 import { createCarouselModule } from "./js/carousel.js";
+import { createPlansModule } from "./js/plans.js";
 import { createReelsModule } from "./js/reels.js";
 import { createShellModule } from "./js/shell.js";
 
@@ -595,29 +596,6 @@ function isContentReviewKind(kind) {
   return normalized === "threads" || normalized === "instagram" || normalized === "telegram";
 }
 
-function planEntryTargetKind(entry = {}) {
-  const platform = String(entry.platform || "").trim().toLowerCase();
-  const formatLabel = String(entry.format_label || "").trim().toLowerCase();
-  if (platform.includes("reels") || formatLabel.includes("reels") || formatLabel.includes("рилс")) return "reels";
-  if (formatLabel.includes("карус") || formatLabel.includes("carousel")) return "carousel";
-  if (platform.includes("threads")) return "threads";
-  if (platform.includes("instagram")) return "instagram";
-  if (platform.includes("telegram")) return "telegram";
-  return "instagram";
-}
-
-function planEntryFormatLabel(entry = {}) {
-  const target = planEntryTargetKind(entry);
-  return kindLabel(target) || "Контент";
-}
-
-function relatedDraftsForEntry(plan = {}, entry = {}) {
-  const topic = String(entry.topic || "").trim();
-  const related = Array.isArray(plan.related_drafts) ? plan.related_drafts : [];
-  if (!topic) return [];
-  return related.filter((draft) => String(draft.topic || "").trim() === topic);
-}
-
 function frameDraftKey(draftId, index) {
   return `${draftId}:${index}`;
 }
@@ -1018,6 +996,41 @@ const {
 });
 
 window.goBackToList = goBackToList;
+
+const {
+  planEntryTargetKind,
+  planEntryFormatLabel,
+  relatedDraftsForEntry,
+  openPlan,
+  generateDraftFromPlan,
+  openPlanRelatedDraft,
+  renderPlanDetail,
+} = createPlansModule({
+  state,
+  elements,
+  escapeHtml,
+  uiIcon,
+  actionLabel,
+  tagMarkup,
+  kindLabel,
+  sourceLabel,
+  sourceTone,
+  formatPlanDate,
+  renderBackButton,
+  renderDetailLoader,
+  fetchJson,
+  withButtonFeedback,
+  upsertDraftSummary,
+  draftSummaryFromDraft,
+  setTab,
+  enterDetailView,
+  syncMobileNavigation,
+  loadPlans,
+  loadDrafts,
+  loadReels,
+  openDraft,
+  openReels,
+});
 
 const reelsCallbacks = {
   renderReels: null,
@@ -1739,58 +1752,6 @@ async function openReels(id) {
   enterDetailView();
 }
 
-async function openPlan(id) {
-  elements.draftDetail.innerHTML = `${renderBackButton()}${renderDetailLoader("Открываю план")}`;
-  enterDetailView();
-  const p = await fetchJson(`/api/plans/${id}`);
-  state.selectedPlan = p;
-  state.plans = state.plans.map((item) => item.plan_id === p.plan_id ? { ...item, ...p } : item);
-  renderPlanDetail(p);
-  enterDetailView();
-  const params = new URLSearchParams(window.location.search);
-  params.set("tab", state.tab);
-  params.set("draft_id", id);
-  history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`);
-}
-
-async function generateDraftFromPlan(planId, entryIndex, button) {
-  const apply = async () => {
-    const payload = await fetchJson(`/api/plans/${planId}/generate`, {
-      method: "POST",
-      body: JSON.stringify({ entry_index: entryIndex }),
-    });
-    const draft = payload?.draft || null;
-    if (draft?.kind === "reels") {
-      state.reels = [draft, ...state.reels.filter((item) => item.draft_id !== draft.draft_id)];
-    } else if (draft?.draft_id) {
-      upsertDraftSummary(draftSummaryFromDraft(draft));
-    }
-    await loadPlans();
-    await openPlan(planId);
-    return draft;
-  };
-  const draft = button instanceof HTMLElement
-    ? await withButtonFeedback(button, "Создаю...", apply, "Создано")
-    : await apply();
-  if (draft?.draft_id) {
-    const tg = window.Telegram?.WebApp;
-    if (tg?.showAlert) tg.showAlert("Черновик создан и привязан к плану");
-  }
-}
-
-async function openPlanRelatedDraft(kind, draftId) {
-  if (!draftId) return;
-  if (kind === "reels") {
-    setTab("reels");
-    await loadReels();
-    await openReels(draftId);
-    return;
-  }
-  setTab("drafts");
-  await loadDrafts();
-  await openDraft(draftId);
-}
-
 function renderDraftDetail(d) {
   if (isPendingDraftId(d?.draft_id)) {
     elements.draftDetail.innerHTML = `
@@ -2381,62 +2342,6 @@ function renderReelsDetail(r) {
     scheduleReelsRefresh(r.draft_id);
   }
   syncMobileNavigation();
-}
-
-function renderPlanDetail(p) {
-  const entries = Array.isArray(p.entries) ? p.entries : [];
-  const relatedDrafts = Array.isArray(p.related_drafts) ? p.related_drafts : [];
-  elements.draftDetail.innerHTML = `
-    <div class="detail-grid">
-      ${renderBackButton()}
-      <div class="detail-top">
-        <p class="eyebrow">${uiIcon("card")}<span>План • ${escapeHtml(formatPlanDate(p.created_at) || p.plan_id)}</span></p>
-        <h2 class="detail-title">${escapeHtml(p.plan_id)}</h2>
-        <div class="draft-meta">
-          ${tagMarkup(`${entries.length} карточек`, "source-plan")}
-          ${tagMarkup(`${relatedDrafts.length} связанных черновиков`, "status-review")}
-        </div>
-      </div>
-      <section class="section">
-        <h3>${uiIcon("text")}Краткое описание плана</h3>
-        <div class="detail-preview detail-markdown">${renderMarkdown(p.raw_text)}</div>
-      </section>
-      <section class="section">
-        <h3>${uiIcon("slides")}Карточки плана</h3>
-        <div class="plan-entries">
-          ${entries.map((entry, index) => {
-            const related = relatedDraftsForEntry(p, entry);
-            return `
-              <article class="plan-entry-card">
-                <div class="plan-entry-top">
-                  <div>
-                    <strong class="plan-entry-title">${escapeHtml(entry.topic || `Карточка ${index + 1}`)}</strong>
-                    <div class="draft-meta">
-                      ${entry.day_label ? tagMarkup(entry.day_label, "status-neutral") : ""}
-                      ${entry.platform ? tagMarkup(entry.platform, "source-content") : ""}
-                      ${entry.goal ? tagMarkup(entry.goal, "status-review") : ""}
-                      ${tagMarkup(planEntryFormatLabel(entry), "source-plan")}
-                    </div>
-                  </div>
-                  <button class="primary-button" type="button" onclick="generateDraftFromPlan('${p.plan_id}', ${index}, this)">${actionLabel("sparkle", `Создать ${planEntryFormatLabel(entry)}`)}</button>
-                </div>
-                ${entry.angle ? `<div class="detail-preview">${escapeHtml(entry.angle)}</div>` : ""}
-                ${related.length ? `
-                  <div class="related-drafts-inline">
-                    ${related.map((draft) => `
-                      <button class="secondary-button" type="button" onclick="openPlanRelatedDraft('${escapeHtml(draft.kind)}', '${escapeHtml(draft.draft_id)}')">${actionLabel(draft.kind === "reels" ? "reel" : "eye", `Открыть ${kindLabel(draft.kind)}`)}</button>
-                    `).join("")}
-                  </div>
-                ` : `
-                  <div class="plan-entry-hint">Черновик по этой карточке ещё не создан.</div>
-                `}
-              </article>
-            `;
-          }).join("")}
-        </div>
-      </section>
-    </div>
-  `;
 }
 
 function renderKeywords() {
