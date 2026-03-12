@@ -309,6 +309,8 @@ def _shared_reference_image_url(category: str, slug: str, source_type: str) -> s
 
 
 def _load_seed_items() -> list[dict[str, object]]:
+    # These JSON files are seed inputs for reference cards only.
+    # Runtime source of truth remains the database rows in aroma_cards.
     items: list[dict[str, object]] = []
     for path in (SEED_FILE, EXTRA_SEED_FILE):
         if not path.exists():
