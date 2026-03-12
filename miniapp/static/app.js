@@ -50,6 +50,7 @@ let swipeStart = null;
 let bootstrapWatchdogTimer = null;
 let appBootstrapped = false;
 let uiNoticeTimer = null;
+let detailEntryTimer = null;
 const carouselNoteSaveTimers = {};
 const reelsNoteSaveTimers = {};
 const reelsPromptSaveTimers = {};
@@ -1308,6 +1309,16 @@ window.goBackToList = (animated = false) => {
 function enterDetailView() {
   state.mobileView = "detail";
   syncMobileNavigation();
+  if (elements.detailPanel) {
+    elements.detailPanel.classList.remove("is-entering");
+    window.clearTimeout(detailEntryTimer);
+    requestAnimationFrame(() => {
+      elements.detailPanel.classList.add("is-entering");
+      detailEntryTimer = window.setTimeout(() => {
+        elements.detailPanel?.classList.remove("is-entering");
+      }, 280);
+    });
+  }
   window.scrollTo(0, 0);
 }
 
