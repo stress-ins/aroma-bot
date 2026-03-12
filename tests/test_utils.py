@@ -1948,7 +1948,8 @@ class TestMiniAppRussianLocale:
         assert "onclick=\"sendDraftToChat('${d.draft_id}', this)\"" in app_js
         assert "onclick=\"deleteDraft('${d.draft_id}', 'drafts', this)\"" in app_js
         assert 'onclick="saveCarouselSlideText(${JSON.stringify(draftId)}, ${index}, this)"' in app_js
-        assert 'onclick="regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, this)"' in app_js
+        assert 'onclick="regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, false, this)"' in app_js
+        assert 'onclick="regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, true, this)"' in app_js
         assert ".secondary-button.is-busy" in app_css
         assert ".secondary-button.did-complete" in app_css
         assert ".secondary-button.did-error" in app_css
@@ -2016,10 +2017,10 @@ class TestMiniAppRussianLocale:
 
         assert "function renderGuidedState" in app_js
         assert "Выберите формат для старта" in app_js
-        assert "Планы пока не собраны" in app_js
-        assert "Рилсы пока не созданы" in app_js
+        assert "Планов пока нет" in app_js
+        assert "Рилсов пока нет" in app_js
         assert "Откройте тему для редактирования" in app_js
-        assert "window.openCreateTool" in app_js
+        assert "setTab('create')" in app_js
         assert ".guided-state" in app_css
         assert ".guided-state-copy" in app_css
         assert ".guided-state-actions" in app_css
