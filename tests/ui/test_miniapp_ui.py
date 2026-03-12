@@ -226,6 +226,25 @@ def page(miniapp_server: str):
         browser.close()
 
 
+@pytest.fixture()
+def desktop_page(miniapp_server: str):
+    with sync_playwright() as playwright:
+        try:
+            browser = playwright.chromium.launch()
+        except Error as exc:
+            pytest.skip(f"Playwright browser is not available: {exc}")
+        context = browser.new_context(
+            viewport={"width": 1280, "height": 900},
+            is_mobile=False,
+            extra_http_headers={"X-Telegram-Init-Data": "user=%7B%22id%22%3A12345%2C%22username%22%3A%22test%22%7D"},
+        )
+        page = context.new_page()
+        page.goto(miniapp_server, wait_until="networkidle")
+        yield page
+        context.close()
+        browser.close()
+
+
 def test_mobile_tabs_and_drafts_render_in_russian(page):
     tabs = page.locator(".tab-button").evaluate_all(
         "(nodes) => nodes.map((node) => node.textContent.trim())"
@@ -308,6 +327,66 @@ def test_mobile_layout_has_no_overlapping_controls(page):
             """
         )
         assert overlaps == []
+
+
+def test_mobile_primary_controls_have_comfortable_hit_targets(page):
+    metrics = page.evaluate(
+        """
+        () => {
+          const selectors = ['.mode-button', '.tab-button', '.icon-corner-button', '.secondary-button', '.primary-button', '.back-button.visible'];
+          return selectors.flatMap((selector) =>
+            [...document.querySelectorAll(selector)]
+              .filter((node) => {
+                const style = getComputedStyle(node);
+                const rect = node.getBoundingClientRect();
+                return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+              })
+              .map((node) => ({
+                selector,
+                text: (node.textContent || '').trim().slice(0, 40),
+                width: Math.round(node.getBoundingClientRect().width),
+                height: Math.round(node.getBoundingClientRect().height),
+              }))
+          );
+        }
+        """
+    )
+    bad = [item for item in metrics if item["height"] < 44]
+    assert bad == []
+
+
+def test_desktop_layout_keeps_split_panels_and_comfortable_controls(desktop_page):
+    desktop_page.get_by_role("button", name="Черновики").click()
+    desktop_page.wait_for_timeout(200)
+    layout = desktop_page.evaluate(
+        """
+        () => {
+          const listPanel = document.querySelector('#listPanel');
+          const detailPanel = document.querySelector('#detailPanel');
+          const tabs = [...document.querySelectorAll('.tab-button')].map((node) => {
+            const rect = node.getBoundingClientRect();
+            return { text: (node.textContent || '').trim(), height: Math.round(rect.height) };
+          });
+          const actions = [...document.querySelectorAll('.secondary-button, .primary-button')]
+            .filter((node) => {
+              const style = getComputedStyle(node);
+              const rect = node.getBoundingClientRect();
+              return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+            })
+            .map((node) => ({ text: (node.textContent || '').trim().slice(0, 40), height: Math.round(node.getBoundingClientRect().height) }));
+          return {
+            listWidth: Math.round(listPanel.getBoundingClientRect().width),
+            detailWidth: Math.round(detailPanel.getBoundingClientRect().width),
+            tabs,
+            actions,
+          };
+        }
+        """
+    )
+    assert layout["listWidth"] >= 300
+    assert layout["detailWidth"] >= 500
+    assert all(item["height"] >= 40 for item in layout["tabs"])
+    assert all(item["height"] >= 40 for item in layout["actions"])
 
 
 def test_mobile_detail_actions_do_not_overlap(page):
@@ -452,6 +531,259 @@ def test_create_carousel_routes_into_draft_detail(page):
     assert page.locator(".detail-title").inner_text().strip() == "Тестовая карусель"
     assert page.locator(".slide").count() == 2
     assert page.get_by_role("button", name="Черновики").get_attribute("class")
+
+
+def test_plan_detail_allows_creating_and_opening_linked_draft(page):
+    updated_plan = {
+        "plan_id": "20260311180000",
+        "created_at": "2026-03-11T18:00:00+00:00",
+        "raw_text": "Понедельник: Threads, Среда: Reels",
+        "entries": [
+            {
+                "day_label": "Понедельник",
+                "platform": "Threads",
+                "format_label": "пост",
+                "goal": "Доверие",
+                "topic": "Почему вечерний ритуал помогает нервной системе",
+                "angle": "Через простые телесные сигналы.",
+            }
+        ],
+        "related_drafts": [
+            {
+                "draft_id": "planth01",
+                "kind": "threads",
+                "topic": "Почему вечерний ритуал помогает нервной системе",
+                "status": "draft",
+            }
+        ],
+    }
+    created_draft = {
+        "draft_id": "planth01",
+        "kind": "threads",
+        "topic": "Почему вечерний ритуал помогает нервной системе",
+        "source": "/plan",
+        "status": "draft",
+        "feedback": "",
+        "created_at": "2026-03-12T02:00:00+00:00",
+        "preview": "Иногда телу нужен сигнал безопасности.",
+        "slides_count": 0,
+        "storyboard_count": 0,
+        "payload": {
+            "angle": "Через простые телесные сигналы.",
+            "hook": "Иногда телу нужен сигнал безопасности.",
+            "caption": "Текст для Threads.",
+            "cta": "Напиши, если хочешь разбор.",
+            "visual_prompt": "warm evening ritual",
+        },
+    }
+
+    def handle_route(route):
+        url = route.request.url
+        if url.endswith("/api/plans/20260311180000/generate"):
+            route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps({"kind": "draft", "draft": created_draft}, ensure_ascii=False),
+            )
+            return
+        if url.endswith("/api/plans?limit=20"):
+            route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps({"items": [updated_plan], "total": 1}, ensure_ascii=False),
+            )
+            return
+        if url.endswith("/api/plans/20260311180000"):
+            route.fulfill(status=200, content_type="application/json", body=json.dumps(updated_plan, ensure_ascii=False))
+            return
+        if "/api/drafts?" in url:
+            route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps(
+                    {
+                        "items": [
+                            {
+                                "draft_id": created_draft["draft_id"],
+                                "kind": created_draft["kind"],
+                                "topic": created_draft["topic"],
+                                "source": created_draft["source"],
+                                "created_at": created_draft["created_at"],
+                                "status": created_draft["status"],
+                                "feedback": "",
+                                "preview": created_draft["preview"],
+                                "slides_count": 0,
+                                "storyboard_count": 0,
+                                "images_ready": 0,
+                                "generation_pending": False,
+                            }
+                        ],
+                        "total": 1,
+                    },
+                    ensure_ascii=False,
+                ),
+            )
+            return
+        if url.endswith("/api/drafts/planth01"):
+            route.fulfill(status=200, content_type="application/json", body=json.dumps(created_draft, ensure_ascii=False))
+            return
+        route.continue_()
+
+    page.route("**/*", handle_route)
+    page.get_by_role("button", name="Планы").click()
+    page.wait_for_timeout(300)
+
+    page.locator(".plan-card").first.click()
+    page.wait_for_timeout(300)
+
+    assert page.get_by_role("button", name="Создать Тредс").is_visible()
+    page.get_by_role("button", name="Создать Тредс").click()
+    page.wait_for_timeout(500)
+
+    assert page.get_by_role("button", name="Открыть Тредс").is_visible()
+    page.get_by_role("button", name="Открыть Тредс").click()
+    page.wait_for_timeout(500)
+
+    assert page.locator(".detail-title").inner_text().strip() == "Почему вечерний ритуал помогает нервной системе"
+    assert page.get_by_role("button", name="Черновики").get_attribute("class")
+
+
+def test_content_review_detail_supports_save_polish_and_feedback(page):
+    updated_draft = {
+        "draft_id": "threads001",
+        "kind": "threads",
+        "topic": "Как мягко выйти из рабочего напряжения",
+        "source": "/content",
+        "status": "draft",
+        "feedback": "worked",
+        "created_at": "2026-03-12T02:00:00+00:00",
+        "preview": "Иногда телу нужен не совет, а сигнал безопасности.",
+        "slides_count": 0,
+        "storyboard_count": 0,
+        "payload": {
+            "angle": "Через телесный переключатель, а не силу воли.",
+            "hook": "Иногда телу нужен не совет, а сигнал безопасности.",
+            "caption": "Обновленный текст для Threads.",
+            "cta": "Если откликается, напиши мне.",
+            "hashtags": "#ritual",
+            "visual_prompt": "warm calm evening ritual, soft light, cozy interior",
+            "editor_notes": "Сделать подачу мягче.",
+        },
+    }
+
+    def handle_route(route):
+        url = route.request.url
+        if url.endswith("/api/drafts/threads001/content"):
+            route.fulfill(status=200, content_type="application/json", body=json.dumps(updated_draft, ensure_ascii=False))
+            return
+        if url.endswith("/api/drafts/threads001/content/polish"):
+            polished = dict(updated_draft)
+            polished["payload"] = dict(updated_draft["payload"])
+            polished["payload"]["caption"] = "Отполированный текст для Threads."
+            polished["preview"] = "Отполированный текст для Threads."
+            route.fulfill(status=200, content_type="application/json", body=json.dumps(polished, ensure_ascii=False))
+            return
+        if url.endswith("/api/drafts/threads001/feedback"):
+            route.fulfill(status=200, content_type="application/json", body=json.dumps(updated_draft, ensure_ascii=False))
+            return
+        route.continue_()
+
+    page.route("**/*", handle_route)
+    page.get_by_role("button", name="Черновики").click()
+    page.wait_for_timeout(300)
+    page.get_by_text("Как мягко выйти из рабочего напряжения").first.click()
+    page.wait_for_timeout(300)
+
+    page.locator("#contentCaptionField").fill("Обновленный текст для Threads.")
+    page.locator("#contentEditorNotesField").fill("Сделать подачу мягче.")
+    page.get_by_role("button", name="Сохранить правки").click()
+    page.wait_for_timeout(350)
+
+    assert page.locator("#contentEditorNotesField").input_value() == "Сделать подачу мягче."
+    assert page.get_by_text("Сработало").count() >= 1
+
+    page.get_by_role("button", name="AI polish").click()
+    page.wait_for_timeout(350)
+    assert page.locator("#contentCaptionField").input_value() == "Отполированный текст для Threads."
+
+    page.get_by_role("button", name="Не сработало").click()
+    page.wait_for_timeout(350)
+    assert page.get_by_text("Не сработало").count() >= 1
+
+
+def test_keywords_detail_supports_add_and_remove(page):
+    updated_keywords = {
+        "items": [
+            {
+                "topic_idx": 0,
+                "name": "Расслабление",
+                "fields": {
+                    "kw_ru": ["расслабление", "пауза"],
+                    "kw_en": ["relaxation"],
+                    "tag_ru": ["#ритуал"],
+                    "tag_en": [],
+                },
+            }
+        ],
+        "field_labels": {
+            "kw_ru": "Ключи RU",
+            "kw_en": "Ключи EN",
+            "tag_ru": "Теги RU",
+            "tag_en": "Теги EN",
+        },
+    }
+
+    removed_keywords = {
+        "items": [
+            {
+                "topic_idx": 0,
+                "name": "Расслабление",
+                "fields": {
+                    "kw_ru": ["пауза"],
+                    "kw_en": ["relaxation"],
+                    "tag_ru": ["#ритуал"],
+                    "tag_en": [],
+                },
+            }
+        ],
+        "field_labels": updated_keywords["field_labels"],
+    }
+
+    def handle_route(route):
+        url = route.request.url
+        if url.endswith("/api/keywords/add"):
+            route.fulfill(status=200, content_type="application/json", body=json.dumps(updated_keywords, ensure_ascii=False))
+            return
+        if url.endswith("/api/keywords/remove"):
+            route.fulfill(status=200, content_type="application/json", body=json.dumps(removed_keywords, ensure_ascii=False))
+            return
+        route.continue_()
+
+    page.route("**/*", handle_route)
+    page.get_by_role("button", name="Ключи").click()
+    page.wait_for_timeout(300)
+    page.locator(".keyword-topic").first.click()
+    page.wait_for_timeout(300)
+
+    page.locator(".keyword-form input").first.fill("пауза")
+    page.get_by_role("button", name="Добавить").first.click()
+    page.wait_for_timeout(350)
+    assert page.get_by_text("Ключ добавлен").is_visible()
+    assert page.get_by_text("пауза").count() >= 1
+
+    chips_before_delete = page.locator(".keyword-chip").count()
+    page.evaluate(
+        """
+        () => {
+          window.Telegram = window.Telegram || {};
+          window.Telegram.WebApp = window.Telegram.WebApp || {};
+          window.Telegram.WebApp.showConfirm = (_message, callback) => callback(true);
+        }
+        """
+    )
+    page.locator(".keyword-chip button").first.click()
+    page.wait_for_timeout(350)
+    assert page.locator(".keyword-chip").count() == chips_before_delete - 1
 
 
 def test_tap_outside_textarea_dismisses_keyboard_focus(page):

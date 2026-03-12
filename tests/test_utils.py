@@ -1,6 +1,7 @@
 """Tests for utility functions: message splitting, dash fixing, topic/carousel parsing."""
 from __future__ import annotations
 
+import asyncio
 import json
 from pathlib import Path
 
@@ -100,6 +101,8 @@ from bot.agents.content import (
     parse_numbered_list,
 )
 from bot.agents.reels_agent import StoryboardFrame
+from bot.services.drafts_store import save_draft
+from bot.services.plans_store import save_plan
 
 
 def _parse_topics(raw: str) -> list[str]:
@@ -1066,6 +1069,71 @@ def miniapp_test_client(monkeypatch):
 class TestMiniAppApi:
     AUTH_HEADERS = {"X-Telegram-Init-Data": "user=%7B%22id%22%3A62912125%7D&hash=test"}
 
+    @pytest.mark.parametrize(
+        "path",
+        [
+            "/api/drafts?limit=10",
+            "/api/status",
+            "/api/plans?limit=10",
+            "/api/reels?limit=10",
+            "/api/keywords",
+        ],
+    )
+    def test_read_endpoints_require_auth(self, miniapp_test_client, path):
+        response = miniapp_test_client.get(path)
+
+        assert response.status_code == 403
+        assert response.json()["detail"] == "forbidden"
+
+    def test_detail_endpoints_require_auth(self, miniapp_test_client, monkeypatch, tmp_path):
+        import bot.services.plans_store as plans_store
+
+        monkeypatch.setattr(plans_store, "_PLANS_FILE", tmp_path / "plans.json")
+
+        content_draft = asyncio.run(
+            save_draft(
+                kind="threads",
+                topic="Тихий вечер",
+                source="/miniapp",
+                payload={"caption": "Тестовый текст"},
+            )
+        )
+        carousel_draft = asyncio.run(
+            save_draft(
+                kind="carousel",
+                topic="Карусель",
+                source="/miniapp",
+                payload={"slides": ["Первый", "Второй"], "images_ready": 0},
+            )
+        )
+        reels_draft = asyncio.run(
+            save_draft(
+                kind="reels",
+                topic="Рилс",
+                source="/miniapp",
+                payload={
+                    "scenario": "Сценарий",
+                    "storyboard": [{"timecode": "0-3 сек", "scene": "Кадр", "angle": "Крупный", "gemini_prompt": "prompt"}],
+                    "images_ready": 0,
+                },
+            )
+        )
+        plan = save_plan(
+            raw_text="Понедельник: Threads",
+            entries=[{"day_label": "Понедельник", "platform": "Threads", "format_label": "пост", "goal": "Доверие", "topic": "Тема", "angle": "Угол"}],
+        )
+
+        for path in [
+            f"/api/drafts/{content_draft.draft_id}",
+            f"/api/carousel/{carousel_draft.draft_id}",
+            f"/api/reels/{reels_draft.draft_id}",
+            f"/api/plans/{plan.plan_id}",
+        ]:
+            response = miniapp_test_client.get(path)
+
+            assert response.status_code == 403
+            assert response.json()["detail"] == "forbidden"
+
     def test_generate_content_creates_draft_and_detail(self, miniapp_test_client, monkeypatch):
         import miniapp_server
 
@@ -1268,6 +1336,7 @@ class TestMiniAppContentReview:
             cta="cta",
             hashtags="#tag",
             visual_prompt="warm visual",
+            editor_notes="note",
         ) is None
 
     async def test_polish_content_review_draft_returns_none_for_missing(self):
@@ -1701,6 +1770,62 @@ class TestMiniAppRussianLocale:
         assert "/api/reels/{draft_id}/storyboard/regenerate" in server_py
         assert "/api/reels/{draft_id}/frames/regenerate-all" in server_py
         assert "/api/reels/{draft_id}/frames/{frame_index}/fields" in server_py
+
+    def test_content_review_detail_supports_editing_polish_and_feedback(self):
+        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        server_py = Path("miniapp_server.py").read_text(encoding="utf-8")
+
+        assert "function isContentReviewKind" in app_js
+        assert "Редакторский review" in app_js
+        assert "Заметка редактора" in app_js
+        assert "Сохранить правки" in app_js
+        assert "AI polish" in app_js
+        assert "Результат публикации" in app_js
+        assert "Сработало" in app_js
+        assert "Не сработало" in app_js
+        assert "Сбросить" in app_js
+        assert "function saveContentReviewDraft" in app_js
+        assert "function polishContentDraft" in app_js
+        assert 'window.saveContentReviewDraft = saveContentReviewDraft;' in app_js
+        assert 'window.polishContentDraft = polishContentDraft;' in app_js
+        assert "/api/drafts/{draft_id}/content" in server_py
+        assert "/api/drafts/{draft_id}/content/polish" in server_py
+        assert "editor_notes" in server_py
+        assert ".content-review-form label > span" in app_css
+
+    def test_keywords_detail_supports_editing_and_ui_notices(self):
+        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        server_py = Path("miniapp_server.py").read_text(encoding="utf-8")
+
+        assert "function showUiNotice" in app_js
+        assert "function confirmAction" in app_js
+        assert "function openKeywordTopic" in app_js
+        assert "function addKeywordItem" in app_js
+        assert "function removeKeywordItem" in app_js
+        assert "Редактор ключей" in app_js
+        assert "Ключ добавлен" in app_js
+        assert "Ключ удален" in app_js
+        assert "tg?.showConfirm" in app_js
+        assert 'window.openKeywordTopic = openKeywordTopic;' in app_js
+        assert 'window.addKeywordItem = addKeywordItem;' in app_js
+        assert 'window.removeKeywordItem = removeKeywordItem;' in app_js
+        assert "/api/keywords/add" in server_py
+        assert "/api/keywords/remove" in server_py
+        assert ".ui-notice" in app_css
+        assert ".keyword-topic.active" in app_css
+
+    def test_primary_controls_use_comfortable_size_tokens(self):
+        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+
+        assert "min-height: 40px;" in app_css
+        assert "min-height: 44px;" in app_css
+        assert "width: 44px;" in app_css
+        assert "height: 44px;" in app_css
+        assert ".tab-button," in app_css
+        assert ".mode-button," in app_css
+        assert ".back-button," in app_css
 
     def test_draft_detail_supports_reject_and_delete_actions(self):
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")

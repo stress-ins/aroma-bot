@@ -14,6 +14,7 @@ const state = {
   plans: [],
   reels: [],
   selectedPlan: null,
+  selectedKeywordTopicIdx: null,
   selected: null,
   selectedReels: null,
   selectedFrameIndex: 0,
@@ -48,6 +49,7 @@ let carouselRefreshTimer = null;
 let swipeStart = null;
 let bootstrapWatchdogTimer = null;
 let appBootstrapped = false;
+let uiNoticeTimer = null;
 const carouselNoteSaveTimers = {};
 const reelsNoteSaveTimers = {};
 const reelsPromptSaveTimers = {};
@@ -266,6 +268,16 @@ function actionLabel(icon, text) {
   return `${uiIcon(icon)}<span>${escapeHtml(text)}</span>`;
 }
 
+function tagMarkup(label, tone = "neutral") {
+  const safeTone = String(tone || "neutral")
+    .replace(/[^a-z0-9_-]/gi, "")
+    .toLowerCase();
+  if (safeTone === "pending") {
+    return `<span class="tag tag-pending">${escapeHtml(label)}</span>`;
+  }
+  return `<span class="tag tag-${safeTone}">${escapeHtml(label)}</span>`;
+}
+
 function contentKindIcon(kind) {
   const glyphMap = {
     content: "✍️",
@@ -342,6 +354,22 @@ function renderPanelError(title, message) {
   `;
 }
 
+function showUiNotice(message, tone = "info") {
+  let notice = document.getElementById("uiNotice");
+  if (!notice) {
+    notice = document.createElement("div");
+    notice.id = "uiNotice";
+    notice.className = "ui-notice";
+    document.body.appendChild(notice);
+  }
+  notice.textContent = String(message || "");
+  notice.className = `ui-notice is-visible tone-${tone}`;
+  window.clearTimeout(uiNoticeTimer);
+  uiNoticeTimer = window.setTimeout(() => {
+    notice.classList.remove("is-visible");
+  }, 2400);
+}
+
 function renderDetailError(title, message, retryAction = "retryCurrentTab()") {
   return `
     <div class="detail-grid">
@@ -395,6 +423,34 @@ function draftGenerationLabel(draft) {
     return total ? `Ещё генерируется ${ready}/${total}` : "Ещё генерируется";
   }
   return "Ещё генерируется";
+}
+
+function isContentReviewKind(kind) {
+  const normalized = String(kind || "").trim().toLowerCase();
+  return normalized === "threads" || normalized === "instagram" || normalized === "telegram";
+}
+
+function planEntryTargetKind(entry = {}) {
+  const platform = String(entry.platform || "").trim().toLowerCase();
+  const formatLabel = String(entry.format_label || "").trim().toLowerCase();
+  if (platform.includes("reels") || formatLabel.includes("reels") || formatLabel.includes("рилс")) return "reels";
+  if (formatLabel.includes("карус") || formatLabel.includes("carousel")) return "carousel";
+  if (platform.includes("threads")) return "threads";
+  if (platform.includes("instagram")) return "instagram";
+  if (platform.includes("telegram")) return "telegram";
+  return "instagram";
+}
+
+function planEntryFormatLabel(entry = {}) {
+  const target = planEntryTargetKind(entry);
+  return kindLabel(target) || "Контент";
+}
+
+function relatedDraftsForEntry(plan = {}, entry = {}) {
+  const topic = String(entry.topic || "").trim();
+  const related = Array.isArray(plan.related_drafts) ? plan.related_drafts : [];
+  if (!topic) return [];
+  return related.filter((draft) => String(draft.topic || "").trim() === topic);
 }
 
 function slideNoteId(index) {
@@ -612,10 +668,55 @@ async function sendDraftToChat(draftId, button) {
   }, "Отправлено");
   const tg = window.Telegram?.WebApp;
   if (tg?.showAlert) tg.showAlert("Черновик отправлен в чат");
+  else showUiNotice("Черновик отправлен в чат", "success");
+}
+
+async function saveContentReviewDraft(draftId, button) {
+  const payload = {
+    topic: String(document.getElementById("contentTopicField")?.value || "").trim(),
+    angle: String(document.getElementById("contentAngleField")?.value || "").trim(),
+    hook: String(document.getElementById("contentHookField")?.value || "").trim(),
+    caption: String(document.getElementById("contentCaptionField")?.value || "").trim(),
+    cta: String(document.getElementById("contentCtaField")?.value || "").trim(),
+    hashtags: String(document.getElementById("contentHashtagsField")?.value || "").trim(),
+    visual_prompt: String(document.getElementById("contentVisualPromptField")?.value || "").trim(),
+    editor_notes: String(document.getElementById("contentEditorNotesField")?.value || "").trim(),
+  };
+  await withButtonFeedback(button, "Сохраняю...", async () => {
+    const draft = await fetchJson(`/api/drafts/${draftId}/content`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    mergeDraftIntoState(draft);
+    renderDraftList();
+    renderDraftDetail(draft);
+  }, "Сохранено");
+}
+
+async function polishContentDraft(draftId, button) {
+  await withButtonFeedback(button, "Полирую...", async () => {
+    const draft = await fetchJson(`/api/drafts/${draftId}/content/polish`, {
+      method: "POST",
+      body: "{}",
+    });
+    mergeDraftIntoState(draft);
+    renderDraftList();
+    renderDraftDetail(draft);
+  }, "Готово");
+}
+
+function confirmAction(message) {
+  const tg = window.Telegram?.WebApp;
+  if (tg?.showConfirm) {
+    return new Promise((resolve) => {
+      tg.showConfirm(message, (confirmed) => resolve(Boolean(confirmed)));
+    });
+  }
+  return Promise.resolve(window.confirm(message));
 }
 
 async function deleteDraft(draftId, kind = "drafts", button) {
-  const confirmed = window.confirm("Удалить этот черновик?");
+  const confirmed = await confirmAction("Удалить этот черновик?");
   if (!confirmed) return;
   if (button instanceof HTMLElement) {
     await withButtonFeedback(button, "Удаляю...", async () => {
@@ -898,6 +999,37 @@ function feedbackLabel(value) {
   return RU_FEEDBACK_LABELS[normalized] || String(value || "");
 }
 
+function statusTone(value) {
+  const normalized = String(value || "").toLowerCase();
+  if (normalized === "approved" || normalized === "published") return "status-positive";
+  if (normalized === "rejected") return "status-negative";
+  if (normalized === "in_review") return "status-review";
+  return "status-neutral";
+}
+
+function feedbackTone(value) {
+  const normalized = String(value || "").toLowerCase();
+  if (normalized === "worked") return "feedback-worked";
+  if (normalized === "missed") return "feedback-missed";
+  return "feedback-neutral";
+}
+
+function sourceTone(value) {
+  const normalized = String(value || "").toLowerCase();
+  if (normalized === "/plan") return "source-plan";
+  if (normalized === "/content") return "source-content";
+  if (normalized === "/miniapp") return "source-miniapp";
+  return "source-neutral";
+}
+
+function formatPlanDate(value) {
+  const text = String(value || "").trim();
+  if (!text) return "";
+  const date = new Date(text);
+  if (Number.isNaN(date.getTime())) return text;
+  return date.toLocaleDateString("ru-RU");
+}
+
 function setEmptyState(hidden, text = "Ничего не найдено.") {
   elements.emptyState.hidden = hidden;
   elements.emptyState.textContent = text;
@@ -920,7 +1052,7 @@ function hideBootFallback() {
 
 function showRequestError(prefix, error) {
   const message = error?.message || String(error || "unknown_error");
-  alert(`${prefix}: ${message}`);
+  showUiNotice(`${prefix}: ${message}`, "error");
 }
 
 function showRuntimeWarning(prefix, error) {
@@ -961,6 +1093,55 @@ async function copyText(value) {
   }
   const tg = window.Telegram?.WebApp;
   if (tg?.showAlert) tg.showAlert("Промпт скопирован");
+  else showUiNotice("Промпт скопирован", "success");
+}
+
+function keywordFieldEntries(topic) {
+  const labels = state.keywords?.field_labels || {};
+  const fields = topic?.fields || {};
+  return Object.entries(fields).map(([field, items]) => ({
+    field,
+    label: labels[field] || field,
+    items: Array.isArray(items) ? items : [],
+  }));
+}
+
+async function addKeywordItem(topicIdx, field, form, button) {
+  const input = form?.querySelector("input[name='word']");
+  const word = String(input?.value || "").trim();
+  if (!word) {
+    input?.focus();
+    return;
+  }
+  await withButtonFeedback(button, "Добавляю...", async () => {
+    const payload = await fetchJson("/api/keywords/add", {
+      method: "POST",
+      body: JSON.stringify({ topic_idx: topicIdx, field, word }),
+    });
+    state.keywords = payload;
+    renderKeywords();
+  }, "Добавлено");
+  showUiNotice("Ключ добавлен", "success");
+}
+
+async function removeKeywordItem(topicIdx, field, word, button) {
+  const confirmed = await confirmAction(`Удалить ключ "${word}"?`);
+  if (!confirmed) return;
+  await withButtonFeedback(button, "Удаляю...", async () => {
+    const payload = await fetchJson("/api/keywords/remove", {
+      method: "POST",
+      body: JSON.stringify({ topic_idx: topicIdx, field, word }),
+    });
+    state.keywords = payload;
+    renderKeywords();
+  }, "Удалено");
+  showUiNotice("Ключ удален", "success");
+}
+
+function openKeywordTopic(topicIdx) {
+  state.selectedKeywordTopicIdx = Number(topicIdx);
+  renderKeywords();
+  enterDetailView();
 }
 
 function syncMobileNavigation() {
@@ -1639,9 +1820,9 @@ function renderDraftList() {
       <h3 class="draft-topic">${escapeHtml(d.topic)}</h3>
       <div class="draft-preview">${escapeHtml(stripMarkdown(d.preview || "Без превью"))}</div>
       <div class="draft-meta">
-        <span class="tag">${escapeHtml(statusLabel(d.status))}</span>
-        ${d.generation_pending ? `<span class="tag tag-pending">${escapeHtml(draftGenerationLabel(d))}</span>` : ""}
-        <span class="tag">${escapeHtml(kindLabel(d.source))}</span>
+        ${tagMarkup(statusLabel(d.status), statusTone(d.status))}
+        ${d.generation_pending ? tagMarkup(draftGenerationLabel(d), "pending") : ""}
+        ${tagMarkup(kindLabel(d.source), sourceTone(d.source))}
       </div>
     </article>
   `).join("");
@@ -1671,20 +1852,95 @@ async function openPlan(id) {
   enterDetailView();
   const p = await fetchJson(`/api/plans/${id}`);
   state.selectedPlan = p;
+  state.plans = state.plans.map((item) => item.plan_id === p.plan_id ? { ...item, ...p } : item);
   renderPlanDetail(p);
   enterDetailView();
+}
+
+async function generateDraftFromPlan(planId, entryIndex, button) {
+  const apply = async () => {
+    const payload = await fetchJson(`/api/plans/${planId}/generate`, {
+      method: "POST",
+      body: JSON.stringify({ entry_index: entryIndex }),
+    });
+    const draft = payload?.draft || null;
+    if (draft?.kind === "reels") {
+      state.reels = [draft, ...state.reels.filter((item) => item.draft_id !== draft.draft_id)];
+    } else if (draft?.draft_id) {
+      upsertDraftSummary(draftSummaryFromDraft(draft));
+    }
+    await loadPlans();
+    await openPlan(planId);
+    return draft;
+  };
+  const draft = button instanceof HTMLElement
+    ? await withButtonFeedback(button, "Создаю...", apply, "Создано")
+    : await apply();
+  if (draft?.draft_id) {
+    const tg = window.Telegram?.WebApp;
+    if (tg?.showAlert) tg.showAlert("Черновик создан и привязан к плану");
+  }
+}
+
+async function openPlanRelatedDraft(kind, draftId) {
+  if (!draftId) return;
+  if (kind === "reels") {
+    setTab("reels");
+    await loadReels();
+    await openReels(draftId);
+    return;
+  }
+  setTab("drafts");
+  await loadDrafts();
+  await openDraft(draftId);
 }
 
 function renderDraftDetail(d) {
   const p = d.payload || {};
   const mainText = p.caption || p.scenario || "";
+  const reviewActions = isContentReviewKind(d.kind)
+    ? `
+      <section class="section">
+        <h3>${uiIcon("text")}Редакторский review</h3>
+        <div class="content-review-form">
+          <label><span>Тема</span><textarea id="contentTopicField" placeholder="Тема draft">${escapeHtml(d.topic || "")}</textarea></label>
+          <label><span>Angle</span><textarea id="contentAngleField" placeholder="Опорный angle">${escapeHtml(p.angle || "")}</textarea></label>
+          <label><span>Hook</span><textarea id="contentHookField" placeholder="Хук">${escapeHtml(p.hook || "")}</textarea></label>
+          <label><span>Основной текст</span><textarea id="contentCaptionField" placeholder="Текст поста">${escapeHtml(p.caption || "")}</textarea></label>
+          <label><span>CTA</span><textarea id="contentCtaField" placeholder="Призыв к действию">${escapeHtml(p.cta || "")}</textarea></label>
+          <label><span>Hashtags</span><textarea id="contentHashtagsField" placeholder="#теги">${escapeHtml(p.hashtags || "")}</textarea></label>
+          <label><span>Visual prompt</span><textarea id="contentVisualPromptField" placeholder="Промпт для визуала">${escapeHtml(p.visual_prompt || "")}</textarea></label>
+          <label><span>Заметка редактора</span><textarea id="contentEditorNotesField" placeholder="Что поправить, на что обратить внимание">${escapeHtml(p.editor_notes || "")}</textarea></label>
+          <div class="actions-row">
+            <button class="primary-button" type="button" onclick="saveContentReviewDraft('${d.draft_id}', this)">${actionLabel("approve", "Сохранить правки")}</button>
+            <button class="secondary-button" type="button" onclick="polishContentDraft('${d.draft_id}', this)">${actionLabel("sparkle", "AI polish")}</button>
+          </div>
+        </div>
+      </section>
+      <section class="section">
+        <h3>${uiIcon("chat")}Результат публикации</h3>
+        <div class="draft-meta">
+          <span class="tag">${escapeHtml(feedbackLabel(d.feedback))}</span>
+        </div>
+        <div class="actions-row">
+          <button class="secondary-button" type="button" onclick="updateDraft('feedback', {feedback:'worked'}, this)">${actionLabel("approve", "Сработало")}</button>
+          <button class="secondary-button" type="button" onclick="updateDraft('feedback', {feedback:'missed'}, this)">${actionLabel("reject", "Не сработало")}</button>
+          <button class="secondary-button" type="button" onclick="updateDraft('feedback', {feedback:''}, this)">${actionLabel("back", "Сбросить")}</button>
+        </div>
+      </section>
+    `
+    : "";
   elements.draftDetail.innerHTML = `
     <div class="detail-grid">
       ${renderBackButton()}
       <div class="detail-top">
         <p class="eyebrow">${contentKindIcon(d.kind)}<span>${escapeHtml(kindLabel(d.kind))} • ${escapeHtml(kindLabel(d.source))}</span></p>
         <h2 class="detail-title">${escapeHtml(d.topic)}</h2>
-        <div class="draft-meta"><span class="tag">${escapeHtml(statusLabel(d.status))}</span></div>
+        <div class="draft-meta">
+          ${tagMarkup(statusLabel(d.status), statusTone(d.status))}
+          ${isContentReviewKind(d.kind) ? tagMarkup(feedbackLabel(d.feedback), feedbackTone(d.feedback)) : ""}
+          ${tagMarkup(kindLabel(d.source), sourceTone(d.source))}
+        </div>
         <div class="actions-row">
           <button class="secondary-button" onclick="updateDraft('status', {status:'approved'}, this)">${actionLabel("approve", "Согласовать")}</button>
           <button class="secondary-button" onclick="updateDraft('status', {status:'rejected'}, this)">${actionLabel("reject", "Не согласовано")}</button>
@@ -1698,6 +1954,7 @@ function renderDraftDetail(d) {
       ${payloadSection("Угол", p.angle)}
       ${payloadSection("Текст", mainText)}
       ${payloadSection("CTA", p.cta)}
+      ${reviewActions}
       ${renderSlides(d.draft_id, p.slides, p.img_prompts, p.slide_images, p.img_prompt_notes)}
       ${promptSection("Промпт для изображения", p.visual_prompt)}
     </div>
@@ -1746,6 +2003,7 @@ function setTab(t) {
   state.tab = t; 
   state.mobileView = "list"; 
   state.selectedCreateTool = null; 
+  if (t !== "keywords" && t !== "settings") state.selectedKeywordTopicIdx = null;
   elements.settingsButton?.classList.toggle("active", state.mode === "content" && t === "settings");
   
   if (HANDBOOK_CATEGORY_META[t]) {
@@ -1888,6 +2146,8 @@ window.openReference = openReference;
 window.copyText = copyText;
 window.openReels = openReels;
 window.openPlan = openPlan;
+window.generateDraftFromPlan = generateDraftFromPlan;
+window.openPlanRelatedDraft = openPlanRelatedDraft;
 window.updateDraft = async (action, payload, button) => {
   const currentDraftId = state.draftId || state.selectedReels?.draft_id || "";
   if (!currentDraftId) return;
@@ -1921,6 +2181,11 @@ window.saveReelsFrameNote = saveReelsFrameNote;
 window.regenerateReelsFrame = regenerateReelsFrame;
 window.handleReelsFramePromptInput = handleReelsFramePromptInput;
 window.handleReelsFrameNoteInput = handleReelsFrameNoteInput;
+window.saveContentReviewDraft = saveContentReviewDraft;
+window.polishContentDraft = polishContentDraft;
+window.openKeywordTopic = openKeywordTopic;
+window.addKeywordItem = addKeywordItem;
+window.removeKeywordItem = removeKeywordItem;
 window.openSettingsSection = async (section) => {
   state.settingsSection = section === "keywords" ? "keywords" : "status";
   if (state.tab !== "settings") {
@@ -1939,6 +2204,9 @@ function renderInbox() {
       <div class="draft-kind">${contentKindIcon(i.kind)}<span>${escapeHtml(kindLabel(i.kind))}</span></div>
       <h4 class="draft-topic">${escapeHtml(i.topic)}</h4>
       <div class="draft-preview">${escapeHtml(stripMarkdown(i.preview || ""))}</div>
+      <div class="draft-meta">
+        ${tagMarkup(kindLabel(i.kind), "source-content")}
+      </div>
     </article>
   `).join("");
   syncMobileNavigation();
@@ -1961,12 +2229,21 @@ function renderStatus() {
 
 function renderPlans() {
   elements.listTitle.textContent = "Планы";
+  elements.draftCount.textContent = `${state.plans.length} шт`;
+  setEmptyState(state.plans.length > 0, "Планы пока не собраны.");
   elements.draftList.innerHTML = state.plans.map(p => `
-    <article class="plan-card" onclick="openPlan('${p.plan_id}')">
+    <article class="plan-card${p.plan_id === state.selectedPlan?.plan_id ? " active" : ""}" onclick="openPlan('${p.plan_id}')">
       <h3 class="draft-topic">${escapeHtml(p.plan_id)}</h3>
       <div class="draft-preview">${escapeHtml(stripMarkdown(p.raw_text || ""))}</div>
+      <div class="draft-meta">
+        ${tagMarkup(`${(p.entries || []).length} карточек`, "source-plan")}
+        ${tagMarkup(`${(p.related_drafts || []).length} черновиков`, "status-review")}
+      </div>
     </article>
   `).join("");
+  if (!state.selectedPlan) {
+    elements.draftDetail.innerHTML = `${renderBackButton()}<div class="detail-empty">Откройте план, чтобы создать черновик по одной из карточек.</div>`;
+  }
   syncMobileNavigation();
 }
 
@@ -1989,8 +2266,9 @@ function renderReelsDetail(r) {
         <p class="eyebrow">${uiIcon("reel")}<span>Рилсы • ${escapeHtml(r.source || "/miniapp")}</span></p>
         <h2 class="detail-title">${escapeHtml(r.topic)}</h2>
         <div class="draft-meta">
-          <span class="tag">${escapeHtml(statusLabel(r.status || "draft"))}</span>
-          <span class="tag">${escapeHtml(`${r.images_ready || 0}/${r.frame_count || 0} кадров`)}</span>
+          ${tagMarkup(statusLabel(r.status || "draft"), statusTone(r.status || "draft"))}
+          ${tagMarkup(`${r.images_ready || 0}/${r.frame_count || 0} кадров`, "progress")}
+          ${tagMarkup(kindLabel(r.source || "/miniapp"), sourceTone(r.source || "/miniapp"))}
         </div>
         <div class="actions-row">
           <button class="secondary-button" type="button" onclick="saveReelsScenario('${r.draft_id}', this)">${actionLabel("text", "Сохранить концепцию")}</button>
@@ -2018,25 +2296,114 @@ function renderReelsDetail(r) {
 }
 
 function renderPlanDetail(p) {
+  const entries = Array.isArray(p.entries) ? p.entries : [];
+  const relatedDrafts = Array.isArray(p.related_drafts) ? p.related_drafts : [];
   elements.draftDetail.innerHTML = `
     <div class="detail-grid">
       ${renderBackButton()}
-      <h2 class="detail-title">${escapeHtml(p.plan_id)}</h2>
-      <div class="detail-preview detail-markdown">${renderMarkdown(p.raw_text)}</div>
+      <div class="detail-top">
+        <p class="eyebrow">${uiIcon("card")}<span>План • ${escapeHtml(formatPlanDate(p.created_at) || p.plan_id)}</span></p>
+        <h2 class="detail-title">${escapeHtml(p.plan_id)}</h2>
+        <div class="draft-meta">
+          ${tagMarkup(`${entries.length} карточек`, "source-plan")}
+          ${tagMarkup(`${relatedDrafts.length} связанных черновиков`, "status-review")}
+        </div>
+      </div>
+      <section class="section">
+        <h3>${uiIcon("text")}Краткое описание плана</h3>
+        <div class="detail-preview detail-markdown">${renderMarkdown(p.raw_text)}</div>
+      </section>
+      <section class="section">
+        <h3>${uiIcon("slides")}Карточки плана</h3>
+        <div class="plan-entries">
+          ${entries.map((entry, index) => {
+            const related = relatedDraftsForEntry(p, entry);
+            return `
+              <article class="plan-entry-card">
+                <div class="plan-entry-top">
+                  <div>
+                    <strong class="plan-entry-title">${escapeHtml(entry.topic || `Карточка ${index + 1}`)}</strong>
+                    <div class="draft-meta">
+                      ${entry.day_label ? tagMarkup(entry.day_label, "status-neutral") : ""}
+                      ${entry.platform ? tagMarkup(entry.platform, "source-content") : ""}
+                      ${entry.goal ? tagMarkup(entry.goal, "status-review") : ""}
+                      ${tagMarkup(planEntryFormatLabel(entry), "source-plan")}
+                    </div>
+                  </div>
+                  <button class="primary-button" type="button" onclick="generateDraftFromPlan('${p.plan_id}', ${index}, this)">${actionLabel("sparkle", `Создать ${planEntryFormatLabel(entry)}`)}</button>
+                </div>
+                ${entry.angle ? `<div class="detail-preview">${escapeHtml(entry.angle)}</div>` : ""}
+                ${related.length ? `
+                  <div class="related-drafts-inline">
+                    ${related.map((draft) => `
+                      <button class="secondary-button" type="button" onclick="openPlanRelatedDraft('${escapeHtml(draft.kind)}', '${escapeHtml(draft.draft_id)}')">${actionLabel(draft.kind === "reels" ? "reel" : "eye", `Открыть ${kindLabel(draft.kind)}`)}</button>
+                    `).join("")}
+                  </div>
+                ` : `
+                  <div class="plan-entry-hint">Черновик по этой карточке ещё не создан.</div>
+                `}
+              </article>
+            `;
+          }).join("")}
+        </div>
+      </section>
     </div>
   `;
 }
 
 function renderKeywords() {
   const inSettings = state.tab === "settings";
+  const topics = state.keywords?.items || [];
+  const selectedTopic = topics.find((topic) => topic.topic_idx === state.selectedKeywordTopicIdx) || null;
   elements.listTitle.textContent = inSettings ? "Настройки" : "Ключи";
-  elements.draftCount.textContent = `${(state.keywords?.items || []).length} тем`;
+  elements.draftCount.textContent = `${topics.length} тем`;
+  setEmptyState(topics.length > 0, "Темы пока не загружены.");
   elements.draftList.innerHTML = `
     ${inSettings ? renderSettingsSwitcher("keywords") : ""}
-    ${(state.keywords?.items || []).map(t => `
-    <article class="keyword-topic"><h3>${escapeHtml(t.name)}</h3></article>
+    ${topics.map(t => `
+    <article class="keyword-topic${t.topic_idx === state.selectedKeywordTopicIdx ? " active" : ""}" onclick="openKeywordTopic(${t.topic_idx})">
+      <h3>${escapeHtml(t.name)}</h3>
+      <div class="draft-meta">
+        <span class="tag">${escapeHtml(`${Object.values(t.fields || {}).reduce((sum, items) => sum + (Array.isArray(items) ? items.length : 0), 0)} ключей`)}</span>
+      </div>
+    </article>
   `).join("")}
   `;
-  elements.draftDetail.innerHTML = renderBackButton() + `<div class="detail-empty">Ключевые темы и опорные запросы.</div>`;
+  if (!selectedTopic) {
+    elements.draftDetail.innerHTML = renderBackButton() + `<div class="detail-empty">Откройте тему, чтобы управлять ключами и тегами.</div>`;
+    syncMobileNavigation();
+    return;
+  }
+  elements.draftDetail.innerHTML = `
+    <div class="detail-grid">
+      ${renderBackButton()}
+      <div class="detail-top">
+        <p class="eyebrow">${uiIcon("text")}<span>Ключи</span></p>
+        <h2 class="detail-title">${escapeHtml(selectedTopic.name)}</h2>
+      </div>
+      <section class="section">
+        <h3>${uiIcon("card")}Редактор ключей</h3>
+        <div class="keyword-fields">
+          ${keywordFieldEntries(selectedTopic).map(({ field, label, items }) => `
+            <div class="keyword-field">
+              <strong>${escapeHtml(label)}</strong>
+              <div class="keyword-items">
+                ${items.map((item) => `
+                  <span class="keyword-chip">
+                    <span>${escapeHtml(item)}</span>
+                    <button type="button" aria-label="Удалить ${escapeHtml(item)}" onclick='removeKeywordItem(${selectedTopic.topic_idx}, ${JSON.stringify(String(field))}, ${JSON.stringify(String(item))}, this)'>×</button>
+                  </span>
+                `).join("") || `<span class="plan-entry-hint">Пока пусто.</span>`}
+              </div>
+              <form class="keyword-form" onsubmit='event.preventDefault(); addKeywordItem(${selectedTopic.topic_idx}, ${JSON.stringify(String(field))}, this, this.querySelector("button"));'>
+                <input name="word" type="text" placeholder="Добавить значение" />
+                <button class="secondary-button" type="submit">${actionLabel("plus", "Добавить")}</button>
+              </form>
+            </div>
+          `).join("")}
+        </div>
+      </section>
+    </div>
+  `;
   syncMobileNavigation();
 }
