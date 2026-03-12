@@ -458,7 +458,12 @@ _IMG_PROMPTS = [
 ]
 
 
-from bot.agents.carousel_editor import _EDITOR_PROMPT as _CAROUSEL_EDITOR_PROMPT, edit_carousel_sync
+from bot.agents.carousel_editor import (
+    _EDITOR_PROMPT as _CAROUSEL_EDITOR_PROMPT,
+    _build_editor_prompt,
+    _sanitize_slide_text,
+    edit_carousel_sync,
+)
 
 
 def _parse_editor_output(raw: str) -> list[str]:
@@ -499,6 +504,23 @@ class TestCarouselEditor:
         assert "мягко, понятно и по-человечески" in lowered
         assert "не руби фразы ради эффекта" in lowered
         assert "понятно, мягко, логично" in lowered
+
+    def test_editor_prompt_bans_awkward_phrases_and_dm(self):
+        rendered = _build_editor_prompt("тема", "Слайд 1: тест").lower()
+        assert "не используй эти фразы" in rendered
+        assert "голова не отключается" in rendered
+        assert "кажется, что ничего не помогает" in rendered
+        assert "земляная база" in rendered
+        assert "в дм" in rendered
+        assert "в личные сообщения" in rendered
+
+    def test_slide_sanitizer_replaces_dm_and_awkward_phrases(self):
+        text = "Если интересно, напиши в ДМ. Твоему телу нужен сигнал, а не земляная база."
+        result = _sanitize_slide_text(text)
+        assert "в ДМ" not in result
+        assert "в личные сообщения" in result
+        assert "твоему телу нужен сигнал" not in result.lower()
+        assert "земляная база" not in result.lower()
 
 
 class TestBuildPptx:
@@ -724,6 +746,32 @@ class TestGenerateSlideImagePrompts:
         result = c._generate_slide_image_prompts_sync(self._SLIDES_6, "тема")
         for p in result:
             assert "--style atmospheric" in p
+
+    def test_prompt_includes_forbidden_visual_motifs(self, monkeypatch):
+        import bot.handlers.carousel as c
+        import anthropic as _anthropic
+
+        captured: dict[str, str] = {}
+
+        class _FakeClient:
+            def __init__(self, **kw):
+                pass
+
+            class messages:
+                @staticmethod
+                def create(*a, **kw):
+                    captured["prompt"] = kw["messages"][0]["content"]
+                    class _R:
+                        content = [type("c", (), {"text": "IMG1: one\nIMG2: two\nIMG3: three\nIMG4: four\nIMG5: five\nIMG6: six"})()]
+                    return _R()
+
+        monkeypatch.setattr(c, "settings", type("s", (), {"anthropic_api_key": "x"})())
+        monkeypatch.setattr(_anthropic, "Anthropic", lambda **kw: _FakeClient())
+        c._generate_slide_image_prompts_sync(self._SLIDES_6, "тема")
+        lowered = captured["prompt"].lower()
+        assert "also forbidden everywhere" in lowered
+        assert "hands joined together" in lowered
+        assert "prayer pose" in lowered
 
 
 # ---------------------------------------------------------------------------
