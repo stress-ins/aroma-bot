@@ -28,6 +28,9 @@ from bot.services.miniapp_content_review import (
     update_content_review_draft,
 )
 from bot.services.miniapp_references import enrich_reference_card, get_reference_card, list_reference_cards, update_reference_card
+from db.models import AromaCardModel
+from db.session import AsyncSessionLocal
+from sqlalchemy import select as sa_select
 from bot.services.miniapp_plan_actions import normalize_plan_format, normalize_plan_goal
 from bot.services.reels_assets import ASSETS_DIR, populate_reels_frame_assets, regenerate_reels_frame_asset
 from bot.services.carousel_assets import (
@@ -338,10 +341,39 @@ async def _complete_carousel_generation(draft_id: str, topic: str) -> None:
         )
 
 
+async def _build_aroma_reference_context() -> str:
+    """Return compact reference text for all aroma cards to inject into generation prompts."""
+    try:
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                sa_select(AromaCardModel).where(AromaCardModel.category == "aromas")
+            )
+            cards = result.scalars().all()
+        lines = []
+        for card in sorted(cards, key=lambda c: c.name):
+            payload = card.payload or {}
+            key = str(payload.get("key", "") or "").strip()
+            psych = str(payload.get("psychological_properties", "") or "").strip()[:120]
+            desc = str(payload.get("description", "") or "").strip()[:100]
+            detail = psych or desc
+            line = f"- {card.name}"
+            if key:
+                line += f" [{key}]"
+            if detail:
+                line += f": {detail}"
+            lines.append(line)
+        return "\n".join(lines)
+    except Exception:
+        return ""
+
+
 async def _complete_reels_generation(draft_id: str, topic: str) -> None:
     try:
         loop = asyncio.get_running_loop()
-        scenario = await loop.run_in_executor(None, generate_reels_scenario_sync, topic)
+        reference_context = await _build_aroma_reference_context()
+        scenario = await loop.run_in_executor(
+            None, generate_reels_scenario_sync, topic, reference_context
+        )
         await _set_generation_state(
             draft_id,
             pending=True,
@@ -921,7 +953,10 @@ async def plan_generate(plan_id: str, payload: PlanGeneratePayload, _: None = De
 
     if target == "reels":
         loop = asyncio.get_running_loop()
-        scenario = await loop.run_in_executor(None, generate_reels_scenario_sync, topic)
+        reference_context = await _build_aroma_reference_context()
+        scenario = await loop.run_in_executor(
+            None, generate_reels_scenario_sync, topic, reference_context
+        )
         frames = await loop.run_in_executor(None, generate_reels_director_sync, topic, scenario)
         saved = await save_draft(
             kind="reels",

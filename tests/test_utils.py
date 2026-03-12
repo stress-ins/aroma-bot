@@ -9,6 +9,14 @@ import pytest
 from fastapi.testclient import TestClient
 
 
+def _miniapp_static_text(*relative_parts: str) -> str:
+    return Path("miniapp", "static", *relative_parts).read_text(encoding="utf-8")
+
+
+def _miniapp_js_bundle() -> str:
+    return " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
+
+
 # ---------------------------------------------------------------------------
 # _split_message (commands.py)
 # ---------------------------------------------------------------------------
@@ -1316,6 +1324,69 @@ class TestMiniAppApi:
         assert detail.json()["generation_pending"] is True
         assert detail.json()["frame_count"] == 0
 
+    def test_reels_storyboard_regenerate_marks_images_pending_and_schedules_refresh(self, miniapp_test_client, monkeypatch):
+        import miniapp_server
+
+        state_calls = []
+        background_runs = []
+
+        async def _fake_regenerate_reels_storyboard(draft_id):
+            return {"draft_id": draft_id, "kind": "reels"}
+
+        async def _fake_set_generation_state(draft_id, *, pending, stage="", message="", error=""):
+            state_calls.append(
+                {
+                    "draft_id": draft_id,
+                    "pending": pending,
+                    "stage": stage,
+                    "message": message,
+                    "error": error,
+                }
+            )
+
+        async def _fake_complete_reels_regenerate_all(draft_id):
+            background_runs.append(draft_id)
+
+        async def _fake_serialize_reels_draft(draft_id):
+            return {
+                "draft_id": draft_id,
+                "kind": "reels",
+                "generation_pending": True,
+                "generation_stage": "images",
+                "generation_message": "Генерирую кадры для рилса.",
+                "frame_count": 4,
+                "images_ready": 0,
+                "frames": [],
+            }
+
+        monkeypatch.setattr(miniapp_server, "regenerate_reels_storyboard", _fake_regenerate_reels_storyboard)
+        monkeypatch.setattr(miniapp_server, "_set_generation_state", _fake_set_generation_state)
+        monkeypatch.setattr(miniapp_server, "_complete_reels_regenerate_all", _fake_complete_reels_regenerate_all)
+        monkeypatch.setattr(miniapp_server, "serialize_reels_draft", _fake_serialize_reels_draft)
+
+        response = miniapp_test_client.post(
+            "/api/reels/reels001/storyboard/regenerate",
+            headers=self.AUTH_HEADERS,
+            json={},
+        )
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["draft_id"] == "reels001"
+        assert payload["generation_pending"] is True
+        assert payload["generation_stage"] == "images"
+        assert payload["generation_message"] == "Генерирую кадры для рилса."
+        assert state_calls == [
+            {
+                "draft_id": "reels001",
+                "pending": True,
+                "stage": "images",
+                "message": "Генерирую кадры для рилса.",
+                "error": "",
+            }
+        ]
+        assert background_runs == ["reels001"]
+
     def test_generate_plan_returns_entries(self, miniapp_test_client, monkeypatch):
         import miniapp_server
         import analytics.aggregator
@@ -1791,34 +1862,38 @@ class TestMiniAppRussianLocale:
         assert "touch-action: manipulation;" in app_css
 
     def test_mobile_detail_swipe_back_allows_full_width_swipe_and_skips_inputs(self):
-        app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
+        shell_js = _miniapp_static_text("js", "shell.js")
         app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
 
-        assert "function bindSwipeBack" in app_js
-        assert "function animateBackToList" in app_js
-        assert "isInteractiveTarget(event.target)" in app_js
-        assert 'closest("textarea, input, select, button, a, [contenteditable=\'true\']")' in app_js
-        assert "touch.clientX > 36" not in app_js
-        assert "dx > 72" in app_js
-        assert "swipe-back-exit" in app_js
+        assert "function bindSwipeBack" in shell_js
+        assert "function animateBackToList" in shell_js
+        assert "isInteractiveTarget(event.target)" in shell_js
+        assert 'closest("textarea, input, select, button, a, [contenteditable=\'true\']")' in shell_js
+        assert "const edgeSwipe = touch.clientX < 44;" in shell_js
+        assert "touch.clientX > 36" not in shell_js
+        assert "dx > 72" in shell_js
+        assert "swipe-back-exit" in shell_js
         assert ".detail-panel.swipe-back-exit" in app_css
         assert ".detail-panel.swipe-back-armed" in app_css
 
     def test_bootstrap_guard_shows_visible_fallback_instead_of_blank_screen(self):
-        app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
+        app_js = _miniapp_static_text("app.js")
+        runtime_js = _miniapp_static_text("js", "runtime.js")
         app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
 
         assert "function showBootFallback" in app_js
         assert "function hideBootFallback" in app_js
         assert "bootstrapWatchdogTimer" in app_js
-        assert 'window.addEventListener("error"' in app_js
-        assert 'window.addEventListener("unhandledrejection"' in app_js
+        assert "timers.setBootstrapWatchdog" in runtime_js
+        assert "timers.getBootstrapWatchdog" in runtime_js
+        assert 'window.addEventListener("error"' in runtime_js
+        assert 'window.addEventListener("unhandledrejection"' in runtime_js
         assert ".boot-fallback" in app_css
         assert ".boot-fallback.is-error" in app_css
-        assert "async function loadInitialScreen()" in app_js
-        assert 'await loadInitialScreen();' in app_js
-        assert 'if (!appBootstrapped) {' in app_js
-        assert 'appState.setBootstrapped(true)' in app_js
+        assert "async function loadInitialScreen()" in runtime_js
+        assert 'await loadInitialScreen();' in runtime_js
+        assert 'if (!appState.isBootstrapped()) {' in runtime_js
+        assert 'appState.setBootstrapped(true)' in runtime_js
 
     def test_handbook_has_all_reference_tabs(self):
         app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
@@ -1874,12 +1949,12 @@ class TestMiniAppRussianLocale:
         assert "flex: 1 1 100%;" in app_css
 
     def test_swipe_back_ignores_text_selection_and_selectable_copy(self):
-        app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
+        shell_js = _miniapp_static_text("js", "shell.js")
 
-        assert "function isSelectableTextTarget" in app_js
-        assert "function hasActiveTextSelection" in app_js
-        assert 'target.closest(".detail-preview, .detail-markdown, .draft-preview, .draft-topic, .detail-title, .section")' in app_js
-        assert "hasActiveTextSelection()" in app_js
+        assert "function isSelectableTextTarget" in shell_js
+        assert "function hasActiveTextSelection" in shell_js
+        assert 'target.closest(".detail-preview, .detail-markdown, .draft-preview, .draft-topic, .detail-title, .section")' in shell_js
+        assert "hasActiveTextSelection()" in shell_js
 
     def test_draft_cards_have_stronger_readability_styles(self):
         app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
@@ -1890,6 +1965,15 @@ class TestMiniAppRussianLocale:
         assert "font-size: 17px;" in app_css
         assert "font-size: 18px;" in app_css
         assert "🎬" in app_js
+
+    def test_telegram_dark_theme_uses_body_class_for_bottom_nav(self):
+        app_js = _miniapp_static_text("app.js")
+        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+
+        assert 'document.body.classList.toggle("tg-theme-dark", tg.colorScheme === "dark");' in app_js
+        assert "body.tg-theme-dark .bottom-tab-bar-inner" in app_css
+        assert ".concept-card .draft-preview" in app_css
+        assert "color: inherit;" in app_css
         assert "🖼️" in app_js
         assert "✍️" in app_js
 
@@ -2202,30 +2286,35 @@ class TestMiniAppRussianLocale:
         assert ".guided-state-copy" in app_css
         assert ".guided-state-actions" in app_css
     def test_interactive_cards_support_keyboard_and_aria_contract(self):
-        app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
+        app_js = _miniapp_static_text("app.js")
+        shell_js = _miniapp_static_text("js", "shell.js")
+        create_js = _miniapp_static_text("js", "create.js")
+        drafts_js = _miniapp_static_text("js", "drafts.js")
         app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
 
         assert "function interactiveCardAttrs(label)" in app_js
-        assert "function bindCardKeyboardActivation()" in app_js
-        assert 'bindCardKeyboardActivation();' in app_js
+        assert "function bindCardKeyboardActivation()" in shell_js
+        assert 'bindCardKeyboardActivation();' in _miniapp_js_bundle()
         assert 'role=\"button\" tabindex=\"0\" aria-label=' in app_js
-        assert 'class="create-card${state.selectedCreateTool === "content" ? " active" : ""} interactive-card"' in app_js
-        assert 'class=\"draft-card overview-card${d.draft_id === state.draftId ? \" active\" : \"\"}${d.generation_pending ? \" is-pending\" : \"\"} interactive-card\"' in app_js
+        assert 'class="create-card${state.selectedCreateTool === "content" ? " active" : ""} interactive-card"' in create_js
+        assert 'class=\"draft-card overview-card${d.draft_id === state.draftId ? \" active\" : \"\"}${d.generation_pending ? \" is-pending\" : \"\"} interactive-card\"' in drafts_js
         assert ".interactive-card:focus-visible" in app_css
     def test_create_flow_reopens_full_draft_and_dismisses_keyboard(self):
-        app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
+        shell_js = _miniapp_static_text("js", "shell.js")
+        create_js = _miniapp_static_text("js", "create.js")
+        app_js = _miniapp_js_bundle()
 
-        assert "function bindKeyboardDismiss()" in app_js
-        assert 'document.addEventListener("touchstart", dismiss, { passive: true });' in app_js
-        assert 'document.addEventListener("mousedown", dismiss, { passive: true });' in app_js
+        assert "function bindKeyboardDismiss()" in shell_js
+        assert 'document.addEventListener("touchstart", dismiss, { passive: true });' in shell_js
+        assert 'document.addEventListener("mousedown", dismiss, { passive: true });' in shell_js
         assert "bindKeyboardDismiss();" in app_js
-        assert "function bindKeyboardViewportAssist()" in app_js
-        assert "function ensureFieldAboveKeyboard(target, behavior = \"smooth\")" in app_js
-        assert "window.visualViewport?.height" in app_js
-        assert "viewport.addEventListener(\"resize\", handleViewportChange);" in app_js
+        assert "function bindKeyboardViewportAssist()" in shell_js
+        assert "function ensureFieldAboveKeyboard(target, behavior = \"smooth\")" in shell_js
+        assert "window.visualViewport?.height" in shell_js
+        assert "viewport.addEventListener(\"resize\", handleViewportChange);" in shell_js
         assert "bindKeyboardViewportAssist();" in app_js
         assert "scroll-margin-bottom: 180px;" in Path("miniapp/static/app.css").read_text(encoding="utf-8")
-        assert 'await openDraft(draft.draft_id)' in app_js
+        assert 'await openDraft(draft.draft_id)' in create_js
 
     def test_create_flow_uses_pending_card_and_timeout_recovery(self):
         app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
