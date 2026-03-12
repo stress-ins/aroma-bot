@@ -179,6 +179,7 @@ function conceptTypeMeta(sourceType) {
     system: { label: "Система", icon: "◎" },
     chakra: { label: "Чакра", icon: "✦" },
     energy: { label: "Энергия", icon: "≈" },
+    archetype: { label: "Архетип", icon: "✧" },
   };
   return metaMap[String(sourceType || "").trim()] || { label: "Теория", icon: "•" };
 }

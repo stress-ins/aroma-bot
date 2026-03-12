@@ -1590,6 +1590,40 @@ class TestMiniAppRussianLocale:
         assert "лимбичес" in concept["name"].lower()
         assert "эмоциональ" in concept["description"].lower()
 
+    async def test_reference_service_seeds_lesson_6_cards_and_metadata(self):
+        benzoin = await get_aroma_card("benzoin")
+        geranium = await get_aroma_card("geranium")
+        rose = await get_aroma_card("rose")
+        vetiver = await get_aroma_card("vetiver")
+
+        assert benzoin is not None
+        assert benzoin["course_source"] == "rudn_olfactotherapy_6l"
+        assert benzoin["chakra_focus"] == "2-я, 3-я и 4-я чакры"
+        assert "нежност" in benzoin["psychological_properties"].lower()
+
+        assert geranium is not None
+        assert geranium["chakra_focus"] == "4-я чакра Анахата"
+        assert rose is not None
+        assert rose["polarity"] == "Инь и Янг"
+        assert vetiver is not None
+        assert "заземля" in vetiver["course_notes"].lower()
+
+        winged_breathing = await get_reference_card("practice", "winged-breathing")
+        tree_qigong = await get_reference_card("practice", "tree-qigong")
+        anahata = await get_reference_card("concept", "anahata-chakra")
+        hierophant = await get_reference_card("concept", "hierophant-archetype")
+
+        assert winged_breathing is not None
+        assert winged_breathing["course_source"] == "rudn_olfactotherapy_6l"
+        assert tree_qigong is not None
+        assert "доверие" in tree_qigong["course_notes"].lower()
+        assert anahata is not None
+        assert anahata["source_type"] == "chakra"
+        assert "я люблю" in anahata["course_notes"].lower()
+        assert hierophant is not None
+        assert hierophant["source_type"] == "archetype"
+        assert "посреднич" in hierophant["description"].lower()
+
     async def test_reference_service_uses_exact_photo_overrides_for_selected_oils(self):
         orange = await get_aroma_card("orange")
         lavender = await get_aroma_card("lavender")
@@ -1744,6 +1778,7 @@ class TestMiniAppRussianLocale:
         assert 'function conceptTypeMeta(sourceType)' in app_js
         assert 'founder: { label: "Автор", icon: "◍" }' in app_js
         assert 'chakra: { label: "Чакра", icon: "✦" }' in app_js
+        assert 'archetype: { label: "Архетип", icon: "✧" }' in app_js
         assert 'class="draft-card overview-card reference-card' in app_js
         assert 'class="concept-kind-mark" aria-hidden="true"' in app_js
         assert 'tone-${escapeHtml(item.tone)}' in app_js
