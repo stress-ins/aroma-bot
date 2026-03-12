@@ -40,10 +40,10 @@ def test_build_instagram_authorize_url():
     parsed = urlparse(url)
     query = parse_qs(parsed.query)
 
-    assert parsed.netloc == "www.facebook.com"
+    assert parsed.netloc == "www.instagram.com"
     assert query["client_id"] == ["instagram-app-id"]
     assert query["redirect_uri"] == ["https://oauth.aromara.ru/instagram/callback"]
-    assert query["scope"] == ["instagram_basic,instagram_content_publish,pages_show_list,pages_read_engagement"]
+    assert query["scope"] == ["instagram_business_basic,instagram_business_content_publish"]
 
 
 def test_oauth_state_roundtrip():
@@ -87,30 +87,15 @@ def test_exchange_threads_code_uses_long_lived_token_and_profile_lookup():
     assert bundle.username == "stress_ins"
 
 
-def test_exchange_instagram_code_uses_facebook_login_and_page_token():
+def test_exchange_instagram_code_uses_long_lived_token():
     def handler(request: httpx.Request) -> httpx.Response:
-        if request.url.host == "graph.facebook.com" and request.url.path == "/oauth/access_token":
-            if request.url.params.get("code") == "ig-code":
-                return httpx.Response(200, json={"access_token": "user-short", "user_id": "fb-user-1"})
-            assert request.url.params["grant_type"] == "fb_exchange_token"
-            return httpx.Response(200, json={"access_token": "user-long", "expires_in": 5_184_000})
-        if request.url.host == "graph.facebook.com" and request.url.path == "/me/accounts":
-            return httpx.Response(
-                200,
-                json={
-                    "data": [
-                        {
-                            "id": "page-123",
-                            "name": "Aromara",
-                            "access_token": "page-token",
-                            "instagram_business_account": {
-                                "id": "igbiz-777",
-                                "username": "aromara.ru",
-                            },
-                        }
-                    ]
-                },
-            )
+        if request.url.host == "api.instagram.com" and request.url.path == "/oauth/access_token":
+            return httpx.Response(200, json={"access_token": "ig-short", "user_id": "777"})
+        if request.url.host == "graph.instagram.com" and request.url.path == "/access_token":
+            assert request.url.params["grant_type"] == "ig_exchange_token"
+            return httpx.Response(200, json={"access_token": "ig-long", "expires_in": 5_184_000})
+        if request.url.host == "graph.instagram.com" and request.url.path == "/me":
+            return httpx.Response(200, json={"user_id": "777", "username": "aromara.ru"})
         raise AssertionError(f"Unexpected request: {request.method} {request.url}")
 
     client = httpx.Client(transport=httpx.MockTransport(handler))
@@ -122,12 +107,10 @@ def test_exchange_instagram_code_uses_facebook_login_and_page_token():
         client=client,
     )
 
-    assert bundle.access_token == "page-token"
-    assert bundle.short_lived_token == "user-short"
-    assert bundle.user_id == "igbiz-777"
+    assert bundle.access_token == "ig-long"
+    assert bundle.short_lived_token == "ig-short"
+    assert bundle.user_id == "777"
     assert bundle.username == "aromara.ru"
-    assert bundle.metadata["page_id"] == "page-123"
-    assert bundle.metadata["instagram_business_account_id"] == "igbiz-777"
 
 
 def test_update_env_file_replaces_existing_values(tmp_path: Path):
