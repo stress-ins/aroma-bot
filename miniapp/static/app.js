@@ -942,12 +942,14 @@ const {
 window.goBackToList = goBackToList;
 
 const {
+  loadPlans: loadPlansImpl,
   planEntryTargetKind,
   planEntryFormatLabel,
   relatedDraftsForEntry,
   openPlan,
   generateDraftFromPlan,
   openPlanRelatedDraft,
+  renderPlans: renderPlansImpl,
   renderPlanDetail,
 } = createPlansModule({
   state,
@@ -956,11 +958,15 @@ const {
   uiIcon,
   actionLabel,
   tagMarkup,
+  interactiveCardAttrs,
+  contentKindIcon,
   kindLabel,
   sourceLabel,
   sourceTone,
   formatPlanDate,
   renderBackButton,
+  renderGuidedState,
+  setEmptyState,
   renderDetailLoader,
   fetchJson,
   withButtonFeedback,
@@ -1146,9 +1152,7 @@ async function loadStatus() {
 }
 
 async function loadPlans() {
-  const data = await fetchJson("/api/plans?limit=20");
-  state.plans = data.items || [];
-  renderPlans();
+  return loadPlansImpl();
 }
 
 async function loadReels() { return loadReelsImpl(); }
@@ -1573,37 +1577,7 @@ function renderStatus() {
 }
 
 function renderPlans() {
-  elements.listTitle.textContent = "Планы";
-  elements.draftCount.textContent = `${state.plans.length} шт`;
-  setEmptyState(state.plans.length > 0, {
-    eyebrow: "Планы",
-    title: "Планов пока нет",
-    body: "Соберите план на неделю, чтобы сразу разложить идеи по форматам и дням.",
-    actionLabel: "Открыть создание",
-    action: "setTab('create')",
-  });
-  elements.draftList.innerHTML = state.plans.map(p => `
-    <article ${interactiveCardAttrs(`Открыть план ${p.plan_id}`)} class="plan-card overview-card${p.plan_id === state.selectedPlan?.plan_id ? " active" : ""} interactive-card" onclick="openPlan('${p.plan_id}')">
-      <div class="overview-card-top">
-        <div class="draft-kind">${contentKindIcon("plan")}<span>План</span></div>
-        <span class="overview-card-date">${escapeHtml(formatPlanDate(p.created_at) || p.plan_id)}</span>
-      </div>
-      <h3 class="draft-topic">${escapeHtml(formatPlanDate(p.created_at) ? `План от ${formatPlanDate(p.created_at)}` : p.plan_id)}</h3>
-      <div class="draft-preview">${escapeHtml(stripMarkdown(p.raw_text || ""))}</div>
-      <div class="draft-meta overview-card-footer">
-        ${tagMarkup(`${(p.entries || []).length} карточек`, "source-plan")}
-        ${tagMarkup(`${(p.related_drafts || []).length} черновиков`, "status-review")}
-      </div>
-    </article>
-  `).join("");
-  if (!state.selectedPlan) {
-    elements.draftDetail.innerHTML = `${renderBackButton()}<div class="detail-empty">${renderGuidedState({
-      eyebrow: "План",
-      title: "Откройте план недели",
-      body: "Внутри плана можно создавать черновики по каждой карточке и сразу открывать связанный материал.",
-    })}</div>`;
-  }
-  syncMobileNavigation();
+  return renderPlansImpl();
 }
 
 function renderReels() { return renderReelsImpl(); }

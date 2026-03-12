@@ -6,11 +6,15 @@ export function createPlansModule(deps) {
     uiIcon,
     actionLabel,
     tagMarkup,
+    interactiveCardAttrs,
+    contentKindIcon,
     kindLabel,
     sourceLabel,
     sourceTone,
     formatPlanDate,
     renderBackButton,
+    renderGuidedState,
+    setEmptyState,
     fetchJson,
     withButtonFeedback,
     upsertDraftSummary,
@@ -18,12 +22,18 @@ export function createPlansModule(deps) {
     setTab,
     enterDetailView,
     syncMobileNavigation,
-    loadPlans,
+    loadPlans: reloadPlans,
     loadDrafts,
     loadReels,
     openDraft,
     openReels,
   } = deps;
+
+  async function loadPlans() {
+    const data = await fetchJson("/api/plans?limit=20");
+    state.plans = data.items || [];
+    renderPlans();
+  }
 
   function planEntryTargetKind(entry = {}) {
     const platform = String(entry.platform || "").trim().toLowerCase();
@@ -74,7 +84,7 @@ export function createPlansModule(deps) {
       } else if (draft?.draft_id) {
         upsertDraftSummary(draftSummaryFromDraft(draft));
       }
-      await loadPlans();
+      await reloadPlans();
       await openPlan(planId);
       return draft;
     };
@@ -155,13 +165,49 @@ export function createPlansModule(deps) {
     syncMobileNavigation();
   }
 
+  function renderPlans() {
+    elements.listTitle.textContent = "Планы";
+    elements.draftCount.textContent = `${state.plans.length} шт`;
+    setEmptyState(state.plans.length > 0, {
+      eyebrow: "Планы",
+      title: "Планов пока нет",
+      body: "Соберите план на неделю, чтобы сразу разложить идеи по форматам и дням.",
+      actionLabel: "Открыть создание",
+      action: "setTab('create')",
+    });
+    elements.draftList.innerHTML = state.plans.map((plan) => `
+      <article ${interactiveCardAttrs(`Открыть план ${plan.plan_id}`)} class="plan-card overview-card${plan.plan_id === state.selectedPlan?.plan_id ? " active" : ""} interactive-card" onclick="openPlan('${plan.plan_id}')">
+        <div class="overview-card-top">
+          <div class="draft-kind">${contentKindIcon("plan")}<span>План</span></div>
+          <span class="overview-card-date">${escapeHtml(formatPlanDate(plan.created_at) || plan.plan_id)}</span>
+        </div>
+        <h3 class="draft-topic">${escapeHtml(formatPlanDate(plan.created_at) ? `План от ${formatPlanDate(plan.created_at)}` : plan.plan_id)}</h3>
+        <div class="draft-preview">${escapeHtml(String(plan.raw_text || "").trim())}</div>
+        <div class="draft-meta overview-card-footer">
+          ${tagMarkup(`${(plan.entries || []).length} карточек`, "source-plan")}
+          ${tagMarkup(`${(plan.related_drafts || []).length} черновиков`, "status-review")}
+        </div>
+      </article>
+    `).join("");
+    if (!state.selectedPlan) {
+      elements.draftDetail.innerHTML = `${renderBackButton()}<div class="detail-empty">${renderGuidedState({
+        eyebrow: "План",
+        title: "Откройте план недели",
+        body: "Внутри плана можно создавать черновики по каждой карточке и сразу открывать связанный материал.",
+      })}</div>`;
+    }
+    syncMobileNavigation();
+  }
+
   return {
+    loadPlans,
     planEntryTargetKind,
     planEntryFormatLabel,
     relatedDraftsForEntry,
     openPlan,
     generateDraftFromPlan,
     openPlanRelatedDraft,
+    renderPlans,
     renderPlanDetail,
   };
 }
