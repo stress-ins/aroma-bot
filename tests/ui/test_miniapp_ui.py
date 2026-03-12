@@ -8,17 +8,20 @@ import subprocess
 import sys
 import time
 import urllib.request
+from io import BytesIO
 from base64 import b64decode
-from datetime import datetime, timezone
 from pathlib import Path
 
+import numpy as np
 import pytest
+from PIL import Image
 from playwright.sync_api import Error, sync_playwright
 
 
 _PNG_1X1 = b64decode(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO7Zk6cAAAAASUVORK5CYII="
 )
+_SNAPSHOT_DIR = Path(__file__).with_name("snapshots")
 
 
 def _free_port() -> int:
@@ -37,6 +40,48 @@ def _wait_until_ready(base_url: str, timeout: float = 20.0) -> None:
         except Exception:
             time.sleep(0.2)
     raise RuntimeError("Mini App test server did not start in time")
+
+
+def _prepare_visual_state(page) -> None:
+    page.add_style_tag(
+        content="""
+        *,
+        *::before,
+        *::after {
+          animation: none !important;
+          transition: none !important;
+          caret-color: transparent !important;
+          scroll-behavior: auto !important;
+        }
+        """
+    )
+    page.wait_for_timeout(150)
+
+
+def _assert_visual_snapshot(locator, snapshot_name: str, *, max_diff_ratio: float = 0.0025) -> None:
+    expected_path = _SNAPSHOT_DIR / snapshot_name
+    actual_bytes = locator.screenshot(animations="disabled")
+
+    if os.getenv("UPDATE_VISUAL_BASELINE") == "1":
+        expected_path.parent.mkdir(parents=True, exist_ok=True)
+        expected_path.write_bytes(actual_bytes)
+        return
+
+    assert expected_path.exists(), f"Missing visual baseline: {expected_path}"
+
+    expected = Image.open(expected_path).convert("RGBA")
+    actual = Image.open(BytesIO(actual_bytes)).convert("RGBA")
+    assert actual.size == expected.size, (
+        f"Snapshot size mismatch for {snapshot_name}: expected {expected.size}, got {actual.size}"
+    )
+
+    expected_pixels = np.array(expected)
+    actual_pixels = np.array(actual)
+    diff_mask = np.any(np.abs(actual_pixels.astype(np.int16) - expected_pixels.astype(np.int16)) > 12, axis=2)
+    diff_ratio = float(diff_mask.mean())
+    assert diff_ratio <= max_diff_ratio, (
+        f"Visual regression in {snapshot_name}: diff ratio {diff_ratio:.4%} exceeds {max_diff_ratio:.4%}"
+    )
 
 
 @pytest.fixture(scope="session")
@@ -140,7 +185,7 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
         "cta": "Напиши, если хочешь такую карусель под свой проект.",
     }
 
-    now = datetime.now(timezone.utc).isoformat()
+    now = "2026-03-11T18:00:00+00:00"
     cursor.execute(
         "INSERT INTO drafts (draft_id, kind, topic, source, status, feedback, payload, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
         (draft_id, "reels", "Вечерний ароматический ритуал", "/miniapp", "draft", "", json.dumps(reels_payload), now),
@@ -333,9 +378,9 @@ def test_create_tab_uses_guided_empty_state_before_tool_selection(desktop_page):
     desktop_page.get_by_role("button", name="Создать").click()
     desktop_page.wait_for_timeout(250)
 
-    assert desktop_page.locator(".create-card").count() == 4
     assert desktop_page.locator(".guided-state").is_visible()
     assert desktop_page.get_by_text("Выберите формат для старта").is_visible()
+    assert desktop_page.get_by_text("быстрые сценарии для контента, рилса, плана недели и карусели").is_visible()
 
 
 def test_draft_search_empty_state_offers_guidance(page):
@@ -345,8 +390,18 @@ def test_draft_search_empty_state_offers_guidance(page):
     page.wait_for_timeout(450)
 
     assert page.locator("#emptyState .guided-state").is_visible()
-    assert page.get_by_text("Ничего не найдено.").is_visible()
+    assert page.get_by_text("Ничего не найдено").is_visible()
+    assert page.get_by_role("button", name="Открыть создание").is_visible()
 
+
+def test_settings_and_keywords_use_guided_detail_copy(desktop_page):
+    desktop_page.get_by_role("button", name="Статус").click()
+    desktop_page.wait_for_timeout(250)
+    assert desktop_page.get_by_text("Проверьте состояние источников").is_visible()
+
+    desktop_page.get_by_role("button", name="Ключи").click()
+    desktop_page.wait_for_timeout(250)
+    assert desktop_page.get_by_text("Откройте тему для редактирования").is_visible()
 
 def test_mobile_layout_has_no_overlapping_controls(page):
     for tab_name in ["Черновики", "Рилсы", "Создать"]:
@@ -586,7 +641,7 @@ def test_create_carousel_routes_into_draft_detail(page):
     page.wait_for_timeout(200)
     page.get_by_role("heading", name="Карусель").click()
     page.locator("textarea[name='topic']").fill("Тестовая карусель")
-    page.get_by_role("button", name="Сгенерировать карусель").click()
+    page.get_by_role("button", name="Собрать карусель").click()
     page.wait_for_timeout(500)
 
     assert page.locator(".detail-title").inner_text().strip() == "Тестовая карусель"
@@ -757,19 +812,19 @@ def test_content_review_detail_supports_save_polish_and_feedback(page):
 
     page.locator("#contentCaptionField").fill("Обновленный текст для Threads.")
     page.locator("#contentEditorNotesField").fill("Сделать подачу мягче.")
-    page.get_by_role("button", name="Сохранить правки").click()
+    page.get_by_role("button", name="Сохранить версию").click()
     page.wait_for_timeout(350)
 
     assert page.locator("#contentEditorNotesField").input_value() == "Сделать подачу мягче."
-    assert page.get_by_text("Сработало").count() >= 1
+    assert page.get_by_text("Откликнулось").count() >= 1
 
-    page.get_by_role("button", name="AI polish").click()
+    page.get_by_role("button", name="Уточнить через AI").click()
     page.wait_for_timeout(350)
     assert page.locator("#contentCaptionField").input_value() == "Отполированный текст для Threads."
 
-    page.get_by_role("button", name="Не сработало").click()
+    page.get_by_role("button", name="Не дало результата").click()
     page.wait_for_timeout(350)
-    assert page.get_by_text("Не сработало").count() >= 1
+    assert page.get_by_text("Не дало результата").count() >= 1
 
 
 def test_content_review_detail_highlights_editor_focus_and_summary(page):
@@ -801,6 +856,24 @@ def test_content_review_detail_highlights_editor_focus_and_summary(page):
     assert metrics["facts"] >= 4
     assert metrics["summaryLength"] >= 20
     assert metrics["captionHeight"] > metrics["notesHeight"]
+
+
+def test_create_and_detail_forms_show_helper_microcopy(page):
+    page.get_by_role("button", name="Создать").click()
+    page.wait_for_timeout(250)
+    page.get_by_text("Пост для соцсетей").click()
+    page.wait_for_timeout(250)
+
+    assert page.get_by_text("Сформулируйте тему как готовую мысль").is_visible()
+    assert page.get_by_role("button", name="Собрать черновик").is_visible()
+
+    page.get_by_role("button", name="Черновики").click()
+    page.wait_for_timeout(300)
+    page.get_by_text("Как мягко выйти из рабочего напряжения").first.click()
+    page.wait_for_timeout(300)
+
+    assert page.get_by_text("Сохраняйте версию после смыслового прохода").is_visible()
+    assert page.get_by_role("button", name="Отметить как согласовано").is_visible()
 
 
 def test_keywords_detail_supports_add_and_remove(page):
@@ -923,3 +996,46 @@ def test_focusing_lower_review_field_keeps_it_in_view(page):
     assert metrics is not None
     assert metrics["top"] >= 0
     assert metrics["bottom"] <= metrics["viewportHeight"]
+
+
+def test_visual_mobile_drafts_list_baseline(page):
+    page.get_by_role("button", name="Черновики").click()
+    page.wait_for_timeout(300)
+    _prepare_visual_state(page)
+    _assert_visual_snapshot(page.locator(".shell"), "mobile-drafts-list.png")
+
+
+def test_visual_mobile_draft_detail_baseline(page):
+    page.get_by_role("button", name="Черновики").click()
+    page.wait_for_timeout(300)
+    page.get_by_text("Как мягко выйти из рабочего напряжения").first.click()
+    page.wait_for_timeout(300)
+    _prepare_visual_state(page)
+    _assert_visual_snapshot(page.locator("#detailPanel"), "mobile-draft-detail.png")
+
+
+def test_visual_mobile_plan_detail_baseline(page):
+    page.get_by_role("button", name="Планы").click()
+    page.wait_for_timeout(300)
+    page.locator(".plan-card").first.click()
+    page.wait_for_timeout(300)
+    _prepare_visual_state(page)
+    _assert_visual_snapshot(page.locator("#detailPanel"), "mobile-plan-detail.png")
+
+
+def test_visual_mobile_reels_detail_baseline(page):
+    page.get_by_role("button", name="Рилсы").click()
+    page.wait_for_timeout(300)
+    page.locator(".reels-card").first.click()
+    page.wait_for_timeout(300)
+    _prepare_visual_state(page)
+    _assert_visual_snapshot(page.locator("#detailPanel"), "mobile-reels-detail.png")
+
+
+def test_visual_desktop_split_view_baseline(desktop_page):
+    desktop_page.get_by_role("button", name="Черновики").click()
+    desktop_page.wait_for_timeout(300)
+    desktop_page.get_by_text("Как мягко выйти из рабочего напряжения").first.click()
+    desktop_page.wait_for_timeout(300)
+    _prepare_visual_state(desktop_page)
+    _assert_visual_snapshot(desktop_page.locator(".shell"), "desktop-split-view.png")
