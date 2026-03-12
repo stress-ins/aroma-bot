@@ -38,6 +38,8 @@ const MODE_TABS = {
   ],
   handbook: [
     { id: "aromas", label: "Масла" },
+    { id: "practices", label: "Практики" },
+    { id: "sounds", label: "Звуки" },
   ],
 };
 
@@ -104,6 +106,28 @@ const HANDBOOK_CATEGORY_META = {
     empty: "Масла не найдены.",
     selectPrompt: "Выберите масло из списка.",
     locked: "Доступ к справочнику масел ограничен.",
+    count: (items) => `${items.length} карточек`,
+  },
+  practices: {
+    category: "practice",
+    label: "практика",
+    title: "Практики",
+    searchLabel: "Поиск практики",
+    searchPlaceholder: "Например: квадратное дыхание",
+    empty: "Практики не найдены.",
+    selectPrompt: "Выберите практику из списка.",
+    locked: "Доступ к справочнику практик ограничен.",
+    count: (items) => `${items.length} карточек`,
+  },
+  sounds: {
+    category: "sound",
+    label: "звук",
+    title: "Звуки",
+    searchLabel: "Поиск звука",
+    searchPlaceholder: "Например: гонг",
+    empty: "Звуки не найдены.",
+    selectPrompt: "Выберите звуковую карточку из списка.",
+    locked: "Доступ к справочнику звуков ограничен.",
     count: (items) => `${items.length} карточек`,
   },
 };

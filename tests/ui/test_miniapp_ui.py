@@ -239,7 +239,7 @@ def test_mobile_tabs_and_drafts_render_in_russian(page):
     tabs_handbook = page.locator(".tab-button").evaluate_all(
         "(nodes) => nodes.map((node) => node.textContent.trim())"
     )
-    assert tabs_handbook == ["Масла"]
+    assert tabs_handbook == ["Масла", "Практики", "Звуки"]
 
     page.get_by_role("button", name="Контент").click()
     page.get_by_role("button", name="Черновики").click()
