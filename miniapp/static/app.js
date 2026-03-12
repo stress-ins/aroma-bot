@@ -196,13 +196,13 @@ function formatCourseSourceLabel(value) {
 
 function referenceHeroBadges(reference) {
   const badges = [
-    { label: "Тип", value: handbookCardBadge(state.tab, reference) || currentHandbookMeta().title },
-    { label: "Фокус", value: reference.chakra_focus || "" },
-    { label: "Полярность", value: reference.polarity || "" },
-    { label: "Курс", value: formatCourseSourceLabel(reference.course_source) },
+    { label: "Тип", value: handbookCardBadge(state.tab, reference) || currentHandbookMeta().title, tone: "type" },
+    { label: "Фокус", value: reference.chakra_focus || "", tone: "chakra" },
+    { label: "Полярность", value: reference.polarity || "", tone: "polarity" },
+    { label: "Курс", value: formatCourseSourceLabel(reference.course_source), tone: "course" },
   ].filter((item) => item.value);
   return badges.map((item) => `
-    <div class="reference-badge">
+    <div class="reference-badge reference-badge-${escapeHtml(item.label.toLowerCase().replace(/[^a-zа-я0-9]+/gi, "-"))} tone-${escapeHtml(item.tone)}">
       <span class="reference-badge-label">${escapeHtml(item.label)}</span>
       <strong>${escapeHtml(item.value)}</strong>
     </div>
@@ -2042,10 +2042,14 @@ function renderReferencePassport(reference) {
 }
 
 function renderReferenceImage(reference) {
+  const heroClass = state.tab === "concepts" ? "reference-hero-card is-theory" : "reference-hero-card";
+  const eyebrowLabel = state.tab === "concepts"
+    ? `${handbookCategoryIcon(state.tab)}<span>${escapeHtml(currentHandbookMeta().title)} · учебный модуль</span>`
+    : `${handbookCategoryIcon(state.tab)}<span>${escapeHtml(currentHandbookMeta().title)}</span>`;
   return `
-    <section class="section aroma-hero reference-hero-card">
+    <section class="section aroma-hero ${heroClass}">
       <div class="reference-hero-copy">
-        <p class="eyebrow">${handbookCategoryIcon(state.tab)}<span>${escapeHtml(currentHandbookMeta().title)}</span></p>
+        <p class="eyebrow">${eyebrowLabel}</p>
         <h2 class="detail-title">${escapeHtml(reference.name)}</h2>
         <p class="reference-keyline">${escapeHtml(reference.key || handbookCardBadge(state.tab, reference) || currentHandbookMeta().title)}</p>
         <p class="reference-summary">${escapeHtml(stripMarkdown(reference.description || reference.course_notes || ""))}</p>
@@ -2099,7 +2103,7 @@ function renderReferences() {
   }
 
   listContainer.innerHTML = filtered.map((item) => `
-    <article ${interactiveCardAttrs(`Открыть карточку ${item.name}`)} class="draft-card overview-card reference-card${item.slug === reference?.slug ? " active" : ""} interactive-card" onclick="openReference('${item.slug}', '${state.tab}')">
+    <article ${interactiveCardAttrs(`Открыть карточку ${item.name}`)} class="draft-card overview-card reference-card${state.tab === "concepts" ? " is-theory concept-card" : ""}${item.slug === reference?.slug ? " active" : ""} interactive-card" onclick="openReference('${item.slug}', '${state.tab}')">
       <div class="overview-card-top">
         <div class="draft-kind">${handbookCategoryIcon(state.tab)}${handbookCardBadge(state.tab, item) ? `<span>${escapeHtml(handbookCardBadge(state.tab, item))}</span>` : ""}</div>
         <span class="overview-card-date">${escapeHtml(formatCourseSourceLabel(item.course_source) || meta.title)}</span>

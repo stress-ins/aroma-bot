@@ -1744,10 +1744,16 @@ class TestMiniAppRussianLocale:
         assert 'founder: "Автор"' in app_js
         assert 'chakra: "Чакра"' in app_js
         assert 'class="draft-card overview-card reference-card' in app_js
+        assert 'tone-${escapeHtml(item.tone)}' in app_js
+        assert 'reference-hero-card is-theory' in app_js
+        assert 'reference-card${state.tab === "concepts" ? " is-theory concept-card" : ""}' in app_js
         assert 'reference.chakra_focus ? `Фокус / чакры: ${reference.chakra_focus}` : ""' in app_js
         assert 'reference.course_source ? `Источник курса: ${formatCourseSourceLabel(reference.course_source)}` : ""' in app_js
         assert '${aromaSection("Материалы курса", reference.course_notes)}' in app_js
         assert ".reference-card .overview-card-date" in app_css
+        assert ".reference-hero-card.is-theory" in app_css
+        assert ".reference-badge.tone-course" in app_css
+        assert ".concept-card::before" in app_css
 
     def test_content_detail_supports_prompt_copy_actions(self):
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
