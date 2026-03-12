@@ -605,6 +605,20 @@ def test_carousel_detail_shows_prompt_copy_buttons(page):
     assert page.get_by_text("Сохранить подпись").count() >= 1
     assert page.get_by_text("Версии").count() >= 1
     assert page.locator(".slide").count() >= 2
+    assert page.locator(".prompt-actions.actions-grid-two").count() >= 1
+    assert page.locator(".slide-version-actions.actions-grid-two").count() >= 1
+
+
+def test_mobile_carousel_actions_use_two_columns(page):
+    page.get_by_role("button", name="Черновики").click()
+    page.wait_for_timeout(300)
+    page.get_by_text("Сенсорная карусель для вечернего ритуала").first.click()
+    page.wait_for_timeout(300)
+
+    columns = page.locator(".prompt-actions.actions-grid-two").first.evaluate(
+        "(node) => getComputedStyle(node).gridTemplateColumns"
+    )
+    assert columns.count(" ") >= 1
 
 
 def test_create_tool_selection_isolates_form(page):

@@ -728,6 +728,21 @@ textarea,
   flex: 0 1 auto;
 }
 
+.actions-grid-two {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.actions-grid-two > button {
+  width: 100%;
+  min-width: 0;
+}
+
+.actions-grid-two > button:only-child {
+  grid-column: 1 / -1;
+}
+
 /* ── Sections ────────────────────────────────────────────────────────────── */
 .section {
   border: 1px solid var(--border);
@@ -1259,8 +1274,8 @@ textarea,
   background: var(--surface-2);
   color: var(--text);
   border-radius: 999px;
-  min-height: 40px;
-  padding: 7px 14px;
+  min-height: 36px;
+  padding: 6px 12px;
   font-size: 13px;
   cursor: pointer;
   transition: background var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), transform var(--duration-medium) var(--ease-standard), opacity var(--duration-fast) var(--ease-standard), box-shadow var(--duration-medium) var(--ease-standard);
@@ -1293,11 +1308,20 @@ textarea,
 }
 .primary-button:hover { opacity: 0.92; filter: saturate(1.05); }
 
+.tab-button.is-tapped,
+.mode-button.is-tapped,
+.back-button.is-tapped,
+.secondary-button.is-tapped,
+.primary-button.is-tapped,
+.status-button.is-tapped,
+.feedback-button.is-tapped,
+.icon-corner-button.is-tapped,
+.bottom-tab-btn.is-tapped,
 .secondary-button:active,
 .primary-button:active,
 .status-button:active,
 .feedback-button:active {
-  transform: scale(0.98);
+  transform: scale(0.96);
 }
 
 .secondary-button.is-busy,
@@ -1468,7 +1492,7 @@ textarea,
 }
 
 .slide-version-actions > button {
-  flex: 1 1 100%;
+  min-width: 0;
 }
 
 .aroma-hero {
@@ -1975,7 +1999,7 @@ textarea,
   .feedback-button,
   .draft-card button,
   .primary-button {
-    min-height: 42px;
+    min-height: 44px;
   }
 
   .actions-row > button,
