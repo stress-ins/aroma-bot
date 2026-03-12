@@ -91,7 +91,6 @@ def _assert_visual_snapshot(locator, snapshot_name: str, *, max_diff_ratio: floa
 def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
     root = tmp_path_factory.mktemp("miniapp-ui")
     db_file = root / "test_aroma.db"
-    plans_file = root / "plans.json"
     assets_dir = root / "reels_assets"
 
     conn = sqlite3.connect(db_file)
@@ -123,6 +122,17 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
             payload JSON,
             created_at DATETIME,
             updated_at DATETIME
+        )
+        """
+    )
+    cursor.execute(
+        """
+        CREATE TABLE plans (
+            id INTEGER PRIMARY KEY,
+            plan_id VARCHAR(32) UNIQUE,
+            raw_text TEXT,
+            entries JSON,
+            created_at DATETIME
         )
         """
     )
@@ -205,33 +215,29 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
         "INSERT INTO aroma_cards (slug, name, category, source_type, aliases, payload, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
         ("lavender", "Лаванда", "aroma", "herb", json.dumps([]), json.dumps({}), now, now),
     )
+    cursor.execute(
+        "INSERT INTO plans (plan_id, raw_text, entries, created_at) VALUES (?, ?, ?, ?)",
+        (
+            "20260311180000",
+            "Понедельник: Threads, Среда: Reels",
+            json.dumps(
+                [
+                    {
+                        "day_label": "Понедельник",
+                        "platform": "Threads",
+                        "format_label": "пост",
+                        "goal": "Доверие",
+                        "topic": "Почему вечерний ритуал помогает нервной системе",
+                        "angle": "Через простые телесные сигналы.",
+                    }
+                ],
+                ensure_ascii=False,
+            ),
+            now,
+        ),
+    )
     conn.commit()
     conn.close()
-
-    plans_file.write_text(
-        json.dumps(
-            [
-                {
-                    "plan_id": "20260311180000",
-                    "created_at": "2026-03-11T18:00:00+00:00",
-                    "raw_text": "Понедельник: Threads, Среда: Reels",
-                    "entries": [
-                        {
-                            "day_label": "Понедельник",
-                            "platform": "Threads",
-                            "format_label": "пост",
-                            "goal": "Доверие",
-                            "topic": "Почему вечерний ритуал помогает нервной системе",
-                            "angle": "Через простые телесные сигналы.",
-                        }
-                    ],
-                }
-            ],
-            ensure_ascii=False,
-            indent=2,
-        ),
-        encoding="utf-8",
-    )
 
     port = _free_port()
     base_url = f"http://127.0.0.1:{port}"
@@ -241,7 +247,6 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
             "TELEGRAM_BOT_TOKEN": "test-token",
             "REPORT_TARGET_CHAT_ID": "test-chat",
             "AROMA_DATABASE_URL": f"sqlite+aiosqlite:///{db_file}",
-            "AROMA_PLANS_FILE": str(plans_file),
             "AROMA_REELS_ASSETS_DIR": str(assets_dir),
             "MINIAPP_AROMA_ALLOWED_USER_IDS": "12345",
             "AROMA_BYPASS_AUTH": "1",
@@ -343,11 +348,23 @@ def test_reels_tab_opens_storyboard_without_empty_state(page):
     assert not page.locator("#emptyState").is_visible()
     assert page.locator(".detail-title").inner_text().strip() == "Вечерний ароматический ритуал"
     
-    # Open the prompt details to make the copy button visible
-    page.get_by_text("Показать промпт").first.click()
+    # Open the editor details to make the copy button visible
+    page.get_by_text("Открыть редактирование кадра").first.click()
     page.wait_for_timeout(150)
     assert page.get_by_role("button", name="Скопировать промпт кадра").is_visible()
     assert page.locator(".frame-image").count() == 1
+
+
+def test_reels_detail_shows_production_overview_and_frame_status(page):
+    page.get_by_role("button", name="Рилсы").click()
+    page.wait_for_load_state("networkidle")
+    page.locator(".reels-card").first.click()
+    page.wait_for_timeout(300)
+
+    assert page.get_by_text("План рилса").is_visible()
+    assert page.get_by_text("Shot 1").is_visible()
+    assert page.get_by_text("Кадр готов").first.is_visible()
+    assert page.get_by_text("Открыть редактирование кадра").first.is_visible()
 
 
 def test_overview_lists_use_consistent_card_meta(page):
@@ -454,7 +471,7 @@ def test_mobile_primary_controls_have_comfortable_hit_targets(page):
     metrics = page.evaluate(
         """
         () => {
-          const selectors = ['.mode-button', '.tab-button', '.icon-corner-button', '.secondary-button', '.primary-button', '.back-button.visible'];
+          const selectors = ['.mode-button', '.tab-button', '.icon-corner-button', '.secondary-button', '.primary-button', '.back-button.visible', '.bottom-tab-btn'];
           return selectors.flatMap((selector) =>
             [...document.querySelectorAll(selector)]
               .filter((node) => {
@@ -474,6 +491,31 @@ def test_mobile_primary_controls_have_comfortable_hit_targets(page):
     )
     bad = [item for item in metrics if item["height"] < 44]
     assert bad == []
+
+
+def test_mobile_bottom_tab_bar_switches_primary_sections(page):
+    bottom_nav = page.locator("#bottomTabBar")
+    assert bottom_nav.is_visible()
+
+    page.locator("#btnTabReels").click()
+    page.wait_for_timeout(300)
+    assert page.locator("#btnTabReels").get_attribute("aria-pressed") == "true"
+    assert page.locator(".reels-card").count() == 1
+
+    page.locator("#btnTabHandbook").click()
+    page.wait_for_timeout(300)
+    assert page.locator("#btnTabHandbook").get_attribute("aria-pressed") == "true"
+    handbook_tabs = page.locator(".tab-button").evaluate_all(
+        "(nodes) => nodes.map((node) => node.textContent.trim())"
+    )
+    assert "🌿Ароматы" in handbook_tabs
+    assert "🫁Практики" in handbook_tabs
+    assert "🔔Звуки" in handbook_tabs
+
+    page.locator("#btnTabDrafts").click()
+    page.wait_for_timeout(300)
+    assert page.locator("#btnTabDrafts").get_attribute("aria-pressed") == "true"
+    assert page.locator(".draft-card").count() >= 2
 
 
 def test_desktop_layout_keeps_split_panels_and_comfortable_controls(desktop_page):

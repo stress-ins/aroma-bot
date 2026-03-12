@@ -1,3 +1,14 @@
+import { createCarouselModule } from "./js/carousel.js";
+import { createContentModule } from "./js/content.js";
+import { createCreateModule } from "./js/create.js";
+import { createDraftsModule } from "./js/drafts.js";
+import { createPlansModule } from "./js/plans.js";
+import { createReferencesModule } from "./js/references.js";
+import { createReelsModule } from "./js/reels.js";
+import { createRuntimeModule } from "./js/runtime.js";
+import { createSettingsModule } from "./js/settings.js";
+import { createShellModule } from "./js/shell.js";
+
 const state = {
   mode: "content", // 'content' or 'handbook'
   tab: new URLSearchParams(window.location.search).get("tab") || "drafts",
@@ -48,13 +59,10 @@ const MODE_TABS = {
 
 let reelRefreshTimer = null;
 let carouselRefreshTimer = null;
-let swipeStart = null;
 let bootstrapWatchdogTimer = null;
 let appBootstrapped = false;
 let startupLoadInFlight = false;
 let uiNoticeTimer = null;
-let detailEntryTimer = null;
-let keyboardViewportTimer = null;
 const carouselNoteSaveTimers = {};
 const reelsNoteSaveTimers = {};
 const reelsPromptSaveTimers = {};
@@ -80,6 +88,7 @@ const elements = {
   bootFallbackTitle: document.getElementById("bootFallbackTitle"),
   bootFallbackText: document.getElementById("bootFallbackText"),
   bootFallbackReload: document.getElementById("bootFallbackReload"),
+  bottomTabBar: document.getElementById("bottomTabBar"),
 };
 
 const RU_KIND_LABELS = {
@@ -653,37 +662,6 @@ function isContentReviewKind(kind) {
   return normalized === "threads" || normalized === "instagram" || normalized === "telegram";
 }
 
-function planEntryTargetKind(entry = {}) {
-  const platform = String(entry.platform || "").trim().toLowerCase();
-  const formatLabel = String(entry.format_label || "").trim().toLowerCase();
-  if (platform.includes("reels") || formatLabel.includes("reels") || formatLabel.includes("рилс")) return "reels";
-  if (formatLabel.includes("карус") || formatLabel.includes("carousel")) return "carousel";
-  if (platform.includes("threads")) return "threads";
-  if (platform.includes("instagram")) return "instagram";
-  if (platform.includes("telegram")) return "telegram";
-  return "instagram";
-}
-
-function planEntryFormatLabel(entry = {}) {
-  const target = planEntryTargetKind(entry);
-  return kindLabel(target) || "Контент";
-}
-
-function relatedDraftsForEntry(plan = {}, entry = {}) {
-  const topic = String(entry.topic || "").trim();
-  const related = Array.isArray(plan.related_drafts) ? plan.related_drafts : [];
-  if (!topic) return [];
-  return related.filter((draft) => String(draft.topic || "").trim() === topic);
-}
-
-function slideNoteId(index) {
-  return `carouselSlideNote${index}`;
-}
-
-function slideTextId(index) {
-  return `carouselSlideText${index}`;
-}
-
 function frameDraftKey(draftId, index) {
   return `${draftId}:${index}`;
 }
@@ -701,159 +679,36 @@ function mergeReelsIntoState(draft) {
   state.reels = state.reels.map((item) => item.draft_id === draft.draft_id ? { ...item, ...draft } : item);
 }
 
-function bufferedCarouselNote(draftId, index, fallback = "") {
-  const key = frameDraftKey(draftId, index);
-  return Object.prototype.hasOwnProperty.call(state.pendingCarouselNotes, key)
-    ? state.pendingCarouselNotes[key]
-    : String(fallback || "");
-}
-
-function carouselSlideOperation(draftId, index) {
-  return state.pendingCarouselOps[frameDraftKey(draftId, index)] || "";
-}
-
-function setCarouselSlideOperation(draftId, index, value = "") {
-  const key = frameDraftKey(draftId, index);
-  if (!value) {
-    delete state.pendingCarouselOps[key];
-    return;
-  }
-  state.pendingCarouselOps[key] = String(value);
-}
-
-function hasPendingCarouselOperations(draftId = "") {
-  const prefix = draftId ? `${draftId}:` : "";
-  return Object.keys(state.pendingCarouselOps).some((key) => key.startsWith(prefix));
-}
-
-function carouselSlideStatusMarkup(draftId, index, hasImage) {
-  const operation = carouselSlideOperation(draftId, index);
-  if (operation) {
-    return `<div class="slide-status is-pending">${uiIcon("sparkle")}<span>${escapeHtml(operation)}</span></div>`;
-  }
-  if (hasImage) {
-    return `<div class="slide-status is-ready">${uiIcon("approve")}<span>Картинка готова</span></div>`;
-  }
-  return `<div class="slide-status is-empty">${uiIcon("image")}<span>Изображение еще готовится</span></div>`;
-}
-
-function bufferedReelsNote(draftId, index, fallback = "") {
-  const key = frameDraftKey(draftId, index);
-  return Object.prototype.hasOwnProperty.call(state.pendingReelsNotes, key)
-    ? state.pendingReelsNotes[key]
-    : String(fallback || "");
-}
-
-function bufferedReelsPrompt(draftId, index, fallback = "") {
-  const key = frameDraftKey(draftId, index);
-  return Object.prototype.hasOwnProperty.call(state.pendingReelsPrompts, key)
-    ? state.pendingReelsPrompts[key]
-    : String(fallback || "");
-}
-
-function renderSlides(draftId, slides = [], prompts = [], slideImages = [], promptNotes = [], slideVersions = []) {
-  const slideItems = Array.isArray(slides) ? slides : [];
-  const promptItems = Array.isArray(prompts) ? prompts : [];
-  const imageItems = Array.isArray(slideImages) ? slideImages : [];
-  const noteItems = Array.isArray(promptNotes) ? promptNotes : [];
-  const versionItems = Array.isArray(slideVersions) ? slideVersions : [];
-  if (!slideItems.length) return "";
-  const readyCount = imageItems.filter(Boolean).length;
-  const header = readyCount > 0
-    ? `Слайды карусели <span class="meta">${readyCount} / ${slideItems.length} с картинкой</span>`
-    : "Слайды карусели";
-  return `
-    <section class="section">
-      <h3>${uiIcon("slides")}${header}</h3>
-      <div class="slides">
-        ${slideItems.map((slide, index) => {
-          const img = imageItems[index];
-          const prompt = String(promptItems[index] || "");
-          const note = bufferedCarouselNote(draftId, index, String(noteItems[index] || ""));
-          const versions = Array.isArray(versionItems[index]) ? versionItems[index] : [];
-          const showPromptOpen = !img?.url;
-          const imgHtml = img?.url
-            ? `<img class="frame-image" src="${escapeHtml(img.url)}" alt="Слайд ${index + 1}" />`
-            : `<div class="frame-loading">Картинка недоступна или еще генерируется. Откройте промпт ниже для ручной генерации.</div>`;
-          return `
-            <article class="slide">
-              <strong>Слайд ${index + 1}</strong>
-              ${carouselSlideStatusMarkup(draftId, index, Boolean(img?.url))}
-              ${imgHtml}
-              <label class="prompt-note-field">
-                <span>Подпись слайда</span>
-                <textarea id="${slideTextId(index)}" placeholder="Текст для этого слайда">${escapeHtml(slide)}</textarea>
-              </label>
-              <p class="field-help">После правки нажмите «Сохранить подпись», чтобы обновить этот слайд в черновике.</p>
-              <div class="actions-row prompt-actions actions-grid-two">
-                <button class="primary-button" type="button" aria-label="Сохранить текст слайда" onclick="saveCarouselSlideText(${JSON.stringify(draftId)}, ${index}, this)">${actionLabel("text", "Сохранить подпись")}</button>
-              </div>
-              ${prompt ? `
-                <details class="prompt-disclosure"${showPromptOpen ? " open" : ""}>
-                  <summary class="secondary-button prompt-toggle">${actionLabel("eye", "Показать промпт")}</summary>
-                  <div class="prompt-card">
-                    <div class="detail-preview prompt-preview">${escapeHtml(prompt)}</div>
-                    <label class="prompt-note-field">
-                      <span>Замечание к картинке</span>
-                      <textarea id="${slideNoteId(index)}" placeholder="Например: теплее свет, крупнее объект, меньше деталей на фоне" oninput="handleCarouselSlideNoteInput(${JSON.stringify(draftId)}, ${index}, this.value)">${escapeHtml(note)}</textarea>
-                    </label>
-                    <div class="actions-row prompt-actions actions-grid-two">
-                      <button class="secondary-button" type="button" onclick='copyText(${JSON.stringify(prompt)})'>${actionLabel("prompt", "Скопировать промпт слайда")}</button>
-                      <button class="secondary-button" type="button" onclick="regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, false, this)">${actionLabel("regenerate", "Обновить изображение")}</button>
-                      <button class="primary-button" type="button" onclick="regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, true, this)">${actionLabel("note", "Обновить по замечанию")}</button>
-                    </div>
-                  </div>
-                </details>
-              ` : `
-                
-              `}
-              ${renderSlideVersions(draftId, index, img, versions)}
-            </article>
-          `;
-        }).join("")}
-      </div>
-    </section>
-  `;
-}
-
-function renderSlideVersions(draftId, slideIndex, currentImage, versions = []) {
-  const items = Array.isArray(versions) ? versions : [];
-  if (!items.length) return "";
-  const currentFilename = String(currentImage?.filename || "").trim();
-  return `
-    <div class="slide-versions">
-      <div class="slide-versions-head">
-        <strong>${uiIcon("image")}Версии</strong>
-        <span class="meta">${items.length} шт</span>
-      </div>
-      <div class="slide-version-grid">
-        ${items.map((version, versionIndex) => {
-          const isCurrent = String(version?.filename || "").trim() === currentFilename;
-          return `
-            <article class="slide-version-card${isCurrent ? " is-current" : ""}">
-              <button
-                class="slide-version-thumb"
-                type="button"
-                onclick="selectCarouselSlideVersion(${JSON.stringify(draftId)}, ${slideIndex}, ${versionIndex}, this)"
-                aria-label="${isCurrent ? "Текущая версия" : "Сделать текущей"}"
-              >
-                <img src="${escapeHtml(version.url || "")}" alt="Версия ${versionIndex + 1} для слайда ${slideIndex + 1}" />
-              </button>
-              <div class="slide-version-meta">
-                <span>${isCurrent ? "Текущая" : `Версия ${versionIndex + 1}`}</span>
-                <span class="meta">${escapeHtml(formatPlanDate(version.generated_at) || "сейчас")}</span>
-              </div>
-              <div class="actions-row slide-version-actions actions-grid-two">
-                ${isCurrent ? "" : `<button class="secondary-button" type="button" onclick="selectCarouselSlideVersion(${JSON.stringify(draftId)}, ${slideIndex}, ${versionIndex}, this)">${actionLabel("approve", "Сделать текущей")}</button>`}
-                ${items.length > 1 ? `<button class="secondary-button" type="button" onclick="deleteCarouselSlideVersion(${JSON.stringify(draftId)}, ${slideIndex}, ${versionIndex}, this)">${actionLabel("trash", "Удалить")}</button>` : ""}
-              </div>
-            </article>
-          `;
-        }).join("")}
-      </div>
-    </div>
-  `;
-}
+const {
+  bufferedCarouselNote,
+  hasPendingCarouselOperations,
+  renderSlides,
+  saveCarouselSlideText,
+  handleCarouselSlideNoteInput,
+  regenerateCarouselSlide,
+  regenerateCarouselAll,
+  selectCarouselSlideVersion,
+  deleteCarouselSlideVersion,
+  downloadCarouselPptx,
+} = createCarouselModule({
+  state,
+  carouselNoteSaveTimers,
+  frameDraftKey,
+  escapeHtml,
+  uiIcon,
+  actionLabel,
+  formatPlanDate,
+  fetchJson,
+  withButtonFeedback,
+  showRequestError,
+  confirmAction,
+  authQueryString: _authQueryString,
+  isCurrentDraftDetail,
+  mergeDraftIntoState,
+  renderDraftList,
+  renderDraftDetail,
+  scheduleCarouselRefresh,
+});
 
 function clearBackgroundRefreshes() {
   window.clearTimeout(reelRefreshTimer);
@@ -870,152 +725,10 @@ function isCurrentReelsDetail(draftId) {
   return state.mode === "content" && state.tab === "reels" && state.mobileView === "detail" && state.selectedReels?.draft_id === draftId;
 }
 
-function isEditingDetailForm() {
-  const active = document.activeElement;
-  if (!active || !(active instanceof HTMLElement)) return false;
-  if (!elements.detailPanel.contains(active)) return false;
-  return active.matches("textarea, input, select, [contenteditable='true']");
-}
-
 function _authQueryString() {
   const initData = window.Telegram?.WebApp?.initData;
   if (!initData) return "";
   return `?init_data=${encodeURIComponent(initData)}`;
-}
-
-async function saveCarouselSlideText(draftId, slideIndex, button) {
-  const textField = document.getElementById(slideTextId(slideIndex));
-  const text = String(textField?.value || "").trim();
-  const apply = async () => {
-    const draft = await fetchJson(`/api/carousel/${draftId}/slides/${slideIndex}/text`, {
-      method: "POST",
-      body: JSON.stringify({ text }),
-    });
-    state.selected = draft;
-    mergeDraftIntoState(draft);
-    renderDraftList();
-    if (isCurrentDraftDetail(draft.draft_id)) renderDraftDetail(draft);
-  };
-  if (button instanceof HTMLElement) {
-    await withButtonFeedback(button, "Сохраняю...", apply, "Сохранено");
-    return;
-  }
-  await apply();
-}
-
-async function persistCarouselSlideNote(draftId, slideIndex, note) {
-  const key = frameDraftKey(draftId, slideIndex);
-  state.pendingCarouselNotes[key] = String(note || "");
-  const draft = await fetchJson(`/api/carousel/${draftId}/slides/${slideIndex}/note`, {
-    method: "POST",
-    body: JSON.stringify({ note: String(note || "") }),
-  });
-  mergeDraftIntoState(draft);
-  state.pendingCarouselNotes[key] = String(note || "");
-  return draft;
-}
-
-function handleCarouselSlideNoteInput(draftId, slideIndex, value) {
-  const key = frameDraftKey(draftId, slideIndex);
-  state.pendingCarouselNotes[key] = String(value || "");
-  window.clearTimeout(carouselNoteSaveTimers[key]);
-  carouselNoteSaveTimers[key] = window.setTimeout(() => {
-    void persistCarouselSlideNote(draftId, slideIndex, state.pendingCarouselNotes[key]).catch(() => {});
-  }, 600);
-}
-
-async function regenerateCarouselSlide(draftId, slideIndex, button) {
-  const noteField = document.getElementById(slideNoteId(slideIndex));
-  const currentNote = String(noteField?.value || bufferedCarouselNote(draftId, slideIndex, "")).trim();
-  const note = currentNote || null;
-  const apply = async () => {
-    setCarouselSlideOperation(
-      draftId,
-      slideIndex,
-      note ? "Учитываю замечание и собираю новый вариант" : "Генерирую новый вариант картинки",
-    );
-    if (isCurrentDraftDetail(draftId) && state.selected?.draft_id === draftId) {
-      renderDraftDetail(state.selected);
-    }
-    if (currentNote) {
-      await persistCarouselSlideNote(draftId, slideIndex, currentNote);
-    }
-    const draft = await fetchJson(`/api/carousel/${draftId}/slides/${slideIndex}/regenerate`, {
-      method: "POST",
-      body: JSON.stringify({ note }),
-    });
-    mergeDraftIntoState(draft);
-    renderDraftList();
-    if (isCurrentDraftDetail(draft.draft_id)) renderDraftDetail(draft);
-    scheduleCarouselRefresh(draft.draft_id);
-  };
-  try {
-    if (button instanceof HTMLElement) {
-      await withButtonFeedback(button, "Генерирую...", apply, "Готово");
-      return;
-    }
-    await apply();
-  } catch (error) {
-    showRequestError("Не удалось перегенерировать картинку", error);
-  } finally {
-    setCarouselSlideOperation(draftId, slideIndex, "");
-    if (isCurrentDraftDetail(draftId) && state.selected?.draft_id === draftId) {
-      renderDraftDetail(state.selected);
-    }
-  }
-}
-
-async function regenerateCarouselAll(draftId, button) {
-  try {
-    await withButtonFeedback(button, "Запускаю...", async () => {
-      const draft = await fetchJson(`/api/carousel/${draftId}/regenerate-all`, {
-        method: "POST",
-        body: "{}",
-        timeout: 30000,
-      });
-      state.selected = draft;
-      state.draftId = draft.draft_id;
-      mergeDraftIntoState(draft);
-      renderDraftList();
-      if (isCurrentDraftDetail(draft.draft_id)) renderDraftDetail(draft);
-      scheduleCarouselRefresh(draft.draft_id);
-    }, "Запущено");
-  } catch (error) {
-    showRequestError("Не удалось запустить перегенерацию всех картинок", error);
-  }
-}
-
-async function selectCarouselSlideVersion(draftId, slideIndex, versionIndex, button) {
-  try {
-    await withButtonFeedback(button, "Выбираю...", async () => {
-      const draft = await fetchJson(`/api/carousel/${draftId}/slides/${slideIndex}/versions/${versionIndex}/select`, {
-        method: "POST",
-        body: "{}",
-      });
-      mergeDraftIntoState(draft);
-      renderDraftList();
-      if (isCurrentDraftDetail(draft.draft_id)) renderDraftDetail(draft);
-    }, "Выбрано");
-  } catch (error) {
-    showRequestError("Не удалось выбрать версию картинки", error);
-  }
-}
-
-async function deleteCarouselSlideVersion(draftId, slideIndex, versionIndex, button) {
-  const confirmed = await confirmAction("Удалить эту версию картинки?");
-  if (!confirmed) return;
-  try {
-    await withButtonFeedback(button, "Удаляю...", async () => {
-      const draft = await fetchJson(`/api/carousel/${draftId}/slides/${slideIndex}/versions/${versionIndex}`, {
-        method: "DELETE",
-      });
-      mergeDraftIntoState(draft);
-      renderDraftList();
-      if (isCurrentDraftDetail(draft.draft_id)) renderDraftDetail(draft);
-    }, "Удалено");
-  } catch (error) {
-    showRequestError("Не удалось удалить версию картинки", error);
-  }
 }
 
 async function sendDraftToChat(draftId, button) {
@@ -1028,37 +741,11 @@ async function sendDraftToChat(draftId, button) {
 }
 
 async function saveContentReviewDraft(draftId, button) {
-  const payload = {
-    topic: String(document.getElementById("contentTopicField")?.value || "").trim(),
-    angle: String(document.getElementById("contentAngleField")?.value || "").trim(),
-    hook: String(document.getElementById("contentHookField")?.value || "").trim(),
-    caption: String(document.getElementById("contentCaptionField")?.value || "").trim(),
-    cta: String(document.getElementById("contentCtaField")?.value || "").trim(),
-    hashtags: String(document.getElementById("contentHashtagsField")?.value || "").trim(),
-    visual_prompt: String(document.getElementById("contentVisualPromptField")?.value || "").trim(),
-    editor_notes: String(document.getElementById("contentEditorNotesField")?.value || "").trim(),
-  };
-  await withButtonFeedback(button, "Сохраняю...", async () => {
-    const draft = await fetchJson(`/api/drafts/${draftId}/content`, {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
-    mergeDraftIntoState(draft);
-    renderDraftList();
-    renderDraftDetail(draft);
-  }, "Сохранено");
+  return saveContentReviewDraftImpl(draftId, button);
 }
 
 async function polishContentDraft(draftId, button) {
-  await withButtonFeedback(button, "Полирую...", async () => {
-    const draft = await fetchJson(`/api/drafts/${draftId}/content/polish`, {
-      method: "POST",
-      body: "{}",
-    });
-    mergeDraftIntoState(draft);
-    renderDraftList();
-    renderDraftDetail(draft);
-  }, "Готово");
+  return polishContentDraftImpl(draftId, button);
 }
 
 function confirmAction(message) {
@@ -1096,20 +783,6 @@ async function deleteDraft(draftId, kind = "drafts", button) {
   }
 }
 
-async function downloadCarouselPptx(draftId, button) {
-  const downloadUrl = `${window.location.origin}/api/carousel/${draftId}/pptx${_authQueryString()}`;
-  if (button instanceof HTMLElement) {
-    button.classList.add("did-complete");
-    window.setTimeout(() => button.classList.remove("did-complete"), 900);
-  }
-  const tg = window.Telegram?.WebApp;
-  if (tg?.openLink) {
-    tg.openLink(downloadUrl);
-    return;
-  }
-  window.open(downloadUrl, "_blank", "noopener,noreferrer");
-}
-
 async function withButtonFeedback(button, pendingLabel, handler, doneLabel = "Готово") {
   const target = button instanceof HTMLElement ? button : null;
   const originalHtml = target?.innerHTML || "";
@@ -1145,222 +818,6 @@ async function withButtonFeedback(button, pendingLabel, handler, doneLabel = "Г
     }
     throw error;
   }
-}
-
-async function saveReelsScenario(draftId, button) {
-  const scenario = String(document.getElementById("reelsScenarioField")?.value || "").trim();
-  const concept = String(document.getElementById("reelsConceptField")?.value || "").trim();
-  await withButtonFeedback(button, "Сохраняю...", async () => {
-    const draft = await fetchJson(`/api/reels/${draftId}/scenario`, {
-      method: "POST",
-      body: JSON.stringify({ scenario, concept }),
-    });
-    state.selectedReels = draft;
-    renderReels();
-    renderReelsDetail(draft);
-  }, "Сохранено");
-}
-
-async function regenerateReelsStoryboard(draftId, button) {
-  await withButtonFeedback(button, "Запускаю...", async () => {
-    const draft = await fetchJson(`/api/reels/${draftId}/storyboard/regenerate`, {
-      method: "POST",
-      body: "{}",
-      timeout: 30000,
-    });
-    mergeReelsIntoState(draft);
-    renderReels();
-    renderReelsDetail(draft);
-    scheduleReelsRefresh(draft.draft_id);
-  }, "Запущено");
-}
-
-async function regenerateAllReelsFrames(draftId, button) {
-  try {
-    await withButtonFeedback(button, "Запускаю...", async () => {
-      const draft = await fetchJson(`/api/reels/${draftId}/frames/regenerate-all`, {
-        method: "POST",
-        body: "{}",
-        timeout: 30000,
-      });
-      mergeReelsIntoState(draft);
-      renderReels();
-      renderReelsDetail(draft);
-      scheduleReelsRefresh(draft.draft_id);
-    }, "Запущено");
-  } catch (error) {
-    showRequestError("Не удалось запустить генерацию кадров", error);
-  }
-}
-
-async function saveReelsFrameFields(draftId, frameIndex, button) {
-  const scene = String(document.getElementById(`reelsFrameScene${frameIndex}`)?.value || "").trim();
-  const angle = String(document.getElementById(`reelsFrameAngle${frameIndex}`)?.value || "").trim();
-  const timecode = String(document.getElementById(`reelsFrameTimecode${frameIndex}`)?.value || "").trim();
-  await withButtonFeedback(button, "Сохраняю...", async () => {
-    const draft = await fetchJson(`/api/reels/${draftId}/frames/${frameIndex}/fields`, {
-      method: "POST",
-      body: JSON.stringify({ scene, angle, timecode }),
-    });
-    state.selectedReels = draft;
-    renderReels();
-    renderReelsDetail(draft);
-  }, "Сохранено");
-}
-
-async function saveReelsFramePrompt(draftId, frameIndex, button) {
-  const prompt = String(document.getElementById(`reelsFramePrompt${frameIndex}`)?.value || "").trim();
-  await withButtonFeedback(button, "Сохраняю...", async () => {
-    const draft = await fetchJson(`/api/reels/${draftId}/frames/${frameIndex}/prompt`, {
-      method: "POST",
-      body: JSON.stringify({ prompt }),
-    });
-    const key = frameDraftKey(draftId, frameIndex);
-    state.pendingReelsPrompts[key] = prompt;
-    mergeReelsIntoState(draft);
-    renderReels();
-    renderReelsDetail(draft);
-  }, "Сохранено");
-}
-
-async function persistReelsFramePrompt(draftId, frameIndex, prompt) {
-  const key = frameDraftKey(draftId, frameIndex);
-  state.pendingReelsPrompts[key] = String(prompt || "");
-  const draft = await fetchJson(`/api/reels/${draftId}/frames/${frameIndex}/prompt`, {
-    method: "POST",
-    body: JSON.stringify({ prompt: String(prompt || "") }),
-  });
-  mergeReelsIntoState(draft);
-  state.pendingReelsPrompts[key] = String(prompt || "");
-  return draft;
-}
-
-function handleReelsFramePromptInput(draftId, frameIndex, value) {
-  const key = frameDraftKey(draftId, frameIndex);
-  state.pendingReelsPrompts[key] = String(value || "");
-  window.clearTimeout(reelsPromptSaveTimers[key]);
-  reelsPromptSaveTimers[key] = window.setTimeout(() => {
-    const prompt = String(state.pendingReelsPrompts[key] || "").trim();
-    if (!prompt) return;
-    void persistReelsFramePrompt(draftId, frameIndex, prompt).catch(() => {});
-  }, 600);
-}
-
-async function saveReelsFrameNote(draftId, frameIndex, button) {
-  const note = String(document.getElementById(`reelsFrameNote${frameIndex}`)?.value || "").trim();
-  await withButtonFeedback(button, "Сохраняю...", async () => {
-    const draft = await fetchJson(`/api/reels/${draftId}/frames/${frameIndex}/note`, {
-      method: "POST",
-      body: JSON.stringify({ note }),
-    });
-    const key = frameDraftKey(draftId, frameIndex);
-    state.pendingReelsNotes[key] = note;
-    mergeReelsIntoState(draft);
-    renderReels();
-    renderReelsDetail(draft);
-  }, "Сохранено");
-}
-
-async function persistReelsFrameNote(draftId, frameIndex, note) {
-  const key = frameDraftKey(draftId, frameIndex);
-  state.pendingReelsNotes[key] = String(note || "");
-  const draft = await fetchJson(`/api/reels/${draftId}/frames/${frameIndex}/note`, {
-    method: "POST",
-    body: JSON.stringify({ note: String(note || "") }),
-  });
-  mergeReelsIntoState(draft);
-  state.pendingReelsNotes[key] = String(note || "");
-  return draft;
-}
-
-function handleReelsFrameNoteInput(draftId, frameIndex, value) {
-  const key = frameDraftKey(draftId, frameIndex);
-  state.pendingReelsNotes[key] = String(value || "");
-  window.clearTimeout(reelsNoteSaveTimers[key]);
-  reelsNoteSaveTimers[key] = window.setTimeout(() => {
-    void persistReelsFrameNote(draftId, frameIndex, state.pendingReelsNotes[key]).catch(() => {});
-  }, 600);
-}
-
-async function regenerateReelsFrame(draftId, frameIndex, button) {
-  await withButtonFeedback(button, "Запускаю...", async () => {
-    const prompt = String(document.getElementById(`reelsFramePrompt${frameIndex}`)?.value || bufferedReelsPrompt(draftId, frameIndex, "")).trim();
-    const note = String(document.getElementById(`reelsFrameNote${frameIndex}`)?.value || bufferedReelsNote(draftId, frameIndex, "")).trim();
-    if (prompt) await persistReelsFramePrompt(draftId, frameIndex, prompt);
-    if (note) await persistReelsFrameNote(draftId, frameIndex, note);
-    const draft = await fetchJson(`/api/reels/${draftId}/frames/${frameIndex}/regenerate`, {
-      method: "POST",
-      body: "{}",
-    });
-    mergeReelsIntoState(draft);
-    renderReels();
-    renderReelsDetail(draft);
-    scheduleReelsRefresh(draft.draft_id);
-  }, "Запущено");
-}
-
-function renderReelsFrames(draftId, frames = []) {
-  const frameItems = Array.isArray(frames) ? frames : [];
-  if (!frameItems.length) return "";
-  return `
-    <section class="section">
-      <h3>${sectionHeadingIcon("Кадры и промпты")}Кадры и промпты</h3>
-      <div class="storyboard">
-        ${frameItems.map((frame, index) => {
-          const prompt = bufferedReelsPrompt(draftId, index, frame.gemini_prompt || "");
-          const note = bufferedReelsNote(draftId, index, frame.review_note || "");
-          const assetUrl = frame.current_asset?.url || "";
-          const showPromptOpen = !assetUrl;
-          return `
-            <article class="storyboard-frame">
-              <strong>Кадр ${index + 1}${frame.timecode ? ` • ${escapeHtml(frame.timecode)}` : ""}</strong>
-              <label class="prompt-note-field">
-                <span>Текст / действие кадра</span>
-                <textarea id="reelsFrameScene${index}" placeholder="Что происходит в кадре">${escapeHtml(frame.scene || "")}</textarea>
-              </label>
-              <label class="prompt-note-field">
-                <span>Ракурс</span>
-                <input id="reelsFrameAngle${index}" type="text" placeholder="Например: макро, фронтальный, средний план" value="${escapeHtml(frame.angle || "")}" />
-              </label>
-              <label class="prompt-note-field">
-                <span>Таймкод</span>
-                <input id="reelsFrameTimecode${index}" type="text" placeholder="Например: 0-3 сек" value="${escapeHtml(frame.timecode || "")}" />
-              </label>
-              ${assetUrl
-                ? `<img class="frame-image" src="${escapeHtml(assetUrl)}" alt="Кадр ${index + 1}" />`
-                : `<div class="frame-loading">Картинка ещё не готова. Откройте промпт ниже для ручной генерации.</div>`}
-              ${prompt ? `
-                <details class="prompt-disclosure"${showPromptOpen ? " open" : ""}>
-                  <summary class="secondary-button prompt-toggle">${actionLabel("eye", "Показать промпт")}</summary>
-                  <div class="prompt-card">
-                    <label class="prompt-note-field">
-                      <span>Промпт кадра</span>
-                      <textarea id="reelsFramePrompt${index}" placeholder="Какой кадр нужно сгенерировать и в каком настроении" oninput="handleReelsFramePromptInput('${draftId}', ${index}, this.value)">${escapeHtml(prompt)}</textarea>
-                    </label>
-                    <label class="prompt-note-field">
-                      <span>Замечание к кадру</span>
-                      <textarea id="reelsFrameNote${index}" placeholder="Например: теплее, меньше деталей, крупнее объект" oninput="handleReelsFrameNoteInput('${draftId}', ${index}, this.value)">${escapeHtml(note)}</textarea>
-                    </label>
-                    <div class="actions-row prompt-actions">
-                      <button class="secondary-button" type="button" onclick="saveReelsFrameFields('${draftId}', ${index}, this)">${actionLabel("text", "Сохранить описание кадра")}</button>
-                      <button class="secondary-button" type="button" onclick="saveReelsFramePrompt('${draftId}', ${index}, this)">${actionLabel("prompt", "Сохранить промпт кадра")}</button>
-                      <button class="secondary-button" type="button" onclick="saveReelsFrameNote('${draftId}', ${index}, this)">${actionLabel("note", "Сохранить замечание")}</button>
-                      <button class="secondary-button" type="button" onclick="regenerateReelsFrame('${draftId}', ${index}, this)">${actionLabel("regenerate", "Обновить кадр")}</button>
-                      <button class="secondary-button" type="button" onclick='copyText(${JSON.stringify(String(prompt))})'>${actionLabel("prompt", "Скопировать промпт кадра")}</button>
-                    </div>
-                  </div>
-                </details>
-              ` : `
-                <div class="actions-row prompt-actions">
-                  <button class="secondary-button" type="button" onclick="saveReelsFrameFields('${draftId}', ${index}, this)">${actionLabel("text", "Сохранить описание кадра")}</button>
-                </div>
-              `}
-            </article>
-          `;
-        }).join("")}
-      </div>
-    </section>
-  `;
 }
 
 function kindLabel(value) {
@@ -1508,350 +965,124 @@ async function copyText(value) {
   else showUiNotice("Промпт скопирован", "success");
 }
 
-function keywordFieldEntries(topic) {
-  const labels = state.keywords?.field_labels || {};
-  const fields = topic?.fields || {};
-  return Object.entries(fields).map(([field, items]) => ({
-    field,
-    label: labels[field] || field,
-    items: Array.isArray(items) ? items : [],
-  }));
-}
-
 async function addKeywordItem(topicIdx, field, form, button) {
-  const input = form?.querySelector("input[name='word']");
-  const word = String(input?.value || "").trim();
-  if (!word) {
-    input?.focus();
-    return;
-  }
-  await withButtonFeedback(button, "Добавляю...", async () => {
-    const payload = await fetchJson("/api/keywords/add", {
-      method: "POST",
-      body: JSON.stringify({ topic_idx: topicIdx, field, word }),
-    });
-    state.keywords = payload;
-    renderKeywords();
-  }, "Добавлено");
-  showUiNotice("Ключ добавлен", "success");
+  return addKeywordItemImpl(topicIdx, field, form, button);
 }
 
 async function removeKeywordItem(topicIdx, field, word, button) {
-  const confirmed = await confirmAction(`Удалить ключ "${word}"?`);
-  if (!confirmed) return;
-  await withButtonFeedback(button, "Удаляю...", async () => {
-    const payload = await fetchJson("/api/keywords/remove", {
-      method: "POST",
-      body: JSON.stringify({ topic_idx: topicIdx, field, word }),
-    });
-    state.keywords = payload;
-    renderKeywords();
-  }, "Удалено");
-  showUiNotice("Ключ удален", "success");
+  return removeKeywordItemImpl(topicIdx, field, word, button);
 }
 
 function openKeywordTopic(topicIdx) {
-  state.selectedKeywordTopicIdx = Number(topicIdx);
-  renderKeywords();
-  enterDetailView();
+  return openKeywordTopicImpl(topicIdx);
 }
 
-function syncMobileNavigation() {
-  const isMobile = window.matchMedia("(max-width: 760px)").matches;
-  if (!isMobile) {
-    elements.listPanel.classList.remove("hidden-mobile");
-    elements.detailPanel.classList.remove("hidden-mobile");
-    return;
-  }
+const {
+  syncMobileNavigation,
+  renderBackButton,
+  goBackToList,
+  enterDetailView,
+  isEditingDetailForm,
+  bindTextareaAutoExpand,
+  bindKeyboardDismiss,
+  bindTapAnimation,
+  bindCardKeyboardActivation,
+  bindKeyboardViewportAssist,
+  bindSwipeBack,
+  bindBottomTabBar,
+} = createShellModule({
+  state,
+  elements,
+  uiIcon,
+  setMode,
+  setTab,
+  safeLoadCurrentTab,
+});
 
-  if (state.mobileView === "detail") {
-    elements.listPanel.classList.add("hidden-mobile");
-    elements.detailPanel.classList.remove("hidden-mobile");
-  } else {
-    elements.listPanel.classList.remove("hidden-mobile");
-    elements.detailPanel.classList.add("hidden-mobile");
-  }
-}
+window.goBackToList = goBackToList;
 
-function renderBackButton() {
-  const isMobile = window.matchMedia("(max-width: 760px)").matches;
-  if (!isMobile) return "";
-  return `<button class="back-button visible" onclick="goBackToList(true)">${uiIcon("back")}<span>Назад к списку</span></button>`;
-}
+const {
+  loadPlans: loadPlansImpl,
+  planEntryTargetKind,
+  planEntryFormatLabel,
+  relatedDraftsForEntry,
+  openPlan,
+  generateDraftFromPlan,
+  openPlanRelatedDraft,
+  renderPlans: renderPlansImpl,
+  renderPlanDetail,
+} = createPlansModule({
+  state,
+  elements,
+  escapeHtml,
+  uiIcon,
+  actionLabel,
+  tagMarkup,
+  interactiveCardAttrs,
+  contentKindIcon,
+  kindLabel,
+  sourceLabel,
+  sourceTone,
+  formatPlanDate,
+  renderBackButton,
+  renderGuidedState,
+  setEmptyState,
+  renderDetailLoader,
+  fetchJson,
+  withButtonFeedback,
+  upsertDraftSummary,
+  draftSummaryFromDraft,
+  setTab,
+  enterDetailView,
+  syncMobileNavigation,
+  loadPlans,
+  loadDrafts,
+  loadReels,
+  openDraft,
+  openReels,
+});
 
-window.goBackToList = (animated = false) => {
-  if (animated) {
-    animateBackToList();
-    return;
-  }
-  state.mobileView = "list";
-  elements.detailPanel.classList.remove("swipe-back-exit", "swipe-back-armed");
-  elements.detailPanel.style.removeProperty("--swipe-offset");
-  syncMobileNavigation();
+const reelsCallbacks = {
+  renderReels: null,
+  renderReelsDetail: null,
 };
 
-function enterDetailView() {
-  state.mobileView = "detail";
-  syncMobileNavigation();
-  if (elements.detailPanel) {
-    elements.detailPanel.classList.remove("is-entering");
-    window.clearTimeout(detailEntryTimer);
-    requestAnimationFrame(() => {
-      elements.detailPanel.classList.add("is-entering");
-      detailEntryTimer = window.setTimeout(() => {
-        elements.detailPanel?.classList.remove("is-entering");
-      }, 280);
-    });
-  }
-  window.scrollTo(0, 0);
-}
-
-function isInteractiveTarget(target) {
-  if (!target || !(target instanceof Element)) return false;
-  return Boolean(target.closest("textarea, input, select, button, a, [contenteditable='true']"));
-}
-
-function isSelectableTextTarget(target) {
-  if (!target || !(target instanceof Element)) return false;
-  return Boolean(target.closest(".detail-preview, .detail-markdown, .draft-preview, .draft-topic, .detail-title, .section"));
-}
-
-function hasActiveTextSelection() {
-  const selection = window.getSelection?.();
-  return Boolean(selection && String(selection).trim().length > 0);
-}
-
-function bindTextareaAutoExpand() {
-  const resizeTextarea = (field) => {
-    if (!(field instanceof HTMLTextAreaElement)) return;
-    field.style.height = "auto";
-    field.style.height = `${field.scrollHeight}px`;
-  };
-
-  const bindField = (field) => {
-    if (!(field instanceof HTMLTextAreaElement)) return;
-    if (field.dataset.autoExpandBound === "true") {
-      resizeTextarea(field);
-      return;
-    }
-    field.dataset.autoExpandBound = "true";
-    resizeTextarea(field);
-    field.addEventListener("input", () => resizeTextarea(field));
-  };
-
-  document.querySelectorAll("textarea").forEach(bindField);
-
-  const observer = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
-      mutation.addedNodes.forEach((node) => {
-        if (!(node instanceof Element)) return;
-        if (node.matches("textarea")) {
-          bindField(node);
-          return;
-        }
-        node.querySelectorAll?.("textarea").forEach(bindField);
-      });
-    });
-  });
-
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true,
-  });
-}
-
-function bindKeyboardDismiss() {
-  const dismiss = (event) => {
-    const active = document.activeElement;
-    if (!active || !(active instanceof HTMLElement)) return;
-    if (!active.matches("textarea, input")) return;
-    const target = event.target;
-    if (target instanceof Element && target.closest("textarea, input, select")) return;
-    active.blur();
-  };
-  document.addEventListener("touchstart", dismiss, { passive: true });
-  document.addEventListener("mousedown", dismiss, { passive: true });
-}
-
-function bindTapAnimation() {
-  const selector = ".tab-button, .mode-button, .back-button, .secondary-button, .status-button, .feedback-button, .primary-button, .icon-corner-button, .bottom-tab-btn";
-  const clearTap = (target) => {
-    if (!(target instanceof HTMLElement)) return;
-    if (target.dataset.tapTimerId) {
-      window.clearTimeout(Number(target.dataset.tapTimerId));
-      delete target.dataset.tapTimerId;
-    }
-    target.classList.remove("is-tapped");
-  };
-
-  document.addEventListener("pointerdown", (event) => {
-    const target = event.target instanceof Element ? event.target.closest(selector) : null;
-    if (!(target instanceof HTMLElement) || target.disabled) return;
-    clearTap(target);
-    target.classList.add("is-tapped");
-    target.dataset.tapTimerId = String(window.setTimeout(() => clearTap(target), 80));
-  }, { passive: true });
-
-  document.addEventListener("pointerup", (event) => {
-    const target = event.target instanceof Element ? event.target.closest(selector) : null;
-    clearTap(target);
-  }, { passive: true });
-
-  document.addEventListener("pointercancel", (event) => {
-    const target = event.target instanceof Element ? event.target.closest(selector) : null;
-    clearTap(target);
-  }, { passive: true });
-}
-
-function bindCardKeyboardActivation() {
-  document.addEventListener("keydown", (event) => {
-    if (event.defaultPrevented) return;
-    const target = event.target;
-    if (!(target instanceof Element)) return;
-    const card = target.closest(".interactive-card");
-    if (!(card instanceof HTMLElement)) return;
-    if (event.key !== "Enter" && event.key !== " ") return;
-    event.preventDefault();
-    card.click();
-  });
-}
-
-function ensureFieldAboveKeyboard(target, behavior = "smooth") {
-  if (!(target instanceof HTMLElement)) return;
-  const viewportHeight = window.visualViewport?.height || window.innerHeight || 0;
-  if (!viewportHeight) return;
-  const rect = target.getBoundingClientRect();
-  const visibleTop = 84;
-  const visibleBottom = viewportHeight - 20;
-  if (rect.top >= visibleTop && rect.bottom <= visibleBottom) return;
-  target.scrollIntoView({
-    behavior,
-    block: rect.top < visibleTop ? "start" : "center",
-    inline: "nearest",
-  });
-}
-
-function bindKeyboardViewportAssist() {
-  const schedule = (target, delay = 0, behavior = "smooth") => {
-    if (!(target instanceof HTMLElement)) return;
-    window.clearTimeout(keyboardViewportTimer);
-    keyboardViewportTimer = window.setTimeout(() => ensureFieldAboveKeyboard(target, behavior), delay);
-  };
-
-  document.addEventListener("focusin", (event) => {
-    const target = event.target;
-    if (!(target instanceof HTMLElement)) return;
-    if (!target.matches("textarea, input, select, [contenteditable='true']")) return;
-    schedule(target, 0, "auto");
-    schedule(target, 120, "smooth");
-    schedule(target, 260, "smooth");
-  });
-
-  const viewport = window.visualViewport;
-  if (!viewport) return;
-  const handleViewportChange = () => {
-    const active = document.activeElement;
-    if (!(active instanceof HTMLElement)) return;
-    if (!active.matches("textarea, input, select, [contenteditable='true']")) return;
-    schedule(active, 40, "smooth");
-  };
-  viewport.addEventListener("resize", handleViewportChange);
-  viewport.addEventListener("scroll", handleViewportChange);
-}
-
-function bindSwipeBack() {
-  const isMobile = window.matchMedia("(max-width: 760px)").matches;
-  if (!isMobile) return;
-  elements.detailPanel.addEventListener("touchstart", (event) => {
-    const touch = event.touches[0];
-    if (!touch || state.mobileView !== "detail" || isInteractiveTarget(event.target) || isSelectableTextTarget(event.target) || hasActiveTextSelection()) {
-      swipeStart = null;
-      return;
-    }
-    swipeStart = { x: touch.clientX, y: touch.clientY };
-  }, { passive: true });
-  elements.detailPanel.addEventListener("touchmove", (event) => {
-    if (!swipeStart || state.mobileView !== "detail" || isInteractiveTarget(event.target) || isSelectableTextTarget(event.target) || hasActiveTextSelection()) return;
-    const touch = event.touches[0];
-    const dx = Math.max(0, touch.clientX - swipeStart.x);
-    const dy = Math.abs(touch.clientY - swipeStart.y);
-    if (dx > 10 && dy < 72) {
-      elements.detailPanel.classList.add("swipe-back-armed");
-      elements.detailPanel.style.setProperty("--swipe-offset", `${Math.min(dx, 96)}px`);
-    }
-  }, { passive: true });
-  elements.detailPanel.addEventListener("touchend", (event) => {
-    if (!swipeStart || state.mobileView !== "detail" || hasActiveTextSelection()) return;
-    const touch = event.changedTouches[0];
-    const dx = touch.clientX - swipeStart.x;
-    const dy = Math.abs(touch.clientY - swipeStart.y);
-    swipeStart = null;
-    if (dx > 72 && dy < 56 && dx > dy * 1.4) {
-      window.goBackToList(true);
-      return;
-    }
-    elements.detailPanel.classList.remove("swipe-back-armed");
-    elements.detailPanel.style.removeProperty("--swipe-offset");
-  }, { passive: true });
-}
-
-function animateBackToList() {
-  elements.detailPanel.classList.remove("swipe-back-armed");
-  elements.detailPanel.classList.add("swipe-back-exit");
-  window.setTimeout(() => {
-    state.mobileView = "list";
-    elements.detailPanel.classList.remove("swipe-back-exit");
-    elements.detailPanel.style.removeProperty("--swipe-offset");
-    syncMobileNavigation();
-  }, 180);
-}
-
-function bindTopicForm(form, config) {
-  const topicField = form.querySelector("textarea[name='topic']");
-  const submitButton = form.querySelector("button[type='submit']");
-  if (!topicField || !submitButton) return;
-
-  const updateState = () => {
-    submitButton.disabled = !topicField.value.trim();
-  };
-
-  updateState();
-  topicField.addEventListener("input", updateState);
-  form.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const topic = topicField.value.trim();
-    if (!topic) {
-      topicField.focus();
-      return;
-    }
-    const originalHtml = submitButton.innerHTML;
-    submitButton.disabled = true;
-    submitButton.classList.add("is-busy");
-    submitButton.innerHTML = `<span class="button-spinner" aria-hidden="true"></span><span>${escapeHtml(config.pendingText)}</span>`;
-    try {
-      await config.onSubmit(topic);
-      submitButton.classList.add("did-complete");
-      submitButton.innerHTML = `<span>${escapeHtml(config.doneText || "Готово")}</span>`;
-      window.setTimeout(() => {
-        submitButton.classList.remove("did-complete");
-        submitButton.innerHTML = originalHtml;
-        updateState();
-      }, 900);
-      return;
-    } catch (error) {
-      submitButton.classList.add("did-error");
-      showRequestError(config.errorPrefix || "Не удалось выполнить действие", error);
-      window.setTimeout(() => {
-        submitButton.classList.remove("did-error");
-        submitButton.innerHTML = originalHtml;
-        updateState();
-      }, 1200);
-    } finally {
-      submitButton.disabled = false;
-      submitButton.classList.remove("is-busy");
-    }
-  });
-}
+const {
+  renderReelsDetail: renderReelsDetailMarkup,
+  saveReelsScenario,
+  regenerateReelsStoryboard,
+  regenerateAllReelsFrames,
+  saveReelsFrameFields,
+  saveReelsFramePrompt,
+  saveReelsFrameNote,
+  regenerateReelsFrame,
+  handleReelsFramePromptInput,
+  handleReelsFrameNoteInput,
+} = createReelsModule({
+  state,
+  reelsNoteSaveTimers,
+  reelsPromptSaveTimers,
+  frameDraftKey,
+  escapeHtml,
+  uiIcon,
+  sectionHeadingIcon,
+  actionLabel,
+  tagMarkup,
+  statusLabel,
+  statusTone,
+  sourceLabel,
+  sourceTone,
+  draftGenerationLabel,
+  generationStateMarkup,
+  renderBackButton,
+  renderDetailLoader,
+  fetchJson,
+  withButtonFeedback,
+  showRequestError,
+  mergeReelsIntoState,
+  scheduleReelsRefresh,
+  callbacks: reelsCallbacks,
+});
 
 function applyTelegramTheme() {
   const tg = window.Telegram?.WebApp;
@@ -1884,15 +1115,8 @@ function scheduleReelsRefresh(draftId, attempts = 10) {
   window.clearTimeout(reelRefreshTimer);
   reelRefreshTimer = window.setTimeout(async () => {
     try {
-      const reel = await fetchJson(`/api/reels/${draftId}`);
-      const readyFrames = Array.isArray(reel.frames) ? reel.frames.filter((i) => i.current_asset?.url).length : 0;
-      state.reels = state.reels.map((i) => i.draft_id === reel.draft_id ? { ...i, ...reel } : i);
-      if (isCurrentReelsDetail(reel.draft_id)) {
-        state.selectedReels = reel;
-        renderReels();
-        if (!isEditingDetailForm()) renderReelsDetail(reel);
-      }
-      if (reel.generation_pending || readyFrames < (reel.frame_count || 0)) scheduleReelsRefresh(draftId, attempts - 1);
+      const { shouldContinue } = await refreshReelsDetailImpl(draftId);
+      if (shouldContinue) scheduleReelsRefresh(draftId, attempts - 1);
     } catch (_e) { scheduleReelsRefresh(draftId, attempts - 1); }
   }, 4000);
 }
@@ -1980,15 +1204,7 @@ async function loadDrafts() {
   }
 }
 
-async function loadInbox() {
-  const params = new URLSearchParams();
-  params.set("limit", "100");
-  if (state.inboxKind && state.inboxKind !== "all") params.set("kind", state.inboxKind);
-  const data = await fetchJson(`/api/inbox?${params.toString()}`);
-  state.inbox = data.items || [];
-  state.inboxKind = data.kind || "all";
-  renderInbox();
-}
+async function loadInbox() { return loadInboxImpl(); }
 
 async function loadStatus() {
   state.status = await fetchJson("/api/status");
@@ -1996,697 +1212,281 @@ async function loadStatus() {
 }
 
 async function loadPlans() {
-  const data = await fetchJson("/api/plans?limit=20");
-  state.plans = data.items || [];
-  renderPlans();
+  return loadPlansImpl();
 }
 
-async function loadReels() {
-  const data = await fetchJson("/api/reels?limit=30");
-  state.reels = data.items || [];
-  renderReels();
-}
+async function loadReels() { return loadReelsImpl(); }
 
 async function loadKeywords() {
-  state.keywords = await fetchJson("/api/keywords");
-  renderKeywords();
+  return loadKeywordsImpl();
 }
 
 async function loadSettings() {
-  if (state.settingsSection === "keywords") {
-    if (!state.keywords) {
-      state.keywords = await fetchJson("/api/keywords");
-    }
-    renderKeywords();
-    return;
-  }
-  if (!state.status) {
-    state.status = await fetchJson("/api/status");
-  }
-  renderStatus();
-}
-
-function renderSettingsSwitcher(activeSection) {
-  return `
-    <section class="settings-switcher">
-      <button class="tab-button${activeSection === "status" ? " active" : ""}" type="button" onclick="openSettingsSection('status')">${uiIcon("gear")}<span>Статус</span></button>
-      <button class="tab-button${activeSection === "keywords" ? " active" : ""}" type="button" onclick="openSettingsSection('keywords')">${uiIcon("text")}<span>Ключи</span></button>
-    </section>
-  `;
-}
-
-function currentHandbookMeta() {
-  return HANDBOOK_CATEGORY_META[state.tab] || HANDBOOK_CATEGORY_META.aromas;
-}
-
-async function loadReferenceAccess() {
-  if (state.referenceAccess !== null) return state.referenceAccess;
-  try {
-    const payload = await fetchJson("/api/references/access");
-    state.referenceAccess = Boolean(payload?.allowed);
-    state.referenceAccessError = "";
-  } catch (error) {
-    const message = String(error?.message || "");
-    if (message.includes("reference_access_denied") || message.includes("403 Forbidden")) {
-      state.referenceAccess = false;
-      state.referenceAccessError = "";
-    } else {
-      state.referenceAccess = null;
-      state.referenceAccessError = message || "reference_temporarily_unavailable";
-    }
-  }
-  return state.referenceAccess;
-}
-
-async function loadReferences(tabId = state.tab) {
-  const meta = HANDBOOK_CATEGORY_META[tabId];
-  if (!meta) return;
-  if (state.referenceAccess === null) {
-    await loadReferenceAccess();
-  }
-  if (state.referenceAccess === null) {
-    renderReferencesUnavailable();
-    return;
-  }
-  if (!state.referenceAccess) {
-    renderReferencesLocked();
-    return;
-  }
-  const data = await fetchJson(`/api/references/${meta.category}`);
-  state.referenceItems = data.items || [];
-  
-  // Do not automatically pick the first card if nothing is selected
-  const selectedSlug = state.selectedReference?.category === meta.category
-    ? state.selectedReference?.slug
-    : "";
-    
-  if (selectedSlug) {
-    await openReference(selectedSlug, tabId);
-  } else {
-    renderReferences();
-  }
-}
-
-async function openReference(slug, tabId = state.tab) {
-  const meta = HANDBOOK_CATEGORY_META[tabId];
-  if (!slug || !meta) return;
-  elements.draftDetail.innerHTML = `${renderBackButton()}${renderDetailLoader("Открываю карточку справочника")}`;
-  enterDetailView();
-  state.selectedReference = await fetchJson(`/api/references/${meta.category}/${encodeURIComponent(slug)}`);
-  state.selectedReference.category = meta.category;
-  state.tab = tabId;
-  elements.tabsContainer.querySelectorAll(".tab-button").forEach((b) => b.classList.toggle("active", b.dataset.tab === tabId));
-  renderReferences();
-  enterDetailView();
-}
-
-function renderReferencePassport(reference) {
-  const parts = [
-    reference.key ? `Ключ: ${reference.key}` : "",
-    reference.botanical_family ? `Семейство / тип: ${reference.botanical_family}` : "",
-    reference.origin_countries ? `Источник / традиция: ${reference.origin_countries}` : "",
-    reference.extraction_method ? `Форма / метод: ${reference.extraction_method}` : "",
-    reference.volatility ? `Длительность / летучесть: ${reference.volatility}` : "",
-    reference.chakra_focus ? `Фокус / чакры: ${reference.chakra_focus}` : "",
-    reference.polarity ? `Полярность: ${reference.polarity}` : "",
-    reference.course_source ? `Источник курса: ${formatCourseSourceLabel(reference.course_source)}` : "",
-  ].filter(Boolean);
-  return parts.join("\n");
-}
-
-function renderReferenceImage(reference) {
-  const heroClass = state.tab === "concepts" ? "reference-hero-card is-theory" : "reference-hero-card";
-  const eyebrowLabel = state.tab === "concepts"
-    ? `${handbookCategoryIcon(state.tab)}<span>${escapeHtml(currentHandbookMeta().title)} · учебный модуль</span>`
-    : `${handbookCategoryIcon(state.tab)}<span>${escapeHtml(currentHandbookMeta().title)}</span>`;
-  return `
-    <section class="section aroma-hero ${heroClass}">
-      <div class="reference-hero-copy">
-        <p class="eyebrow">${eyebrowLabel}</p>
-        <h2 class="detail-title">${escapeHtml(reference.name)}</h2>
-        <p class="reference-keyline">${escapeHtml(reference.key || handbookCardBadge(state.tab, reference) || currentHandbookMeta().title)}</p>
-        <p class="reference-summary">${escapeHtml(stripMarkdown(reference.description || reference.course_notes || ""))}</p>
-        <div class="reference-badges">${referenceHeroBadges(reference)}</div>
-      </div>
-      <div class="reference-hero-media">
-        <img class="aroma-image" src="${escapeHtml(reference.image_url)}" alt="${escapeHtml(reference.image_alt)}" />
-        <div class="aroma-image-caption">${escapeHtml(reference.image_alt)}</div>
-      </div>
-    </section>
-  `;
-}
-
-function renderReferences() {
-  const meta = currentHandbookMeta();
-  const items = state.referenceItems || [];
-  const query = (state.referenceSearch || "").trim().toLowerCase();
-  const filtered = items.filter((item) => `${item.name} ${item.description || ""} ${item.course_notes || ""}`.toLowerCase().includes(query));
-  const reference = state.selectedReference;
-  
-  elements.listTitle.textContent = meta.title;
-  elements.draftCount.textContent = query 
-    ? `Найдено ${filtered.length} из ${items.length}` 
-    : meta.count(items);
-    
-  setEmptyState(filtered.length > 0, meta.empty);
-
-  let listContainer = document.getElementById("referenceListContainer");
-  if (!listContainer) {
-    elements.draftList.innerHTML = `
-      <div class="aroma-search">
-        <label>${escapeHtml(meta.searchLabel)}<input id="referenceSearchInput" type="search" placeholder="${escapeHtml(meta.searchPlaceholder)}" value="${escapeHtml(state.referenceSearch)}" /></label>
-      </div>
-      <div id="referenceListContainer" class="plans-list"></div>
-    `;
-    listContainer = document.getElementById("referenceListContainer");
-    document.getElementById("referenceSearchInput")?.addEventListener("input", (e) => {
-      state.referenceSearch = e.target.value;
-      renderReferences();
-    });
-  } else {
-    const searchInput = document.getElementById("referenceSearchInput");
-    if (searchInput) {
-      searchInput.placeholder = meta.searchPlaceholder;
-      searchInput.value = state.referenceSearch;
-      const label = searchInput.closest("label");
-      if (label) {
-        label.firstChild.textContent = meta.searchLabel;
-      }
-    }
-  }
-
-  listContainer.innerHTML = filtered.map((item) => `
-    <article ${interactiveCardAttrs(`Открыть карточку ${item.name}`)} class="draft-card overview-card reference-card${state.tab === "concepts" ? " is-theory concept-card" : ""}${item.slug === reference?.slug ? " active" : ""} interactive-card" onclick="openReference('${item.slug}', '${state.tab}')">
-      <div class="overview-card-top">
-        <div class="draft-kind">${handbookCategoryIcon(state.tab)}${handbookCardBadge(state.tab, item) ? `<span>${state.tab === "concepts" ? `<span class="concept-kind-mark" aria-hidden="true">${escapeHtml(conceptTypeMeta(item.source_type).icon)}</span>` : ""}${escapeHtml(handbookCardBadge(state.tab, item))}</span>` : ""}</div>
-        <span class="overview-card-date">${escapeHtml(formatCourseSourceLabel(item.course_source) || meta.title)}</span>
-      </div>
-      <h3 class="draft-topic">${escapeHtml(item.name)}</h3>
-      <div class="draft-preview">${escapeHtml(stripMarkdown(item.description || item.course_notes || ""))}</div>
-      <div class="draft-meta overview-card-footer">
-        ${item.chakra_focus ? tagMarkup(item.chakra_focus, "source") : ""}
-        ${item.polarity ? tagMarkup(item.polarity, "feedback") : ""}
-      </div>
-    </article>
-  `).join("");
-
-  if (!reference) {
-    elements.draftDetail.innerHTML = `${renderBackButton()}<div class="detail-empty">${renderGuidedState({
-      eyebrow: meta.title,
-      title: `Откройте ${meta.label} из списка`,
-      body: meta.selectPrompt,
-    })}</div>`;
-    syncMobileNavigation();
-    return;
-  }
-
-  elements.draftDetail.innerHTML = `
-    <div class="detail-grid">
-      ${renderBackButton()}
-      ${renderReferenceImage(reference)}
-      ${aromaSection("Паспорт карточки", renderReferencePassport(reference))}
-      ${aromaSection("Описание", reference.description)}
-      ${aromaSection("Какие вопросы поднимает", reference.questions)}
-      ${aromaSection("Действие на НПС", reference.nps_effect)}
-      ${aromaSection("Терапевтические свойства", reference.therapeutic_properties)}
-      ${aromaSection("Психологические свойства", reference.psychological_properties)}
-      ${aromaSection("Материалы курса", reference.course_notes)}
-      ${aromaSection('Ресурс "+"', reference.resource_values?.plus)}
-      ${aromaSection('Ресурс "-"', reference.resource_values?.minus)}
-      ${aromaSection("Исторические сведения", reference.history)}
-    </div>
-  `;
-  syncMobileNavigation();
-}
-
-function renderReferencesLocked() {
-  const meta = currentHandbookMeta();
-  elements.listTitle.textContent = meta.title;
-  elements.draftCount.textContent = "";
-  setEmptyState(true);
-  elements.draftList.innerHTML = renderGuidedState({
-    eyebrow: meta.title,
-    title: "Доступ пока закрыт",
-    body: meta.locked,
-  });
-  elements.draftDetail.innerHTML = `${renderBackButton()}<div class="detail-empty">${renderGuidedState({
-    eyebrow: meta.title,
-    title: "Доступ пока закрыт",
-    body: meta.locked,
-  })}</div>`;
-  syncMobileNavigation();
-}
-
-function renderReferencesUnavailable() {
-  const meta = currentHandbookMeta();
-  const message = "Справочник временно недоступен. Попробуйте открыть раздел ещё раз.";
-  elements.listTitle.textContent = meta.title;
-  elements.draftCount.textContent = "";
-  setEmptyState(true);
-  elements.draftList.innerHTML = renderGuidedState({
-    eyebrow: meta.title,
-    title: "Не удалось открыть справочник",
-    body: message,
-    actionLabel: "Повторить",
-    action: "retryCurrentTab()",
-  });
-  elements.draftDetail.innerHTML = `${renderBackButton()}<div class="detail-empty">${renderGuidedState({
-    eyebrow: meta.title,
-    title: "Не удалось открыть справочник",
-    body: message,
-    actionLabel: "Повторить",
-    action: "retryCurrentTab()",
-  })}</div>`;
-  syncMobileNavigation();
-}
-
-async function openAroma(slug) {
-  if (!slug) return;
-  await openReference(slug, "aromas");
+  return loadSettingsImpl();
 }
 
 function renderCreate() {
-  elements.listTitle.textContent = "Инструменты";
-  elements.draftCount.textContent = "4 типа";
-  setEmptyState(true);
-  
-  elements.draftList.innerHTML = `
-    <div class="create-list">
-      <article ${interactiveCardAttrs("Выбрать инструмент Пост для соцсетей")} class="create-card${state.selectedCreateTool === 'content' ? ' active' : ''} interactive-card" data-tool="content" onclick="renderCreateTool('content')">
-        <div class="draft-kind">${contentKindIcon("content")}<span>контент</span></div>
-        <h3 class="draft-topic">Пост для соцсетей</h3>
-        <div class="draft-preview">Тредс, Инстаграм или Телеграм.</div>
-      </article>
-      <article ${interactiveCardAttrs("Выбрать инструмент Сценарий и раскадровка")} class="create-card${state.selectedCreateTool === 'reels' ? ' active' : ''} interactive-card" data-tool="reels" onclick="renderCreateTool('reels')">
-        <div class="draft-kind">${contentKindIcon("reels")}<span>рилсы</span></div>
-        <h3 class="draft-topic">Сценарий + раскадровка</h3>
-        <div class="draft-preview">Сценарий и 4 кадра визуализации.</div>
-      </article>
-      <article ${interactiveCardAttrs("Выбрать инструмент Контент-план")} class="create-card${state.selectedCreateTool === 'plan' ? ' active' : ''} interactive-card" data-tool="plan" onclick="renderCreateTool('plan')">
-        <div class="draft-kind">${contentKindIcon("plan")}<span>план</span></div>
-        <h3 class="draft-topic">Контент-план</h3>
-        <div class="draft-preview">Сбор трендов и план на неделю.</div>
-      </article>
-      <article ${interactiveCardAttrs("Выбрать инструмент Карусель")} class="create-card${state.selectedCreateTool === 'carousel' ? ' active' : ''} interactive-card" data-tool="carousel" onclick="renderCreateTool('carousel')">
-        <div class="draft-kind">${contentKindIcon("carousel")}<span>карусель</span></div>
-        <h3 class="draft-topic">Карусель</h3>
-        <div class="draft-preview">5 слайдов с промптами для картинок.</div>
-      </article>
-    </div>
-  `;
-
-  if (!state.selectedCreateTool) {
-    elements.draftDetail.innerHTML = `<div class="detail-empty">${renderGuidedState({
-      eyebrow: "Создать",
-      title: "Выберите формат для старта",
-      body: "Слева доступны быстрые сценарии для контента, рилса, плана недели и карусели.",
-    })}</div>`;
-    syncMobileNavigation();
-    return;
-  }
-
-  renderCreateTool(state.selectedCreateTool);
+  return renderCreateImpl();
 }
 
 function renderCreateTool(toolId) {
-  state.selectedCreateTool = toolId;
-  
-  // Update active state in the list
-  elements.draftList.querySelectorAll(".create-card").forEach(card => {
-    card.classList.toggle("active", card.dataset.tool === toolId);
-  });
-
-  let formHtml = '';
-  if (toolId === 'content') {
-    formHtml = `
-      <section class="section create-tool-panel">
-        <h3>Создать контент</h3>
-        <form class="create-form" data-create-content>
-          <label>Тема<textarea name="topic" placeholder="Например: как мягко переключиться после рабочего дня"></textarea></label>
-          <p class="field-help">Сформулируйте тему как готовую мысль. Так черновик сразу получится ближе к нужной подаче.</p>
-          <div class="field-grid">
-            <label>Цель<select name="goal_key"><option value="trust">Доверие</option><option value="authority">Экспертность</option><option value="engagement">Вовлечённость</option><option value="sales">Продажи</option></select></label>
-            <label>Формат<select name="format_key"><option value="threads">Тредс</option><option value="instagram">Инстаграм</option><option value="telegram">Телеграм</option></select></label>
-          </div>
-          <button class="primary-button" type="submit">Собрать черновик</button>
-        </form>
-      </section>
-    `;
-  } else if (toolId === 'reels') {
-    formHtml = `
-      <section class="section create-tool-panel">
-        <h3>Создать рилс</h3>
-        <form class="create-form" data-create-reels>
-          <label>Тема<textarea name="topic" placeholder="Например: вечерний сенсорный ритуал"></textarea></label>
-          <p class="field-help">Описывайте тему через сцену, состояние или ритуал. Так легче получить usable сценарий и кадры.</p>
-          <button class="primary-button" type="submit">Собрать сценарий и кадры</button>
-        </form>
-      </section>
-    `;
-  } else if (toolId === 'plan') {
-    formHtml = `
-      <section class="section create-tool-panel">
-        <h3>Создать план</h3>
-        <form class="create-form" data-create-plan>
-          <div class="detail-preview">Собирает актуальные тренды и сохраняет недельный план с карточками, из которых можно сразу запускать черновики.</div>
-          <button class="primary-button" type="submit">Собрать план на неделю</button>
-        </form>
-      </section>
-    `;
-  } else if (toolId === 'carousel') {
-    formHtml = `
-      <section class="section create-tool-panel">
-        <h3>Создать карусель</h3>
-        <form class="create-form" data-create-carousel>
-          <label>Тема<textarea name="topic" placeholder="Например: утренний ритуал с маслами"></textarea></label>
-          <p class="field-help">Лучше работает тема с обещанием результата: что человек поймет, почувствует или сможет сделать после карусели.</p>
-          <button class="primary-button" type="submit">Собрать карусель</button>
-        </form>
-      </section>
-    `;
-  }
-
-  elements.draftDetail.innerHTML = `
-    <div class="detail-grid">
-      ${renderBackButton()}
-      ${formHtml}
-    </div>
-  `;
-  
-  enterDetailView();
-
-  // Re-bind forms
-  const cForm = elements.draftDetail.querySelector("[data-create-content]");
-  if (cForm) bindTopicForm(cForm, { pendingText: "Создаю...", onSubmit: async (t) => {
-    const g = cForm.querySelector("select[name='goal_key']").value;
-    const f = cForm.querySelector("select[name='format_key']").value;
-    const pending = openPendingDraftCreation(f, t);
-    try {
-      const d = await fetchJson("/api/generate/content", {
-        method: "POST",
-        timeout: 45000,
-        body: JSON.stringify({ topic: t, goal_key: g, format_key: f }),
-      });
-      finalizePendingDraftCreation(d);
-      await openDraft(d.draft_id);
-    } catch (error) {
-      if (error?.message === "request_timeout") {
-        await recoverPendingDraftCreation(f, t, pending.draft_id);
-        return;
-      }
-      throw error;
-    }
-  }});
-
-  const rForm = elements.draftDetail.querySelector("[data-create-reels]");
-  if (rForm) bindTopicForm(rForm, { pendingText: "Создаю...", onSubmit: async (t) => {
-    const pending = openPendingReelsCreation(t);
-    try {
-      const r = await fetchJson("/api/generate/reels", {
-        method: "POST",
-        timeout: 45000,
-        body: JSON.stringify({ topic: t }),
-      });
-      finalizePendingReelsCreation(r);
-      await openReels(r.draft_id);
-    } catch (error) {
-      if (error?.message === "request_timeout") {
-        await recoverPendingReelsCreation(t, pending.draft_id);
-        return;
-      }
-      throw error;
-    }
-  }});
-
-  const pForm = elements.draftDetail.querySelector("[data-create-plan]");
-  if (pForm) pForm.addEventListener("submit", async (e) => {
-    e.preventDefault(); const b = pForm.querySelector("button"); b.disabled = true; b.textContent = "Собираю...";
-    try { const p = await fetchJson("/api/generate/plan", { method: "POST", body: JSON.stringify({}) });
-      state.selectedPlan = p; setTab("plans"); await loadPlans(); renderPlanDetail(p); enterDetailView();
-    } finally { b.disabled = false; b.textContent = "Собрать план на неделю"; }
-  });
-
-  const carForm = elements.draftDetail.querySelector("[data-create-carousel]");
-  if (carForm) bindTopicForm(carForm, { pendingText: "Создаю...", onSubmit: async (t) => {
-    const pending = openPendingDraftCreation("carousel", t);
-    try {
-      const d = await fetchJson("/api/generate/carousel", {
-        method: "POST",
-        timeout: 45000,
-        body: JSON.stringify({ topic: t }),
-      });
-      finalizePendingDraftCreation(d);
-      await openDraft(d.draft_id);
-    } catch (error) {
-      if (error?.message === "request_timeout") {
-        await recoverPendingDraftCreation("carousel", t, pending.draft_id);
-        return;
-      }
-      throw error;
-    }
-  }});
+  return renderCreateToolImpl(toolId);
 }
 
-function renderAromas() { renderReferences(); }
+const {
+  currentHandbookMeta,
+  loadReferenceAccess,
+  loadReferences,
+  openReference,
+  renderReferences,
+  renderReferencesLocked,
+  renderReferencesUnavailable,
+  openAroma,
+  renderAromas,
+  renderAromasLocked,
+} = createReferencesModule({
+  state,
+  elements,
+  HANDBOOK_CATEGORY_META,
+  escapeHtml,
+  renderMarkdown,
+  interactiveCardAttrs,
+  renderBackButton,
+  renderDetailLoader,
+  renderGuidedState,
+  handbookCategoryIcon,
+  handbookCardBadge,
+  aromaSection,
+  fetchJson,
+  enterDetailView,
+  syncMobileNavigation,
+  setEmptyState,
+  conceptTypeMeta,
+  formatCourseSourceLabel,
+  tagMarkup,
+  stripMarkdown,
+});
+
+const {
+  saveContentReviewDraft: saveContentReviewDraftImpl,
+  polishContentDraft: polishContentDraftImpl,
+  renderDraftList: renderDraftListImpl,
+  openDraft: openDraftImpl,
+  renderDraftDetail: renderDraftDetailImpl,
+  renderEmptyDetail: renderEmptyDetailImpl,
+} = createDraftsModule({
+  state,
+  elements,
+  escapeHtml,
+  renderBackButton,
+  renderDetailLoader,
+  renderGuidedState,
+  renderDetailError,
+  payloadSection,
+  promptSection,
+  detailFactMarkup,
+  actionLabel,
+  tagMarkup,
+  contentKindIcon,
+  kindLabel,
+  sourceLabel,
+  sourceTone,
+  statusLabel,
+  statusTone,
+  feedbackLabel,
+  feedbackTone,
+  draftGenerationLabel,
+  draftHeroSummary,
+  generationStateMarkup,
+  formatPlanDate,
+  stripMarkdown,
+  uiIcon,
+  interactiveCardAttrs,
+  isPendingDraftId,
+  isContentReviewKind,
+  renderSlides,
+  fetchJson,
+  withButtonFeedback,
+  mergeDraftIntoState,
+  scheduleCarouselRefresh,
+  setEmptyState,
+  enterDetailView,
+  syncMobileNavigation,
+  callbacks: {
+    renderDraftList: (...args) => renderDraftList(...args),
+    renderDraftDetail: (...args) => renderDraftDetail(...args),
+  },
+});
+
+const {
+  addKeywordItem: addKeywordItemImpl,
+  removeKeywordItem: removeKeywordItemImpl,
+  openKeywordTopic: openKeywordTopicImpl,
+  loadKeywords: loadKeywordsImpl,
+  loadSettings: loadSettingsImpl,
+  renderStatus: renderStatusImpl,
+  renderKeywords: renderKeywordsImpl,
+} = createSettingsModule({
+  state,
+  elements,
+  escapeHtml,
+  uiIcon,
+  actionLabel,
+  interactiveCardAttrs,
+  renderBackButton,
+  renderGuidedState,
+  withButtonFeedback,
+  fetchJson,
+  confirmAction,
+  showUiNotice,
+  setEmptyState,
+  syncMobileNavigation,
+  enterDetailView,
+});
+
+const {
+  renderCreate: renderCreateImpl,
+  renderCreateTool: renderCreateToolImpl,
+} = createCreateModule({
+  state,
+  elements,
+  interactiveCardAttrs,
+  contentKindIcon,
+  renderGuidedState,
+  renderBackButton,
+  setEmptyState,
+  syncMobileNavigation,
+  enterDetailView,
+  fetchJson,
+  showRequestError,
+  openPendingDraftCreation,
+  finalizePendingDraftCreation,
+  recoverPendingDraftCreation,
+  openPendingReelsCreation,
+  finalizePendingReelsCreation,
+  recoverPendingReelsCreation,
+  openDraft,
+  openReels,
+  setTab,
+  loadPlans,
+  renderPlanDetail,
+});
+
+const {
+  loadCurrentTab: loadCurrentTabImpl,
+  safeLoadCurrentTab: safeLoadCurrentTabImpl,
+  bootstrap: bootstrapImpl,
+  retryCurrentTab: retryCurrentTabImpl,
+  bindBootFallbackReload,
+  bindStartupErrorFallbacks,
+} = createRuntimeModule({
+  state,
+  elements,
+  MODE_TABS,
+  HANDBOOK_CATEGORY_META,
+  appState: {
+    isBootstrapped: () => appBootstrapped,
+    setBootstrapped: (value) => { appBootstrapped = value; },
+    startupLoadInFlight: () => startupLoadInFlight,
+    setStartupLoadInFlight: (value) => { startupLoadInFlight = value; },
+  },
+  timers: {
+    getBootstrapWatchdog: () => bootstrapWatchdogTimer,
+    setBootstrapWatchdog: (value) => { bootstrapWatchdogTimer = value; },
+    getReelRefresh: () => reelRefreshTimer,
+    setReelRefresh: (value) => { reelRefreshTimer = value; },
+  },
+  applyTelegramTheme,
+  bindTextareaAutoExpand,
+  bindTapAnimation,
+  bindSwipeBack,
+  bindKeyboardDismiss,
+  bindCardKeyboardActivation,
+  bindKeyboardViewportAssist,
+  bindBottomTabBar,
+  setMode,
+  setTab,
+  loadReferenceAccess,
+  loadDrafts,
+  loadInbox,
+  loadPlans,
+  loadReels,
+  loadReferences,
+  loadSettings,
+  loadStatus,
+  loadKeywords,
+  renderCreate,
+  showBootFallback,
+  hideBootFallback,
+  showRuntimeWarning,
+  renderPanelLoader,
+});
+
+const {
+  loadInbox: loadInboxImpl,
+  loadReels: loadReelsImpl,
+  openReels: openReelsImpl,
+  openPendingReelsCreation: openPendingReelsCreationImpl,
+  finalizePendingReelsCreation: finalizePendingReelsCreationImpl,
+  recoverPendingReelsCreation: recoverPendingReelsCreationImpl,
+  renderInbox: renderInboxImpl,
+  renderReels: renderReelsImpl,
+  renderReelsDetail: renderReelsDetailImpl,
+  refreshReelsDetail: refreshReelsDetailImpl,
+} = createContentModule({
+  state,
+  elements,
+  escapeHtml,
+  stripMarkdown,
+  renderBackButton,
+  renderDetailLoader,
+  renderGuidedState,
+  renderDetailError,
+  interactiveCardAttrs,
+  contentKindIcon,
+  kindLabel,
+  sourceLabel,
+  sourceTone,
+  statusLabel,
+  statusTone,
+  tagMarkup,
+  formatPlanDate,
+  fetchJson,
+  setEmptyState,
+  syncMobileNavigation,
+  enterDetailView,
+  setTab,
+  clearBackgroundRefreshes,
+  mergeReelsIntoState,
+  scheduleReelsRefresh,
+  isCurrentReelsDetail,
+  isEditingDetailForm,
+  callbacks: {
+    renderReelsDetailMarkup,
+  },
+});
 
 function aromaSection(title, content) {
   if (!content) return "";
   return `<section class="section"><h3>${sectionHeadingIcon(title)}${escapeHtml(title)}</h3><div class="detail-preview detail-markdown">${renderMarkdown(content)}</div></section>`;
 }
 
-function renderAromasLocked() { renderReferencesLocked(); }
-
 function renderDraftList() {
-  elements.listTitle.textContent = "Черновики";
-  elements.draftCount.textContent = `${state.drafts.length} шт`;
-  setEmptyState(state.drafts.length > 0, {
-    eyebrow: "Черновики",
-    title: "Ничего не найдено",
-    body: "Попробуйте сбросить фильтры или собрать новый материал через вкладку «Создать».",
-    actionLabel: "Открыть создание",
-    action: "setTab('create')",
-  });
-  elements.draftList.innerHTML = state.drafts.map((d) => `
-    <article ${interactiveCardAttrs(`Открыть черновик ${d.topic}`)} class="draft-card overview-card${d.draft_id === state.draftId ? " active" : ""}${d.generation_pending ? " is-pending" : ""} interactive-card" onclick="openDraft('${d.draft_id}')">
-      <div class="overview-card-top">
-        <div class="draft-kind">${contentKindIcon(d.kind)}<span>${escapeHtml(kindLabel(d.kind))}</span></div>
-        <span class="overview-card-date">${escapeHtml(formatPlanDate(d.created_at) || "Новый черновик")}</span>
-      </div>
-      <h3 class="draft-topic">${escapeHtml(d.topic)}</h3>
-      <div class="draft-preview">${escapeHtml(stripMarkdown(d.preview || "Без превью"))}</div>
-      <div class="draft-meta overview-card-footer">
-        ${tagMarkup(statusLabel(d.status), statusTone(d.status))}
-        ${d.generation_pending ? tagMarkup(draftGenerationLabel(d), "pending") : ""}
-        ${tagMarkup(sourceLabel(d.source), sourceTone(d.source))}
-      </div>
-    </article>
-  `).join("");
-  syncMobileNavigation();
+  return renderDraftListImpl();
 }
 
 async function openDraft(id) {
-  if (isPendingDraftId(id) && state.selected?.draft_id === id) {
-    renderDraftList();
-    renderDraftDetail(state.selected);
-    enterDetailView();
-    return;
-  }
-  elements.draftDetail.innerHTML = `${renderBackButton()}${renderDetailLoader("Открываю черновик")}`;
-  enterDetailView();
-  const d = await fetchJson(`/api/drafts/${id}`, { timeout: 20000 });
-  state.selected = d; state.draftId = id;
-  const params = new URLSearchParams(window.location.search);
-  params.set("tab", state.tab);
-  params.set("draft_id", id);
-  history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`);
-  renderDraftList(); renderDraftDetail(d); enterDetailView();
+  return openDraftImpl(id);
 }
 
-async function openReels(id) {
-  elements.draftDetail.innerHTML = `${renderBackButton()}${renderDetailLoader("Открываю рилс")}`;
-  enterDetailView();
-  clearBackgroundRefreshes();
-  const r = await fetchJson(`/api/reels/${id}`);
-  state.selectedReels = r;
-  renderReelsDetail(r);
-  enterDetailView();
-}
-
-async function openPlan(id) {
-  elements.draftDetail.innerHTML = `${renderBackButton()}${renderDetailLoader("Открываю план")}`;
-  enterDetailView();
-  const p = await fetchJson(`/api/plans/${id}`);
-  state.selectedPlan = p;
-  state.plans = state.plans.map((item) => item.plan_id === p.plan_id ? { ...item, ...p } : item);
-  renderPlanDetail(p);
-  enterDetailView();
-}
-
-async function generateDraftFromPlan(planId, entryIndex, button) {
-  const apply = async () => {
-    const payload = await fetchJson(`/api/plans/${planId}/generate`, {
-      method: "POST",
-      body: JSON.stringify({ entry_index: entryIndex }),
-    });
-    const draft = payload?.draft || null;
-    if (draft?.kind === "reels") {
-      state.reels = [draft, ...state.reels.filter((item) => item.draft_id !== draft.draft_id)];
-    } else if (draft?.draft_id) {
-      upsertDraftSummary(draftSummaryFromDraft(draft));
-    }
-    await loadPlans();
-    await openPlan(planId);
-    return draft;
-  };
-  const draft = button instanceof HTMLElement
-    ? await withButtonFeedback(button, "Создаю...", apply, "Создано")
-    : await apply();
-  if (draft?.draft_id) {
-    const tg = window.Telegram?.WebApp;
-    if (tg?.showAlert) tg.showAlert("Черновик создан и привязан к плану");
-  }
-}
-
-async function openPlanRelatedDraft(kind, draftId) {
-  if (!draftId) return;
-  if (kind === "reels") {
-    setTab("reels");
-    await loadReels();
-    await openReels(draftId);
-    return;
-  }
-  setTab("drafts");
-  await loadDrafts();
-  await openDraft(draftId);
-}
+async function openReels(id) { return openReelsImpl(id); }
 
 function renderDraftDetail(d) {
-  if (isPendingDraftId(d?.draft_id)) {
-    elements.draftDetail.innerHTML = `
-      <div class="detail-grid detail-grid-pending">
-        ${renderBackButton()}
-        <div class="detail-top">
-          <p class="eyebrow">${contentKindIcon(d.kind)}<span>${escapeHtml(kindLabel(d.kind))} • ${escapeHtml(sourceLabel(d.source || "/miniapp"))}</span></p>
-          <h2 class="detail-title">${escapeHtml(d.topic || "Создаём черновик")}</h2>
-          <div class="draft-meta">
-            ${tagMarkup("Черновик", "status-neutral")}
-            ${tagMarkup("Ещё генерируется", "pending")}
-          </div>
-        </div>
-        ${renderDetailLoader("Генерирую карточку", "Сохраняю черновик и подгружаю содержимое.", "detail-loader-card-compact")}
-      </div>
-    `;
-    syncMobileNavigation();
-    return;
-  }
-  const p = d.payload || {};
-  const mainText = p.caption || p.scenario || "";
-  const heroFacts = [
-    detailFactMarkup("Тип", kindLabel(d.kind)),
-    detailFactMarkup("Источник", sourceLabel(d.source)),
-    detailFactMarkup("Статус", statusLabel(d.status)),
-    isContentReviewKind(d.kind) ? detailFactMarkup("Реакция", feedbackLabel(d.feedback)) : "",
-    detailFactMarkup("Создан", formatPlanDate(d.created_at)),
-  ].join("");
-  const reviewActions = isContentReviewKind(d.kind)
-    ? `
-      <section class="section section-primary">
-        <div class="section-heading">
-          <h3>${uiIcon("text")}Редакторский review</h3>
-          <p>Сначала соберите сильную мысль и основной текст, затем уточните подачу, визуал и комментарии для следующего прохода.</p>
-        </div>
-        <div class="content-review-form">
-          <div class="content-review-highlight">
-            <label><span>Тема материала</span><textarea id="contentTopicField" placeholder="О чем этот материал и зачем он читателю">${escapeHtml(d.topic || "")}</textarea></label>
-            <label><span>Опорная мысль</span><textarea id="contentAngleField" placeholder="Какой угол подачи или тезис держит весь текст">${escapeHtml(p.angle || "")}</textarea></label>
-            <label><span>Первая фраза</span><textarea id="contentHookField" placeholder="С чего лучше начать, чтобы зацепить внимание">${escapeHtml(p.hook || "")}</textarea></label>
-          </div>
-          <label class="content-review-lead"><span>Основной текст</span><textarea id="contentCaptionField" placeholder="Соберите здесь основную версию текста, которую будете отправлять на согласование">${escapeHtml(p.caption || "")}</textarea></label>
-          <p class="field-help">Сохраняйте версию после смыслового прохода. Если нужен быстрый черновой рефайн, используйте AI как промежуточный шаг.</p>
-          <div class="content-review-support-grid">
-            <label><span>Призыв к действию</span><textarea id="contentCtaField" placeholder="Что читателю стоит сделать после текста">${escapeHtml(p.cta || "")}</textarea></label>
-            <label><span>Теги</span><textarea id="contentHashtagsField" placeholder="#ритуал #аромапрактика">${escapeHtml(p.hashtags || "")}</textarea></label>
-            <label><span>Промпт для визуала</span><textarea id="contentVisualPromptField" placeholder="Какой образ или сцену должен поддержать визуал">${escapeHtml(p.visual_prompt || "")}</textarea></label>
-            <label><span>Комментарий редактора</span><textarea id="contentEditorNotesField" placeholder="Что стоит усилить, сократить или перепроверить в следующем проходе">${escapeHtml(p.editor_notes || "")}</textarea></label>
-          </div>
-          <div class="actions-row review-actions">
-            <button class="primary-button" type="button" onclick="saveContentReviewDraft('${d.draft_id}', this)">${actionLabel("approve", "Сохранить версию")}</button>
-            <button class="secondary-button" type="button" onclick="polishContentDraft('${d.draft_id}', this)">${actionLabel("sparkle", "Уточнить через AI")}</button>
-          </div>
-        </div>
-      </section>
-      <section class="section section-accent">
-        <div class="section-heading">
-          <h3>${uiIcon("chat")}Результат публикации</h3>
-          <p>После публикации отметьте фактический результат, чтобы видеть, какие материалы реально срабатывают у аудитории.</p>
-        </div>
-        <div class="draft-meta">
-          ${tagMarkup(feedbackLabel(d.feedback), feedbackTone(d.feedback))}
-        </div>
-        <div class="actions-row">
-          <button class="secondary-button" type="button" onclick="updateDraft('feedback', {feedback:'worked'}, this)">${actionLabel("approve", "Откликнулось")}</button>
-          <button class="secondary-button" type="button" onclick="updateDraft('feedback', {feedback:'missed'}, this)">${actionLabel("reject", "Не дало результата")}</button>
-          <button class="secondary-button" type="button" onclick="updateDraft('feedback', {feedback:''}, this)">${actionLabel("back", "Очистить отметку")}</button>
-        </div>
-      </section>
-    `
-    : "";
-  elements.draftDetail.innerHTML = `
-    <div class="detail-grid">
-      ${renderBackButton()}
-      <div class="detail-top detail-hero">
-        <div class="detail-hero-copy">
-          <p class="eyebrow">${contentKindIcon(d.kind)}<span>${escapeHtml(kindLabel(d.kind))} • ${escapeHtml(sourceLabel(d.source))}</span></p>
-          <h2 class="detail-title">${escapeHtml(d.topic)}</h2>
-          <p class="detail-summary">${escapeHtml(draftHeroSummary(d, p, mainText))}</p>
-          <div class="draft-meta">
-            ${tagMarkup(statusLabel(d.status), statusTone(d.status))}
-            ${d.generation_pending ? tagMarkup(draftGenerationLabel(d), "pending") : ""}
-            ${isContentReviewKind(d.kind) ? tagMarkup(feedbackLabel(d.feedback), feedbackTone(d.feedback)) : ""}
-            ${tagMarkup(sourceLabel(d.source), sourceTone(d.source))}
-          </div>
-        </div>
-        <div class="detail-hero-side">
-          <div class="detail-facts">${heroFacts}</div>
-        </div>
-        <div class="actions-row detail-actions">
-          <button class="secondary-button" onclick="updateDraft('status', {status:'approved'}, this)">${actionLabel("approve", "Отметить как согласовано")}</button>
-          <button class="secondary-button" onclick="updateDraft('status', {status:'rejected'}, this)">${actionLabel("reject", "Вернуть на доработку")}</button>
-          <button class="secondary-button" onclick="sendDraftToChat('${d.draft_id}', this)">${actionLabel("chat", "Отправить в чат")}</button>
-          ${d.kind === "carousel" ? `<button class="secondary-button" onclick="downloadCarouselPptx('${d.draft_id}', this)">${actionLabel("pptx", "Скачать презентацию")}</button>` : ""}
-          ${d.kind === "carousel" ? `<button class="secondary-button" onclick="regenerateCarouselAll('${d.draft_id}', this)">${actionLabel("regenerate", "Обновить все слайды")}</button>` : ""}
-          <button class="secondary-button" onclick="deleteDraft('${d.draft_id}', 'drafts', this)">${actionLabel("trash", "Удалить черновик")}</button>
-        </div>
-      </div>
-      ${payloadSection("Превью", d.preview)}
-      ${payloadSection("Угол", p.angle)}
-      ${payloadSection("Текст", mainText)}
-      ${payloadSection("CTA", p.cta)}
-      ${generationStateMarkup(d, "draft")}
-      ${reviewActions}
-      ${renderSlides(d.draft_id, p.slides, p.img_prompts, p.slide_images, p.img_prompt_notes, p.slide_image_versions)}
-      ${promptSection("Промпт для изображения", p.visual_prompt)}
-    </div>
-  `;
-  if (d.kind === "carousel") {
-    const readyCount = (p.slide_images || []).filter(Boolean).length;
-    const slideCount = (p.slides || []).length;
-    if (d.generation_pending || readyCount < slideCount) scheduleCarouselRefresh(d.draft_id);
-  }
+  return renderDraftDetailImpl(d);
 }
 
 function renderEmptyDetail() {
-  elements.draftDetail.innerHTML = `
-    ${renderBackButton()}
-    <div class="detail-empty">
-      ${renderGuidedState({
-        eyebrow: "Детали",
-        title: "Выберите элемент из списка",
-        body: "Откройте карточку слева, чтобы увидеть детали, правки и быстрые действия.",
-      })}
-    </div>
-  `;
-  syncMobileNavigation();
+  return renderEmptyDetailImpl();
 }
 
 function setMode(m) {
@@ -2740,6 +1540,7 @@ function setTab(t) {
   p.delete("draft_id");
   history.replaceState({}, "", `${window.location.pathname}?${p.toString()}`);
   
+  syncMobileNavigation();
   elements.tabsContainer.querySelectorAll(".tab-button").forEach(b => b.classList.toggle("active", b.dataset.tab === t));
   elements.filtersContainer.hidden = (t !== "drafts");
   
@@ -2752,223 +1553,24 @@ function setTab(t) {
   syncMobileNavigation();
 }
 
-async function loadCurrentTab() {
-  if (state.tab === "create") return renderCreate();
-  if (state.tab === "inbox") return await loadInbox();
-  if (state.tab === "plans") return await loadPlans();
-  if (state.tab === "reels") return await loadReels();
-  if (HANDBOOK_CATEGORY_META[state.tab]) return await loadReferences(state.tab);
-  if (state.tab === "settings") return await loadSettings();
-  if (state.tab === "status") return await loadStatus();
-  if (state.tab === "keywords") return await loadKeywords();
-  await loadDrafts();
-}
+async function loadCurrentTab() { return loadCurrentTabImpl(); }
 
 async function safeLoadCurrentTab(prefix = "Не удалось загрузить раздел") {
-  try {
-    await loadCurrentTab();
-    hideBootFallback();
-    return true;
-  } catch (error) {
-    console.error("miniapp runtime tab load failed", error);
-    showRuntimeWarning(prefix, error);
-    return false;
-  }
+  return safeLoadCurrentTabImpl(prefix);
 }
 
-async function loadInitialScreen() {
-  if (startupLoadInFlight) return false;
-  startupLoadInFlight = true;
-  showBootFallback(
-    "Загружаю интерфейс",
-    "Если экран остаётся пустым дольше пары секунд, попробуйте открыть mini app ещё раз.",
-    false,
-  );
-  bootstrapWatchdogTimer = window.setTimeout(() => {
-    if (!appBootstrapped) {
-      showBootFallback(
-        "Интерфейс загружается слишком долго",
-        "Похоже, стартовый экран отвечает медленнее обычного. Можно повторить загрузку.",
-        true,
-      );
-    }
-  }, 1800);
+function openPendingReelsCreation(topic) { return openPendingReelsCreationImpl(topic); }
 
-  const result = await Promise.race([
-    safeLoadCurrentTab("Не удалось загрузить вкладку"),
-    new Promise((resolve) => {
-      window.clearTimeout(bootstrapWatchdogTimer);
-      bootstrapWatchdogTimer = window.setTimeout(() => resolve("timeout"), 8000);
-    }),
-  ]);
+function finalizePendingReelsCreation(draft) { return finalizePendingReelsCreationImpl(draft); }
 
-  startupLoadInFlight = false;
-  window.clearTimeout(bootstrapWatchdogTimer);
+async function recoverPendingReelsCreation(topic, pendingDraftId) { return recoverPendingReelsCreationImpl(topic, pendingDraftId); }
 
-  if (result === true) {
-    appBootstrapped = true;
-    hideBootFallback();
-    return true;
-  }
-  if (result === "timeout") {
-    showBootFallback(
-      "Интерфейс загружается слишком долго",
-      "Мы не дождались первого ответа. Попробуйте повторить загрузку.",
-      true,
-    );
-    return false;
-  }
-  return false;
-}
+async function bootstrap() { return bootstrapImpl(); }
 
-function openPendingReelsCreation(topic) {
-  const draft = buildPendingDraft("reels", topic);
-  draft.storyboard_count = 4;
-  draft.generation_stage = "scenario";
-  draft.generation_message = "Собираю сценарий и раскадровку для рилса.";
-  state.pendingCreateRecovery = {
-    draft_id: draft.draft_id,
-    kind: "reels",
-    topic,
-    started_at: Date.now(),
-  };
-  state.selectedReels = {
-    ...draft,
-    frame_count: 0,
-    frames: [],
-    payload: {
-      concept: "",
-      scenario: "",
-      storyboard: [],
-      generation_pending: true,
-      generation_stage: "scenario",
-      generation_message: "Собираю сценарий и раскадровку для рилса.",
-    },
-  };
-  setTab("reels");
-  state.reels = [
-    state.selectedReels,
-    ...state.reels.filter((item) => item.draft_id !== draft.draft_id),
-  ];
-  renderReels();
-  renderReelsDetail(state.selectedReels);
-  enterDetailView();
-  return state.selectedReels;
-}
+bindBootFallbackReload();
+bindStartupErrorFallbacks();
 
-function finalizePendingReelsCreation(draft) {
-  if (!draft?.draft_id) return;
-  state.pendingCreateRecovery = null;
-  mergeReelsIntoState(draft);
-  renderReels();
-  renderReelsDetail(draft);
-  enterDetailView();
-}
-
-async function recoverPendingReelsCreation(topic, pendingDraftId) {
-  const startedAt = Date.now();
-  state.pendingCreateRecovery = {
-    draft_id: pendingDraftId,
-    kind: "reels",
-    topic,
-    started_at: startedAt,
-  };
-  for (let attempt = 0; attempt < 8; attempt += 1) {
-    try {
-      const data = await fetchJson("/api/drafts?kind=reels&limit=20", { timeout: 20000 });
-      const items = data.items || [];
-      const recovered = items.find((item) => {
-        const createdAt = new Date(item.created_at || 0).getTime();
-        return item.kind === "reels"
-          && item.topic === topic
-          && item.source === "/miniapp"
-          && (Number.isNaN(createdAt) || createdAt >= startedAt - 10_000);
-      });
-      if (recovered?.draft_id) {
-        state.pendingCreateRecovery = null;
-        await loadReels();
-        await openReels(recovered.draft_id);
-        return true;
-      }
-    } catch (_error) {
-      // ignore and retry
-    }
-    await new Promise((resolve) => window.setTimeout(resolve, 1500));
-  }
-  return false;
-}
-
-async function bootstrap() {
-  applyTelegramTheme();
-  bindTextareaAutoExpand();
-  bindTapAnimation();
-  bindSwipeBack();
-  bindKeyboardDismiss();
-  bindCardKeyboardActivation();
-  bindKeyboardViewportAssist();
-  elements.modeContent.addEventListener("click", () => { setMode("content"); void safeLoadCurrentTab("Не удалось загрузить раздел контента"); });
-  elements.modeHandbook.addEventListener("click", () => { setMode("handbook"); void safeLoadCurrentTab("Не удалось загрузить справочник"); });
-  elements.settingsButton?.addEventListener("click", () => {
-    state.settingsSection = state.settingsSection || "status";
-    setMode("content");
-    setTab("settings");
-    void safeLoadCurrentTab("Не удалось загрузить настройки");
-  });
-
-  [elements.kindFilter, elements.statusFilter, elements.feedbackFilter].forEach(f => f.addEventListener("change", loadDrafts));
-
-  elements.queryFilter.addEventListener("input", () => {
-    clearTimeout(reelRefreshTimer);
-    reelRefreshTimer = setTimeout(() => {
-      if (state.tab === "drafts") {
-        void safeLoadCurrentTab("Не удалось обновить черновики");
-      }
-    }, 300);
-  });
-  if (MODE_TABS.handbook.find(t => t.id === state.tab)) state.mode = "handbook";
-  setMode(state.mode);
-  if (state.mode === "content") {
-    void loadReferenceAccess();
-  }
-  try {
-    await loadInitialScreen();
-  } catch (error) {
-    console.error("miniapp bootstrap fallback failed", error);
-  }
-}
-
-if (elements.bootFallbackReload) {
-  elements.bootFallbackReload.addEventListener("click", () => {
-    if (appBootstrapped) {
-      window.retryCurrentTab();
-      return;
-    }
-    window.location.reload();
-  });
-}
-
-window.retryCurrentTab = () => {
-  elements.draftList.innerHTML = renderPanelLoader("Повторяю загрузку");
-  void safeLoadCurrentTab("Не удалось загрузить вкладку");
-};
-
-window.addEventListener("error", () => {
-  if (appBootstrapped) return;
-  showBootFallback(
-    "Интерфейс временно недоступен",
-    "Во время загрузки произошла ошибка. Попробуйте обновить экран.",
-    true,
-  );
-});
-
-window.addEventListener("unhandledrejection", () => {
-  if (appBootstrapped) return;
-  showBootFallback(
-    "Интерфейс временно недоступен",
-    "Во время загрузки произошла ошибка. Попробуйте обновить экран.",
-    true,
-  );
-});
+window.retryCurrentTab = retryCurrentTabImpl;
 
 window.openDraft = openDraft;
 window.openAroma = openAroma;
@@ -3018,6 +1620,7 @@ window.polishContentDraft = polishContentDraft;
 window.openKeywordTopic = openKeywordTopic;
 window.addKeywordItem = addKeywordItem;
 window.removeKeywordItem = removeKeywordItem;
+window.renderCreateTool = renderCreateTool;
 window.openCreateTool = (toolId = "content") => {
   setMode("content");
   setTab("create");
@@ -3033,283 +1636,26 @@ window.openSettingsSection = async (section) => {
   await loadSettings();
 };
 
-function renderInbox() {
-  elements.listTitle.textContent = "Согласование";
-  elements.draftCount.textContent = `${state.inbox.length} на проверке`;
-  setEmptyState(state.inbox.length > 0, {
-    eyebrow: "Согласование",
-    title: "Очередь пока пуста",
-    body: "Когда появятся материалы на ревью, они сразу окажутся здесь.",
-  });
-  elements.draftList.innerHTML = state.inbox.map(i => `
-    <article ${interactiveCardAttrs(`Открыть материал на согласовании ${i.topic}`)} class="draft-card overview-card${i.draft_id === state.draftId ? " active" : ""} interactive-card" onclick="openDraft('${i.draft_id}')">
-      <div class="overview-card-top">
-        <div class="draft-kind">${contentKindIcon(i.kind)}<span>${escapeHtml(kindLabel(i.kind))}</span></div>
-        <span class="overview-card-date">${escapeHtml(formatPlanDate(i.created_at) || "На проверке")}</span>
-      </div>
-      <h4 class="draft-topic">${escapeHtml(i.topic)}</h4>
-      <div class="draft-preview">${escapeHtml(stripMarkdown(i.preview || ""))}</div>
-      <div class="draft-meta overview-card-footer">
-        ${tagMarkup(statusLabel(i.status || "in_review"), statusTone(i.status || "in_review"))}
-        ${tagMarkup(sourceLabel(i.source || "/content"), sourceTone(i.source || "/content"))}
-      </div>
-    </article>
-  `).join("");
-  syncMobileNavigation();
-}
+function renderInbox() { return renderInboxImpl(); }
 
 function renderStatus() {
-  const items = state.status?.items || [];
-  const inSettings = state.tab === "settings";
-  elements.listTitle.textContent = inSettings ? "Настройки" : "Статус";
-  elements.draftCount.textContent = `${items.length} источников`;
-  elements.draftList.innerHTML = `
-    ${inSettings ? renderSettingsSwitcher("status") : ""}
-    ${items.map(i => `
-    <article class="status-card"><strong>${escapeHtml(i.source)}</strong> <span class="${i.enabled ? 'status-good' : 'status-bad'}">${i.enabled ? 'вкл' : 'выкл'}</span></article>
-  `).join("")}
-  `;
-  elements.draftDetail.innerHTML = renderBackButton() + `<div class="detail-empty">${renderGuidedState({
-    eyebrow: inSettings ? "Настройки" : "Статус",
-    title: inSettings ? "Откройте источник слева" : "Проверьте состояние источников",
-    body: inSettings
-      ? "Здесь будут переключатели mini app и системные параметры каждого источника."
-      : "Слева собраны все подключенные источники и их текущее состояние.",
-  })}</div>`;
-  syncMobileNavigation();
+  return renderStatusImpl();
 }
 
 function renderPlans() {
-  elements.listTitle.textContent = "Планы";
-  elements.draftCount.textContent = `${state.plans.length} шт`;
-  setEmptyState(state.plans.length > 0, {
-    eyebrow: "Планы",
-    title: "Планов пока нет",
-    body: "Соберите план на неделю, чтобы сразу разложить идеи по форматам и дням.",
-    actionLabel: "Открыть создание",
-    action: "setTab('create')",
-  });
-  elements.draftList.innerHTML = state.plans.map(p => `
-    <article ${interactiveCardAttrs(`Открыть план ${p.plan_id}`)} class="plan-card overview-card${p.plan_id === state.selectedPlan?.plan_id ? " active" : ""} interactive-card" onclick="openPlan('${p.plan_id}')">
-      <div class="overview-card-top">
-        <div class="draft-kind">${contentKindIcon("plan")}<span>План</span></div>
-        <span class="overview-card-date">${escapeHtml(formatPlanDate(p.created_at) || p.plan_id)}</span>
-      </div>
-      <h3 class="draft-topic">${escapeHtml(formatPlanDate(p.created_at) ? `План от ${formatPlanDate(p.created_at)}` : p.plan_id)}</h3>
-      <div class="draft-preview">${escapeHtml(stripMarkdown(p.raw_text || ""))}</div>
-      <div class="draft-meta overview-card-footer">
-        ${tagMarkup(`${(p.entries || []).length} карточек`, "source-plan")}
-        ${tagMarkup(`${(p.related_drafts || []).length} черновиков`, "status-review")}
-      </div>
-    </article>
-  `).join("");
-  if (!state.selectedPlan) {
-    elements.draftDetail.innerHTML = `${renderBackButton()}<div class="detail-empty">${renderGuidedState({
-      eyebrow: "План",
-      title: "Откройте план недели",
-      body: "Внутри плана можно создавать черновики по каждой карточке и сразу открывать связанный материал.",
-    })}</div>`;
-  }
-  syncMobileNavigation();
+  return renderPlansImpl();
 }
 
-function renderReels() {
-  elements.listTitle.textContent = "Рилсы";
-  elements.draftCount.textContent = `${state.reels.length} шт`;
-  setEmptyState(state.reels.length > 0, {
-    eyebrow: "Рилсы",
-    title: "Рилсов пока нет",
-    body: "Создайте сценарий и раскадровку, чтобы здесь появился готовый рабочий список.",
-    actionLabel: "Открыть создание",
-    action: "setTab('create')",
-  });
-  elements.draftList.innerHTML = state.reels.map(r => `
-    <article ${interactiveCardAttrs(`Открыть рилс ${r.topic}`)} class="reels-card overview-card${r.draft_id === state.selectedReels?.draft_id ? " active" : ""} interactive-card" onclick="openReels('${r.draft_id}')">
-      <div class="overview-card-top">
-        <div class="draft-kind">${contentKindIcon("reels")}<span>Рилс</span></div>
-        <span class="overview-card-date">${escapeHtml(formatPlanDate(r.created_at) || "Видео")}</span>
-      </div>
-      <h3 class="draft-topic">${escapeHtml(r.topic)}</h3>
-      <div class="draft-preview">${escapeHtml(stripMarkdown(r.preview || ""))}</div>
-      <div class="draft-meta overview-card-footer">
-        ${tagMarkup(statusLabel(r.status || "draft"), statusTone(r.status || "draft"))}
-        ${tagMarkup(`${r.images_ready || 0}/${r.frame_count || 0} кадров`, "progress")}
-        ${tagMarkup(sourceLabel(r.source || "/miniapp"), sourceTone(r.source || "/miniapp"))}
-      </div>
-    </article>
-  `).join("");
-  syncMobileNavigation();
-}
+function renderReels() { return renderReelsImpl(); }
+
+reelsCallbacks.renderReels = renderReels;
+reelsCallbacks.renderReelsDetail = renderReelsDetail;
 
 function renderReelsDetail(r) {
-  const hasFrames = Array.isArray(r.frames) && r.frames.length > 0;
-  elements.draftDetail.innerHTML = `
-    <div class="detail-grid">
-      ${renderBackButton()}
-      <div class="detail-top">
-        <p class="eyebrow">${uiIcon("reel")}<span>Рилсы • ${escapeHtml(sourceLabel(r.source || "/miniapp"))}</span></p>
-        <h2 class="detail-title">${escapeHtml(r.topic)}</h2>
-        <div class="draft-meta">
-          ${tagMarkup(statusLabel(r.status || "draft"), statusTone(r.status || "draft"))}
-          ${r.generation_pending ? tagMarkup(draftGenerationLabel({ ...r, kind: "reels" }), "pending") : ""}
-          ${tagMarkup(`${r.images_ready || 0}/${r.frame_count || 0} кадров`, "progress")}
-          ${tagMarkup(sourceLabel(r.source || "/miniapp"), sourceTone(r.source || "/miniapp"))}
-        </div>
-        <div class="actions-row">
-          <button class="secondary-button" type="button" onclick="saveReelsScenario('${r.draft_id}', this)">${actionLabel("text", "Сохранить концепцию и сценарий")}</button>
-          <button class="secondary-button" type="button" onclick="regenerateReelsStoryboard('${r.draft_id}', this)">${actionLabel("regenerate", "Пересобрать структуру рилса")}</button>
-          <button class="secondary-button" type="button" onclick="regenerateAllReelsFrames('${r.draft_id}', this)">${actionLabel("reel", "Обновить все кадры")}</button>
-          <button class="secondary-button" type="button" onclick="updateDraft('status', {status:'rejected'}, this)">${actionLabel("reject", "Вернуть на доработку")}</button>
-          <button class="secondary-button" type="button" onclick="sendDraftToChat('${r.draft_id}', this)">${actionLabel("chat", "Отправить в чат")}</button>
-          <button class="secondary-button" type="button" onclick="deleteDraft('${r.draft_id}', 'reels', this)">${actionLabel("trash", "Удалить рилс")}</button>
-        </div>
-      </div>
-      <section class="section">
-        <h3>${sectionHeadingIcon("Сценарий")}Концепция и сценарий</h3>
-        <label class="prompt-note-field">
-          <span>Концепция</span>
-          <textarea id="reelsConceptField" placeholder="Коротко: идея, настроение, обещание результата">${escapeHtml(r.payload?.concept || "")}</textarea>
-        </label>
-        <label class="prompt-note-field">
-          <span>Сценарий</span>
-          <textarea id="reelsScenarioField" placeholder="Соберите полный сценарий с переходами между кадрами">${escapeHtml(r.payload?.scenario || "")}</textarea>
-        </label>
-      </section>
-      ${generationStateMarkup(r, "reels")}
-      ${hasFrames ? renderReelsFrames(r.draft_id, r.frames) : `
-        <section class="section section-accent">
-          <div class="section-heading">
-            <h3>${uiIcon("slides")}Кадры и промпты</h3>
-            <p>${escapeHtml(r.generation_message || "Подготавливаю раскадровку и кадры для рилса.")}</p>
-          </div>
-          ${renderDetailLoader("Собираю раскадровку", r.generation_message || "Подождите ещё немного, и здесь появятся кадры.", "detail-loader-card-compact")}
-        </section>
-      `}
-    </div>
-  `;
-  if (r.generation_pending || (r.images_ready || 0) < (r.frame_count || 0)) {
-    scheduleReelsRefresh(r.draft_id);
-  }
-}
-
-function renderPlanDetail(p) {
-  const entries = Array.isArray(p.entries) ? p.entries : [];
-  const relatedDrafts = Array.isArray(p.related_drafts) ? p.related_drafts : [];
-  elements.draftDetail.innerHTML = `
-    <div class="detail-grid">
-      ${renderBackButton()}
-      <div class="detail-top">
-        <p class="eyebrow">${uiIcon("card")}<span>План • ${escapeHtml(formatPlanDate(p.created_at) || p.plan_id)}</span></p>
-        <h2 class="detail-title">${escapeHtml(p.plan_id)}</h2>
-        <div class="draft-meta">
-          ${tagMarkup(`${entries.length} карточек`, "source-plan")}
-          ${tagMarkup(`${relatedDrafts.length} связанных черновиков`, "status-review")}
-        </div>
-      </div>
-      <section class="section">
-        <h3>${uiIcon("text")}Краткое описание плана</h3>
-        <div class="detail-preview detail-markdown">${renderMarkdown(p.raw_text)}</div>
-      </section>
-      <section class="section">
-        <h3>${uiIcon("slides")}Карточки плана</h3>
-        <div class="plan-entries">
-          ${entries.map((entry, index) => {
-            const related = relatedDraftsForEntry(p, entry);
-            return `
-              <article class="plan-entry-card">
-                <div class="plan-entry-top">
-                  <div>
-                    <strong class="plan-entry-title">${escapeHtml(entry.topic || `Карточка ${index + 1}`)}</strong>
-                    <div class="draft-meta">
-                      ${entry.day_label ? tagMarkup(entry.day_label, "status-neutral") : ""}
-                      ${entry.platform ? tagMarkup(entry.platform, "source-content") : ""}
-                      ${entry.goal ? tagMarkup(entry.goal, "status-review") : ""}
-                      ${tagMarkup(planEntryFormatLabel(entry), "source-plan")}
-                    </div>
-                  </div>
-                  <button class="primary-button" type="button" onclick="generateDraftFromPlan('${p.plan_id}', ${index}, this)">${actionLabel("sparkle", `Создать ${planEntryFormatLabel(entry)}`)}</button>
-                </div>
-                ${entry.angle ? `<div class="detail-preview">${escapeHtml(entry.angle)}</div>` : ""}
-                ${related.length ? `
-                  <div class="related-drafts-inline">
-                    ${related.map((draft) => `
-                      <button class="secondary-button" type="button" onclick="openPlanRelatedDraft('${escapeHtml(draft.kind)}', '${escapeHtml(draft.draft_id)}')">${actionLabel(draft.kind === "reels" ? "reel" : "eye", `Открыть ${kindLabel(draft.kind)}`)}</button>
-                    `).join("")}
-                  </div>
-                ` : `
-                  <div class="plan-entry-hint">Черновик по этой карточке ещё не создан.</div>
-                `}
-              </article>
-            `;
-          }).join("")}
-        </div>
-      </section>
-    </div>
-  `;
+  return renderReelsDetailImpl(r);
 }
 
 function renderKeywords() {
-  const inSettings = state.tab === "settings";
-  const topics = state.keywords?.items || [];
-  const selectedTopic = topics.find((topic) => topic.topic_idx === state.selectedKeywordTopicIdx) || null;
-  elements.listTitle.textContent = inSettings ? "Настройки" : "Ключи";
-  elements.draftCount.textContent = `${topics.length} тем`;
-  setEmptyState(topics.length > 0, {
-    eyebrow: "Ключи",
-    title: "Темы еще не появились",
-    body: "Когда словарь загрузится, здесь можно будет редактировать RU/EN ключи и теги.",
-  });
-  elements.draftList.innerHTML = `
-    ${inSettings ? renderSettingsSwitcher("keywords") : ""}
-    ${topics.map(t => `
-    <article ${interactiveCardAttrs(`Открыть тему ${t.name}`)} class="keyword-topic${t.topic_idx === state.selectedKeywordTopicIdx ? " active" : ""} interactive-card" onclick="openKeywordTopic(${t.topic_idx})">
-      <h3>${escapeHtml(t.name)}</h3>
-      <div class="draft-meta">
-        <span class="tag">${escapeHtml(`${Object.values(t.fields || {}).reduce((sum, items) => sum + (Array.isArray(items) ? items.length : 0), 0)} ключей`)}</span>
-      </div>
-    </article>
-  `).join("")}
-  `;
-  if (!selectedTopic) {
-    elements.draftDetail.innerHTML = renderBackButton() + `<div class="detail-empty">${renderGuidedState({
-      eyebrow: "Ключи",
-      title: "Откройте тему для редактирования",
-      body: "Внутри темы можно добавлять и удалять RU/EN ключи и теги без выхода из mini app.",
-    })}</div>`;
-    syncMobileNavigation();
-    return;
-  }
-  elements.draftDetail.innerHTML = `
-    <div class="detail-grid">
-      ${renderBackButton()}
-      <div class="detail-top">
-        <p class="eyebrow">${uiIcon("text")}<span>Ключи</span></p>
-        <h2 class="detail-title">${escapeHtml(selectedTopic.name)}</h2>
-      </div>
-      <section class="section">
-        <h3>${uiIcon("card")}Редактор ключей</h3>
-        <div class="keyword-fields">
-          ${keywordFieldEntries(selectedTopic).map(({ field, label, items }) => `
-            <div class="keyword-field">
-              <strong>${escapeHtml(label)}</strong>
-              <div class="keyword-items">
-                ${items.map((item) => `
-                  <span class="keyword-chip">
-                    <span>${escapeHtml(item)}</span>
-                    <button type="button" aria-label="Удалить ${escapeHtml(item)}" onclick='removeKeywordItem(${selectedTopic.topic_idx}, ${JSON.stringify(String(field))}, ${JSON.stringify(String(item))}, this)'>×</button>
-                  </span>
-                `).join("") || `<span class="plan-entry-hint">Пока пусто.</span>`}
-              </div>
-              <form class="keyword-form" onsubmit='event.preventDefault(); addKeywordItem(${selectedTopic.topic_idx}, ${JSON.stringify(String(field))}, this, this.querySelector("button"));'>
-                <input name="word" type="text" placeholder="Добавить значение" />
-                <button class="secondary-button" type="submit">${actionLabel("plus", "Добавить")}</button>
-              </form>
-            </div>
-          `).join("")}
-        </div>
-      </section>
-    </div>
-  `;
-  syncMobileNavigation();
+  return renderKeywordsImpl();
 }
 bootstrap();

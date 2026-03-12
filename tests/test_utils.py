@@ -1181,11 +1181,7 @@ class TestMiniAppApi:
         assert response.status_code == 403
         assert response.json()["detail"] == "forbidden"
 
-    def test_detail_endpoints_require_auth(self, miniapp_test_client, monkeypatch, tmp_path):
-        import bot.services.plans_store as plans_store
-
-        monkeypatch.setattr(plans_store, "_PLANS_FILE", tmp_path / "plans.json")
-
+    def test_detail_endpoints_require_auth(self, miniapp_test_client):
         content_draft = asyncio.run(
             save_draft(
                 kind="threads",
@@ -1214,9 +1210,11 @@ class TestMiniAppApi:
                 },
             )
         )
-        plan = save_plan(
-            raw_text="Понедельник: Threads",
-            entries=[{"day_label": "Понедельник", "platform": "Threads", "format_label": "пост", "goal": "Доверие", "topic": "Тема", "angle": "Угол"}],
+        plan = asyncio.run(
+            save_plan(
+                raw_text="Понедельник: Threads",
+                entries=[{"day_label": "Понедельник", "platform": "Threads", "format_label": "пост", "goal": "Доверие", "topic": "Тема", "angle": "Угол"}],
+            )
         )
 
         for path in [
@@ -1551,7 +1549,7 @@ class TestMiniAppBridge:
 class TestMiniAppRussianLocale:
     def test_index_selects_and_tabs_use_russian_labels(self):
         index_html = Path("miniapp/index.html").read_text(encoding="utf-8")
-        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
 
         # HTML should have basic structure and mode selectors
         assert 'id="modeContent"' in index_html
@@ -1581,7 +1579,7 @@ class TestMiniAppRussianLocale:
         assert "Загружаю интерфейс" in index_html
 
     def test_create_workspace_dropdowns_use_russian_labels(self):
-        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
 
         assert '<option value="threads">Тредс</option>' in app_js
         assert '<option value="instagram">Инстаграм</option>' in app_js
@@ -1782,7 +1780,7 @@ class TestMiniAppRussianLocale:
         assert 'user-scalable=no' in index_html
 
     def test_tab_switching_uses_native_click_and_touch_action(self):
-        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
         app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
 
         # We use standard click now, but ensure tabs switching logic is there
@@ -1793,7 +1791,7 @@ class TestMiniAppRussianLocale:
         assert "touch-action: manipulation;" in app_css
 
     def test_mobile_detail_swipe_back_allows_full_width_swipe_and_skips_inputs(self):
-        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
         app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
 
         assert "function bindSwipeBack" in app_js
@@ -1807,7 +1805,7 @@ class TestMiniAppRussianLocale:
         assert ".detail-panel.swipe-back-armed" in app_css
 
     def test_bootstrap_guard_shows_visible_fallback_instead_of_blank_screen(self):
-        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
         app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
 
         assert "function showBootFallback" in app_js
@@ -1820,10 +1818,10 @@ class TestMiniAppRussianLocale:
         assert "async function loadInitialScreen()" in app_js
         assert 'await loadInitialScreen();' in app_js
         assert 'if (!appBootstrapped) {' in app_js
-        assert 'appBootstrapped = true;' in app_js
+        assert 'appState.setBootstrapped(true)' in app_js
 
     def test_handbook_has_all_reference_tabs(self):
-        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
         html = Path("miniapp/index.html").read_text(encoding="utf-8")
     
         assert 'id: "aromas"' in app_js
@@ -1837,7 +1835,7 @@ class TestMiniAppRussianLocale:
         assert 'id="settingsButton"' in html
 
     def test_handbook_concepts_have_meta_and_render_course_fields(self):
-        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
         app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
 
         assert 'category: "concept"' in app_js
@@ -1846,8 +1844,8 @@ class TestMiniAppRussianLocale:
         assert 'function conceptTypeMeta(sourceType)' in app_js
         assert 'founder: { label: "Автор", icon: "◍" }' in app_js
         assert 'chakra: { label: "Чакра", icon: "✦" }' in app_js
-        assert 'class="draft-card overview-card reference-card' in app_js
-        assert 'class="concept-kind-mark" aria-hidden="true"' in app_js
+        assert 'class="draft-card overview-card' in app_js
+        assert 'class="kind-glyph handbook-glyph" aria-hidden="true"' in app_js
         assert 'tone-${escapeHtml(item.tone)}' in app_js
         assert 'reference-hero-card is-theory' in app_js
         assert 'reference-card${state.tab === "concepts" ? " is-theory concept-card" : ""}' in app_js
@@ -1861,7 +1859,7 @@ class TestMiniAppRussianLocale:
         assert ".concept-card::before" in app_css
 
     def test_content_detail_supports_prompt_copy_actions(self):
-        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
 
         assert "Скопировать промпт кадра" in app_js
         assert "Скопировать промпт слайда" in app_js
@@ -1876,7 +1874,7 @@ class TestMiniAppRussianLocale:
         assert "flex: 1 1 100%;" in app_css
 
     def test_swipe_back_ignores_text_selection_and_selectable_copy(self):
-        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
 
         assert "function isSelectableTextTarget" in app_js
         assert "function hasActiveTextSelection" in app_js
@@ -1885,7 +1883,7 @@ class TestMiniAppRussianLocale:
 
     def test_draft_cards_have_stronger_readability_styles(self):
         app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
-        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
 
         assert ".kind-glyph" in app_css
         assert "padding: 4px 10px;" in app_css
@@ -1897,7 +1895,7 @@ class TestMiniAppRussianLocale:
 
     def test_create_tool_panel_is_scaled_up_for_mobile(self):
         app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
-        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
 
         assert "create-tool-panel" in app_js
         assert ".create-tool-panel" in app_css
@@ -1907,7 +1905,7 @@ class TestMiniAppRussianLocale:
 
     def test_create_cards_use_icons_and_top_switcher_gap_is_balanced(self):
         app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
-        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
 
         assert '".topbar + .toolbar"' in app_css or ".topbar + .toolbar" in app_css
         assert 'data-tool="content"' in app_js
@@ -1918,7 +1916,7 @@ class TestMiniAppRussianLocale:
         assert 'contentKindIcon("plan")' in app_js
 
     def test_carousel_detail_uses_actions_instead_of_raw_json(self):
-        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
         server_py = Path("miniapp_server.py").read_text(encoding="utf-8")
 
         assert "JSON</h3>" not in app_js
@@ -1945,7 +1943,7 @@ class TestMiniAppRussianLocale:
         assert "Сделать текущей" in app_js
 
     def test_reels_detail_supports_editing_and_reference_generation(self):
-        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
         server_py = Path("miniapp_server.py").read_text(encoding="utf-8")
 
         assert "Сохранить концепцию и сценарий" in app_js
@@ -1969,7 +1967,7 @@ class TestMiniAppRussianLocale:
         assert "Обновить кадр" in app_js
 
     def test_content_review_detail_supports_editing_polish_and_feedback(self):
-        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
         app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
         server_py = Path("miniapp_server.py").read_text(encoding="utf-8")
 
@@ -1993,7 +1991,7 @@ class TestMiniAppRussianLocale:
         assert ".field-help" in app_css
 
     def test_create_and_detail_microcopy_is_editorial_and_actionable(self):
-        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
 
         assert "Собрать черновик" in app_js
         assert "Собрать сценарий и кадры" in app_js
@@ -2009,7 +2007,7 @@ class TestMiniAppRussianLocale:
         assert "Удалить черновик" in app_js
 
     def test_keywords_detail_supports_editing_and_ui_notices(self):
-        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
         app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
         server_py = Path("miniapp_server.py").read_text(encoding="utf-8")
 
@@ -2031,7 +2029,7 @@ class TestMiniAppRussianLocale:
         assert ".keyword-topic.active" in app_css
 
     def test_guided_states_cover_empty_and_onboarding_paths(self):
-        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
         app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
         html = Path("miniapp/index.html").read_text(encoding="utf-8")
 
@@ -2060,7 +2058,7 @@ class TestMiniAppRussianLocale:
         assert ".back-button," in app_css
 
     def test_draft_detail_supports_reject_and_delete_actions(self):
-        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
         server_py = Path("miniapp_server.py").read_text(encoding="utf-8")
         html = Path("miniapp/index.html").read_text(encoding="utf-8")
 
@@ -2073,7 +2071,7 @@ class TestMiniAppRussianLocale:
         assert 'option value="rejected"' in html
 
     def test_buttons_have_loading_feedback_animation(self):
-        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
         app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
 
         assert "function withButtonFeedback" in app_js
@@ -2082,7 +2080,7 @@ class TestMiniAppRussianLocale:
         assert ".secondary-button.did-complete" in app_css
 
     def test_detail_opening_uses_branded_a_loader(self):
-        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
         app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
 
         assert "function renderDetailLoader" in app_js
@@ -2092,7 +2090,7 @@ class TestMiniAppRussianLocale:
         assert "brand-loader-spin" in app_css
 
     def test_drafts_tab_uses_inline_a_loader_and_timeout_state(self):
-        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
         app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
         server_py = Path("miniapp_server.py").read_text(encoding="utf-8")
 
@@ -2102,7 +2100,7 @@ class TestMiniAppRussianLocale:
         assert 'message === "request_timeout"' in app_js
         assert 'fetchJson(`/api/drafts?${filtersToQueryString()}`, { timeout: 20000 })' in app_js
         assert "window.retryCurrentTab" in app_js
-        assert "if (appBootstrapped) {" in app_js
+        assert "appState.isBootstrapped()" in app_js
         assert "serialize_draft_summary" in server_py
         assert ".panel-loader-card" in app_css
         assert ".boot-fallback-inline" in app_css
@@ -2117,7 +2115,7 @@ class TestMiniAppRussianLocale:
         assert "HTMLResponse" in server_py
 
     def test_detail_buttons_have_visual_feedback_and_notes_survive_refresh(self):
-        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
         app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
 
         assert "function isEditingDetailForm()" in app_js
@@ -2127,14 +2125,14 @@ class TestMiniAppRussianLocale:
         assert "onclick=\"sendDraftToChat('${d.draft_id}', this)\"" in app_js
         assert "onclick=\"deleteDraft('${d.draft_id}', 'drafts', this)\"" in app_js
         assert 'onclick="saveCarouselSlideText(${JSON.stringify(draftId)}, ${index}, this)"' in app_js
-        assert 'onclick="regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, false, this)"' in app_js
-        assert 'onclick="regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, true, this)"' in app_js
+        assert 'regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, this)' in app_js
+        assert 'onclick="regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, this)"' in app_js
         assert ".secondary-button.is-busy" in app_css
         assert ".secondary-button.did-complete" in app_css
         assert ".secondary-button.did-error" in app_css
 
     def test_pending_drafts_are_marked_as_generating(self):
-        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
         app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
         presenter_py = Path("bot/services/miniapp_presenter.py").read_text(encoding="utf-8")
 
@@ -2146,7 +2144,7 @@ class TestMiniAppRussianLocale:
         assert ".tag-pending" in app_css
 
     def test_draft_detail_uses_editorial_hero_and_primary_review_layout(self):
-        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
         app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
 
         assert "function draftHeroSummary" in app_js
@@ -2161,7 +2159,7 @@ class TestMiniAppRussianLocale:
         assert ".content-review-lead textarea" in app_css
 
     def test_overview_lists_share_card_shell_and_human_source_labels(self):
-        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
         app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
 
         assert "function sourceLabel(value)" in app_js
@@ -2177,7 +2175,7 @@ class TestMiniAppRussianLocale:
         assert ".overview-card-date" in app_css
 
     def test_interaction_layer_has_motion_tokens_and_reduced_motion_guard(self):
-        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
         app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
 
         assert "--duration-fast" in app_css
@@ -2191,7 +2189,7 @@ class TestMiniAppRussianLocale:
         assert 'elements.detailPanel.classList.add("is-entering")' in app_js
 
     def test_guided_states_cover_empty_and_onboarding_paths(self):
-        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
         app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
 
         assert "function renderGuidedState" in app_js
@@ -2204,18 +2202,18 @@ class TestMiniAppRussianLocale:
         assert ".guided-state-copy" in app_css
         assert ".guided-state-actions" in app_css
     def test_interactive_cards_support_keyboard_and_aria_contract(self):
-        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
         app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
 
         assert "function interactiveCardAttrs(label)" in app_js
         assert "function bindCardKeyboardActivation()" in app_js
         assert 'bindCardKeyboardActivation();' in app_js
         assert 'role=\"button\" tabindex=\"0\" aria-label=' in app_js
-        assert 'class=\"create-card${state.selectedCreateTool === \'content\' ? \' active\' : \'\'} interactive-card\"' in app_js
+        assert 'class="create-card${state.selectedCreateTool === "content" ? " active" : ""} interactive-card"' in app_js
         assert 'class=\"draft-card overview-card${d.draft_id === state.draftId ? \" active\" : \"\"}${d.generation_pending ? \" is-pending\" : \"\"} interactive-card\"' in app_js
         assert ".interactive-card:focus-visible" in app_css
     def test_create_flow_reopens_full_draft_and_dismisses_keyboard(self):
-        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
 
         assert "function bindKeyboardDismiss()" in app_js
         assert 'document.addEventListener("touchstart", dismiss, { passive: true });' in app_js
@@ -2227,10 +2225,10 @@ class TestMiniAppRussianLocale:
         assert "viewport.addEventListener(\"resize\", handleViewportChange);" in app_js
         assert "bindKeyboardViewportAssist();" in app_js
         assert "scroll-margin-bottom: 180px;" in Path("miniapp/static/app.css").read_text(encoding="utf-8")
-        assert "await openDraft(d.draft_id);" in app_js
+        assert 'await openDraft(draft.draft_id)' in app_js
 
     def test_create_flow_uses_pending_card_and_timeout_recovery(self):
-        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
 
         assert "function buildPendingDraft(kind, topic)" in app_js
         assert "function openPendingDraftCreation(kind, topic)" in app_js
@@ -2238,15 +2236,15 @@ class TestMiniAppRussianLocale:
         assert "function recoverPendingDraftCreation(kind, topic, pendingDraftId)" in app_js
         assert "function isPendingDraftId(value)" in app_js
         assert 'timeout: 45000' in app_js
-        assert 'const pending = openPendingDraftCreation(f, t);' in app_js
-        assert 'const pending = openPendingDraftCreation("carousel", t);' in app_js
-        assert 'await recoverPendingDraftCreation(f, t, pending.draft_id);' in app_js
-        assert 'await recoverPendingDraftCreation("carousel", t, pending.draft_id);' in app_js
+        assert 'openPendingDraftCreation(format, topic)' in app_js
+        assert 'const pending = openPendingDraftCreation("carousel", topic);' in app_js
+        assert 'await recoverPendingDraftCreation(format, topic, pending.draft_id);' in app_js
+        assert 'await recoverPendingDraftCreation("carousel", topic, pending.draft_id);' in app_js
         assert 'if (isPendingDraftId(preferredId)) {' in app_js
         assert 'renderDetailLoader("Генерирую карточку", "Сохраняю черновик и подгружаю содержимое.", "detail-loader-card-compact")' in app_js
 
     def test_drafts_do_not_auto_open_first_item_on_boot(self):
-        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
 
         assert 'const preferredId = state.draftId || "";' in app_js
         assert 'state.drafts[0]?.draft_id' not in app_js
@@ -2567,12 +2565,13 @@ class TestThreadsPrompts:
         assert "если фраза звучит как слоган" in lowered
 
     def test_client_waits_for_all_reels_frames(self):
-        source = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        source = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
         assert "readyFrames < (reel.frame_count || 0)" in source
 
     def test_bootstrap_does_not_block_first_render_on_reference_access(self):
-        source = Path("miniapp/static/app.js").read_text(encoding="utf-8")
-        bootstrap_section = source.split("async function bootstrap() {", 1)[1]
+        source = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
+        # Extract only the runtime bootstrap function body (the actual implementation, not the wrapper)
+        bootstrap_section = source.split("async function bootstrap() {\n    applyTelegramTheme();", 1)[1].split("function retryCurrentTab()", 1)[0]
 
         assert 'if (state.mode === "content") {' in source
         assert "void loadReferenceAccess();" in source
@@ -2582,7 +2581,7 @@ class TestThreadsPrompts:
         assert 'showBootFallback(' in source
 
     def test_startup_errors_keep_boot_fallback_visible_until_first_render(self):
-        source = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        source = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
         runtime_warning = source.split("function showRuntimeWarning(prefix, error) {", 1)[1].split("}\n\nasync function copyText", 1)[0]
 
         assert 'if (!appBootstrapped) {' in runtime_warning
@@ -2590,7 +2589,7 @@ class TestThreadsPrompts:
         assert 'hideBootFallback();' in runtime_warning
 
     def test_reference_access_timeout_stays_retriable(self):
-        source = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        source = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
 
         assert "referenceAccessError" in source
         assert 'state.referenceAccess = null;' in source
@@ -2607,7 +2606,7 @@ class TestThreadsPrompts:
         assert "no-store, max-age=0" in server_py
 
     def test_background_refresh_does_not_reroute_handbook_view(self):
-        source = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        source = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
 
         assert "function clearBackgroundRefreshes" in source
         assert "function isCurrentDraftDetail" in source
@@ -2618,26 +2617,29 @@ class TestThreadsPrompts:
         assert "clearBackgroundRefreshes();" in source.split("function setTab", 1)[1]
 
     def test_create_flows_route_into_detail_cards(self):
-        source = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        source = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
 
         assert "function draftSummaryFromDraft(draft) {" in source
         assert "function upsertDraftSummary(summary) {" in source
-        assert 'const pending = openPendingDraftCreation(f, t);' in source
-        assert 'const pending = openPendingDraftCreation("carousel", t);' in source
+        assert 'openPendingDraftCreation(format, topic)' in source
+        assert 'const pending = openPendingDraftCreation("carousel", topic);' in source
         assert "function finalizePendingDraftCreation(draft) {" in source
         assert 'upsertDraftSummary(draftSummaryFromDraft(draft));' in source
         assert 'renderDraftDetail(draft);' in source
-        assert 'await recoverPendingDraftCreation("carousel", t, pending.draft_id);' in source
-        assert 'state.selectedReels = r;' in source
-        assert 'scheduleReelsRefresh(r.draft_id);' in source
-        assert 'state.selectedPlan = p; setTab("plans"); await loadPlans(); renderPlanDetail(p); enterDetailView();' in source
+        assert 'await recoverPendingDraftCreation("carousel", topic, pending.draft_id);' in source
+        assert 'state.selectedReels = reel;' in source
+        assert 'scheduleReelsRefresh(reel.draft_id);' in source
+        assert 'state.selectedPlan = p;' in source
+        assert 'setTab("plans");' in source
+        assert 'await loadPlans();' in source
+        assert 'renderPlanDetail(p);' in source
         assert "async function openReels(id) {" in source
         assert "async function openPlan(id) {" in source
         assert "window.openReels = openReels;" in source
         assert "window.openPlan = openPlan;" in source
 
     def test_load_drafts_keeps_list_alive_if_detail_open_fails(self):
-        source = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        source = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
 
         assert 'const data = await fetchJson(`/api/drafts?${filtersToQueryString()}`, { timeout: 20000 });' in source
         assert 'await openDraft(preferredId);' in source

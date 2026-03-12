@@ -857,7 +857,7 @@ async def generate_plan(_: None = Depends(_require_auth)):
         raise HTTPException(status_code=500, detail="plan_generation_failed")
 
     entries = _parse_plan_entries(raw_plan)
-    record = save_plan(
+    record = await save_plan(
         raw_text=raw_plan,
         entries=[
             {
@@ -886,7 +886,7 @@ async def inbox(limit: int = Query(default=50, ge=1, le=200), kind: str = "", _:
 
 @app.get("/api/plans")
 async def plans(limit: int = Query(default=20, ge=1, le=100), _: None = Depends(_require_auth)):
-    records = list_recent_plans(limit=limit)
+    records = await list_recent_plans(limit=limit)
     return {
         "items": [await serialize_plan(record) for record in records],
         "total": len(records),
@@ -895,7 +895,7 @@ async def plans(limit: int = Query(default=20, ge=1, le=100), _: None = Depends(
 
 @app.get("/api/plans/{plan_id}")
 async def plan_detail(plan_id: str, _: None = Depends(_require_auth)):
-    record = get_plan(plan_id)
+    record = await get_plan(plan_id)
     if not record:
         raise HTTPException(status_code=404, detail="plan_not_found")
     return await serialize_plan(record)
@@ -906,7 +906,7 @@ async def plan_generate(plan_id: str, payload: PlanGeneratePayload, _: None = De
     if not settings.anthropic_api_key:
         raise HTTPException(status_code=400, detail="anthropic_not_configured")
 
-    record = get_plan(plan_id)
+    record = await get_plan(plan_id)
     if not record:
         raise HTTPException(status_code=404, detail="plan_not_found")
     if payload.entry_index < 0 or payload.entry_index >= len(record.entries):
