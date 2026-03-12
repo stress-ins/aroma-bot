@@ -2781,7 +2781,7 @@ if (elements.bootFallbackReload) {
       window.retryCurrentTab();
       return;
     }
-    void loadInitialScreen();
+    window.location.reload();
   });
 }
 
