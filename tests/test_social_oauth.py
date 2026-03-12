@@ -6,10 +6,12 @@ from urllib.parse import parse_qs, urlparse
 import httpx
 
 from bot.services.social_oauth import (
+    build_oauth_state,
     build_instagram_authorize_url,
     build_threads_authorize_url,
     exchange_instagram_code,
     exchange_threads_code,
+    parse_oauth_state,
     update_env_file,
 )
 
@@ -42,6 +44,20 @@ def test_build_instagram_authorize_url():
     assert query["client_id"] == ["instagram-app-id"]
     assert query["redirect_uri"] == ["https://oauth.aromara.ru/instagram/callback"]
     assert query["scope"] == ["instagram_business_basic,instagram_business_content_publish"]
+
+
+def test_oauth_state_roundtrip():
+    state = build_oauth_state(
+        secret="telegram-secret",
+        service="threads",
+        chat_id=12345,
+        user_id=67890,
+    )
+    parsed = parse_oauth_state(state=state, secret="telegram-secret")
+
+    assert parsed.service == "threads"
+    assert parsed.chat_id == "12345"
+    assert parsed.user_id == "67890"
 
 
 def test_exchange_threads_code_uses_long_lived_token_and_profile_lookup():
