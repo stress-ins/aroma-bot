@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 import pytest
+from fastapi.testclient import TestClient
 
 
 # ---------------------------------------------------------------------------
@@ -89,6 +90,7 @@ class TestFixDashes:
 
 from bot.handlers.threads import _claude_topics as _real_claude_topics
 from bot.agents.content import (
+    ContentDraft,
     _has_structured_content,
     format_content_message,
     make_single_image_prompt,
@@ -97,6 +99,7 @@ from bot.agents.content import (
     parse_content_draft,
     parse_numbered_list,
 )
+from bot.agents.reels_agent import StoryboardFrame
 
 
 def _parse_topics(raw: str) -> list[str]:
@@ -1047,6 +1050,150 @@ class TestMiniAppPresenter:
         assert data["slides_count"] == 3
         assert data["images_ready"] == 1
         assert data["generation_pending"] is True
+
+
+@pytest.fixture()
+def miniapp_test_client(monkeypatch):
+    import miniapp_server
+
+    monkeypatch.setattr(miniapp_server, "_verify_init_data", lambda _value: True)
+    monkeypatch.setattr(miniapp_server.settings, "anthropic_api_key", "test-key")
+
+    with TestClient(miniapp_server.app) as client:
+        yield client
+
+
+class TestMiniAppApi:
+    AUTH_HEADERS = {"X-Telegram-Init-Data": "user=%7B%22id%22%3A62912125%7D&hash=test"}
+
+    def test_generate_content_creates_draft_and_detail(self, miniapp_test_client, monkeypatch):
+        import miniapp_server
+
+        async def _fake_generate_content(topic, goal_key, format_key):
+            return ContentDraft(
+                angle="Угол",
+                hook="Хук",
+                caption=f"Контент про {topic}",
+                cta="Напишите, если откликается",
+                hashtags="",
+                visual_prompt="soft warm ritual",
+                slides=[],
+            )
+
+        monkeypatch.setattr(
+            miniapp_server,
+            "generate_content_draft",
+            _fake_generate_content,
+        )
+
+        response = miniapp_test_client.post(
+            "/api/generate/content",
+            headers=self.AUTH_HEADERS,
+            json={"topic": "Вечерний ритуал", "goal_key": "trust", "format_key": "threads"},
+        )
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["draft_id"]
+        assert payload["kind"] == "threads"
+
+        detail = miniapp_test_client.get(f"/api/drafts/{payload['draft_id']}", headers=self.AUTH_HEADERS)
+        assert detail.status_code == 200
+        assert detail.json()["topic"] == "Вечерний ритуал"
+
+    def test_generate_carousel_creates_draft_and_summary(self, miniapp_test_client, monkeypatch):
+        import miniapp_server
+
+        monkeypatch.setattr(
+            miniapp_server,
+            "_generate_carousel_sync",
+            lambda topic: (
+                [f"{topic}: слайд 1", f"{topic}: слайд 2"],
+                ["prompt one", "prompt two"],
+                "arc",
+            ),
+        )
+        monkeypatch.setattr(miniapp_server, "populate_carousel_slide_assets", lambda *_args, **_kwargs: None)
+
+        response = miniapp_test_client.post(
+            "/api/generate/carousel",
+            headers=self.AUTH_HEADERS,
+            json={"topic": "Сенсорная карусель"},
+        )
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["draft_id"]
+        assert payload["kind"] == "carousel"
+
+        drafts = miniapp_test_client.get("/api/drafts?limit=100", headers=self.AUTH_HEADERS)
+        assert drafts.status_code == 200
+        items = drafts.json()["items"]
+        created = next(item for item in items if item["draft_id"] == payload["draft_id"])
+        assert created["generation_pending"] is True
+        assert created["slides_count"] == 2
+
+    def test_generate_reels_creates_draft_and_detail(self, miniapp_test_client, monkeypatch):
+        import miniapp_server
+
+        monkeypatch.setattr(miniapp_server, "generate_reels_scenario_sync", lambda topic: f"Сценарий для {topic}")
+        monkeypatch.setattr(
+            miniapp_server,
+            "generate_reels_director_sync",
+            lambda topic, scenario: [
+                StoryboardFrame("0-3 сек", "Крупный план лица", "Крупный план", "portrait soft warm light"),
+                StoryboardFrame("3-6 сек", "Рука касается аромата", "Макро", "macro aroma bottle"),
+            ],
+        )
+        monkeypatch.setattr(miniapp_server, "populate_reels_frame_assets", lambda *_args, **_kwargs: None)
+
+        response = miniapp_test_client.post(
+            "/api/generate/reels",
+            headers=self.AUTH_HEADERS,
+            json={"topic": "Рилс про паузу"},
+        )
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["draft_id"]
+        assert payload["frame_count"] == 2
+
+        detail = miniapp_test_client.get(f"/api/reels/{payload['draft_id']}", headers=self.AUTH_HEADERS)
+        assert detail.status_code == 200
+        assert detail.json()["frame_count"] == 2
+
+    def test_generate_plan_returns_entries(self, miniapp_test_client, monkeypatch):
+        import miniapp_server
+        import analytics.aggregator
+        import cache.store
+
+        monkeypatch.setattr(
+            miniapp_server,
+            "generate_plan_sync",
+            lambda trends_text: (
+                "📅 Понедельник\n"
+                "Платформа: Threads\n"
+                "Формат: Пост\n"
+                "Цель: Доверие\n"
+                "Тема: Тема недели\n"
+                "Угол: Через мягкий вход\n"
+            ),
+        )
+        monkeypatch.setattr(miniapp_server, "_format_trends", lambda _results: "threads: signal")
+        monkeypatch.setattr(analytics.aggregator, "collect_all", lambda: [])
+        monkeypatch.setattr(cache.store.cache, "get", lambda _key: ["cached"])
+        monkeypatch.setattr(cache.store.cache, "set", lambda _key, _value: None)
+
+        response = miniapp_test_client.post(
+            "/api/generate/plan",
+            headers=self.AUTH_HEADERS,
+            json={},
+        )
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["plan_id"]
+        assert len(payload["entries"]) >= 1
 
 
 class TestMiniAppKeywords:

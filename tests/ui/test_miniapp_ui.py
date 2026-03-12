@@ -380,3 +380,90 @@ def test_create_tool_selection_isolates_form(page):
         page.wait_for_timeout(300)
         assert page.get_by_text("Инструменты").is_visible()
         assert page.get_by_text("Пост для соцсетей").is_visible()
+
+
+def test_create_carousel_routes_into_draft_detail(page):
+    created = {
+        "draft_id": "newcar01",
+        "kind": "carousel",
+        "topic": "Тестовая карусель",
+        "source": "/miniapp",
+        "status": "draft",
+        "feedback": "",
+        "created_at": "2026-03-12T02:00:00+00:00",
+        "preview": "Первый слайд / Второй слайд",
+        "slides_count": 2,
+        "storyboard_count": 0,
+        "payload": {
+            "slides": ["Первый слайд", "Второй слайд"],
+            "img_prompts": ["prompt 1", "prompt 2"],
+            "slide_images": [],
+            "img_prompt_notes": ["", ""],
+            "images_ready": 0,
+        },
+    }
+
+    def handle_route(route):
+        url = route.request.url
+        if url.endswith("/api/generate/carousel"):
+            route.fulfill(status=200, content_type="application/json", body=json.dumps(created, ensure_ascii=False))
+            return
+        if "/api/drafts?" in url:
+            route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps(
+                    {
+                        "items": [
+                            {
+                                "draft_id": created["draft_id"],
+                                "kind": "carousel",
+                                "topic": created["topic"],
+                                "source": created["source"],
+                                "created_at": created["created_at"],
+                                "status": created["status"],
+                                "feedback": "",
+                                "preview": created["preview"],
+                                "slides_count": 2,
+                                "storyboard_count": 0,
+                                "images_ready": 0,
+                                "generation_pending": True,
+                            }
+                        ],
+                        "total": 1,
+                    },
+                    ensure_ascii=False,
+                ),
+            )
+            return
+        if url.endswith(f"/api/drafts/{created['draft_id']}"):
+            route.fulfill(status=200, content_type="application/json", body=json.dumps(created, ensure_ascii=False))
+            return
+        route.continue_()
+
+    page.route("**/*", handle_route)
+    page.get_by_role("button", name="Создать").click()
+    page.wait_for_timeout(200)
+    page.get_by_role("heading", name="Карусель").click()
+    page.locator("textarea[name='topic']").fill("Тестовая карусель")
+    page.get_by_role("button", name="Сгенерировать карусель").click()
+    page.wait_for_timeout(500)
+
+    assert page.locator(".detail-title").inner_text().strip() == "Тестовая карусель"
+    assert page.locator(".slide").count() == 2
+    assert page.get_by_role("button", name="Черновики").get_attribute("class")
+
+
+def test_tap_outside_textarea_dismisses_keyboard_focus(page):
+    page.get_by_role("button", name="Создать").click()
+    page.wait_for_timeout(200)
+    page.get_by_role("heading", name="Пост для соцсетей").click()
+    page.wait_for_timeout(300)
+    page.locator("textarea[name='topic']").wait_for(state="visible")
+    page.locator("textarea[name='topic']").focus()
+    assert page.evaluate("document.activeElement && document.activeElement.tagName") == "TEXTAREA"
+
+    page.locator("#detailPanel").click(position={"x": 20, "y": 20})
+    page.wait_for_timeout(150)
+
+    assert page.evaluate("document.activeElement && document.activeElement.tagName") != "TEXTAREA"
