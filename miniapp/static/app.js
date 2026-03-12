@@ -364,7 +364,7 @@ function renderSlides(draftId, slides = [], prompts = [], slideImages = [], prom
           const showPromptOpen = !img?.url;
           const imgHtml = img?.url
             ? `<img class="frame-image" src="${escapeHtml(img.url)}" alt="Слайд ${index + 1}" />`
-            : `<div class="frame-loading">Картинка недоступна или еще генерируется. Откройте промт ниже для ручной генерации.</div>`;
+            : `<div class="frame-loading">Картинка недоступна или еще генерируется. Откройте промпт ниже для ручной генерации.</div>`;
           return `
             <article class="slide">
               <strong>Слайд ${index + 1}</strong>
@@ -714,7 +714,7 @@ function renderReelsFrames(draftId, frames = []) {
               </label>
               ${assetUrl
                 ? `<img class="frame-image" src="${escapeHtml(assetUrl)}" alt="Кадр ${index + 1}" />`
-                : `<div class="frame-loading">Картинка ещё не готова. Откройте промт ниже для ручной генерации.</div>`}
+                : `<div class="frame-loading">Картинка ещё не готова. Откройте промпт ниже для ручной генерации.</div>`}
               ${prompt ? `
                 <details class="prompt-disclosure"${showPromptOpen ? " open" : ""}>
                   <summary class="secondary-button prompt-toggle">${actionLabel("eye", "Показать промпт")}</summary>
@@ -729,10 +729,10 @@ function renderReelsFrames(draftId, frames = []) {
                     </label>
                     <div class="actions-row prompt-actions">
                       <button class="secondary-button" type="button" onclick="saveReelsFrameFields('${draftId}', ${index}, this)">${actionLabel("text", "Сохранить кадр")}</button>
-                      <button class="secondary-button" type="button" onclick="saveReelsFramePrompt('${draftId}', ${index}, this)">${actionLabel("prompt", "Сохранить промт")}</button>
+                      <button class="secondary-button" type="button" onclick="saveReelsFramePrompt('${draftId}', ${index}, this)">${actionLabel("prompt", "Сохранить промпт")}</button>
                       <button class="secondary-button" type="button" onclick="saveReelsFrameNote('${draftId}', ${index}, this)">${actionLabel("note", "Сохранить замечание")}</button>
                       <button class="secondary-button" type="button" onclick="regenerateReelsFrame('${draftId}', ${index}, this)">${actionLabel("regenerate", "Сгенерировать кадр")}</button>
-                      <button class="secondary-button" type="button" onclick='copyText(${JSON.stringify(String(prompt))})'>${actionLabel("prompt", "Скопировать промт кадра")}</button>
+                      <button class="secondary-button" type="button" onclick='copyText(${JSON.stringify(String(prompt))})'>${actionLabel("prompt", "Скопировать промпт кадра")}</button>
                     </div>
                   </div>
                 </details>
