@@ -19,7 +19,8 @@ from sqlalchemy import select
 from db.session import AsyncSessionLocal
 from db.models import AromaCardModel
 
-# Exported card data (payload already contains all edits)
+# Seed/import payload for patching aroma_cards rows in the database.
+# This file is not a runtime source of truth for the miniapp.
 CARDS_JSON = Path(__file__).parent.parent / "scripts" / "aroma_cards_data.json"
 
 
