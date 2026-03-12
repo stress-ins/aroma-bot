@@ -1447,14 +1447,16 @@ class TestMiniAppRussianLocale:
         assert 'await safeLoadCurrentTab("Не удалось загрузить вкладку")' in app_js
         assert "appBootstrapped = true;" in app_js
 
-    def test_handbook_has_only_oils_tab(self):
+    def test_handbook_has_all_reference_tabs(self):
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
         html = Path("miniapp/index.html").read_text(encoding="utf-8")
     
         assert 'id: "aromas"' in app_js
-        assert 'label: "Масла"' in app_js
-        assert 'id: "practices"' not in app_js
-        assert 'id: "sounds"' not in app_js
+        assert 'label: "Ароматы"' in app_js
+        assert 'id: "practices"' in app_js
+        assert 'label: "Практики"' in app_js
+        assert 'id: "sounds"' in app_js
+        assert 'label: "Звуки"' in app_js
         assert 'id="settingsButton"' in html
 
     def test_content_detail_supports_prompt_copy_actions(self):
@@ -1611,6 +1613,8 @@ class TestMiniAppRussianLocale:
         assert "onclick=\"updateDraft('status', {status:'approved'}, this)\"" in app_js
         assert "onclick=\"sendDraftToChat('${d.draft_id}', this)\"" in app_js
         assert "onclick=\"deleteDraft('${d.draft_id}', 'drafts', this)\"" in app_js
+        assert 'onclick="saveCarouselSlideText(${JSON.stringify(draftId)}, ${index}, this)"' in app_js
+        assert 'onclick="regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, false, this)"' in app_js
         assert ".secondary-button.is-busy" in app_css
         assert ".secondary-button.did-complete" in app_css
 
@@ -1625,6 +1629,15 @@ class TestMiniAppRussianLocale:
         assert 'class="tag tag-pending"' in app_js
         assert ".draft-card.is-pending" in app_css
         assert ".tag-pending" in app_css
+
+    def test_create_flow_reopens_full_draft_and_dismisses_keyboard(self):
+        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+
+        assert "function bindKeyboardDismiss()" in app_js
+        assert 'document.addEventListener("touchstart", dismiss, { passive: true });' in app_js
+        assert 'document.addEventListener("mousedown", dismiss, { passive: true });' in app_js
+        assert "bindKeyboardDismiss();" in app_js
+        assert "await openDraft(d.draft_id);" in app_js
 
     def test_drafts_do_not_auto_open_first_item_on_boot(self):
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
