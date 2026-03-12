@@ -997,6 +997,7 @@ const {
   setMode,
   setTab,
   safeLoadCurrentTab,
+  HANDBOOK_CATEGORY_META,
 });
 
 window.goBackToList = goBackToList;
