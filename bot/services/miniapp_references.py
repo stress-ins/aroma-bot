@@ -15,7 +15,7 @@ from db.session import AsyncSessionLocal
 BASE_DIR = Path(__file__).resolve().parents[2]
 SEED_FILE = BASE_DIR / "data" / "reference_cards_seed.json"
 EXTRA_SEED_FILE = BASE_DIR / "data" / "reference_cards_extra.json"
-REFERENCE_CATEGORIES = {"aroma", "practice", "sound"}
+REFERENCE_CATEGORIES = {"aroma", "practice", "sound", "concept"}
 REFERENCE_IMAGES_DIR = BASE_DIR / "assets" / "reference_images"
 INTERNAL_SEED_KEY = "__seed_payload"
 INTERNAL_OVERRIDES_KEY = "__manual_overrides"
@@ -37,6 +37,8 @@ SHARED_IMAGE_OVERRIDES = {
     ("practice", "breath"): "nature.jpg",
     ("practice", "meditation"): "nature.jpg",
     ("practice", "body"): "nature.jpg",
+    ("concept", "method"): "nature.jpg",
+    ("concept", "chakra"): "nature.jpg",
     ("sound", "instrument"): "instrument.jpg",
     ("sound", "sound"): "sound.jpg",
     ("sound", "voice"): "voice.jpg",
@@ -55,6 +57,7 @@ def _image_label(category: str) -> str:
     return {
         "aroma": "источник сырья",
         "practice": "образ практики",
+        "concept": "теоретическая карточка",
         "sound": "источник звука",
     }.get(category, "справочник")
 
@@ -87,6 +90,11 @@ def _source_illustration_key(source_type: str, title: str) -> str:
         "breath": "breath-wave",
         "meditation": "meditation-stone",
         "body": "body-line",
+        "method": "breath-wave",
+        "chakra": "meditation-stone",
+        "system": "sound-wave",
+        "founder": "voice-wave",
+        "energy": "body-line",
         "sound": "sound-wave",
         "instrument": "sound-bowl",
         "voice": "voice-wave",
@@ -197,6 +205,11 @@ def _source_image(source_type: str, title: str, category: str) -> str:
         "breath": ("#4d8cbf", "#d7e8f7", "дыхание"),
         "meditation": ("#7a64b1", "#e2daf7", "медитация"),
         "body": ("#b35f5f", "#f4d9d9", "тело"),
+        "method": ("#6a8f7a", "#deefe6", "метод"),
+        "chakra": ("#8a63c2", "#e7def8", "чакра"),
+        "system": ("#5878b8", "#dde7fb", "система"),
+        "founder": ("#a86e57", "#f0dfd5", "автор"),
+        "energy": ("#d08a4f", "#f8e4cf", "энергия"),
         "sound": ("#5468b8", "#dbe1fb", "звук"),
         "instrument": ("#8b6e4a", "#eadcc9", "инструмент"),
         "voice": ("#ad5f9e", "#f0d7eb", "голос"),
