@@ -37,7 +37,7 @@ const MODE_TABS = {
     { id: "status", label: "Статус" },
   ],
   handbook: [
-    { id: "aromas", label: "Масла" },
+    { id: "aromas", label: "Ароматы" },
     { id: "practices", label: "Практики" },
     { id: "sounds", label: "Звуки" },
   ],
@@ -483,16 +483,16 @@ function renderSlides(draftId, slides = [], prompts = [], slideImages = [], prom
                       <textarea id="${slideNoteId(index)}" placeholder="Например: теплее свет, крупнее объект, меньше деталей на фоне" oninput="handleCarouselSlideNoteInput(${JSON.stringify(draftId)}, ${index}, this.value)">${escapeHtml(note)}</textarea>
                     </label>
                     <div class="actions-row prompt-actions">
-                      <button class="secondary-button" type="button" onclick="saveCarouselSlideText(${JSON.stringify(draftId)}, ${index})">${actionLabel("text", "Сохранить текст слайда")}</button>
+                      <button class="secondary-button" type="button" onclick="saveCarouselSlideText(${JSON.stringify(draftId)}, ${index}, this)">${actionLabel("text", "Сохранить текст слайда")}</button>
                       <button class="secondary-button" type="button" onclick='copyText(${JSON.stringify(prompt)})'>${actionLabel("prompt", "Скопировать промпт слайда")}</button>
-                      <button class="secondary-button" type="button" onclick="regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, false)">${actionLabel("regenerate", "Перегенерировать")}</button>
-                      <button class="primary-button" type="button" onclick="regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, true)">${actionLabel("note", "Учесть замечание")}</button>
+                      <button class="secondary-button" type="button" onclick="regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, false, this)">${actionLabel("regenerate", "Перегенерировать")}</button>
+                      <button class="primary-button" type="button" onclick="regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, true, this)">${actionLabel("note", "Учесть замечание")}</button>
                     </div>
                   </div>
                 </details>
               ` : `
                 <div class="actions-row prompt-actions">
-                  <button class="secondary-button" type="button" onclick="saveCarouselSlideText(${JSON.stringify(draftId)}, ${index})">${actionLabel("text", "Сохранить текст слайда")}</button>
+                  <button class="secondary-button" type="button" onclick="saveCarouselSlideText(${JSON.stringify(draftId)}, ${index}, this)">${actionLabel("text", "Сохранить текст слайда")}</button>
                 </div>
               `}
             </article>
@@ -531,17 +531,24 @@ function _authQueryString() {
   return `?init_data=${encodeURIComponent(initData)}`;
 }
 
-async function saveCarouselSlideText(draftId, slideIndex) {
+async function saveCarouselSlideText(draftId, slideIndex, button) {
   const textField = document.getElementById(slideTextId(slideIndex));
   const text = String(textField?.value || "").trim();
-  const draft = await fetchJson(`/api/carousel/${draftId}/slides/${slideIndex}/text`, {
-    method: "POST",
-    body: JSON.stringify({ text }),
-  });
-  state.selected = draft;
-  mergeDraftIntoState(draft);
-  renderDraftList();
-  if (isCurrentDraftDetail(draft.draft_id)) renderDraftDetail(draft);
+  const apply = async () => {
+    const draft = await fetchJson(`/api/carousel/${draftId}/slides/${slideIndex}/text`, {
+      method: "POST",
+      body: JSON.stringify({ text }),
+    });
+    state.selected = draft;
+    mergeDraftIntoState(draft);
+    renderDraftList();
+    if (isCurrentDraftDetail(draft.draft_id)) renderDraftDetail(draft);
+  };
+  if (button instanceof HTMLElement) {
+    await withButtonFeedback(button, "Сохраняю...", apply, "Сохранено");
+    return;
+  }
+  await apply();
 }
 
 async function persistCarouselSlideNote(draftId, slideIndex, note) {
@@ -565,20 +572,27 @@ function handleCarouselSlideNoteInput(draftId, slideIndex, value) {
   }, 600);
 }
 
-async function regenerateCarouselSlide(draftId, slideIndex, withNote) {
+async function regenerateCarouselSlide(draftId, slideIndex, withNote, button) {
   const noteField = document.getElementById(slideNoteId(slideIndex));
   const currentNote = String(noteField?.value || bufferedCarouselNote(draftId, slideIndex, "")).trim();
   const note = currentNote ? currentNote : (withNote ? "" : null);
-  if (currentNote) {
-    await persistCarouselSlideNote(draftId, slideIndex, currentNote);
+  const apply = async () => {
+    if (currentNote) {
+      await persistCarouselSlideNote(draftId, slideIndex, currentNote);
+    }
+    const draft = await fetchJson(`/api/carousel/${draftId}/slides/${slideIndex}/regenerate`, {
+      method: "POST",
+      body: JSON.stringify({ note }),
+    });
+    mergeDraftIntoState(draft);
+    renderDraftList();
+    if (isCurrentDraftDetail(draft.draft_id)) renderDraftDetail(draft);
+  };
+  if (button instanceof HTMLElement) {
+    await withButtonFeedback(button, "Генерирую...", apply, "Готово");
+    return;
   }
-  const draft = await fetchJson(`/api/carousel/${draftId}/slides/${slideIndex}/regenerate`, {
-    method: "POST",
-    body: JSON.stringify({ note }),
-  });
-  mergeDraftIntoState(draft);
-  renderDraftList();
-  if (isCurrentDraftDetail(draft.draft_id)) renderDraftDetail(draft);
+  await apply();
 }
 
 async function regenerateCarouselAll(draftId, button) {
@@ -1002,6 +1016,19 @@ function isSelectableTextTarget(target) {
 function hasActiveTextSelection() {
   const selection = window.getSelection?.();
   return Boolean(selection && String(selection).trim().length > 0);
+}
+
+function bindKeyboardDismiss() {
+  const dismiss = (event) => {
+    const active = document.activeElement;
+    if (!active || !(active instanceof HTMLElement)) return;
+    if (!active.matches("textarea, input")) return;
+    const target = event.target;
+    if (target instanceof Element && target.closest("textarea, input, select")) return;
+    active.blur();
+  };
+  document.addEventListener("touchstart", dismiss, { passive: true });
+  document.addEventListener("mousedown", dismiss, { passive: true });
 }
 
 function bindSwipeBack() {
@@ -1554,7 +1581,11 @@ function renderCreateTool(toolId) {
     renderDraftList();
     renderDraftDetail(d);
     enterDetailView();
-    void loadDrafts();
+    try {
+      await openDraft(d.draft_id);
+    } catch (_error) {
+      void loadDrafts();
+    }
   }});
 
   const rForm = elements.draftDetail.querySelector("[data-create-reels]");
@@ -1581,7 +1612,11 @@ function renderCreateTool(toolId) {
     renderDraftList();
     renderDraftDetail(d);
     enterDetailView();
-    void loadDrafts();
+    try {
+      await openDraft(d.draft_id);
+    } catch (_error) {
+      void loadDrafts();
+    }
   }});
 }
 
@@ -1776,6 +1811,7 @@ async function bootstrap() {
   }, 1800);
   applyTelegramTheme();
   bindSwipeBack();
+  bindKeyboardDismiss();
   elements.modeContent.addEventListener("click", () => { setMode("content"); void safeLoadCurrentTab("Не удалось загрузить раздел контента"); });
   elements.modeHandbook.addEventListener("click", () => { setMode("handbook"); void safeLoadCurrentTab("Не удалось загрузить справочник"); });
   elements.settingsButton?.addEventListener("click", () => {
