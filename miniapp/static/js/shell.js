@@ -6,6 +6,7 @@ export function createShellModule(deps) {
     setMode,
     setTab,
     safeLoadCurrentTab,
+    HANDBOOK_CATEGORY_META,
   } = deps;
 
   let swipeStart = null;
@@ -261,14 +262,21 @@ export function createShellModule(deps) {
     if (!isMobile) return;
     elements.detailPanel.addEventListener("touchstart", (event) => {
       const touch = event.touches[0];
-      if (!touch || state.mobileView !== "detail" || isInteractiveTarget(event.target) || isSelectableTextTarget(event.target) || hasActiveTextSelection()) {
+      if (!touch || state.mobileView !== "detail" || hasActiveTextSelection()) {
         swipeStart = null;
         return;
       }
-      swipeStart = { x: touch.clientX, y: touch.clientY };
+      // Allow swipe from left edge (first 44px) even over buttons
+      const edgeSwipe = touch.clientX < 44;
+      if (!edgeSwipe && (isInteractiveTarget(event.target) || isSelectableTextTarget(event.target))) {
+        swipeStart = null;
+        return;
+      }
+      swipeStart = { x: touch.clientX, y: touch.clientY, edgeSwipe };
     }, { passive: true });
     elements.detailPanel.addEventListener("touchmove", (event) => {
-      if (!swipeStart || state.mobileView !== "detail" || isInteractiveTarget(event.target) || isSelectableTextTarget(event.target) || hasActiveTextSelection()) return;
+      if (!swipeStart || state.mobileView !== "detail" || hasActiveTextSelection()) return;
+      if (!swipeStart.edgeSwipe && (isInteractiveTarget(event.target) || isSelectableTextTarget(event.target))) return;
       const touch = event.touches[0];
       const dx = Math.max(0, touch.clientX - swipeStart.x);
       const dy = Math.abs(touch.clientY - swipeStart.y);
