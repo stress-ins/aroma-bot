@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import fcntl
 import hashlib
 import hmac
 import json
@@ -70,6 +71,7 @@ BASE_DIR = Path(__file__).parent
 MINIAPP_DIR = BASE_DIR / "miniapp"
 STATIC_DIR = MINIAPP_DIR / "static"
 REFERENCE_IMAGES_DIR = BASE_DIR / "assets" / "reference_images"
+STARTUP_RECOVERY_LOCK_PATH = Path(os.getenv("AROMA_MINIAPP_RECOVERY_LOCK", "/tmp/aroma-miniapp-recovery.lock"))
 
 
 def _asset_version() -> str:
@@ -135,28 +137,46 @@ def _require_reference_access(x_telegram_init_data: str | None = Header(default=
     return user_id
 
 
+def _acquire_startup_recovery_lock():
+    STARTUP_RECOVERY_LOCK_PATH.parent.mkdir(parents=True, exist_ok=True)
+    lock_file = STARTUP_RECOVERY_LOCK_PATH.open("a+", encoding="utf-8")
+    try:
+        fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        lock_file.close()
+        return None
+    return lock_file
+
+
 @asynccontextmanager
 async def _lifespan(app: FastAPI):  # noqa: ARG001
     """On startup: resume any generations that were interrupted mid-flight."""
+    recovery_lock = _acquire_startup_recovery_lock()
     try:
-        drafts = await list_recent_drafts(limit=200)
-        for draft in drafts:
-            payload = draft.payload or {}
-            if not payload.get("generation_pending"):
-                continue
-            if draft.kind == "carousel":
-                if payload.get("slides"):
-                    asyncio.create_task(populate_carousel_slide_assets(draft.draft_id))
-                else:
-                    asyncio.create_task(_complete_carousel_generation(draft.draft_id, draft.topic))
-            elif draft.kind == "reels":
-                if payload.get("storyboard"):
-                    asyncio.create_task(populate_reels_frame_assets(draft.draft_id))
-                else:
-                    asyncio.create_task(_complete_reels_generation(draft.draft_id, draft.topic))
+        if recovery_lock is not None:
+            drafts = await list_recent_drafts(limit=200)
+            for draft in drafts:
+                payload = draft.payload or {}
+                if not payload.get("generation_pending"):
+                    continue
+                if draft.kind == "carousel":
+                    if payload.get("slides"):
+                        asyncio.create_task(populate_carousel_slide_assets(draft.draft_id))
+                    else:
+                        asyncio.create_task(_complete_carousel_generation(draft.draft_id, draft.topic))
+                elif draft.kind == "reels":
+                    if payload.get("storyboard"):
+                        asyncio.create_task(populate_reels_frame_assets(draft.draft_id))
+                    else:
+                        asyncio.create_task(_complete_reels_generation(draft.draft_id, draft.topic))
     except Exception:
         pass  # Don't block startup if recovery fails
     yield
+    if recovery_lock is not None:
+        try:
+            fcntl.flock(recovery_lock.fileno(), fcntl.LOCK_UN)
+        finally:
+            recovery_lock.close()
 
 
 app = FastAPI(lifespan=_lifespan)

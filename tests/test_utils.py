@@ -1267,6 +1267,24 @@ class TestMiniAppApi:
         assert payload["plan_id"]
         assert len(payload["entries"]) >= 1
 
+    @pytest.mark.asyncio
+    async def test_lifespan_skips_recovery_when_lock_is_held(self, monkeypatch):
+        import miniapp_server
+
+        calls = {"list_recent_drafts": 0}
+
+        async def _fake_list_recent_drafts(*_args, **_kwargs):
+            calls["list_recent_drafts"] += 1
+            return []
+
+        monkeypatch.setattr(miniapp_server, "_acquire_startup_recovery_lock", lambda: None)
+        monkeypatch.setattr(miniapp_server, "list_recent_drafts", _fake_list_recent_drafts)
+
+        async with miniapp_server.app.router.lifespan_context(miniapp_server.app):
+            pass
+
+        assert calls["list_recent_drafts"] == 0
+
 
 class TestMiniAppKeywords:
     def test_field_labels_exposes_ru_and_en_fields(self):
