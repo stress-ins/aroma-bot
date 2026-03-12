@@ -1,4 +1,5 @@
 import { createCarouselModule } from "./js/carousel.js";
+import { createContentModule } from "./js/content.js";
 import { createCreateModule } from "./js/create.js";
 import { createDraftsModule } from "./js/drafts.js";
 import { createPlansModule } from "./js/plans.js";
@@ -1047,15 +1048,8 @@ function scheduleReelsRefresh(draftId, attempts = 10) {
   window.clearTimeout(reelRefreshTimer);
   reelRefreshTimer = window.setTimeout(async () => {
     try {
-      const reel = await fetchJson(`/api/reels/${draftId}`);
-      const readyFrames = Array.isArray(reel.frames) ? reel.frames.filter((i) => i.current_asset?.url).length : 0;
-      state.reels = state.reels.map((i) => i.draft_id === reel.draft_id ? { ...i, ...reel } : i);
-      if (isCurrentReelsDetail(reel.draft_id)) {
-        state.selectedReels = reel;
-        renderReels();
-        if (!isEditingDetailForm()) renderReelsDetail(reel);
-      }
-      if (reel.generation_pending || readyFrames < (reel.frame_count || 0)) scheduleReelsRefresh(draftId, attempts - 1);
+      const { shouldContinue } = await refreshReelsDetailImpl(draftId);
+      if (shouldContinue) scheduleReelsRefresh(draftId, attempts - 1);
     } catch (_e) { scheduleReelsRefresh(draftId, attempts - 1); }
   }, 4000);
 }
@@ -1143,15 +1137,7 @@ async function loadDrafts() {
   }
 }
 
-async function loadInbox() {
-  const params = new URLSearchParams();
-  params.set("limit", "100");
-  if (state.inboxKind && state.inboxKind !== "all") params.set("kind", state.inboxKind);
-  const data = await fetchJson(`/api/inbox?${params.toString()}`);
-  state.inbox = data.items || [];
-  state.inboxKind = data.kind || "all";
-  renderInbox();
-}
+async function loadInbox() { return loadInboxImpl(); }
 
 async function loadStatus() {
   state.status = await fetchJson("/api/status");
@@ -1164,11 +1150,7 @@ async function loadPlans() {
   renderPlans();
 }
 
-async function loadReels() {
-  const data = await fetchJson("/api/reels?limit=30");
-  state.reels = data.items || [];
-  renderReels();
-}
+async function loadReels() { return loadReelsImpl(); }
 
 async function loadKeywords() {
   return loadKeywordsImpl();
@@ -1321,6 +1303,50 @@ const {
   renderPlanDetail,
 });
 
+const {
+  loadInbox: loadInboxImpl,
+  loadReels: loadReelsImpl,
+  openReels: openReelsImpl,
+  openPendingReelsCreation: openPendingReelsCreationImpl,
+  finalizePendingReelsCreation: finalizePendingReelsCreationImpl,
+  recoverPendingReelsCreation: recoverPendingReelsCreationImpl,
+  renderInbox: renderInboxImpl,
+  renderReels: renderReelsImpl,
+  renderReelsDetail: renderReelsDetailImpl,
+  refreshReelsDetail: refreshReelsDetailImpl,
+} = createContentModule({
+  state,
+  elements,
+  escapeHtml,
+  stripMarkdown,
+  renderBackButton,
+  renderDetailLoader,
+  renderGuidedState,
+  renderDetailError,
+  interactiveCardAttrs,
+  contentKindIcon,
+  kindLabel,
+  sourceLabel,
+  sourceTone,
+  statusLabel,
+  statusTone,
+  tagMarkup,
+  formatPlanDate,
+  fetchJson,
+  setEmptyState,
+  syncMobileNavigation,
+  enterDetailView,
+  setTab,
+  clearBackgroundRefreshes,
+  mergeReelsIntoState,
+  scheduleReelsRefresh,
+  isCurrentReelsDetail,
+  isEditingDetailForm,
+  callbacks: {
+    renderReelsDetailMarkup,
+  },
+});
+
 function aromaSection(title, content) {
   if (!content) return "";
   return `<section class="section"><h3>${sectionHeadingIcon(title)}${escapeHtml(title)}</h3><div class="detail-preview detail-markdown">${renderMarkdown(content)}</div></section>`;
@@ -1334,15 +1360,7 @@ async function openDraft(id) {
   return openDraftImpl(id);
 }
 
-async function openReels(id) {
-  elements.draftDetail.innerHTML = `${renderBackButton()}${renderDetailLoader("Открываю рилс")}`;
-  enterDetailView();
-  clearBackgroundRefreshes();
-  const r = await fetchJson(`/api/reels/${id}`);
-  state.selectedReels = r;
-  renderReelsDetail(r);
-  enterDetailView();
-}
+async function openReels(id) { return openReelsImpl(id); }
 
 function renderDraftDetail(d) {
   return renderDraftDetailImpl(d);
@@ -1483,82 +1501,11 @@ async function loadInitialScreen() {
   return false;
 }
 
-function openPendingReelsCreation(topic) {
-  const draft = buildPendingDraft("reels", topic);
-  draft.storyboard_count = 4;
-  draft.generation_stage = "scenario";
-  draft.generation_message = "Собираю сценарий и раскадровку для рилса.";
-  state.pendingCreateRecovery = {
-    draft_id: draft.draft_id,
-    kind: "reels",
-    topic,
-    started_at: Date.now(),
-  };
-  state.selectedReels = {
-    ...draft,
-    frame_count: 0,
-    frames: [],
-    payload: {
-      concept: "",
-      scenario: "",
-      storyboard: [],
-      generation_pending: true,
-      generation_stage: "scenario",
-      generation_message: "Собираю сценарий и раскадровку для рилса.",
-    },
-  };
-  setTab("reels");
-  state.reels = [
-    state.selectedReels,
-    ...state.reels.filter((item) => item.draft_id !== draft.draft_id),
-  ];
-  renderReels();
-  renderReelsDetail(state.selectedReels);
-  enterDetailView();
-  return state.selectedReels;
-}
+function openPendingReelsCreation(topic) { return openPendingReelsCreationImpl(topic); }
 
-function finalizePendingReelsCreation(draft) {
-  if (!draft?.draft_id) return;
-  state.pendingCreateRecovery = null;
-  mergeReelsIntoState(draft);
-  renderReels();
-  renderReelsDetail(draft);
-  enterDetailView();
-}
+function finalizePendingReelsCreation(draft) { return finalizePendingReelsCreationImpl(draft); }
 
-async function recoverPendingReelsCreation(topic, pendingDraftId) {
-  const startedAt = Date.now();
-  state.pendingCreateRecovery = {
-    draft_id: pendingDraftId,
-    kind: "reels",
-    topic,
-    started_at: startedAt,
-  };
-  for (let attempt = 0; attempt < 8; attempt += 1) {
-    try {
-      const data = await fetchJson("/api/drafts?kind=reels&limit=20", { timeout: 20000 });
-      const items = data.items || [];
-      const recovered = items.find((item) => {
-        const createdAt = new Date(item.created_at || 0).getTime();
-        return item.kind === "reels"
-          && item.topic === topic
-          && item.source === "/miniapp"
-          && (Number.isNaN(createdAt) || createdAt >= startedAt - 10_000);
-      });
-      if (recovered?.draft_id) {
-        state.pendingCreateRecovery = null;
-        await loadReels();
-        await openReels(recovered.draft_id);
-        return true;
-      }
-    } catch (_error) {
-      // ignore and retry
-    }
-    await new Promise((resolve) => window.setTimeout(resolve, 1500));
-  }
-  return false;
-}
+async function recoverPendingReelsCreation(topic, pendingDraftId) { return recoverPendingReelsCreationImpl(topic, pendingDraftId); }
 
 async function bootstrap() {
   applyTelegramTheme();
@@ -1697,30 +1644,7 @@ window.openSettingsSection = async (section) => {
   await loadSettings();
 };
 
-function renderInbox() {
-  elements.listTitle.textContent = "Согласование";
-  elements.draftCount.textContent = `${state.inbox.length} на проверке`;
-  setEmptyState(state.inbox.length > 0, {
-    eyebrow: "Согласование",
-    title: "Очередь пока пуста",
-    body: "Когда появятся материалы на ревью, они сразу окажутся здесь.",
-  });
-  elements.draftList.innerHTML = state.inbox.map(i => `
-    <article ${interactiveCardAttrs(`Открыть материал на согласовании ${i.topic}`)} class="draft-card overview-card${i.draft_id === state.draftId ? " active" : ""} interactive-card" onclick="openDraft('${i.draft_id}')">
-      <div class="overview-card-top">
-        <div class="draft-kind">${contentKindIcon(i.kind)}<span>${escapeHtml(kindLabel(i.kind))}</span></div>
-        <span class="overview-card-date">${escapeHtml(formatPlanDate(i.created_at) || "На проверке")}</span>
-      </div>
-      <h4 class="draft-topic">${escapeHtml(i.topic)}</h4>
-      <div class="draft-preview">${escapeHtml(stripMarkdown(i.preview || ""))}</div>
-      <div class="draft-meta overview-card-footer">
-        ${tagMarkup(statusLabel(i.status || "in_review"), statusTone(i.status || "in_review"))}
-        ${tagMarkup(sourceLabel(i.source || "/content"), sourceTone(i.source || "/content"))}
-      </div>
-    </article>
-  `).join("");
-  syncMobileNavigation();
-}
+function renderInbox() { return renderInboxImpl(); }
 
 function renderStatus() {
   return renderStatusImpl();
@@ -1760,43 +1684,13 @@ function renderPlans() {
   syncMobileNavigation();
 }
 
-function renderReels() {
-  elements.listTitle.textContent = "Рилсы";
-  elements.draftCount.textContent = `${state.reels.length} шт`;
-  setEmptyState(state.reels.length > 0, {
-    eyebrow: "Рилсы",
-    title: "Рилсов пока нет",
-    body: "Создайте сценарий и раскадровку, чтобы здесь появился готовый рабочий список.",
-    actionLabel: "Открыть создание",
-    action: "setTab('create')",
-  });
-  elements.draftList.innerHTML = state.reels.map(r => `
-    <article ${interactiveCardAttrs(`Открыть рилс ${r.topic}`)} class="reels-card overview-card${r.draft_id === state.selectedReels?.draft_id ? " active" : ""} interactive-card" onclick="openReels('${r.draft_id}')">
-      <div class="overview-card-top">
-        <div class="draft-kind">${contentKindIcon("reels")}<span>Рилс</span></div>
-        <span class="overview-card-date">${escapeHtml(formatPlanDate(r.created_at) || "Видео")}</span>
-      </div>
-      <h3 class="draft-topic">${escapeHtml(r.topic)}</h3>
-      <div class="draft-preview">${escapeHtml(stripMarkdown(r.preview || ""))}</div>
-      <div class="draft-meta overview-card-footer">
-        ${tagMarkup(statusLabel(r.status || "draft"), statusTone(r.status || "draft"))}
-        ${tagMarkup(`${r.images_ready || 0}/${r.frame_count || 0} кадров`, "progress")}
-        ${tagMarkup(sourceLabel(r.source || "/miniapp"), sourceTone(r.source || "/miniapp"))}
-      </div>
-    </article>
-  `).join("");
-  syncMobileNavigation();
-}
+function renderReels() { return renderReelsImpl(); }
 
 reelsCallbacks.renderReels = renderReels;
 reelsCallbacks.renderReelsDetail = renderReelsDetail;
 
 function renderReelsDetail(r) {
-  elements.draftDetail.innerHTML = renderReelsDetailMarkup(r);
-  if (r.generation_pending || (r.images_ready || 0) < (r.frame_count || 0)) {
-    scheduleReelsRefresh(r.draft_id);
-  }
-  syncMobileNavigation();
+  return renderReelsDetailImpl(r);
 }
 
 function renderKeywords() {
