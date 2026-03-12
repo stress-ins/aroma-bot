@@ -1447,14 +1447,16 @@ class TestMiniAppRussianLocale:
         assert 'await safeLoadCurrentTab("Не удалось загрузить вкладку")' in app_js
         assert "appBootstrapped = true;" in app_js
 
-    def test_handbook_has_only_oils_tab(self):
+    def test_handbook_has_all_reference_tabs(self):
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
         html = Path("miniapp/index.html").read_text(encoding="utf-8")
     
         assert 'id: "aromas"' in app_js
         assert 'label: "Масла"' in app_js
-        assert 'id: "practices"' not in app_js
-        assert 'id: "sounds"' not in app_js
+        assert 'id: "practices"' in app_js
+        assert 'label: "Практики"' in app_js
+        assert 'id: "sounds"' in app_js
+        assert 'label: "Звуки"' in app_js
         assert 'id="settingsButton"' in html
 
     def test_content_detail_supports_prompt_copy_actions(self):
