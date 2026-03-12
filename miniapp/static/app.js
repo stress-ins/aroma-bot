@@ -781,7 +781,7 @@ function renderSlides(draftId, slides = [], prompts = [], slideImages = [], prom
                 <textarea id="${slideTextId(index)}" placeholder="Текст для этого слайда">${escapeHtml(slide)}</textarea>
               </label>
               <p class="field-help">После правки нажмите «Сохранить подпись», чтобы обновить этот слайд в черновике.</p>
-              <div class="actions-row prompt-actions">
+              <div class="actions-row prompt-actions actions-grid-two">
                 <button class="primary-button" type="button" aria-label="Сохранить текст слайда" onclick="saveCarouselSlideText(${JSON.stringify(draftId)}, ${index}, this)">${actionLabel("text", "Сохранить подпись")}</button>
               </div>
               ${prompt ? `
@@ -793,7 +793,7 @@ function renderSlides(draftId, slides = [], prompts = [], slideImages = [], prom
                       <span>Замечание к картинке</span>
                       <textarea id="${slideNoteId(index)}" placeholder="Например: теплее свет, крупнее объект, меньше деталей на фоне" oninput="handleCarouselSlideNoteInput(${JSON.stringify(draftId)}, ${index}, this.value)">${escapeHtml(note)}</textarea>
                     </label>
-                    <div class="actions-row prompt-actions">
+                    <div class="actions-row prompt-actions actions-grid-two">
                       <button class="secondary-button" type="button" onclick='copyText(${JSON.stringify(prompt)})'>${actionLabel("prompt", "Скопировать промпт слайда")}</button>
                       <button class="secondary-button" type="button" onclick="regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, false, this)">${actionLabel("regenerate", "Обновить изображение")}</button>
                       <button class="primary-button" type="button" onclick="regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, true, this)">${actionLabel("note", "Обновить по замечанию")}</button>
@@ -839,7 +839,7 @@ function renderSlideVersions(draftId, slideIndex, currentImage, versions = []) {
                 <span>${isCurrent ? "Текущая" : `Версия ${versionIndex + 1}`}</span>
                 <span class="meta">${escapeHtml(formatPlanDate(version.generated_at) || "сейчас")}</span>
               </div>
-              <div class="actions-row slide-version-actions">
+              <div class="actions-row slide-version-actions actions-grid-two">
                 ${isCurrent ? "" : `<button class="secondary-button" type="button" onclick="selectCarouselSlideVersion(${JSON.stringify(draftId)}, ${slideIndex}, ${versionIndex}, this)">${actionLabel("approve", "Сделать текущей")}</button>`}
                 ${items.length > 1 ? `<button class="secondary-button" type="button" onclick="deleteCarouselSlideVersion(${JSON.stringify(draftId)}, ${slideIndex}, ${versionIndex}, this)">${actionLabel("trash", "Удалить")}</button>` : ""}
               </div>
@@ -1617,6 +1617,45 @@ function hasActiveTextSelection() {
   return Boolean(selection && String(selection).trim().length > 0);
 }
 
+function bindTextareaAutoExpand() {
+  const resizeTextarea = (field) => {
+    if (!(field instanceof HTMLTextAreaElement)) return;
+    field.style.height = "auto";
+    field.style.height = `${field.scrollHeight}px`;
+  };
+
+  const bindField = (field) => {
+    if (!(field instanceof HTMLTextAreaElement)) return;
+    if (field.dataset.autoExpandBound === "true") {
+      resizeTextarea(field);
+      return;
+    }
+    field.dataset.autoExpandBound = "true";
+    resizeTextarea(field);
+    field.addEventListener("input", () => resizeTextarea(field));
+  };
+
+  document.querySelectorAll("textarea").forEach(bindField);
+
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      mutation.addedNodes.forEach((node) => {
+        if (!(node instanceof Element)) return;
+        if (node.matches("textarea")) {
+          bindField(node);
+          return;
+        }
+        node.querySelectorAll?.("textarea").forEach(bindField);
+      });
+    });
+  });
+
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+  });
+}
+
 function bindKeyboardDismiss() {
   const dismiss = (event) => {
     const active = document.activeElement;
@@ -1628,6 +1667,36 @@ function bindKeyboardDismiss() {
   };
   document.addEventListener("touchstart", dismiss, { passive: true });
   document.addEventListener("mousedown", dismiss, { passive: true });
+}
+
+function bindTapAnimation() {
+  const selector = ".tab-button, .mode-button, .back-button, .secondary-button, .status-button, .feedback-button, .primary-button, .icon-corner-button, .bottom-tab-btn";
+  const clearTap = (target) => {
+    if (!(target instanceof HTMLElement)) return;
+    if (target.dataset.tapTimerId) {
+      window.clearTimeout(Number(target.dataset.tapTimerId));
+      delete target.dataset.tapTimerId;
+    }
+    target.classList.remove("is-tapped");
+  };
+
+  document.addEventListener("pointerdown", (event) => {
+    const target = event.target instanceof Element ? event.target.closest(selector) : null;
+    if (!(target instanceof HTMLElement) || target.disabled) return;
+    clearTap(target);
+    target.classList.add("is-tapped");
+    target.dataset.tapTimerId = String(window.setTimeout(() => clearTap(target), 80));
+  }, { passive: true });
+
+  document.addEventListener("pointerup", (event) => {
+    const target = event.target instanceof Element ? event.target.closest(selector) : null;
+    clearTap(target);
+  }, { passive: true });
+
+  document.addEventListener("pointercancel", (event) => {
+    const target = event.target instanceof Element ? event.target.closest(selector) : null;
+    clearTap(target);
+  }, { passive: true });
 }
 
 function bindCardKeyboardActivation() {
@@ -2823,6 +2892,8 @@ async function recoverPendingReelsCreation(topic, pendingDraftId) {
 
 async function bootstrap() {
   applyTelegramTheme();
+  bindTextareaAutoExpand();
+  bindTapAnimation();
   bindSwipeBack();
   bindKeyboardDismiss();
   bindCardKeyboardActivation();
