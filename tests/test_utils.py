@@ -1902,6 +1902,37 @@ class TestMiniAppRussianLocale:
         assert ".draft-card.is-pending" in app_css
         assert ".tag-pending" in app_css
 
+    def test_draft_detail_uses_editorial_hero_and_primary_review_layout(self):
+        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+
+        assert "function draftHeroSummary" in app_js
+        assert "detail-fact-label" in app_js
+        assert 'class="detail-top detail-hero"' in app_js
+        assert 'class="content-review-highlight"' in app_js
+        assert 'class="content-review-lead"' in app_js
+        assert 'class="content-review-support-grid"' in app_js
+        assert ".detail-hero" in app_css
+        assert ".detail-facts" in app_css
+        assert ".section-primary" in app_css
+        assert ".content-review-lead textarea" in app_css
+
+    def test_overview_lists_share_card_shell_and_human_source_labels(self):
+        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+
+        assert "function sourceLabel(value)" in app_js
+        assert 'return "Из плана";' in app_js
+        assert 'return "Контент";' in app_js
+        assert 'return "Mini App";' in app_js
+        assert 'class="draft-card overview-card' in app_js
+        assert 'class="plan-card overview-card' in app_js
+        assert 'class="reels-card overview-card' in app_js
+        assert 'class="overview-card-top"' in app_js
+        assert ".overview-card" in app_css
+        assert ".overview-card-top" in app_css
+        assert ".overview-card-date" in app_css
+
     def test_create_flow_reopens_full_draft_and_dismisses_keyboard(self):
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
 
@@ -1910,6 +1941,22 @@ class TestMiniAppRussianLocale:
         assert 'document.addEventListener("mousedown", dismiss, { passive: true });' in app_js
         assert "bindKeyboardDismiss();" in app_js
         assert "await openDraft(d.draft_id);" in app_js
+
+    def test_create_flow_uses_pending_card_and_timeout_recovery(self):
+        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+
+        assert "function buildPendingDraft(kind, topic)" in app_js
+        assert "function openPendingDraftCreation(kind, topic)" in app_js
+        assert "function finalizePendingDraftCreation(draft)" in app_js
+        assert "function recoverPendingDraftCreation(kind, topic, pendingDraftId)" in app_js
+        assert "function isPendingDraftId(value)" in app_js
+        assert 'timeout: 45000' in app_js
+        assert 'const pending = openPendingDraftCreation(f, t);' in app_js
+        assert 'const pending = openPendingDraftCreation("carousel", t);' in app_js
+        assert 'await recoverPendingDraftCreation(f, t, pending.draft_id);' in app_js
+        assert 'await recoverPendingDraftCreation("carousel", t, pending.draft_id);' in app_js
+        assert 'if (isPendingDraftId(preferredId)) {' in app_js
+        assert 'renderDetailLoader("Генерирую карточку")' in app_js
 
     def test_drafts_do_not_auto_open_first_item_on_boot(self):
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
@@ -2227,10 +2274,12 @@ class TestThreadsPrompts:
 
         assert "function draftSummaryFromDraft(draft) {" in source
         assert "function upsertDraftSummary(summary) {" in source
-        assert 'state.selected = d;' in source
-        assert 'upsertDraftSummary(draftSummaryFromDraft(d));' in source
-        assert 'renderDraftDetail(d);' in source
-        assert 'void loadDrafts();' in source
+        assert 'const pending = openPendingDraftCreation(f, t);' in source
+        assert 'const pending = openPendingDraftCreation("carousel", t);' in source
+        assert "function finalizePendingDraftCreation(draft) {" in source
+        assert 'upsertDraftSummary(draftSummaryFromDraft(draft));' in source
+        assert 'renderDraftDetail(draft);' in source
+        assert 'await recoverPendingDraftCreation("carousel", t, pending.draft_id);' in source
         assert 'state.selectedReels = r; state.selectedFrameIndex = 0; setTab("reels"); await loadReels(); await openReels(r.draft_id);' in source
         assert 'state.selectedPlan = p; setTab("plans"); await loadPlans(); renderPlanDetail(p); enterDetailView();' in source
         assert "async function openReels(id) {" in source
