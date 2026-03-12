@@ -1829,6 +1829,24 @@ class TestMiniAppRussianLocale:
         assert ".ui-notice" in app_css
         assert ".keyword-topic.active" in app_css
 
+    def test_guided_states_cover_empty_and_onboarding_paths(self):
+        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        html = Path("miniapp/index.html").read_text(encoding="utf-8")
+
+        assert "function renderGuidedState" in app_js
+        assert 'title: "Выберите формат для старта"' in app_js
+        assert 'title: "Ничего не найдено"' in app_js
+        assert 'title: "Планов пока нет"' in app_js
+        assert 'title: "Рилсов пока нет"' in app_js
+        assert 'title: "Откройте тему для редактирования"' in app_js
+        assert 'title: inSettings ? "Откройте источник слева" : "Проверьте состояние источников"' in app_js
+        assert ".guided-state" in app_css
+        assert ".guided-state-copy" in app_css
+        assert ".guided-state-actions" in app_css
+        assert "Попробовать еще раз" in html
+        assert "Откройте раздел или карточку слева" in html
+
     def test_primary_controls_use_comfortable_size_tokens(self):
         app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
 

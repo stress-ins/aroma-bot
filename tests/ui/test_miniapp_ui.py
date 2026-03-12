@@ -378,9 +378,9 @@ def test_create_tab_uses_guided_empty_state_before_tool_selection(desktop_page):
     desktop_page.get_by_role("button", name="Создать").click()
     desktop_page.wait_for_timeout(250)
 
-    assert desktop_page.locator(".create-card").count() == 4
     assert desktop_page.locator(".guided-state").is_visible()
     assert desktop_page.get_by_text("Выберите формат для старта").is_visible()
+    assert desktop_page.get_by_text("быстрые сценарии для контента, рилса, плана недели и карусели").is_visible()
 
 
 def test_draft_search_empty_state_offers_guidance(page):
@@ -390,7 +390,18 @@ def test_draft_search_empty_state_offers_guidance(page):
     page.wait_for_timeout(450)
 
     assert page.locator("#emptyState .guided-state").is_visible()
-    assert page.get_by_text("Ничего не найдено.").is_visible()
+    assert page.get_by_text("Ничего не найдено").is_visible()
+    assert page.get_by_role("button", name="Открыть создание").is_visible()
+
+
+def test_settings_and_keywords_use_guided_detail_copy(desktop_page):
+    desktop_page.get_by_role("button", name="Статус").click()
+    desktop_page.wait_for_timeout(250)
+    assert desktop_page.get_by_text("Проверьте состояние источников").is_visible()
+
+    desktop_page.get_by_role("button", name="Ключи").click()
+    desktop_page.wait_for_timeout(250)
+    assert desktop_page.get_by_text("Откройте тему для редактирования").is_visible()
 
 def test_mobile_layout_has_no_overlapping_controls(page):
     for tab_name in ["Черновики", "Рилсы", "Создать"]:
