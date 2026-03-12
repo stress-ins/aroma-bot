@@ -261,6 +261,10 @@ def test_reels_tab_opens_storyboard_without_empty_state(page):
 
     assert not page.locator("#emptyState").is_visible()
     assert page.locator(".detail-title").inner_text().strip() == "Вечерний ароматический ритуал"
+    
+    # Open the prompt details to make the copy button visible
+    page.get_by_text("Показать промпт").first.click()
+    page.wait_for_timeout(150)
     assert page.get_by_role("button", name="Скопировать промпт кадра").is_visible()
     assert page.locator(".frame-image").count() == 1
 
