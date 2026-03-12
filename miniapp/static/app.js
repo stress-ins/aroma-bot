@@ -51,6 +51,7 @@ const MODE_TABS = {
   ],
   handbook: [
     { id: "aromas", label: "Ароматы" },
+    { id: "concepts", label: "Теория" },
     { id: "practices", label: "Практики" },
     { id: "sounds", label: "Звуки" },
   ],
@@ -115,6 +116,7 @@ const HANDBOOK_CATEGORY_META = {
   aromas: {
     category: "aroma",
     title: "Ароматы",
+    label: "аромат",
     searchLabel: "Поиск аромата",
     searchPlaceholder: "Например: лаванда",
     empty: "Ароматы не найдены.",
@@ -122,9 +124,21 @@ const HANDBOOK_CATEGORY_META = {
     locked: "Доступ к справочнику ароматов ограничен.",
     count: (items) => `${items.length} карточек`,
   },
+  concepts: {
+    category: "concept",
+    title: "Теория",
+    label: "теоретическую карточку",
+    searchLabel: "Поиск темы",
+    searchPlaceholder: "Например: лимбическая система",
+    empty: "Теоретические карточки не найдены.",
+    selectPrompt: "Выберите теоретическую карточку из списка.",
+    locked: "Доступ к теоретическим карточкам ограничен.",
+    count: (items) => `${items.length} карточек`,
+  },
   practices: {
     category: "practice",
     title: "Практики",
+    label: "практику",
     searchLabel: "Поиск практики",
     searchPlaceholder: "Например: квадратное дыхание",
     empty: "Практики не найдены.",
@@ -135,6 +149,7 @@ const HANDBOOK_CATEGORY_META = {
   sounds: {
     category: "sound",
     title: "Звуки",
+    label: "звуковую карточку",
     searchLabel: "Поиск звука",
     searchPlaceholder: "Например: гонг",
     empty: "Звуки не найдены.",
@@ -147,6 +162,7 @@ const HANDBOOK_CATEGORY_META = {
 function handbookCategoryIcon(tabId) {
   const glyphMap = {
     aromas: "🌿",
+    concepts: "🧭",
     practices: "🫁",
     sounds: "🔔",
   };
@@ -157,9 +173,53 @@ function handbookCategoryIcon(tabId) {
 function handbookCardBadge(tabId, item = {}) {
   const sourceType = String(item.source_type || "").trim();
   if (tabId === "aromas" && sourceType) return sourceType;
+  if (tabId === "concepts") {
+    return conceptTypeMeta(sourceType).label;
+  }
   if (tabId === "practices") return "Практика";
   if (tabId === "sounds") return "Звук";
   return "";
+}
+
+function conceptTypeMeta(sourceType) {
+  const metaMap = {
+    method: { label: "Метод", icon: "◌" },
+    founder: { label: "Автор", icon: "◍" },
+    system: { label: "Система", icon: "◎" },
+    chakra: { label: "Чакра", icon: "✦" },
+    energy: { label: "Энергия", icon: "≈" },
+  };
+  return metaMap[String(sourceType || "").trim()] || { label: "Теория", icon: "•" };
+}
+
+function formatCourseSourceLabel(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  return raw
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((part) => {
+      const match = part.match(/^rudn_olfactotherapy_(.+)$/);
+      if (!match) return part;
+      return `PDF ${match[1].replaceAll("_", ".")}`;
+    })
+    .join(" · ");
+}
+
+function referenceHeroBadges(reference) {
+  const badges = [
+    { label: "Тип", value: handbookCardBadge(state.tab, reference) || currentHandbookMeta().title, tone: "type" },
+    { label: "Фокус", value: reference.chakra_focus || "", tone: "chakra" },
+    { label: "Полярность", value: reference.polarity || "", tone: "polarity" },
+    { label: "Курс", value: formatCourseSourceLabel(reference.course_source), tone: "course" },
+  ].filter((item) => item.value);
+  return badges.map((item) => `
+    <div class="reference-badge reference-badge-${escapeHtml(item.label.toLowerCase().replace(/[^a-zа-я0-9]+/gi, "-"))} tone-${escapeHtml(item.tone)}">
+      <span class="reference-badge-label">${escapeHtml(item.label)}</span>
+      <strong>${escapeHtml(item.value)}</strong>
+    </div>
+  `).join("");
 }
 
 function escapeHtml(value) {
@@ -1201,6 +1261,10 @@ const {
   enterDetailView,
   syncMobileNavigation,
   setEmptyState,
+  conceptTypeMeta,
+  formatCourseSourceLabel,
+  tagMarkup,
+  stripMarkdown,
 });
 
 const {
@@ -1453,6 +1517,7 @@ function setMode(m) {
     });
   });
   if (!(m === "content" && state.tab === "settings") && !tabs.find(t => t.id === state.tab)) setTab(tabs[0].id);
+  syncMobileNavigation();
 }
 
 function setTab(t) {
@@ -1472,6 +1537,7 @@ function setTab(t) {
   
   const p = new URLSearchParams(window.location.search);
   p.set("tab", t);
+  p.delete("draft_id");
   history.replaceState({}, "", `${window.location.pathname}?${p.toString()}`);
   
   syncMobileNavigation();

@@ -16,6 +16,10 @@ export function createReferencesModule(deps) {
     enterDetailView,
     syncMobileNavigation,
     setEmptyState,
+    conceptTypeMeta,
+    formatCourseSourceLabel,
+    tagMarkup,
+    stripMarkdown,
   } = deps;
 
   function currentHandbookMeta() {
@@ -89,15 +93,30 @@ export function createReferencesModule(deps) {
       reference.origin_countries ? `Источник / традиция: ${reference.origin_countries}` : "",
       reference.extraction_method ? `Форма / метод: ${reference.extraction_method}` : "",
       reference.volatility ? `Длительность / летучесть: ${reference.volatility}` : "",
+      reference.chakra_focus ? `Фокус / чакры: ${reference.chakra_focus}` : "",
+      reference.polarity ? `Полярность: ${reference.polarity}` : "",
+      reference.course_source ? `Источник курса: ${formatCourseSourceLabel(reference.course_source)}` : "",
     ].filter(Boolean);
     return parts.join("\n");
   }
 
   function renderReferenceImage(reference) {
+    const heroClass = state.tab === "concepts" ? "reference-hero-card is-theory" : "reference-hero-card";
+    const eyebrowLabel = state.tab === "concepts"
+      ? `${handbookCategoryIcon(state.tab)}<span>${escapeHtml(currentHandbookMeta().title)} · учебный модуль</span>`
+      : `${handbookCategoryIcon(state.tab)}<span>${escapeHtml(currentHandbookMeta().title)}</span>`;
     return `
-      <section class="section aroma-hero">
-        <img class="aroma-image" src="${escapeHtml(reference.image_url)}" alt="${escapeHtml(reference.image_alt)}" />
-        <div class="aroma-image-caption">${escapeHtml(reference.image_alt)}</div>
+      <section class="section aroma-hero ${heroClass}">
+        <div class="reference-hero-copy">
+          <p class="eyebrow">${eyebrowLabel}</p>
+          <h2 class="detail-title">${escapeHtml(reference.name)}</h2>
+          <p class="reference-keyline">${escapeHtml(reference.key || handbookCardBadge(state.tab, reference) || currentHandbookMeta().title)}</p>
+          <p class="reference-summary">${escapeHtml(stripMarkdown(reference.description || reference.course_notes || ""))}</p>
+        </div>
+        <div class="reference-hero-media">
+          <img class="aroma-image" src="${escapeHtml(reference.image_url)}" alt="${escapeHtml(reference.image_alt)}" />
+          <div class="aroma-image-caption">${escapeHtml(reference.image_alt)}</div>
+        </div>
       </section>
     `;
   }
@@ -106,7 +125,7 @@ export function createReferencesModule(deps) {
     const meta = currentHandbookMeta();
     const items = state.referenceItems || [];
     const query = (state.referenceSearch || "").trim().toLowerCase();
-    const filtered = items.filter((item) => `${item.name} ${item.description || ""}`.toLowerCase().includes(query));
+    const filtered = items.filter((item) => `${item.name} ${item.description || ""} ${item.course_notes || ""}`.toLowerCase().includes(query));
     const reference = state.selectedReference;
 
     elements.listTitle.textContent = meta.title;
@@ -142,10 +161,17 @@ export function createReferencesModule(deps) {
     }
 
     listContainer.innerHTML = filtered.map((item) => `
-      <article ${interactiveCardAttrs(`Открыть карточку ${item.name}`)} class="draft-card${item.slug === reference?.slug ? " active" : ""} interactive-card" onclick="openReference('${item.slug}', '${state.tab}')">
-        <div class="draft-kind">${handbookCategoryIcon(state.tab)}${handbookCardBadge(state.tab, item) ? `<span>${escapeHtml(handbookCardBadge(state.tab, item))}</span>` : ""}</div>
+      <article ${interactiveCardAttrs(`Открыть карточку ${item.name}`)} class="draft-card overview-card reference-card${state.tab === "concepts" ? " is-theory concept-card" : ""}${item.slug === reference?.slug ? " active" : ""} interactive-card" onclick="openReference('${item.slug}', '${state.tab}')">
+        <div class="overview-card-top">
+          <div class="draft-kind">${handbookCategoryIcon(state.tab)}${handbookCardBadge(state.tab, item) ? `<span>${state.tab === "concepts" ? `<span class="concept-kind-mark" aria-hidden="true">${escapeHtml(conceptTypeMeta(item.source_type).icon)}</span>` : ""}${escapeHtml(handbookCardBadge(state.tab, item))}</span>` : ""}</div>
+          <span class="overview-card-date">${escapeHtml(formatCourseSourceLabel(item.course_source) || meta.title)}</span>
+        </div>
         <h3 class="draft-topic">${escapeHtml(item.name)}</h3>
-        <div class="draft-preview">${escapeHtml(item.description || "")}</div>
+        <div class="draft-preview">${escapeHtml(stripMarkdown(item.description || item.course_notes || ""))}</div>
+        <div class="draft-meta overview-card-footer">
+          ${item.chakra_focus ? tagMarkup(item.chakra_focus, "source") : ""}
+          ${item.polarity ? tagMarkup(item.polarity, "feedback") : ""}
+        </div>
       </article>
     `).join("");
 
@@ -169,6 +195,7 @@ export function createReferencesModule(deps) {
         ${aromaSection("Действие на НПС", reference.nps_effect)}
         ${aromaSection("Терапевтические свойства", reference.therapeutic_properties)}
         ${aromaSection("Психологические свойства", reference.psychological_properties)}
+        ${aromaSection("Материалы курса", reference.course_notes)}
         ${aromaSection('Ресурс "+"', reference.resource_values?.plus)}
         ${aromaSection('Ресурс "-"', reference.resource_values?.minus)}
         ${aromaSection("Исторические сведения", reference.history)}
