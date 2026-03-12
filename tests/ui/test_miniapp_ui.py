@@ -328,21 +328,6 @@ def test_keyboard_can_open_cards_and_create_tools(desktop_page):
     desktop_page.wait_for_timeout(250)
     assert desktop_page.locator("[data-create-content]").is_visible()
 
-def test_keyboard_can_open_cards_and_create_tools(desktop_page):
-    desktop_page.get_by_role("button", name="Черновики").click()
-    desktop_page.wait_for_timeout(250)
-    desktop_page.locator(".draft-card").first.focus()
-    desktop_page.keyboard.press("Enter")
-    desktop_page.wait_for_timeout(300)
-    assert desktop_page.locator(".detail-title").is_visible()
-
-    desktop_page.get_by_role("button", name="Создать").click()
-    desktop_page.wait_for_timeout(250)
-    desktop_page.locator(".create-card[data-tool='content']").focus()
-    desktop_page.keyboard.press("Enter")
-    desktop_page.wait_for_timeout(250)
-    assert desktop_page.locator("[data-create-content]").is_visible()
-
 
 def test_create_tab_uses_guided_empty_state_before_tool_selection(desktop_page):
     desktop_page.get_by_role("button", name="Создать").click()
