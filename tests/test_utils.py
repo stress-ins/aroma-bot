@@ -1434,6 +1434,12 @@ class TestMiniAppRussianLocale:
         assert "/api/carousel/{draft_id}/slides/{slide_index}/regenerate" in server_py
         assert "/api/carousel/{draft_id}/slides/{slide_index}/text" in server_py
 
+    def test_drafts_do_not_auto_open_first_item_on_boot(self):
+        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+
+        assert 'const preferredId = state.draftId || "";' in app_js
+        assert 'state.drafts[0]?.draft_id' not in app_js
+
 
 class TestMiniAppCarousel:
     async def test_update_carousel_slide_text_returns_none_for_missing(self):
@@ -1651,6 +1657,15 @@ class TestMiniAppReelsPolling:
         assert 'state.referenceAccess = null;' in source
         assert "renderReferencesUnavailable()" in source
         assert "reference_access_denied" in source
+
+    def test_index_disables_html_cache_and_bumps_static_version(self):
+        index_html = Path("miniapp/index.html").read_text(encoding="utf-8")
+        server_py = Path("miniapp_server.py").read_text(encoding="utf-8")
+
+        assert "app.css?v=4" in index_html
+        assert "app.js?v=4" in index_html
+        assert "Cache-Control" in server_py
+        assert "no-store, max-age=0" in server_py
 
     def test_background_refresh_does_not_reroute_handbook_view(self):
         source = Path("miniapp/static/app.js").read_text(encoding="utf-8")
