@@ -1653,7 +1653,7 @@ body.tg-theme-dark .bottom-tab-bar-inner {
 }
 
 .concept-card .draft-preview {
-  color: var(--text);
+  color: inherit;
 }
 
 .aroma-image {
