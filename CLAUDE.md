@@ -47,9 +47,10 @@
 - Создать миграцию: `.venv/bin/alembic revision --autogenerate -m "описание"`
 - Применить миграции: `.venv/bin/alembic upgrade head`
 
-**Важное правило для Drafts:**
-- Все функции в `bot/services/drafts_store.py` (`save_draft`, `get_draft`, `list_recent_drafts`, `update_draft`) являются **асинхронными**.
-- Всегда вызывать их через `await`.
+**Важное правило для Drafts и Plans:**
+- Все функции в `bot/services/drafts_store.py` и `bot/services/plans_store.py` являются **асинхронными**.
+- `Drafts` и `Plans` хранятся в SQLite как основной source of truth, а не в JSON-файлах.
+- Всегда вызывать store-функции через `await`.
 
 **Тесты:**
 - Тесты находятся в `tests/` и запускаются командой: `.venv/bin/pytest`

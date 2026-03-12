@@ -91,7 +91,6 @@ def _assert_visual_snapshot(locator, snapshot_name: str, *, max_diff_ratio: floa
 def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
     root = tmp_path_factory.mktemp("miniapp-ui")
     db_file = root / "test_aroma.db"
-    plans_file = root / "plans.json"
     assets_dir = root / "reels_assets"
 
     conn = sqlite3.connect(db_file)
@@ -123,6 +122,17 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
             payload JSON,
             created_at DATETIME,
             updated_at DATETIME
+        )
+        """
+    )
+    cursor.execute(
+        """
+        CREATE TABLE plans (
+            id INTEGER PRIMARY KEY,
+            plan_id VARCHAR(32) UNIQUE,
+            raw_text TEXT,
+            entries JSON,
+            created_at DATETIME
         )
         """
     )
@@ -205,33 +215,29 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
         "INSERT INTO aroma_cards (slug, name, category, source_type, aliases, payload, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
         ("lavender", "Лаванда", "aroma", "herb", json.dumps([]), json.dumps({}), now, now),
     )
+    cursor.execute(
+        "INSERT INTO plans (plan_id, raw_text, entries, created_at) VALUES (?, ?, ?, ?)",
+        (
+            "20260311180000",
+            "Понедельник: Threads, Среда: Reels",
+            json.dumps(
+                [
+                    {
+                        "day_label": "Понедельник",
+                        "platform": "Threads",
+                        "format_label": "пост",
+                        "goal": "Доверие",
+                        "topic": "Почему вечерний ритуал помогает нервной системе",
+                        "angle": "Через простые телесные сигналы.",
+                    }
+                ],
+                ensure_ascii=False,
+            ),
+            now,
+        ),
+    )
     conn.commit()
     conn.close()
-
-    plans_file.write_text(
-        json.dumps(
-            [
-                {
-                    "plan_id": "20260311180000",
-                    "created_at": "2026-03-11T18:00:00+00:00",
-                    "raw_text": "Понедельник: Threads, Среда: Reels",
-                    "entries": [
-                        {
-                            "day_label": "Понедельник",
-                            "platform": "Threads",
-                            "format_label": "пост",
-                            "goal": "Доверие",
-                            "topic": "Почему вечерний ритуал помогает нервной системе",
-                            "angle": "Через простые телесные сигналы.",
-                        }
-                    ],
-                }
-            ],
-            ensure_ascii=False,
-            indent=2,
-        ),
-        encoding="utf-8",
-    )
 
     port = _free_port()
     base_url = f"http://127.0.0.1:{port}"
@@ -241,7 +247,6 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
             "TELEGRAM_BOT_TOKEN": "test-token",
             "REPORT_TARGET_CHAT_ID": "test-chat",
             "AROMA_DATABASE_URL": f"sqlite+aiosqlite:///{db_file}",
-            "AROMA_PLANS_FILE": str(plans_file),
             "AROMA_REELS_ASSETS_DIR": str(assets_dir),
             "MINIAPP_AROMA_ALLOWED_USER_IDS": "12345",
             "AROMA_BYPASS_AUTH": "1",

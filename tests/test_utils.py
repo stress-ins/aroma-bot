@@ -1097,11 +1097,7 @@ class TestMiniAppApi:
         assert response.status_code == 403
         assert response.json()["detail"] == "forbidden"
 
-    def test_detail_endpoints_require_auth(self, miniapp_test_client, monkeypatch, tmp_path):
-        import bot.services.plans_store as plans_store
-
-        monkeypatch.setattr(plans_store, "_PLANS_FILE", tmp_path / "plans.json")
-
+    def test_detail_endpoints_require_auth(self, miniapp_test_client):
         content_draft = asyncio.run(
             save_draft(
                 kind="threads",
@@ -1130,9 +1126,11 @@ class TestMiniAppApi:
                 },
             )
         )
-        plan = save_plan(
-            raw_text="Понедельник: Threads",
-            entries=[{"day_label": "Понедельник", "platform": "Threads", "format_label": "пост", "goal": "Доверие", "topic": "Тема", "angle": "Угол"}],
+        plan = asyncio.run(
+            save_plan(
+                raw_text="Понедельник: Threads",
+                entries=[{"day_label": "Понедельник", "platform": "Threads", "format_label": "пост", "goal": "Доверие", "topic": "Тема", "angle": "Угол"}],
+            )
         )
 
         for path in [

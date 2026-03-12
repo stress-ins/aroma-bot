@@ -317,7 +317,7 @@ aroma/
 ├── config.py
 ├── .env
 ├── db/
-│   ├── models.py             # SQLAlchemy модели (DraftModel)
+│   ├── models.py             # SQLAlchemy модели (DraftModel, PlanModel, AromaCardModel)
 │   └── session.py            # Настройка асинхронного engine и сессий
 ├── alembic/                  # Миграции базы данных
 ├── data/
@@ -327,6 +327,7 @@ aroma/
 ├── bot/
 │   ├── services/
 │   │   ├── drafts_store.py   # Асинхронный интерфейс к БД черновиков
+│   │   ├── plans_store.py    # Асинхронный интерфейс к БД планов
 │   │   └── reels_assets.py   # Управление медиа-файлами для Reels
 ```
 
