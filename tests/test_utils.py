@@ -1427,7 +1427,7 @@ class TestMiniAppRussianLocale:
     def test_content_detail_supports_prompt_copy_actions(self):
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
 
-        assert "Скопировать промт кадра" in app_js
+        assert "Скопировать промпт кадра" in app_js
         assert "Скопировать промпт слайда" in app_js
         assert "function copyText" in app_js
         assert "function renderMarkdown" in app_js
@@ -1468,7 +1468,7 @@ class TestMiniAppRussianLocale:
         assert "Пересобрать рилс" in app_js
         assert "Сгенерировать кадры" in app_js
         assert "Сохранить кадр" in app_js
-        assert "Сохранить промт" in app_js
+        assert "Сохранить промпт" in app_js
         assert "Сохранить замечание" in app_js
         assert "Сгенерировать кадр" in app_js
         assert "handleReelsFrameNoteInput" in app_js
