@@ -258,7 +258,7 @@ def test_mobile_tabs_and_drafts_render_in_russian(page):
     tabs_handbook = page.locator(".tab-button").evaluate_all(
         "(nodes) => nodes.map((node) => node.textContent.trim())"
     )
-    assert tabs_handbook == ["Ароматы", "Практики", "Звуки"]
+    assert tabs_handbook == ["🌿Ароматы", "🫁Практики", "🔔Звуки"]
 
     page.get_by_role("button", name="Контент").click()
     page.get_by_role("button", name="Черновики").click()
@@ -301,6 +301,23 @@ def test_overview_lists_use_consistent_card_meta(page):
     page.get_by_role("button", name="Рилсы").click()
     page.wait_for_timeout(250)
     assert page.locator(".reels-card .draft-meta .tag").count() >= 2
+
+
+def test_create_tab_uses_guided_empty_state_before_tool_selection(page):
+    page.get_by_role("button", name="Создать").click()
+    page.wait_for_timeout(250)
+
+    assert page.locator(".create-card").count() == 4
+
+
+def test_draft_search_empty_state_offers_guidance(page):
+    page.get_by_role("button", name="Черновики").click()
+    page.wait_for_timeout(250)
+    page.locator("#queryFilter").fill("совсем-нет-такой-темы")
+    page.wait_for_timeout(450)
+
+    assert page.locator("#emptyState .guided-state").is_visible()
+    assert page.get_by_text("Ничего не найдено.").is_visible()
 
 
 def test_mobile_layout_has_no_overlapping_controls(page):

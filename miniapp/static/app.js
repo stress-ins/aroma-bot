@@ -23,6 +23,7 @@ const state = {
   settingsSection: "status",
   mobileView: "list", // 'list' or 'detail'
   pendingCarouselNotes: {},
+  pendingCarouselOps: {},
   pendingReelsNotes: {},
   pendingReelsPrompts: {},
 };
@@ -102,7 +103,6 @@ const RU_FEEDBACK_LABELS = {
 const HANDBOOK_CATEGORY_META = {
   aromas: {
     category: "aroma",
-    label: "аромат",
     title: "Ароматы",
     searchLabel: "Поиск аромата",
     searchPlaceholder: "Например: лаванда",
@@ -113,7 +113,6 @@ const HANDBOOK_CATEGORY_META = {
   },
   practices: {
     category: "practice",
-    label: "практика",
     title: "Практики",
     searchLabel: "Поиск практики",
     searchPlaceholder: "Например: квадратное дыхание",
@@ -124,7 +123,6 @@ const HANDBOOK_CATEGORY_META = {
   },
   sounds: {
     category: "sound",
-    label: "звук",
     title: "Звуки",
     searchLabel: "Поиск звука",
     searchPlaceholder: "Например: гонг",
@@ -143,6 +141,14 @@ function handbookCategoryIcon(tabId) {
   };
   const glyph = glyphMap[String(tabId || "").toLowerCase()] || "•";
   return `<span class="kind-glyph handbook-glyph" aria-hidden="true">${glyph}</span>`;
+}
+
+function handbookCardBadge(tabId, item = {}) {
+  const sourceType = String(item.source_type || "").trim();
+  if (tabId === "aromas" && sourceType) return sourceType;
+  if (tabId === "practices") return "Практика";
+  if (tabId === "sounds") return "Звук";
+  return "";
 }
 
 function escapeHtml(value) {
@@ -249,6 +255,7 @@ function uiIcon(name) {
     history: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.3-5.7L4 9"></path><path d="M12 8v5l3 2"></path></svg>`,
     passport: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="4" width="12" height="16" rx="2"></rect><path d="M9 8h6M9 12h6M9 16h4"></path></svg>`,
     reel: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="6" width="16" height="12" rx="2"></rect><path d="M8 6v12M16 6v12"></path></svg>`,
+    image: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2"></rect><path d="m8 14 2.5-2.5L13 14l2-2 3 3"></path><circle cx="9" cy="9" r="1.2"></circle></svg>`,
   };
   return `<span class="ui-icon ui-icon-${escapeHtml(name)}">${icons[name] || icons.prompt}</span>`;
 }
@@ -322,16 +329,16 @@ function promptSection(title, prompt, copyLabel = "Скопировать про
   `;
 }
 
-function renderDetailLoader(label = "Открываю карточку") {
+function renderDetailLoader(label = "Открываю карточку", subtitle = "Подгружаю данные и собираю экран.", extraClass = "") {
   return `
-    <div class="detail-loader-card" aria-live="polite">
+    <div class="detail-loader-card${extraClass ? ` ${escapeHtml(extraClass)}` : ""}" aria-live="polite">
       <div class="brand-loader" aria-hidden="true">
         <span class="brand-loader-ring"></span>
         <span class="brand-loader-letter">A</span>
       </div>
       <div class="detail-loader-copy">
         <strong>${escapeHtml(label)}</strong>
-        <span>Подгружаю данные и собираю экран.</span>
+        <span>${escapeHtml(subtitle)}</span>
       </div>
     </div>
   `;
@@ -361,6 +368,30 @@ function renderPanelError(title, message) {
         <p>${escapeHtml(message)}</p>
       </div>
       <button class="secondary-button" type="button" onclick="retryCurrentTab()">Повторить</button>
+    </div>
+  `;
+}
+
+function renderGuidedState({
+  eyebrow = "Навигация",
+  title = "Пока пусто",
+  body = "Выберите следующий шаг, и мы продолжим.",
+  actionLabel = "",
+  action = "",
+  tone = "soft",
+} = {}) {
+  return `
+    <div class="guided-state tone-${escapeHtml(tone)}">
+      <div class="guided-state-copy">
+        <p class="eyebrow">${escapeHtml(eyebrow)}</p>
+        <h3>${escapeHtml(title)}</h3>
+        <p>${escapeHtml(body)}</p>
+      </div>
+      ${actionLabel && action ? `
+        <div class="guided-state-actions">
+          <button class="secondary-button" type="button" onclick="${action}">${escapeHtml(actionLabel)}</button>
+        </div>
+      ` : ""}
     </div>
   `;
 }
@@ -597,6 +628,35 @@ function bufferedCarouselNote(draftId, index, fallback = "") {
     : String(fallback || "");
 }
 
+function carouselSlideOperation(draftId, index) {
+  return state.pendingCarouselOps[frameDraftKey(draftId, index)] || "";
+}
+
+function setCarouselSlideOperation(draftId, index, value = "") {
+  const key = frameDraftKey(draftId, index);
+  if (!value) {
+    delete state.pendingCarouselOps[key];
+    return;
+  }
+  state.pendingCarouselOps[key] = String(value);
+}
+
+function hasPendingCarouselOperations(draftId = "") {
+  const prefix = draftId ? `${draftId}:` : "";
+  return Object.keys(state.pendingCarouselOps).some((key) => key.startsWith(prefix));
+}
+
+function carouselSlideStatusMarkup(draftId, index, hasImage) {
+  const operation = carouselSlideOperation(draftId, index);
+  if (operation) {
+    return `<div class="slide-status is-pending">${uiIcon("sparkle")}<span>${escapeHtml(operation)}</span></div>`;
+  }
+  if (hasImage) {
+    return `<div class="slide-status is-ready">${uiIcon("approve")}<span>Картинка готова</span></div>`;
+  }
+  return `<div class="slide-status is-empty">${uiIcon("image")}<span>Изображение еще готовится</span></div>`;
+}
+
 function bufferedReelsNote(draftId, index, fallback = "") {
   const key = frameDraftKey(draftId, index);
   return Object.prototype.hasOwnProperty.call(state.pendingReelsNotes, key)
@@ -636,6 +696,7 @@ function renderSlides(draftId, slides = [], prompts = [], slideImages = [], prom
           return `
             <article class="slide">
               <strong>Слайд ${index + 1}</strong>
+              ${carouselSlideStatusMarkup(draftId, index, Boolean(img?.url))}
               ${imgHtml}
               <label class="prompt-note-field">
                 <span>Текст слайда</span>
@@ -653,8 +714,7 @@ function renderSlides(draftId, slides = [], prompts = [], slideImages = [], prom
                     <div class="actions-row prompt-actions">
                       <button class="secondary-button" type="button" onclick="saveCarouselSlideText(${JSON.stringify(draftId)}, ${index}, this)">${actionLabel("text", "Сохранить текст слайда")}</button>
                       <button class="secondary-button" type="button" onclick='copyText(${JSON.stringify(prompt)})'>${actionLabel("prompt", "Скопировать промпт слайда")}</button>
-                      <button class="secondary-button" type="button" onclick="regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, false, this)">${actionLabel("regenerate", "Перегенерировать")}</button>
-                      <button class="primary-button" type="button" onclick="regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, true, this)">${actionLabel("note", "Учесть замечание")}</button>
+                      <button class="primary-button" type="button" onclick="regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, this)">${actionLabel("regenerate", "Перегенерировать картинку")}</button>
                     </div>
                   </div>
                 </details>
@@ -740,11 +800,19 @@ function handleCarouselSlideNoteInput(draftId, slideIndex, value) {
   }, 600);
 }
 
-async function regenerateCarouselSlide(draftId, slideIndex, withNote, button) {
+async function regenerateCarouselSlide(draftId, slideIndex, button) {
   const noteField = document.getElementById(slideNoteId(slideIndex));
   const currentNote = String(noteField?.value || bufferedCarouselNote(draftId, slideIndex, "")).trim();
-  const note = currentNote ? currentNote : (withNote ? "" : null);
+  const note = currentNote || null;
   const apply = async () => {
+    setCarouselSlideOperation(
+      draftId,
+      slideIndex,
+      note ? "Учитываю замечание и собираю новый вариант" : "Генерирую новый вариант картинки",
+    );
+    if (isCurrentDraftDetail(draftId) && state.selected?.draft_id === draftId) {
+      renderDraftDetail(state.selected);
+    }
     if (currentNote) {
       await persistCarouselSlideNote(draftId, slideIndex, currentNote);
     }
@@ -755,12 +823,22 @@ async function regenerateCarouselSlide(draftId, slideIndex, withNote, button) {
     mergeDraftIntoState(draft);
     renderDraftList();
     if (isCurrentDraftDetail(draft.draft_id)) renderDraftDetail(draft);
+    scheduleCarouselRefresh(draft.draft_id);
   };
-  if (button instanceof HTMLElement) {
-    await withButtonFeedback(button, "Генерирую...", apply, "Готово");
-    return;
+  try {
+    if (button instanceof HTMLElement) {
+      await withButtonFeedback(button, "Генерирую...", apply, "Готово");
+      return;
+    }
+    await apply();
+  } catch (error) {
+    showRequestError("Не удалось перегенерировать картинку", error);
+  } finally {
+    setCarouselSlideOperation(draftId, slideIndex, "");
+    if (isCurrentDraftDetail(draftId) && state.selected?.draft_id === draftId) {
+      renderDraftDetail(state.selected);
+    }
   }
-  await apply();
 }
 
 async function regenerateCarouselAll(draftId, button) {
@@ -871,12 +949,12 @@ async function withButtonFeedback(button, pendingLabel, handler, doneLabel = "Г
   const originalHtml = target?.innerHTML || "";
   if (target) {
     target.disabled = true;
+    target.classList.remove("did-complete", "did-error");
     target.classList.add("is-busy");
     target.innerHTML = `<span class="button-spinner" aria-hidden="true"></span><span>${escapeHtml(pendingLabel)}</span>`;
   }
   try {
-    return await handler();
-  } finally {
+    const result = await handler();
     if (target) {
       target.disabled = false;
       target.classList.remove("is-busy");
@@ -887,6 +965,19 @@ async function withButtonFeedback(button, pendingLabel, handler, doneLabel = "Г
         target.innerHTML = originalHtml;
       }, 900);
     }
+    return result;
+  } catch (error) {
+    if (target) {
+      target.disabled = false;
+      target.classList.remove("is-busy");
+      target.classList.add("did-error");
+      target.innerHTML = "<span>Ошибка</span>";
+      window.setTimeout(() => {
+        target.classList.remove("did-error");
+        target.innerHTML = originalHtml;
+      }, 1200);
+    }
+    throw error;
   }
 }
 
@@ -1160,7 +1251,17 @@ function formatPlanDate(value) {
 
 function setEmptyState(hidden, text = "Ничего не найдено.") {
   elements.emptyState.hidden = hidden;
-  elements.emptyState.textContent = text;
+  if (hidden) {
+    elements.emptyState.textContent = "";
+  } else if (typeof text === "string") {
+    elements.emptyState.innerHTML = renderGuidedState({
+      eyebrow: "Список",
+      title: text,
+      body: "Попробуйте изменить фильтры, поиск или откройте соседний раздел.",
+    });
+  } else {
+    elements.emptyState.innerHTML = renderGuidedState(text || {});
+  }
   elements.emptyState.style.display = hidden ? "none" : "block";
 }
 
@@ -1421,11 +1522,25 @@ function bindTopicForm(form, config) {
     submitButton.innerHTML = `<span class="button-spinner" aria-hidden="true"></span><span>${escapeHtml(config.pendingText)}</span>`;
     try {
       await config.onSubmit(topic);
+      submitButton.classList.add("did-complete");
+      submitButton.innerHTML = `<span>${escapeHtml(config.doneText || "Готово")}</span>`;
+      window.setTimeout(() => {
+        submitButton.classList.remove("did-complete");
+        submitButton.innerHTML = originalHtml;
+        updateState();
+      }, 900);
+      return;
+    } catch (error) {
+      submitButton.classList.add("did-error");
+      showRequestError(config.errorPrefix || "Не удалось выполнить действие", error);
+      window.setTimeout(() => {
+        submitButton.classList.remove("did-error");
+        submitButton.innerHTML = originalHtml;
+        updateState();
+      }, 1200);
     } finally {
       submitButton.disabled = false;
       submitButton.classList.remove("is-busy");
-      submitButton.innerHTML = originalHtml;
-      updateState();
     }
   });
 }
@@ -1488,7 +1603,7 @@ function scheduleCarouselRefresh(draftId, attempts = 12) {
       if (isCurrentDraftDetail(draft.draft_id)) {
         state.selected = draft;
         renderDraftList();
-        if (!isEditingDetailForm()) renderDraftDetail(draft);
+        if (!isEditingDetailForm() && !hasPendingCarouselOperations(draft.draft_id)) renderDraftDetail(draft);
       }
       if (readyCount < slideCount) scheduleCarouselRefresh(draftId, attempts - 1);
     } catch (_e) { scheduleCarouselRefresh(draftId, attempts - 1); }
@@ -1738,14 +1853,23 @@ function renderReferences() {
 
   listContainer.innerHTML = filtered.map((item) => `
     <article class="draft-card${item.slug === reference?.slug ? " active" : ""}" onclick="openReference('${item.slug}', '${state.tab}')">
-      <div class="draft-kind">${handbookCategoryIcon(state.tab)}<span>${escapeHtml(meta.label)}</span></div>
+      <div class="draft-kind">${handbookCategoryIcon(state.tab)}${handbookCardBadge(state.tab, item) ? `<span>${escapeHtml(handbookCardBadge(state.tab, item))}</span>` : ""}</div>
       <h3 class="draft-topic">${escapeHtml(item.name)}</h3>
       <div class="draft-preview">${escapeHtml(item.description || "")}</div>
     </article>
   `).join("");
 
   if (!reference) {
-    elements.draftDetail.innerHTML = `${renderBackButton()}<div class="detail-empty">${escapeHtml(meta.selectPrompt)}</div>`;
+    elements.draftDetail.innerHTML = `
+      ${renderBackButton()}
+      <div class="detail-empty">
+        ${renderGuidedState({
+          eyebrow: meta.title,
+          title: "Выберите карточку справочника",
+          body: meta.selectPrompt,
+        })}
+      </div>
+    `;
     syncMobileNavigation();
     return;
   }
@@ -1773,8 +1897,13 @@ function renderReferencesLocked() {
   elements.listTitle.textContent = meta.title;
   elements.draftCount.textContent = "";
   setEmptyState(true);
-  elements.draftList.innerHTML = `<div class="detail-preview">${escapeHtml(meta.locked)}</div>`;
-  elements.draftDetail.innerHTML = `${renderBackButton()}<div class="detail-empty">${escapeHtml(meta.locked)}</div>`;
+  elements.draftList.innerHTML = renderGuidedState({
+    eyebrow: meta.title,
+    title: "Доступ ограничен",
+    body: meta.locked,
+    tone: "soft",
+  });
+  elements.draftDetail.innerHTML = `${renderBackButton()}<div class="detail-empty">${renderGuidedState({ eyebrow: meta.title, title: "Справочник пока недоступен", body: meta.locked, tone: "soft" })}</div>`;
   syncMobileNavigation();
 }
 
@@ -1784,8 +1913,15 @@ function renderReferencesUnavailable() {
   elements.listTitle.textContent = meta.title;
   elements.draftCount.textContent = "";
   setEmptyState(true);
-  elements.draftList.innerHTML = `<div class="detail-preview">${escapeHtml(message)}</div>`;
-  elements.draftDetail.innerHTML = `${renderBackButton()}<div class="detail-empty">${escapeHtml(message)}</div>`;
+  elements.draftList.innerHTML = renderGuidedState({
+    eyebrow: "Загрузка",
+    title: "Справочник временно недоступен",
+    body: message,
+    actionLabel: "Повторить",
+    action: "retryCurrentTab()",
+    tone: "soft",
+  });
+  elements.draftDetail.innerHTML = `${renderBackButton()}<div class="detail-empty">${renderGuidedState({ eyebrow: "Загрузка", title: "Справочник временно недоступен", body: message, actionLabel: "Повторить", action: "retryCurrentTab()", tone: "soft" })}</div>`;
   syncMobileNavigation();
 }
 
@@ -1825,7 +1961,15 @@ function renderCreate() {
   `;
 
   if (!state.selectedCreateTool) {
-    elements.draftDetail.innerHTML = `<div class="detail-empty">Выберите инструмент слева.</div>`;
+    elements.draftDetail.innerHTML = `
+      <div class="detail-empty">
+        ${renderGuidedState({
+          eyebrow: "Создание",
+          title: "Выберите формат для старта",
+          body: "Слева доступны быстрые сценарии: пост, рилс, план или карусель. Откройте нужный инструмент, и мы сразу покажем форму.",
+        })}
+      </div>
+    `;
     syncMobileNavigation();
     return;
   }
@@ -2061,7 +2205,7 @@ async function openPlanRelatedDraft(kind, draftId) {
 function renderDraftDetail(d) {
   if (isPendingDraftId(d?.draft_id)) {
     elements.draftDetail.innerHTML = `
-      <div class="detail-grid">
+      <div class="detail-grid detail-grid-pending">
         ${renderBackButton()}
         <div class="detail-top">
           <p class="eyebrow">${contentKindIcon(d.kind)}<span>${escapeHtml(kindLabel(d.kind))} • ${escapeHtml(sourceLabel(d.source || "/miniapp"))}</span></p>
@@ -2071,7 +2215,7 @@ function renderDraftDetail(d) {
             ${tagMarkup("Ещё генерируется", "pending")}
           </div>
         </div>
-        ${renderDetailLoader("Генерирую карточку")}
+        ${renderDetailLoader("Генерирую карточку", "Сохраняю черновик и подгружаю содержимое.", "detail-loader-card-compact")}
       </div>
     `;
     syncMobileNavigation();
@@ -2171,7 +2315,16 @@ function renderDraftDetail(d) {
 }
 
 function renderEmptyDetail() {
-  elements.draftDetail.innerHTML = `${renderBackButton()}<div class="detail-empty">Выберите элемент из списка слева.</div>`;
+  elements.draftDetail.innerHTML = `
+    ${renderBackButton()}
+    <div class="detail-empty">
+      ${renderGuidedState({
+        eyebrow: "Детали",
+        title: "Выберите элемент из списка",
+        body: "Откройте карточку слева, чтобы увидеть детали, правки и быстрые действия.",
+      })}
+    </div>
+  `;
   syncMobileNavigation();
 }
 
@@ -2182,9 +2335,12 @@ function setMode(m) {
   elements.modeHandbook.classList.toggle("active", m === "handbook");
   elements.settingsButton?.classList.toggle("active", m === "content" && state.tab === "settings");
   const tabs = MODE_TABS[m] || [];
-  elements.tabsContainer.innerHTML = tabs.map(t => `
-    <button class="tab-button${state.tab === t.id ? ' active' : ''}" data-tab="${t.id}" type="button">${t.label}</button>
-  `).join("");
+  elements.tabsContainer.innerHTML = tabs.map((t) => {
+    const label = HANDBOOK_CATEGORY_META[t.id]
+      ? `${handbookCategoryIcon(t.id)}<span>${escapeHtml(t.label)}</span>`
+      : `<span>${escapeHtml(t.label)}</span>`;
+    return `<button class="tab-button${state.tab === t.id ? " active" : ""}" data-tab="${t.id}" type="button">${label}</button>`;
+  }).join("");
   elements.tabsContainer.querySelectorAll(".tab-button").forEach(b => {
     b.addEventListener("click", () => {
       const targetTab = b.dataset.tab;
@@ -2390,6 +2546,12 @@ window.polishContentDraft = polishContentDraft;
 window.openKeywordTopic = openKeywordTopic;
 window.addKeywordItem = addKeywordItem;
 window.removeKeywordItem = removeKeywordItem;
+window.openCreateTool = (toolId = "content") => {
+  setMode("content");
+  setTab("create");
+  renderCreate();
+  renderCreateTool(toolId);
+};
 window.openSettingsSection = async (section) => {
   state.settingsSection = section === "keywords" ? "keywords" : "status";
   if (state.tab !== "settings") {
@@ -2432,13 +2594,22 @@ function renderStatus() {
   `).join("")}
   `;
   elements.draftDetail.innerHTML = renderBackButton() + `<div class="detail-empty">${inSettings ? "Настройки mini app и системные параметры." : "Настройки mini app и состояния источников."}</div>`;
+  if (!items.length) {
+    elements.draftDetail.innerHTML = renderBackButton() + `<div class="detail-empty">${renderGuidedState({ eyebrow: "Настройки", title: "Источники еще не показаны", body: "Здесь появятся переключатели и системные состояния источников, как только раздел загрузит конфигурацию." })}</div>`;
+  }
   syncMobileNavigation();
 }
 
 function renderPlans() {
   elements.listTitle.textContent = "Планы";
   elements.draftCount.textContent = `${state.plans.length} шт`;
-  setEmptyState(state.plans.length > 0, "Планы пока не собраны.");
+  setEmptyState(state.plans.length > 0, {
+    eyebrow: "Планы",
+    title: "Планы пока не собраны",
+    body: "Соберите недельный план во вкладке Создать, и здесь появятся карточки с темами и связями к черновикам.",
+    actionLabel: "Открыть создание",
+    action: "openCreateTool('plan')",
+  });
   elements.draftList.innerHTML = state.plans.map(p => `
     <article class="plan-card overview-card${p.plan_id === state.selectedPlan?.plan_id ? " active" : ""}" onclick="openPlan('${p.plan_id}')">
       <div class="overview-card-top">
@@ -2454,7 +2625,7 @@ function renderPlans() {
     </article>
   `).join("");
   if (!state.selectedPlan) {
-    elements.draftDetail.innerHTML = `${renderBackButton()}<div class="detail-empty">Откройте план, чтобы создать черновик по одной из карточек.</div>`;
+    elements.draftDetail.innerHTML = `${renderBackButton()}<div class="detail-empty">${renderGuidedState({ eyebrow: "План", title: "Откройте план недели", body: "Внутри плана можно создавать draft по каждой карточке и сразу открывать связанный материал." })}</div>`;
   }
   syncMobileNavigation();
 }
@@ -2462,7 +2633,13 @@ function renderPlans() {
 function renderReels() {
   elements.listTitle.textContent = "Рилсы";
   elements.draftCount.textContent = `${state.reels.length} шт`;
-  setEmptyState(state.reels.length > 0, "Рилсы пока не созданы.");
+  setEmptyState(state.reels.length > 0, {
+    eyebrow: "Рилсы",
+    title: "Рилсы пока не созданы",
+    body: "Откройте вкладку Создать и соберите новый рилс: сценарий, концепцию и кадры для раскадровки.",
+    actionLabel: "Создать рилс",
+    action: "openCreateTool('reels')",
+  });
   elements.draftList.innerHTML = state.reels.map(r => `
     <article class="reels-card overview-card${r.draft_id === state.selectedReels?.draft_id ? " active" : ""}" onclick="openReels('${r.draft_id}')">
       <div class="overview-card-top">
@@ -2580,7 +2757,11 @@ function renderKeywords() {
   const selectedTopic = topics.find((topic) => topic.topic_idx === state.selectedKeywordTopicIdx) || null;
   elements.listTitle.textContent = inSettings ? "Настройки" : "Ключи";
   elements.draftCount.textContent = `${topics.length} тем`;
-  setEmptyState(topics.length > 0, "Темы пока не загружены.");
+  setEmptyState(topics.length > 0, {
+    eyebrow: "Ключи",
+    title: "Темы пока не загружены",
+    body: "Когда справочник ключей будет доступен, здесь появятся темы с RU/EN ключами и тегами для редактирования.",
+  });
   elements.draftList.innerHTML = `
     ${inSettings ? renderSettingsSwitcher("keywords") : ""}
     ${topics.map(t => `
@@ -2593,7 +2774,7 @@ function renderKeywords() {
   `).join("")}
   `;
   if (!selectedTopic) {
-    elements.draftDetail.innerHTML = renderBackButton() + `<div class="detail-empty">Откройте тему, чтобы управлять ключами и тегами.</div>`;
+    elements.draftDetail.innerHTML = renderBackButton() + `<div class="detail-empty">${renderGuidedState({ eyebrow: "Ключи", title: "Откройте тему для редактирования", body: "Внутри темы можно добавлять и удалять RU/EN ключи и теги без выхода из mini app." })}</div>`;
     syncMobileNavigation();
     return;
   }

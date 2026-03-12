@@ -1738,8 +1738,8 @@ class TestMiniAppRussianLocale:
 
         assert "JSON</h3>" not in app_js
         assert "Перегенерировать все" in app_js
-        assert "Учесть замечание" in app_js
         assert "Сохранить текст слайда" in app_js
+        assert "Перегенерировать картинку" in app_js
         assert "Текст слайда" in app_js
         assert "Скачать PPTX" in app_js
         assert "Показать промпт" in app_js
@@ -1881,14 +1881,15 @@ class TestMiniAppRussianLocale:
 
         assert "function isEditingDetailForm()" in app_js
         assert "if (!isEditingDetailForm()) renderReelsDetail(reel);" in app_js
-        assert "if (!isEditingDetailForm()) renderDraftDetail(draft);" in app_js
+        assert "if (!isEditingDetailForm() && !hasPendingCarouselOperations(draft.draft_id)) renderDraftDetail(draft);" in app_js
         assert "onclick=\"updateDraft('status', {status:'approved'}, this)\"" in app_js
         assert "onclick=\"sendDraftToChat('${d.draft_id}', this)\"" in app_js
         assert "onclick=\"deleteDraft('${d.draft_id}', 'drafts', this)\"" in app_js
         assert 'onclick="saveCarouselSlideText(${JSON.stringify(draftId)}, ${index}, this)"' in app_js
-        assert 'onclick="regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, false, this)"' in app_js
+        assert 'onclick="regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, this)"' in app_js
         assert ".secondary-button.is-busy" in app_css
         assert ".secondary-button.did-complete" in app_css
+        assert ".secondary-button.did-error" in app_css
 
     def test_pending_drafts_are_marked_as_generating(self):
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
@@ -1947,6 +1948,20 @@ class TestMiniAppRussianLocale:
         assert "let detailEntryTimer = null;" in app_js
         assert 'elements.detailPanel.classList.add("is-entering")' in app_js
 
+    def test_guided_states_cover_empty_and_onboarding_paths(self):
+        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+
+        assert "function renderGuidedState" in app_js
+        assert "Выберите формат для старта" in app_js
+        assert "Планы пока не собраны" in app_js
+        assert "Рилсы пока не созданы" in app_js
+        assert "Откройте тему для редактирования" in app_js
+        assert "window.openCreateTool" in app_js
+        assert ".guided-state" in app_css
+        assert ".guided-state-copy" in app_css
+        assert ".guided-state-actions" in app_css
+
     def test_create_flow_reopens_full_draft_and_dismisses_keyboard(self):
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
 
@@ -1970,7 +1985,7 @@ class TestMiniAppRussianLocale:
         assert 'await recoverPendingDraftCreation(f, t, pending.draft_id);' in app_js
         assert 'await recoverPendingDraftCreation("carousel", t, pending.draft_id);' in app_js
         assert 'if (isPendingDraftId(preferredId)) {' in app_js
-        assert 'renderDetailLoader("Генерирую карточку")' in app_js
+        assert 'renderDetailLoader("Генерирую карточку", "Сохраняю черновик и подгружаю содержимое.", "detail-loader-card-compact")' in app_js
 
     def test_drafts_do_not_auto_open_first_item_on_boot(self):
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
