@@ -671,11 +671,12 @@ function bufferedReelsPrompt(draftId, index, fallback = "") {
     : String(fallback || "");
 }
 
-function renderSlides(draftId, slides = [], prompts = [], slideImages = [], promptNotes = []) {
+function renderSlides(draftId, slides = [], prompts = [], slideImages = [], promptNotes = [], slideVersions = []) {
   const slideItems = Array.isArray(slides) ? slides : [];
   const promptItems = Array.isArray(prompts) ? prompts : [];
   const imageItems = Array.isArray(slideImages) ? slideImages : [];
   const noteItems = Array.isArray(promptNotes) ? promptNotes : [];
+  const versionItems = Array.isArray(slideVersions) ? slideVersions : [];
   if (!slideItems.length) return "";
   const readyCount = imageItems.filter(Boolean).length;
   const header = readyCount > 0
@@ -689,6 +690,7 @@ function renderSlides(draftId, slides = [], prompts = [], slideImages = [], prom
           const img = imageItems[index];
           const prompt = String(promptItems[index] || "");
           const note = bufferedCarouselNote(draftId, index, String(noteItems[index] || ""));
+          const versions = Array.isArray(versionItems[index]) ? versionItems[index] : [];
           const showPromptOpen = !img?.url;
           const imgHtml = img?.url
             ? `<img class="frame-image" src="${escapeHtml(img.url)}" alt="Слайд ${index + 1}" />`
@@ -724,11 +726,51 @@ function renderSlides(draftId, slides = [], prompts = [], slideImages = [], prom
                   <button class="primary-button" type="button" aria-label="Сохранить текст слайда" onclick="saveCarouselSlideText(${JSON.stringify(draftId)}, ${index}, this)">${actionLabel("text", "Сохранить подпись")}</button>
                 </div>
               `}
+              ${renderSlideVersions(draftId, index, img, versions)}
             </article>
           `;
         }).join("")}
       </div>
     </section>
+  `;
+}
+
+function renderSlideVersions(draftId, slideIndex, currentImage, versions = []) {
+  const items = Array.isArray(versions) ? versions : [];
+  if (!items.length) return "";
+  const currentFilename = String(currentImage?.filename || "").trim();
+  return `
+    <div class="slide-versions">
+      <div class="slide-versions-head">
+        <strong>${uiIcon("image")}Версии</strong>
+        <span class="meta">${items.length} шт</span>
+      </div>
+      <div class="slide-version-grid">
+        ${items.map((version, versionIndex) => {
+          const isCurrent = String(version?.filename || "").trim() === currentFilename;
+          return `
+            <article class="slide-version-card${isCurrent ? " is-current" : ""}">
+              <button
+                class="slide-version-thumb"
+                type="button"
+                onclick="selectCarouselSlideVersion(${JSON.stringify(draftId)}, ${slideIndex}, ${versionIndex}, this)"
+                aria-label="${isCurrent ? "Текущая версия" : "Сделать текущей"}"
+              >
+                <img src="${escapeHtml(version.url || "")}" alt="Версия ${versionIndex + 1} для слайда ${slideIndex + 1}" />
+              </button>
+              <div class="slide-version-meta">
+                <span>${isCurrent ? "Текущая" : `Версия ${versionIndex + 1}`}</span>
+                <span class="meta">${escapeHtml(formatPlanDate(version.generated_at) || "сейчас")}</span>
+              </div>
+              <div class="actions-row slide-version-actions">
+                ${isCurrent ? "" : `<button class="secondary-button" type="button" onclick="selectCarouselSlideVersion(${JSON.stringify(draftId)}, ${slideIndex}, ${versionIndex}, this)">${actionLabel("approve", "Сделать текущей")}</button>`}
+                ${items.length > 1 ? `<button class="secondary-button" type="button" onclick="deleteCarouselSlideVersion(${JSON.stringify(draftId)}, ${slideIndex}, ${versionIndex}, this)">${actionLabel("trash", "Удалить")}</button>` : ""}
+              </div>
+            </article>
+          `;
+        }).join("")}
+      </div>
+    </div>
   `;
 }
 
@@ -851,6 +893,39 @@ async function regenerateCarouselAll(draftId, button) {
     renderDraftList();
     if (isCurrentDraftDetail(draft.draft_id)) renderDraftDetail(draft);
   }, "Готово");
+}
+
+async function selectCarouselSlideVersion(draftId, slideIndex, versionIndex, button) {
+  try {
+    await withButtonFeedback(button, "Выбираю...", async () => {
+      const draft = await fetchJson(`/api/carousel/${draftId}/slides/${slideIndex}/versions/${versionIndex}/select`, {
+        method: "POST",
+        body: "{}",
+      });
+      mergeDraftIntoState(draft);
+      renderDraftList();
+      if (isCurrentDraftDetail(draft.draft_id)) renderDraftDetail(draft);
+    }, "Выбрано");
+  } catch (error) {
+    showRequestError("Не удалось выбрать версию картинки", error);
+  }
+}
+
+async function deleteCarouselSlideVersion(draftId, slideIndex, versionIndex, button) {
+  const confirmed = await confirmAction("Удалить эту версию картинки?");
+  if (!confirmed) return;
+  try {
+    await withButtonFeedback(button, "Удаляю...", async () => {
+      const draft = await fetchJson(`/api/carousel/${draftId}/slides/${slideIndex}/versions/${versionIndex}`, {
+        method: "DELETE",
+      });
+      mergeDraftIntoState(draft);
+      renderDraftList();
+      if (isCurrentDraftDetail(draft.draft_id)) renderDraftDetail(draft);
+    }, "Удалено");
+  } catch (error) {
+    showRequestError("Не удалось удалить версию картинки", error);
+  }
 }
 
 async function sendDraftToChat(draftId, button) {
@@ -2304,7 +2379,7 @@ function renderDraftDetail(d) {
       ${payloadSection("Текст", mainText)}
       ${payloadSection("CTA", p.cta)}
       ${reviewActions}
-      ${renderSlides(d.draft_id, p.slides, p.img_prompts, p.slide_images, p.img_prompt_notes)}
+      ${renderSlides(d.draft_id, p.slides, p.img_prompts, p.slide_images, p.img_prompt_notes, p.slide_image_versions)}
       ${promptSection("Промпт для изображения", p.visual_prompt)}
     </div>
   `;
@@ -2531,6 +2606,8 @@ window.deleteDraft = deleteDraft;
 window.saveCarouselSlideText = saveCarouselSlideText;
 window.regenerateCarouselSlide = regenerateCarouselSlide;
 window.regenerateCarouselAll = regenerateCarouselAll;
+window.selectCarouselSlideVersion = selectCarouselSlideVersion;
+window.deleteCarouselSlideVersion = deleteCarouselSlideVersion;
 window.handleCarouselSlideNoteInput = handleCarouselSlideNoteInput;
 window.downloadCarouselPptx = downloadCarouselPptx;
 window.saveReelsScenario = saveReelsScenario;

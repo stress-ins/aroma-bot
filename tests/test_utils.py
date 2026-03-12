@@ -852,7 +852,12 @@ from bot.services import drafts_store as drafts_store_module
 from bot.services import reels_assets as reels_assets_module
 from bot.services.drafts_store import delete_draft, save_draft
 from bot.services.reels_assets import regenerate_reels_frame_asset
-from bot.services.carousel_assets import update_carousel_slide_note, update_carousel_slide_text
+from bot.services.carousel_assets import (
+    delete_carousel_slide_version,
+    select_carousel_slide_version,
+    update_carousel_slide_note,
+    update_carousel_slide_text,
+)
 from bot.services.mini_app import build_draft_tab
 from bot.handlers.miniapp_bridge import parse_webapp_payload
 from bot.services.plans_store import PlanRecord
@@ -1753,6 +1758,10 @@ class TestMiniAppRussianLocale:
         assert "/api/carousel/{draft_id}/slides/{slide_index}/regenerate" in server_py
         assert "/api/carousel/{draft_id}/slides/{slide_index}/text" in server_py
         assert "/api/carousel/{draft_id}/slides/{slide_index}/note" in server_py
+        assert "/api/carousel/{draft_id}/slides/{slide_index}/versions/{version_index}/select" in server_py
+        assert "/api/carousel/{draft_id}/slides/{slide_index}/versions/{version_index}" in server_py
+        assert "Версии" in app_js
+        assert "Сделать текущей" in app_js
 
     def test_reels_detail_supports_editing_and_reference_generation(self):
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
@@ -2037,6 +2046,49 @@ class TestMiniAppCarousel:
         assert payload is not None
         assert payload["img_prompt_notes"][1] == "больше воздуха"
 
+    async def test_select_carousel_slide_version_sets_current_image(self):
+        draft = await save_draft(
+            kind="carousel",
+            topic="Версии",
+            source="/carousel",
+            payload={
+                "slides": ["Слайд 1"],
+                "img_prompts": ["prompt-1"],
+                "slide_images": [{"filename": "new.png", "url": "/generated/new.png", "generated_at": "2026-03-12T10:00:00+00:00", "prompt": "new"}],
+                "slide_image_versions": [[
+                    {"filename": "old.png", "url": "/generated/old.png", "generated_at": "2026-03-12T09:00:00+00:00", "prompt": "old"},
+                    {"filename": "new.png", "url": "/generated/new.png", "generated_at": "2026-03-12T10:00:00+00:00", "prompt": "new"},
+                ]],
+            },
+        )
+
+        payload = await select_carousel_slide_version(draft.draft_id, 0, 0)
+
+        assert payload is not None
+        assert payload["slide_images"][0]["filename"] == "old.png"
+
+    async def test_delete_carousel_slide_version_removes_version_and_keeps_current_valid(self):
+        draft = await save_draft(
+            kind="carousel",
+            topic="Версии",
+            source="/carousel",
+            payload={
+                "slides": ["Слайд 1"],
+                "img_prompts": ["prompt-1"],
+                "slide_images": [{"filename": "new.png", "url": "/generated/new.png", "generated_at": "2026-03-12T10:00:00+00:00", "prompt": "new"}],
+                "slide_image_versions": [[
+                    {"filename": "old.png", "url": "/generated/old.png", "generated_at": "2026-03-12T09:00:00+00:00", "prompt": "old"},
+                    {"filename": "new.png", "url": "/generated/new.png", "generated_at": "2026-03-12T10:00:00+00:00", "prompt": "new"},
+                ]],
+            },
+        )
+
+        payload = await delete_carousel_slide_version(draft.draft_id, 0, 1)
+
+        assert payload is not None
+        assert len(payload["slide_image_versions"][0]) == 1
+        assert payload["slide_images"][0]["filename"] == "old.png"
+
 
 class TestMiniAppReels:
     async def test_serialize_reels_draft_returns_none_for_missing(self):
@@ -2174,6 +2226,8 @@ class TestCreativeTeamConstants:
         assert "минует логику" in lowered
         assert "литературные метафоры" in lowered
         assert "живую разговорную речь" in lowered
+        assert "с подвыподвертом" in lowered
+        assert "жёсткие, рубленые" in lowered or "жесткие, рубленые" in lowered
 
     def test_editor_system_keeps_threads_as_three_posts(self):
         lowered = _EDITOR_SYSTEM.lower()
@@ -2254,9 +2308,15 @@ class TestThreadsPrompts:
         prompt = _PROMPT_POST
         assert "3 поста для Threads на сегодня" in prompt
         assert "УТРО, ДЕНЬ, ВЕЧЕР" in prompt
-        assert "5-12 коротких строк" in prompt
-        assert "40-120 слов" in prompt
-        assert "Без хэштегов" in prompt
+
+    def test_writer_prompt_demands_plain_human_rhythm(self):
+        from bot.agents.content import _writer_prompt
+
+        prompt = _writer_prompt("тема", "trust", "telegram", "угол", "хук")
+        lowered = prompt.lower()
+        assert "живой человек" in lowered
+        assert "без резких обрывов" in lowered
+        assert "если фраза звучит как слоган" in lowered
 
     def test_client_waits_for_all_reels_frames(self):
         source = Path("miniapp/static/app.js").read_text(encoding="utf-8")

@@ -125,6 +125,17 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
             },
             None,
         ],
+        "slide_image_versions": [
+            [
+                {
+                    "url": "/generated/carousel_assets/carousel001/slide_1.png",
+                    "filename": "slide_1.png",
+                    "generated_at": "2026-03-11T18:00:00+00:00",
+                    "prompt": "prompt 1",
+                }
+            ],
+            [],
+        ],
         "img_prompt_notes": ["", ""],
         "cta": "Напиши, если хочешь такую карусель под свой проект.",
     }
@@ -474,7 +485,8 @@ def test_carousel_detail_shows_prompt_copy_buttons(page):
     page.wait_for_timeout(300)
 
     assert page.get_by_role("button", name="Скопировать промпт слайда").count() >= 1
-    assert page.get_by_role("button", name="Сохранить текст слайда").count() >= 1
+    assert page.get_by_text("Сохранить подпись").count() >= 1
+    assert page.get_by_text("Версии").count() >= 1
     assert page.locator(".slide").count() >= 2
 
 

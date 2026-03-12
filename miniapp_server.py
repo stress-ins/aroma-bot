@@ -29,10 +29,12 @@ from bot.services.miniapp_plan_actions import normalize_plan_format, normalize_p
 from bot.services.reels_assets import ASSETS_DIR, populate_reels_frame_assets, regenerate_reels_frame_asset
 from bot.services.carousel_assets import (
     CAROUSEL_ASSETS_DIR,
+    delete_carousel_slide_version,
     load_carousel_slide_images,
     populate_carousel_slide_assets,
     regenerate_all_carousel_slide_assets,
     regenerate_carousel_slide_asset,
+    select_carousel_slide_version,
     update_carousel_slide_note,
     update_carousel_slide_text,
 )
@@ -538,6 +540,38 @@ async def update_carousel_slide_review_note(
     updated_payload = await update_carousel_slide_note(draft_id, slide_index, payload.note)
     if updated_payload is None:
         raise HTTPException(status_code=404, detail="carousel_slide_not_found")
+    draft = await get_draft(draft_id)
+    if not draft:
+        raise HTTPException(status_code=404, detail="carousel_not_found")
+    return await serialize_draft(draft)
+
+
+@app.post("/api/carousel/{draft_id}/slides/{slide_index}/versions/{version_index}/select")
+async def select_carousel_version(
+    draft_id: str,
+    slide_index: int,
+    version_index: int,
+    _: None = Depends(_require_auth),
+):
+    updated_payload = await select_carousel_slide_version(draft_id, slide_index, version_index)
+    if updated_payload is None:
+        raise HTTPException(status_code=404, detail="carousel_version_not_found")
+    draft = await get_draft(draft_id)
+    if not draft:
+        raise HTTPException(status_code=404, detail="carousel_not_found")
+    return await serialize_draft(draft)
+
+
+@app.delete("/api/carousel/{draft_id}/slides/{slide_index}/versions/{version_index}")
+async def delete_carousel_version(
+    draft_id: str,
+    slide_index: int,
+    version_index: int,
+    _: None = Depends(_require_auth),
+):
+    updated_payload = await delete_carousel_slide_version(draft_id, slide_index, version_index)
+    if updated_payload is None:
+        raise HTTPException(status_code=404, detail="carousel_version_not_found")
     draft = await get_draft(draft_id)
     if not draft:
         raise HTTPException(status_code=404, detail="carousel_not_found")
