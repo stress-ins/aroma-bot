@@ -50,6 +50,7 @@ let swipeStart = null;
 let bootstrapWatchdogTimer = null;
 let appBootstrapped = false;
 let uiNoticeTimer = null;
+let detailEntryTimer = null;
 const carouselNoteSaveTimers = {};
 const reelsNoteSaveTimers = {};
 const reelsPromptSaveTimers = {};
@@ -211,6 +212,16 @@ function stripMarkdown(value) {
 function payloadSection(title, content) {
   if (!content) return "";
   return `<section class="section"><h3>${sectionHeadingIcon(title)}${escapeHtml(title)}</h3><div class="detail-preview detail-markdown">${renderMarkdown(content)}</div></section>`;
+}
+
+function detailFactMarkup(label, value) {
+  if (!value) return "";
+  return `
+    <div class="detail-fact">
+      <span class="detail-fact-label">${escapeHtml(label)}</span>
+      <strong class="detail-fact-value">${escapeHtml(value)}</strong>
+    </div>
+  `;
 }
 
 function uiIcon(name) {
@@ -399,6 +410,8 @@ function draftSummaryFromDraft(draft) {
     preview: draft.preview || "",
     slides_count: draft.slides_count || 0,
     storyboard_count: draft.storyboard_count || 0,
+    images_ready: draft.images_ready || 0,
+    generation_pending: Boolean(draft.generation_pending),
   };
 }
 
@@ -423,6 +436,105 @@ function draftGenerationLabel(draft) {
     return total ? `Ещё генерируется ${ready}/${total}` : "Ещё генерируется";
   }
   return "Ещё генерируется";
+}
+
+function isPendingDraftId(value) {
+  return String(value || "").startsWith("pending-");
+}
+
+function buildPendingDraft(kind, topic) {
+  const draftId = `pending-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+  return {
+    draft_id: draftId,
+    kind,
+    topic,
+    source: "/miniapp",
+    created_at: new Date().toISOString(),
+    status: "draft",
+    feedback: "",
+    preview: "Генерируем черновик...",
+    slides_count: kind === "carousel" ? 5 : 0,
+    storyboard_count: kind === "reels" ? 4 : 0,
+    images_ready: 0,
+    generation_pending: true,
+    payload: {},
+  };
+}
+
+function openPendingDraftCreation(kind, topic) {
+  const draft = buildPendingDraft(kind, topic);
+  state.pendingCreateRecovery = {
+    draft_id: draft.draft_id,
+    kind,
+    topic,
+    started_at: Date.now(),
+  };
+  state.draftId = draft.draft_id;
+  state.selected = draft;
+  setTab("drafts");
+  upsertDraftSummary(draftSummaryFromDraft(draft));
+  renderDraftList();
+  renderDraftDetail(draft);
+  enterDetailView();
+  return draft;
+}
+
+function finalizePendingDraftCreation(draft) {
+  const d = draft;
+  if (!d?.draft_id) return;
+  state.pendingCreateRecovery = null;
+  state.draftId = d.draft_id;
+  state.selected = d;
+  state.drafts = state.drafts.filter((item) => !isPendingDraftId(item.draft_id));
+  upsertDraftSummary(draftSummaryFromDraft(d));
+  renderDraftList();
+  renderDraftDetail(d);
+  enterDetailView();
+  void loadDrafts();
+}
+
+async function recoverPendingDraftCreation(kind, topic, pendingDraftId) {
+  const startedAt = Date.now();
+  state.pendingCreateRecovery = {
+    draft_id: pendingDraftId,
+    kind,
+    topic,
+    started_at: startedAt,
+  };
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    try {
+      const params = new URLSearchParams();
+      params.set("limit", "20");
+      params.set("kind", kind);
+      const data = await fetchJson(`/api/drafts?${params.toString()}`, { timeout: 20000 });
+      state.drafts = (data.items || []).filter((item) => item.draft_id !== pendingDraftId);
+      const recovered = state.drafts.find((item) => {
+        const createdAt = new Date(item.created_at || 0).getTime();
+        return item.kind === kind
+          && item.topic === topic
+          && item.source === "/miniapp"
+          && (Number.isNaN(createdAt) || createdAt >= startedAt - 10_000);
+      });
+      if (recovered?.draft_id) {
+        state.pendingCreateRecovery = null;
+        state.draftId = recovered.draft_id;
+        renderDraftList();
+        await openDraft(recovered.draft_id);
+        return true;
+      }
+      renderDraftList();
+    } catch (_error) {
+      // Keep pending UI visible while the backend finishes creating the draft.
+    }
+    await new Promise((resolve) => window.setTimeout(resolve, 1500));
+  }
+  elements.draftDetail.innerHTML = renderDetailError(
+    "Черновик создаётся дольше обычного",
+    "Мы продолжаем ждать создание карточки. Откройте Черновики ещё раз или повторите позже.",
+    "retryCurrentTab()",
+  );
+  syncMobileNavigation();
+  return false;
 }
 
 function isContentReviewKind(kind) {
@@ -1022,6 +1134,22 @@ function sourceTone(value) {
   return "source-neutral";
 }
 
+function sourceLabel(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (normalized === "/plan") return "Из плана";
+  if (normalized === "/content") return "Контент";
+  if (normalized === "/miniapp") return "Mini App";
+  return String(value || "");
+}
+
+function draftHeroSummary(draft, payload, mainText) {
+  const preview = stripMarkdown(draft.preview || mainText || "");
+  if (preview) return preview.slice(0, 180);
+  if (payload?.angle) return `Опорный angle: ${String(payload.angle).trim()}`;
+  if (payload?.hook) return `Главный hook: ${String(payload.hook).trim()}`;
+  return "Материал готов к редакторскому проходу и согласованию.";
+}
+
 function formatPlanDate(value) {
   const text = String(value || "").trim();
   if (!text) return "";
@@ -1181,6 +1309,16 @@ window.goBackToList = (animated = false) => {
 function enterDetailView() {
   state.mobileView = "detail";
   syncMobileNavigation();
+  if (elements.detailPanel) {
+    elements.detailPanel.classList.remove("is-entering");
+    window.clearTimeout(detailEntryTimer);
+    requestAnimationFrame(() => {
+      elements.detailPanel.classList.add("is-entering");
+      detailEntryTimer = window.setTimeout(() => {
+        elements.detailPanel?.classList.remove("is-entering");
+      }, 280);
+    });
+  }
   window.scrollTo(0, 0);
 }
 
@@ -1394,6 +1532,16 @@ async function loadDrafts() {
   renderDraftList();
   const preferredId = state.draftId || "";
   if (!preferredId) {
+    renderEmptyDetail();
+    return;
+  }
+  if (isPendingDraftId(preferredId)) {
+    if (state.selected?.draft_id === preferredId) {
+      renderDraftDetail(state.selected);
+      enterDetailView();
+      return;
+    }
+    state.draftId = "";
     renderEmptyDetail();
     return;
   }
@@ -1754,18 +1902,21 @@ function renderCreateTool(toolId) {
   if (cForm) bindTopicForm(cForm, { pendingText: "Создаю...", onSubmit: async (t) => {
     const g = cForm.querySelector("select[name='goal_key']").value;
     const f = cForm.querySelector("select[name='format_key']").value;
-    const d = await fetchJson("/api/generate/content", { method: "POST", body: JSON.stringify({ topic: t, goal_key: g, format_key: f }) });
-    state.draftId = d.draft_id;
-    state.selected = d;
-    setTab("drafts");
-    upsertDraftSummary(draftSummaryFromDraft(d));
-    renderDraftList();
-    renderDraftDetail(d);
-    enterDetailView();
+    const pending = openPendingDraftCreation(f, t);
     try {
+      const d = await fetchJson("/api/generate/content", {
+        method: "POST",
+        timeout: 45000,
+        body: JSON.stringify({ topic: t, goal_key: g, format_key: f }),
+      });
+      finalizePendingDraftCreation(d);
       await openDraft(d.draft_id);
-    } catch (_error) {
-      void loadDrafts();
+    } catch (error) {
+      if (error?.message === "request_timeout") {
+        await recoverPendingDraftCreation(f, t, pending.draft_id);
+        return;
+      }
+      throw error;
     }
   }});
 
@@ -1785,18 +1936,21 @@ function renderCreateTool(toolId) {
 
   const carForm = elements.draftDetail.querySelector("[data-create-carousel]");
   if (carForm) bindTopicForm(carForm, { pendingText: "Создаю...", onSubmit: async (t) => {
-    const d = await fetchJson("/api/generate/carousel", { method: "POST", body: JSON.stringify({ topic: t }) });
-    state.draftId = d.draft_id;
-    state.selected = d;
-    setTab("drafts");
-    upsertDraftSummary(draftSummaryFromDraft(d));
-    renderDraftList();
-    renderDraftDetail(d);
-    enterDetailView();
+    const pending = openPendingDraftCreation("carousel", t);
     try {
+      const d = await fetchJson("/api/generate/carousel", {
+        method: "POST",
+        timeout: 45000,
+        body: JSON.stringify({ topic: t }),
+      });
+      finalizePendingDraftCreation(d);
       await openDraft(d.draft_id);
-    } catch (_error) {
-      void loadDrafts();
+    } catch (error) {
+      if (error?.message === "request_timeout") {
+        await recoverPendingDraftCreation("carousel", t, pending.draft_id);
+        return;
+      }
+      throw error;
     }
   }});
 }
@@ -1815,14 +1969,17 @@ function renderDraftList() {
   elements.draftCount.textContent = `${state.drafts.length} шт`;
   setEmptyState(state.drafts.length > 0);
   elements.draftList.innerHTML = state.drafts.map((d) => `
-    <article class="draft-card${d.draft_id === state.draftId ? " active" : ""}${d.generation_pending ? " is-pending" : ""}" onclick="openDraft('${d.draft_id}')">
-      <div class="draft-kind">${contentKindIcon(d.kind)}<span>${escapeHtml(kindLabel(d.kind))}</span></div>
+    <article class="draft-card overview-card${d.draft_id === state.draftId ? " active" : ""}${d.generation_pending ? " is-pending" : ""}" onclick="openDraft('${d.draft_id}')">
+      <div class="overview-card-top">
+        <div class="draft-kind">${contentKindIcon(d.kind)}<span>${escapeHtml(kindLabel(d.kind))}</span></div>
+        <span class="overview-card-date">${escapeHtml(formatPlanDate(d.created_at) || "Новый черновик")}</span>
+      </div>
       <h3 class="draft-topic">${escapeHtml(d.topic)}</h3>
       <div class="draft-preview">${escapeHtml(stripMarkdown(d.preview || "Без превью"))}</div>
-      <div class="draft-meta">
+      <div class="draft-meta overview-card-footer">
         ${tagMarkup(statusLabel(d.status), statusTone(d.status))}
         ${d.generation_pending ? tagMarkup(draftGenerationLabel(d), "pending") : ""}
-        ${tagMarkup(kindLabel(d.source), sourceTone(d.source))}
+        ${tagMarkup(sourceLabel(d.source), sourceTone(d.source))}
       </div>
     </article>
   `).join("");
@@ -1830,6 +1987,12 @@ function renderDraftList() {
 }
 
 async function openDraft(id) {
+  if (isPendingDraftId(id) && state.selected?.draft_id === id) {
+    renderDraftList();
+    renderDraftDetail(state.selected);
+    enterDetailView();
+    return;
+  }
   elements.draftDetail.innerHTML = `${renderBackButton()}${renderDetailLoader("Открываю черновик")}`;
   enterDetailView();
   const d = await fetchJson(`/api/drafts/${id}`, { timeout: 20000 });
@@ -1896,31 +2059,66 @@ async function openPlanRelatedDraft(kind, draftId) {
 }
 
 function renderDraftDetail(d) {
+  if (isPendingDraftId(d?.draft_id)) {
+    elements.draftDetail.innerHTML = `
+      <div class="detail-grid">
+        ${renderBackButton()}
+        <div class="detail-top">
+          <p class="eyebrow">${contentKindIcon(d.kind)}<span>${escapeHtml(kindLabel(d.kind))} • ${escapeHtml(sourceLabel(d.source || "/miniapp"))}</span></p>
+          <h2 class="detail-title">${escapeHtml(d.topic || "Создаём черновик")}</h2>
+          <div class="draft-meta">
+            ${tagMarkup("Черновик", "status-neutral")}
+            ${tagMarkup("Ещё генерируется", "pending")}
+          </div>
+        </div>
+        ${renderDetailLoader("Генерирую карточку")}
+      </div>
+    `;
+    syncMobileNavigation();
+    return;
+  }
   const p = d.payload || {};
   const mainText = p.caption || p.scenario || "";
+  const heroFacts = [
+    detailFactMarkup("Тип", kindLabel(d.kind)),
+    detailFactMarkup("Источник", sourceLabel(d.source)),
+    detailFactMarkup("Статус", statusLabel(d.status)),
+    isContentReviewKind(d.kind) ? detailFactMarkup("Реакция", feedbackLabel(d.feedback)) : "",
+    detailFactMarkup("Создан", formatPlanDate(d.created_at)),
+  ].join("");
   const reviewActions = isContentReviewKind(d.kind)
     ? `
-      <section class="section">
-        <h3>${uiIcon("text")}Редакторский review</h3>
+      <section class="section section-primary">
+        <div class="section-heading">
+          <h3>${uiIcon("text")}Редакторский review</h3>
+          <p>Сначала поправьте главный текст и позиционирование, затем уточните supporting-поля и сохраните версию для согласования.</p>
+        </div>
         <div class="content-review-form">
-          <label><span>Тема</span><textarea id="contentTopicField" placeholder="Тема draft">${escapeHtml(d.topic || "")}</textarea></label>
-          <label><span>Angle</span><textarea id="contentAngleField" placeholder="Опорный angle">${escapeHtml(p.angle || "")}</textarea></label>
-          <label><span>Hook</span><textarea id="contentHookField" placeholder="Хук">${escapeHtml(p.hook || "")}</textarea></label>
-          <label><span>Основной текст</span><textarea id="contentCaptionField" placeholder="Текст поста">${escapeHtml(p.caption || "")}</textarea></label>
-          <label><span>CTA</span><textarea id="contentCtaField" placeholder="Призыв к действию">${escapeHtml(p.cta || "")}</textarea></label>
-          <label><span>Hashtags</span><textarea id="contentHashtagsField" placeholder="#теги">${escapeHtml(p.hashtags || "")}</textarea></label>
-          <label><span>Visual prompt</span><textarea id="contentVisualPromptField" placeholder="Промпт для визуала">${escapeHtml(p.visual_prompt || "")}</textarea></label>
-          <label><span>Заметка редактора</span><textarea id="contentEditorNotesField" placeholder="Что поправить, на что обратить внимание">${escapeHtml(p.editor_notes || "")}</textarea></label>
-          <div class="actions-row">
+          <div class="content-review-highlight">
+            <label><span>Тема</span><textarea id="contentTopicField" placeholder="Тема draft">${escapeHtml(d.topic || "")}</textarea></label>
+            <label><span>Angle</span><textarea id="contentAngleField" placeholder="Опорный angle">${escapeHtml(p.angle || "")}</textarea></label>
+            <label><span>Hook</span><textarea id="contentHookField" placeholder="Хук">${escapeHtml(p.hook || "")}</textarea></label>
+          </div>
+          <label class="content-review-lead"><span>Основной текст</span><textarea id="contentCaptionField" placeholder="Текст поста">${escapeHtml(p.caption || "")}</textarea></label>
+          <div class="content-review-support-grid">
+            <label><span>CTA</span><textarea id="contentCtaField" placeholder="Призыв к действию">${escapeHtml(p.cta || "")}</textarea></label>
+            <label><span>Hashtags</span><textarea id="contentHashtagsField" placeholder="#теги">${escapeHtml(p.hashtags || "")}</textarea></label>
+            <label><span>Visual prompt</span><textarea id="contentVisualPromptField" placeholder="Промпт для визуала">${escapeHtml(p.visual_prompt || "")}</textarea></label>
+            <label><span>Заметка редактора</span><textarea id="contentEditorNotesField" placeholder="Что поправить, на что обратить внимание">${escapeHtml(p.editor_notes || "")}</textarea></label>
+          </div>
+          <div class="actions-row review-actions">
             <button class="primary-button" type="button" onclick="saveContentReviewDraft('${d.draft_id}', this)">${actionLabel("approve", "Сохранить правки")}</button>
             <button class="secondary-button" type="button" onclick="polishContentDraft('${d.draft_id}', this)">${actionLabel("sparkle", "AI polish")}</button>
           </div>
         </div>
       </section>
-      <section class="section">
-        <h3>${uiIcon("chat")}Результат публикации</h3>
+      <section class="section section-accent">
+        <div class="section-heading">
+          <h3>${uiIcon("chat")}Результат публикации</h3>
+          <p>После публикации отметьте фактический результат, чтобы видеть, какие материалы реально срабатывают у аудитории.</p>
+        </div>
         <div class="draft-meta">
-          <span class="tag">${escapeHtml(feedbackLabel(d.feedback))}</span>
+          ${tagMarkup(feedbackLabel(d.feedback), feedbackTone(d.feedback))}
         </div>
         <div class="actions-row">
           <button class="secondary-button" type="button" onclick="updateDraft('feedback', {feedback:'worked'}, this)">${actionLabel("approve", "Сработало")}</button>
@@ -1933,15 +2131,21 @@ function renderDraftDetail(d) {
   elements.draftDetail.innerHTML = `
     <div class="detail-grid">
       ${renderBackButton()}
-      <div class="detail-top">
-        <p class="eyebrow">${contentKindIcon(d.kind)}<span>${escapeHtml(kindLabel(d.kind))} • ${escapeHtml(kindLabel(d.source))}</span></p>
-        <h2 class="detail-title">${escapeHtml(d.topic)}</h2>
-        <div class="draft-meta">
-          ${tagMarkup(statusLabel(d.status), statusTone(d.status))}
-          ${isContentReviewKind(d.kind) ? tagMarkup(feedbackLabel(d.feedback), feedbackTone(d.feedback)) : ""}
-          ${tagMarkup(kindLabel(d.source), sourceTone(d.source))}
+      <div class="detail-top detail-hero">
+        <div class="detail-hero-copy">
+          <p class="eyebrow">${contentKindIcon(d.kind)}<span>${escapeHtml(kindLabel(d.kind))} • ${escapeHtml(sourceLabel(d.source))}</span></p>
+          <h2 class="detail-title">${escapeHtml(d.topic)}</h2>
+          <p class="detail-summary">${escapeHtml(draftHeroSummary(d, p, mainText))}</p>
+          <div class="draft-meta">
+            ${tagMarkup(statusLabel(d.status), statusTone(d.status))}
+            ${isContentReviewKind(d.kind) ? tagMarkup(feedbackLabel(d.feedback), feedbackTone(d.feedback)) : ""}
+            ${tagMarkup(sourceLabel(d.source), sourceTone(d.source))}
+          </div>
         </div>
-        <div class="actions-row">
+        <div class="detail-hero-side">
+          <div class="detail-facts">${heroFacts}</div>
+        </div>
+        <div class="actions-row detail-actions">
           <button class="secondary-button" onclick="updateDraft('status', {status:'approved'}, this)">${actionLabel("approve", "Согласовать")}</button>
           <button class="secondary-button" onclick="updateDraft('status', {status:'rejected'}, this)">${actionLabel("reject", "Не согласовано")}</button>
           <button class="secondary-button" onclick="sendDraftToChat('${d.draft_id}', this)">${actionLabel("chat", "В чат")}</button>
@@ -2200,12 +2404,16 @@ function renderInbox() {
   elements.draftCount.textContent = `${state.inbox.length} на проверке`;
   setEmptyState(state.inbox.length > 0, "Очередь пуста.");
   elements.draftList.innerHTML = state.inbox.map(i => `
-    <article class="draft-card" onclick="openDraft('${i.draft_id}')">
-      <div class="draft-kind">${contentKindIcon(i.kind)}<span>${escapeHtml(kindLabel(i.kind))}</span></div>
+    <article class="draft-card overview-card${i.draft_id === state.draftId ? " active" : ""}" onclick="openDraft('${i.draft_id}')">
+      <div class="overview-card-top">
+        <div class="draft-kind">${contentKindIcon(i.kind)}<span>${escapeHtml(kindLabel(i.kind))}</span></div>
+        <span class="overview-card-date">${escapeHtml(formatPlanDate(i.created_at) || "На проверке")}</span>
+      </div>
       <h4 class="draft-topic">${escapeHtml(i.topic)}</h4>
       <div class="draft-preview">${escapeHtml(stripMarkdown(i.preview || ""))}</div>
-      <div class="draft-meta">
-        ${tagMarkup(kindLabel(i.kind), "source-content")}
+      <div class="draft-meta overview-card-footer">
+        ${tagMarkup(statusLabel(i.status || "in_review"), statusTone(i.status || "in_review"))}
+        ${tagMarkup(sourceLabel(i.source || "/content"), sourceTone(i.source || "/content"))}
       </div>
     </article>
   `).join("");
@@ -2232,10 +2440,14 @@ function renderPlans() {
   elements.draftCount.textContent = `${state.plans.length} шт`;
   setEmptyState(state.plans.length > 0, "Планы пока не собраны.");
   elements.draftList.innerHTML = state.plans.map(p => `
-    <article class="plan-card${p.plan_id === state.selectedPlan?.plan_id ? " active" : ""}" onclick="openPlan('${p.plan_id}')">
-      <h3 class="draft-topic">${escapeHtml(p.plan_id)}</h3>
+    <article class="plan-card overview-card${p.plan_id === state.selectedPlan?.plan_id ? " active" : ""}" onclick="openPlan('${p.plan_id}')">
+      <div class="overview-card-top">
+        <div class="draft-kind">${contentKindIcon("plan")}<span>План</span></div>
+        <span class="overview-card-date">${escapeHtml(formatPlanDate(p.created_at) || p.plan_id)}</span>
+      </div>
+      <h3 class="draft-topic">${escapeHtml(formatPlanDate(p.created_at) ? `План от ${formatPlanDate(p.created_at)}` : p.plan_id)}</h3>
       <div class="draft-preview">${escapeHtml(stripMarkdown(p.raw_text || ""))}</div>
-      <div class="draft-meta">
+      <div class="draft-meta overview-card-footer">
         ${tagMarkup(`${(p.entries || []).length} карточек`, "source-plan")}
         ${tagMarkup(`${(p.related_drafts || []).length} черновиков`, "status-review")}
       </div>
@@ -2249,10 +2461,21 @@ function renderPlans() {
 
 function renderReels() {
   elements.listTitle.textContent = "Рилсы";
+  elements.draftCount.textContent = `${state.reels.length} шт`;
+  setEmptyState(state.reels.length > 0, "Рилсы пока не созданы.");
   elements.draftList.innerHTML = state.reels.map(r => `
-    <article class="reels-card" onclick="openReels('${r.draft_id}')">
+    <article class="reels-card overview-card${r.draft_id === state.selectedReels?.draft_id ? " active" : ""}" onclick="openReels('${r.draft_id}')">
+      <div class="overview-card-top">
+        <div class="draft-kind">${contentKindIcon("reels")}<span>Рилс</span></div>
+        <span class="overview-card-date">${escapeHtml(formatPlanDate(r.created_at) || "Видео")}</span>
+      </div>
       <h3 class="draft-topic">${escapeHtml(r.topic)}</h3>
       <div class="draft-preview">${escapeHtml(stripMarkdown(r.preview || ""))}</div>
+      <div class="draft-meta overview-card-footer">
+        ${tagMarkup(statusLabel(r.status || "draft"), statusTone(r.status || "draft"))}
+        ${tagMarkup(`${r.images_ready || 0}/${r.frame_count || 0} кадров`, "progress")}
+        ${tagMarkup(sourceLabel(r.source || "/miniapp"), sourceTone(r.source || "/miniapp"))}
+      </div>
     </article>
   `).join("");
   syncMobileNavigation();
@@ -2263,12 +2486,12 @@ function renderReelsDetail(r) {
     <div class="detail-grid">
       ${renderBackButton()}
       <div class="detail-top">
-        <p class="eyebrow">${uiIcon("reel")}<span>Рилсы • ${escapeHtml(r.source || "/miniapp")}</span></p>
+        <p class="eyebrow">${uiIcon("reel")}<span>Рилсы • ${escapeHtml(sourceLabel(r.source || "/miniapp"))}</span></p>
         <h2 class="detail-title">${escapeHtml(r.topic)}</h2>
         <div class="draft-meta">
           ${tagMarkup(statusLabel(r.status || "draft"), statusTone(r.status || "draft"))}
           ${tagMarkup(`${r.images_ready || 0}/${r.frame_count || 0} кадров`, "progress")}
-          ${tagMarkup(kindLabel(r.source || "/miniapp"), sourceTone(r.source || "/miniapp"))}
+          ${tagMarkup(sourceLabel(r.source || "/miniapp"), sourceTone(r.source || "/miniapp"))}
         </div>
         <div class="actions-row">
           <button class="secondary-button" type="button" onclick="saveReelsScenario('${r.draft_id}', this)">${actionLabel("text", "Сохранить концепцию")}</button>
