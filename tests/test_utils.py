@@ -705,7 +705,11 @@ class TestAdapterAgent:
             assert len(ADAPT_PLATFORM_SPECS[key]) > 10
 
     def test_threads_spec_mentions_length(self):
-        assert "450" in ADAPT_PLATFORM_SPECS["threads"]
+        spec = ADAPT_PLATFORM_SPECS["threads"]
+        assert "Утро / День / Вечер" in spec
+        assert "5-12" in spec
+        assert "40-120" in spec
+        assert "без хэштегов" in spec
 
     def test_telegram_spec_longer_than_threads(self):
         # telegram allows longer posts
@@ -840,9 +844,9 @@ from bot.services.miniapp_reels import (
 )
 from bot.services import drafts_store as drafts_store_module
 from bot.services import reels_assets as reels_assets_module
-from bot.services.drafts_store import save_draft
+from bot.services.drafts_store import delete_draft, save_draft
 from bot.services.reels_assets import regenerate_reels_frame_asset
-from bot.services.carousel_assets import update_carousel_slide_text
+from bot.services.carousel_assets import update_carousel_slide_note, update_carousel_slide_text
 from bot.services.mini_app import build_draft_tab
 from bot.handlers.miniapp_bridge import parse_webapp_payload
 from bot.services.plans_store import PlanRecord
@@ -923,6 +927,20 @@ class TestDraftRecord:
 
         assert record.status == "approved"
         assert record.feedback == "worked"
+
+    def test_draft_record_can_store_rejected_status(self):
+        record = DraftRecord(
+            draft_id="reject01",
+            kind="threads",
+            topic="Тест",
+            source="/content",
+            created_at="2026-03-11T07:00:00+00:00",
+            status="rejected",
+            feedback="",
+            payload={"caption": "ok"},
+        )
+
+        assert record.status == "rejected"
 
 
 class TestMiniAppPresenter:
@@ -1078,6 +1096,7 @@ class TestMiniAppInbox:
     def test_review_status_filter(self):
         assert is_review_status("draft") is True
         assert is_review_status("in_review") is True
+        assert is_review_status("rejected") is False
         assert is_review_status("approved") is False
 
     def test_category_and_reason(self):
@@ -1393,6 +1412,7 @@ class TestMiniAppRussianLocale:
 
     def test_handbook_has_separate_reference_tabs(self):
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        html = Path("miniapp/index.html").read_text(encoding="utf-8")
     
         assert 'id: "aromas"' in app_js
         assert 'label: "Ароматы"' in app_js
@@ -1400,14 +1420,18 @@ class TestMiniAppRussianLocale:
         assert 'label: "Практики"' in app_js
         assert 'id: "sounds"' in app_js
         assert 'label: "Звуки"' in app_js
-        assert 'id: "keywords"' in app_js
+        assert 'id: "keywords"' not in app_js
+        assert 'id: "status"' not in app_js
+        assert 'id="settingsButton"' in html
 
     def test_content_detail_supports_prompt_copy_actions(self):
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
 
-        assert "Скопировать промпт кадра" in app_js
+        assert "Скопировать промт кадра" in app_js
         assert "Скопировать промпт слайда" in app_js
         assert "function copyText" in app_js
+        assert "function renderMarkdown" in app_js
+        assert "function stripMarkdown" in app_js
 
     def test_content_cards_force_left_alignment_and_mobile_button_stack(self):
         app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
@@ -1429,10 +1453,61 @@ class TestMiniAppRussianLocale:
         assert "tg.openLink(downloadUrl)" in app_js
         assert "init_data" in server_py
         assert "sendDraftToChat" in app_js
+        assert "handleCarouselSlideNoteInput" in app_js
         assert "bindSwipeBack" in app_js
         assert "/api/carousel/{draft_id}/pptx" in server_py
         assert "/api/carousel/{draft_id}/slides/{slide_index}/regenerate" in server_py
         assert "/api/carousel/{draft_id}/slides/{slide_index}/text" in server_py
+        assert "/api/carousel/{draft_id}/slides/{slide_index}/note" in server_py
+
+    def test_reels_detail_supports_editing_and_reference_generation(self):
+        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        server_py = Path("miniapp_server.py").read_text(encoding="utf-8")
+
+        assert "Сохранить концепцию" in app_js
+        assert "Пересобрать рилс" in app_js
+        assert "Сгенерировать кадры" in app_js
+        assert "Сохранить кадр" in app_js
+        assert "Сохранить промт" in app_js
+        assert "Сохранить замечание" in app_js
+        assert "Сгенерировать кадр" in app_js
+        assert "handleReelsFrameNoteInput" in app_js
+        assert "handleReelsFramePromptInput" in app_js
+        assert "/api/reels/{draft_id}/scenario" in server_py
+        assert "/api/reels/{draft_id}/storyboard/regenerate" in server_py
+        assert "/api/reels/{draft_id}/frames/regenerate-all" in server_py
+        assert "/api/reels/{draft_id}/frames/{frame_index}/fields" in server_py
+
+    def test_draft_detail_supports_reject_and_delete_actions(self):
+        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        server_py = Path("miniapp_server.py").read_text(encoding="utf-8")
+        html = Path("miniapp/index.html").read_text(encoding="utf-8")
+
+        assert "Не согласовано" in app_js
+        assert "Удалить" in app_js
+        assert "deleteDraft" in app_js
+        assert "rejected" in app_js
+        assert '@app.delete("/api/drafts/{draft_id}")' in server_py
+        assert 'option value="rejected"' in html
+
+    def test_buttons_have_loading_feedback_animation(self):
+        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+
+        assert "function withButtonFeedback" in app_js
+        assert "button-spinner" in app_css
+        assert ".secondary-button.is-busy" in app_css
+        assert ".secondary-button.did-complete" in app_css
+
+    def test_detail_opening_uses_branded_a_loader(self):
+        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+
+        assert "function renderDetailLoader" in app_js
+        assert "Открываю черновик" in app_js
+        assert "Открываю рилс" in app_js
+        assert "brand-loader-letter" in app_css
+        assert "brand-loader-spin" in app_css
 
     def test_drafts_do_not_auto_open_first_item_on_boot(self):
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
@@ -1444,6 +1519,9 @@ class TestMiniAppRussianLocale:
 class TestMiniAppCarousel:
     async def test_update_carousel_slide_text_returns_none_for_missing(self):
         assert await update_carousel_slide_text("missing-id", 0, "Новый слайд") is None
+
+    async def test_update_carousel_slide_note_returns_none_for_missing(self):
+        assert await update_carousel_slide_note("missing-id", 0, "теплее") is None
 
     async def test_update_carousel_slide_text_updates_payload(self):
         draft = await save_draft(
@@ -1462,6 +1540,25 @@ class TestMiniAppCarousel:
         assert payload is not None
         assert payload["slides"][0] == "Новый текст слайда"
         assert payload["slides"][1] == "Второй слайд"
+
+    async def test_update_carousel_slide_note_updates_payload(self):
+        draft = await save_draft(
+            kind="carousel",
+            topic="Вечерний ритуал",
+            source="/carousel",
+            payload={
+                "slides": ["Старый текст", "Второй слайд"],
+                "img_prompts": ["prompt-1", "prompt-2"],
+                "img_prompt_notes": ["", ""],
+            },
+        )
+
+        payload = await update_carousel_slide_note(draft.draft_id, 1, "больше воздуха")
+
+        assert payload is not None
+        assert payload["img_prompt_notes"][1] == "больше воздуха"
+
+
 class TestMiniAppReels:
     async def test_serialize_reels_draft_returns_none_for_missing(self):
         assert await serialize_reels_draft("missing-id") is None
@@ -1477,6 +1574,24 @@ class TestMiniAppReels:
 
     async def test_regenerate_reels_frame_asset_returns_none_for_missing(self):
         assert await regenerate_reels_frame_asset("missing-id", 0) is None
+
+
+class TestDraftStore:
+    async def test_delete_draft_returns_false_for_missing(self):
+        assert await delete_draft("missing-id") is False
+
+    async def test_delete_draft_removes_existing_draft(self):
+        draft = await save_draft(
+            kind="threads",
+            topic="Удаляемый черновик",
+            source="/content",
+            payload={"caption": "text"},
+        )
+
+        deleted = await delete_draft(draft.draft_id)
+
+        assert deleted is True
+        assert await drafts_store_module.get_draft(draft.draft_id) is None
 
     async def test_build_reels_export_payload_counts_ready_frames(self, monkeypatch, tmp_path):
         draft = await save_draft(
@@ -1549,7 +1664,9 @@ from bot.agents.creative_team import _PLATFORM_RULES, _EDITOR_SYSTEM, edit_post_
 class TestCreativeTeamConstants:
     def test_platform_rules_has_threads(self):
         assert "threads" in _PLATFORM_RULES
-        assert "450" in _PLATFORM_RULES["threads"]
+        assert "УТРО, ДЕНЬ, ВЕЧЕР" in _PLATFORM_RULES["threads"]
+        assert "5-12" in _PLATFORM_RULES["threads"]
+        assert "40-120" in _PLATFORM_RULES["threads"]
 
     def test_platform_rules_has_instagram(self):
         assert "instagram" in _PLATFORM_RULES
@@ -1578,6 +1695,10 @@ class TestCreativeTeamConstants:
         assert "минует логику" in lowered
         assert "литературные метафоры" in lowered
         assert "живую разговорную речь" in lowered
+
+    def test_editor_system_keeps_threads_as_three_posts(self):
+        lowered = _EDITOR_SYSTEM.lower()
+        assert "утро / день / вечер" in lowered
 
 
 class TestEditPostFallback:
@@ -1636,6 +1757,27 @@ class TestMiniAppReelsPolling:
         source = Path("miniapp_server.py").read_text(encoding="utf-8")
         assert "frame_indexes=[0, 1]" not in source
         assert "background_tasks.add_task(" in source
+
+
+class TestThreadsPrompts:
+    def test_writer_rules_for_threads_define_three_daily_posts(self):
+        from bot.agents.content import _PLATFORM_RULES_WRITER
+
+        rules = _PLATFORM_RULES_WRITER["threads"]
+        assert "morning, day, evening" in rules
+        assert "5-12 short lines" in rules
+        assert "40-120 words" in rules
+        assert "no hashtags" in rules
+
+    def test_legacy_threads_prompt_uses_new_daily_pack_format(self):
+        from bot.handlers.threads import _PROMPT_POST
+
+        prompt = _PROMPT_POST
+        assert "3 поста для Threads на сегодня" in prompt
+        assert "УТРО, ДЕНЬ, ВЕЧЕР" in prompt
+        assert "5-12 коротких строк" in prompt
+        assert "40-120 слов" in prompt
+        assert "Без хэштегов" in prompt
 
     def test_client_waits_for_all_reels_frames(self):
         source = Path("miniapp/static/app.js").read_text(encoding="utf-8")

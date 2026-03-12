@@ -19,7 +19,11 @@ const state = {
   selectedFrameIndex: 0,
   status: null,
   keywords: null,
+  settingsSection: "status",
   mobileView: "list", // 'list' or 'detail'
+  pendingCarouselNotes: {},
+  pendingReelsNotes: {},
+  pendingReelsPrompts: {},
 };
 
 const MODE_TABS = {
@@ -29,8 +33,6 @@ const MODE_TABS = {
     { id: "drafts", label: "Черновики" },
     { id: "plans", label: "Планы" },
     { id: "reels", label: "Рилсы" },
-    { id: "keywords", label: "Ключи" },
-    { id: "status", label: "Статус" },
   ],
   handbook: [
     { id: "aromas", label: "Ароматы" },
@@ -43,6 +45,10 @@ let reelRefreshTimer = null;
 let carouselRefreshTimer = null;
 let swipeStart = null;
 let bootstrapWatchdogTimer = null;
+let appBootstrapped = false;
+const carouselNoteSaveTimers = {};
+const reelsNoteSaveTimers = {};
+const reelsPromptSaveTimers = {};
 
 const elements = {
   tabsContainer: document.getElementById("tabsContainer"),
@@ -60,6 +66,7 @@ const elements = {
   queryFilter: document.getElementById("queryFilter"),
   modeContent: document.getElementById("modeContent"),
   modeHandbook: document.getElementById("modeHandbook"),
+  settingsButton: document.getElementById("settingsButton"),
   bootFallback: document.getElementById("bootFallback"),
   bootFallbackTitle: document.getElementById("bootFallbackTitle"),
   bootFallbackText: document.getElementById("bootFallbackText"),
@@ -78,6 +85,7 @@ const RU_STATUS_LABELS = {
   draft: "Черновик",
   in_review: "На согласовании",
   approved: "Согласовано",
+  rejected: "Не согласовано",
   published: "Опубликовано",
 };
 
@@ -130,9 +138,65 @@ function escapeHtml(value) {
     .replaceAll('"', "&quot;");
 }
 
+function formatInlineMarkdown(value) {
+  return value
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/__(.+?)__/g, "<strong>$1</strong>")
+    .replace(/\*(.+?)\*/g, "<em>$1</em>")
+    .replace(/_(.+?)_/g, "<em>$1</em>");
+}
+
+function renderMarkdown(value) {
+  const source = String(value || "").trim();
+  if (!source) return "";
+  const lines = source.split(/\r?\n/);
+  const chunks = [];
+  let listItems = [];
+
+  const flushList = () => {
+    if (!listItems.length) return;
+    chunks.push(`<ul>${listItems.join("")}</ul>`);
+    listItems = [];
+  };
+
+  for (const rawLine of lines) {
+    const escapedLine = escapeHtml(rawLine.trim());
+    if (!escapedLine) {
+      flushList();
+      continue;
+    }
+    if (/^#{1,3}\s+/.test(escapedLine)) {
+      flushList();
+      const level = Math.min((escapedLine.match(/^#+/) || ["#"])[0].length + 2, 5);
+      const text = escapedLine.replace(/^#{1,3}\s+/, "");
+      chunks.push(`<h${level}>${formatInlineMarkdown(text)}</h${level}>`);
+      continue;
+    }
+    if (/^[-*]\s+/.test(escapedLine)) {
+      listItems.push(`<li>${formatInlineMarkdown(escapedLine.replace(/^[-*]\s+/, ""))}</li>`);
+      continue;
+    }
+    flushList();
+    chunks.push(`<p>${formatInlineMarkdown(escapedLine)}</p>`);
+  }
+  flushList();
+  return chunks.join("");
+}
+
+function stripMarkdown(value) {
+  return String(value || "")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/\*\*(.+?)\*\*/g, "$1")
+    .replace(/__(.+?)__/g, "$1")
+    .replace(/\*(.+?)\*/g, "$1")
+    .replace(/_(.+?)_/g, "$1")
+    .replace(/`(.+?)`/g, "$1")
+    .trim();
+}
+
 function payloadSection(title, content) {
   if (!content) return "";
-  return `<section class="section"><h3>${sectionHeadingIcon(title)}${escapeHtml(title)}</h3><div class="detail-preview">${escapeHtml(content)}</div></section>`;
+  return `<section class="section"><h3>${sectionHeadingIcon(title)}${escapeHtml(title)}</h3><div class="detail-preview detail-markdown">${renderMarkdown(content)}</div></section>`;
 }
 
 function uiIcon(name) {
@@ -144,7 +208,9 @@ function uiIcon(name) {
     chat: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14v9H9l-4 3V7Z"></path></svg>`,
     pptx: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h7l5 5v11H7z"></path><path d="M14 4v5h5"></path></svg>`,
     note: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 17.5V20h2.5L18 10.5 15.5 8 6 17.5Z"></path><path d="M14.5 9l2.5 2.5"></path></svg>`,
+    trash: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"></path><path d="M9 7V5h6v2"></path><path d="M7 7l1 12h8l1-12"></path><path d="M10 11v5M14 11v5"></path></svg>`,
     back: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>`,
+    gear: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v3"></path><path d="M12 18v3"></path><path d="m4.9 4.9 2.1 2.1"></path><path d="m17 17 2.1 2.1"></path><path d="M3 12h3"></path><path d="M18 12h3"></path><path d="m4.9 19.1 2.1-2.1"></path><path d="m17 7 2.1-2.1"></path><circle cx="12" cy="12" r="3.5"></circle></svg>`,
     eye: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"></path><circle cx="12" cy="12" r="3"></circle></svg>`,
     approve: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5 9 16l10-10"></path></svg>`,
     sparkle: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 1.7 4.3L18 9l-4.3 1.7L12 15l-1.7-4.3L6 9l4.3-1.7L12 3Z"></path><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15Z"></path></svg>`,
@@ -187,6 +253,17 @@ function actionLabel(icon, text) {
   return `${uiIcon(icon)}<span>${escapeHtml(text)}</span>`;
 }
 
+function contentKindIcon(kind) {
+  const iconMap = {
+    reels: "reel",
+    carousel: "slides",
+    threads: "text",
+    instagram: "card",
+    telegram: "chat",
+  };
+  return uiIcon(iconMap[String(kind || "").toLowerCase()] || "card");
+}
+
 function promptSection(title, prompt, copyLabel = "Скопировать промпт") {
   if (!prompt) return "";
   return `
@@ -205,12 +282,65 @@ function promptSection(title, prompt, copyLabel = "Скопировать про
   `;
 }
 
+function renderDetailLoader(label = "Открываю карточку") {
+  return `
+    <div class="detail-loader-card" aria-live="polite">
+      <div class="brand-loader" aria-hidden="true">
+        <span class="brand-loader-ring"></span>
+        <span class="brand-loader-letter">A</span>
+      </div>
+      <div class="detail-loader-copy">
+        <strong>${escapeHtml(label)}</strong>
+        <span>Подгружаю данные и собираю экран.</span>
+      </div>
+    </div>
+  `;
+}
+
 function slideNoteId(index) {
   return `carouselSlideNote${index}`;
 }
 
 function slideTextId(index) {
   return `carouselSlideText${index}`;
+}
+
+function frameDraftKey(draftId, index) {
+  return `${draftId}:${index}`;
+}
+
+function mergeDraftIntoState(draft) {
+  if (!draft?.draft_id) return;
+  state.selected = draft;
+  state.draftId = draft.draft_id;
+  state.drafts = state.drafts.map((item) => item.draft_id === draft.draft_id ? { ...item, ...draft } : item);
+}
+
+function mergeReelsIntoState(draft) {
+  if (!draft?.draft_id) return;
+  state.selectedReels = draft;
+  state.reels = state.reels.map((item) => item.draft_id === draft.draft_id ? { ...item, ...draft } : item);
+}
+
+function bufferedCarouselNote(draftId, index, fallback = "") {
+  const key = frameDraftKey(draftId, index);
+  return Object.prototype.hasOwnProperty.call(state.pendingCarouselNotes, key)
+    ? state.pendingCarouselNotes[key]
+    : String(fallback || "");
+}
+
+function bufferedReelsNote(draftId, index, fallback = "") {
+  const key = frameDraftKey(draftId, index);
+  return Object.prototype.hasOwnProperty.call(state.pendingReelsNotes, key)
+    ? state.pendingReelsNotes[key]
+    : String(fallback || "");
+}
+
+function bufferedReelsPrompt(draftId, index, fallback = "") {
+  const key = frameDraftKey(draftId, index);
+  return Object.prototype.hasOwnProperty.call(state.pendingReelsPrompts, key)
+    ? state.pendingReelsPrompts[key]
+    : String(fallback || "");
 }
 
 function renderSlides(draftId, slides = [], prompts = [], slideImages = [], promptNotes = []) {
@@ -230,7 +360,7 @@ function renderSlides(draftId, slides = [], prompts = [], slideImages = [], prom
         ${slideItems.map((slide, index) => {
           const img = imageItems[index];
           const prompt = String(promptItems[index] || "");
-          const note = String(noteItems[index] || "");
+          const note = bufferedCarouselNote(draftId, index, String(noteItems[index] || ""));
           const showPromptOpen = !img?.url;
           const imgHtml = img?.url
             ? `<img class="frame-image" src="${escapeHtml(img.url)}" alt="Слайд ${index + 1}" />`
@@ -250,7 +380,7 @@ function renderSlides(draftId, slides = [], prompts = [], slideImages = [], prom
                     <div class="detail-preview prompt-preview">${escapeHtml(prompt)}</div>
                     <label class="prompt-note-field">
                       <span>Замечание к картинке</span>
-                      <textarea id="${slideNoteId(index)}" placeholder="Например: теплее свет, крупнее объект, меньше деталей на фоне">${escapeHtml(note)}</textarea>
+                      <textarea id="${slideNoteId(index)}" placeholder="Например: теплее свет, крупнее объект, меньше деталей на фоне" oninput="handleCarouselSlideNoteInput(${JSON.stringify(draftId)}, ${index}, this.value)">${escapeHtml(note)}</textarea>
                     </label>
                     <div class="actions-row prompt-actions">
                       <button class="secondary-button" type="button" onclick="saveCarouselSlideText(${JSON.stringify(draftId)}, ${index})">${actionLabel("text", "Сохранить текст слайда")}</button>
@@ -302,22 +432,44 @@ async function saveCarouselSlideText(draftId, slideIndex) {
     body: JSON.stringify({ text }),
   });
   state.selected = draft;
-  state.draftId = draft.draft_id;
-  state.drafts = state.drafts.map((item) => item.draft_id === draft.draft_id ? { ...item, ...draft } : item);
+  mergeDraftIntoState(draft);
   renderDraftList();
   if (isCurrentDraftDetail(draft.draft_id)) renderDraftDetail(draft);
 }
 
+async function persistCarouselSlideNote(draftId, slideIndex, note) {
+  const key = frameDraftKey(draftId, slideIndex);
+  state.pendingCarouselNotes[key] = String(note || "");
+  const draft = await fetchJson(`/api/carousel/${draftId}/slides/${slideIndex}/note`, {
+    method: "POST",
+    body: JSON.stringify({ note: String(note || "") }),
+  });
+  mergeDraftIntoState(draft);
+  state.pendingCarouselNotes[key] = String(note || "");
+  return draft;
+}
+
+function handleCarouselSlideNoteInput(draftId, slideIndex, value) {
+  const key = frameDraftKey(draftId, slideIndex);
+  state.pendingCarouselNotes[key] = String(value || "");
+  window.clearTimeout(carouselNoteSaveTimers[key]);
+  carouselNoteSaveTimers[key] = window.setTimeout(() => {
+    void persistCarouselSlideNote(draftId, slideIndex, state.pendingCarouselNotes[key]).catch(() => {});
+  }, 600);
+}
+
 async function regenerateCarouselSlide(draftId, slideIndex, withNote) {
   const noteField = document.getElementById(slideNoteId(slideIndex));
-  const note = withNote ? String(noteField?.value || "").trim() : "";
+  const currentNote = String(noteField?.value || bufferedCarouselNote(draftId, slideIndex, "")).trim();
+  const note = currentNote ? currentNote : (withNote ? "" : null);
+  if (currentNote) {
+    await persistCarouselSlideNote(draftId, slideIndex, currentNote);
+  }
   const draft = await fetchJson(`/api/carousel/${draftId}/slides/${slideIndex}/regenerate`, {
     method: "POST",
     body: JSON.stringify({ note }),
   });
-  state.selected = draft;
-  state.draftId = draft.draft_id;
-  state.drafts = state.drafts.map((item) => item.draft_id === draft.draft_id ? { ...item, ...draft } : item);
+  mergeDraftIntoState(draft);
   renderDraftList();
   if (isCurrentDraftDetail(draft.draft_id)) renderDraftDetail(draft);
 }
@@ -337,6 +489,25 @@ async function sendDraftToChat(draftId) {
   if (tg?.showAlert) tg.showAlert("Черновик отправлен в чат");
 }
 
+async function deleteDraft(draftId, kind = "drafts") {
+  const confirmed = window.confirm("Удалить этот черновик?");
+  if (!confirmed) return;
+  await fetchJson(`/api/drafts/${draftId}`, { method: "DELETE" });
+  if (kind === "reels") {
+    state.reels = state.reels.filter((item) => item.draft_id !== draftId);
+    if (state.selectedReels?.draft_id === draftId) state.selectedReels = null;
+    renderReels();
+  } else {
+    state.drafts = state.drafts.filter((item) => item.draft_id !== draftId);
+    if (state.draftId === draftId) {
+      state.draftId = "";
+      state.selected = null;
+      renderEmptyDetail();
+    }
+    renderDraftList();
+  }
+}
+
 async function downloadCarouselPptx(draftId) {
   const downloadUrl = `${window.location.origin}/api/carousel/${draftId}/pptx${_authQueryString()}`;
   const tg = window.Telegram?.WebApp;
@@ -347,7 +518,174 @@ async function downloadCarouselPptx(draftId) {
   window.open(downloadUrl, "_blank", "noopener,noreferrer");
 }
 
-function renderReelsFrames(frames = []) {
+async function withButtonFeedback(button, pendingLabel, handler, doneLabel = "Готово") {
+  const target = button instanceof HTMLElement ? button : null;
+  const originalHtml = target?.innerHTML || "";
+  if (target) {
+    target.disabled = true;
+    target.classList.add("is-busy");
+    target.innerHTML = `<span class="button-spinner" aria-hidden="true"></span><span>${escapeHtml(pendingLabel)}</span>`;
+  }
+  try {
+    return await handler();
+  } finally {
+    if (target) {
+      target.disabled = false;
+      target.classList.remove("is-busy");
+      target.classList.add("did-complete");
+      target.innerHTML = `<span>${escapeHtml(doneLabel)}</span>`;
+      window.setTimeout(() => {
+        target.classList.remove("did-complete");
+        target.innerHTML = originalHtml;
+      }, 900);
+    }
+  }
+}
+
+async function saveReelsScenario(draftId, button) {
+  const scenario = String(document.getElementById("reelsScenarioField")?.value || "").trim();
+  const concept = String(document.getElementById("reelsConceptField")?.value || "").trim();
+  await withButtonFeedback(button, "Сохраняю...", async () => {
+    const draft = await fetchJson(`/api/reels/${draftId}/scenario`, {
+      method: "POST",
+      body: JSON.stringify({ scenario, concept }),
+    });
+    state.selectedReels = draft;
+    renderReels();
+    renderReelsDetail(draft);
+  }, "Сохранено");
+}
+
+async function regenerateReelsStoryboard(draftId, button) {
+  await withButtonFeedback(button, "Собираю заново...", async () => {
+    const draft = await fetchJson(`/api/reels/${draftId}/storyboard/regenerate`, {
+      method: "POST",
+      body: "{}",
+    });
+    state.selectedReels = draft;
+    renderReels();
+    renderReelsDetail(draft);
+  }, "Готово");
+}
+
+async function regenerateAllReelsFrames(draftId, button) {
+  await withButtonFeedback(button, "Генерирую кадры...", async () => {
+    const draft = await fetchJson(`/api/reels/${draftId}/frames/regenerate-all`, {
+      method: "POST",
+      body: "{}",
+    });
+    state.selectedReels = draft;
+    renderReels();
+    renderReelsDetail(draft);
+  }, "Готово");
+}
+
+async function saveReelsFrameFields(draftId, frameIndex, button) {
+  const scene = String(document.getElementById(`reelsFrameScene${frameIndex}`)?.value || "").trim();
+  const angle = String(document.getElementById(`reelsFrameAngle${frameIndex}`)?.value || "").trim();
+  const timecode = String(document.getElementById(`reelsFrameTimecode${frameIndex}`)?.value || "").trim();
+  await withButtonFeedback(button, "Сохраняю...", async () => {
+    const draft = await fetchJson(`/api/reels/${draftId}/frames/${frameIndex}/fields`, {
+      method: "POST",
+      body: JSON.stringify({ scene, angle, timecode }),
+    });
+    state.selectedReels = draft;
+    renderReels();
+    renderReelsDetail(draft);
+  }, "Сохранено");
+}
+
+async function saveReelsFramePrompt(draftId, frameIndex, button) {
+  const prompt = String(document.getElementById(`reelsFramePrompt${frameIndex}`)?.value || "").trim();
+  await withButtonFeedback(button, "Сохраняю...", async () => {
+    const draft = await fetchJson(`/api/reels/${draftId}/frames/${frameIndex}/prompt`, {
+      method: "POST",
+      body: JSON.stringify({ prompt }),
+    });
+    const key = frameDraftKey(draftId, frameIndex);
+    state.pendingReelsPrompts[key] = prompt;
+    mergeReelsIntoState(draft);
+    renderReels();
+    renderReelsDetail(draft);
+  }, "Сохранено");
+}
+
+async function persistReelsFramePrompt(draftId, frameIndex, prompt) {
+  const key = frameDraftKey(draftId, frameIndex);
+  state.pendingReelsPrompts[key] = String(prompt || "");
+  const draft = await fetchJson(`/api/reels/${draftId}/frames/${frameIndex}/prompt`, {
+    method: "POST",
+    body: JSON.stringify({ prompt: String(prompt || "") }),
+  });
+  mergeReelsIntoState(draft);
+  state.pendingReelsPrompts[key] = String(prompt || "");
+  return draft;
+}
+
+function handleReelsFramePromptInput(draftId, frameIndex, value) {
+  const key = frameDraftKey(draftId, frameIndex);
+  state.pendingReelsPrompts[key] = String(value || "");
+  window.clearTimeout(reelsPromptSaveTimers[key]);
+  reelsPromptSaveTimers[key] = window.setTimeout(() => {
+    const prompt = String(state.pendingReelsPrompts[key] || "").trim();
+    if (!prompt) return;
+    void persistReelsFramePrompt(draftId, frameIndex, prompt).catch(() => {});
+  }, 600);
+}
+
+async function saveReelsFrameNote(draftId, frameIndex, button) {
+  const note = String(document.getElementById(`reelsFrameNote${frameIndex}`)?.value || "").trim();
+  await withButtonFeedback(button, "Сохраняю...", async () => {
+    const draft = await fetchJson(`/api/reels/${draftId}/frames/${frameIndex}/note`, {
+      method: "POST",
+      body: JSON.stringify({ note }),
+    });
+    const key = frameDraftKey(draftId, frameIndex);
+    state.pendingReelsNotes[key] = note;
+    mergeReelsIntoState(draft);
+    renderReels();
+    renderReelsDetail(draft);
+  }, "Сохранено");
+}
+
+async function persistReelsFrameNote(draftId, frameIndex, note) {
+  const key = frameDraftKey(draftId, frameIndex);
+  state.pendingReelsNotes[key] = String(note || "");
+  const draft = await fetchJson(`/api/reels/${draftId}/frames/${frameIndex}/note`, {
+    method: "POST",
+    body: JSON.stringify({ note: String(note || "") }),
+  });
+  mergeReelsIntoState(draft);
+  state.pendingReelsNotes[key] = String(note || "");
+  return draft;
+}
+
+function handleReelsFrameNoteInput(draftId, frameIndex, value) {
+  const key = frameDraftKey(draftId, frameIndex);
+  state.pendingReelsNotes[key] = String(value || "");
+  window.clearTimeout(reelsNoteSaveTimers[key]);
+  reelsNoteSaveTimers[key] = window.setTimeout(() => {
+    void persistReelsFrameNote(draftId, frameIndex, state.pendingReelsNotes[key]).catch(() => {});
+  }, 600);
+}
+
+async function regenerateReelsFrame(draftId, frameIndex, button) {
+  await withButtonFeedback(button, "Генерирую...", async () => {
+    const prompt = String(document.getElementById(`reelsFramePrompt${frameIndex}`)?.value || bufferedReelsPrompt(draftId, frameIndex, "")).trim();
+    const note = String(document.getElementById(`reelsFrameNote${frameIndex}`)?.value || bufferedReelsNote(draftId, frameIndex, "")).trim();
+    if (prompt) await persistReelsFramePrompt(draftId, frameIndex, prompt);
+    if (note) await persistReelsFrameNote(draftId, frameIndex, note);
+    const draft = await fetchJson(`/api/reels/${draftId}/frames/${frameIndex}/regenerate`, {
+      method: "POST",
+      body: "{}",
+    });
+    mergeReelsIntoState(draft);
+    renderReels();
+    renderReelsDetail(draft);
+  }, "Готово");
+}
+
+function renderReelsFrames(draftId, frames = []) {
   const frameItems = Array.isArray(frames) ? frames : [];
   if (!frameItems.length) return "";
   return `
@@ -355,14 +693,25 @@ function renderReelsFrames(frames = []) {
       <h3>${sectionHeadingIcon("Кадры и промпты")}Кадры и промпты</h3>
       <div class="storyboard">
         ${frameItems.map((frame, index) => {
-          const prompt = frame.gemini_prompt || "";
+          const prompt = bufferedReelsPrompt(draftId, index, frame.gemini_prompt || "");
+          const note = bufferedReelsNote(draftId, index, frame.review_note || "");
           const assetUrl = frame.current_asset?.url || "";
           const showPromptOpen = !assetUrl;
           return `
             <article class="storyboard-frame">
               <strong>Кадр ${index + 1}${frame.timecode ? ` • ${escapeHtml(frame.timecode)}` : ""}</strong>
-              ${frame.scene ? `<div class="detail-preview">${escapeHtml(frame.scene)}</div>` : ""}
-              ${frame.angle ? `<div class="detail-preview frame-meta-line">Ракурс: ${escapeHtml(frame.angle)}</div>` : ""}
+              <label class="prompt-note-field">
+                <span>Текст / действие кадра</span>
+                <textarea id="reelsFrameScene${index}" placeholder="Что происходит в кадре">${escapeHtml(frame.scene || "")}</textarea>
+              </label>
+              <label class="prompt-note-field">
+                <span>Ракурс</span>
+                <input id="reelsFrameAngle${index}" type="text" placeholder="Например: макро, фронтальный, средний план" value="${escapeHtml(frame.angle || "")}" />
+              </label>
+              <label class="prompt-note-field">
+                <span>Таймкод</span>
+                <input id="reelsFrameTimecode${index}" type="text" placeholder="Например: 0-3 сек" value="${escapeHtml(frame.timecode || "")}" />
+              </label>
               ${assetUrl
                 ? `<img class="frame-image" src="${escapeHtml(assetUrl)}" alt="Кадр ${index + 1}" />`
                 : `<div class="frame-loading">Картинка ещё не готова. Откройте промт ниже для ручной генерации.</div>`}
@@ -370,13 +719,28 @@ function renderReelsFrames(frames = []) {
                 <details class="prompt-disclosure"${showPromptOpen ? " open" : ""}>
                   <summary class="secondary-button prompt-toggle">${actionLabel("eye", "Показать промпт")}</summary>
                   <div class="prompt-card">
-                    <div class="detail-preview prompt-preview">${escapeHtml(prompt)}</div>
+                    <label class="prompt-note-field">
+                      <span>Промт кадра</span>
+                      <textarea id="reelsFramePrompt${index}" placeholder="Промт для генерации кадра" oninput="handleReelsFramePromptInput('${draftId}', ${index}, this.value)">${escapeHtml(prompt)}</textarea>
+                    </label>
+                    <label class="prompt-note-field">
+                      <span>Замечание к кадру</span>
+                      <textarea id="reelsFrameNote${index}" placeholder="Например: теплее, меньше деталей, крупнее объект" oninput="handleReelsFrameNoteInput('${draftId}', ${index}, this.value)">${escapeHtml(note)}</textarea>
+                    </label>
                     <div class="actions-row prompt-actions">
-                      <button class="secondary-button" type="button" onclick='copyText(${JSON.stringify(String(prompt))})'>${actionLabel("prompt", "Скопировать промпт кадра")}</button>
+                      <button class="secondary-button" type="button" onclick="saveReelsFrameFields('${draftId}', ${index}, this)">${actionLabel("text", "Сохранить кадр")}</button>
+                      <button class="secondary-button" type="button" onclick="saveReelsFramePrompt('${draftId}', ${index}, this)">${actionLabel("prompt", "Сохранить промт")}</button>
+                      <button class="secondary-button" type="button" onclick="saveReelsFrameNote('${draftId}', ${index}, this)">${actionLabel("note", "Сохранить замечание")}</button>
+                      <button class="secondary-button" type="button" onclick="regenerateReelsFrame('${draftId}', ${index}, this)">${actionLabel("regenerate", "Сгенерировать кадр")}</button>
+                      <button class="secondary-button" type="button" onclick='copyText(${JSON.stringify(String(prompt))})'>${actionLabel("prompt", "Скопировать промт кадра")}</button>
                     </div>
                   </div>
                 </details>
-              ` : ""}
+              ` : `
+                <div class="actions-row prompt-actions">
+                  <button class="secondary-button" type="button" onclick="saveReelsFrameFields('${draftId}', ${index}, this)">${actionLabel("text", "Сохранить кадр")}</button>
+                </div>
+              `}
             </article>
           `;
         }).join("")}
@@ -422,6 +786,11 @@ function hideBootFallback() {
 function showRequestError(prefix, error) {
   const message = error?.message || String(error || "unknown_error");
   alert(`${prefix}: ${message}`);
+}
+
+function showRuntimeWarning(prefix, error) {
+  hideBootFallback();
+  showRequestError(prefix, error);
 }
 
 async function copyText(value) {
@@ -709,6 +1078,29 @@ async function loadKeywords() {
   renderKeywords();
 }
 
+async function loadSettings() {
+  if (state.settingsSection === "keywords") {
+    if (!state.keywords) {
+      state.keywords = await fetchJson("/api/keywords");
+    }
+    renderKeywords();
+    return;
+  }
+  if (!state.status) {
+    state.status = await fetchJson("/api/status");
+  }
+  renderStatus();
+}
+
+function renderSettingsSwitcher(activeSection) {
+  return `
+    <section class="settings-switcher">
+      <button class="tab-button${activeSection === "status" ? " active" : ""}" type="button" onclick="openSettingsSection('status')">${uiIcon("gear")}<span>Статус</span></button>
+      <button class="tab-button${activeSection === "keywords" ? " active" : ""}" type="button" onclick="openSettingsSection('keywords')">${uiIcon("text")}<span>Ключи</span></button>
+    </section>
+  `;
+}
+
 function currentHandbookMeta() {
   return HANDBOOK_CATEGORY_META[state.tab] || HANDBOOK_CATEGORY_META.aromas;
 }
@@ -764,6 +1156,8 @@ async function loadReferences(tabId = state.tab) {
 async function openReference(slug, tabId = state.tab) {
   const meta = HANDBOOK_CATEGORY_META[tabId];
   if (!slug || !meta) return;
+  elements.draftDetail.innerHTML = `${renderBackButton()}${renderDetailLoader("Открываю карточку справочника")}`;
+  enterDetailView();
   state.selectedReference = await fetchJson(`/api/references/${meta.category}/${encodeURIComponent(slug)}`);
   state.selectedReference.category = meta.category;
   state.tab = tabId;
@@ -1030,7 +1424,7 @@ function renderAromas() { renderReferences(); }
 
 function aromaSection(title, content) {
   if (!content) return "";
-  return `<section class="section"><h3>${sectionHeadingIcon(title)}${escapeHtml(title)}</h3><div class="detail-preview">${escapeHtml(content)}</div></section>`;
+  return `<section class="section"><h3>${sectionHeadingIcon(title)}${escapeHtml(title)}</h3><div class="detail-preview detail-markdown">${renderMarkdown(content)}</div></section>`;
 }
 
 function renderAromasLocked() { renderReferencesLocked(); }
@@ -1041,9 +1435,9 @@ function renderDraftList() {
   setEmptyState(state.drafts.length > 0);
   elements.draftList.innerHTML = state.drafts.map((d) => `
     <article class="draft-card${d.draft_id === state.draftId ? " active" : ""}" onclick="openDraft('${d.draft_id}')">
-      <div class="draft-kind">${escapeHtml(kindLabel(d.kind))}</div>
+      <div class="draft-kind">${contentKindIcon(d.kind)}<span>${escapeHtml(kindLabel(d.kind))}</span></div>
       <h3 class="draft-topic">${escapeHtml(d.topic)}</h3>
-      <div class="draft-preview">${escapeHtml(d.preview || "Без превью")}</div>
+      <div class="draft-preview">${escapeHtml(stripMarkdown(d.preview || "Без превью"))}</div>
       <div class="draft-meta">
         <span class="tag">${escapeHtml(statusLabel(d.status))}</span>
         <span class="tag">${escapeHtml(kindLabel(d.source))}</span>
@@ -1054,6 +1448,8 @@ function renderDraftList() {
 }
 
 async function openDraft(id) {
+  elements.draftDetail.innerHTML = `${renderBackButton()}${renderDetailLoader("Открываю черновик")}`;
+  enterDetailView();
   const d = await fetchJson(`/api/drafts/${id}`);
   state.selected = d; state.draftId = id;
   renderDraftList(); renderDraftDetail(d); enterDetailView();
@@ -1066,14 +1462,16 @@ function renderDraftDetail(d) {
     <div class="detail-grid">
       ${renderBackButton()}
       <div class="detail-top">
-        <p class="eyebrow">${escapeHtml(kindLabel(d.kind))} • ${escapeHtml(kindLabel(d.source))}</p>
+        <p class="eyebrow">${contentKindIcon(d.kind)}<span>${escapeHtml(kindLabel(d.kind))} • ${escapeHtml(kindLabel(d.source))}</span></p>
         <h2 class="detail-title">${escapeHtml(d.topic)}</h2>
         <div class="draft-meta"><span class="tag">${escapeHtml(statusLabel(d.status))}</span></div>
         <div class="actions-row">
           <button class="secondary-button" onclick="updateDraft('status', {status:'approved'})">${actionLabel("approve", "Согласовать")}</button>
+          <button class="secondary-button" onclick="updateDraft('status', {status:'rejected'})">${actionLabel("note", "Не согласовано")}</button>
           <button class="secondary-button" onclick="sendDraftToChat('${d.draft_id}')">${actionLabel("chat", "В чат")}</button>
           ${d.kind === "carousel" ? `<button class="secondary-button" onclick="downloadCarouselPptx('${d.draft_id}')">${actionLabel("pptx", "Скачать PPTX")}</button>` : ""}
           ${d.kind === "carousel" ? `<button class="secondary-button" onclick="regenerateCarouselAll('${d.draft_id}')">${actionLabel("regenerate", "Перегенерировать все")}</button>` : ""}
+          <button class="secondary-button" onclick="deleteDraft('${d.draft_id}', 'drafts')">${actionLabel("trash", "Удалить")}</button>
         </div>
       </div>
       ${payloadSection("Превью", d.preview)}
@@ -1101,14 +1499,15 @@ function setMode(m) {
   state.mode = m;
   elements.modeContent.classList.toggle("active", m === "content");
   elements.modeHandbook.classList.toggle("active", m === "handbook");
+  elements.settingsButton?.classList.toggle("active", m === "content" && state.tab === "settings");
   const tabs = MODE_TABS[m] || [];
   elements.tabsContainer.innerHTML = tabs.map(t => `
     <button class="tab-button${state.tab === t.id ? ' active' : ''}" data-tab="${t.id}" type="button">${t.label}</button>
   `).join("");
   elements.tabsContainer.querySelectorAll(".tab-button").forEach(b => {
-    b.addEventListener("click", () => { setTab(b.dataset.tab); loadCurrentTab(); });
+    b.addEventListener("click", () => { setTab(b.dataset.tab); void safeLoadCurrentTab("Не удалось загрузить вкладку"); });
   });
-  if (!tabs.find(t => t.id === state.tab)) setTab(tabs[0].id);
+  if (!(m === "content" && state.tab === "settings") && !tabs.find(t => t.id === state.tab)) setTab(tabs[0].id);
 }
 
 function setTab(t) {
@@ -1116,6 +1515,7 @@ function setTab(t) {
   state.tab = t; 
   state.mobileView = "list"; 
   state.selectedCreateTool = null; 
+  elements.settingsButton?.classList.toggle("active", state.mode === "content" && t === "settings");
   
   if (HANDBOOK_CATEGORY_META[t]) {
     state.referenceSearch = "";
@@ -1135,7 +1535,7 @@ function setTab(t) {
   elements.listTitle.textContent = "Загрузка...";
   elements.draftCount.textContent = "";
   elements.draftList.innerHTML = "";
-  elements.draftDetail.innerHTML = `<div class="detail-empty">Загрузка...</div>`;
+  elements.draftDetail.innerHTML = renderDetailLoader("Загружаю раздел");
   
   syncMobileNavigation();
 }
@@ -1146,9 +1546,20 @@ async function loadCurrentTab() {
   if (state.tab === "plans") return await loadPlans();
   if (state.tab === "reels") return await loadReels();
   if (HANDBOOK_CATEGORY_META[state.tab]) return await loadReferences(state.tab);
+  if (state.tab === "settings") return await loadSettings();
   if (state.tab === "status") return await loadStatus();
   if (state.tab === "keywords") return await loadKeywords();
   await loadDrafts();
+}
+
+async function safeLoadCurrentTab(prefix = "Не удалось загрузить раздел") {
+  try {
+    await loadCurrentTab();
+    hideBootFallback();
+  } catch (error) {
+    console.error("miniapp runtime tab load failed", error);
+    showRuntimeWarning(prefix, error);
+  }
 }
 
 async function bootstrap() {
@@ -1169,12 +1580,25 @@ async function bootstrap() {
   }, 1800);
   applyTelegramTheme();
   bindSwipeBack();
-  elements.modeContent.addEventListener("click", () => { setMode("content"); loadCurrentTab(); });
-  elements.modeHandbook.addEventListener("click", () => { setMode("handbook"); loadCurrentTab(); });
+  elements.modeContent.addEventListener("click", () => { setMode("content"); void safeLoadCurrentTab("Не удалось загрузить раздел контента"); });
+  elements.modeHandbook.addEventListener("click", () => { setMode("handbook"); void safeLoadCurrentTab("Не удалось загрузить справочник"); });
+  elements.settingsButton?.addEventListener("click", () => {
+    state.settingsSection = state.settingsSection || "status";
+    setMode("content");
+    setTab("settings");
+    void safeLoadCurrentTab("Не удалось загрузить настройки");
+  });
 
   [elements.kindFilter, elements.statusFilter, elements.feedbackFilter].forEach(f => f.addEventListener("change", loadDrafts));
 
-  elements.queryFilter.addEventListener("input", () => { clearTimeout(reelRefreshTimer); reelRefreshTimer = setTimeout(loadDrafts, 300); });
+  elements.queryFilter.addEventListener("input", () => {
+    clearTimeout(reelRefreshTimer);
+    reelRefreshTimer = setTimeout(() => {
+      if (state.tab === "drafts") {
+        void safeLoadCurrentTab("Не удалось обновить черновики");
+      }
+    }, 300);
+  });
   if (MODE_TABS.handbook.find(t => t.id === state.tab)) state.mode = "handbook";
   setMode(state.mode);
   if (state.mode === "content") {
@@ -1184,6 +1608,7 @@ async function bootstrap() {
     await loadCurrentTab();
     window.clearTimeout(bootstrapWatchdogTimer);
     hideBootFallback();
+    appBootstrapped = true;
   } catch (error) {
     console.error("miniapp bootstrap failed", error);
     elements.draftDetail.innerHTML = `<div class="detail-empty">Не удалось загрузить данные. Попробуйте открыть mini app еще раз.</div>`;
@@ -1201,6 +1626,7 @@ if (elements.bootFallbackReload) {
 }
 
 window.addEventListener("error", () => {
+  if (appBootstrapped) return;
   showBootFallback(
     "Интерфейс временно недоступен",
     "Во время загрузки произошла ошибка. Попробуйте обновить экран.",
@@ -1209,6 +1635,7 @@ window.addEventListener("error", () => {
 });
 
 window.addEventListener("unhandledrejection", () => {
+  if (appBootstrapped) return;
   showBootFallback(
     "Интерфейс временно недоступен",
     "Во время загрузки произошла ошибка. Попробуйте обновить экран.",
@@ -1224,23 +1651,56 @@ window.openAroma = openAroma;
 window.openReference = openReference;
 window.copyText = copyText;
 window.openReels = async (id) => {
+  elements.draftDetail.innerHTML = `${renderBackButton()}${renderDetailLoader("Открываю рилс")}`;
+  enterDetailView();
   clearBackgroundRefreshes();
   const r = await fetchJson(`/api/reels/${id}`);
   state.selectedReels = r; renderReelsDetail(r); enterDetailView();
 };
 window.openPlan = async (id) => {
+  elements.draftDetail.innerHTML = `${renderBackButton()}${renderDetailLoader("Открываю план")}`;
+  enterDetailView();
   const p = await fetchJson(`/api/plans/${id}`);
   state.selectedPlan = p; renderPlanDetail(p); enterDetailView();
 };
 window.updateDraft = async (action, payload) => {
-  const d = await fetchJson(`/api/drafts/${state.draftId}/${action}`, { method: "POST", body: JSON.stringify(payload) });
-  state.selected = d; renderDraftDetail(d); renderDraftList();
+  const currentDraftId = state.draftId || state.selectedReels?.draft_id || "";
+  if (!currentDraftId) return;
+  const d = await fetchJson(`/api/drafts/${currentDraftId}/${action}`, { method: "POST", body: JSON.stringify(payload) });
+  if (state.tab === "reels" || d.kind === "reels") {
+    mergeReelsIntoState(d);
+    renderReels();
+    renderReelsDetail(d);
+    return;
+  }
+  mergeDraftIntoState(d);
+  renderDraftDetail(d);
+  renderDraftList();
 };
 window.sendDraftToChat = sendDraftToChat;
+window.deleteDraft = deleteDraft;
 window.saveCarouselSlideText = saveCarouselSlideText;
 window.regenerateCarouselSlide = regenerateCarouselSlide;
 window.regenerateCarouselAll = regenerateCarouselAll;
+window.handleCarouselSlideNoteInput = handleCarouselSlideNoteInput;
 window.downloadCarouselPptx = downloadCarouselPptx;
+window.saveReelsScenario = saveReelsScenario;
+window.regenerateReelsStoryboard = regenerateReelsStoryboard;
+window.regenerateAllReelsFrames = regenerateAllReelsFrames;
+window.saveReelsFrameFields = saveReelsFrameFields;
+window.saveReelsFramePrompt = saveReelsFramePrompt;
+window.saveReelsFrameNote = saveReelsFrameNote;
+window.regenerateReelsFrame = regenerateReelsFrame;
+window.handleReelsFramePromptInput = handleReelsFramePromptInput;
+window.handleReelsFrameNoteInput = handleReelsFrameNoteInput;
+window.openSettingsSection = async (section) => {
+  state.settingsSection = section === "keywords" ? "keywords" : "status";
+  if (state.tab !== "settings") {
+    setMode("content");
+    setTab("settings");
+  }
+  await loadSettings();
+};
 
 function renderInbox() {
   elements.listTitle.textContent = "Согласование";
@@ -1248,20 +1708,26 @@ function renderInbox() {
   setEmptyState(state.inbox.length > 0, "Очередь пуста.");
   elements.draftList.innerHTML = state.inbox.map(i => `
     <article class="draft-card" onclick="openDraft('${i.draft_id}')">
-      <div class="draft-kind">${escapeHtml(kindLabel(i.kind))}</div>
+      <div class="draft-kind">${contentKindIcon(i.kind)}<span>${escapeHtml(kindLabel(i.kind))}</span></div>
       <h4 class="draft-topic">${escapeHtml(i.topic)}</h4>
-      <div class="draft-preview">${escapeHtml(i.preview || "")}</div>
+      <div class="draft-preview">${escapeHtml(stripMarkdown(i.preview || ""))}</div>
     </article>
   `).join("");
   syncMobileNavigation();
 }
 
 function renderStatus() {
-  elements.listTitle.textContent = "Статус";
   const items = state.status?.items || [];
-  elements.draftList.innerHTML = items.map(i => `
+  const inSettings = state.tab === "settings";
+  elements.listTitle.textContent = inSettings ? "Настройки" : "Статус";
+  elements.draftCount.textContent = `${items.length} источников`;
+  elements.draftList.innerHTML = `
+    ${inSettings ? renderSettingsSwitcher("status") : ""}
+    ${items.map(i => `
     <article class="status-card"><strong>${escapeHtml(i.source)}</strong> <span class="${i.enabled ? 'status-good' : 'status-bad'}">${i.enabled ? 'вкл' : 'выкл'}</span></article>
-  `).join("");
+  `).join("")}
+  `;
+  elements.draftDetail.innerHTML = renderBackButton() + `<div class="detail-empty">${inSettings ? "Настройки mini app и системные параметры." : "Настройки mini app и состояния источников."}</div>`;
   syncMobileNavigation();
 }
 
@@ -1270,7 +1736,7 @@ function renderPlans() {
   elements.draftList.innerHTML = state.plans.map(p => `
     <article class="plan-card" onclick="openPlan('${p.plan_id}')">
       <h3 class="draft-topic">${escapeHtml(p.plan_id)}</h3>
-      <div class="draft-preview">${escapeHtml(p.raw_text || "")}</div>
+      <div class="draft-preview">${escapeHtml(stripMarkdown(p.raw_text || ""))}</div>
     </article>
   `).join("");
   syncMobileNavigation();
@@ -1281,7 +1747,7 @@ function renderReels() {
   elements.draftList.innerHTML = state.reels.map(r => `
     <article class="reels-card" onclick="openReels('${r.draft_id}')">
       <h3 class="draft-topic">${escapeHtml(r.topic)}</h3>
-      <div class="draft-preview">${escapeHtml(r.preview || "")}</div>
+      <div class="draft-preview">${escapeHtml(stripMarkdown(r.preview || ""))}</div>
     </article>
   `).join("");
   syncMobileNavigation();
@@ -1292,15 +1758,33 @@ function renderReelsDetail(r) {
     <div class="detail-grid">
       ${renderBackButton()}
       <div class="detail-top">
-        <p class="eyebrow">${uiIcon("reel")}Рилсы • ${escapeHtml(r.source || "/miniapp")}</p>
+        <p class="eyebrow">${uiIcon("reel")}<span>Рилсы • ${escapeHtml(r.source || "/miniapp")}</span></p>
         <h2 class="detail-title">${escapeHtml(r.topic)}</h2>
         <div class="draft-meta">
           <span class="tag">${escapeHtml(statusLabel(r.status || "draft"))}</span>
           <span class="tag">${escapeHtml(`${r.images_ready || 0}/${r.frame_count || 0} кадров`)}</span>
         </div>
+        <div class="actions-row">
+          <button class="secondary-button" type="button" onclick="saveReelsScenario('${r.draft_id}', this)">${actionLabel("text", "Сохранить концепцию")}</button>
+          <button class="secondary-button" type="button" onclick="regenerateReelsStoryboard('${r.draft_id}', this)">${actionLabel("regenerate", "Пересобрать рилс")}</button>
+          <button class="secondary-button" type="button" onclick="regenerateAllReelsFrames('${r.draft_id}', this)">${actionLabel("reel", "Сгенерировать кадры")}</button>
+          <button class="secondary-button" type="button" onclick="updateDraft('status', {status:'rejected'})">${actionLabel("note", "Не согласовано")}</button>
+          <button class="secondary-button" type="button" onclick="sendDraftToChat('${r.draft_id}')">${actionLabel("chat", "В чат")}</button>
+          <button class="secondary-button" type="button" onclick="deleteDraft('${r.draft_id}', 'reels')">${actionLabel("trash", "Удалить")}</button>
+        </div>
       </div>
-      ${payloadSection("Сценарий", r.payload?.scenario)}
-      ${renderReelsFrames(r.frames)}
+      <section class="section">
+        <h3>${sectionHeadingIcon("Сценарий")}Концепция и сценарий</h3>
+        <label class="prompt-note-field">
+          <span>Концепция</span>
+          <textarea id="reelsConceptField" placeholder="Коротко: идея, настроение, подход">${escapeHtml(r.payload?.concept || "")}</textarea>
+        </label>
+        <label class="prompt-note-field">
+          <span>Сценарий</span>
+          <textarea id="reelsScenarioField" placeholder="Полный текст сценария">${escapeHtml(r.payload?.scenario || "")}</textarea>
+        </label>
+      </section>
+      ${renderReelsFrames(r.draft_id, r.frames)}
     </div>
   `;
 }
@@ -1310,15 +1794,21 @@ function renderPlanDetail(p) {
     <div class="detail-grid">
       ${renderBackButton()}
       <h2 class="detail-title">${escapeHtml(p.plan_id)}</h2>
-      <pre class="json-block">${escapeHtml(p.raw_text)}</pre>
+      <div class="detail-preview detail-markdown">${renderMarkdown(p.raw_text)}</div>
     </div>
   `;
 }
 
 function renderKeywords() {
-  elements.listTitle.textContent = "Ключи";
-  elements.draftList.innerHTML = (state.keywords?.items || []).map(t => `
+  const inSettings = state.tab === "settings";
+  elements.listTitle.textContent = inSettings ? "Настройки" : "Ключи";
+  elements.draftCount.textContent = `${(state.keywords?.items || []).length} тем`;
+  elements.draftList.innerHTML = `
+    ${inSettings ? renderSettingsSwitcher("keywords") : ""}
+    ${(state.keywords?.items || []).map(t => `
     <article class="keyword-topic"><h3>${escapeHtml(t.name)}</h3></article>
-  `).join("");
+  `).join("")}
+  `;
+  elements.draftDetail.innerHTML = renderBackButton() + `<div class="detail-empty">Ключевые темы и опорные запросы.</div>`;
   syncMobileNavigation();
 }
