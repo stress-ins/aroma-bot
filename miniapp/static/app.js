@@ -672,7 +672,7 @@ async function loadDrafts() {
   const data = await fetchJson(`/api/drafts?${filtersToQueryString()}`);
   state.drafts = data.items || [];
   renderDraftList();
-  const preferredId = state.draftId || state.drafts[0]?.draft_id || "";
+  const preferredId = state.draftId || "";
   if (preferredId) await openDraft(preferredId);
   else renderEmptyDetail();
 }

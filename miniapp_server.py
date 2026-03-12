@@ -203,7 +203,10 @@ class AromaCardPayload(BaseModel):
 
 @app.get("/")
 async def index():
-    return FileResponse(MINIAPP_DIR / "index.html")
+    return FileResponse(
+        MINIAPP_DIR / "index.html",
+        headers={"Cache-Control": "no-store, max-age=0"},
+    )
 
 
 @app.get("/healthz")
