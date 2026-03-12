@@ -369,7 +369,7 @@ function renderPanelError(title, message) {
   return `
     <div class="boot-fallback boot-fallback-inline is-error">
       <div class="boot-fallback-copy">
-        <p class="eyebrow">Загрузка</p>
+        <p class="eyebrow">Нужна повторная попытка</p>
         <h2>${escapeHtml(title)}</h2>
         <p>${escapeHtml(message)}</p>
       </div>
@@ -379,9 +379,9 @@ function renderPanelError(title, message) {
 }
 
 function renderGuidedState({
-  eyebrow = "Навигация",
-  title = "Пока пусто",
-  body = "Выберите следующий шаг, и мы продолжим.",
+  eyebrow = "Следующий шаг",
+  title,
+  body = "",
   actionLabel = "",
   action = "",
   tone = "soft",
@@ -390,14 +390,10 @@ function renderGuidedState({
     <div class="guided-state tone-${escapeHtml(tone)}">
       <div class="guided-state-copy">
         <p class="eyebrow">${escapeHtml(eyebrow)}</p>
-        <h3>${escapeHtml(title)}</h3>
-        <p>${escapeHtml(body)}</p>
+        <h3>${escapeHtml(title || "Пока ничего не выбрано")}</h3>
+        ${body ? `<p>${escapeHtml(body)}</p>` : ""}
       </div>
-      ${actionLabel && action ? `
-        <div class="guided-state-actions">
-          <button class="secondary-button" type="button" onclick="${action}">${escapeHtml(actionLabel)}</button>
-        </div>
-      ` : ""}
+      ${actionLabel && action ? `<div class="guided-state-actions"><button class="secondary-button" type="button" onclick="${action}">${escapeHtml(actionLabel)}</button></div>` : ""}
     </div>
   `;
 }
@@ -423,7 +419,7 @@ function renderDetailError(title, message, retryAction = "retryCurrentTab()") {
       ${renderBackButton()}
       <div class="boot-fallback boot-fallback-inline is-error">
         <div class="boot-fallback-copy">
-          <p class="eyebrow">Загрузка</p>
+          <p class="eyebrow">Нужна повторная попытка</p>
           <h2>${escapeHtml(title)}</h2>
           <p>${escapeHtml(message)}</p>
         </div>
@@ -1326,11 +1322,7 @@ function setEmptyState(hidden, text = "Ничего не найдено.") {
   if (hidden) {
     elements.emptyState.textContent = "";
   } else if (typeof text === "string") {
-    elements.emptyState.innerHTML = renderGuidedState({
-      eyebrow: "Список",
-      title: text,
-      body: "Попробуйте изменить фильтры, поиск или откройте соседний раздел.",
-    });
+    elements.emptyState.textContent = text;
   } else {
     elements.emptyState.innerHTML = renderGuidedState(text || {});
   }
@@ -1352,7 +1344,12 @@ function hideBootFallback() {
 }
 
 function showRequestError(prefix, error) {
-  const message = error?.message || String(error || "unknown_error");
+  const raw = String(error?.message || error || "unknown_error");
+  const message = raw === "Failed to fetch"
+    ? "Похоже, сеть недоступна. Проверьте соединение и попробуйте еще раз."
+    : raw === "request_timeout"
+      ? "Сервер отвечает дольше обычного. Повторите действие чуть позже."
+      : raw;
   showUiNotice(`${prefix}: ${message}`, "error");
 }
 
@@ -1981,16 +1978,11 @@ function renderReferences() {
   `).join("");
 
   if (!reference) {
-    elements.draftDetail.innerHTML = `
-      ${renderBackButton()}
-      <div class="detail-empty">
-        ${renderGuidedState({
-          eyebrow: meta.title,
-          title: "Выберите карточку справочника",
-          body: meta.selectPrompt,
-        })}
-      </div>
-    `;
+    elements.draftDetail.innerHTML = `${renderBackButton()}<div class="detail-empty">${renderGuidedState({
+      eyebrow: meta.title,
+      title: `Откройте ${meta.label} из списка`,
+      body: meta.selectPrompt,
+    })}</div>`;
     syncMobileNavigation();
     return;
   }
@@ -2020,11 +2012,14 @@ function renderReferencesLocked() {
   setEmptyState(true);
   elements.draftList.innerHTML = renderGuidedState({
     eyebrow: meta.title,
-    title: "Доступ ограничен",
+    title: "Доступ пока закрыт",
     body: meta.locked,
-    tone: "soft",
   });
-  elements.draftDetail.innerHTML = `${renderBackButton()}<div class="detail-empty">${renderGuidedState({ eyebrow: meta.title, title: "Справочник пока недоступен", body: meta.locked, tone: "soft" })}</div>`;
+  elements.draftDetail.innerHTML = `${renderBackButton()}<div class="detail-empty">${renderGuidedState({
+    eyebrow: meta.title,
+    title: "Доступ пока закрыт",
+    body: meta.locked,
+  })}</div>`;
   syncMobileNavigation();
 }
 
@@ -2035,14 +2030,19 @@ function renderReferencesUnavailable() {
   elements.draftCount.textContent = "";
   setEmptyState(true);
   elements.draftList.innerHTML = renderGuidedState({
-    eyebrow: "Загрузка",
-    title: "Справочник временно недоступен",
+    eyebrow: meta.title,
+    title: "Не удалось открыть справочник",
     body: message,
     actionLabel: "Повторить",
     action: "retryCurrentTab()",
-    tone: "soft",
   });
-  elements.draftDetail.innerHTML = `${renderBackButton()}<div class="detail-empty">${renderGuidedState({ eyebrow: "Загрузка", title: "Справочник временно недоступен", body: message, actionLabel: "Повторить", action: "retryCurrentTab()", tone: "soft" })}</div>`;
+  elements.draftDetail.innerHTML = `${renderBackButton()}<div class="detail-empty">${renderGuidedState({
+    eyebrow: meta.title,
+    title: "Не удалось открыть справочник",
+    body: message,
+    actionLabel: "Повторить",
+    action: "retryCurrentTab()",
+  })}</div>`;
   syncMobileNavigation();
 }
 
@@ -2082,15 +2082,11 @@ function renderCreate() {
   `;
 
   if (!state.selectedCreateTool) {
-    elements.draftDetail.innerHTML = `
-      <div class="detail-empty">
-        ${renderGuidedState({
-          eyebrow: "Создание",
-          title: "Выберите формат для старта",
-          body: "Слева доступны быстрые сценарии: пост, рилс, план или карусель. Откройте нужный инструмент, и мы сразу покажем форму.",
-        })}
-      </div>
-    `;
+    elements.draftDetail.innerHTML = `<div class="detail-empty">${renderGuidedState({
+      eyebrow: "Создать",
+      title: "Выберите формат для старта",
+      body: "Слева доступны быстрые сценарии для контента, рилса, плана недели и карусели.",
+    })}</div>`;
     syncMobileNavigation();
     return;
   }
@@ -2232,7 +2228,13 @@ function renderAromasLocked() { renderReferencesLocked(); }
 function renderDraftList() {
   elements.listTitle.textContent = "Черновики";
   elements.draftCount.textContent = `${state.drafts.length} шт`;
-  setEmptyState(state.drafts.length > 0);
+  setEmptyState(state.drafts.length > 0, {
+    eyebrow: "Черновики",
+    title: "Ничего не найдено",
+    body: "Попробуйте сбросить фильтры или собрать новый материал через вкладку «Создать».",
+    actionLabel: "Открыть создание",
+    action: "setTab('create')",
+  });
   elements.draftList.innerHTML = state.drafts.map((d) => `
     <article ${interactiveCardAttrs(`Открыть черновик ${d.topic}`)} class="draft-card overview-card${d.draft_id === state.draftId ? " active" : ""}${d.generation_pending ? " is-pending" : ""} interactive-card" onclick="openDraft('${d.draft_id}')">
       <div class="overview-card-top">
@@ -2676,7 +2678,11 @@ if (elements.bootFallbackReload) {
 function renderInbox() {
   elements.listTitle.textContent = "Согласование";
   elements.draftCount.textContent = `${state.inbox.length} на проверке`;
-  setEmptyState(state.inbox.length > 0, "Очередь пуста.");
+  setEmptyState(state.inbox.length > 0, {
+    eyebrow: "Согласование",
+    title: "Очередь пока пуста",
+    body: "Когда появятся материалы на ревью, они сразу окажутся здесь.",
+  });
   elements.draftList.innerHTML = state.inbox.map(i => `
     <article ${interactiveCardAttrs(`Открыть материал на согласовании ${i.topic}`)} class="draft-card overview-card${i.draft_id === state.draftId ? " active" : ""} interactive-card" onclick="openDraft('${i.draft_id}')">
       <div class="overview-card-top">
@@ -2705,10 +2711,13 @@ function renderStatus() {
     <article class="status-card"><strong>${escapeHtml(i.source)}</strong> <span class="${i.enabled ? 'status-good' : 'status-bad'}">${i.enabled ? 'вкл' : 'выкл'}</span></article>
   `).join("")}
   `;
-  elements.draftDetail.innerHTML = renderBackButton() + `<div class="detail-empty">${inSettings ? "Настройки mini app и системные параметры." : "Настройки mini app и состояния источников."}</div>`;
-  if (!items.length) {
-    elements.draftDetail.innerHTML = renderBackButton() + `<div class="detail-empty">${renderGuidedState({ eyebrow: "Настройки", title: "Источники еще не показаны", body: "Здесь появятся переключатели и системные состояния источников, как только раздел загрузит конфигурацию." })}</div>`;
-  }
+  elements.draftDetail.innerHTML = renderBackButton() + `<div class="detail-empty">${renderGuidedState({
+    eyebrow: inSettings ? "Настройки" : "Статус",
+    title: inSettings ? "Откройте источник слева" : "Проверьте состояние источников",
+    body: inSettings
+      ? "Здесь будут переключатели mini app и системные параметры каждого источника."
+      : "Слева собраны все подключенные источники и их текущее состояние.",
+  })}</div>`;
   syncMobileNavigation();
 }
 
@@ -2717,10 +2726,10 @@ function renderPlans() {
   elements.draftCount.textContent = `${state.plans.length} шт`;
   setEmptyState(state.plans.length > 0, {
     eyebrow: "Планы",
-    title: "Планы пока не собраны",
-    body: "Соберите недельный план во вкладке Создать, и здесь появятся карточки с темами и связями к черновикам.",
+    title: "Планов пока нет",
+    body: "Соберите план на неделю, чтобы сразу разложить идеи по форматам и дням.",
     actionLabel: "Открыть создание",
-    action: "openCreateTool('plan')",
+    action: "setTab('create')",
   });
   elements.draftList.innerHTML = state.plans.map(p => `
     <article ${interactiveCardAttrs(`Открыть план ${p.plan_id}`)} class="plan-card overview-card${p.plan_id === state.selectedPlan?.plan_id ? " active" : ""} interactive-card" onclick="openPlan('${p.plan_id}')">
@@ -2737,7 +2746,11 @@ function renderPlans() {
     </article>
   `).join("");
   if (!state.selectedPlan) {
-    elements.draftDetail.innerHTML = `${renderBackButton()}<div class="detail-empty">${renderGuidedState({ eyebrow: "План", title: "Откройте план недели", body: "Внутри плана можно создавать draft по каждой карточке и сразу открывать связанный материал." })}</div>`;
+    elements.draftDetail.innerHTML = `${renderBackButton()}<div class="detail-empty">${renderGuidedState({
+      eyebrow: "План",
+      title: "Откройте план недели",
+      body: "Внутри плана можно создавать черновики по каждой карточке и сразу открывать связанный материал.",
+    })}</div>`;
   }
   syncMobileNavigation();
 }
@@ -2747,10 +2760,10 @@ function renderReels() {
   elements.draftCount.textContent = `${state.reels.length} шт`;
   setEmptyState(state.reels.length > 0, {
     eyebrow: "Рилсы",
-    title: "Рилсы пока не созданы",
-    body: "Откройте вкладку Создать и соберите новый рилс: сценарий, концепцию и кадры для раскадровки.",
-    actionLabel: "Создать рилс",
-    action: "openCreateTool('reels')",
+    title: "Рилсов пока нет",
+    body: "Создайте сценарий и раскадровку, чтобы здесь появился готовый рабочий список.",
+    actionLabel: "Открыть создание",
+    action: "setTab('create')",
   });
   elements.draftList.innerHTML = state.reels.map(r => `
     <article ${interactiveCardAttrs(`Открыть рилс ${r.topic}`)} class="reels-card overview-card${r.draft_id === state.selectedReels?.draft_id ? " active" : ""} interactive-card" onclick="openReels('${r.draft_id}')">
@@ -2871,8 +2884,8 @@ function renderKeywords() {
   elements.draftCount.textContent = `${topics.length} тем`;
   setEmptyState(topics.length > 0, {
     eyebrow: "Ключи",
-    title: "Темы пока не загружены",
-    body: "Когда справочник ключей будет доступен, здесь появятся темы с RU/EN ключами и тегами для редактирования.",
+    title: "Темы еще не появились",
+    body: "Когда словарь загрузится, здесь можно будет редактировать RU/EN ключи и теги.",
   });
   elements.draftList.innerHTML = `
     ${inSettings ? renderSettingsSwitcher("keywords") : ""}
@@ -2886,7 +2899,11 @@ function renderKeywords() {
   `).join("")}
   `;
   if (!selectedTopic) {
-    elements.draftDetail.innerHTML = renderBackButton() + `<div class="detail-empty">${renderGuidedState({ eyebrow: "Ключи", title: "Откройте тему для редактирования", body: "Внутри темы можно добавлять и удалять RU/EN ключи и теги без выхода из mini app." })}</div>`;
+    elements.draftDetail.innerHTML = renderBackButton() + `<div class="detail-empty">${renderGuidedState({
+      eyebrow: "Ключи",
+      title: "Откройте тему для редактирования",
+      body: "Внутри темы можно добавлять и удалять RU/EN ключи и теги без выхода из mini app.",
+    })}</div>`;
     syncMobileNavigation();
     return;
   }
