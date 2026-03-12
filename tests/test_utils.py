@@ -1,6 +1,7 @@
 """Tests for utility functions: message splitting, dash fixing, topic/carousel parsing."""
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -13,7 +14,9 @@ import pytest
 from bot.handlers.commands import _split_message
 from bot.handlers.content import _topics_text, _source_label
 from bot.agents.threads_replies import _extract_json
-from bot.services.miniapp_references import get_reference_card, list_reference_cards
+from bot.services.miniapp_references import get_reference_card, list_reference_cards, seed_reference_cards_if_empty
+import bot.services.miniapp_references as miniapp_references
+from scripts.patch_aroma_cards import _coerce_aliases, _coerce_payload
 
 
 class TestSplitMessage:
@@ -839,6 +842,7 @@ from bot.services import drafts_store as drafts_store_module
 from bot.services import reels_assets as reels_assets_module
 from bot.services.drafts_store import save_draft
 from bot.services.reels_assets import regenerate_reels_frame_asset
+from bot.services.carousel_assets import update_carousel_slide_text
 from bot.services.mini_app import build_draft_tab
 from bot.handlers.miniapp_bridge import parse_webapp_payload
 from bot.services.plans_store import PlanRecord
@@ -1186,6 +1190,20 @@ class TestMiniAppRussianLocale:
 
         assert ">Reels<" not in index_html
 
+    def test_index_does_not_render_legacy_hero_block(self):
+        index_html = Path("miniapp/index.html").read_text(encoding="utf-8")
+
+        assert 'class="hero"' not in index_html
+        assert "Черновики и рилсы" not in index_html
+        assert 'id="headerContent"' not in index_html
+
+    def test_index_has_bootstrap_fallback_panel(self):
+        index_html = Path("miniapp/index.html").read_text(encoding="utf-8")
+
+        assert 'id="bootFallback"' in index_html
+        assert 'id="bootFallbackReload"' in index_html
+        assert "Загружаю интерфейс" in index_html
+
     def test_create_workspace_dropdowns_use_russian_labels(self):
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
 
@@ -1265,6 +1283,71 @@ class TestMiniAppRussianLocale:
         assert practice["image_url"] == "/reference-images/shared/nature.jpg"
         assert sound["image_url"] == "/reference-images/shared/instrument.jpg"
 
+    async def test_seed_does_not_overwrite_manual_reference_edits(self, monkeypatch, tmp_path):
+        seed_file = tmp_path / "seed.json"
+        extra_seed_file = tmp_path / "extra.json"
+        seed_file.write_text(
+            json.dumps(
+                [
+                    {
+                        "category": "practice",
+                        "slug": "box-breathing",
+                        "name": "Квадратное дыхание",
+                        "source_type": "breath",
+                        "description": "Базовое описание из seed.",
+                        "questions": "Базовый вопрос из seed.",
+                        "resource_values": {"plus": "Плюс seed", "minus": "Минус seed"},
+                    }
+                ],
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
+        extra_seed_file.write_text("[]", encoding="utf-8")
+        monkeypatch.setattr(miniapp_references, "SEED_FILE", seed_file)
+        monkeypatch.setattr(miniapp_references, "EXTRA_SEED_FILE", extra_seed_file)
+
+        await seed_reference_cards_if_empty()
+        updated = await miniapp_references.update_reference_card(
+            "practice",
+            "box-breathing",
+            {
+                "description": "Ручное описание из mini app.",
+                "questions": "Ручной вопрос из mini app.",
+                "resource_values": {"plus": "Ручной плюс", "minus": "Минус seed"},
+            },
+        )
+        assert updated is not None
+        assert updated["description"] == "Ручное описание из mini app."
+
+        seed_file.write_text(
+            json.dumps(
+                [
+                    {
+                        "category": "practice",
+                        "slug": "box-breathing",
+                        "name": "Квадратное дыхание",
+                        "source_type": "breath",
+                        "description": "Новое описание из seed.",
+                        "questions": "Новый вопрос из seed.",
+                        "nps_effect": "Новый НПС из seed.",
+                        "resource_values": {"plus": "Плюс seed v2", "minus": "Минус seed v2"},
+                    }
+                ],
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
+
+        await seed_reference_cards_if_empty()
+        card = await get_reference_card("practice", "box-breathing")
+        assert card is not None
+        assert card["description"] == "Ручное описание из mini app."
+        assert card["questions"] == "Ручной вопрос из mini app."
+        assert card["resource_values"]["plus"] == "Ручной плюс"
+        assert card["resource_values"]["minus"] == "Минус seed v2"
+        assert card["nps_effect"] == "Новый НПС из seed."
+
     def test_viewport_disables_double_tap_zoom(self):
         index_html = Path("miniapp/index.html").read_text(encoding="utf-8")
 
@@ -1282,9 +1365,30 @@ class TestMiniAppRussianLocale:
         # Ensure CSS handles the 300ms delay/zoom
         assert "touch-action: manipulation;" in app_css
 
-    def test_handbook_has_separate_reference_tabs(self):
+    def test_mobile_detail_swipe_back_allows_full_width_swipe_and_skips_inputs(self):
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
 
+        assert "function bindSwipeBack" in app_js
+        assert "isInteractiveTarget(event.target)" in app_js
+        assert 'closest("textarea, input, select, button, a, [contenteditable=\'true\']")' in app_js
+        assert "touch.clientX > 36" not in app_js
+        assert "dx > 72" in app_js
+
+    def test_bootstrap_guard_shows_visible_fallback_instead_of_blank_screen(self):
+        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+
+        assert "function showBootFallback" in app_js
+        assert "function hideBootFallback" in app_js
+        assert "bootstrapWatchdogTimer" in app_js
+        assert 'window.addEventListener("error"' in app_js
+        assert 'window.addEventListener("unhandledrejection"' in app_js
+        assert ".boot-fallback" in app_css
+        assert ".boot-fallback.is-error" in app_css
+
+    def test_handbook_has_separate_reference_tabs(self):
+        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+    
         assert 'id: "aromas"' in app_js
         assert 'label: "Ароматы"' in app_js
         assert 'id: "practices"' in app_js
@@ -1298,13 +1402,52 @@ class TestMiniAppRussianLocale:
 
         assert "Скопировать промпт кадра" in app_js
         assert "Скопировать промпт слайда" in app_js
-        assert "function copyText(value)" in app_js
+        assert "function copyText" in app_js
 
     def test_content_cards_force_left_alignment_and_mobile_button_stack(self):
         app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
 
         assert "text-align: left;" in app_css
         assert "flex: 1 1 100%;" in app_css
+
+    def test_carousel_detail_uses_actions_instead_of_raw_json(self):
+        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        server_py = Path("miniapp_server.py").read_text(encoding="utf-8")
+
+        assert "JSON</h3>" not in app_js
+        assert "Перегенерировать все" in app_js
+        assert "Учесть замечание" in app_js
+        assert "Сохранить текст слайда" in app_js
+        assert "Текст слайда" in app_js
+        assert "Скачать PPTX" in app_js
+        assert "sendDraftToChat" in app_js
+        assert "bindSwipeBack" in app_js
+        assert "/api/carousel/{draft_id}/pptx" in server_py
+        assert "/api/carousel/{draft_id}/slides/{slide_index}/regenerate" in server_py
+        assert "/api/carousel/{draft_id}/slides/{slide_index}/text" in server_py
+
+
+class TestMiniAppCarousel:
+    async def test_update_carousel_slide_text_returns_none_for_missing(self):
+        assert await update_carousel_slide_text("missing-id", 0, "Новый слайд") is None
+
+    async def test_update_carousel_slide_text_updates_payload(self):
+        draft = await save_draft(
+            kind="carousel",
+            topic="Вечерний ритуал",
+            source="/carousel",
+            payload={
+                "slides": ["Старый текст", "Второй слайд"],
+                "img_prompts": ["prompt-1", "prompt-2"],
+                "img_prompt_notes": ["", ""],
+            },
+        )
+
+        payload = await update_carousel_slide_text(draft.draft_id, 0, "Новый текст слайда")
+
+        assert payload is not None
+        assert payload["slides"][0] == "Новый текст слайда"
+        assert payload["slides"][1] == "Второй слайд"
 class TestMiniAppReels:
     async def test_serialize_reels_draft_returns_none_for_missing(self):
         assert await serialize_reels_draft("missing-id") is None
@@ -1475,3 +1618,29 @@ class TestMiniAppReelsPolling:
     def test_client_waits_for_all_reels_frames(self):
         source = Path("miniapp/static/app.js").read_text(encoding="utf-8")
         assert "readyFrames < (reel.frame_count || 0)" in source
+
+    def test_bootstrap_does_not_block_first_render_on_reference_access(self):
+        source = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        bootstrap_section = source.split("async function bootstrap() {", 1)[1]
+
+        assert 'if (state.mode === "content") {' in source
+        assert "void loadReferenceAccess();" in source
+        assert "await loadReferenceAccess();" not in bootstrap_section
+        assert 'throw new Error("request_timeout")' in source
+
+    def test_reference_access_timeout_stays_retriable(self):
+        source = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+
+        assert "referenceAccessError" in source
+        assert 'state.referenceAccess = null;' in source
+        assert "renderReferencesUnavailable()" in source
+        assert "reference_access_denied" in source
+
+class TestPatchAromaCardsScript:
+    def test_coerce_aliases_accepts_exported_json_string(self):
+        assert _coerce_aliases('["orange", "sweet orange"]') == ["orange", "sweet orange"]
+
+    def test_coerce_payload_accepts_exported_json_string(self):
+        payload = _coerce_payload('{"slug":"orange","resource_values":{"plus":"joy"}}')
+        assert payload["slug"] == "orange"
+        assert payload["resource_values"]["plus"] == "joy"

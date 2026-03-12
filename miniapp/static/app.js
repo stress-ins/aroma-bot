@@ -3,7 +3,8 @@ const state = {
   tab: new URLSearchParams(window.location.search).get("tab") || "drafts",
   draftId: new URLSearchParams(window.location.search).get("draft_id") || "",
   selectedCreateTool: null,
-  referenceAccess: false,
+  referenceAccess: null,
+  referenceAccessError: "",
   referenceItems: [],
   referenceSearch: "",
   selectedReference: null,
@@ -40,6 +41,8 @@ const MODE_TABS = {
 
 let reelRefreshTimer = null;
 let carouselRefreshTimer = null;
+let swipeStart = null;
+let bootstrapWatchdogTimer = null;
 
 const elements = {
   tabsContainer: document.getElementById("tabsContainer"),
@@ -57,6 +60,10 @@ const elements = {
   queryFilter: document.getElementById("queryFilter"),
   modeContent: document.getElementById("modeContent"),
   modeHandbook: document.getElementById("modeHandbook"),
+  bootFallback: document.getElementById("bootFallback"),
+  bootFallbackTitle: document.getElementById("bootFallbackTitle"),
+  bootFallbackText: document.getElementById("bootFallbackText"),
+  bootFallbackReload: document.getElementById("bootFallbackReload"),
 };
 
 const RU_KIND_LABELS = {
@@ -141,10 +148,19 @@ function promptSection(title, prompt, copyLabel = "Скопировать про
   `;
 }
 
-function renderSlides(slides = [], prompts = [], slideImages = []) {
+function slideNoteId(index) {
+  return `carouselSlideNote${index}`;
+}
+
+function slideTextId(index) {
+  return `carouselSlideText${index}`;
+}
+
+function renderSlides(draftId, slides = [], prompts = [], slideImages = [], promptNotes = []) {
   const slideItems = Array.isArray(slides) ? slides : [];
   const promptItems = Array.isArray(prompts) ? prompts : [];
   const imageItems = Array.isArray(slideImages) ? slideImages : [];
+  const noteItems = Array.isArray(promptNotes) ? promptNotes : [];
   if (!slideItems.length) return "";
   const readyCount = imageItems.filter(Boolean).length;
   const header = readyCount > 0
@@ -156,28 +172,101 @@ function renderSlides(slides = [], prompts = [], slideImages = []) {
       <div class="slides">
         ${slideItems.map((slide, index) => {
           const img = imageItems[index];
+          const prompt = String(promptItems[index] || "");
+          const note = String(noteItems[index] || "");
           const imgHtml = img?.url
             ? `<img class="frame-image" src="${escapeHtml(img.url)}" alt="Слайд ${index + 1}" />`
-            : `<div class="frame-loading">⏳ Картинка генерируется…</div>`;
+            : `<div class="frame-loading">Картинка недоступна или еще генерируется. Промпт показан ниже для ручной генерации.</div>`;
           return `
             <article class="slide">
               <strong>Слайд ${index + 1}</strong>
               ${imgHtml}
-              <div class="detail-preview">${escapeHtml(slide)}</div>
-              ${promptItems[index] ? `
+              <label class="prompt-note-field">
+                <span>Текст слайда</span>
+                <textarea id="${slideTextId(index)}" placeholder="Текст для этого слайда">${escapeHtml(slide)}</textarea>
+              </label>
+              ${prompt ? `
                 <div class="prompt-card">
-                  <div class="detail-preview prompt-preview">${escapeHtml(promptItems[index])}</div>
+                  <div class="detail-preview prompt-preview">${escapeHtml(prompt)}</div>
+                  <label class="prompt-note-field">
+                    <span>Замечание к картинке</span>
+                    <textarea id="${slideNoteId(index)}" placeholder="Например: теплее свет, крупнее объект, меньше деталей на фоне">${escapeHtml(note)}</textarea>
+                  </label>
                   <div class="actions-row prompt-actions">
-                    <button class="secondary-button" type="button" onclick='copyText(${JSON.stringify(String(promptItems[index]))})'>Скопировать промпт слайда</button>
+                    <button class="secondary-button" type="button" onclick="saveCarouselSlideText(${JSON.stringify(draftId)}, ${index})">Сохранить текст слайда</button>
+                    <button class="secondary-button" type="button" onclick='copyText(${JSON.stringify(prompt)})'>Скопировать промпт слайда</button>
+                    <button class="secondary-button" type="button" onclick="regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, false)">Перегенерировать</button>
+                    <button class="primary-button" type="button" onclick="regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, true)">Учесть замечание</button>
                   </div>
                 </div>
-              ` : ""}
+              ` : `
+                <div class="actions-row prompt-actions">
+                  <button class="secondary-button" type="button" onclick="saveCarouselSlideText(${JSON.stringify(draftId)}, ${index})">Сохранить текст слайда</button>
+                </div>
+              `}
             </article>
           `;
         }).join("")}
       </div>
     </section>
   `;
+}
+
+async function saveCarouselSlideText(draftId, slideIndex) {
+  const textField = document.getElementById(slideTextId(slideIndex));
+  const text = String(textField?.value || "").trim();
+  const draft = await fetchJson(`/api/carousel/${draftId}/slides/${slideIndex}/text`, {
+    method: "POST",
+    body: JSON.stringify({ text }),
+  });
+  state.selected = draft;
+  state.draftId = draft.draft_id;
+  state.drafts = state.drafts.map((item) => item.draft_id === draft.draft_id ? { ...item, ...draft } : item);
+  renderDraftList();
+  renderDraftDetail(draft);
+}
+
+async function regenerateCarouselSlide(draftId, slideIndex, withNote) {
+  const noteField = document.getElementById(slideNoteId(slideIndex));
+  const note = withNote ? String(noteField?.value || "").trim() : "";
+  const draft = await fetchJson(`/api/carousel/${draftId}/slides/${slideIndex}/regenerate`, {
+    method: "POST",
+    body: JSON.stringify({ note }),
+  });
+  state.selected = draft;
+  state.draftId = draft.draft_id;
+  state.drafts = state.drafts.map((item) => item.draft_id === draft.draft_id ? { ...item, ...draft } : item);
+  renderDraftList();
+  renderDraftDetail(draft);
+}
+
+async function regenerateCarouselAll(draftId) {
+  const draft = await fetchJson(`/api/carousel/${draftId}/regenerate-all`, { method: "POST", body: "{}" });
+  state.selected = draft;
+  state.draftId = draft.draft_id;
+  state.drafts = state.drafts.map((item) => item.draft_id === draft.draft_id ? { ...item, ...draft } : item);
+  renderDraftList();
+  renderDraftDetail(draft);
+}
+
+async function sendDraftToChat(draftId) {
+  await fetchJson(`/api/drafts/${draftId}/send`, { method: "POST", body: "{}" });
+  const tg = window.Telegram?.WebApp;
+  if (tg?.showAlert) tg.showAlert("Черновик отправлен в чат");
+}
+
+async function downloadCarouselPptx(draftId) {
+  const response = await fetch(`/api/carousel/${draftId}/pptx`, { headers: _initDataHeader() });
+  if (!response.ok) throw new Error("pptx_export_failed");
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `carousel_${draftId}.pptx`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
 function renderReelsFrames(frames = []) {
@@ -232,6 +321,20 @@ function setEmptyState(hidden, text = "Ничего не найдено.") {
   elements.emptyState.hidden = hidden;
   elements.emptyState.textContent = text;
   elements.emptyState.style.display = hidden ? "none" : "block";
+}
+
+function showBootFallback(title, text, isError = false) {
+  if (!elements.bootFallback) return;
+  elements.bootFallback.hidden = false;
+  elements.bootFallback.classList.toggle("is-error", isError);
+  if (elements.bootFallbackTitle) elements.bootFallbackTitle.textContent = title;
+  if (elements.bootFallbackText) elements.bootFallbackText.textContent = text;
+}
+
+function hideBootFallback() {
+  if (!elements.bootFallback) return;
+  elements.bootFallback.hidden = true;
+  elements.bootFallback.classList.remove("is-error");
 }
 
 function showRequestError(prefix, error) {
@@ -296,6 +399,34 @@ function enterDetailView() {
   state.mobileView = "detail";
   syncMobileNavigation();
   window.scrollTo(0, 0);
+}
+
+function isInteractiveTarget(target) {
+  if (!target || !(target instanceof Element)) return false;
+  return Boolean(target.closest("textarea, input, select, button, a, [contenteditable='true']"));
+}
+
+function bindSwipeBack() {
+  const isMobile = window.matchMedia("(max-width: 760px)").matches;
+  if (!isMobile) return;
+  elements.detailPanel.addEventListener("touchstart", (event) => {
+    const touch = event.touches[0];
+    if (!touch || state.mobileView !== "detail" || isInteractiveTarget(event.target)) {
+      swipeStart = null;
+      return;
+    }
+    swipeStart = { x: touch.clientX, y: touch.clientY };
+  }, { passive: true });
+  elements.detailPanel.addEventListener("touchend", (event) => {
+    if (!swipeStart || state.mobileView !== "detail") return;
+    const touch = event.changedTouches[0];
+    const dx = touch.clientX - swipeStart.x;
+    const dy = Math.abs(touch.clientY - swipeStart.y);
+    swipeStart = null;
+    if (dx > 72 && dy < 56 && dx > dy * 1.4) {
+      window.goBackToList();
+    }
+  }, { passive: true });
 }
 
 function bindTopicForm(form, config) {
@@ -390,11 +521,25 @@ function scheduleCarouselRefresh(draftId, attempts = 12) {
 }
 
 async function fetchJson(url, options = {}) {
+  const { timeout = 12000, ...fetchOptions } = options;
   const extraHeaders = url.startsWith("/api/") ? _initDataHeader() : {};
-  const response = await fetch(url, {
-    headers: { "Content-Type": "application/json", ...extraHeaders },
-    ...options,
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeout);
+  let response;
+  try {
+    response = await fetch(url, {
+      headers: { "Content-Type": "application/json", ...extraHeaders },
+      signal: controller.signal,
+      ...fetchOptions,
+    });
+  } catch (error) {
+    clearTimeout(timer);
+    if (error?.name === "AbortError") {
+      throw new Error("request_timeout");
+    }
+    throw error;
+  }
+  clearTimeout(timer);
   if (!response.ok) {
     let detail = "";
     try {
@@ -452,15 +597,34 @@ function currentHandbookMeta() {
 }
 
 async function loadReferenceAccess() {
+  if (state.referenceAccess !== null) return state.referenceAccess;
   try {
     const payload = await fetchJson("/api/references/access");
     state.referenceAccess = Boolean(payload?.allowed);
-  } catch (_e) { state.referenceAccess = false; }
+    state.referenceAccessError = "";
+  } catch (error) {
+    const message = String(error?.message || "");
+    if (message.includes("reference_access_denied") || message.includes("403 Forbidden")) {
+      state.referenceAccess = false;
+      state.referenceAccessError = "";
+    } else {
+      state.referenceAccess = null;
+      state.referenceAccessError = message || "reference_temporarily_unavailable";
+    }
+  }
+  return state.referenceAccess;
 }
 
 async function loadReferences(tabId = state.tab) {
   const meta = HANDBOOK_CATEGORY_META[tabId];
   if (!meta) return;
+  if (state.referenceAccess === null) {
+    await loadReferenceAccess();
+  }
+  if (state.referenceAccess === null) {
+    renderReferencesUnavailable();
+    return;
+  }
   if (!state.referenceAccess) {
     renderReferencesLocked();
     return;
@@ -583,6 +747,17 @@ function renderReferencesLocked() {
   setEmptyState(true);
   elements.draftList.innerHTML = `<div class="detail-preview">${escapeHtml(meta.locked)}</div>`;
   elements.draftDetail.innerHTML = `${renderBackButton()}<div class="detail-empty">${escapeHtml(meta.locked)}</div>`;
+  syncMobileNavigation();
+}
+
+function renderReferencesUnavailable() {
+  const meta = currentHandbookMeta();
+  const message = "Справочник временно недоступен. Попробуйте открыть раздел ещё раз.";
+  elements.listTitle.textContent = meta.title;
+  elements.draftCount.textContent = "";
+  setEmptyState(true);
+  elements.draftList.innerHTML = `<div class="detail-preview">${escapeHtml(message)}</div>`;
+  elements.draftDetail.innerHTML = `${renderBackButton()}<div class="detail-empty">${escapeHtml(message)}</div>`;
   syncMobileNavigation();
 }
 
@@ -774,15 +949,16 @@ function renderDraftDetail(d) {
         <div class="actions-row">
           <button class="secondary-button" onclick="updateDraft('status', {status:'approved'})">Согласовать</button>
           <button class="secondary-button" onclick="sendDraftToChat('${d.draft_id}')">В чат</button>
+          ${d.kind === "carousel" ? `<button class="secondary-button" onclick="downloadCarouselPptx('${d.draft_id}')">Скачать PPTX</button>` : ""}
+          ${d.kind === "carousel" ? `<button class="secondary-button" onclick="regenerateCarouselAll('${d.draft_id}')">Перегенерировать все</button>` : ""}
         </div>
       </div>
       ${payloadSection("Превью", d.preview)}
       ${payloadSection("Угол", p.angle)}
       ${payloadSection("Текст", mainText)}
       ${payloadSection("CTA", p.cta)}
-      ${renderSlides(p.slides, p.img_prompts, p.slide_images)}
+      ${renderSlides(d.draft_id, p.slides, p.img_prompts, p.slide_images, p.img_prompt_notes)}
       ${promptSection("Промпт для изображения", p.visual_prompt)}
-      <section class="section"><h3>JSON</h3><pre class="json-block">${escapeHtml(JSON.stringify(p, null, 2))}</pre></section>
     </div>
   `;
   if (d.kind === "carousel") {
@@ -812,20 +988,30 @@ function setMode(m) {
 }
 
 function setTab(t) {
-  state.tab = t; state.mobileView = "list";
-  if (t === "create") {
-    state.selectedCreateTool = null;
-  }
+  state.tab = t; 
+  state.mobileView = "list"; 
+  state.selectedCreateTool = null; 
+  
   if (HANDBOOK_CATEGORY_META[t]) {
     state.referenceSearch = "";
     if (state.selectedReference?.category !== HANDBOOK_CATEGORY_META[t].category) {
       state.selectedReference = null;
     }
   }
-  const p = new URLSearchParams(window.location.search); p.set("tab", t);
+  
+  const p = new URLSearchParams(window.location.search);
+  p.set("tab", t);
   history.replaceState({}, "", `${window.location.pathname}?${p.toString()}`);
+  
   elements.tabsContainer.querySelectorAll(".tab-button").forEach(b => b.classList.toggle("active", b.dataset.tab === t));
   elements.filtersContainer.hidden = (t !== "drafts");
+  
+  // Clear panels immediately to prevent showing tools/content from previous tab
+  elements.listTitle.textContent = "Загрузка...";
+  elements.draftCount.textContent = "";
+  elements.draftList.innerHTML = "";
+  elements.draftDetail.innerHTML = `<div class="detail-empty">Загрузка...</div>`;
+  
   syncMobileNavigation();
 }
 
@@ -841,18 +1027,69 @@ async function loadCurrentTab() {
 }
 
 async function bootstrap() {
+  showBootFallback(
+    "Загружаю интерфейс",
+    "Если экран остаётся пустым дольше пары секунд, попробуйте открыть mini app ещё раз.",
+    false,
+  );
+  window.clearTimeout(bootstrapWatchdogTimer);
+  bootstrapWatchdogTimer = window.setTimeout(() => {
+    if (elements.tabsContainer.children.length === 0) {
+      showBootFallback(
+        "Интерфейс загружается слишком долго",
+        "Попробуйте обновить экран или открыть mini app ещё раз.",
+        true,
+      );
+    }
+  }, 1800);
   applyTelegramTheme();
+  bindSwipeBack();
   elements.modeContent.addEventListener("click", () => { setMode("content"); loadCurrentTab(); });
   elements.modeHandbook.addEventListener("click", () => { setMode("handbook"); loadCurrentTab(); });
 
   [elements.kindFilter, elements.statusFilter, elements.feedbackFilter].forEach(f => f.addEventListener("change", loadDrafts));
 
   elements.queryFilter.addEventListener("input", () => { clearTimeout(reelRefreshTimer); reelRefreshTimer = setTimeout(loadDrafts, 300); });
-  await loadReferenceAccess();
   if (MODE_TABS.handbook.find(t => t.id === state.tab)) state.mode = "handbook";
   setMode(state.mode);
-  await loadCurrentTab();
+  if (state.mode === "content") {
+    void loadReferenceAccess();
+  }
+  try {
+    await loadCurrentTab();
+    window.clearTimeout(bootstrapWatchdogTimer);
+    hideBootFallback();
+  } catch (error) {
+    console.error("miniapp bootstrap failed", error);
+    elements.draftDetail.innerHTML = `<div class="detail-empty">Не удалось загрузить данные. Попробуйте открыть mini app еще раз.</div>`;
+    setEmptyState(true, "Не удалось загрузить данные.");
+    showBootFallback(
+      "Не удалось загрузить интерфейс",
+      "Попробуйте обновить экран или открыть mini app ещё раз.",
+      true,
+    );
+  }
 }
+
+if (elements.bootFallbackReload) {
+  elements.bootFallbackReload.addEventListener("click", () => window.location.reload());
+}
+
+window.addEventListener("error", () => {
+  showBootFallback(
+    "Интерфейс временно недоступен",
+    "Во время загрузки произошла ошибка. Попробуйте обновить экран.",
+    true,
+  );
+});
+
+window.addEventListener("unhandledrejection", () => {
+  showBootFallback(
+    "Интерфейс временно недоступен",
+    "Во время загрузки произошла ошибка. Попробуйте обновить экран.",
+    true,
+  );
+});
 
 bootstrap();
 
@@ -874,6 +1111,10 @@ window.updateDraft = async (action, payload) => {
   state.selected = d; renderDraftDetail(d); renderDraftList();
 };
 window.sendDraftToChat = sendDraftToChat;
+window.saveCarouselSlideText = saveCarouselSlideText;
+window.regenerateCarouselSlide = regenerateCarouselSlide;
+window.regenerateCarouselAll = regenerateCarouselAll;
+window.downloadCarouselPptx = downloadCarouselPptx;
 
 function renderInbox() {
   elements.listTitle.textContent = "Согласование";
@@ -934,7 +1175,6 @@ function renderReelsDetail(r) {
       </div>
       ${payloadSection("Сценарий", r.payload?.scenario)}
       ${renderReelsFrames(r.frames)}
-      <section class="section"><h3>JSON</h3><pre class="json-block">${escapeHtml(JSON.stringify(r.payload, null, 2))}</pre></section>
     </div>
   `;
 }
