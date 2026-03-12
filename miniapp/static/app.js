@@ -412,6 +412,7 @@ function showUiNotice(message, tone = "info") {
   }
   notice.textContent = String(message || "");
   notice.className = `ui-notice is-visible tone-${tone}`;
+  window.clearTimeout(uiNoticeTimer);
   uiNoticeTimer = window.setTimeout(() => {
     notice.classList.remove("is-visible");
   }, 2400);
@@ -472,6 +473,24 @@ function draftGenerationLabel(draft) {
     return total ? `Ещё генерируется ${ready}/${total}` : "Ещё генерируется";
   }
   return "Ещё генерируется";
+}
+
+function generationStateMarkup(item, kind = "draft") {
+  if (!item?.generation_pending) return "";
+  const stage = String(item.generation_stage || "").trim();
+  const message = String(item.generation_message || "").trim();
+  const title = kind === "reels"
+    ? (stage === "scenario" ? "Собираю сценарий и раскадровку" : stage === "images" ? "Генерирую кадры" : "Собираю рилс")
+    : (stage === "slides" ? "Собираю структуру карусели" : stage === "images" ? "Генерирую картинки" : "Собираю карточку");
+  return `
+    <section class="section section-accent">
+      <div class="section-heading">
+        <h3>${uiIcon("sparkle")}${escapeHtml(title)}</h3>
+        <p>${escapeHtml(message || "Подождите ещё немного, мы обновим карточку автоматически.")}</p>
+      </div>
+      ${renderDetailLoader(title, message || "Подождите ещё немного, данные догружаются.", "detail-loader-card-compact")}
+    </section>
+  `;
 }
 
 function isPendingDraftId(value) {
@@ -710,6 +729,9 @@ function renderSlides(draftId, slides = [], prompts = [], slideImages = [], prom
                 <textarea id="${slideTextId(index)}" placeholder="Текст для этого слайда">${escapeHtml(slide)}</textarea>
               </label>
               <p class="field-help">После правки нажмите «Сохранить подпись», чтобы обновить этот слайд в черновике.</p>
+              <div class="actions-row prompt-actions">
+                <button class="primary-button" type="button" aria-label="Сохранить текст слайда" onclick="saveCarouselSlideText(${JSON.stringify(draftId)}, ${index}, this)">${actionLabel("text", "Сохранить подпись")}</button>
+              </div>
               ${prompt ? `
                 <details class="prompt-disclosure"${showPromptOpen ? " open" : ""}>
                   <summary class="secondary-button prompt-toggle">${actionLabel("eye", "Показать промпт")}</summary>
@@ -720,16 +742,13 @@ function renderSlides(draftId, slides = [], prompts = [], slideImages = [], prom
                       <textarea id="${slideNoteId(index)}" placeholder="Например: теплее свет, крупнее объект, меньше деталей на фоне" oninput="handleCarouselSlideNoteInput(${JSON.stringify(draftId)}, ${index}, this.value)">${escapeHtml(note)}</textarea>
                     </label>
                     <div class="actions-row prompt-actions">
-                      <button class="primary-button" type="button" aria-label="Сохранить текст слайда" onclick="saveCarouselSlideText(${JSON.stringify(draftId)}, ${index}, this)">${actionLabel("text", "Сохранить подпись")}</button>
                       <button class="secondary-button" type="button" onclick='copyText(${JSON.stringify(prompt)})'>${actionLabel("prompt", "Скопировать промпт слайда")}</button>
                       <button class="secondary-button" type="button" onclick="regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, this)">${actionLabel("regenerate", "Перегенерировать картинку")}</button>
                     </div>
                   </div>
                 </details>
               ` : `
-                <div class="actions-row prompt-actions">
-                  <button class="primary-button" type="button" aria-label="Сохранить текст слайда" onclick="saveCarouselSlideText(${JSON.stringify(draftId)}, ${index}, this)">${actionLabel("text", "Сохранить подпись")}</button>
-                </div>
+                
               `}
               ${renderSlideVersions(draftId, index, img, versions)}
             </article>
@@ -780,6 +799,8 @@ function renderSlideVersions(draftId, slideIndex, currentImage, versions = []) {
 }
 
 function clearBackgroundRefreshes() {
+  window.clearTimeout(reelRefreshTimer);
+  window.clearTimeout(carouselRefreshTimer);
   reelRefreshTimer = null;
   carouselRefreshTimer = null;
 }
@@ -840,6 +861,7 @@ async function persistCarouselSlideNote(draftId, slideIndex, note) {
 function handleCarouselSlideNoteInput(draftId, slideIndex, value) {
   const key = frameDraftKey(draftId, slideIndex);
   state.pendingCarouselNotes[key] = String(value || "");
+  window.clearTimeout(carouselNoteSaveTimers[key]);
   carouselNoteSaveTimers[key] = window.setTimeout(() => {
     void persistCarouselSlideNote(draftId, slideIndex, state.pendingCarouselNotes[key]).catch(() => {});
   }, 600);
@@ -887,14 +909,23 @@ async function regenerateCarouselSlide(draftId, slideIndex, button) {
 }
 
 async function regenerateCarouselAll(draftId, button) {
-  await withButtonFeedback(button, "Генерирую...", async () => {
-    const draft = await fetchJson(`/api/carousel/${draftId}/regenerate-all`, { method: "POST", body: "{}" });
-    state.selected = draft;
-    state.draftId = draft.draft_id;
-    state.drafts = state.drafts.map((item) => item.draft_id === draft.draft_id ? { ...item, ...draft } : item);
-    renderDraftList();
-    if (isCurrentDraftDetail(draft.draft_id)) renderDraftDetail(draft);
-  }, "Готово");
+  try {
+    await withButtonFeedback(button, "Запускаю...", async () => {
+      const draft = await fetchJson(`/api/carousel/${draftId}/regenerate-all`, {
+        method: "POST",
+        body: "{}",
+        timeout: 30000,
+      });
+      state.selected = draft;
+      state.draftId = draft.draft_id;
+      mergeDraftIntoState(draft);
+      renderDraftList();
+      if (isCurrentDraftDetail(draft.draft_id)) renderDraftDetail(draft);
+      scheduleCarouselRefresh(draft.draft_id);
+    }, "Запущено");
+  } catch (error) {
+    showRequestError("Не удалось запустить перегенерацию всех картинок", error);
+  }
 }
 
 async function selectCarouselSlideVersion(draftId, slideIndex, versionIndex, button) {
@@ -1012,12 +1043,14 @@ async function downloadCarouselPptx(draftId, button) {
   const downloadUrl = `${window.location.origin}/api/carousel/${draftId}/pptx${_authQueryString()}`;
   if (button instanceof HTMLElement) {
     button.classList.add("did-complete");
+    window.setTimeout(() => button.classList.remove("did-complete"), 900);
   }
   const tg = window.Telegram?.WebApp;
   if (tg?.openLink) {
     tg.openLink(downloadUrl);
     return;
   }
+  window.open(downloadUrl, "_blank", "noopener,noreferrer");
 }
 
 async function withButtonFeedback(button, pendingLabel, handler, doneLabel = "Готово") {
@@ -1036,6 +1069,7 @@ async function withButtonFeedback(button, pendingLabel, handler, doneLabel = "Г
       target.classList.remove("is-busy");
       target.classList.add("did-complete");
       target.innerHTML = `<span>${escapeHtml(doneLabel)}</span>`;
+      window.setTimeout(() => {
         target.classList.remove("did-complete");
         target.innerHTML = originalHtml;
       }, 900);
@@ -1047,6 +1081,7 @@ async function withButtonFeedback(button, pendingLabel, handler, doneLabel = "Г
       target.classList.remove("is-busy");
       target.classList.add("did-error");
       target.innerHTML = "<span>Ошибка</span>";
+      window.setTimeout(() => {
         target.classList.remove("did-error");
         target.innerHTML = originalHtml;
       }, 1200);
@@ -1070,27 +1105,35 @@ async function saveReelsScenario(draftId, button) {
 }
 
 async function regenerateReelsStoryboard(draftId, button) {
-  await withButtonFeedback(button, "Собираю заново...", async () => {
+  await withButtonFeedback(button, "Запускаю...", async () => {
     const draft = await fetchJson(`/api/reels/${draftId}/storyboard/regenerate`, {
       method: "POST",
       body: "{}",
+      timeout: 30000,
     });
-    state.selectedReels = draft;
+    mergeReelsIntoState(draft);
     renderReels();
     renderReelsDetail(draft);
-  }, "Готово");
+    scheduleReelsRefresh(draft.draft_id);
+  }, "Запущено");
 }
 
 async function regenerateAllReelsFrames(draftId, button) {
-  await withButtonFeedback(button, "Генерирую кадры...", async () => {
-    const draft = await fetchJson(`/api/reels/${draftId}/frames/regenerate-all`, {
-      method: "POST",
-      body: "{}",
-    });
-    state.selectedReels = draft;
-    renderReels();
-    renderReelsDetail(draft);
-  }, "Готово");
+  try {
+    await withButtonFeedback(button, "Запускаю...", async () => {
+      const draft = await fetchJson(`/api/reels/${draftId}/frames/regenerate-all`, {
+        method: "POST",
+        body: "{}",
+        timeout: 30000,
+      });
+      mergeReelsIntoState(draft);
+      renderReels();
+      renderReelsDetail(draft);
+      scheduleReelsRefresh(draft.draft_id);
+    }, "Запущено");
+  } catch (error) {
+    showRequestError("Не удалось запустить генерацию кадров", error);
+  }
 }
 
 async function saveReelsFrameFields(draftId, frameIndex, button) {
@@ -1138,6 +1181,7 @@ async function persistReelsFramePrompt(draftId, frameIndex, prompt) {
 function handleReelsFramePromptInput(draftId, frameIndex, value) {
   const key = frameDraftKey(draftId, frameIndex);
   state.pendingReelsPrompts[key] = String(value || "");
+  window.clearTimeout(reelsPromptSaveTimers[key]);
   reelsPromptSaveTimers[key] = window.setTimeout(() => {
     const prompt = String(state.pendingReelsPrompts[key] || "").trim();
     if (!prompt) return;
@@ -1175,13 +1219,14 @@ async function persistReelsFrameNote(draftId, frameIndex, note) {
 function handleReelsFrameNoteInput(draftId, frameIndex, value) {
   const key = frameDraftKey(draftId, frameIndex);
   state.pendingReelsNotes[key] = String(value || "");
+  window.clearTimeout(reelsNoteSaveTimers[key]);
   reelsNoteSaveTimers[key] = window.setTimeout(() => {
     void persistReelsFrameNote(draftId, frameIndex, state.pendingReelsNotes[key]).catch(() => {});
   }, 600);
 }
 
 async function regenerateReelsFrame(draftId, frameIndex, button) {
-  await withButtonFeedback(button, "Генерирую...", async () => {
+  await withButtonFeedback(button, "Запускаю...", async () => {
     const prompt = String(document.getElementById(`reelsFramePrompt${frameIndex}`)?.value || bufferedReelsPrompt(draftId, frameIndex, "")).trim();
     const note = String(document.getElementById(`reelsFrameNote${frameIndex}`)?.value || bufferedReelsNote(draftId, frameIndex, "")).trim();
     if (prompt) await persistReelsFramePrompt(draftId, frameIndex, prompt);
@@ -1193,7 +1238,8 @@ async function regenerateReelsFrame(draftId, frameIndex, button) {
     mergeReelsIntoState(draft);
     renderReels();
     renderReelsDetail(draft);
-  }, "Готово");
+    scheduleReelsRefresh(draft.draft_id);
+  }, "Запущено");
 }
 
 function renderReelsFrames(draftId, frames = []) {
@@ -1351,16 +1397,24 @@ function hideBootFallback() {
   elements.bootFallback.classList.remove("is-error");
 }
 
+function humanizeRequestMessage(message) {
+  if (message === "request_timeout") {
+    return "Сервер отвечает слишком долго. Действие могло уже запуститься, проверьте карточку ещё раз.";
+  }
+  if (message === "Load failed" || message === "Failed to fetch") {
+    return "Не удалось связаться с сервером. Проверьте соединение и попробуйте ещё раз.";
+  }
+  return message;
+}
+
 function showRequestError(prefix, error) {
   const message = error?.message || String(error || "unknown_error");
-  showUiNotice(`${prefix}: ${message}`, "error");
+  showUiNotice(`${prefix}: ${humanizeRequestMessage(message)}`, "error");
 }
 
 function showRuntimeWarning(prefix, error) {
   const message = error?.message || String(error || "unknown_error");
-  const humanMessage = message === "request_timeout"
-    ? "Сервер отвечает слишком долго. Попробуйте повторить загрузку."
-    : message;
+  const humanMessage = humanizeRequestMessage(message);
   if (!appBootstrapped) {
     showBootFallback(prefix, humanMessage, true);
     return;
@@ -1472,6 +1526,7 @@ function renderBackButton() {
   return `<button class="back-button visible" onclick="goBackToList(true)">${uiIcon("back")}<span>Назад к списку</span></button>`;
 }
 
+window.goBackToList = (animated = false) => {
   if (animated) {
     animateBackToList();
     return;
@@ -1487,6 +1542,7 @@ function enterDetailView() {
   syncMobileNavigation();
   if (elements.detailPanel) {
     elements.detailPanel.classList.remove("is-entering");
+    window.clearTimeout(detailEntryTimer);
     requestAnimationFrame(() => {
       elements.detailPanel.classList.add("is-entering");
       detailEntryTimer = window.setTimeout(() => {
@@ -1494,6 +1550,7 @@ function enterDetailView() {
       }, 280);
     });
   }
+  window.scrollTo(0, 0);
 }
 
 function isInteractiveTarget(target) {
@@ -1555,6 +1612,7 @@ function ensureFieldAboveKeyboard(target, behavior = "smooth") {
 function bindKeyboardViewportAssist() {
   const schedule = (target, delay = 0, behavior = "smooth") => {
     if (!(target instanceof HTMLElement)) return;
+    window.clearTimeout(keyboardViewportTimer);
     keyboardViewportTimer = window.setTimeout(() => ensureFieldAboveKeyboard(target, behavior), delay);
   };
 
@@ -1606,6 +1664,7 @@ function bindSwipeBack() {
     const dy = Math.abs(touch.clientY - swipeStart.y);
     swipeStart = null;
     if (dx > 72 && dy < 56 && dx > dy * 1.4) {
+      window.goBackToList(true);
       return;
     }
     elements.detailPanel.classList.remove("swipe-back-armed");
@@ -1616,6 +1675,7 @@ function bindSwipeBack() {
 function animateBackToList() {
   elements.detailPanel.classList.remove("swipe-back-armed");
   elements.detailPanel.classList.add("swipe-back-exit");
+  window.setTimeout(() => {
     state.mobileView = "list";
     elements.detailPanel.classList.remove("swipe-back-exit");
     elements.detailPanel.style.removeProperty("--swipe-offset");
@@ -1649,6 +1709,7 @@ function bindTopicForm(form, config) {
       await config.onSubmit(topic);
       submitButton.classList.add("did-complete");
       submitButton.innerHTML = `<span>${escapeHtml(config.doneText || "Готово")}</span>`;
+      window.setTimeout(() => {
         submitButton.classList.remove("did-complete");
         submitButton.innerHTML = originalHtml;
         updateState();
@@ -1657,6 +1718,7 @@ function bindTopicForm(form, config) {
     } catch (error) {
       submitButton.classList.add("did-error");
       showRequestError(config.errorPrefix || "Не удалось выполнить действие", error);
+      window.setTimeout(() => {
         submitButton.classList.remove("did-error");
         submitButton.innerHTML = originalHtml;
         updateState();
@@ -1696,6 +1758,7 @@ function _initDataHeader() {
 
 function scheduleReelsRefresh(draftId, attempts = 10) {
   if (!draftId || attempts <= 0) return;
+  window.clearTimeout(reelRefreshTimer);
   reelRefreshTimer = window.setTimeout(async () => {
     try {
       const reel = await fetchJson(`/api/reels/${draftId}`);
@@ -1706,13 +1769,14 @@ function scheduleReelsRefresh(draftId, attempts = 10) {
         renderReels();
         if (!isEditingDetailForm()) renderReelsDetail(reel);
       }
-      if (readyFrames < (reel.frame_count || 0)) scheduleReelsRefresh(draftId, attempts - 1);
+      if (reel.generation_pending || readyFrames < (reel.frame_count || 0)) scheduleReelsRefresh(draftId, attempts - 1);
     } catch (_e) { scheduleReelsRefresh(draftId, attempts - 1); }
   }, 4000);
 }
 
 function scheduleCarouselRefresh(draftId, attempts = 12) {
   if (!draftId || attempts <= 0) return;
+  window.clearTimeout(carouselRefreshTimer);
   carouselRefreshTimer = window.setTimeout(async () => {
     try {
       const draft = await fetchJson(`/api/carousel/${draftId}`);
@@ -1726,7 +1790,7 @@ function scheduleCarouselRefresh(draftId, attempts = 12) {
         renderDraftList();
         if (!isEditingDetailForm() && !hasPendingCarouselOperations(draft.draft_id)) renderDraftDetail(draft);
       }
-      if (readyCount < slideCount) scheduleCarouselRefresh(draftId, attempts - 1);
+      if (draft.generation_pending || readyCount < slideCount) scheduleCarouselRefresh(draftId, attempts - 1);
     } catch (_e) { scheduleCarouselRefresh(draftId, attempts - 1); }
   }, 5000);
 }
@@ -2187,8 +2251,22 @@ function renderCreateTool(toolId) {
 
   const rForm = elements.draftDetail.querySelector("[data-create-reels]");
   if (rForm) bindTopicForm(rForm, { pendingText: "Создаю...", onSubmit: async (t) => {
-    const r = await fetchJson("/api/generate/reels", { method: "POST", body: JSON.stringify({ topic: t }) });
-    state.selectedReels = r; state.selectedFrameIndex = 0; setTab("reels"); await loadReels(); await openReels(r.draft_id);
+    const pending = openPendingReelsCreation(t);
+    try {
+      const r = await fetchJson("/api/generate/reels", {
+        method: "POST",
+        timeout: 45000,
+        body: JSON.stringify({ topic: t }),
+      });
+      finalizePendingReelsCreation(r);
+      await openReels(r.draft_id);
+    } catch (error) {
+      if (error?.message === "request_timeout") {
+        await recoverPendingReelsCreation(t, pending.draft_id);
+        return;
+      }
+      throw error;
+    }
   }});
 
   const pForm = elements.draftDetail.querySelector("[data-create-plan]");
@@ -2403,6 +2481,7 @@ function renderDraftDetail(d) {
           <p class="detail-summary">${escapeHtml(draftHeroSummary(d, p, mainText))}</p>
           <div class="draft-meta">
             ${tagMarkup(statusLabel(d.status), statusTone(d.status))}
+            ${d.generation_pending ? tagMarkup(draftGenerationLabel(d), "pending") : ""}
             ${isContentReviewKind(d.kind) ? tagMarkup(feedbackLabel(d.feedback), feedbackTone(d.feedback)) : ""}
             ${tagMarkup(sourceLabel(d.source), sourceTone(d.source))}
           </div>
@@ -2423,6 +2502,7 @@ function renderDraftDetail(d) {
       ${payloadSection("Угол", p.angle)}
       ${payloadSection("Текст", mainText)}
       ${payloadSection("CTA", p.cta)}
+      ${generationStateMarkup(d, "draft")}
       ${reviewActions}
       ${renderSlides(d.draft_id, p.slides, p.img_prompts, p.slide_images, p.img_prompt_notes, p.slide_image_versions)}
       ${promptSection("Промпт для изображения", p.visual_prompt)}
@@ -2431,7 +2511,7 @@ function renderDraftDetail(d) {
   if (d.kind === "carousel") {
     const readyCount = (p.slide_images || []).filter(Boolean).length;
     const slideCount = (p.slides || []).length;
-    if (readyCount < slideCount) scheduleCarouselRefresh(d.draft_id);
+    if (d.generation_pending || readyCount < slideCount) scheduleCarouselRefresh(d.draft_id);
   }
 }
 
@@ -2555,10 +2635,13 @@ async function loadInitialScreen() {
   const result = await Promise.race([
     safeLoadCurrentTab("Не удалось загрузить вкладку"),
     new Promise((resolve) => {
+      window.clearTimeout(bootstrapWatchdogTimer);
+      bootstrapWatchdogTimer = window.setTimeout(() => resolve("timeout"), 8000);
     }),
   ]);
 
   startupLoadInFlight = false;
+  window.clearTimeout(bootstrapWatchdogTimer);
 
   if (result === true) {
     appBootstrapped = true;
@@ -2572,6 +2655,83 @@ async function loadInitialScreen() {
       true,
     );
     return false;
+  }
+  return false;
+}
+
+function openPendingReelsCreation(topic) {
+  const draft = buildPendingDraft("reels", topic);
+  draft.storyboard_count = 4;
+  draft.generation_stage = "scenario";
+  draft.generation_message = "Собираю сценарий и раскадровку для рилса.";
+  state.pendingCreateRecovery = {
+    draft_id: draft.draft_id,
+    kind: "reels",
+    topic,
+    started_at: Date.now(),
+  };
+  state.selectedReels = {
+    ...draft,
+    frame_count: 0,
+    frames: [],
+    payload: {
+      concept: "",
+      scenario: "",
+      storyboard: [],
+      generation_pending: true,
+      generation_stage: "scenario",
+      generation_message: "Собираю сценарий и раскадровку для рилса.",
+    },
+  };
+  setTab("reels");
+  state.reels = [
+    state.selectedReels,
+    ...state.reels.filter((item) => item.draft_id !== draft.draft_id),
+  ];
+  renderReels();
+  renderReelsDetail(state.selectedReels);
+  enterDetailView();
+  return state.selectedReels;
+}
+
+function finalizePendingReelsCreation(draft) {
+  if (!draft?.draft_id) return;
+  state.pendingCreateRecovery = null;
+  mergeReelsIntoState(draft);
+  renderReels();
+  renderReelsDetail(draft);
+  enterDetailView();
+}
+
+async function recoverPendingReelsCreation(topic, pendingDraftId) {
+  const startedAt = Date.now();
+  state.pendingCreateRecovery = {
+    draft_id: pendingDraftId,
+    kind: "reels",
+    topic,
+    started_at: startedAt,
+  };
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    try {
+      const data = await fetchJson("/api/drafts?kind=reels&limit=20", { timeout: 20000 });
+      const items = data.items || [];
+      const recovered = items.find((item) => {
+        const createdAt = new Date(item.created_at || 0).getTime();
+        return item.kind === "reels"
+          && item.topic === topic
+          && item.source === "/miniapp"
+          && (Number.isNaN(createdAt) || createdAt >= startedAt - 10_000);
+      });
+      if (recovered?.draft_id) {
+        state.pendingCreateRecovery = null;
+        await loadReels();
+        await openReels(recovered.draft_id);
+        return true;
+      }
+    } catch (_error) {
+      // ignore and retry
+    }
+    await new Promise((resolve) => window.setTimeout(resolve, 1500));
   }
   return false;
 }
@@ -2616,16 +2776,19 @@ async function bootstrap() {
 if (elements.bootFallbackReload) {
   elements.bootFallbackReload.addEventListener("click", () => {
     if (appBootstrapped) {
+      window.retryCurrentTab();
       return;
     }
     void loadInitialScreen();
   });
 }
 
+window.retryCurrentTab = () => {
   elements.draftList.innerHTML = renderPanelLoader("Повторяю загрузку");
   void safeLoadCurrentTab("Не удалось загрузить вкладку");
 };
 
+window.addEventListener("error", () => {
   if (appBootstrapped) return;
   showBootFallback(
     "Интерфейс временно недоступен",
@@ -2634,6 +2797,7 @@ if (elements.bootFallbackReload) {
   );
 });
 
+window.addEventListener("unhandledrejection", () => {
   if (appBootstrapped) return;
   showBootFallback(
     "Интерфейс временно недоступен",
@@ -2642,8 +2806,15 @@ if (elements.bootFallbackReload) {
   );
 });
 
-
-// Global Window functions
+window.openDraft = openDraft;
+window.openAroma = openAroma;
+window.openReference = openReference;
+window.copyText = copyText;
+window.openReels = openReels;
+window.openPlan = openPlan;
+window.generateDraftFromPlan = generateDraftFromPlan;
+window.openPlanRelatedDraft = openPlanRelatedDraft;
+window.updateDraft = async (action, payload, button) => {
   const currentDraftId = state.draftId || state.selectedReels?.draft_id || "";
   if (!currentDraftId) return;
   const request = async () => fetchJson(`/api/drafts/${currentDraftId}/${action}`, { method: "POST", body: JSON.stringify(payload) });
@@ -2660,11 +2831,36 @@ if (elements.bootFallbackReload) {
   renderDraftDetail(d);
   renderDraftList();
 };
+window.sendDraftToChat = sendDraftToChat;
+window.deleteDraft = deleteDraft;
+window.saveCarouselSlideText = saveCarouselSlideText;
+window.regenerateCarouselSlide = regenerateCarouselSlide;
+window.regenerateCarouselAll = regenerateCarouselAll;
+window.selectCarouselSlideVersion = selectCarouselSlideVersion;
+window.deleteCarouselSlideVersion = deleteCarouselSlideVersion;
+window.handleCarouselSlideNoteInput = handleCarouselSlideNoteInput;
+window.downloadCarouselPptx = downloadCarouselPptx;
+window.saveReelsScenario = saveReelsScenario;
+window.regenerateReelsStoryboard = regenerateReelsStoryboard;
+window.regenerateAllReelsFrames = regenerateAllReelsFrames;
+window.saveReelsFrameFields = saveReelsFrameFields;
+window.saveReelsFramePrompt = saveReelsFramePrompt;
+window.saveReelsFrameNote = saveReelsFrameNote;
+window.regenerateReelsFrame = regenerateReelsFrame;
+window.handleReelsFramePromptInput = handleReelsFramePromptInput;
+window.handleReelsFrameNoteInput = handleReelsFrameNoteInput;
+window.saveContentReviewDraft = saveContentReviewDraft;
+window.polishContentDraft = polishContentDraft;
+window.openKeywordTopic = openKeywordTopic;
+window.addKeywordItem = addKeywordItem;
+window.removeKeywordItem = removeKeywordItem;
+window.openCreateTool = (toolId = "content") => {
   setMode("content");
   setTab("create");
   renderCreate();
   renderCreateTool(toolId);
 };
+window.openSettingsSection = async (section) => {
   state.settingsSection = section === "keywords" ? "keywords" : "status";
   if (state.tab !== "settings") {
     setMode("content");
@@ -2771,6 +2967,7 @@ function renderReels() {
 }
 
 function renderReelsDetail(r) {
+  const hasFrames = Array.isArray(r.frames) && r.frames.length > 0;
   elements.draftDetail.innerHTML = `
     <div class="detail-grid">
       ${renderBackButton()}
@@ -2779,6 +2976,7 @@ function renderReelsDetail(r) {
         <h2 class="detail-title">${escapeHtml(r.topic)}</h2>
         <div class="draft-meta">
           ${tagMarkup(statusLabel(r.status || "draft"), statusTone(r.status || "draft"))}
+          ${r.generation_pending ? tagMarkup(draftGenerationLabel({ ...r, kind: "reels" }), "pending") : ""}
           ${tagMarkup(`${r.images_ready || 0}/${r.frame_count || 0} кадров`, "progress")}
           ${tagMarkup(sourceLabel(r.source || "/miniapp"), sourceTone(r.source || "/miniapp"))}
         </div>
@@ -2802,9 +3000,21 @@ function renderReelsDetail(r) {
           <textarea id="reelsScenarioField" placeholder="Полный текст сценария">${escapeHtml(r.payload?.scenario || "")}</textarea>
         </label>
       </section>
-      ${renderReelsFrames(r.draft_id, r.frames)}
+      ${generationStateMarkup(r, "reels")}
+      ${hasFrames ? renderReelsFrames(r.draft_id, r.frames) : `
+        <section class="section section-accent">
+          <div class="section-heading">
+            <h3>${uiIcon("slides")}Кадры и промпты</h3>
+            <p>${escapeHtml(r.generation_message || "Подготавливаю раскадровку и кадры для рилса.")}</p>
+          </div>
+          ${renderDetailLoader("Собираю раскадровку", r.generation_message || "Подождите ещё немного, и здесь появятся кадры.", "detail-loader-card-compact")}
+        </section>
+      `}
     </div>
   `;
+  if (r.generation_pending || (r.images_ready || 0) < (r.frame_count || 0)) {
+    scheduleReelsRefresh(r.draft_id);
+  }
 }
 
 function renderPlanDetail(p) {
@@ -2923,71 +3133,4 @@ function renderKeywords() {
   `;
   syncMobileNavigation();
 }
-
-
-
-// Global Window functions
-  window.clearTimeout(uiNoticeTimer);
-  window.clearTimeout(reelRefreshTimer);
-  window.clearTimeout(carouselRefreshTimer);
-  window.clearTimeout(carouselNoteSaveTimers[key]);
-    window.setTimeout(() => button.classList.remove("did-complete"), 900);
-  window.open(downloadUrl, "_blank", "noopener,noreferrer");
-      window.setTimeout(() => {
-      window.setTimeout(() => {
-  window.clearTimeout(reelsPromptSaveTimers[key]);
-  window.clearTimeout(reelsNoteSaveTimers[key]);
-window.goBackToList = (animated = false) => {
-    window.clearTimeout(detailEntryTimer);
-  window.scrollTo(0, 0);
-    window.clearTimeout(keyboardViewportTimer);
-      window.goBackToList(true);
-  window.setTimeout(() => {
-      window.setTimeout(() => {
-      window.setTimeout(() => {
-  window.clearTimeout(reelRefreshTimer);
-  window.clearTimeout(carouselRefreshTimer);
-  window.clearTimeout(bootstrapWatchdogTimer);
-      window.setTimeout(() => resolve("timeout"), 8000);
-  window.clearTimeout(bootstrapWatchdogTimer);
-      window.retryCurrentTab();
-window.retryCurrentTab = () => {
-window.addEventListener("error", () => {
-window.addEventListener("unhandledrejection", () => {
-window.openDraft = openDraft;
-window.openAroma = openAroma;
-window.openReference = openReference;
-window.copyText = copyText;
-window.openReels = openReels;
-window.openPlan = openPlan;
-window.generateDraftFromPlan = generateDraftFromPlan;
-window.openPlanRelatedDraft = openPlanRelatedDraft;
-window.updateDraft = async (action, payload, button) => {
-window.sendDraftToChat = sendDraftToChat;
-window.deleteDraft = deleteDraft;
-window.saveCarouselSlideText = saveCarouselSlideText;
-window.regenerateCarouselSlide = regenerateCarouselSlide;
-window.regenerateCarouselAll = regenerateCarouselAll;
-window.selectCarouselSlideVersion = selectCarouselSlideVersion;
-window.deleteCarouselSlideVersion = deleteCarouselSlideVersion;
-window.handleCarouselSlideNoteInput = handleCarouselSlideNoteInput;
-window.downloadCarouselPptx = downloadCarouselPptx;
-window.saveReelsScenario = saveReelsScenario;
-window.regenerateReelsStoryboard = regenerateReelsStoryboard;
-window.regenerateAllReelsFrames = regenerateAllReelsFrames;
-window.saveReelsFrameFields = saveReelsFrameFields;
-window.saveReelsFramePrompt = saveReelsFramePrompt;
-window.saveReelsFrameNote = saveReelsFrameNote;
-window.regenerateReelsFrame = regenerateReelsFrame;
-window.handleReelsFramePromptInput = handleReelsFramePromptInput;
-window.handleReelsFrameNoteInput = handleReelsFrameNoteInput;
-window.saveContentReviewDraft = saveContentReviewDraft;
-window.polishContentDraft = polishContentDraft;
-window.openKeywordTopic = openKeywordTopic;
-window.addKeywordItem = addKeywordItem;
-window.removeKeywordItem = removeKeywordItem;
-window.openCreateTool = (toolId = "content") => {
-window.openSettingsSection = async (section) => {
-
-
 bootstrap();

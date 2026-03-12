@@ -233,6 +233,143 @@ class AromaCardPayload(BaseModel):
     resource_values: dict[str, str] = Field(default_factory=dict)
 
 
+async def _set_generation_state(
+    draft_id: str,
+    *,
+    pending: bool,
+    stage: str = "",
+    message: str = "",
+    error: str = "",
+) -> None:
+    draft = await get_draft(draft_id)
+    if not draft:
+        return
+    payload = dict(draft.payload or {})
+    payload["generation_pending"] = pending
+    payload["generation_stage"] = stage
+    payload["generation_message"] = message
+    if error:
+        payload["generation_error"] = error
+    else:
+        payload.pop("generation_error", None)
+    await update_draft(draft_id, payload=payload, status="draft")
+
+
+async def _complete_carousel_generation(draft_id: str, topic: str) -> None:
+    try:
+        loop = asyncio.get_running_loop()
+        slides, img_prompts, arc = await loop.run_in_executor(None, _generate_carousel_sync, topic)
+        if not slides:
+            raise RuntimeError("carousel_generation_failed")
+        draft = await get_draft(draft_id)
+        if not draft:
+            return
+        payload = dict(draft.payload or {})
+        payload.update(
+            {
+                "slides": slides,
+                "img_prompts": img_prompts,
+                "arc": arc,
+                "slide_images": [],
+                "slide_image_versions": [],
+                "img_prompt_notes": [],
+                "images_ready": 0,
+                "generation_pending": True,
+                "generation_stage": "images",
+                "generation_message": "Генерирую картинки для слайдов.",
+            }
+        )
+        await update_draft(draft_id, payload=payload, status="draft")
+        await populate_carousel_slide_assets(draft_id)
+        await _set_generation_state(draft_id, pending=False)
+    except Exception as exc:
+        await _set_generation_state(
+            draft_id,
+            pending=False,
+            stage="error",
+            message="Не удалось закончить генерацию карусели. Попробуйте ещё раз.",
+            error=str(exc),
+        )
+
+
+async def _complete_reels_generation(draft_id: str, topic: str) -> None:
+    try:
+        loop = asyncio.get_running_loop()
+        scenario = await loop.run_in_executor(None, generate_reels_scenario_sync, topic)
+        await _set_generation_state(
+            draft_id,
+            pending=True,
+            stage="storyboard",
+            message="Собираю раскадровку рилса.",
+        )
+        frames = await loop.run_in_executor(None, generate_reels_director_sync, topic, scenario)
+        draft = await get_draft(draft_id)
+        if not draft:
+            return
+        payload = dict(draft.payload or {})
+        payload.update(
+            {
+                "scenario": scenario,
+                "storyboard": [
+                    {
+                        "timecode": frame.timecode,
+                        "scene": frame.scene,
+                        "angle": frame.angle,
+                        "gemini_prompt": frame.gemini_prompt,
+                        "review_note": "",
+                        "prompt_revisions": [],
+                        "current_asset": {},
+                        "asset_revisions": [],
+                    }
+                    for frame in frames
+                ],
+                "images_ready": 0,
+                "generation_pending": True,
+                "generation_stage": "images",
+                "generation_message": "Генерирую кадры для рилса.",
+            }
+        )
+        await update_draft(draft_id, payload=payload, status="draft")
+        await populate_reels_frame_assets(draft_id)
+        await _set_generation_state(draft_id, pending=False)
+    except Exception as exc:
+        await _set_generation_state(
+            draft_id,
+            pending=False,
+            stage="error",
+            message="Не удалось закончить генерацию рилса. Попробуйте ещё раз.",
+            error=str(exc),
+        )
+
+
+async def _complete_carousel_regenerate_all(draft_id: str) -> None:
+    try:
+        await regenerate_all_carousel_slide_assets(draft_id)
+        await _set_generation_state(draft_id, pending=False)
+    except Exception as exc:
+        await _set_generation_state(
+            draft_id,
+            pending=False,
+            stage="error",
+            message="Не удалось перегенерировать все картинки. Попробуйте ещё раз.",
+            error=str(exc),
+        )
+
+
+async def _complete_reels_regenerate_all(draft_id: str) -> None:
+    try:
+        await populate_reels_frame_assets(draft_id, overwrite_existing=True)
+        await _set_generation_state(draft_id, pending=False)
+    except Exception as exc:
+        await _set_generation_state(
+            draft_id,
+            pending=False,
+            stage="error",
+            message="Не удалось перегенерировать кадры. Попробуйте ещё раз.",
+            error=str(exc),
+        )
+
+
 @app.get("/", response_class=HTMLResponse)
 async def index():
     html = (MINIAPP_DIR / "index.html").read_text(encoding="utf-8")
@@ -449,19 +586,21 @@ async def generate_reels(
     if not topic:
         raise HTTPException(status_code=400, detail="empty_topic")
 
-    loop = asyncio.get_running_loop()
-    scenario = await loop.run_in_executor(None, generate_reels_scenario_sync, topic)
-    frames = await loop.run_in_executor(None, generate_reels_director_sync, topic, scenario)
     saved = await save_draft(
         kind="reels",
         topic=topic,
         source="/miniapp",
-        payload=build_reels_payload(topic, scenario, frames),
+        payload={
+            "scenario": "",
+            "concept": "",
+            "storyboard": [],
+            "images_ready": 0,
+            "generation_pending": True,
+            "generation_stage": "scenario",
+            "generation_message": "Собираю сценарий для рилса.",
+        },
     )
-    background_tasks.add_task(
-        populate_reels_frame_assets,
-        saved.draft_id,
-    )
+    background_tasks.add_task(_complete_reels_generation, saved.draft_id, topic)
     draft = await serialize_reels_draft(saved.draft_id)
     if not draft:
         raise HTTPException(status_code=500, detail="reels_not_saved")
@@ -481,24 +620,24 @@ async def generate_carousel(
     if not topic:
         raise HTTPException(status_code=400, detail="empty_topic")
 
-    loop = asyncio.get_running_loop()
-    slides, img_prompts, arc = await loop.run_in_executor(None, _generate_carousel_sync, topic)
-    if not slides:
-        raise HTTPException(status_code=500, detail="carousel_generation_failed")
-
     saved = await save_draft(
         kind="carousel",
         topic=topic,
         source="/miniapp",
         payload={
-            "slides": slides,
-            "img_prompts": img_prompts,
-            "arc": arc,
+            "slides": [],
+            "img_prompts": [],
+            "arc": "",
             "slide_images": [],
+            "slide_image_versions": [],
+            "img_prompt_notes": [],
             "images_ready": 0,
+            "generation_pending": True,
+            "generation_stage": "slides",
+            "generation_message": "Собираю структуру карусели.",
         },
     )
-    background_tasks.add_task(populate_carousel_slide_assets, saved.draft_id)
+    background_tasks.add_task(_complete_carousel_generation, saved.draft_id, topic)
     return await serialize_draft(saved)
 
 
@@ -591,14 +730,25 @@ async def delete_carousel_version(
 
 
 @app.post("/api/carousel/{draft_id}/regenerate-all")
-async def regenerate_carousel_all(draft_id: str, _: None = Depends(_require_auth)):
-    updated_payload = await regenerate_all_carousel_slide_assets(draft_id)
-    if updated_payload is None:
-        raise HTTPException(status_code=404, detail="carousel_not_found")
+async def regenerate_carousel_all(
+    draft_id: str,
+    background_tasks: BackgroundTasks,
+    _: None = Depends(_require_auth),
+):
     draft = await get_draft(draft_id)
-    if not draft:
+    if not draft or draft.kind != "carousel":
         raise HTTPException(status_code=404, detail="carousel_not_found")
-    return await serialize_draft(draft)
+    await _set_generation_state(
+        draft_id,
+        pending=True,
+        stage="images",
+        message="Перегенерирую все картинки в карусели.",
+    )
+    background_tasks.add_task(_complete_carousel_regenerate_all, draft_id)
+    refreshed = await get_draft(draft_id)
+    if not refreshed:
+        raise HTTPException(status_code=404, detail="carousel_not_found")
+    return await serialize_draft(refreshed)
 
 
 @app.get("/api/carousel/{draft_id}/pptx")
@@ -863,11 +1013,19 @@ async def reels_storyboard_regenerate(
 @app.post("/api/reels/{draft_id}/frames/regenerate-all")
 async def reels_frames_regenerate_all(
     draft_id: str,
+    background_tasks: BackgroundTasks,
     _: None = Depends(_require_auth),
 ):
-    regen_payload = await populate_reels_frame_assets(draft_id, overwrite_existing=True)
-    if not regen_payload:
-        raise HTTPException(status_code=503, detail="reels_frames_regenerate_failed")
+    draft = await get_draft(draft_id)
+    if not draft or draft.kind != "reels":
+        raise HTTPException(status_code=404, detail="reels_not_found")
+    await _set_generation_state(
+        draft_id,
+        pending=True,
+        stage="images",
+        message="Перегенерирую все кадры рилса.",
+    )
+    background_tasks.add_task(_complete_reels_regenerate_all, draft_id)
     draft = await serialize_reels_draft(draft_id)
     if not draft:
         raise HTTPException(status_code=404, detail="reels_not_found")

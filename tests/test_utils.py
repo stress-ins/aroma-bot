@@ -1184,16 +1184,10 @@ class TestMiniAppApi:
     def test_generate_carousel_creates_draft_and_summary(self, miniapp_test_client, monkeypatch):
         import miniapp_server
 
-        monkeypatch.setattr(
-            miniapp_server,
-            "_generate_carousel_sync",
-            lambda topic: (
-                [f"{topic}: слайд 1", f"{topic}: слайд 2"],
-                ["prompt one", "prompt two"],
-                "arc",
-            ),
-        )
-        monkeypatch.setattr(miniapp_server, "populate_carousel_slide_assets", lambda *_args, **_kwargs: None)
+        async def _noop_complete_carousel_generation(*_args, **_kwargs):
+            return None
+
+        monkeypatch.setattr(miniapp_server, "_complete_carousel_generation", _noop_complete_carousel_generation)
 
         response = miniapp_test_client.post(
             "/api/generate/carousel",
@@ -1205,27 +1199,22 @@ class TestMiniAppApi:
         payload = response.json()
         assert payload["draft_id"]
         assert payload["kind"] == "carousel"
+        assert payload["generation_pending"] is True
 
         drafts = miniapp_test_client.get("/api/drafts?limit=100", headers=self.AUTH_HEADERS)
         assert drafts.status_code == 200
         items = drafts.json()["items"]
         created = next(item for item in items if item["draft_id"] == payload["draft_id"])
         assert created["generation_pending"] is True
-        assert created["slides_count"] == 2
+        assert created["slides_count"] == 0
 
     def test_generate_reels_creates_draft_and_detail(self, miniapp_test_client, monkeypatch):
         import miniapp_server
 
-        monkeypatch.setattr(miniapp_server, "generate_reels_scenario_sync", lambda topic: f"Сценарий для {topic}")
-        monkeypatch.setattr(
-            miniapp_server,
-            "generate_reels_director_sync",
-            lambda topic, scenario: [
-                StoryboardFrame("0-3 сек", "Крупный план лица", "Крупный план", "portrait soft warm light"),
-                StoryboardFrame("3-6 сек", "Рука касается аромата", "Макро", "macro aroma bottle"),
-            ],
-        )
-        monkeypatch.setattr(miniapp_server, "populate_reels_frame_assets", lambda *_args, **_kwargs: None)
+        async def _noop_complete_reels_generation(*_args, **_kwargs):
+            return None
+
+        monkeypatch.setattr(miniapp_server, "_complete_reels_generation", _noop_complete_reels_generation)
 
         response = miniapp_test_client.post(
             "/api/generate/reels",
@@ -1236,11 +1225,14 @@ class TestMiniAppApi:
         assert response.status_code == 200
         payload = response.json()
         assert payload["draft_id"]
-        assert payload["frame_count"] == 2
+        assert payload["generation_pending"] is True
+        assert payload["frame_count"] == 0
+        assert payload["generation_stage"] == "scenario"
 
         detail = miniapp_test_client.get(f"/api/reels/{payload['draft_id']}", headers=self.AUTH_HEADERS)
         assert detail.status_code == 200
-        assert detail.json()["frame_count"] == 2
+        assert detail.json()["generation_pending"] is True
+        assert detail.json()["frame_count"] == 0
 
     def test_generate_plan_returns_entries(self, miniapp_test_client, monkeypatch):
         import miniapp_server
@@ -1758,6 +1750,8 @@ class TestMiniAppRussianLocale:
         assert "После правки нажмите «Сохранить подпись»" in app_js
         assert "Скачать PPTX" in app_js
         assert "Показать промпт" in app_js
+        assert "Скопировать промпт слайда" in app_js
+        assert "generationStateMarkup" in app_js
         assert "tg.openLink(downloadUrl)" in app_js
         assert "init_data" in server_py
         assert "sendDraftToChat" in app_js
@@ -2416,7 +2410,8 @@ class TestThreadsPrompts:
         assert 'upsertDraftSummary(draftSummaryFromDraft(draft));' in source
         assert 'renderDraftDetail(draft);' in source
         assert 'await recoverPendingDraftCreation("carousel", t, pending.draft_id);' in source
-        assert 'state.selectedReels = r; state.selectedFrameIndex = 0; setTab("reels"); await loadReels(); await openReels(r.draft_id);' in source
+        assert 'state.selectedReels = r;' in source
+        assert 'scheduleReelsRefresh(r.draft_id);' in source
         assert 'state.selectedPlan = p; setTab("plans"); await loadPlans(); renderPlanDetail(p); enterDetailView();' in source
         assert "async function openReels(id) {" in source
         assert "async function openPlan(id) {" in source
