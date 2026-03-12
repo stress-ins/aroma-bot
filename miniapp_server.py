@@ -9,7 +9,7 @@ import urllib.parse
 from pathlib import Path
 
 from fastapi import BackgroundTasks, Depends, FastAPI, Header, HTTPException, Query
-from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from telegram import Bot
@@ -68,6 +68,16 @@ BASE_DIR = Path(__file__).parent
 MINIAPP_DIR = BASE_DIR / "miniapp"
 STATIC_DIR = MINIAPP_DIR / "static"
 REFERENCE_IMAGES_DIR = BASE_DIR / "assets" / "reference_images"
+
+
+def _asset_version() -> str:
+    parts: list[str] = []
+    for path in (STATIC_DIR / "app.css", STATIC_DIR / "app.js"):
+        if path.exists():
+            stat = path.stat()
+            parts.append(f"{path.name}:{stat.st_mtime_ns}:{stat.st_size}")
+    digest = hashlib.sha256("|".join(parts).encode("utf-8")).hexdigest()
+    return digest[:10]
 
 
 def _verify_init_data(init_data: str) -> bool:
@@ -223,10 +233,12 @@ class AromaCardPayload(BaseModel):
     resource_values: dict[str, str] = Field(default_factory=dict)
 
 
-@app.get("/")
+@app.get("/", response_class=HTMLResponse)
 async def index():
-    return FileResponse(
-        MINIAPP_DIR / "index.html",
+    html = (MINIAPP_DIR / "index.html").read_text(encoding="utf-8")
+    html = html.replace("__ASSET_VERSION__", _asset_version())
+    return HTMLResponse(
+        content=html,
         headers={"Cache-Control": "no-store, max-age=0"},
     )
 
