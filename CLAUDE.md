@@ -14,7 +14,8 @@
 - Все изменения делаются в отдельной ветке (`git checkout -b feature/...`)
 - **ЗАПРЕЩЕНО коммитить напрямую в `main`** — только через Pull Request
 - После завершения работы: создать PR через `gh pr create`, дождаться явного одобрения от пользователя, только потом мержить
-- Деплой на VPS (`git push vps main`) — только после того, как PR смержен в `main`
+- **После мержа PR:** ОБЯЗАТЕЛЬНО сделать `git push origin main`, чтобы запустить автоматический деплой через GitHub Actions
+- **Проверка деплоя:** Убедиться, что GitHub Action "Deploy" завершился успешно и изменения доехали до VPS
 
 ## Чеклист после каждого изменения
 
@@ -28,7 +29,8 @@
 | 4 | ✅/❌ HELP_TEXT / WELCOME_TEXT обновлены | если добавлена новая команда |
 | 5 | ✅/❌ n8n workflow обновлён и задеплоен | если изменился промпт или логика флоу |
 | 6 | ✅/❌ PR создан и одобрен пользователем | всегда |
-| 7 | ✅/❌ Бот перезапущен | после мержа в main |
+| 7 | ✅/❌ Сделан `git push origin main` | после мержа в main |
+| 8 | ✅/❌ Деплой проверен на VPS | после пуша в main |
 
 Показывать таблицу в конце каждого ответа с выполненными задачами.
 
@@ -82,22 +84,21 @@ curl -s -X PUT http://localhost:5678/api/v1/workflows/uVGs2O7RguKjLWSW \
 
 ## Деплой на VPS
 
-Бот работает на VPS `46.32.186.192` как systemd-сервис `aroma-bot`.
+Бот работает на VPS `46.32.186.192` как systemd-сервисы `aroma-bot` и `aroma-miniapp`.
 
-**Задеплоить изменения:**
-```bash
-cd "/Users/p.kutsenko/Library/Mobile Documents/com~apple~CloudDocs/python/aroma"
-git add -A && git commit -m "описание изменений"
-git push vps main
-```
-После push хук автоматически: checkout → pip install → systemctl restart aroma-bot.
+**Автоматический деплой (GitHub Actions):**
+Деплой происходит автоматически при пуше в ветку `main` после прохождения тестов.
+1. Смержить PR в `main` (локально или через UI)
+2. Выполнить `git push origin main`
+3. Следить за статусом в [GitHub Actions](https://github.com/stress-ins/aroma-bot/actions)
 
 **Перезапуск вручную:**
 ```bash
-ssh root@46.32.186.192 'systemctl restart aroma-bot'
+ssh root@46.32.186.192 'systemctl restart aroma-bot aroma-miniapp'
 ```
 
 **Логи:**
 ```bash
 ssh root@46.32.186.192 'journalctl -u aroma-bot -n 50 --no-pager'
+ssh root@46.32.186.192 'journalctl -u aroma-miniapp -n 50 --no-pager'
 ```
