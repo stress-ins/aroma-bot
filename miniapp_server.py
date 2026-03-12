@@ -33,9 +33,10 @@ from bot.services.carousel_assets import (
     populate_carousel_slide_assets,
     regenerate_all_carousel_slide_assets,
     regenerate_carousel_slide_asset,
+    update_carousel_slide_note,
     update_carousel_slide_text,
 )
-from bot.services.drafts_store import get_draft, list_recent_drafts, update_draft
+from bot.services.drafts_store import delete_draft, get_draft, list_recent_drafts, update_draft
 from bot.services.drafts_store import save_draft
 from bot.services.miniapp_generator import (
     build_content_payload,
@@ -50,9 +51,12 @@ from bot.services.miniapp_presenter import filter_drafts, serialize_draft
 from bot.services.miniapp_reels import (
     build_reels_export_payload,
     list_reels_drafts,
+    regenerate_reels_storyboard,
     serialize_reels_draft,
+    update_reels_frame_fields,
     update_reels_frame_note,
     update_reels_frame_prompt,
+    update_reels_scenario,
 )
 from bot.services.plans_store import get_plan, list_recent_plans, save_plan
 from config import settings
@@ -160,6 +164,17 @@ class ReelsFramePromptPayload(BaseModel):
     prompt: str = Field(default="")
 
 
+class ReelsScenarioPayload(BaseModel):
+    scenario: str = Field(default="")
+    concept: str = Field(default="")
+
+
+class ReelsFrameFieldsPayload(BaseModel):
+    scene: str = Field(default="")
+    angle: str = Field(default="")
+    timecode: str = Field(default="")
+
+
 class CreateContentPayload(BaseModel):
     topic: str = Field(default="")
     goal_key: str = Field(default="")
@@ -175,11 +190,15 @@ class CreateCarouselPayload(BaseModel):
 
 
 class CarouselSlideRegeneratePayload(BaseModel):
-    note: str = Field(default="")
+    note: str | None = Field(default=None)
 
 
 class CarouselSlideTextPayload(BaseModel):
     text: str = Field(default="")
+
+
+class CarouselSlideNotePayload(BaseModel):
+    note: str = Field(default="")
 
 
 class PlanGeneratePayload(BaseModel):
@@ -247,12 +266,20 @@ async def draft_detail(draft_id: str):
 @app.post("/api/drafts/{draft_id}/status")
 async def update_status(draft_id: str, payload: DraftStatusPayload, _: None = Depends(_require_auth)):
     status = payload.status.strip().lower()
-    if status not in {"draft", "in_review", "approved", "published"}:
+    if status not in {"draft", "in_review", "approved", "published", "rejected"}:
         raise HTTPException(status_code=400, detail="invalid_status")
     draft = await update_draft(draft_id, status=status)
     if not draft:
         raise HTTPException(status_code=404, detail="draft_not_found")
     return await serialize_draft(draft)
+
+
+@app.delete("/api/drafts/{draft_id}")
+async def remove_draft(draft_id: str, _: None = Depends(_require_auth)):
+    deleted = await delete_draft(draft_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="draft_not_found")
+    return {"ok": True, "draft_id": draft_id}
 
 
 @app.post("/api/drafts/{draft_id}/feedback")
@@ -490,6 +517,22 @@ async def update_carousel_slide_copy(
     _: None = Depends(_require_auth),
 ):
     updated_payload = await update_carousel_slide_text(draft_id, slide_index, payload.text)
+    if updated_payload is None:
+        raise HTTPException(status_code=404, detail="carousel_slide_not_found")
+    draft = await get_draft(draft_id)
+    if not draft:
+        raise HTTPException(status_code=404, detail="carousel_not_found")
+    return await serialize_draft(draft)
+
+
+@app.post("/api/carousel/{draft_id}/slides/{slide_index}/note")
+async def update_carousel_slide_review_note(
+    draft_id: str,
+    slide_index: int,
+    payload: CarouselSlideNotePayload,
+    _: None = Depends(_require_auth),
+):
+    updated_payload = await update_carousel_slide_note(draft_id, slide_index, payload.note)
     if updated_payload is None:
         raise HTTPException(status_code=404, detail="carousel_slide_not_found")
     draft = await get_draft(draft_id)
@@ -742,6 +785,62 @@ async def reels_frame_regenerate(
     draft = await serialize_reels_draft(draft_id)
     if not draft:
         raise HTTPException(status_code=404, detail="reels_not_found")
+    return draft
+
+
+@app.post("/api/reels/{draft_id}/scenario")
+async def reels_scenario_update(
+    draft_id: str,
+    payload: ReelsScenarioPayload,
+    _: None = Depends(_require_auth),
+):
+    draft = await update_reels_scenario(draft_id, payload.scenario, payload.concept)
+    if not draft:
+        raise HTTPException(status_code=404, detail="reels_not_found")
+    return draft
+
+
+@app.post("/api/reels/{draft_id}/storyboard/regenerate")
+async def reels_storyboard_regenerate(
+    draft_id: str,
+    _: None = Depends(_require_auth),
+):
+    draft = await regenerate_reels_storyboard(draft_id)
+    if not draft:
+        raise HTTPException(status_code=404, detail="reels_not_found")
+    return draft
+
+
+@app.post("/api/reels/{draft_id}/frames/regenerate-all")
+async def reels_frames_regenerate_all(
+    draft_id: str,
+    _: None = Depends(_require_auth),
+):
+    regen_payload = await populate_reels_frame_assets(draft_id, overwrite_existing=True)
+    if not regen_payload:
+        raise HTTPException(status_code=503, detail="reels_frames_regenerate_failed")
+    draft = await serialize_reels_draft(draft_id)
+    if not draft:
+        raise HTTPException(status_code=404, detail="reels_not_found")
+    return draft
+
+
+@app.post("/api/reels/{draft_id}/frames/{frame_index}/fields")
+async def reels_frame_fields(
+    draft_id: str,
+    frame_index: int,
+    payload: ReelsFrameFieldsPayload,
+    _: None = Depends(_require_auth),
+):
+    draft = await update_reels_frame_fields(
+        draft_id,
+        frame_index,
+        scene=payload.scene,
+        angle=payload.angle,
+        timecode=payload.timecode,
+    )
+    if not draft:
+        raise HTTPException(status_code=404, detail="reels_frame_not_found")
     return draft
 
 

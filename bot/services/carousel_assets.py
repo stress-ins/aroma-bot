@@ -210,6 +210,30 @@ async def update_carousel_slide_text(
     return dict(updated.payload) if updated else None
 
 
+async def update_carousel_slide_note(
+    draft_id: str,
+    slide_index: int,
+    note: str,
+) -> dict[str, object] | None:
+    draft = await get_draft(draft_id)
+    if not draft or draft.kind != "carousel":
+        return None
+
+    prompts: list[str] = list(draft.payload.get("img_prompts", []))
+    if slide_index < 0 or slide_index >= len(prompts):
+        return None
+
+    notes: list[str] = list(draft.payload.get("img_prompt_notes", []))
+    while len(notes) < len(prompts):
+        notes.append("")
+
+    notes[slide_index] = note.strip()
+    payload = dict(draft.payload)
+    payload["img_prompt_notes"] = notes
+    updated = await update_draft(draft_id, payload=payload)
+    return dict(updated.payload) if updated else None
+
+
 def load_carousel_slide_images(draft_id: str, slide_images: list[dict | None]) -> list[bytes | None]:
     images: list[bytes | None] = []
     for item in slide_images:

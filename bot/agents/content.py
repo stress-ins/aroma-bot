@@ -35,13 +35,18 @@ FORMAT_LABELS = {
 _PLATFORM_RULES_WRITER = {
     "threads": """\
 Platform: Threads.
-STRICT LIMIT: 450 characters total including hashtags.
+Deliver a pack of 3 posts for today: morning, day, evening.
 Structure:
-- Line 1: the hook — verbatim or tightened, max 12 words, no greeting, no "Сегодня хочу"
-- Body: 2-3 dense sentences. Specific and concrete, no filler transitions
-- Last line: question to reader OR one-sentence CTA ("Напиши в ДМ если откликается")
-- New line, then 3-5 hashtags
-Forbidden: "В нашем мире", long intros, multiple CTAs, "подписывайся", empty filler""",
+- Use exactly three sections in this order: УТРО, ДЕНЬ, ВЕЧЕР
+- Each section is one standalone post with one idea only
+- Each post must be 5-12 short lines
+- Each post must be 40-120 words
+- Morning: observation, thought, or insight
+- Day: micro-expert post with one practical takeaway
+- Evening: question to the audience, can end with an open question
+- Conversational, mobile-readable, written like an in-the-moment thought
+- Short lines, no walls of text, no hashtags
+Forbidden: lectures, long explanations, complex terms, corporate tone, generic intros, multiple ideas in one post""",
 
     "instagram": """\
 Platform: Instagram caption.
