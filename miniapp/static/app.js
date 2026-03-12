@@ -1036,6 +1036,7 @@ async function withButtonFeedback(button, pendingLabel, handler, doneLabel = "Г
       target.classList.remove("is-busy");
       target.classList.add("did-complete");
       target.innerHTML = `<span>${escapeHtml(doneLabel)}</span>`;
+      window.setTimeout(() => {
         target.classList.remove("did-complete");
         target.innerHTML = originalHtml;
       }, 900);
@@ -1047,6 +1048,7 @@ async function withButtonFeedback(button, pendingLabel, handler, doneLabel = "Г
       target.classList.remove("is-busy");
       target.classList.add("did-error");
       target.innerHTML = "<span>Ошибка</span>";
+      window.setTimeout(() => {
         target.classList.remove("did-error");
         target.innerHTML = originalHtml;
       }, 1200);
@@ -1472,6 +1474,7 @@ function renderBackButton() {
   return `<button class="back-button visible" onclick="goBackToList(true)">${uiIcon("back")}<span>Назад к списку</span></button>`;
 }
 
+window.goBackToList = (animated = false) => {
   if (animated) {
     animateBackToList();
     return;
@@ -1616,6 +1619,7 @@ function bindSwipeBack() {
 function animateBackToList() {
   elements.detailPanel.classList.remove("swipe-back-armed");
   elements.detailPanel.classList.add("swipe-back-exit");
+  window.setTimeout(() => {
     state.mobileView = "list";
     elements.detailPanel.classList.remove("swipe-back-exit");
     elements.detailPanel.style.removeProperty("--swipe-offset");
@@ -1649,6 +1653,7 @@ function bindTopicForm(form, config) {
       await config.onSubmit(topic);
       submitButton.classList.add("did-complete");
       submitButton.innerHTML = `<span>${escapeHtml(config.doneText || "Готово")}</span>`;
+      window.setTimeout(() => {
         submitButton.classList.remove("did-complete");
         submitButton.innerHTML = originalHtml;
         updateState();
@@ -1657,6 +1662,7 @@ function bindTopicForm(form, config) {
     } catch (error) {
       submitButton.classList.add("did-error");
       showRequestError(config.errorPrefix || "Не удалось выполнить действие", error);
+      window.setTimeout(() => {
         submitButton.classList.remove("did-error");
         submitButton.innerHTML = originalHtml;
         updateState();
@@ -2616,16 +2622,19 @@ async function bootstrap() {
 if (elements.bootFallbackReload) {
   elements.bootFallbackReload.addEventListener("click", () => {
     if (appBootstrapped) {
+      window.retryCurrentTab();
       return;
     }
-    void loadInitialScreen();
+    window.location.reload();
   });
 }
 
+window.retryCurrentTab = () => {
   elements.draftList.innerHTML = renderPanelLoader("Повторяю загрузку");
   void safeLoadCurrentTab("Не удалось загрузить вкладку");
 };
 
+window.addEventListener("error", () => {
   if (appBootstrapped) return;
   showBootFallback(
     "Интерфейс временно недоступен",
@@ -2634,6 +2643,7 @@ if (elements.bootFallbackReload) {
   );
 });
 
+window.addEventListener("unhandledrejection", () => {
   if (appBootstrapped) return;
   showBootFallback(
     "Интерфейс временно недоступен",
@@ -2644,6 +2654,15 @@ if (elements.bootFallbackReload) {
 
 
 // Global Window functions
+window.openDraft = openDraft;
+window.openAroma = openAroma;
+window.openReference = openReference;
+window.copyText = copyText;
+window.openReels = openReels;
+window.openPlan = openPlan;
+window.generateDraftFromPlan = generateDraftFromPlan;
+window.openPlanRelatedDraft = openPlanRelatedDraft;
+window.updateDraft = async (action, payload, button) => {
   const currentDraftId = state.draftId || state.selectedReels?.draft_id || "";
   if (!currentDraftId) return;
   const request = async () => fetchJson(`/api/drafts/${currentDraftId}/${action}`, { method: "POST", body: JSON.stringify(payload) });
@@ -2660,11 +2679,36 @@ if (elements.bootFallbackReload) {
   renderDraftDetail(d);
   renderDraftList();
 };
+window.sendDraftToChat = sendDraftToChat;
+window.deleteDraft = deleteDraft;
+window.saveCarouselSlideText = saveCarouselSlideText;
+window.regenerateCarouselSlide = regenerateCarouselSlide;
+window.regenerateCarouselAll = regenerateCarouselAll;
+window.selectCarouselSlideVersion = selectCarouselSlideVersion;
+window.deleteCarouselSlideVersion = deleteCarouselSlideVersion;
+window.handleCarouselSlideNoteInput = handleCarouselSlideNoteInput;
+window.downloadCarouselPptx = downloadCarouselPptx;
+window.saveReelsScenario = saveReelsScenario;
+window.regenerateReelsStoryboard = regenerateReelsStoryboard;
+window.regenerateAllReelsFrames = regenerateAllReelsFrames;
+window.saveReelsFrameFields = saveReelsFrameFields;
+window.saveReelsFramePrompt = saveReelsFramePrompt;
+window.saveReelsFrameNote = saveReelsFrameNote;
+window.regenerateReelsFrame = regenerateReelsFrame;
+window.handleReelsFramePromptInput = handleReelsFramePromptInput;
+window.handleReelsFrameNoteInput = handleReelsFrameNoteInput;
+window.saveContentReviewDraft = saveContentReviewDraft;
+window.polishContentDraft = polishContentDraft;
+window.openKeywordTopic = openKeywordTopic;
+window.addKeywordItem = addKeywordItem;
+window.removeKeywordItem = removeKeywordItem;
+window.openCreateTool = (toolId = "content") => {
   setMode("content");
   setTab("create");
   renderCreate();
   renderCreateTool(toolId);
 };
+window.openSettingsSection = async (section) => {
   state.settingsSection = section === "keywords" ? "keywords" : "status";
   if (state.tab !== "settings") {
     setMode("content");
@@ -2924,36 +2968,40 @@ function renderKeywords() {
   syncMobileNavigation();
 }
 
+if (elements.bootFallbackReload) {
+  elements.bootFallbackReload.addEventListener("click", () => {
+    if (appBootstrapped) {
+      window.retryCurrentTab();
+      return;
+    }
+    window.location.reload();
+  });
+}
 
+window.retryCurrentTab = () => {
+  elements.draftList.innerHTML = renderPanelLoader("Повторяю загрузку");
+  void safeLoadCurrentTab("Не удалось загрузить вкладку");
+};
+
+window.addEventListener("error", () => {
+  if (appBootstrapped) return;
+  showBootFallback(
+    "Интерфейс временно недоступен",
+    "Во время загрузки произошла ошибка. Попробуйте обновить экран.",
+    true,
+  );
+});
+
+window.addEventListener("unhandledrejection", () => {
+  if (appBootstrapped) return;
+  showBootFallback(
+    "Интерфейс временно недоступен",
+    "Во время загрузки произошла ошибка. Попробуйте обновить экран.",
+    true,
+  );
+});
 
 // Global Window functions
-  window.clearTimeout(uiNoticeTimer);
-  window.clearTimeout(reelRefreshTimer);
-  window.clearTimeout(carouselRefreshTimer);
-  window.clearTimeout(carouselNoteSaveTimers[key]);
-    window.setTimeout(() => button.classList.remove("did-complete"), 900);
-  window.open(downloadUrl, "_blank", "noopener,noreferrer");
-      window.setTimeout(() => {
-      window.setTimeout(() => {
-  window.clearTimeout(reelsPromptSaveTimers[key]);
-  window.clearTimeout(reelsNoteSaveTimers[key]);
-window.goBackToList = (animated = false) => {
-    window.clearTimeout(detailEntryTimer);
-  window.scrollTo(0, 0);
-    window.clearTimeout(keyboardViewportTimer);
-      window.goBackToList(true);
-  window.setTimeout(() => {
-      window.setTimeout(() => {
-      window.setTimeout(() => {
-  window.clearTimeout(reelRefreshTimer);
-  window.clearTimeout(carouselRefreshTimer);
-  window.clearTimeout(bootstrapWatchdogTimer);
-      window.setTimeout(() => resolve("timeout"), 8000);
-  window.clearTimeout(bootstrapWatchdogTimer);
-      window.retryCurrentTab();
-window.retryCurrentTab = () => {
-window.addEventListener("error", () => {
-window.addEventListener("unhandledrejection", () => {
 window.openDraft = openDraft;
 window.openAroma = openAroma;
 window.openReference = openReference;
@@ -2963,6 +3011,22 @@ window.openPlan = openPlan;
 window.generateDraftFromPlan = generateDraftFromPlan;
 window.openPlanRelatedDraft = openPlanRelatedDraft;
 window.updateDraft = async (action, payload, button) => {
+  const currentDraftId = state.draftId || state.selectedReels?.draft_id || "";
+  if (!currentDraftId) return;
+  const request = async () => fetchJson(`/api/drafts/${currentDraftId}/${action}`, { method: "POST", body: JSON.stringify(payload) });
+  const d = button instanceof HTMLElement
+    ? await withButtonFeedback(button, "Сохраняю...", request, "Готово")
+    : await request();
+  if (state.tab === "reels" || d.kind === "reels") {
+    mergeReelsIntoState(d);
+    renderReels();
+    renderReelsDetail(d);
+    return;
+  }
+  mergeDraftIntoState(d);
+  renderDraftDetail(d);
+  renderDraftList();
+};
 window.sendDraftToChat = sendDraftToChat;
 window.deleteDraft = deleteDraft;
 window.saveCarouselSlideText = saveCarouselSlideText;
@@ -2987,7 +3051,18 @@ window.openKeywordTopic = openKeywordTopic;
 window.addKeywordItem = addKeywordItem;
 window.removeKeywordItem = removeKeywordItem;
 window.openCreateTool = (toolId = "content") => {
+  setMode("content");
+  setTab("create");
+  renderCreate();
+  renderCreateTool(toolId);
+};
 window.openSettingsSection = async (section) => {
-
+  state.settingsSection = section === "keywords" ? "keywords" : "status";
+  if (state.tab !== "settings") {
+    setMode("content");
+    setTab("settings");
+  }
+  await loadSettings();
+};
 
 bootstrap();
