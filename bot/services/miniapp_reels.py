@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from bot.agents.reels_agent import generate_reels_director_sync
 from bot.services.drafts_store import get_draft, list_recent_drafts, update_draft
 from bot.services.miniapp_presenter import serialize_draft
 
@@ -141,7 +142,7 @@ async def update_reels_frame_note(draft_id: str, frame_index: int, note: str) ->
     updated = await update_draft(draft_id, payload=payload, status="draft")
     if not updated:
         return None
-    return serialize_reels_draft(draft_id)
+    return await serialize_reels_draft(draft_id)
 
 
 async def update_reels_frame_prompt(draft_id: str, frame_index: int, prompt: str) -> dict[str, object] | None:
@@ -173,4 +174,80 @@ async def update_reels_frame_prompt(draft_id: str, frame_index: int, prompt: str
     updated = await update_draft(draft_id, payload=payload, status="draft")
     if not updated:
         return None
-    return serialize_reels_draft(draft_id)
+    return await serialize_reels_draft(draft_id)
+
+
+async def update_reels_scenario(draft_id: str, scenario: str, concept: str = "") -> dict[str, object] | None:
+    draft = await get_draft(draft_id)
+    if not draft or draft.kind != "reels":
+        return None
+    payload = dict(draft.payload)
+    payload["scenario"] = scenario.strip()
+    payload["concept"] = concept.strip()
+    updated = await update_draft(draft_id, payload=payload, status="draft")
+    if not updated:
+        return None
+    return await serialize_reels_draft(draft_id)
+
+
+async def update_reels_frame_fields(
+    draft_id: str,
+    frame_index: int,
+    *,
+    scene: str,
+    angle: str,
+    timecode: str,
+) -> dict[str, object] | None:
+    draft = await get_draft(draft_id)
+    if not draft or draft.kind != "reels":
+        return None
+    storyboard = draft.payload.get("storyboard", [])
+    if not isinstance(storyboard, list) or frame_index < 0 or frame_index >= len(storyboard):
+        return None
+
+    updated_storyboard: list[dict[str, object]] = []
+    for idx, item in enumerate(storyboard):
+        if not isinstance(item, dict):
+            updated_storyboard.append({})
+            continue
+        frame = dict(item)
+        if idx == frame_index:
+            frame["scene"] = scene.strip()
+            frame["angle"] = angle.strip()
+            frame["timecode"] = timecode.strip()
+        updated_storyboard.append(frame)
+
+    payload = dict(draft.payload)
+    payload["storyboard"] = updated_storyboard
+    updated = await update_draft(draft_id, payload=payload, status="draft")
+    if not updated:
+        return None
+    return await serialize_reels_draft(draft_id)
+
+
+async def regenerate_reels_storyboard(draft_id: str) -> dict[str, object] | None:
+    draft = await get_draft(draft_id)
+    if not draft or draft.kind != "reels":
+        return None
+
+    payload = dict(draft.payload)
+    scenario = str(payload.get("scenario", "")).strip()
+    frames = generate_reels_director_sync(draft.topic, scenario)
+    payload["storyboard"] = [
+        {
+            "timecode": frame.timecode,
+            "scene": frame.scene,
+            "angle": frame.angle,
+            "gemini_prompt": frame.gemini_prompt,
+            "review_note": "",
+            "prompt_revisions": [],
+            "current_asset": {},
+            "asset_revisions": [],
+        }
+        for frame in frames
+    ]
+    payload["images_ready"] = 0
+    updated = await update_draft(draft_id, payload=payload, status="draft")
+    if not updated:
+        return None
+    return await serialize_reels_draft(draft_id)
