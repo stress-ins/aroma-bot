@@ -66,6 +66,8 @@ def main() -> int:
         "username": bundle.username,
         "expires_in": bundle.expires_in,
         "access_token": bundle.access_token,
+        "instagram_business_account_id": bundle.metadata.get("instagram_business_account_id", bundle.user_id),
+        "page_id": bundle.metadata.get("page_id", ""),
     }
     print(json.dumps(payload, ensure_ascii=False, indent=2))
 
@@ -75,9 +77,15 @@ def main() -> int:
             {
                 "INSTAGRAM_ACCESS_TOKEN": bundle.access_token,
                 "INSTAGRAM_USER_ID": bundle.user_id,
+                "INSTAGRAM_BUSINESS_ACCOUNT_ID": str(
+                    bundle.metadata.get("instagram_business_account_id") or bundle.user_id
+                ),
             },
         )
-        print(f"Updated {args.env_file} with INSTAGRAM_ACCESS_TOKEN / INSTAGRAM_USER_ID")
+        print(
+            f"Updated {args.env_file} with "
+            "INSTAGRAM_ACCESS_TOKEN / INSTAGRAM_USER_ID / INSTAGRAM_BUSINESS_ACCOUNT_ID"
+        )
     return 0
 
 
