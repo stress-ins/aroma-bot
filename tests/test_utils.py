@@ -1989,7 +1989,6 @@ class TestMiniAppRussianLocale:
         assert ".guided-state" in app_css
         assert ".guided-state-copy" in app_css
         assert ".guided-state-actions" in app_css
-
     def test_interactive_cards_support_keyboard_and_aria_contract(self):
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
         app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
@@ -2001,7 +2000,6 @@ class TestMiniAppRussianLocale:
         assert 'class=\"create-card${state.selectedCreateTool === \'content\' ? \' active\' : \'\'} interactive-card\"' in app_js
         assert 'class=\"draft-card overview-card${d.draft_id === state.draftId ? \" active\" : \"\"}${d.generation_pending ? \" is-pending\" : \"\"} interactive-card\"' in app_js
         assert ".interactive-card:focus-visible" in app_css
-
     def test_create_flow_reopens_full_draft_and_dismisses_keyboard(self):
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
 
