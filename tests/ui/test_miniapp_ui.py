@@ -814,6 +814,7 @@ def test_keywords_detail_supports_add_and_remove(page):
     page.locator(".keyword-form input").first.fill("пауза")
     page.get_by_role("button", name="Добавить").first.click()
     page.wait_for_timeout(350)
+    assert page.locator("#uiNotice").is_visible()
     assert page.get_by_text("Ключ добавлен").is_visible()
     assert page.get_by_text("пауза").count() >= 1
 

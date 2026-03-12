@@ -1933,6 +1933,20 @@ class TestMiniAppRussianLocale:
         assert ".overview-card-top" in app_css
         assert ".overview-card-date" in app_css
 
+    def test_interaction_layer_has_motion_tokens_and_reduced_motion_guard(self):
+        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+
+        assert "--duration-fast" in app_css
+        assert "--ease-standard" in app_css
+        assert ":focus-visible" in app_css
+        assert ".detail-panel.is-entering" in app_css
+        assert "@keyframes detail-panel-enter" in app_css
+        assert "@keyframes notice-progress" in app_css
+        assert "@media (prefers-reduced-motion: reduce)" in app_css
+        assert "let detailEntryTimer = null;" in app_js
+        assert 'elements.detailPanel.classList.add("is-entering")' in app_js
+
     def test_create_flow_reopens_full_draft_and_dismisses_keyboard(self):
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
 
