@@ -412,7 +412,6 @@ function showUiNotice(message, tone = "info") {
   }
   notice.textContent = String(message || "");
   notice.className = `ui-notice is-visible tone-${tone}`;
-  window.clearTimeout(uiNoticeTimer);
   uiNoticeTimer = window.setTimeout(() => {
     notice.classList.remove("is-visible");
   }, 2400);
@@ -781,8 +780,6 @@ function renderSlideVersions(draftId, slideIndex, currentImage, versions = []) {
 }
 
 function clearBackgroundRefreshes() {
-  window.clearTimeout(reelRefreshTimer);
-  window.clearTimeout(carouselRefreshTimer);
   reelRefreshTimer = null;
   carouselRefreshTimer = null;
 }
@@ -843,7 +840,6 @@ async function persistCarouselSlideNote(draftId, slideIndex, note) {
 function handleCarouselSlideNoteInput(draftId, slideIndex, value) {
   const key = frameDraftKey(draftId, slideIndex);
   state.pendingCarouselNotes[key] = String(value || "");
-  window.clearTimeout(carouselNoteSaveTimers[key]);
   carouselNoteSaveTimers[key] = window.setTimeout(() => {
     void persistCarouselSlideNote(draftId, slideIndex, state.pendingCarouselNotes[key]).catch(() => {});
   }, 600);
@@ -1016,14 +1012,12 @@ async function downloadCarouselPptx(draftId, button) {
   const downloadUrl = `${window.location.origin}/api/carousel/${draftId}/pptx${_authQueryString()}`;
   if (button instanceof HTMLElement) {
     button.classList.add("did-complete");
-    window.setTimeout(() => button.classList.remove("did-complete"), 900);
   }
   const tg = window.Telegram?.WebApp;
   if (tg?.openLink) {
     tg.openLink(downloadUrl);
     return;
   }
-  window.open(downloadUrl, "_blank", "noopener,noreferrer");
 }
 
 async function withButtonFeedback(button, pendingLabel, handler, doneLabel = "Готово") {
@@ -1042,7 +1036,6 @@ async function withButtonFeedback(button, pendingLabel, handler, doneLabel = "Г
       target.classList.remove("is-busy");
       target.classList.add("did-complete");
       target.innerHTML = `<span>${escapeHtml(doneLabel)}</span>`;
-      window.setTimeout(() => {
         target.classList.remove("did-complete");
         target.innerHTML = originalHtml;
       }, 900);
@@ -1054,7 +1047,6 @@ async function withButtonFeedback(button, pendingLabel, handler, doneLabel = "Г
       target.classList.remove("is-busy");
       target.classList.add("did-error");
       target.innerHTML = "<span>Ошибка</span>";
-      window.setTimeout(() => {
         target.classList.remove("did-error");
         target.innerHTML = originalHtml;
       }, 1200);
@@ -1146,7 +1138,6 @@ async function persistReelsFramePrompt(draftId, frameIndex, prompt) {
 function handleReelsFramePromptInput(draftId, frameIndex, value) {
   const key = frameDraftKey(draftId, frameIndex);
   state.pendingReelsPrompts[key] = String(value || "");
-  window.clearTimeout(reelsPromptSaveTimers[key]);
   reelsPromptSaveTimers[key] = window.setTimeout(() => {
     const prompt = String(state.pendingReelsPrompts[key] || "").trim();
     if (!prompt) return;
@@ -1184,7 +1175,6 @@ async function persistReelsFrameNote(draftId, frameIndex, note) {
 function handleReelsFrameNoteInput(draftId, frameIndex, value) {
   const key = frameDraftKey(draftId, frameIndex);
   state.pendingReelsNotes[key] = String(value || "");
-  window.clearTimeout(reelsNoteSaveTimers[key]);
   reelsNoteSaveTimers[key] = window.setTimeout(() => {
     void persistReelsFrameNote(draftId, frameIndex, state.pendingReelsNotes[key]).catch(() => {});
   }, 600);
@@ -1482,7 +1472,6 @@ function renderBackButton() {
   return `<button class="back-button visible" onclick="goBackToList(true)">${uiIcon("back")}<span>Назад к списку</span></button>`;
 }
 
-window.goBackToList = (animated = false) => {
   if (animated) {
     animateBackToList();
     return;
@@ -1498,7 +1487,6 @@ function enterDetailView() {
   syncMobileNavigation();
   if (elements.detailPanel) {
     elements.detailPanel.classList.remove("is-entering");
-    window.clearTimeout(detailEntryTimer);
     requestAnimationFrame(() => {
       elements.detailPanel.classList.add("is-entering");
       detailEntryTimer = window.setTimeout(() => {
@@ -1506,7 +1494,6 @@ function enterDetailView() {
       }, 280);
     });
   }
-  window.scrollTo(0, 0);
 }
 
 function isInteractiveTarget(target) {
@@ -1568,7 +1555,6 @@ function ensureFieldAboveKeyboard(target, behavior = "smooth") {
 function bindKeyboardViewportAssist() {
   const schedule = (target, delay = 0, behavior = "smooth") => {
     if (!(target instanceof HTMLElement)) return;
-    window.clearTimeout(keyboardViewportTimer);
     keyboardViewportTimer = window.setTimeout(() => ensureFieldAboveKeyboard(target, behavior), delay);
   };
 
@@ -1620,7 +1606,6 @@ function bindSwipeBack() {
     const dy = Math.abs(touch.clientY - swipeStart.y);
     swipeStart = null;
     if (dx > 72 && dy < 56 && dx > dy * 1.4) {
-      window.goBackToList(true);
       return;
     }
     elements.detailPanel.classList.remove("swipe-back-armed");
@@ -1631,7 +1616,6 @@ function bindSwipeBack() {
 function animateBackToList() {
   elements.detailPanel.classList.remove("swipe-back-armed");
   elements.detailPanel.classList.add("swipe-back-exit");
-  window.setTimeout(() => {
     state.mobileView = "list";
     elements.detailPanel.classList.remove("swipe-back-exit");
     elements.detailPanel.style.removeProperty("--swipe-offset");
@@ -1665,7 +1649,6 @@ function bindTopicForm(form, config) {
       await config.onSubmit(topic);
       submitButton.classList.add("did-complete");
       submitButton.innerHTML = `<span>${escapeHtml(config.doneText || "Готово")}</span>`;
-      window.setTimeout(() => {
         submitButton.classList.remove("did-complete");
         submitButton.innerHTML = originalHtml;
         updateState();
@@ -1674,7 +1657,6 @@ function bindTopicForm(form, config) {
     } catch (error) {
       submitButton.classList.add("did-error");
       showRequestError(config.errorPrefix || "Не удалось выполнить действие", error);
-      window.setTimeout(() => {
         submitButton.classList.remove("did-error");
         submitButton.innerHTML = originalHtml;
         updateState();
@@ -1714,7 +1696,6 @@ function _initDataHeader() {
 
 function scheduleReelsRefresh(draftId, attempts = 10) {
   if (!draftId || attempts <= 0) return;
-  window.clearTimeout(reelRefreshTimer);
   reelRefreshTimer = window.setTimeout(async () => {
     try {
       const reel = await fetchJson(`/api/reels/${draftId}`);
@@ -1732,7 +1713,6 @@ function scheduleReelsRefresh(draftId, attempts = 10) {
 
 function scheduleCarouselRefresh(draftId, attempts = 12) {
   if (!draftId || attempts <= 0) return;
-  window.clearTimeout(carouselRefreshTimer);
   carouselRefreshTimer = window.setTimeout(async () => {
     try {
       const draft = await fetchJson(`/api/carousel/${draftId}`);
@@ -2562,7 +2542,6 @@ async function loadInitialScreen() {
     "Если экран остаётся пустым дольше пары секунд, попробуйте открыть mini app ещё раз.",
     false,
   );
-  window.clearTimeout(bootstrapWatchdogTimer);
   bootstrapWatchdogTimer = window.setTimeout(() => {
     if (!appBootstrapped) {
       showBootFallback(
@@ -2576,11 +2555,9 @@ async function loadInitialScreen() {
   const result = await Promise.race([
     safeLoadCurrentTab("Не удалось загрузить вкладку"),
     new Promise((resolve) => {
-      window.setTimeout(() => resolve("timeout"), 8000);
     }),
   ]);
 
-  window.clearTimeout(bootstrapWatchdogTimer);
   startupLoadInFlight = false;
 
   if (result === true) {
@@ -2639,19 +2616,16 @@ async function bootstrap() {
 if (elements.bootFallbackReload) {
   elements.bootFallbackReload.addEventListener("click", () => {
     if (appBootstrapped) {
-      window.retryCurrentTab();
       return;
     }
     void loadInitialScreen();
   });
 }
 
-window.retryCurrentTab = () => {
   elements.draftList.innerHTML = renderPanelLoader("Повторяю загрузку");
   void safeLoadCurrentTab("Не удалось загрузить вкладку");
 };
 
-window.addEventListener("error", () => {
   if (appBootstrapped) return;
   showBootFallback(
     "Интерфейс временно недоступен",
@@ -2660,7 +2634,6 @@ window.addEventListener("error", () => {
   );
 });
 
-window.addEventListener("unhandledrejection", () => {
   if (appBootstrapped) return;
   showBootFallback(
     "Интерфейс временно недоступен",
@@ -2669,18 +2642,8 @@ window.addEventListener("unhandledrejection", () => {
   );
 });
 
-bootstrap();
 
 // Global Window functions
-window.openDraft = openDraft;
-window.openAroma = openAroma;
-window.openReference = openReference;
-window.copyText = copyText;
-window.openReels = openReels;
-window.openPlan = openPlan;
-window.generateDraftFromPlan = generateDraftFromPlan;
-window.openPlanRelatedDraft = openPlanRelatedDraft;
-window.updateDraft = async (action, payload, button) => {
   const currentDraftId = state.draftId || state.selectedReels?.draft_id || "";
   if (!currentDraftId) return;
   const request = async () => fetchJson(`/api/drafts/${currentDraftId}/${action}`, { method: "POST", body: JSON.stringify(payload) });
@@ -2697,36 +2660,11 @@ window.updateDraft = async (action, payload, button) => {
   renderDraftDetail(d);
   renderDraftList();
 };
-window.sendDraftToChat = sendDraftToChat;
-window.deleteDraft = deleteDraft;
-window.saveCarouselSlideText = saveCarouselSlideText;
-window.regenerateCarouselSlide = regenerateCarouselSlide;
-window.regenerateCarouselAll = regenerateCarouselAll;
-window.selectCarouselSlideVersion = selectCarouselSlideVersion;
-window.deleteCarouselSlideVersion = deleteCarouselSlideVersion;
-window.handleCarouselSlideNoteInput = handleCarouselSlideNoteInput;
-window.downloadCarouselPptx = downloadCarouselPptx;
-window.saveReelsScenario = saveReelsScenario;
-window.regenerateReelsStoryboard = regenerateReelsStoryboard;
-window.regenerateAllReelsFrames = regenerateAllReelsFrames;
-window.saveReelsFrameFields = saveReelsFrameFields;
-window.saveReelsFramePrompt = saveReelsFramePrompt;
-window.saveReelsFrameNote = saveReelsFrameNote;
-window.regenerateReelsFrame = regenerateReelsFrame;
-window.handleReelsFramePromptInput = handleReelsFramePromptInput;
-window.handleReelsFrameNoteInput = handleReelsFrameNoteInput;
-window.saveContentReviewDraft = saveContentReviewDraft;
-window.polishContentDraft = polishContentDraft;
-window.openKeywordTopic = openKeywordTopic;
-window.addKeywordItem = addKeywordItem;
-window.removeKeywordItem = removeKeywordItem;
-window.openCreateTool = (toolId = "content") => {
   setMode("content");
   setTab("create");
   renderCreate();
   renderCreateTool(toolId);
 };
-window.openSettingsSection = async (section) => {
   state.settingsSection = section === "keywords" ? "keywords" : "status";
   if (state.tab !== "settings") {
     setMode("content");
@@ -2985,3 +2923,71 @@ function renderKeywords() {
   `;
   syncMobileNavigation();
 }
+
+
+
+// Global Window functions
+  window.clearTimeout(uiNoticeTimer);
+  window.clearTimeout(reelRefreshTimer);
+  window.clearTimeout(carouselRefreshTimer);
+  window.clearTimeout(carouselNoteSaveTimers[key]);
+    window.setTimeout(() => button.classList.remove("did-complete"), 900);
+  window.open(downloadUrl, "_blank", "noopener,noreferrer");
+      window.setTimeout(() => {
+      window.setTimeout(() => {
+  window.clearTimeout(reelsPromptSaveTimers[key]);
+  window.clearTimeout(reelsNoteSaveTimers[key]);
+window.goBackToList = (animated = false) => {
+    window.clearTimeout(detailEntryTimer);
+  window.scrollTo(0, 0);
+    window.clearTimeout(keyboardViewportTimer);
+      window.goBackToList(true);
+  window.setTimeout(() => {
+      window.setTimeout(() => {
+      window.setTimeout(() => {
+  window.clearTimeout(reelRefreshTimer);
+  window.clearTimeout(carouselRefreshTimer);
+  window.clearTimeout(bootstrapWatchdogTimer);
+      window.setTimeout(() => resolve("timeout"), 8000);
+  window.clearTimeout(bootstrapWatchdogTimer);
+      window.retryCurrentTab();
+window.retryCurrentTab = () => {
+window.addEventListener("error", () => {
+window.addEventListener("unhandledrejection", () => {
+window.openDraft = openDraft;
+window.openAroma = openAroma;
+window.openReference = openReference;
+window.copyText = copyText;
+window.openReels = openReels;
+window.openPlan = openPlan;
+window.generateDraftFromPlan = generateDraftFromPlan;
+window.openPlanRelatedDraft = openPlanRelatedDraft;
+window.updateDraft = async (action, payload, button) => {
+window.sendDraftToChat = sendDraftToChat;
+window.deleteDraft = deleteDraft;
+window.saveCarouselSlideText = saveCarouselSlideText;
+window.regenerateCarouselSlide = regenerateCarouselSlide;
+window.regenerateCarouselAll = regenerateCarouselAll;
+window.selectCarouselSlideVersion = selectCarouselSlideVersion;
+window.deleteCarouselSlideVersion = deleteCarouselSlideVersion;
+window.handleCarouselSlideNoteInput = handleCarouselSlideNoteInput;
+window.downloadCarouselPptx = downloadCarouselPptx;
+window.saveReelsScenario = saveReelsScenario;
+window.regenerateReelsStoryboard = regenerateReelsStoryboard;
+window.regenerateAllReelsFrames = regenerateAllReelsFrames;
+window.saveReelsFrameFields = saveReelsFrameFields;
+window.saveReelsFramePrompt = saveReelsFramePrompt;
+window.saveReelsFrameNote = saveReelsFrameNote;
+window.regenerateReelsFrame = regenerateReelsFrame;
+window.handleReelsFramePromptInput = handleReelsFramePromptInput;
+window.handleReelsFrameNoteInput = handleReelsFrameNoteInput;
+window.saveContentReviewDraft = saveContentReviewDraft;
+window.polishContentDraft = polishContentDraft;
+window.openKeywordTopic = openKeywordTopic;
+window.addKeywordItem = addKeywordItem;
+window.removeKeywordItem = removeKeywordItem;
+window.openCreateTool = (toolId = "content") => {
+window.openSettingsSection = async (section) => {
+
+
+bootstrap();
