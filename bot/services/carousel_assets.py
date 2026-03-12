@@ -45,6 +45,38 @@ def _slide_dir(draft_id: str) -> Path:
     return path
 
 
+def _ensure_slide_versions(
+    payload: dict[str, object],
+    slide_count: int,
+) -> tuple[list[dict | None], list[list[dict[str, str]]]]:
+    slide_images: list[dict | None] = list(payload.get("slide_images", []))
+    while len(slide_images) < slide_count:
+        slide_images.append(None)
+
+    raw_versions = payload.get("slide_image_versions", [])
+    versions: list[list[dict[str, str]]] = []
+    if isinstance(raw_versions, list):
+        for item in raw_versions[:slide_count]:
+            if isinstance(item, list):
+                versions.append([
+                    version
+                    for version in item
+                    if isinstance(version, dict) and version.get("url") and version.get("filename")
+                ])
+            else:
+                versions.append([])
+    while len(versions) < slide_count:
+        versions.append([])
+
+    for index in range(slide_count):
+        current = slide_images[index]
+        current_filename = str(current.get("filename", "")).strip() if isinstance(current, dict) else ""
+        if current_filename and not any(str(item.get("filename", "")).strip() == current_filename for item in versions[index]):
+            versions[index].append(current)
+
+    return slide_images, versions
+
+
 def save_carousel_slide_asset(
     draft_id: str,
     slide_index: int,
@@ -75,11 +107,7 @@ async def populate_carousel_slide_assets(draft_id: str) -> None:
         return
 
     img_prompts: list[str] = draft.payload.get("img_prompts", [])
-    slide_images: list[dict | None] = list(draft.payload.get("slide_images", []))
-
-    # Pad to match number of slides
-    while len(slide_images) < len(img_prompts):
-        slide_images.append(None)
+    slide_images, slide_versions = _ensure_slide_versions(draft.payload, len(img_prompts))
 
     changed = False
     for i, prompt in enumerate(img_prompts):
@@ -91,7 +119,9 @@ async def populate_carousel_slide_assets(draft_id: str) -> None:
                 log_context=f"carousel slide {i + 1}/{len(img_prompts)}",
             )
             if image_bytes:
-                slide_images[i] = save_carousel_slide_asset(draft_id, i, image_bytes, prompt=prompt)
+                version = save_carousel_slide_asset(draft_id, i, image_bytes, prompt=prompt)
+                slide_images[i] = version
+                slide_versions[i].append(version)
                 changed = True
                 logger.info("carousel_assets: slide %d generated for draft %s", i + 1, draft_id)
         except Exception:
@@ -100,6 +130,7 @@ async def populate_carousel_slide_assets(draft_id: str) -> None:
     if changed:
         payload = dict(draft.payload)
         payload["slide_images"] = slide_images
+        payload["slide_image_versions"] = slide_versions
         payload["images_ready"] = sum(1 for img in slide_images if img)
         await update_draft(draft_id, payload=payload)
 
@@ -118,9 +149,7 @@ async def regenerate_carousel_slide_asset(
     if slide_index < 0 or slide_index >= len(img_prompts):
         return None
 
-    slide_images: list[dict | None] = list(draft.payload.get("slide_images", []))
-    while len(slide_images) < len(img_prompts):
-        slide_images.append(None)
+    slide_images, slide_versions = _ensure_slide_versions(draft.payload, len(img_prompts))
 
     notes: list[str] = list(draft.payload.get("img_prompt_notes", []))
     while len(notes) < len(img_prompts):
@@ -141,9 +170,12 @@ async def regenerate_carousel_slide_asset(
     if not image_bytes:
         return None
 
-    slide_images[slide_index] = save_carousel_slide_asset(draft_id, slide_index, image_bytes, prompt=final_prompt)
+    version = save_carousel_slide_asset(draft_id, slide_index, image_bytes, prompt=final_prompt)
+    slide_images[slide_index] = version
+    slide_versions[slide_index].append(version)
     payload = dict(draft.payload)
     payload["slide_images"] = slide_images
+    payload["slide_image_versions"] = slide_versions
     payload["img_prompt_notes"] = notes
     payload["images_ready"] = sum(1 for img in slide_images if img)
     updated = await update_draft(draft_id, payload=payload)
@@ -156,10 +188,8 @@ async def regenerate_all_carousel_slide_assets(draft_id: str) -> dict[str, objec
         return None
 
     img_prompts: list[str] = list(draft.payload.get("img_prompts", []))
-    slide_images: list[dict | None] = list(draft.payload.get("slide_images", []))
+    slide_images, slide_versions = _ensure_slide_versions(draft.payload, len(img_prompts))
     notes: list[str] = list(draft.payload.get("img_prompt_notes", []))
-    while len(slide_images) < len(img_prompts):
-        slide_images.append(None)
     while len(notes) < len(img_prompts):
         notes.append("")
 
@@ -176,7 +206,9 @@ async def regenerate_all_carousel_slide_assets(draft_id: str) -> dict[str, objec
             continue
         if not image_bytes:
             continue
-        slide_images[index] = save_carousel_slide_asset(draft_id, index, image_bytes, prompt=final_prompt)
+        version = save_carousel_slide_asset(draft_id, index, image_bytes, prompt=final_prompt)
+        slide_images[index] = version
+        slide_versions[index].append(version)
         changed = True
 
     if not changed:
@@ -184,7 +216,66 @@ async def regenerate_all_carousel_slide_assets(draft_id: str) -> dict[str, objec
 
     payload = dict(draft.payload)
     payload["slide_images"] = slide_images
+    payload["slide_image_versions"] = slide_versions
     payload["img_prompt_notes"] = notes
+    payload["images_ready"] = sum(1 for img in slide_images if img)
+    updated = await update_draft(draft_id, payload=payload)
+    return dict(updated.payload) if updated else None
+
+
+async def select_carousel_slide_version(
+    draft_id: str,
+    slide_index: int,
+    version_index: int,
+) -> dict[str, object] | None:
+    draft = await get_draft(draft_id)
+    if not draft or draft.kind != "carousel":
+        return None
+
+    prompts: list[str] = list(draft.payload.get("img_prompts", []))
+    if slide_index < 0 or slide_index >= len(prompts):
+        return None
+
+    slide_images, slide_versions = _ensure_slide_versions(draft.payload, len(prompts))
+    if version_index < 0 or version_index >= len(slide_versions[slide_index]):
+        return None
+
+    slide_images[slide_index] = slide_versions[slide_index][version_index]
+    payload = dict(draft.payload)
+    payload["slide_images"] = slide_images
+    payload["slide_image_versions"] = slide_versions
+    payload["images_ready"] = sum(1 for img in slide_images if img)
+    updated = await update_draft(draft_id, payload=payload)
+    return dict(updated.payload) if updated else None
+
+
+async def delete_carousel_slide_version(
+    draft_id: str,
+    slide_index: int,
+    version_index: int,
+) -> dict[str, object] | None:
+    draft = await get_draft(draft_id)
+    if not draft or draft.kind != "carousel":
+        return None
+
+    prompts: list[str] = list(draft.payload.get("img_prompts", []))
+    if slide_index < 0 or slide_index >= len(prompts):
+        return None
+
+    slide_images, slide_versions = _ensure_slide_versions(draft.payload, len(prompts))
+    if version_index < 0 or version_index >= len(slide_versions[slide_index]):
+        return None
+
+    removed = slide_versions[slide_index].pop(version_index)
+    current = slide_images[slide_index]
+    current_filename = str(current.get("filename", "")).strip() if isinstance(current, dict) else ""
+    removed_filename = str(removed.get("filename", "")).strip()
+    if current_filename and current_filename == removed_filename:
+      slide_images[slide_index] = slide_versions[slide_index][-1] if slide_versions[slide_index] else None
+
+    payload = dict(draft.payload)
+    payload["slide_images"] = slide_images
+    payload["slide_image_versions"] = slide_versions
     payload["images_ready"] = sum(1 for img in slide_images if img)
     updated = await update_draft(draft_id, payload=payload)
     return dict(updated.payload) if updated else None
