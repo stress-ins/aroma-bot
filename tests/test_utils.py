@@ -1672,8 +1672,10 @@ class TestMiniAppRussianLocale:
         assert 'window.addEventListener("unhandledrejection"' in app_js
         assert ".boot-fallback" in app_css
         assert ".boot-fallback.is-error" in app_css
-        assert 'await safeLoadCurrentTab("Не удалось загрузить вкладку")' in app_js
-        assert "appBootstrapped = true;" in app_js
+        assert "async function loadInitialScreen()" in app_js
+        assert 'await loadInitialScreen();' in app_js
+        assert 'if (!appBootstrapped) {' in app_js
+        assert 'appBootstrapped = true;' in app_js
 
     def test_handbook_has_all_reference_tabs(self):
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
@@ -2364,6 +2366,16 @@ class TestThreadsPrompts:
         assert "void loadReferenceAccess();" in source
         assert "await loadReferenceAccess();" not in bootstrap_section
         assert 'throw new Error("request_timeout")' in source
+        assert 'new Promise((resolve) => {' in source
+        assert 'showBootFallback(' in source
+
+    def test_startup_errors_keep_boot_fallback_visible_until_first_render(self):
+        source = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        runtime_warning = source.split("function showRuntimeWarning(prefix, error) {", 1)[1].split("}\n\nasync function copyText", 1)[0]
+
+        assert 'if (!appBootstrapped) {' in runtime_warning
+        assert 'showBootFallback(prefix, humanMessage, true);' in runtime_warning
+        assert 'hideBootFallback();' in runtime_warning
 
     def test_reference_access_timeout_stays_retriable(self):
         source = Path("miniapp/static/app.js").read_text(encoding="utf-8")

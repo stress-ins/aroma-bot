@@ -50,6 +50,7 @@ let carouselRefreshTimer = null;
 let swipeStart = null;
 let bootstrapWatchdogTimer = null;
 let appBootstrapped = false;
+let startupLoadInFlight = false;
 let uiNoticeTimer = null;
 let detailEntryTimer = null;
 let keyboardViewportTimer = null;
@@ -1366,11 +1367,15 @@ function showRequestError(prefix, error) {
 }
 
 function showRuntimeWarning(prefix, error) {
-  hideBootFallback();
   const message = error?.message || String(error || "unknown_error");
   const humanMessage = message === "request_timeout"
     ? "Сервер отвечает слишком долго. Попробуйте повторить загрузку."
     : message;
+  if (!appBootstrapped) {
+    showBootFallback(prefix, humanMessage, true);
+    return;
+  }
+  hideBootFallback();
   setEmptyState(true);
   elements.listTitle.textContent = "Загрузка";
   elements.draftCount.textContent = "";
@@ -2541,13 +2546,17 @@ async function safeLoadCurrentTab(prefix = "Не удалось загрузит
   try {
     await loadCurrentTab();
     hideBootFallback();
+    return true;
   } catch (error) {
     console.error("miniapp runtime tab load failed", error);
     showRuntimeWarning(prefix, error);
+    return false;
   }
 }
 
-async function bootstrap() {
+async function loadInitialScreen() {
+  if (startupLoadInFlight) return false;
+  startupLoadInFlight = true;
   showBootFallback(
     "Загружаю интерфейс",
     "Если экран остаётся пустым дольше пары секунд, попробуйте открыть mini app ещё раз.",
@@ -2555,14 +2564,42 @@ async function bootstrap() {
   );
   window.clearTimeout(bootstrapWatchdogTimer);
   bootstrapWatchdogTimer = window.setTimeout(() => {
-    if (elements.tabsContainer.children.length === 0) {
+    if (!appBootstrapped) {
       showBootFallback(
         "Интерфейс загружается слишком долго",
-        "Попробуйте обновить экран или открыть mini app ещё раз.",
+        "Похоже, стартовый экран отвечает медленнее обычного. Можно повторить загрузку.",
         true,
       );
     }
   }, 1800);
+
+  const result = await Promise.race([
+    safeLoadCurrentTab("Не удалось загрузить вкладку"),
+    new Promise((resolve) => {
+      window.setTimeout(() => resolve("timeout"), 8000);
+    }),
+  ]);
+
+  window.clearTimeout(bootstrapWatchdogTimer);
+  startupLoadInFlight = false;
+
+  if (result === true) {
+    appBootstrapped = true;
+    hideBootFallback();
+    return true;
+  }
+  if (result === "timeout") {
+    showBootFallback(
+      "Интерфейс загружается слишком долго",
+      "Мы не дождались первого ответа. Попробуйте повторить загрузку.",
+      true,
+    );
+    return false;
+  }
+  return false;
+}
+
+async function bootstrap() {
   applyTelegramTheme();
   bindSwipeBack();
   bindKeyboardDismiss();
@@ -2589,14 +2626,11 @@ async function bootstrap() {
   });
   if (MODE_TABS.handbook.find(t => t.id === state.tab)) state.mode = "handbook";
   setMode(state.mode);
-  appBootstrapped = true;
   if (state.mode === "content") {
     void loadReferenceAccess();
   }
   try {
-    await safeLoadCurrentTab("Не удалось загрузить вкладку");
-    window.clearTimeout(bootstrapWatchdogTimer);
-    hideBootFallback();
+    await loadInitialScreen();
   } catch (error) {
     console.error("miniapp bootstrap fallback failed", error);
   }
@@ -2608,7 +2642,7 @@ if (elements.bootFallbackReload) {
       window.retryCurrentTab();
       return;
     }
-    window.location.reload();
+    void loadInitialScreen();
   });
 }
 
