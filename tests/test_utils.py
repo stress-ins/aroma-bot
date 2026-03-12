@@ -1030,6 +1030,24 @@ class TestMiniAppPresenter:
         assert data["preview"] == "Текст поста"
         assert "payload" not in data
 
+    async def test_serialize_draft_summary_marks_generation_pending(self):
+        draft = DraftRecord(
+            draft_id="car12345",
+            kind="carousel",
+            topic="Карусель",
+            source="/miniapp",
+            created_at="2026-03-12T01:00:00+00:00",
+            status="draft",
+            feedback="",
+            payload={"slides": ["1", "2", "3"], "images_ready": 1},
+        )
+
+        data = await serialize_draft_summary(draft)
+
+        assert data["slides_count"] == 3
+        assert data["images_ready"] == 1
+        assert data["generation_pending"] is True
+
 
 class TestMiniAppKeywords:
     def test_field_labels_exposes_ru_and_en_fields(self):
@@ -1575,6 +1593,31 @@ class TestMiniAppRussianLocale:
         assert ".panel-loader-card" in app_css
         assert ".boot-fallback-inline" in app_css
 
+    def test_detail_buttons_have_visual_feedback_and_notes_survive_refresh(self):
+        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+
+        assert "function isEditingDetailForm()" in app_js
+        assert "if (!isEditingDetailForm()) renderReelsDetail(reel);" in app_js
+        assert "if (!isEditingDetailForm()) renderDraftDetail(draft);" in app_js
+        assert "onclick=\"updateDraft('status', {status:'approved'}, this)\"" in app_js
+        assert "onclick=\"sendDraftToChat('${d.draft_id}', this)\"" in app_js
+        assert "onclick=\"deleteDraft('${d.draft_id}', 'drafts', this)\"" in app_js
+        assert ".secondary-button.is-busy" in app_css
+        assert ".secondary-button.did-complete" in app_css
+
+    def test_pending_drafts_are_marked_as_generating(self):
+        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        presenter_py = Path("bot/services/miniapp_presenter.py").read_text(encoding="utf-8")
+
+        assert '"generation_pending": generation_pending' in presenter_py
+        assert '"images_ready": images_ready' in presenter_py
+        assert "function draftGenerationLabel(draft)" in app_js
+        assert 'class="tag tag-pending"' in app_js
+        assert ".draft-card.is-pending" in app_css
+        assert ".tag-pending" in app_css
+
     def test_drafts_do_not_auto_open_first_item_on_boot(self):
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
 
@@ -1889,13 +1932,26 @@ class TestThreadsPrompts:
     def test_create_flows_route_into_detail_cards(self):
         source = Path("miniapp/static/app.js").read_text(encoding="utf-8")
 
-        assert 'state.draftId = d.draft_id; setTab("drafts"); await loadDrafts();' in source
+        assert "function draftSummaryFromDraft(draft) {" in source
+        assert "function upsertDraftSummary(summary) {" in source
+        assert 'state.selected = d;' in source
+        assert 'upsertDraftSummary(draftSummaryFromDraft(d));' in source
+        assert 'renderDraftDetail(d);' in source
+        assert 'void loadDrafts();' in source
         assert 'state.selectedReels = r; state.selectedFrameIndex = 0; setTab("reels"); await loadReels(); await openReels(r.draft_id);' in source
         assert 'state.selectedPlan = p; setTab("plans"); await loadPlans(); renderPlanDetail(p); enterDetailView();' in source
         assert "async function openReels(id) {" in source
         assert "async function openPlan(id) {" in source
         assert "window.openReels = openReels;" in source
         assert "window.openPlan = openPlan;" in source
+
+    def test_load_drafts_keeps_list_alive_if_detail_open_fails(self):
+        source = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+
+        assert 'const data = await fetchJson(`/api/drafts?${filtersToQueryString()}`, { timeout: 20000 });' in source
+        assert 'await openDraft(preferredId);' in source
+        assert 'console.error("miniapp failed to open preferred draft", error);' in source
+        assert 'renderDetailError("Не удалось открыть карточку", message, `openDraft(\'${preferredId}\')`)' in source
 
 class TestPatchAromaCardsScript:
     def test_coerce_aliases_accepts_exported_json_string(self):
