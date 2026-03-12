@@ -1617,6 +1617,26 @@ textarea,
   letter-spacing: -0.01em;
 }
 
+.concept-card .draft-kind span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.concept-kind-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: rgba(86, 129, 173, 0.12);
+  color: #416784;
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 700;
+}
+
 .concept-card .draft-preview {
   color: var(--text);
 }

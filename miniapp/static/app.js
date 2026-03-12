@@ -165,18 +165,22 @@ function handbookCardBadge(tabId, item = {}) {
   const sourceType = String(item.source_type || "").trim();
   if (tabId === "aromas" && sourceType) return sourceType;
   if (tabId === "concepts") {
-    const conceptLabels = {
-      method: "Метод",
-      founder: "Автор",
-      system: "Система",
-      chakra: "Чакра",
-      energy: "Энергия",
-    };
-    return conceptLabels[sourceType] || "Теория";
+    return conceptTypeMeta(sourceType).label;
   }
   if (tabId === "practices") return "Практика";
   if (tabId === "sounds") return "Звук";
   return "";
+}
+
+function conceptTypeMeta(sourceType) {
+  const metaMap = {
+    method: { label: "Метод", icon: "◌" },
+    founder: { label: "Автор", icon: "◍" },
+    system: { label: "Система", icon: "◎" },
+    chakra: { label: "Чакра", icon: "✦" },
+    energy: { label: "Энергия", icon: "≈" },
+  };
+  return metaMap[String(sourceType || "").trim()] || { label: "Теория", icon: "•" };
 }
 
 function formatCourseSourceLabel(value) {
@@ -2174,7 +2178,7 @@ function renderReferences() {
   listContainer.innerHTML = filtered.map((item) => `
     <article ${interactiveCardAttrs(`Открыть карточку ${item.name}`)} class="draft-card overview-card reference-card${state.tab === "concepts" ? " is-theory concept-card" : ""}${item.slug === reference?.slug ? " active" : ""} interactive-card" onclick="openReference('${item.slug}', '${state.tab}')">
       <div class="overview-card-top">
-        <div class="draft-kind">${handbookCategoryIcon(state.tab)}${handbookCardBadge(state.tab, item) ? `<span>${escapeHtml(handbookCardBadge(state.tab, item))}</span>` : ""}</div>
+        <div class="draft-kind">${handbookCategoryIcon(state.tab)}${handbookCardBadge(state.tab, item) ? `<span>${state.tab === "concepts" ? `<span class="concept-kind-mark" aria-hidden="true">${escapeHtml(conceptTypeMeta(item.source_type).icon)}</span>` : ""}${escapeHtml(handbookCardBadge(state.tab, item))}</span>` : ""}</div>
         <span class="overview-card-date">${escapeHtml(formatCourseSourceLabel(item.course_source) || meta.title)}</span>
       </div>
       <h3 class="draft-topic">${escapeHtml(item.name)}</h3>
