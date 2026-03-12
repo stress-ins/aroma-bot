@@ -50,9 +50,18 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
 
     # Threads API
+    threads_app_id: str = ""
+    threads_app_secret: str = ""
     threads_access_token: str = ""
     threads_user_id: str = ""
     threads_username: str = ""
+
+    # Instagram Platform API
+    instagram_app_id: str = ""
+    instagram_app_secret: str = ""
+    instagram_access_token: str = ""
+    instagram_user_id: str = ""
+    instagram_business_account_id: str = ""
     mini_app_url: str = ""
 
     # Scheduler

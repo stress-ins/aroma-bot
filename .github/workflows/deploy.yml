@@ -33,4 +33,5 @@ jobs:
       - name: Verify services
         run: |
           ssh root@46.32.186.192 'systemctl is-active aroma-bot'
+          ssh root@46.32.186.192 'systemctl is-active threads-oauth'
           ssh root@46.32.186.192 'systemctl is-active aroma-miniapp && echo "miniapp active" || echo "miniapp not running (skip)"'
