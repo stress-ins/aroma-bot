@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from typing import Any
 from uuid import uuid4
 
-from sqlalchemy import select, update
+from sqlalchemy import select, update, delete
 from sqlalchemy.orm import selectinload
 
 from db.session import AsyncSessionLocal
@@ -120,3 +120,16 @@ async def update_draft(
         await session.commit()
         await session.refresh(model)
         return DraftRecord.from_model(model)
+
+
+async def delete_draft(draft_id: str) -> bool:
+    async with AsyncSessionLocal() as session:
+        query = select(DraftModel).filter(DraftModel.draft_id == draft_id)
+        result = await session.execute(query)
+        model = result.scalar_one_or_none()
+        if not model:
+            return False
+
+        await session.delete(model)
+        await session.commit()
+        return True
