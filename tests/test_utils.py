@@ -1452,7 +1452,7 @@ class TestMiniAppRussianLocale:
         html = Path("miniapp/index.html").read_text(encoding="utf-8")
     
         assert 'id: "aromas"' in app_js
-        assert 'label: "Масла"' in app_js
+        assert 'label: "Ароматы"' in app_js
         assert 'id: "practices"' in app_js
         assert 'label: "Практики"' in app_js
         assert 'id: "sounds"' in app_js
