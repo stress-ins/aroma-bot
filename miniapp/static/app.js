@@ -79,8 +79,8 @@ const elements = {
   bootFallbackTitle: document.getElementById("bootFallbackTitle"),
   bootFallbackText: document.getElementById("bootFallbackText"),
   bootFallbackReload: document.getElementById("bootFallbackReload"),
-};
   bottomTabBar: document.getElementById("bottomTabBar"),
+};
 
 const RU_KIND_LABELS = {
   threads: "Тредс",
@@ -692,6 +692,93 @@ function bufferedReelsPrompt(draftId, index, fallback = "") {
     : String(fallback || "");
 }
 
+function reelsFrameStatusMarkup(frame = {}) {
+  if (frame.current_asset?.url) {
+    return `<div class="slide-status is-ready">${uiIcon("approve")}<span>Кадр готов</span></div>`;
+  }
+  if (String(frame.gemini_prompt || "").trim()) {
+    return `<div class="slide-status is-pending">${uiIcon("sparkle")}<span>Кадр генерируется по промпту</span></div>`;
+  }
+  return `<div class="slide-status is-empty">${uiIcon("image")}<span>Кадр еще не подготовлен</span></div>`;
+}
+
+function renderReelsFrameNarrative(frame = {}) {
+  const sections = [
+    { label: "Видеоряд", value: frame.scene || "" },
+    { label: "Ракурс", value: frame.angle || "" },
+    { label: "Таймкод", value: frame.timecode || "" },
+  ].filter((item) => String(item.value || "").trim());
+
+  if (!sections.length) return "";
+
+  return `
+    <div class="reels-frame-narrative">
+      ${sections.map((item) => `
+        <div class="reels-frame-section">
+          <span class="reels-frame-section-label">${escapeHtml(item.label)}</span>
+          <div class="reels-frame-section-value">${escapeHtml(item.value)}</div>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+function renderReelsProductionOverview(reel = {}) {
+  const shotList = Array.isArray(reel.shot_list) ? reel.shot_list : [];
+  const productionNotes = reel.production_notes && typeof reel.production_notes === "object"
+    ? reel.production_notes
+    : { required: [], optional: [] };
+  const requiredNotes = Array.isArray(productionNotes.required) ? productionNotes.required : [];
+  const optionalNotes = Array.isArray(productionNotes.optional) ? productionNotes.optional : [];
+  const readyFrames = Number(reel.images_ready || 0);
+  const totalFrames = Number(reel.frame_count || 0);
+
+  if (!shotList.length && !requiredNotes.length && !optionalNotes.length && !totalFrames) return "";
+
+  return `
+    <section class="section section-accent">
+      <div class="section-heading">
+        <h3>${uiIcon("slides")}План рилса</h3>
+        <p>${totalFrames ? `Готово ${readyFrames} из ${totalFrames} кадров. Карточка обновляется по мере генерации.` : "Собираем раскадровку и production notes."}</p>
+      </div>
+      ${shotList.length ? `
+        <div class="reels-overview-grid">
+          ${shotList.map((shot) => `
+            <article class="reels-overview-card">
+              <strong>${escapeHtml(shot.title || `Shot ${Number(shot.frame_index || 0) + 1}`)}</strong>
+              <div class="draft-meta">
+                ${shot.timecode ? tagMarkup(shot.timecode, "status-neutral") : ""}
+                ${shot.asset_ready ? tagMarkup("кадр готов", "status-positive") : tagMarkup("в очереди", "progress")}
+              </div>
+              ${shot.action ? `<div class="detail-preview">${escapeHtml(shot.action)}</div>` : ""}
+            </article>
+          `).join("")}
+        </div>
+      ` : ""}
+      ${requiredNotes.length || optionalNotes.length ? `
+        <div class="reels-production-notes">
+          ${requiredNotes.length ? `
+            <div class="reels-production-column">
+              <span class="reels-production-title">Обязательно</span>
+              <ul>
+                ${requiredNotes.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
+              </ul>
+            </div>
+          ` : ""}
+          ${optionalNotes.length ? `
+            <div class="reels-production-column">
+              <span class="reels-production-title">Опционально</span>
+              <ul>
+                ${optionalNotes.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
+              </ul>
+            </div>
+          ` : ""}
+        </div>
+      ` : ""}
+    </section>
+  `;
+}
+
 function renderSlides(draftId, slides = [], prompts = [], slideImages = [], promptNotes = [], slideVersions = []) {
   const slideItems = Array.isArray(slides) ? slides : [];
   const promptItems = Array.isArray(prompts) ? prompts : [];
@@ -1243,9 +1330,13 @@ async function regenerateReelsFrame(draftId, frameIndex, button) {
 function renderReelsFrames(draftId, frames = []) {
   const frameItems = Array.isArray(frames) ? frames : [];
   if (!frameItems.length) return "";
+  const readyCount = frameItems.filter((frame) => frame?.current_asset?.url).length;
+  const header = readyCount > 0
+    ? `Кадры и промпты <span class="meta">${readyCount} / ${frameItems.length} готовы</span>`
+    : "Кадры и промпты";
   return `
     <section class="section">
-      <h3>${sectionHeadingIcon("Кадры и промпты")}Кадры и промпты</h3>
+      <h3>${sectionHeadingIcon("Кадры и промпты")}${header}</h3>
       <div class="storyboard">
         ${frameItems.map((frame, index) => {
           const prompt = bufferedReelsPrompt(draftId, index, frame.gemini_prompt || "");
@@ -1255,25 +1346,29 @@ function renderReelsFrames(draftId, frames = []) {
           return `
             <article class="storyboard-frame">
               <strong>Кадр ${index + 1}${frame.timecode ? ` • ${escapeHtml(frame.timecode)}` : ""}</strong>
-              <label class="prompt-note-field">
-                <span>Текст / действие кадра</span>
-                <textarea id="reelsFrameScene${index}" placeholder="Что происходит в кадре">${escapeHtml(frame.scene || "")}</textarea>
-              </label>
-              <label class="prompt-note-field">
-                <span>Ракурс</span>
-                <input id="reelsFrameAngle${index}" type="text" placeholder="Например: макро, фронтальный, средний план" value="${escapeHtml(frame.angle || "")}" />
-              </label>
-              <label class="prompt-note-field">
-                <span>Таймкод</span>
-                <input id="reelsFrameTimecode${index}" type="text" placeholder="Например: 0-3 сек" value="${escapeHtml(frame.timecode || "")}" />
-              </label>
+              ${reelsFrameStatusMarkup(frame)}
+              ${renderReelsFrameNarrative(frame)}
               ${assetUrl
                 ? `<img class="frame-image" src="${escapeHtml(assetUrl)}" alt="Кадр ${index + 1}" />`
-                : `<div class="frame-loading">Картинка ещё не готова. Откройте промпт ниже для ручной генерации.</div>`}
-              ${prompt ? `
-                <details class="prompt-disclosure"${showPromptOpen ? " open" : ""}>
-                  <summary class="secondary-button prompt-toggle">${actionLabel("eye", "Показать промпт")}</summary>
-                  <div class="prompt-card">
+                : `<div class="frame-loading">Картинка ещё не готова. Карточка обновится автоматически, как только кадр будет сгенерирован.</div>`}
+              <details class="prompt-disclosure"${showPromptOpen ? " open" : ""}>
+                <summary class="secondary-button prompt-toggle">${actionLabel("eye", prompt ? "Открыть редактирование кадра" : "Открыть описание кадра")}</summary>
+                <div class="prompt-card">
+                  <div class="reels-frame-edit-grid">
+                    <label class="prompt-note-field">
+                      <span>Текст / действие кадра</span>
+                      <textarea id="reelsFrameScene${index}" placeholder="Что происходит в кадре">${escapeHtml(frame.scene || "")}</textarea>
+                    </label>
+                    <label class="prompt-note-field">
+                      <span>Ракурс</span>
+                      <input id="reelsFrameAngle${index}" type="text" placeholder="Например: макро, фронтальный, средний план" value="${escapeHtml(frame.angle || "")}" />
+                    </label>
+                    <label class="prompt-note-field">
+                      <span>Таймкод</span>
+                      <input id="reelsFrameTimecode${index}" type="text" placeholder="Например: 0-3 сек" value="${escapeHtml(frame.timecode || "")}" />
+                    </label>
+                  </div>
+                  ${prompt ? `
                     <label class="prompt-note-field">
                       <span>Промпт кадра</span>
                       <textarea id="reelsFramePrompt${index}" placeholder="Какой кадр нужно сгенерировать и в каком настроении" oninput="handleReelsFramePromptInput('${draftId}', ${index}, this.value)">${escapeHtml(prompt)}</textarea>
@@ -1289,13 +1384,13 @@ function renderReelsFrames(draftId, frames = []) {
                       <button class="secondary-button" type="button" onclick="regenerateReelsFrame('${draftId}', ${index}, this)">${actionLabel("regenerate", "Обновить кадр")}</button>
                       <button class="secondary-button" type="button" onclick='copyText(${JSON.stringify(String(prompt))})'>${actionLabel("prompt", "Скопировать промпт кадра")}</button>
                     </div>
-                  </div>
-                </details>
-              ` : `
-                <div class="actions-row prompt-actions">
-                  <button class="secondary-button" type="button" onclick="saveReelsFrameFields('${draftId}', ${index}, this)">${actionLabel("text", "Сохранить описание кадра")}</button>
+                  ` : `
+                    <div class="actions-row prompt-actions">
+                      <button class="secondary-button" type="button" onclick="saveReelsFrameFields('${draftId}', ${index}, this)">${actionLabel("text", "Сохранить описание кадра")}</button>
+                    </div>
+                  `}
                 </div>
-              `}
+              </details>
             </article>
           `;
         }).join("")}
@@ -3119,6 +3214,7 @@ function renderReelsDetail(r) {
           <textarea id="reelsScenarioField" placeholder="Соберите полный сценарий с переходами между кадрами">${escapeHtml(r.payload?.scenario || "")}</textarea>
         </label>
       </section>
+      ${renderReelsProductionOverview(r)}
       ${generationStateMarkup(r, "reels")}
       ${hasFrames ? renderReelsFrames(r.draft_id, r.frames) : `
         <section class="section section-accent">

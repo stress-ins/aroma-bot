@@ -1709,7 +1709,17 @@ textarea,
   text-align: left;
 }
 
-.storyboard-frame strong { display: block; margin-bottom: 3px; font-size: 13px; }
+.storyboard-frame {
+  display: grid;
+  gap: 10px;
+  padding: 14px 0 14px 14px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--brand-border);
+  border-radius: var(--radius-md);
+  background: linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
+}
+
+.storyboard-frame strong { display: block; margin-bottom: 0; font-size: 13px; }
 .frame-meta-line { color: var(--muted); margin-top: 6px; }
 .prompt-card {
   display: grid;
@@ -1769,6 +1779,79 @@ textarea,
   background: var(--surface-2);
   border-radius: var(--radius-sm);
   padding: 10px 12px;
+  color: var(--text);
+}
+
+.reels-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.reels-overview-card {
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.reels-overview-card strong {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.reels-production-notes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.reels-production-column {
+  display: grid;
+  gap: 8px;
+}
+
+.reels-production-title,
+.reels-frame-section-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--hint);
+}
+
+.reels-production-column ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+}
+
+.reels-frame-narrative,
+.reels-frame-edit-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.reels-frame-edit-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.reels-frame-edit-grid .prompt-note-field:first-child {
+  grid-column: 1 / -1;
+}
+
+.reels-frame-section {
+  display: grid;
+  gap: 4px;
+}
+
+.reels-frame-section-value {
+  font-size: 14px;
+  line-height: 1.55;
   color: var(--text);
 }
 
@@ -1919,6 +2002,12 @@ textarea,
   }
 
   .reels-frames {
+    grid-template-columns: 1fr;
+  }
+
+  .reels-overview-grid,
+  .reels-production-notes,
+  .reels-frame-edit-grid {
     grid-template-columns: 1fr;
   }
 

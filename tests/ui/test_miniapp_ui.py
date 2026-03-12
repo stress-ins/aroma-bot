@@ -342,11 +342,23 @@ def test_reels_tab_opens_storyboard_without_empty_state(page):
     assert not page.locator("#emptyState").is_visible()
     assert page.locator(".detail-title").inner_text().strip() == "Вечерний ароматический ритуал"
     
-    # Open the prompt details to make the copy button visible
-    page.get_by_text("Показать промпт").first.click()
+    # Open the editor details to make the copy button visible
+    page.get_by_text("Открыть редактирование кадра").first.click()
     page.wait_for_timeout(150)
     assert page.get_by_role("button", name="Скопировать промпт кадра").is_visible()
     assert page.locator(".frame-image").count() == 1
+
+
+def test_reels_detail_shows_production_overview_and_frame_status(page):
+    page.get_by_role("button", name="Рилсы").click()
+    page.wait_for_load_state("networkidle")
+    page.locator(".reels-card").first.click()
+    page.wait_for_timeout(300)
+
+    assert page.get_by_text("План рилса").is_visible()
+    assert page.get_by_text("Shot 1").is_visible()
+    assert page.get_by_text("Кадр готов").first.is_visible()
+    assert page.get_by_text("Открыть редактирование кадра").first.is_visible()
 
 
 def test_overview_lists_use_consistent_card_meta(page):
