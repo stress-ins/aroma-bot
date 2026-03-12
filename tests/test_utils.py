@@ -1743,12 +1743,11 @@ class TestMiniAppRussianLocale:
         server_py = Path("miniapp_server.py").read_text(encoding="utf-8")
 
         assert "JSON</h3>" not in app_js
-        assert "Перегенерировать все" in app_js
-        assert "Сохранить подпись" in app_js
-        assert "Перегенерировать картинку" in app_js
+        assert "Обновить все слайды" in app_js
+        assert "Обновить по замечанию" in app_js
+        assert "Сохранить текст слайда" in app_js
         assert "Подпись слайда" in app_js
-        assert "После правки нажмите «Сохранить подпись»" in app_js
-        assert "Скачать PPTX" in app_js
+        assert "Скачать презентацию" in app_js
         assert "Показать промпт" in app_js
         assert "Скопировать промпт слайда" in app_js
         assert "generationStateMarkup" in app_js
@@ -1770,19 +1769,25 @@ class TestMiniAppRussianLocale:
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
         server_py = Path("miniapp_server.py").read_text(encoding="utf-8")
 
-        assert "Сохранить концепцию" in app_js
-        assert "Пересобрать рилс" in app_js
-        assert "Сгенерировать кадры" in app_js
-        assert "Сохранить кадр" in app_js
-        assert "Сохранить промпт" in app_js
+        assert "Сохранить концепцию и сценарий" in app_js
+        assert "Пересобрать структуру рилса" in app_js
+        assert "Обновить все кадры" in app_js
+        assert "Сохранить описание кадра" in app_js
+        assert "Сохранить промпт кадра" in app_js
         assert "Сохранить замечание" in app_js
-        assert "Сгенерировать кадр" in app_js
+        assert "Обновить кадр" in app_js
         assert "handleReelsFrameNoteInput" in app_js
         assert "handleReelsFramePromptInput" in app_js
         assert "/api/reels/{draft_id}/scenario" in server_py
         assert "/api/reels/{draft_id}/storyboard/regenerate" in server_py
         assert "/api/reels/{draft_id}/frames/regenerate-all" in server_py
         assert "/api/reels/{draft_id}/frames/{frame_index}/fields" in server_py
+        assert "Сохранить концепцию и сценарий" in app_js
+        assert "Пересобрать структуру рилса" in app_js
+        assert "Обновить все кадры" in app_js
+        assert "Сохранить описание кадра" in app_js
+        assert "Сохранить промпт кадра" in app_js
+        assert "Обновить кадр" in app_js
 
     def test_content_review_detail_supports_editing_polish_and_feedback(self):
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
@@ -1791,13 +1796,13 @@ class TestMiniAppRussianLocale:
 
         assert "function isContentReviewKind" in app_js
         assert "Редакторский review" in app_js
-        assert "Заметка редактора" in app_js
-        assert "Сохранить правки" in app_js
-        assert "AI polish" in app_js
+        assert "Комментарий редактора" in app_js
+        assert "Сохранить версию" in app_js
+        assert "Уточнить через AI" in app_js
         assert "Результат публикации" in app_js
-        assert "Сработало" in app_js
-        assert "Не сработало" in app_js
-        assert "Сбросить" in app_js
+        assert "Откликнулось" in app_js
+        assert "Не дало результата" in app_js
+        assert "Очистить отметку" in app_js
         assert "function saveContentReviewDraft" in app_js
         assert "function polishContentDraft" in app_js
         assert 'window.saveContentReviewDraft = saveContentReviewDraft;' in app_js
@@ -1806,6 +1811,23 @@ class TestMiniAppRussianLocale:
         assert "/api/drafts/{draft_id}/content/polish" in server_py
         assert "editor_notes" in server_py
         assert ".content-review-form label > span" in app_css
+        assert ".field-help" in app_css
+
+    def test_create_and_detail_microcopy_is_editorial_and_actionable(self):
+        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+
+        assert "Собрать черновик" in app_js
+        assert "Собрать сценарий и кадры" in app_js
+        assert "Собрать карусель" in app_js
+        assert "Тема материала" in app_js
+        assert "Опорная мысль" in app_js
+        assert "Первая фраза" in app_js
+        assert "Призыв к действию" in app_js
+        assert "Промпт для визуала" in app_js
+        assert "Отметить как согласовано" in app_js
+        assert "Вернуть на доработку" in app_js
+        assert "Отправить в чат" in app_js
+        assert "Удалить черновик" in app_js
 
     def test_keywords_detail_supports_editing_and_ui_notices(self):
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
@@ -1863,9 +1885,9 @@ class TestMiniAppRussianLocale:
         server_py = Path("miniapp_server.py").read_text(encoding="utf-8")
         html = Path("miniapp/index.html").read_text(encoding="utf-8")
 
-        assert "Не согласовано" in app_js
-        assert 'actionLabel("reject", "Не согласовано")' in app_js
-        assert "Удалить" in app_js
+        assert "Вернуть на доработку" in app_js
+        assert 'actionLabel("reject", "Вернуть на доработку")' in app_js
+        assert "Удалить черновик" in app_js
         assert "deleteDraft" in app_js
         assert "rejected" in app_js
         assert '@app.delete("/api/drafts/{draft_id}")' in server_py

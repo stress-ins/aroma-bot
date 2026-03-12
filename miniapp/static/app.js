@@ -739,7 +739,8 @@ function renderSlides(draftId, slides = [], prompts = [], slideImages = [], prom
                     </label>
                     <div class="actions-row prompt-actions">
                       <button class="secondary-button" type="button" onclick='copyText(${JSON.stringify(prompt)})'>${actionLabel("prompt", "Скопировать промпт слайда")}</button>
-                      <button class="secondary-button" type="button" onclick="regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, this)">${actionLabel("regenerate", "Перегенерировать картинку")}</button>
+                      <button class="secondary-button" type="button" onclick="regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, false, this)">${actionLabel("regenerate", "Обновить изображение")}</button>
+                      <button class="primary-button" type="button" onclick="regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, true, this)">${actionLabel("note", "Обновить по замечанию")}</button>
                     </div>
                   </div>
                 </details>
@@ -1273,25 +1274,25 @@ function renderReelsFrames(draftId, frames = []) {
                   <summary class="secondary-button prompt-toggle">${actionLabel("eye", "Показать промпт")}</summary>
                   <div class="prompt-card">
                     <label class="prompt-note-field">
-                      <span>Промт кадра</span>
-                      <textarea id="reelsFramePrompt${index}" placeholder="Промт для генерации кадра" oninput="handleReelsFramePromptInput('${draftId}', ${index}, this.value)">${escapeHtml(prompt)}</textarea>
+                      <span>Промпт кадра</span>
+                      <textarea id="reelsFramePrompt${index}" placeholder="Какой кадр нужно сгенерировать и в каком настроении" oninput="handleReelsFramePromptInput('${draftId}', ${index}, this.value)">${escapeHtml(prompt)}</textarea>
                     </label>
                     <label class="prompt-note-field">
                       <span>Замечание к кадру</span>
                       <textarea id="reelsFrameNote${index}" placeholder="Например: теплее, меньше деталей, крупнее объект" oninput="handleReelsFrameNoteInput('${draftId}', ${index}, this.value)">${escapeHtml(note)}</textarea>
                     </label>
                     <div class="actions-row prompt-actions">
-                      <button class="secondary-button" type="button" onclick="saveReelsFrameFields('${draftId}', ${index}, this)">${actionLabel("text", "Сохранить кадр")}</button>
-                      <button class="secondary-button" type="button" onclick="saveReelsFramePrompt('${draftId}', ${index}, this)">${actionLabel("prompt", "Сохранить промпт")}</button>
+                      <button class="secondary-button" type="button" onclick="saveReelsFrameFields('${draftId}', ${index}, this)">${actionLabel("text", "Сохранить описание кадра")}</button>
+                      <button class="secondary-button" type="button" onclick="saveReelsFramePrompt('${draftId}', ${index}, this)">${actionLabel("prompt", "Сохранить промпт кадра")}</button>
                       <button class="secondary-button" type="button" onclick="saveReelsFrameNote('${draftId}', ${index}, this)">${actionLabel("note", "Сохранить замечание")}</button>
-                      <button class="secondary-button" type="button" onclick="regenerateReelsFrame('${draftId}', ${index}, this)">${actionLabel("regenerate", "Сгенерировать кадр")}</button>
+                      <button class="secondary-button" type="button" onclick="regenerateReelsFrame('${draftId}', ${index}, this)">${actionLabel("regenerate", "Обновить кадр")}</button>
                       <button class="secondary-button" type="button" onclick='copyText(${JSON.stringify(String(prompt))})'>${actionLabel("prompt", "Скопировать промпт кадра")}</button>
                     </div>
                   </div>
                 </details>
               ` : `
                 <div class="actions-row prompt-actions">
-                  <button class="secondary-button" type="button" onclick="saveReelsFrameFields('${draftId}', ${index}, this)">${actionLabel("text", "Сохранить кадр")}</button>
+                  <button class="secondary-button" type="button" onclick="saveReelsFrameFields('${draftId}', ${index}, this)">${actionLabel("text", "Сохранить описание кадра")}</button>
                 </div>
               `}
             </article>
@@ -2168,11 +2169,12 @@ function renderCreateTool(toolId) {
         <h3>Создать контент</h3>
         <form class="create-form" data-create-content>
           <label>Тема<textarea name="topic" placeholder="Например: как мягко переключиться после рабочего дня"></textarea></label>
+          <p class="field-help">Сформулируйте тему как готовую мысль. Так черновик сразу получится ближе к нужной подаче.</p>
           <div class="field-grid">
             <label>Цель<select name="goal_key"><option value="trust">Доверие</option><option value="authority">Экспертность</option><option value="engagement">Вовлечённость</option><option value="sales">Продажи</option></select></label>
             <label>Формат<select name="format_key"><option value="threads">Тредс</option><option value="instagram">Инстаграм</option><option value="telegram">Телеграм</option></select></label>
           </div>
-          <button class="primary-button" type="submit">Сгенерировать текст</button>
+          <button class="primary-button" type="submit">Собрать черновик</button>
         </form>
       </section>
     `;
@@ -2182,7 +2184,8 @@ function renderCreateTool(toolId) {
         <h3>Создать рилс</h3>
         <form class="create-form" data-create-reels>
           <label>Тема<textarea name="topic" placeholder="Например: вечерний сенсорный ритуал"></textarea></label>
-          <button class="primary-button" type="submit">Сгенерировать раскадровку</button>
+          <p class="field-help">Описывайте тему через сцену, состояние или ритуал. Так легче получить usable сценарий и кадры.</p>
+          <button class="primary-button" type="submit">Собрать сценарий и кадры</button>
         </form>
       </section>
     `;
@@ -2191,7 +2194,7 @@ function renderCreateTool(toolId) {
       <section class="section create-tool-panel">
         <h3>Создать план</h3>
         <form class="create-form" data-create-plan>
-          <div class="detail-preview">Собирает актуальные тренды и сохраняет недельный план.</div>
+          <div class="detail-preview">Собирает актуальные тренды и сохраняет недельный план с карточками, из которых можно сразу запускать черновики.</div>
           <button class="primary-button" type="submit">Собрать план на неделю</button>
         </form>
       </section>
@@ -2202,7 +2205,8 @@ function renderCreateTool(toolId) {
         <h3>Создать карусель</h3>
         <form class="create-form" data-create-carousel>
           <label>Тема<textarea name="topic" placeholder="Например: утренний ритуал с маслами"></textarea></label>
-          <button class="primary-button" type="submit">Сгенерировать карусель</button>
+          <p class="field-help">Лучше работает тема с обещанием результата: что человек поймет, почувствует или сможет сделать после карусели.</p>
+          <button class="primary-button" type="submit">Собрать карусель</button>
         </form>
       </section>
     `;
@@ -2431,24 +2435,25 @@ function renderDraftDetail(d) {
       <section class="section section-primary">
         <div class="section-heading">
           <h3>${uiIcon("text")}Редакторский review</h3>
-          <p>Сначала поправьте главный текст и позиционирование, затем уточните supporting-поля и сохраните версию для согласования.</p>
+          <p>Сначала соберите сильную мысль и основной текст, затем уточните подачу, визуал и комментарии для следующего прохода.</p>
         </div>
         <div class="content-review-form">
           <div class="content-review-highlight">
-            <label><span>Тема</span><textarea id="contentTopicField" placeholder="Тема draft">${escapeHtml(d.topic || "")}</textarea></label>
-            <label><span>Angle</span><textarea id="contentAngleField" placeholder="Опорный angle">${escapeHtml(p.angle || "")}</textarea></label>
-            <label><span>Hook</span><textarea id="contentHookField" placeholder="Хук">${escapeHtml(p.hook || "")}</textarea></label>
+            <label><span>Тема материала</span><textarea id="contentTopicField" placeholder="О чем этот материал и зачем он читателю">${escapeHtml(d.topic || "")}</textarea></label>
+            <label><span>Опорная мысль</span><textarea id="contentAngleField" placeholder="Какой угол подачи или тезис держит весь текст">${escapeHtml(p.angle || "")}</textarea></label>
+            <label><span>Первая фраза</span><textarea id="contentHookField" placeholder="С чего лучше начать, чтобы зацепить внимание">${escapeHtml(p.hook || "")}</textarea></label>
           </div>
-          <label class="content-review-lead"><span>Основной текст</span><textarea id="contentCaptionField" placeholder="Текст поста">${escapeHtml(p.caption || "")}</textarea></label>
+          <label class="content-review-lead"><span>Основной текст</span><textarea id="contentCaptionField" placeholder="Соберите здесь основную версию текста, которую будете отправлять на согласование">${escapeHtml(p.caption || "")}</textarea></label>
+          <p class="field-help">Сохраняйте версию после смыслового прохода. Если нужен быстрый черновой рефайн, используйте AI как промежуточный шаг.</p>
           <div class="content-review-support-grid">
-            <label><span>CTA</span><textarea id="contentCtaField" placeholder="Призыв к действию">${escapeHtml(p.cta || "")}</textarea></label>
-            <label><span>Hashtags</span><textarea id="contentHashtagsField" placeholder="#теги">${escapeHtml(p.hashtags || "")}</textarea></label>
-            <label><span>Visual prompt</span><textarea id="contentVisualPromptField" placeholder="Промпт для визуала">${escapeHtml(p.visual_prompt || "")}</textarea></label>
-            <label><span>Заметка редактора</span><textarea id="contentEditorNotesField" placeholder="Что поправить, на что обратить внимание">${escapeHtml(p.editor_notes || "")}</textarea></label>
+            <label><span>Призыв к действию</span><textarea id="contentCtaField" placeholder="Что читателю стоит сделать после текста">${escapeHtml(p.cta || "")}</textarea></label>
+            <label><span>Теги</span><textarea id="contentHashtagsField" placeholder="#ритуал #аромапрактика">${escapeHtml(p.hashtags || "")}</textarea></label>
+            <label><span>Промпт для визуала</span><textarea id="contentVisualPromptField" placeholder="Какой образ или сцену должен поддержать визуал">${escapeHtml(p.visual_prompt || "")}</textarea></label>
+            <label><span>Комментарий редактора</span><textarea id="contentEditorNotesField" placeholder="Что стоит усилить, сократить или перепроверить в следующем проходе">${escapeHtml(p.editor_notes || "")}</textarea></label>
           </div>
           <div class="actions-row review-actions">
-            <button class="primary-button" type="button" onclick="saveContentReviewDraft('${d.draft_id}', this)">${actionLabel("approve", "Сохранить правки")}</button>
-            <button class="secondary-button" type="button" onclick="polishContentDraft('${d.draft_id}', this)">${actionLabel("sparkle", "AI polish")}</button>
+            <button class="primary-button" type="button" onclick="saveContentReviewDraft('${d.draft_id}', this)">${actionLabel("approve", "Сохранить версию")}</button>
+            <button class="secondary-button" type="button" onclick="polishContentDraft('${d.draft_id}', this)">${actionLabel("sparkle", "Уточнить через AI")}</button>
           </div>
         </div>
       </section>
@@ -2461,9 +2466,9 @@ function renderDraftDetail(d) {
           ${tagMarkup(feedbackLabel(d.feedback), feedbackTone(d.feedback))}
         </div>
         <div class="actions-row">
-          <button class="secondary-button" type="button" onclick="updateDraft('feedback', {feedback:'worked'}, this)">${actionLabel("approve", "Сработало")}</button>
-          <button class="secondary-button" type="button" onclick="updateDraft('feedback', {feedback:'missed'}, this)">${actionLabel("reject", "Не сработало")}</button>
-          <button class="secondary-button" type="button" onclick="updateDraft('feedback', {feedback:''}, this)">${actionLabel("back", "Сбросить")}</button>
+          <button class="secondary-button" type="button" onclick="updateDraft('feedback', {feedback:'worked'}, this)">${actionLabel("approve", "Откликнулось")}</button>
+          <button class="secondary-button" type="button" onclick="updateDraft('feedback', {feedback:'missed'}, this)">${actionLabel("reject", "Не дало результата")}</button>
+          <button class="secondary-button" type="button" onclick="updateDraft('feedback', {feedback:''}, this)">${actionLabel("back", "Очистить отметку")}</button>
         </div>
       </section>
     `
@@ -2487,12 +2492,12 @@ function renderDraftDetail(d) {
           <div class="detail-facts">${heroFacts}</div>
         </div>
         <div class="actions-row detail-actions">
-          <button class="secondary-button" onclick="updateDraft('status', {status:'approved'}, this)">${actionLabel("approve", "Согласовать")}</button>
-          <button class="secondary-button" onclick="updateDraft('status', {status:'rejected'}, this)">${actionLabel("reject", "Не согласовано")}</button>
-          <button class="secondary-button" onclick="sendDraftToChat('${d.draft_id}', this)">${actionLabel("chat", "В чат")}</button>
-          ${d.kind === "carousel" ? `<button class="secondary-button" onclick="downloadCarouselPptx('${d.draft_id}', this)">${actionLabel("pptx", "Скачать PPTX")}</button>` : ""}
-          ${d.kind === "carousel" ? `<button class="secondary-button" onclick="regenerateCarouselAll('${d.draft_id}', this)">${actionLabel("regenerate", "Перегенерировать все")}</button>` : ""}
-          <button class="secondary-button" onclick="deleteDraft('${d.draft_id}', 'drafts', this)">${actionLabel("trash", "Удалить")}</button>
+          <button class="secondary-button" onclick="updateDraft('status', {status:'approved'}, this)">${actionLabel("approve", "Отметить как согласовано")}</button>
+          <button class="secondary-button" onclick="updateDraft('status', {status:'rejected'}, this)">${actionLabel("reject", "Вернуть на доработку")}</button>
+          <button class="secondary-button" onclick="sendDraftToChat('${d.draft_id}', this)">${actionLabel("chat", "Отправить в чат")}</button>
+          ${d.kind === "carousel" ? `<button class="secondary-button" onclick="downloadCarouselPptx('${d.draft_id}', this)">${actionLabel("pptx", "Скачать презентацию")}</button>` : ""}
+          ${d.kind === "carousel" ? `<button class="secondary-button" onclick="regenerateCarouselAll('${d.draft_id}', this)">${actionLabel("regenerate", "Обновить все слайды")}</button>` : ""}
+          <button class="secondary-button" onclick="deleteDraft('${d.draft_id}', 'drafts', this)">${actionLabel("trash", "Удалить черновик")}</button>
         </div>
       </div>
       ${payloadSection("Превью", d.preview)}
@@ -2989,23 +2994,23 @@ function renderReelsDetail(r) {
           ${tagMarkup(sourceLabel(r.source || "/miniapp"), sourceTone(r.source || "/miniapp"))}
         </div>
         <div class="actions-row">
-          <button class="secondary-button" type="button" onclick="saveReelsScenario('${r.draft_id}', this)">${actionLabel("text", "Сохранить концепцию")}</button>
-          <button class="secondary-button" type="button" onclick="regenerateReelsStoryboard('${r.draft_id}', this)">${actionLabel("regenerate", "Пересобрать рилс")}</button>
-          <button class="secondary-button" type="button" onclick="regenerateAllReelsFrames('${r.draft_id}', this)">${actionLabel("reel", "Сгенерировать кадры")}</button>
-          <button class="secondary-button" type="button" onclick="updateDraft('status', {status:'rejected'}, this)">${actionLabel("reject", "Не согласовано")}</button>
-          <button class="secondary-button" type="button" onclick="sendDraftToChat('${r.draft_id}', this)">${actionLabel("chat", "В чат")}</button>
-          <button class="secondary-button" type="button" onclick="deleteDraft('${r.draft_id}', 'reels', this)">${actionLabel("trash", "Удалить")}</button>
+          <button class="secondary-button" type="button" onclick="saveReelsScenario('${r.draft_id}', this)">${actionLabel("text", "Сохранить концепцию и сценарий")}</button>
+          <button class="secondary-button" type="button" onclick="regenerateReelsStoryboard('${r.draft_id}', this)">${actionLabel("regenerate", "Пересобрать структуру рилса")}</button>
+          <button class="secondary-button" type="button" onclick="regenerateAllReelsFrames('${r.draft_id}', this)">${actionLabel("reel", "Обновить все кадры")}</button>
+          <button class="secondary-button" type="button" onclick="updateDraft('status', {status:'rejected'}, this)">${actionLabel("reject", "Вернуть на доработку")}</button>
+          <button class="secondary-button" type="button" onclick="sendDraftToChat('${r.draft_id}', this)">${actionLabel("chat", "Отправить в чат")}</button>
+          <button class="secondary-button" type="button" onclick="deleteDraft('${r.draft_id}', 'reels', this)">${actionLabel("trash", "Удалить рилс")}</button>
         </div>
       </div>
       <section class="section">
         <h3>${sectionHeadingIcon("Сценарий")}Концепция и сценарий</h3>
         <label class="prompt-note-field">
           <span>Концепция</span>
-          <textarea id="reelsConceptField" placeholder="Коротко: идея, настроение, подход">${escapeHtml(r.payload?.concept || "")}</textarea>
+          <textarea id="reelsConceptField" placeholder="Коротко: идея, настроение, обещание результата">${escapeHtml(r.payload?.concept || "")}</textarea>
         </label>
         <label class="prompt-note-field">
           <span>Сценарий</span>
-          <textarea id="reelsScenarioField" placeholder="Полный текст сценария">${escapeHtml(r.payload?.scenario || "")}</textarea>
+          <textarea id="reelsScenarioField" placeholder="Соберите полный сценарий с переходами между кадрами">${escapeHtml(r.payload?.scenario || "")}</textarea>
         </label>
       </section>
       ${generationStateMarkup(r, "reels")}

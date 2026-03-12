@@ -931,6 +931,13 @@ textarea,
   line-height: 1.65;
 }
 
+.field-help {
+  margin: -2px 0 2px;
+  color: var(--hint);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .review-actions {
   margin-top: 0;
 }

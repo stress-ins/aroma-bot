@@ -641,7 +641,7 @@ def test_create_carousel_routes_into_draft_detail(page):
     page.wait_for_timeout(200)
     page.get_by_role("heading", name="Карусель").click()
     page.locator("textarea[name='topic']").fill("Тестовая карусель")
-    page.get_by_role("button", name="Сгенерировать карусель").click()
+    page.get_by_role("button", name="Собрать карусель").click()
     page.wait_for_timeout(500)
 
     assert page.locator(".detail-title").inner_text().strip() == "Тестовая карусель"
@@ -812,19 +812,19 @@ def test_content_review_detail_supports_save_polish_and_feedback(page):
 
     page.locator("#contentCaptionField").fill("Обновленный текст для Threads.")
     page.locator("#contentEditorNotesField").fill("Сделать подачу мягче.")
-    page.get_by_role("button", name="Сохранить правки").click()
+    page.get_by_role("button", name="Сохранить версию").click()
     page.wait_for_timeout(350)
 
     assert page.locator("#contentEditorNotesField").input_value() == "Сделать подачу мягче."
-    assert page.get_by_text("Сработало").count() >= 1
+    assert page.get_by_text("Откликнулось").count() >= 1
 
-    page.get_by_role("button", name="AI polish").click()
+    page.get_by_role("button", name="Уточнить через AI").click()
     page.wait_for_timeout(350)
     assert page.locator("#contentCaptionField").input_value() == "Отполированный текст для Threads."
 
-    page.get_by_role("button", name="Не сработало").click()
+    page.get_by_role("button", name="Не дало результата").click()
     page.wait_for_timeout(350)
-    assert page.get_by_text("Не сработало").count() >= 1
+    assert page.get_by_text("Не дало результата").count() >= 1
 
 
 def test_content_review_detail_highlights_editor_focus_and_summary(page):
@@ -856,6 +856,24 @@ def test_content_review_detail_highlights_editor_focus_and_summary(page):
     assert metrics["facts"] >= 4
     assert metrics["summaryLength"] >= 20
     assert metrics["captionHeight"] > metrics["notesHeight"]
+
+
+def test_create_and_detail_forms_show_helper_microcopy(page):
+    page.get_by_role("button", name="Создать").click()
+    page.wait_for_timeout(250)
+    page.get_by_text("Пост для соцсетей").click()
+    page.wait_for_timeout(250)
+
+    assert page.get_by_text("Сформулируйте тему как готовую мысль").is_visible()
+    assert page.get_by_role("button", name="Собрать черновик").is_visible()
+
+    page.get_by_role("button", name="Черновики").click()
+    page.wait_for_timeout(300)
+    page.get_by_text("Как мягко выйти из рабочего напряжения").first.click()
+    page.wait_for_timeout(300)
+
+    assert page.get_by_text("Сохраняйте версию после смыслового прохода").is_visible()
+    assert page.get_by_role("button", name="Отметить как согласовано").is_visible()
 
 
 def test_keywords_detail_supports_add_and_remove(page):
