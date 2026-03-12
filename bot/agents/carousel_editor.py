@@ -134,7 +134,7 @@ def edit_carousel_sync(raw_slides: list[str], topic: str) -> list[str]:
     slides = [_sanitize_slide_text(item) for item in _parse_slides(text, count=6)]
 
     # Fallback: return originals if parsing failed
-    return slides[:6] if len(slides) >= 4 else [_sanitize_slide_text(item) for item in raw_slides]
+    return slides[:6] if len(slides) >= 4 else raw_slides
 
 
 def _normalize_line(line: str) -> str:

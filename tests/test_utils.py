@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from fastapi.testclient import TestClient
@@ -521,6 +522,29 @@ class TestCarouselEditor:
         assert "в личные сообщения" in result
         assert "твоему телу нужен сигнал" not in result.lower()
         assert "земляная база" not in result.lower()
+
+    def test_fallback_keeps_original_slides_when_parse_failed(self, monkeypatch):
+        import anthropic as _anthropic
+
+        original = [
+            "Если интересно, напиши в ДМ.",
+            "Твоему телу нужен сигнал.",
+        ]
+
+        class _FakeClient:
+            def __init__(self, **_kwargs):
+                pass
+
+            class messages:
+                @staticmethod
+                def create(*_args, **_kwargs):
+                    class _R:
+                        content = [type("c", (), {"text": "не удалось собрать ответ"})()]
+                    return _R()
+
+        monkeypatch.setattr(_anthropic, "Anthropic", lambda **_kwargs: _FakeClient())
+        result = edit_carousel_sync(original, "тема")
+        assert result == original
 
 
 class TestBuildPptx:
@@ -1434,6 +1458,75 @@ class TestMiniAppApi:
             }
         ]
         assert background_runs == ["reels001"]
+
+    @pytest.mark.asyncio
+    async def test_build_reference_context_includes_handbook_sections(self, monkeypatch):
+        import miniapp_server
+
+        cards = [
+            SimpleNamespace(
+                category="aroma",
+                name="Лаванда",
+                source_type="herb",
+                payload={"key": "lavender", "psychological_properties": "Помогает выдохнуть и снизить вечернее напряжение."},
+            ),
+            SimpleNamespace(
+                category="concept",
+                name="Лимбическая система",
+                source_type="system",
+                payload={"description": "Связана с эмоциями и реакцией на запах."},
+            ),
+            SimpleNamespace(
+                category="practice",
+                name="Квадратное дыхание",
+                source_type="breath",
+                payload={"description": "Практика с ровным ритмом вдоха и выдоха."},
+            ),
+            SimpleNamespace(
+                category="sound",
+                name="Гонг",
+                source_type="instrument",
+                payload={"description": "Дает плотную вибрацию и ощущение опоры."},
+            ),
+            SimpleNamespace(
+                category="other",
+                name="Лишняя запись",
+                source_type="misc",
+                payload={"description": "Не должна попасть в контекст."},
+            ),
+        ]
+
+        class _FakeResult:
+            def scalars(self):
+                return self
+
+            def all(self):
+                return cards
+
+        class _FakeSession:
+            async def execute(self, _query):
+                return _FakeResult()
+
+        class _FakeSessionContext:
+            async def __aenter__(self):
+                return _FakeSession()
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return False
+
+        monkeypatch.setattr(miniapp_server, "AsyncSessionLocal", lambda: _FakeSessionContext())
+
+        result = await miniapp_server._build_reference_context()
+
+        assert "Ароматы:" in result
+        assert "Теория:" in result
+        assert "Практики:" in result
+        assert "Звуки:" in result
+        assert "- Лаванда (herb, lavender): Помогает выдохнуть" in result
+        assert "- Лимбическая система (system): Связана с эмоциями" in result
+        assert "- Квадратное дыхание (breath): Практика с ровным ритмом" in result
+        assert "- Гонг (instrument): Дает плотную вибрацию" in result
+        assert "Лишняя запись" not in result
 
     def test_generate_plan_returns_entries(self, miniapp_test_client, monkeypatch):
         import miniapp_server

@@ -184,7 +184,7 @@ def generate_reels_scenario_sync(topic: str, reference_context: str = "") -> str
 
     if reference_context:
         reference_context_block = (
-            "\nДанные из справочника ароматов (используй для точности описаний):\n"
+            "\nДанные из нашего справочника (используй для точности описаний и формулировок):\n"
             + reference_context
             + "\n"
         )
