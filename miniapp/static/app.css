@@ -66,6 +66,14 @@ body {
 button, input, select, textarea { font: inherit; color: inherit; }
 [hidden] { display: none !important; }
 
+input,
+select,
+textarea,
+[contenteditable="true"] {
+  scroll-margin-top: 96px;
+  scroll-margin-bottom: 180px;
+}
+
 :focus-visible {
   outline: 3px solid rgba(180, 92, 61, 0.22);
   outline-offset: 2px;

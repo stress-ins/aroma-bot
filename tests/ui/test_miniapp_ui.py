@@ -907,3 +907,34 @@ def test_tap_outside_textarea_dismisses_keyboard_focus(page):
     page.wait_for_timeout(150)
 
     assert page.evaluate("document.activeElement && document.activeElement.tagName") != "TEXTAREA"
+
+
+def test_focusing_lower_review_field_keeps_it_in_view(page):
+    page.get_by_role("button", name="Черновики").click()
+    page.wait_for_timeout(300)
+    page.get_by_text("Как мягко выйти из рабочего напряжения").first.click()
+    page.wait_for_timeout(300)
+
+    page.evaluate("window.scrollTo(0, 0)")
+    page.locator("#contentEditorNotesField").focus()
+    page.wait_for_timeout(350)
+
+    metrics = page.evaluate(
+        """
+        () => {
+          const field = document.getElementById('contentEditorNotesField');
+          if (!field) return null;
+          const rect = field.getBoundingClientRect();
+          const viewportHeight = window.visualViewport?.height || window.innerHeight;
+          return {
+            top: Math.round(rect.top),
+            bottom: Math.round(rect.bottom),
+            viewportHeight: Math.round(viewportHeight),
+          };
+        }
+        """
+    )
+
+    assert metrics is not None
+    assert metrics["top"] >= 0
+    assert metrics["bottom"] <= metrics["viewportHeight"]
