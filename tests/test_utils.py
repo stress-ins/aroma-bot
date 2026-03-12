@@ -1758,6 +1758,17 @@ class TestMiniAppRussianLocale:
         assert ".concept-kind-mark" in app_css
         assert ".concept-card::before" in app_css
 
+    def test_reference_detail_places_psychology_and_resource_before_questions(self):
+        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+
+        description_index = app_js.index('${aromaSection("Описание", reference.description)}')
+        psychology_index = app_js.index('${aromaSection("Психологические свойства", reference.psychological_properties)}')
+        plus_index = app_js.index('${aromaSection(\'Ресурс "+"\', reference.resource_values?.plus)}')
+        minus_index = app_js.index('${aromaSection(\'Ресурс "-"\', reference.resource_values?.minus)}')
+        questions_index = app_js.index('${aromaSection("Какие вопросы поднимает", reference.questions)}')
+
+        assert description_index < psychology_index < plus_index < minus_index < questions_index
+
     def test_content_detail_supports_prompt_copy_actions(self):
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
 
