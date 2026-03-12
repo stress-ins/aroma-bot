@@ -269,6 +269,16 @@ textarea,
 }
 .draft-card:hover  { border-color: var(--brand-border); }
 .draft-card.active { border-color: var(--brand-border); background: var(--brand-bg); }
+.draft-card.is-pending {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.015) 100%);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.draft-card.is-pending .draft-kind,
+.draft-card.is-pending .draft-topic,
+.draft-card.is-pending .draft-preview {
+  opacity: 0.84;
+}
 
 .create-card {
   border: 1px solid var(--border);
@@ -343,6 +353,12 @@ textarea,
   color: var(--sage);
   font-size: 12px;
   font-weight: 500;
+}
+
+.tag-pending {
+  color: var(--hint);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 /* ── Detail panel ────────────────────────────────────────────────────────── */
@@ -463,6 +479,13 @@ textarea,
   font-size: 15px;
   line-height: 1;
   transform: translateY(-0.5px);
+}
+
+.handbook-glyph {
+  width: 20px;
+  height: 20px;
+  flex-basis: 20px;
+  font-size: 16px;
 }
 
 .actions, .actions-row {
@@ -842,14 +865,20 @@ textarea,
 
 .secondary-button.is-busy,
 .primary-button.is-busy {
-  opacity: 0.82;
-  box-shadow: 0 0 0 3px rgba(180, 92, 61, 0.12);
+  opacity: 0.88;
+  transform: translateY(-1px) scale(1.01);
+  box-shadow: 0 0 0 3px rgba(180, 92, 61, 0.12), 0 10px 24px rgba(180, 92, 61, 0.18);
 }
 
 .secondary-button.did-complete,
 .primary-button.did-complete {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 20px rgba(180, 92, 61, 0.16);
+  transform: translateY(-1px) scale(1.01);
+  box-shadow: 0 10px 24px rgba(180, 92, 61, 0.22);
+  border-color: rgba(118, 167, 90, 0.45);
+}
+
+.secondary-button.did-complete {
+  background: rgba(118, 167, 90, 0.12);
 }
 
 .button-spinner {

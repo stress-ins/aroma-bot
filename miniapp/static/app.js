@@ -97,7 +97,7 @@ const RU_FEEDBACK_LABELS = {
 const HANDBOOK_CATEGORY_META = {
   aromas: {
     category: "aroma",
-    label: "аромат",
+    label: "масло",
     title: "Ароматы",
     searchLabel: "Поиск аромата",
     searchPlaceholder: "Например: лаванда",
@@ -129,6 +129,16 @@ const HANDBOOK_CATEGORY_META = {
     count: (items) => `${items.length} карточек`,
   },
 };
+
+function handbookCategoryIcon(tabId) {
+  const glyphMap = {
+    aromas: "🌿",
+    practices: "🫁",
+    sounds: "🔔",
+  };
+  const glyph = glyphMap[String(tabId || "").toLowerCase()] || "•";
+  return `<span class="kind-glyph handbook-glyph" aria-hidden="true">${glyph}</span>`;
+}
 
 function escapeHtml(value) {
   return String(value || "")
@@ -328,6 +338,61 @@ function renderPanelError(title, message) {
   `;
 }
 
+function renderDetailError(title, message, retryAction = "retryCurrentTab()") {
+  return `
+    <div class="detail-grid">
+      ${renderBackButton()}
+      <div class="boot-fallback boot-fallback-inline is-error">
+        <div class="boot-fallback-copy">
+          <p class="eyebrow">Загрузка</p>
+          <h2>${escapeHtml(title)}</h2>
+          <p>${escapeHtml(message)}</p>
+        </div>
+        <button class="secondary-button" type="button" onclick="${retryAction}">Повторить</button>
+      </div>
+    </div>
+  `;
+}
+
+function draftSummaryFromDraft(draft) {
+  if (!draft) return null;
+  return {
+    draft_id: draft.draft_id,
+    kind: draft.kind,
+    topic: draft.topic,
+    source: draft.source,
+    created_at: draft.created_at,
+    status: draft.status,
+    feedback: draft.feedback || "",
+    preview: draft.preview || "",
+    slides_count: draft.slides_count || 0,
+    storyboard_count: draft.storyboard_count || 0,
+  };
+}
+
+function upsertDraftSummary(summary) {
+  if (!summary?.draft_id) return;
+  state.drafts = [
+    summary,
+    ...state.drafts.filter((item) => item.draft_id !== summary.draft_id),
+  ];
+}
+
+function draftGenerationLabel(draft) {
+  if (!draft?.generation_pending) return "";
+  if (draft.kind === "carousel") {
+    const total = Number(draft.slides_count || 0);
+    const ready = Number(draft.images_ready || 0);
+    return total ? `Ещё генерируется ${ready}/${total}` : "Ещё генерируется";
+  }
+  if (draft.kind === "reels") {
+    const total = Number(draft.storyboard_count || 0);
+    const ready = Number(draft.images_ready || 0);
+    return total ? `Ещё генерируется ${ready}/${total}` : "Ещё генерируется";
+  }
+  return "Ещё генерируется";
+}
+
 function slideNoteId(index) {
   return `carouselSlideNote${index}`;
 }
@@ -449,6 +514,13 @@ function isCurrentReelsDetail(draftId) {
   return state.mode === "content" && state.tab === "reels" && state.mobileView === "detail" && state.selectedReels?.draft_id === draftId;
 }
 
+function isEditingDetailForm() {
+  const active = document.activeElement;
+  if (!active || !(active instanceof HTMLElement)) return false;
+  if (!elements.detailPanel.contains(active)) return false;
+  return active.matches("textarea, input, select, [contenteditable='true']");
+}
+
 function _authQueryString() {
   const initData = window.Telegram?.WebApp?.initData;
   if (!initData) return "";
@@ -505,25 +577,35 @@ async function regenerateCarouselSlide(draftId, slideIndex, withNote) {
   if (isCurrentDraftDetail(draft.draft_id)) renderDraftDetail(draft);
 }
 
-async function regenerateCarouselAll(draftId) {
-  const draft = await fetchJson(`/api/carousel/${draftId}/regenerate-all`, { method: "POST", body: "{}" });
-  state.selected = draft;
-  state.draftId = draft.draft_id;
-  state.drafts = state.drafts.map((item) => item.draft_id === draft.draft_id ? { ...item, ...draft } : item);
-  renderDraftList();
-  if (isCurrentDraftDetail(draft.draft_id)) renderDraftDetail(draft);
+async function regenerateCarouselAll(draftId, button) {
+  await withButtonFeedback(button, "Генерирую...", async () => {
+    const draft = await fetchJson(`/api/carousel/${draftId}/regenerate-all`, { method: "POST", body: "{}" });
+    state.selected = draft;
+    state.draftId = draft.draft_id;
+    state.drafts = state.drafts.map((item) => item.draft_id === draft.draft_id ? { ...item, ...draft } : item);
+    renderDraftList();
+    if (isCurrentDraftDetail(draft.draft_id)) renderDraftDetail(draft);
+  }, "Готово");
 }
 
-async function sendDraftToChat(draftId) {
-  await fetchJson(`/api/drafts/${draftId}/send`, { method: "POST", body: "{}" });
+async function sendDraftToChat(draftId, button) {
+  await withButtonFeedback(button, "Отправляю...", async () => {
+    await fetchJson(`/api/drafts/${draftId}/send`, { method: "POST", body: "{}" });
+  }, "Отправлено");
   const tg = window.Telegram?.WebApp;
   if (tg?.showAlert) tg.showAlert("Черновик отправлен в чат");
 }
 
-async function deleteDraft(draftId, kind = "drafts") {
+async function deleteDraft(draftId, kind = "drafts", button) {
   const confirmed = window.confirm("Удалить этот черновик?");
   if (!confirmed) return;
-  await fetchJson(`/api/drafts/${draftId}`, { method: "DELETE" });
+  if (button instanceof HTMLElement) {
+    await withButtonFeedback(button, "Удаляю...", async () => {
+      await fetchJson(`/api/drafts/${draftId}`, { method: "DELETE" });
+    }, "Удалено");
+  } else {
+    await fetchJson(`/api/drafts/${draftId}`, { method: "DELETE" });
+  }
   if (kind === "reels") {
     state.reels = state.reels.filter((item) => item.draft_id !== draftId);
     if (state.selectedReels?.draft_id === draftId) state.selectedReels = null;
@@ -539,8 +621,12 @@ async function deleteDraft(draftId, kind = "drafts") {
   }
 }
 
-async function downloadCarouselPptx(draftId) {
+async function downloadCarouselPptx(draftId, button) {
   const downloadUrl = `${window.location.origin}/api/carousel/${draftId}/pptx${_authQueryString()}`;
+  if (button instanceof HTMLElement) {
+    button.classList.add("did-complete");
+    window.setTimeout(() => button.classList.remove("did-complete"), 900);
+  }
   const tg = window.Telegram?.WebApp;
   if (tg?.openLink) {
     tg.openLink(downloadUrl);
@@ -1031,7 +1117,7 @@ function scheduleReelsRefresh(draftId, attempts = 10) {
       if (isCurrentReelsDetail(reel.draft_id)) {
         state.selectedReels = reel;
         renderReels();
-        renderReelsDetail(reel);
+        if (!isEditingDetailForm()) renderReelsDetail(reel);
       }
       if (readyFrames < (reel.frame_count || 0)) scheduleReelsRefresh(draftId, attempts - 1);
     } catch (_e) { scheduleReelsRefresh(draftId, attempts - 1); }
@@ -1052,7 +1138,7 @@ function scheduleCarouselRefresh(draftId, attempts = 12) {
       if (isCurrentDraftDetail(draft.draft_id)) {
         state.selected = draft;
         renderDraftList();
-        renderDraftDetail(draft);
+        if (!isEditingDetailForm()) renderDraftDetail(draft);
       }
       if (readyCount < slideCount) scheduleCarouselRefresh(draftId, attempts - 1);
     } catch (_e) { scheduleCarouselRefresh(draftId, attempts - 1); }
@@ -1095,8 +1181,20 @@ async function loadDrafts() {
   state.drafts = data.items || [];
   renderDraftList();
   const preferredId = state.draftId || "";
-  if (preferredId) await openDraft(preferredId);
-  else renderEmptyDetail();
+  if (!preferredId) {
+    renderEmptyDetail();
+    return;
+  }
+  try {
+    await openDraft(preferredId);
+  } catch (error) {
+    console.error("miniapp failed to open preferred draft", error);
+    const message = error?.message === "request_timeout"
+      ? "Карточка открывается слишком долго. Список уже загружен, можно повторить открытие."
+      : (error?.message || "Не удалось открыть карточку.");
+    elements.draftDetail.innerHTML = renderDetailError("Не удалось открыть карточку", message, `openDraft('${preferredId}')`);
+    syncMobileNavigation();
+  }
 }
 
 async function loadInbox() {
@@ -1280,7 +1378,7 @@ function renderReferences() {
 
   listContainer.innerHTML = filtered.map((item) => `
     <article class="draft-card${item.slug === reference?.slug ? " active" : ""}" onclick="openReference('${item.slug}', '${state.tab}')">
-      <div class="draft-kind">${escapeHtml(meta.label)}</div>
+      <div class="draft-kind">${handbookCategoryIcon(state.tab)}<span>${escapeHtml(meta.label)}</span></div>
       <h3 class="draft-topic">${escapeHtml(item.name)}</h3>
       <div class="draft-preview">${escapeHtml(item.description || "")}</div>
     </article>
@@ -1449,7 +1547,14 @@ function renderCreateTool(toolId) {
     const g = cForm.querySelector("select[name='goal_key']").value;
     const f = cForm.querySelector("select[name='format_key']").value;
     const d = await fetchJson("/api/generate/content", { method: "POST", body: JSON.stringify({ topic: t, goal_key: g, format_key: f }) });
-    state.draftId = d.draft_id; setTab("drafts"); await loadDrafts();
+    state.draftId = d.draft_id;
+    state.selected = d;
+    setTab("drafts");
+    upsertDraftSummary(draftSummaryFromDraft(d));
+    renderDraftList();
+    renderDraftDetail(d);
+    enterDetailView();
+    void loadDrafts();
   }});
 
   const rForm = elements.draftDetail.querySelector("[data-create-reels]");
@@ -1469,7 +1574,14 @@ function renderCreateTool(toolId) {
   const carForm = elements.draftDetail.querySelector("[data-create-carousel]");
   if (carForm) bindTopicForm(carForm, { pendingText: "Создаю...", onSubmit: async (t) => {
     const d = await fetchJson("/api/generate/carousel", { method: "POST", body: JSON.stringify({ topic: t }) });
-    state.draftId = d.draft_id; setTab("drafts"); await loadDrafts();
+    state.draftId = d.draft_id;
+    state.selected = d;
+    setTab("drafts");
+    upsertDraftSummary(draftSummaryFromDraft(d));
+    renderDraftList();
+    renderDraftDetail(d);
+    enterDetailView();
+    void loadDrafts();
   }});
 }
 
@@ -1487,12 +1599,13 @@ function renderDraftList() {
   elements.draftCount.textContent = `${state.drafts.length} шт`;
   setEmptyState(state.drafts.length > 0);
   elements.draftList.innerHTML = state.drafts.map((d) => `
-    <article class="draft-card${d.draft_id === state.draftId ? " active" : ""}" onclick="openDraft('${d.draft_id}')">
+    <article class="draft-card${d.draft_id === state.draftId ? " active" : ""}${d.generation_pending ? " is-pending" : ""}" onclick="openDraft('${d.draft_id}')">
       <div class="draft-kind">${contentKindIcon(d.kind)}<span>${escapeHtml(kindLabel(d.kind))}</span></div>
       <h3 class="draft-topic">${escapeHtml(d.topic)}</h3>
       <div class="draft-preview">${escapeHtml(stripMarkdown(d.preview || "Без превью"))}</div>
       <div class="draft-meta">
         <span class="tag">${escapeHtml(statusLabel(d.status))}</span>
+        ${d.generation_pending ? `<span class="tag tag-pending">${escapeHtml(draftGenerationLabel(d))}</span>` : ""}
         <span class="tag">${escapeHtml(kindLabel(d.source))}</span>
       </div>
     </article>
@@ -1503,7 +1616,7 @@ function renderDraftList() {
 async function openDraft(id) {
   elements.draftDetail.innerHTML = `${renderBackButton()}${renderDetailLoader("Открываю черновик")}`;
   enterDetailView();
-  const d = await fetchJson(`/api/drafts/${id}`);
+  const d = await fetchJson(`/api/drafts/${id}`, { timeout: 20000 });
   state.selected = d; state.draftId = id;
   renderDraftList(); renderDraftDetail(d); enterDetailView();
 }
@@ -1538,12 +1651,12 @@ function renderDraftDetail(d) {
         <h2 class="detail-title">${escapeHtml(d.topic)}</h2>
         <div class="draft-meta"><span class="tag">${escapeHtml(statusLabel(d.status))}</span></div>
         <div class="actions-row">
-          <button class="secondary-button" onclick="updateDraft('status', {status:'approved'})">${actionLabel("approve", "Согласовать")}</button>
-          <button class="secondary-button" onclick="updateDraft('status', {status:'rejected'})">${actionLabel("reject", "Не согласовано")}</button>
-          <button class="secondary-button" onclick="sendDraftToChat('${d.draft_id}')">${actionLabel("chat", "В чат")}</button>
-          ${d.kind === "carousel" ? `<button class="secondary-button" onclick="downloadCarouselPptx('${d.draft_id}')">${actionLabel("pptx", "Скачать PPTX")}</button>` : ""}
-          ${d.kind === "carousel" ? `<button class="secondary-button" onclick="regenerateCarouselAll('${d.draft_id}')">${actionLabel("regenerate", "Перегенерировать все")}</button>` : ""}
-          <button class="secondary-button" onclick="deleteDraft('${d.draft_id}', 'drafts')">${actionLabel("trash", "Удалить")}</button>
+          <button class="secondary-button" onclick="updateDraft('status', {status:'approved'}, this)">${actionLabel("approve", "Согласовать")}</button>
+          <button class="secondary-button" onclick="updateDraft('status', {status:'rejected'}, this)">${actionLabel("reject", "Не согласовано")}</button>
+          <button class="secondary-button" onclick="sendDraftToChat('${d.draft_id}', this)">${actionLabel("chat", "В чат")}</button>
+          ${d.kind === "carousel" ? `<button class="secondary-button" onclick="downloadCarouselPptx('${d.draft_id}', this)">${actionLabel("pptx", "Скачать PPTX")}</button>` : ""}
+          ${d.kind === "carousel" ? `<button class="secondary-button" onclick="regenerateCarouselAll('${d.draft_id}', this)">${actionLabel("regenerate", "Перегенерировать все")}</button>` : ""}
+          <button class="secondary-button" onclick="deleteDraft('${d.draft_id}', 'drafts', this)">${actionLabel("trash", "Удалить")}</button>
         </div>
       </div>
       ${payloadSection("Превью", d.preview)}
@@ -1577,7 +1690,18 @@ function setMode(m) {
     <button class="tab-button${state.tab === t.id ? ' active' : ''}" data-tab="${t.id}" type="button">${t.label}</button>
   `).join("");
   elements.tabsContainer.querySelectorAll(".tab-button").forEach(b => {
-    b.addEventListener("click", () => { setTab(b.dataset.tab); void safeLoadCurrentTab("Не удалось загрузить вкладку"); });
+    b.addEventListener("click", () => {
+      const targetTab = b.dataset.tab;
+      if (targetTab === state.tab && HANDBOOK_CATEGORY_META[targetTab] && state.selectedReference) {
+        state.selectedReference = null;
+        state.mobileView = "list";
+        renderReferences();
+        syncMobileNavigation();
+        return;
+      }
+      setTab(targetTab);
+      void safeLoadCurrentTab("Не удалось загрузить вкладку");
+    });
   });
   if (!(m === "content" && state.tab === "settings") && !tabs.find(t => t.id === state.tab)) setTab(tabs[0].id);
 }
@@ -1728,10 +1852,13 @@ window.openReference = openReference;
 window.copyText = copyText;
 window.openReels = openReels;
 window.openPlan = openPlan;
-window.updateDraft = async (action, payload) => {
+window.updateDraft = async (action, payload, button) => {
   const currentDraftId = state.draftId || state.selectedReels?.draft_id || "";
   if (!currentDraftId) return;
-  const d = await fetchJson(`/api/drafts/${currentDraftId}/${action}`, { method: "POST", body: JSON.stringify(payload) });
+  const request = async () => fetchJson(`/api/drafts/${currentDraftId}/${action}`, { method: "POST", body: JSON.stringify(payload) });
+  const d = button instanceof HTMLElement
+    ? await withButtonFeedback(button, "Сохраняю...", request, "Готово")
+    : await request();
   if (state.tab === "reels" || d.kind === "reels") {
     mergeReelsIntoState(d);
     renderReels();
@@ -1833,9 +1960,9 @@ function renderReelsDetail(r) {
           <button class="secondary-button" type="button" onclick="saveReelsScenario('${r.draft_id}', this)">${actionLabel("text", "Сохранить концепцию")}</button>
           <button class="secondary-button" type="button" onclick="regenerateReelsStoryboard('${r.draft_id}', this)">${actionLabel("regenerate", "Пересобрать рилс")}</button>
           <button class="secondary-button" type="button" onclick="regenerateAllReelsFrames('${r.draft_id}', this)">${actionLabel("reel", "Сгенерировать кадры")}</button>
-          <button class="secondary-button" type="button" onclick="updateDraft('status', {status:'rejected'})">${actionLabel("reject", "Не согласовано")}</button>
-          <button class="secondary-button" type="button" onclick="sendDraftToChat('${r.draft_id}')">${actionLabel("chat", "В чат")}</button>
-          <button class="secondary-button" type="button" onclick="deleteDraft('${r.draft_id}', 'reels')">${actionLabel("trash", "Удалить")}</button>
+          <button class="secondary-button" type="button" onclick="updateDraft('status', {status:'rejected'}, this)">${actionLabel("reject", "Не согласовано")}</button>
+          <button class="secondary-button" type="button" onclick="sendDraftToChat('${r.draft_id}', this)">${actionLabel("chat", "В чат")}</button>
+          <button class="secondary-button" type="button" onclick="deleteDraft('${r.draft_id}', 'reels', this)">${actionLabel("trash", "Удалить")}</button>
         </div>
       </div>
       <section class="section">
