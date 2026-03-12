@@ -335,6 +335,12 @@ textarea,
   border-color: rgba(255, 255, 255, 0.12);
 }
 
+.interactive-card:focus-visible {
+  outline-offset: 4px;
+  border-color: var(--brand-border);
+  box-shadow: 0 0 0 4px rgba(180, 92, 61, 0.12), 0 10px 24px rgba(60, 40, 20, 0.08);
+}
+
 .draft-card.is-pending .draft-kind,
 .draft-card.is-pending .draft-topic,
 .draft-card.is-pending .draft-preview {

@@ -286,6 +286,10 @@ function actionLabel(icon, text) {
   return `${uiIcon(icon)}<span>${escapeHtml(text)}</span>`;
 }
 
+function interactiveCardAttrs(label) {
+  return `role="button" tabindex="0" aria-label="${escapeHtml(label)}"`;
+}
+
 function tagMarkup(label, tone = "neutral") {
   const safeTone = String(tone || "neutral")
     .replace(/[^a-z0-9_-]/gi, "")
@@ -1527,6 +1531,19 @@ function bindKeyboardDismiss() {
   document.addEventListener("mousedown", dismiss, { passive: true });
 }
 
+function bindCardKeyboardActivation() {
+  document.addEventListener("keydown", (event) => {
+    if (event.defaultPrevented) return;
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    const card = target.closest(".interactive-card");
+    if (!(card instanceof HTMLElement)) return;
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    card.click();
+  });
+}
+
 function bindSwipeBack() {
   const isMobile = window.matchMedia("(max-width: 760px)").matches;
   if (!isMobile) return;
@@ -1928,7 +1945,7 @@ function renderReferences() {
   }
 
   listContainer.innerHTML = filtered.map((item) => `
-    <article class="draft-card${item.slug === reference?.slug ? " active" : ""}" onclick="openReference('${item.slug}', '${state.tab}')">
+    <article ${interactiveCardAttrs(`Открыть карточку ${item.name}`)} class="draft-card${item.slug === reference?.slug ? " active" : ""} interactive-card" onclick="openReference('${item.slug}', '${state.tab}')">
       <div class="draft-kind">${handbookCategoryIcon(state.tab)}${handbookCardBadge(state.tab, item) ? `<span>${escapeHtml(handbookCardBadge(state.tab, item))}</span>` : ""}</div>
       <h3 class="draft-topic">${escapeHtml(item.name)}</h3>
       <div class="draft-preview">${escapeHtml(item.description || "")}</div>
@@ -2013,22 +2030,22 @@ function renderCreate() {
   
   elements.draftList.innerHTML = `
     <div class="create-list">
-      <article class="create-card${state.selectedCreateTool === 'content' ? ' active' : ''}" data-tool="content" onclick="renderCreateTool('content')">
+      <article ${interactiveCardAttrs("Выбрать инструмент Пост для соцсетей")} class="create-card${state.selectedCreateTool === 'content' ? ' active' : ''} interactive-card" data-tool="content" onclick="renderCreateTool('content')">
         <div class="draft-kind">${contentKindIcon("content")}<span>контент</span></div>
         <h3 class="draft-topic">Пост для соцсетей</h3>
         <div class="draft-preview">Тредс, Инстаграм или Телеграм.</div>
       </article>
-      <article class="create-card${state.selectedCreateTool === 'reels' ? ' active' : ''}" data-tool="reels" onclick="renderCreateTool('reels')">
+      <article ${interactiveCardAttrs("Выбрать инструмент Сценарий и раскадровка")} class="create-card${state.selectedCreateTool === 'reels' ? ' active' : ''} interactive-card" data-tool="reels" onclick="renderCreateTool('reels')">
         <div class="draft-kind">${contentKindIcon("reels")}<span>рилсы</span></div>
         <h3 class="draft-topic">Сценарий + раскадровка</h3>
         <div class="draft-preview">Сценарий и 4 кадра визуализации.</div>
       </article>
-      <article class="create-card${state.selectedCreateTool === 'plan' ? ' active' : ''}" data-tool="plan" onclick="renderCreateTool('plan')">
+      <article ${interactiveCardAttrs("Выбрать инструмент Контент-план")} class="create-card${state.selectedCreateTool === 'plan' ? ' active' : ''} interactive-card" data-tool="plan" onclick="renderCreateTool('plan')">
         <div class="draft-kind">${contentKindIcon("plan")}<span>план</span></div>
         <h3 class="draft-topic">Контент-план</h3>
         <div class="draft-preview">Сбор трендов и план на неделю.</div>
       </article>
-      <article class="create-card${state.selectedCreateTool === 'carousel' ? ' active' : ''}" data-tool="carousel" onclick="renderCreateTool('carousel')">
+      <article ${interactiveCardAttrs("Выбрать инструмент Карусель")} class="create-card${state.selectedCreateTool === 'carousel' ? ' active' : ''} interactive-card" data-tool="carousel" onclick="renderCreateTool('carousel')">
         <div class="draft-kind">${contentKindIcon("carousel")}<span>карусель</span></div>
         <h3 class="draft-topic">Карусель</h3>
         <div class="draft-preview">5 слайдов с промптами для картинок.</div>
@@ -2189,7 +2206,7 @@ function renderDraftList() {
   elements.draftCount.textContent = `${state.drafts.length} шт`;
   setEmptyState(state.drafts.length > 0);
   elements.draftList.innerHTML = state.drafts.map((d) => `
-    <article class="draft-card overview-card${d.draft_id === state.draftId ? " active" : ""}${d.generation_pending ? " is-pending" : ""}" onclick="openDraft('${d.draft_id}')">
+    <article ${interactiveCardAttrs(`Открыть черновик ${d.topic}`)} class="draft-card overview-card${d.draft_id === state.draftId ? " active" : ""}${d.generation_pending ? " is-pending" : ""} interactive-card" onclick="openDraft('${d.draft_id}')">
       <div class="overview-card-top">
         <div class="draft-kind">${contentKindIcon(d.kind)}<span>${escapeHtml(kindLabel(d.kind))}</span></div>
         <span class="overview-card-date">${escapeHtml(formatPlanDate(d.created_at) || "Новый черновик")}</span>
@@ -2506,6 +2523,7 @@ async function bootstrap() {
   applyTelegramTheme();
   bindSwipeBack();
   bindKeyboardDismiss();
+  bindCardKeyboardActivation();
   elements.modeContent.addEventListener("click", () => { setMode("content"); void safeLoadCurrentTab("Не удалось загрузить раздел контента"); });
   elements.modeHandbook.addEventListener("click", () => { setMode("handbook"); void safeLoadCurrentTab("Не удалось загрузить справочник"); });
   elements.settingsButton?.addEventListener("click", () => {
@@ -2644,7 +2662,7 @@ function renderInbox() {
   elements.draftCount.textContent = `${state.inbox.length} на проверке`;
   setEmptyState(state.inbox.length > 0, "Очередь пуста.");
   elements.draftList.innerHTML = state.inbox.map(i => `
-    <article class="draft-card overview-card${i.draft_id === state.draftId ? " active" : ""}" onclick="openDraft('${i.draft_id}')">
+    <article ${interactiveCardAttrs(`Открыть материал на согласовании ${i.topic}`)} class="draft-card overview-card${i.draft_id === state.draftId ? " active" : ""} interactive-card" onclick="openDraft('${i.draft_id}')">
       <div class="overview-card-top">
         <div class="draft-kind">${contentKindIcon(i.kind)}<span>${escapeHtml(kindLabel(i.kind))}</span></div>
         <span class="overview-card-date">${escapeHtml(formatPlanDate(i.created_at) || "На проверке")}</span>
@@ -2689,7 +2707,7 @@ function renderPlans() {
     action: "openCreateTool('plan')",
   });
   elements.draftList.innerHTML = state.plans.map(p => `
-    <article class="plan-card overview-card${p.plan_id === state.selectedPlan?.plan_id ? " active" : ""}" onclick="openPlan('${p.plan_id}')">
+    <article ${interactiveCardAttrs(`Открыть план ${p.plan_id}`)} class="plan-card overview-card${p.plan_id === state.selectedPlan?.plan_id ? " active" : ""} interactive-card" onclick="openPlan('${p.plan_id}')">
       <div class="overview-card-top">
         <div class="draft-kind">${contentKindIcon("plan")}<span>План</span></div>
         <span class="overview-card-date">${escapeHtml(formatPlanDate(p.created_at) || p.plan_id)}</span>
@@ -2719,7 +2737,7 @@ function renderReels() {
     action: "openCreateTool('reels')",
   });
   elements.draftList.innerHTML = state.reels.map(r => `
-    <article class="reels-card overview-card${r.draft_id === state.selectedReels?.draft_id ? " active" : ""}" onclick="openReels('${r.draft_id}')">
+    <article ${interactiveCardAttrs(`Открыть рилс ${r.topic}`)} class="reels-card overview-card${r.draft_id === state.selectedReels?.draft_id ? " active" : ""} interactive-card" onclick="openReels('${r.draft_id}')">
       <div class="overview-card-top">
         <div class="draft-kind">${contentKindIcon("reels")}<span>Рилс</span></div>
         <span class="overview-card-date">${escapeHtml(formatPlanDate(r.created_at) || "Видео")}</span>
@@ -2843,7 +2861,7 @@ function renderKeywords() {
   elements.draftList.innerHTML = `
     ${inSettings ? renderSettingsSwitcher("keywords") : ""}
     ${topics.map(t => `
-    <article class="keyword-topic${t.topic_idx === state.selectedKeywordTopicIdx ? " active" : ""}" onclick="openKeywordTopic(${t.topic_idx})">
+    <article ${interactiveCardAttrs(`Открыть тему ${t.name}`)} class="keyword-topic${t.topic_idx === state.selectedKeywordTopicIdx ? " active" : ""} interactive-card" onclick="openKeywordTopic(${t.topic_idx})">
       <h3>${escapeHtml(t.name)}</h3>
       <div class="draft-meta">
         <span class="tag">${escapeHtml(`${Object.values(t.fields || {}).reduce((sum, items) => sum + (Array.isArray(items) ? items.length : 0), 0)} ключей`)}</span>
