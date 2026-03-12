@@ -1048,9 +1048,20 @@ async def reels_scenario_update(
 @app.post("/api/reels/{draft_id}/storyboard/regenerate")
 async def reels_storyboard_regenerate(
     draft_id: str,
+    background_tasks: BackgroundTasks,
     _: None = Depends(_require_auth),
 ):
     draft = await regenerate_reels_storyboard(draft_id)
+    if not draft:
+        raise HTTPException(status_code=404, detail="reels_not_found")
+    await _set_generation_state(
+        draft_id,
+        pending=True,
+        stage="images",
+        message="Генерирую кадры для рилса.",
+    )
+    background_tasks.add_task(_complete_reels_regenerate_all, draft_id)
+    draft = await serialize_reels_draft(draft_id)
     if not draft:
         raise HTTPException(status_code=404, detail="reels_not_found")
     return draft

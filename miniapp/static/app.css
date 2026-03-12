@@ -1078,6 +1078,20 @@ textarea,
   -webkit-backdrop-filter: blur(16px);
 }
 
+@media (prefers-color-scheme: dark) {
+  .bottom-tab-bar-inner {
+    background: rgba(37, 30, 24, 0.94);
+    border-color: rgba(255, 230, 200, 0.12);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.40);
+  }
+}
+
+body.tg-theme-dark .bottom-tab-bar-inner {
+  background: rgba(37, 30, 24, 0.94);
+  border-color: rgba(255, 230, 200, 0.12);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.40);
+}
+
 .bottom-tab-btn {
   display: grid;
   justify-items: center;
@@ -1607,6 +1621,7 @@ textarea,
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(244, 249, 252, 0.98));
   border-color: rgba(86, 129, 173, 0.2);
+  color: #1c1510;
 }
 
 .concept-card::before {
@@ -1638,7 +1653,7 @@ textarea,
 }
 
 .concept-card .draft-preview {
-  color: var(--text);
+  color: inherit;
 }
 
 .aroma-image {

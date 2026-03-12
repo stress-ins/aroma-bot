@@ -997,6 +997,7 @@ const {
   setMode,
   setTab,
   safeLoadCurrentTab,
+  HANDBOOK_CATEGORY_META,
 });
 
 window.goBackToList = goBackToList;
@@ -1093,6 +1094,7 @@ function applyTelegramTheme() {
   const textColor = tg.themeParams.text_color;
   if (bgColor) document.documentElement.style.setProperty("--panel", bgColor);
   if (textColor) document.documentElement.style.setProperty("--text", textColor);
+  document.body.classList.toggle("tg-theme-dark", tg.colorScheme === "dark");
 }
 
 function filtersToQueryString() {
