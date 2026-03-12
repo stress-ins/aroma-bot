@@ -8,17 +8,20 @@ import subprocess
 import sys
 import time
 import urllib.request
+from io import BytesIO
 from base64 import b64decode
-from datetime import datetime, timezone
 from pathlib import Path
 
+import numpy as np
 import pytest
+from PIL import Image
 from playwright.sync_api import Error, sync_playwright
 
 
 _PNG_1X1 = b64decode(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO7Zk6cAAAAASUVORK5CYII="
 )
+_SNAPSHOT_DIR = Path(__file__).with_name("snapshots")
 
 
 def _free_port() -> int:
@@ -37,6 +40,48 @@ def _wait_until_ready(base_url: str, timeout: float = 20.0) -> None:
         except Exception:
             time.sleep(0.2)
     raise RuntimeError("Mini App test server did not start in time")
+
+
+def _prepare_visual_state(page) -> None:
+    page.add_style_tag(
+        content="""
+        *,
+        *::before,
+        *::after {
+          animation: none !important;
+          transition: none !important;
+          caret-color: transparent !important;
+          scroll-behavior: auto !important;
+        }
+        """
+    )
+    page.wait_for_timeout(150)
+
+
+def _assert_visual_snapshot(locator, snapshot_name: str, *, max_diff_ratio: float = 0.0025) -> None:
+    expected_path = _SNAPSHOT_DIR / snapshot_name
+    actual_bytes = locator.screenshot(animations="disabled")
+
+    if os.getenv("UPDATE_VISUAL_BASELINE") == "1":
+        expected_path.parent.mkdir(parents=True, exist_ok=True)
+        expected_path.write_bytes(actual_bytes)
+        return
+
+    assert expected_path.exists(), f"Missing visual baseline: {expected_path}"
+
+    expected = Image.open(expected_path).convert("RGBA")
+    actual = Image.open(BytesIO(actual_bytes)).convert("RGBA")
+    assert actual.size == expected.size, (
+        f"Snapshot size mismatch for {snapshot_name}: expected {expected.size}, got {actual.size}"
+    )
+
+    expected_pixels = np.array(expected)
+    actual_pixels = np.array(actual)
+    diff_mask = np.any(np.abs(actual_pixels.astype(np.int16) - expected_pixels.astype(np.int16)) > 12, axis=2)
+    diff_ratio = float(diff_mask.mean())
+    assert diff_ratio <= max_diff_ratio, (
+        f"Visual regression in {snapshot_name}: diff ratio {diff_ratio:.4%} exceeds {max_diff_ratio:.4%}"
+    )
 
 
 @pytest.fixture(scope="session")
@@ -140,7 +185,7 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
         "cta": "Напиши, если хочешь такую карусель под свой проект.",
     }
 
-    now = datetime.now(timezone.utc).isoformat()
+    now = "2026-03-11T18:00:00+00:00"
     cursor.execute(
         "INSERT INTO drafts (draft_id, kind, topic, source, status, feedback, payload, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
         (draft_id, "reels", "Вечерний ароматический ритуал", "/miniapp", "draft", "", json.dumps(reels_payload), now),
@@ -922,3 +967,46 @@ def test_focusing_lower_review_field_keeps_it_in_view(page):
     assert metrics is not None
     assert metrics["top"] >= 0
     assert metrics["bottom"] <= metrics["viewportHeight"]
+
+
+def test_visual_mobile_drafts_list_baseline(page):
+    page.get_by_role("button", name="Черновики").click()
+    page.wait_for_timeout(300)
+    _prepare_visual_state(page)
+    _assert_visual_snapshot(page.locator(".shell"), "mobile-drafts-list.png")
+
+
+def test_visual_mobile_draft_detail_baseline(page):
+    page.get_by_role("button", name="Черновики").click()
+    page.wait_for_timeout(300)
+    page.get_by_text("Как мягко выйти из рабочего напряжения").first.click()
+    page.wait_for_timeout(300)
+    _prepare_visual_state(page)
+    _assert_visual_snapshot(page.locator("#detailPanel"), "mobile-draft-detail.png")
+
+
+def test_visual_mobile_plan_detail_baseline(page):
+    page.get_by_role("button", name="Планы").click()
+    page.wait_for_timeout(300)
+    page.locator(".plan-card").first.click()
+    page.wait_for_timeout(300)
+    _prepare_visual_state(page)
+    _assert_visual_snapshot(page.locator("#detailPanel"), "mobile-plan-detail.png")
+
+
+def test_visual_mobile_reels_detail_baseline(page):
+    page.get_by_role("button", name="Рилсы").click()
+    page.wait_for_timeout(300)
+    page.locator(".reels-card").first.click()
+    page.wait_for_timeout(300)
+    _prepare_visual_state(page)
+    _assert_visual_snapshot(page.locator("#detailPanel"), "mobile-reels-detail.png")
+
+
+def test_visual_desktop_split_view_baseline(desktop_page):
+    desktop_page.get_by_role("button", name="Черновики").click()
+    desktop_page.wait_for_timeout(300)
+    desktop_page.get_by_text("Как мягко выйти из рабочего напряжения").first.click()
+    desktop_page.wait_for_timeout(300)
+    _prepare_visual_state(desktop_page)
+    _assert_visual_snapshot(desktop_page.locator(".shell"), "desktop-split-view.png")
