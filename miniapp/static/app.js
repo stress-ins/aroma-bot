@@ -40,6 +40,7 @@ const MODE_TABS = {
   ],
   handbook: [
     { id: "aromas", label: "Ароматы" },
+    { id: "concepts", label: "Теория" },
     { id: "practices", label: "Практики" },
     { id: "sounds", label: "Звуки" },
   ],
@@ -106,6 +107,7 @@ const HANDBOOK_CATEGORY_META = {
   aromas: {
     category: "aroma",
     title: "Ароматы",
+    label: "аромат",
     searchLabel: "Поиск аромата",
     searchPlaceholder: "Например: лаванда",
     empty: "Ароматы не найдены.",
@@ -113,9 +115,21 @@ const HANDBOOK_CATEGORY_META = {
     locked: "Доступ к справочнику ароматов ограничен.",
     count: (items) => `${items.length} карточек`,
   },
+  concepts: {
+    category: "concept",
+    title: "Теория",
+    label: "теоретическую карточку",
+    searchLabel: "Поиск темы",
+    searchPlaceholder: "Например: лимбическая система",
+    empty: "Теоретические карточки не найдены.",
+    selectPrompt: "Выберите теоретическую карточку из списка.",
+    locked: "Доступ к теоретическим карточкам ограничен.",
+    count: (items) => `${items.length} карточек`,
+  },
   practices: {
     category: "practice",
     title: "Практики",
+    label: "практику",
     searchLabel: "Поиск практики",
     searchPlaceholder: "Например: квадратное дыхание",
     empty: "Практики не найдены.",
@@ -126,6 +140,7 @@ const HANDBOOK_CATEGORY_META = {
   sounds: {
     category: "sound",
     title: "Звуки",
+    label: "звуковую карточку",
     searchLabel: "Поиск звука",
     searchPlaceholder: "Например: гонг",
     empty: "Звуки не найдены.",
@@ -138,6 +153,7 @@ const HANDBOOK_CATEGORY_META = {
 function handbookCategoryIcon(tabId) {
   const glyphMap = {
     aromas: "🌿",
+    concepts: "🧭",
     practices: "🫁",
     sounds: "🔔",
   };
@@ -148,9 +164,49 @@ function handbookCategoryIcon(tabId) {
 function handbookCardBadge(tabId, item = {}) {
   const sourceType = String(item.source_type || "").trim();
   if (tabId === "aromas" && sourceType) return sourceType;
+  if (tabId === "concepts") {
+    const conceptLabels = {
+      method: "Метод",
+      founder: "Автор",
+      system: "Система",
+      chakra: "Чакра",
+      energy: "Энергия",
+    };
+    return conceptLabels[sourceType] || "Теория";
+  }
   if (tabId === "practices") return "Практика";
   if (tabId === "sounds") return "Звук";
   return "";
+}
+
+function formatCourseSourceLabel(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  return raw
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((part) => {
+      const match = part.match(/^rudn_olfactotherapy_(.+)$/);
+      if (!match) return part;
+      return `PDF ${match[1].replaceAll("_", ".")}`;
+    })
+    .join(" · ");
+}
+
+function referenceHeroBadges(reference) {
+  const badges = [
+    { label: "Тип", value: handbookCardBadge(state.tab, reference) || currentHandbookMeta().title },
+    { label: "Фокус", value: reference.chakra_focus || "" },
+    { label: "Полярность", value: reference.polarity || "" },
+    { label: "Курс", value: formatCourseSourceLabel(reference.course_source) },
+  ].filter((item) => item.value);
+  return badges.map((item) => `
+    <div class="reference-badge">
+      <span class="reference-badge-label">${escapeHtml(item.label)}</span>
+      <strong>${escapeHtml(item.value)}</strong>
+    </div>
+  `).join("");
 }
 
 function escapeHtml(value) {
@@ -1629,6 +1685,7 @@ function bindKeyboardViewportAssist() {
   viewport.addEventListener("resize", handleViewportChange);
   viewport.addEventListener("scroll", handleViewportChange);
 }
+
 function bindSwipeBack() {
   const isMobile = window.matchMedia("(max-width: 760px)").matches;
   if (!isMobile) return;
@@ -1977,15 +2034,27 @@ function renderReferencePassport(reference) {
     reference.origin_countries ? `Источник / традиция: ${reference.origin_countries}` : "",
     reference.extraction_method ? `Форма / метод: ${reference.extraction_method}` : "",
     reference.volatility ? `Длительность / летучесть: ${reference.volatility}` : "",
+    reference.chakra_focus ? `Фокус / чакры: ${reference.chakra_focus}` : "",
+    reference.polarity ? `Полярность: ${reference.polarity}` : "",
+    reference.course_source ? `Источник курса: ${formatCourseSourceLabel(reference.course_source)}` : "",
   ].filter(Boolean);
   return parts.join("\n");
 }
 
 function renderReferenceImage(reference) {
   return `
-    <section class="section aroma-hero">
-      <img class="aroma-image" src="${escapeHtml(reference.image_url)}" alt="${escapeHtml(reference.image_alt)}" />
-      <div class="aroma-image-caption">${escapeHtml(reference.image_alt)}</div>
+    <section class="section aroma-hero reference-hero-card">
+      <div class="reference-hero-copy">
+        <p class="eyebrow">${handbookCategoryIcon(state.tab)}<span>${escapeHtml(currentHandbookMeta().title)}</span></p>
+        <h2 class="detail-title">${escapeHtml(reference.name)}</h2>
+        <p class="reference-keyline">${escapeHtml(reference.key || handbookCardBadge(state.tab, reference) || currentHandbookMeta().title)}</p>
+        <p class="reference-summary">${escapeHtml(stripMarkdown(reference.description || reference.course_notes || ""))}</p>
+        <div class="reference-badges">${referenceHeroBadges(reference)}</div>
+      </div>
+      <div class="reference-hero-media">
+        <img class="aroma-image" src="${escapeHtml(reference.image_url)}" alt="${escapeHtml(reference.image_alt)}" />
+        <div class="aroma-image-caption">${escapeHtml(reference.image_alt)}</div>
+      </div>
     </section>
   `;
 }
@@ -1994,7 +2063,7 @@ function renderReferences() {
   const meta = currentHandbookMeta();
   const items = state.referenceItems || [];
   const query = (state.referenceSearch || "").trim().toLowerCase();
-  const filtered = items.filter((item) => `${item.name} ${item.description || ""}`.toLowerCase().includes(query));
+  const filtered = items.filter((item) => `${item.name} ${item.description || ""} ${item.course_notes || ""}`.toLowerCase().includes(query));
   const reference = state.selectedReference;
   
   elements.listTitle.textContent = meta.title;
@@ -2030,10 +2099,17 @@ function renderReferences() {
   }
 
   listContainer.innerHTML = filtered.map((item) => `
-    <article ${interactiveCardAttrs(`Открыть карточку ${item.name}`)} class="draft-card${item.slug === reference?.slug ? " active" : ""} interactive-card" onclick="openReference('${item.slug}', '${state.tab}')">
-      <div class="draft-kind">${handbookCategoryIcon(state.tab)}${handbookCardBadge(state.tab, item) ? `<span>${escapeHtml(handbookCardBadge(state.tab, item))}</span>` : ""}</div>
+    <article ${interactiveCardAttrs(`Открыть карточку ${item.name}`)} class="draft-card overview-card reference-card${item.slug === reference?.slug ? " active" : ""} interactive-card" onclick="openReference('${item.slug}', '${state.tab}')">
+      <div class="overview-card-top">
+        <div class="draft-kind">${handbookCategoryIcon(state.tab)}${handbookCardBadge(state.tab, item) ? `<span>${escapeHtml(handbookCardBadge(state.tab, item))}</span>` : ""}</div>
+        <span class="overview-card-date">${escapeHtml(formatCourseSourceLabel(item.course_source) || meta.title)}</span>
+      </div>
       <h3 class="draft-topic">${escapeHtml(item.name)}</h3>
-      <div class="draft-preview">${escapeHtml(item.description || "")}</div>
+      <div class="draft-preview">${escapeHtml(stripMarkdown(item.description || item.course_notes || ""))}</div>
+      <div class="draft-meta overview-card-footer">
+        ${item.chakra_focus ? tagMarkup(item.chakra_focus, "source") : ""}
+        ${item.polarity ? tagMarkup(item.polarity, "feedback") : ""}
+      </div>
     </article>
   `).join("");
 
@@ -2057,6 +2133,7 @@ function renderReferences() {
       ${aromaSection("Действие на НПС", reference.nps_effect)}
       ${aromaSection("Терапевтические свойства", reference.therapeutic_properties)}
       ${aromaSection("Психологические свойства", reference.psychological_properties)}
+      ${aromaSection("Материалы курса", reference.course_notes)}
       ${aromaSection('Ресурс "+"', reference.resource_values?.plus)}
       ${aromaSection('Ресурс "-"', reference.resource_values?.minus)}
       ${aromaSection("Исторические сведения", reference.history)}
@@ -2341,6 +2418,10 @@ async function openDraft(id) {
   enterDetailView();
   const d = await fetchJson(`/api/drafts/${id}`, { timeout: 20000 });
   state.selected = d; state.draftId = id;
+  const params = new URLSearchParams(window.location.search);
+  params.set("tab", state.tab);
+  params.set("draft_id", id);
+  history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`);
   renderDraftList(); renderDraftDetail(d); enterDetailView();
 }
 
@@ -2559,6 +2640,7 @@ function setMode(m) {
     });
   });
   if (!(m === "content" && state.tab === "settings") && !tabs.find(t => t.id === state.tab)) setTab(tabs[0].id);
+  syncMobileNavigation();
 }
 
 function setTab(t) {
@@ -2578,6 +2660,7 @@ function setTab(t) {
   
   const p = new URLSearchParams(window.location.search);
   p.set("tab", t);
+  p.delete("draft_id");
   history.replaceState({}, "", `${window.location.pathname}?${p.toString()}`);
   
   elements.tabsContainer.querySelectorAll(".tab-button").forEach(b => b.classList.toggle("active", b.dataset.tab === t));
