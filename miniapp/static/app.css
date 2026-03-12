@@ -1509,6 +1509,14 @@ textarea,
     linear-gradient(180deg, var(--surface), var(--surface-2));
 }
 
+.reference-hero-card.is-theory {
+  background:
+    radial-gradient(circle at top right, rgba(86, 129, 173, 0.18), transparent 33%),
+    radial-gradient(circle at bottom left, rgba(113, 161, 132, 0.14), transparent 36%),
+    linear-gradient(180deg, rgba(249, 252, 255, 0.96), rgba(239, 246, 250, 0.94));
+  border-color: rgba(86, 129, 173, 0.22);
+}
+
 .reference-hero-copy {
   display: grid;
   gap: 10px;
@@ -1543,6 +1551,10 @@ textarea,
   font-weight: 600;
 }
 
+.reference-card.is-theory .overview-card-date {
+  color: #416784;
+}
+
 .reference-card .overview-card-footer {
   margin-top: 4px;
 }
@@ -1553,6 +1565,26 @@ textarea,
   border: 1px solid var(--border);
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.56);
+}
+
+.reference-badge.tone-type {
+  background: rgba(86, 129, 173, 0.1);
+  border-color: rgba(86, 129, 173, 0.22);
+}
+
+.reference-badge.tone-chakra {
+  background: rgba(169, 109, 79, 0.1);
+  border-color: rgba(169, 109, 79, 0.24);
+}
+
+.reference-badge.tone-polarity {
+  background: rgba(113, 161, 132, 0.1);
+  border-color: rgba(113, 161, 132, 0.24);
+}
+
+.reference-badge.tone-course {
+  background: rgba(103, 97, 145, 0.08);
+  border-color: rgba(103, 97, 145, 0.22);
 }
 
 .reference-badge-label {
@@ -1569,6 +1601,24 @@ textarea,
   display: block;
   font-size: 14px;
   line-height: 1.45;
+}
+
+.concept-card {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(244, 249, 252, 0.98));
+  border-color: rgba(86, 129, 173, 0.2);
+}
+
+.concept-card::before {
+  background: linear-gradient(90deg, rgba(86, 129, 173, 0.8), rgba(113, 161, 132, 0.78));
+}
+
+.concept-card .draft-topic {
+  letter-spacing: -0.01em;
+}
+
+.concept-card .draft-preview {
+  color: var(--text);
 }
 
 .aroma-image {
