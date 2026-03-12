@@ -288,6 +288,21 @@ def test_reels_tab_opens_storyboard_without_empty_state(page):
     assert page.locator(".frame-image").count() == 1
 
 
+def test_overview_lists_use_consistent_card_meta(page):
+    page.get_by_role("button", name="Черновики").click()
+    page.wait_for_timeout(250)
+    assert page.locator(".draft-card .overview-card-date").first.inner_text().strip()
+
+    page.get_by_role("button", name="Планы").click()
+    page.wait_for_timeout(250)
+    assert page.locator(".plan-card .draft-kind").first.is_visible()
+    assert page.locator(".plan-card .overview-card-date").first.is_visible()
+
+    page.get_by_role("button", name="Рилсы").click()
+    page.wait_for_timeout(250)
+    assert page.locator(".reels-card .draft-meta .tag").count() >= 2
+
+
 def test_mobile_layout_has_no_overlapping_controls(page):
     for tab_name in ["Черновики", "Рилсы", "Создать"]:
         page.get_by_role("button", name=tab_name).click()
@@ -709,6 +724,37 @@ def test_content_review_detail_supports_save_polish_and_feedback(page):
     page.get_by_role("button", name="Не сработало").click()
     page.wait_for_timeout(350)
     assert page.get_by_text("Не сработало").count() >= 1
+
+
+def test_content_review_detail_highlights_editor_focus_and_summary(page):
+    page.get_by_role("button", name="Черновики").click()
+    page.wait_for_timeout(300)
+    page.get_by_text("Как мягко выйти из рабочего напряжения").first.click()
+    page.wait_for_timeout(300)
+
+    metrics = page.evaluate(
+        """
+        () => {
+          const hero = document.querySelector('.detail-hero');
+          const facts = document.querySelectorAll('.detail-fact').length;
+          const summary = (document.querySelector('.detail-summary')?.textContent || '').trim();
+          const captionRect = document.querySelector('#contentCaptionField')?.getBoundingClientRect();
+          const notesRect = document.querySelector('#contentEditorNotesField')?.getBoundingClientRect();
+          return {
+            hasHero: Boolean(hero),
+            facts,
+            summaryLength: summary.length,
+            captionHeight: captionRect ? Math.round(captionRect.height) : 0,
+            notesHeight: notesRect ? Math.round(notesRect.height) : 0,
+          };
+        }
+        """
+    )
+
+    assert metrics["hasHero"] is True
+    assert metrics["facts"] >= 4
+    assert metrics["summaryLength"] >= 20
+    assert metrics["captionHeight"] > metrics["notesHeight"]
 
 
 def test_keywords_detail_supports_add_and_remove(page):
