@@ -8,6 +8,8 @@ import os
 import urllib.parse
 from pathlib import Path
 
+from contextlib import asynccontextmanager
+
 from fastapi import BackgroundTasks, Depends, FastAPI, Header, HTTPException, Query
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -133,7 +135,31 @@ def _require_reference_access(x_telegram_init_data: str | None = Header(default=
     return user_id
 
 
-app = FastAPI()
+@asynccontextmanager
+async def _lifespan(app: FastAPI):  # noqa: ARG001
+    """On startup: resume any generations that were interrupted mid-flight."""
+    try:
+        drafts = await list_recent_drafts(limit=200)
+        for draft in drafts:
+            payload = draft.payload or {}
+            if not payload.get("generation_pending"):
+                continue
+            if draft.kind == "carousel":
+                if payload.get("slides"):
+                    asyncio.create_task(populate_carousel_slide_assets(draft.draft_id))
+                else:
+                    asyncio.create_task(_complete_carousel_generation(draft.draft_id, draft.topic))
+            elif draft.kind == "reels":
+                if payload.get("storyboard"):
+                    asyncio.create_task(populate_reels_frame_assets(draft.draft_id))
+                else:
+                    asyncio.create_task(_complete_reels_generation(draft.draft_id, draft.topic))
+    except Exception:
+        pass  # Don't block startup if recovery fails
+    yield
+
+
+app = FastAPI(lifespan=_lifespan)
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="miniapp-static")
 app.mount("/generated/reels_assets", StaticFiles(directory=ASSETS_DIR), name="reels-generated-assets")
