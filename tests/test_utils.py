@@ -19,6 +19,7 @@ from bot.agents.threads_replies import _extract_json
 from bot.services.miniapp_references import get_reference_card, list_reference_cards, seed_reference_cards_if_empty
 import bot.services.miniapp_references as miniapp_references
 from scripts.patch_aroma_cards import _coerce_aliases, _coerce_payload
+from threads_oauth_callback import app as oauth_callback_app
 
 
 class TestSplitMessage:
@@ -270,6 +271,33 @@ class TestContentImagePrompts:
         prompt = make_single_image_prompt("base prompt", "Заголовок слайда", with_text=False)
         assert "Заголовок слайда" in prompt
         assert "no typography" in prompt
+
+
+class TestOAuthCallbacks:
+    def test_threads_callback_renders_code(self):
+        client = TestClient(oauth_callback_app)
+        response = client.get("/threads/callback?code=abc123&state=state1")
+        assert response.status_code == 200
+        assert "Threads OAuth code received" in response.text
+        assert "abc123" in response.text
+
+    def test_instagram_callback_renders_code(self):
+        client = TestClient(oauth_callback_app)
+        response = client.get("/instagram/callback?code=ig123")
+        assert response.status_code == 200
+        assert "Instagram OAuth code received" in response.text
+
+    def test_threads_deauthorize_returns_ok(self):
+        client = TestClient(oauth_callback_app)
+        response = client.get("/threads/deauthorize?user_id=42")
+        assert response.status_code == 200
+        assert response.json()["event"] == "deauthorize"
+
+    def test_threads_delete_returns_confirmation_url(self):
+        client = TestClient(oauth_callback_app)
+        response = client.post("/threads/delete", json={"confirmation_code": "delete-1"})
+        assert response.status_code == 200
+        assert response.json()["confirmation_code"] == "delete-1"
 
 
 class TestThreadsReplyJson:
