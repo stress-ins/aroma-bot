@@ -1311,6 +1311,15 @@ body.tg-theme-dark .detail-markdown h5 {
     padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
   }
 
+  /* When soft keyboard is open: hide the bottom nav so it can't overlap focused fields.
+     padding-bottom also removed — nav space is no longer needed. */
+  body.is-mobile-layout.is-keyboard-open {
+    padding-bottom: 0;
+  }
+  body.is-keyboard-open .bottom-tab-bar {
+    display: none;
+  }
+
   .detail-title {
     font-size: 19px;
   }

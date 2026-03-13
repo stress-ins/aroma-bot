@@ -245,9 +245,22 @@ export function createShellModule(deps) {
       schedule(target, 260, "smooth");
     });
 
+    document.addEventListener("focusout", () => {
+      // Small delay: focus may be moving between fields, not truly leaving
+      window.setTimeout(() => {
+        const active = document.activeElement;
+        if (!(active instanceof HTMLElement) || !active.matches("textarea, input, select, [contenteditable='true']")) {
+          document.body.classList.remove("is-keyboard-open");
+        }
+      }, 150);
+    });
+
     const viewport = window.visualViewport;
     if (!viewport) return;
     const handleViewportChange = () => {
+      // Keyboard is open when visual viewport is meaningfully smaller than layout viewport
+      const keyboardVisible = window.innerHeight - viewport.height > 80;
+      document.body.classList.toggle("is-keyboard-open", keyboardVisible);
       const active = document.activeElement;
       if (!(active instanceof HTMLElement)) return;
       if (!active.matches("textarea, input, select, [contenteditable='true']")) return;
