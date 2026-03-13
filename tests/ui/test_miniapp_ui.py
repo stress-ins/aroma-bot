@@ -407,13 +407,69 @@ def test_reels_detail_falls_back_to_payload_storyboard(page):
         route.fulfill(status=200, content_type="application/json", body=json.dumps(payload, ensure_ascii=False))
 
     page.route("**/api/reels/reels001", _fulfill_reel)
-    page.locator("#btnTabReels").click()
-    page.wait_for_load_state("networkidle")
-    page.locator(".reels-card").first.click()
+    page.locator("#btnTabDrafts").click()
+    page.wait_for_timeout(200)
+    page.get_by_text("Вечерний ароматический ритуал").first.click()
     page.wait_for_timeout(250)
 
     assert page.locator(".storyboard-frame").count() == 1
     assert page.get_by_text("Попробуй сегодня").first.is_visible()
+
+
+def test_drafts_reels_card_routes_into_storyboard_detail_with_mocked_api(page):
+    reels_detail = {
+        "draft_id": "reels001",
+        "kind": "reels",
+        "topic": "Вечерний ароматический ритуал",
+        "source": "/miniapp",
+        "status": "draft",
+        "feedback": "",
+        "created_at": "2026-03-11T18:00:00+00:00",
+        "preview": "Рилс с раскадровкой.",
+        "images_ready": 1,
+        "frame_count": 1,
+        "frames": [
+            {
+                "timecode": "0-3 сек",
+                "scene": "Камера идет по флакону и ладони",
+                "angle": "Крупный план",
+                "gemini_prompt": "close-up bottle and hand, warm evening light",
+                "current_asset": {
+                    "url": "/generated/reels_assets/reels001/frame_1.png",
+                    "filename": "frame_1.png",
+                },
+            }
+        ],
+        "payload": {
+            "concept": "Вечернее переключение",
+            "scenario": "Короткий сценарий",
+            "storyboard": [],
+        },
+    }
+
+    def _draft_detail(route):
+        if route.request.url.endswith("/api/drafts/reels001"):
+            route.fulfill(status=200, content_type="application/json", body=json.dumps(reels_detail, ensure_ascii=False))
+            return
+        route.continue_()
+
+    def _reel_detail(route):
+        if route.request.url.endswith("/api/reels/reels001"):
+            route.fulfill(status=200, content_type="application/json", body=json.dumps(reels_detail, ensure_ascii=False))
+            return
+        route.continue_()
+
+    page.route("**/api/drafts/reels001", _draft_detail)
+    page.route("**/api/reels/reels001", _reel_detail)
+
+    page.locator("#btnTabDrafts").click()
+    page.wait_for_timeout(200)
+    page.get_by_text("Вечерний ароматический ритуал").first.click()
+    page.wait_for_timeout(300)
+
+    assert page.locator(".storyboard-frame").count() == 1
+    assert page.get_by_text("Камера идет по флакону и ладони").first.is_visible()
+    assert not page.get_by_text("Превью").is_visible()
 
 
 def test_overview_lists_use_consistent_card_meta(page):
