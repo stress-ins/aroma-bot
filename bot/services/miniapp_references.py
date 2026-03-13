@@ -247,6 +247,20 @@ def _source_image(source_type: str, title: str, category: str) -> str:
     return f"data:image/svg+xml;charset=UTF-8,{quote(svg)}"
 
 
+def _payload_image_url(payload: dict[str, object]) -> str | None:
+    """Return payload image_url if it points to an existing file on disk."""
+    stored = str(payload.get("image_url", "") or "").strip()
+    if not stored or stored.startswith("data:"):
+        return None
+    # Resolve /reference-images/... to assets/reference_images/...
+    if stored.startswith("/reference-images/"):
+        rel = stored[len("/reference-images/"):]
+        candidate = REFERENCE_IMAGES_DIR / rel
+        if candidate.exists():
+            return stored
+    return None
+
+
 def _serialize_model(model: AromaCardModel) -> dict[str, object]:
     payload = _public_payload(model.payload or {})
     payload.setdefault("resource_values", {"plus": "", "minus": ""})
@@ -256,7 +270,8 @@ def _serialize_model(model: AromaCardModel) -> dict[str, object]:
     payload["aliases"] = list(model.aliases or [])
     payload["source_type"] = model.source_type
     payload["image_url"] = (
-        _local_reference_image_url(model.category, model.slug)
+        _payload_image_url(payload)
+        or _local_reference_image_url(model.category, model.slug)
         or _shared_reference_image_url(model.category, model.slug, model.source_type)
         or _source_image(model.source_type, model.name, model.category)
     )
@@ -392,6 +407,30 @@ async def seed_reference_cards_if_empty() -> None:
                 )
             )
         await session.commit()
+
+
+_SVG_PREFIX = "data:image/svg+xml"
+
+
+async def list_reference_cards_with_placeholder_images(category: str) -> list[dict[str, str]]:
+    """Return cards whose resolved image_url is an SVG placeholder."""
+    await seed_reference_cards_if_empty()
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(select(AromaCardModel).where(AromaCardModel.category == category))
+        models = result.scalars().all()
+    items = []
+    for model in models:
+        serialized = _serialize_model(model)
+        image_url = str(serialized.get("image_url", "") or "")
+        if not image_url or image_url.startswith(_SVG_PREFIX):
+            items.append({
+                "slug": model.slug,
+                "name": model.name,
+                "category": model.category,
+                "source_type": model.source_type,
+                "image_url": image_url[:80] + "…" if len(image_url) > 80 else image_url,
+            })
+    return sorted(items, key=lambda x: _normalize(x["name"]))
 
 
 async def list_reference_cards(category: str) -> list[dict[str, str]]:

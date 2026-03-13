@@ -7,6 +7,7 @@ from bot.services.miniapp_references import (
     get_reference_card,
     list_reference_cards,
     list_reference_cards_missing_description,
+    list_reference_cards_with_placeholder_images,
     update_reference_card,
 )
 from config import settings
@@ -31,6 +32,12 @@ async def references_access(x_telegram_init_data: str | None = Header(default=No
 async def references_audit(category: str = "aroma", _: int = Depends(_require_reference_access)):
     """Return cards with empty description field for content audit."""
     return {"items": await list_reference_cards_missing_description(category)}
+
+
+@router.get("/api/references/images/audit")
+async def references_images_audit(category: str = "aroma", _: int = Depends(_require_reference_access)):
+    """Return cards with SVG placeholder images (dry-run view for image generation)."""
+    return {"items": await list_reference_cards_with_placeholder_images(category)}
 
 
 @router.get("/api/references/{category}")
