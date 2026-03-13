@@ -6,6 +6,7 @@ from bot.services.miniapp_references import (
     enrich_reference_card,
     get_reference_card,
     list_reference_cards,
+    list_reference_cards_missing_description,
     update_reference_card,
 )
 from config import settings
@@ -24,6 +25,12 @@ async def references_access(x_telegram_init_data: str | None = Header(default=No
         "allowed": bool(user_id in settings.miniapp_aroma_allowed_user_id_set if user_id is not None else False),
         "user_id": user_id,
     }
+
+
+@router.get("/api/references/audit")
+async def references_audit(category: str = "aroma", _: int = Depends(_require_reference_access)):
+    """Return cards with empty description field for content audit."""
+    return {"items": await list_reference_cards_missing_description(category)}
 
 
 @router.get("/api/references/{category}")
