@@ -21,6 +21,7 @@ const state = {
   referenceAccessError: "",
   referenceItems: [],
   referenceSearch: "",
+  referenceFilter: "",
   selectedReference: null,
   inbox: [],
   inboxKind: "all",
@@ -100,6 +101,18 @@ const elements = {
   bootFallbackReload: document.getElementById("bootFallbackReload"),
   bottomTabBar: document.getElementById("bottomTabBar"),
   topbarTitle: document.querySelector(".topbar-title"),
+};
+
+const SOURCE_TYPE_LABELS = {
+  citrus:  "Цитрусовые",
+  herb:    "Травяные",
+  flower:  "Цветочные",
+  tree:    "Древесные",
+  resin:   "Смолистые",
+  spice:   "Пряные",
+  grass:   "Злаковые",
+  root:    "Корневые",
+  wood:    "Деревянистые",
 };
 
 const RU_KIND_LABELS = {
@@ -235,7 +248,7 @@ function aromaCardIcon(item, tabId) {
 
 function handbookCardBadge(tabId, item = {}) {
   const sourceType = String(item.source_type || "").trim();
-  if (tabId === "aromas" && sourceType) return sourceType;
+  if (tabId === "aromas" && sourceType) return SOURCE_TYPE_LABELS[sourceType.toLowerCase()] || sourceType;
   if (tabId === "blends") return "Смесь";
   if (tabId === "symptoms") return item.category_group ? String(item.category_group).split(" ")[0] : "Симптом";
   if (tabId === "concepts") {
@@ -1285,6 +1298,7 @@ function setTab(t) {
   if (HANDBOOK_CATEGORY_META[t]) {
     state.lastHandbookTab = t;
     state.referenceSearch = "";
+    state.referenceFilter = "";
     if (state.selectedReference?.category !== HANDBOOK_CATEGORY_META[t].category) {
       state.selectedReference = null;
     }
@@ -1367,6 +1381,7 @@ registerWindowBridge({
   addForbiddenPhrase,
   removeForbiddenPhrase,
   goBackToList,
+  renderReferences,
 });
 
 function renderInbox() { return renderInboxImpl(); }

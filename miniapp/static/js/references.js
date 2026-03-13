@@ -1,3 +1,15 @@
+const REFERENCE_SOURCE_TYPE_LABELS = {
+  citrus:  "Цитрусовые",
+  herb:    "Травяные",
+  flower:  "Цветочные",
+  tree:    "Древесные",
+  resin:   "Смолистые",
+  spice:   "Пряные",
+  grass:   "Злаковые",
+  root:    "Корневые",
+  wood:    "Деревянистые",
+};
+
 export function createReferencesModule(deps) {
   const {
     state,
@@ -141,11 +153,50 @@ export function createReferencesModule(deps) {
     `;
   }
 
+  function renderFilterChips(items, tabId) {
+    if (tabId !== "aromas" && tabId !== "symptoms") return "";
+    const seen = new Set();
+    const values = [];
+    for (const item of items) {
+      let raw = "";
+      if (tabId === "aromas") raw = String(item.source_type || "").trim().toLowerCase();
+      else if (tabId === "symptoms") raw = String(item.category_group || "").split(" ")[0].trim();
+      if (raw && !seen.has(raw)) {
+        seen.add(raw);
+        values.push(raw);
+      }
+    }
+    if (!values.length) return "";
+    const activeFilter = state.referenceFilter || "";
+    const allActive = !activeFilter;
+    const chips = [
+      `<button class="filter-chip${allActive ? " active" : ""}" onclick="setReferenceFilter('')">Все</button>`,
+      ...values.map((v) => {
+        const label = tabId === "aromas" ? (REFERENCE_SOURCE_TYPE_LABELS[v] || v) : v;
+        const isActive = activeFilter === v;
+        return `<button class="filter-chip${isActive ? " active" : ""}" onclick="setReferenceFilter(${JSON.stringify(v)})">${escapeHtml(label)}</button>`;
+      }),
+    ];
+    return `<div class="filter-chips">${chips.join("")}</div>`;
+  }
+
   function renderReferences() {
     const meta = currentHandbookMeta();
+    const tabId = state.tab;
     const items = state.referenceItems || [];
+    const activeFilter = state.referenceFilter || "";
+
+    let visible = items;
+    if (activeFilter) {
+      visible = items.filter((item) => {
+        if (tabId === "aromas") return String(item.source_type || "").trim().toLowerCase() === activeFilter;
+        if (tabId === "symptoms") return String(item.category_group || "").split(" ")[0].trim() === activeFilter;
+        return true;
+      });
+    }
+
     const query = (state.referenceSearch || "").trim().toLowerCase();
-    const filtered = items.filter((item) =>
+    const filtered = visible.filter((item) =>
       `${item.name} ${item.description || ""} ${item.course_notes || ""} ${item.conditions_for_use || ""} ${item.category_group || ""}`.toLowerCase().includes(query)
     );
     const reference = state.selectedReference;
@@ -160,6 +211,7 @@ export function createReferencesModule(deps) {
     let listContainer = document.getElementById("referenceListContainer");
     if (!listContainer) {
       elements.draftList.innerHTML = `
+        <div id="referenceFilterChips"></div>
         <div class="aroma-search">
           <label>${escapeHtml(meta.searchLabel)}<input id="referenceSearchInput" type="search" placeholder="${escapeHtml(meta.searchPlaceholder)}" value="${escapeHtml(state.referenceSearch)}" /></label>
         </div>
@@ -181,6 +233,8 @@ export function createReferencesModule(deps) {
         }
       }
     }
+    const filterChipsEl = document.getElementById("referenceFilterChips");
+    if (filterChipsEl) filterChipsEl.innerHTML = renderFilterChips(items, tabId);
 
     listContainer.innerHTML = filtered.map((item) => `
       <article ${interactiveCardAttrs(`Открыть карточку ${item.name}`)} class="draft-card overview-card reference-card${state.tab === "concepts" ? " is-theory concept-card" : ""}${item.slug === reference?.slug ? " active" : ""} interactive-card" onclick="openReference(${JSON.stringify(item.slug)}, ${JSON.stringify(state.tab)})">
