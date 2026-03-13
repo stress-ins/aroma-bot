@@ -671,7 +671,7 @@ const {
   renderReelsDetail: (draft) => renderReelsDetail(draft),
   renderEmptyDetail: () => renderEmptyDetail(),
   renderDetailError,
-  hasPendingCarouselOperations,
+  hasPendingCarouselOperations: (draftId) => hasPendingCarouselOperations(draftId),
   isEditingDetailForm,
   syncMobileNavigation,
   enterDetailView,

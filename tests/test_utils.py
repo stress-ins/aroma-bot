@@ -2414,6 +2414,11 @@ class TestMiniAppRussianLocale:
         assert ".secondary-button.did-complete" in app_css
         assert ".secondary-button.did-error" in app_css
 
+    def test_session_module_avoids_tdz_on_carousel_ops_dependency(self):
+        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+
+        assert "hasPendingCarouselOperations: (draftId) => hasPendingCarouselOperations(draftId)" in app_js
+
     def test_pending_drafts_are_marked_as_generating(self):
         app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
         app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
