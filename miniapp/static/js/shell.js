@@ -172,7 +172,7 @@ export function createShellModule(deps) {
   }
 
   function bindTapAnimation() {
-    const selector = ".tab-button, .mode-button, .back-button, .secondary-button, .status-button, .feedback-button, .primary-button, .icon-corner-button, .bottom-tab-btn";
+    const selector = ".tab-button, .mode-button, .back-button, .secondary-button, .status-button, .feedback-button, .primary-button, .bottom-tab-btn";
     const clearTap = (target) => {
       if (!(target instanceof HTMLElement)) return;
       if (target.dataset.tapTimerId) {

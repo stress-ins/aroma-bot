@@ -14,9 +14,10 @@ from bot.services.carousel_assets import (
     update_carousel_slide_text,
 )
 from bot.handlers.carousel import _build_pptx
-from bot.services.drafts_store import get_draft
+from bot.services.drafts_store import DraftRecord, get_draft
 from bot.services.miniapp_presenter import serialize_draft
 from ..auth import _require_auth, _resolve_init_data
+from ..deps import require_draft
 from ..generation import complete_carousel_regenerate_all, set_generation_state
 from ..models import (
     CarouselSlideNotePayload,
@@ -28,10 +29,7 @@ router = APIRouter()
 
 
 @router.get("/api/carousel/{draft_id}")
-async def get_carousel(draft_id: str, _: None = Depends(_require_auth)):
-    draft = await get_draft(draft_id)
-    if not draft or draft.kind != "carousel":
-        raise HTTPException(status_code=404, detail="carousel_not_found")
+async def get_carousel(draft: DraftRecord = Depends(require_draft("carousel"))):
     return await serialize_draft(draft)
 
 
@@ -117,18 +115,14 @@ async def delete_carousel_version(
 
 @router.post("/api/carousel/{draft_id}/regenerate-all")
 async def regenerate_carousel_all(
-    draft_id: str,
     background_tasks: BackgroundTasks,
-    _: None = Depends(_require_auth),
+    draft: DraftRecord = Depends(require_draft("carousel")),
 ):
-    draft = await get_draft(draft_id)
-    if not draft or draft.kind != "carousel":
-        raise HTTPException(status_code=404, detail="carousel_not_found")
     await set_generation_state(
-        draft_id, pending=True, stage="images", message="Перегенерирую все картинки в карусели."
+        draft.draft_id, pending=True, stage="images", message="Перегенерирую все картинки в карусели."
     )
-    background_tasks.add_task(complete_carousel_regenerate_all, draft_id)
-    refreshed = await get_draft(draft_id)
+    background_tasks.add_task(complete_carousel_regenerate_all, draft.draft_id)
+    refreshed = await get_draft(draft.draft_id)
     if not refreshed:
         raise HTTPException(status_code=404, detail="carousel_not_found")
     return await serialize_draft(refreshed)
