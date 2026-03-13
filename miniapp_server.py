@@ -81,6 +81,16 @@ async def _lifespan(app: FastAPI):  # noqa: ARG001
 app = FastAPI(lifespan=_lifespan)
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="miniapp-static")
+
+
+@app.middleware("http")
+async def _no_cache_js_modules(request, call_next):
+    """Force revalidation of ES module files that lack their own version hash."""
+    response = await call_next(request)
+    path = request.url.path
+    if path.startswith("/static/js/") and path.endswith(".js"):
+        response.headers["Cache-Control"] = "no-cache"
+    return response
 app.mount("/generated/reels_assets", StaticFiles(directory=ASSETS_DIR), name="reels-generated-assets")
 app.mount("/generated/carousel_assets", StaticFiles(directory=CAROUSEL_ASSETS_DIR), name="carousel-generated-assets")
 
