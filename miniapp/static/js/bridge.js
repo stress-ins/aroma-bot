@@ -39,6 +39,8 @@ export function registerWindowBridge(deps) {
     openKeywordTopic,
     addKeywordItem,
     removeKeywordItem,
+    addTodoItem,
+    removeTodoItem,
     goBackToList,
     renderReferences,
   } = deps;
@@ -85,6 +87,8 @@ export function registerWindowBridge(deps) {
   window.openKeywordTopic = openKeywordTopic;
   window.addKeywordItem = addKeywordItem;
   window.removeKeywordItem = removeKeywordItem;
+  window.addTodoItem = () => addTodoItem();
+  window.removeTodoItem = (id) => removeTodoItem(id);
   window.renderCreateTool = renderCreateTool;
 
   window.openCreateTool = (toolId = "content") => {

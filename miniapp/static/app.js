@@ -179,6 +179,12 @@ const PRACTICE_TYPE_ICONS = {
   body:       "⚡",
 };
 
+const PRACTICE_RU_LABELS = {
+  breath:     "Дыхание",
+  meditation: "Медитация",
+  body:       "Телесная",
+};
+
 const RU_KIND_LABELS = {
   threads: "Тредс",
   instagram: "Инстаграм",
@@ -300,11 +306,12 @@ function aromaCardIcon(item, tabId) {
   }
   if (tabId === "blends") return "🌀";
   if (tabId === "symptoms") return "🫀";
+  if (tabId === "concepts") return conceptTypeMeta(item.source_type).icon;
   if (tabId === "practices") {
     const type = (item.source_type || "").toLowerCase();
-    if (type.includes("active") || type.includes("актив")) return "⚡";
-    if (type.includes("calm") || type.includes("спокой") || type.includes("relax")) return "🧘";
-    if (type.includes("breath") || type.includes("дыхан")) return "🫁";
+    if (type === "body")       return "⚡";
+    if (type === "meditation") return "🧘";
+    if (type === "breath")     return "🫁";
     return "🫁";
   }
   return handbookCategoryIcon(tabId);
@@ -324,7 +331,9 @@ function handbookCardBadge(tabId, item = {}) {
   if (tabId === "concepts") {
     return conceptTypeMeta(sourceType).label;
   }
-  if (tabId === "practices") return "Практика";
+  if (tabId === "practices") {
+    return PRACTICE_RU_LABELS[sourceType.toLowerCase()] || "Практика";
+  }
   if (tabId === "sounds") return "Звук";
   return "";
 }
@@ -944,6 +953,9 @@ const {
 
 const {
   loadPlans: loadPlansImpl,
+  loadTodo: loadTodoImpl,
+  addTodoItemImpl,
+  removeTodoItemImpl,
   planEntryTargetKind,
   planEntryFormatLabel,
   relatedDraftsForEntry,
@@ -1037,7 +1049,8 @@ async function loadStatus() {
 }
 
 async function loadPlans() {
-  return loadPlansImpl();
+  await loadPlansImpl();
+  await loadTodoImpl();
 }
 
 async function loadReels() { return loadReelsImpl(); }
@@ -1095,6 +1108,7 @@ const {
   SYMPTOM_CATEGORY_ICONS,
   CONCEPT_TYPE_ICONS,
   PRACTICE_TYPE_ICONS,
+  PRACTICE_RU_LABELS,
 });
 
 const {
@@ -1454,6 +1468,8 @@ registerWindowBridge({
   removeKeywordItem,
   addForbiddenPhrase,
   removeForbiddenPhrase,
+  addTodoItem: addTodoItemImpl,
+  removeTodoItem: removeTodoItemImpl,
   goBackToList,
   renderReferences,
 });
