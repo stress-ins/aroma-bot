@@ -529,24 +529,43 @@ async def build_reference_context(
 
 
 async def _enrich_aroma_cross_refs(serialized: dict[str, object]) -> dict[str, object]:
-    """Compute blends_containing_* cross-references for an aroma card."""
+    """Compute blends_containing_* and complementary_oil_* cross-references for an aroma card."""
     slug = serialized.get("slug")
     if not slug:
         return serialized
     blends_containing_names: list[str] = []
     blends_containing_slugs: list[str] = []
-    # Keep the loop inside the session to avoid DetachedInstanceError on lazy attrs.
+    complementary_oil_names: list[str] = list(serialized.get("complementary_oil_names") or [])
+    complementary_oil_slugs: list[str] = []
+
     async with AsyncSessionLocal() as session:
-        result = await session.execute(select(AromaCardModel).where(AromaCardModel.category == "blend"))
-        blend_models = result.scalars().all()
+        result = await session.execute(select(AromaCardModel).where(AromaCardModel.category == "aroma"))
+        aroma_models = result.scalars().all()
+        # Build lookup: normalised name/alias → slug
+        aroma_slug_by_name: dict[str, str] = {}
+        for m in aroma_models:
+            aroma_slug_by_name[_normalize(m.name)] = m.slug
+            for alias in (m.aliases or []):
+                aroma_slug_by_name[_normalize(alias)] = m.slug
+
+        result2 = await session.execute(select(AromaCardModel).where(AromaCardModel.category == "blend"))
+        blend_models = result2.scalars().all()
         for blend in blend_models:
             payload = _public_payload(blend.payload or {})
             ingredient_slugs = payload.get("ingredient_slugs") or []
             if isinstance(ingredient_slugs, list) and slug in ingredient_slugs:
                 blends_containing_names.append(blend.name)
                 blends_containing_slugs.append(blend.slug)
+
+    # Resolve complementary oil slugs from stored names
+    for name in complementary_oil_names:
+        resolved = aroma_slug_by_name.get(_normalize(name))
+        complementary_oil_slugs.append(resolved or "")
+
     serialized["blends_containing_names"] = blends_containing_names
     serialized["blends_containing_slugs"] = blends_containing_slugs
+    serialized["complementary_oil_names"] = complementary_oil_names
+    serialized["complementary_oil_slugs"] = complementary_oil_slugs
     return serialized
 
 
