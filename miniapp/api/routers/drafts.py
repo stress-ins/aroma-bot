@@ -3,11 +3,12 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, Query
 from telegram import Bot
 
-from bot.services.drafts_store import delete_draft, get_draft, list_recent_drafts, update_draft
+from bot.services.drafts_store import DraftModel, delete_draft, get_draft, list_recent_drafts, update_draft
 from bot.services.miniapp_content_review import polish_content_review_draft, update_content_review_draft
 from bot.services.miniapp_presenter import filter_drafts, serialize_draft, serialize_draft_summary
 from config import settings
 from ..auth import _require_auth
+from ..deps import require_draft
 from ..models import DraftContentPayload, DraftFeedbackPayload, DraftStatusPayload
 
 router = APIRouter()
@@ -41,10 +42,7 @@ async def drafts(
 
 
 @router.get("/api/drafts/{draft_id}")
-async def draft_detail(draft_id: str, _: None = Depends(_require_auth)):
-    draft = await get_draft(draft_id)
-    if not draft:
-        raise HTTPException(status_code=404, detail="draft_not_found")
+async def draft_detail(draft: DraftModel = Depends(require_draft())):
     return await serialize_draft(draft)
 
 

@@ -986,35 +986,6 @@ textarea,
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
-.icon-corner-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--surface);
-  color: var(--muted);
-  cursor: pointer;
-  box-shadow: var(--shadow-sm);
-  transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.18s ease;
-}
-
-.icon-corner-button:hover {
-  border-color: var(--brand-border);
-  color: var(--brand);
-}
-
-.icon-corner-button.active {
-  background: var(--brand-bg);
-  border-color: var(--brand-border);
-  color: var(--brand);
-}
-
-.icon-corner-button:active {
-  transform: scale(0.96);
-}
 
 .mode-button {
   flex: 1;
@@ -1516,7 +1487,6 @@ body.tg-theme-dark .detail-markdown h5 {
 .primary-button.is-tapped,
 .status-button.is-tapped,
 .feedback-button.is-tapped,
-.icon-corner-button.is-tapped,
 .bottom-tab-btn.is-tapped,
 .secondary-button:active,
 .primary-button:active,
