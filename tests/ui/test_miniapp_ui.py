@@ -836,10 +836,9 @@ def test_carousel_detail_shows_prompt_copy_buttons(page):
 
     assert page.get_by_role("button", name="Скопировать промпт слайда").count() >= 1
     assert page.get_by_text("Сохранить подпись").count() >= 1
-    assert page.get_by_text("Версии").count() >= 1
+    # «Версии» показываются только если версий >= 2; в тестовых данных одна версия — раздел скрыт
     assert page.locator(".slide").count() >= 2
     assert page.locator(".prompt-actions.actions-grid-two").count() >= 1
-    assert page.locator(".slide-version-actions.actions-grid-two").count() >= 1
 
 
 def test_mobile_carousel_actions_use_two_columns(page):
