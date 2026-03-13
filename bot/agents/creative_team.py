@@ -70,7 +70,7 @@ _EDITOR_SYSTEM = """\
 """
 
 
-def edit_post_sync(raw: str, topic: str, platform: str = "default") -> str:
+def edit_post_sync(raw: str, topic: str, platform: str = "default", user_forbidden: list[str] | None = None) -> str:
     """Run an editor pass over a raw post. Returns the polished post text."""
     import anthropic
 
@@ -80,6 +80,9 @@ def edit_post_sync(raw: str, topic: str, platform: str = "default") -> str:
         f"{platform_rule}\n\n"
         f"Черновик:\n{raw}"
     )
+    if user_forbidden:
+        extra = "\n".join(f"- {p}" for p in user_forbidden)
+        user_msg += f"\n\nДополнительные запрещённые фразы (указаны пользователем):\n{extra}"
 
     client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
     resp = client.messages.create(

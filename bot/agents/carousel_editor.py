@@ -122,11 +122,14 @@ def _sanitize_slide_text(text: str) -> str:
     return updated.strip()
 
 
-def edit_carousel_sync(raw_slides: list[str], topic: str) -> list[str]:
+def edit_carousel_sync(raw_slides: list[str], topic: str, user_forbidden: list[str] | None = None) -> list[str]:
     import anthropic
 
     raw_text = "\n".join(f"Слайд {i + 1}: {s}" for i, s in enumerate(raw_slides))
     prompt = _build_editor_prompt(topic=topic, raw_slides=raw_text)
+    if user_forbidden:
+        extra = "\n".join(f"- {p}" for p in user_forbidden)
+        prompt += f"\n\nДополнительные запрещённые фразы (указаны пользователем):\n{extra}"
 
     client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
     resp = client.messages.create(

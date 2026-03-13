@@ -7,6 +7,7 @@ from bot.agents.reels_agent import generate_reels_director_sync, generate_reels_
 from bot.handlers.carousel import _generate_carousel_sync
 from bot.services.carousel_assets import populate_carousel_slide_assets, regenerate_all_carousel_slide_assets
 from bot.services.drafts_store import get_draft, update_draft
+from bot.services.forbidden_phrases import load_forbidden_phrases
 from bot.services.miniapp_references import build_reference_context
 from bot.services.reels_assets import populate_reels_frame_assets
 
@@ -36,7 +37,10 @@ async def set_generation_state(
 async def complete_carousel_generation(draft_id: str, topic: str) -> None:
     try:
         loop = asyncio.get_running_loop()
-        slides, img_prompts, arc = await loop.run_in_executor(None, _generate_carousel_sync, topic)
+        forbidden = load_forbidden_phrases()
+        slides, img_prompts, arc = await loop.run_in_executor(
+            None, _generate_carousel_sync, topic, forbidden
+        )
         if not slides:
             raise RuntimeError("carousel_generation_failed")
         draft = await get_draft(draft_id)

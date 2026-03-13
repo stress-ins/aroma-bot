@@ -63,6 +63,8 @@ export function createSessionModule(deps) {
     applyInset();
     tg.onEvent("safeAreaChanged", applyInset);
     tg.onEvent("contentSafeAreaChanged", applyInset);
+    if (tg.enableClosingConfirmation) tg.enableClosingConfirmation();
+    if (tg.disableVerticalSwipes) tg.disableVerticalSwipes();
   }
 
   function filtersToQueryString() {

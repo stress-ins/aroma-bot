@@ -36,6 +36,56 @@ export function createSettingsModule(deps) {
     `;
   }
 
+  async function loadForbiddenPhrases() {
+    try {
+      const payload = await fetchJson("/api/preferences/forbidden-phrases");
+      renderForbiddenPhrases(payload.items || []);
+    } catch (_err) {
+      // silently ignore if endpoint not yet available
+    }
+  }
+
+  function renderForbiddenPhrases(phrases) {
+    const container = document.getElementById("forbiddenPhrasesList");
+    if (!container) return;
+    container.innerHTML = (phrases || []).map((phrase) => `
+      <span class="keyword-chip">
+        <span>${escapeHtml(phrase)}</span>
+        <button type="button" aria-label="Удалить ${escapeHtml(phrase)}" onclick='removeForbiddenPhrase(${JSON.stringify(String(phrase))})'>×</button>
+      </span>
+    `).join("") || `<span class="plan-entry-hint">Нет запрещённых фраз.</span>`;
+  }
+
+  async function addForbiddenPhrase() {
+    const input = document.getElementById("forbiddenPhraseInput");
+    const phrase = String(input?.value || "").trim();
+    if (!phrase) { input?.focus(); return; }
+    try {
+      const payload = await fetchJson("/api/preferences/forbidden-phrases/add", {
+        method: "POST",
+        body: JSON.stringify({ phrase }),
+      });
+      if (input) input.value = "";
+      renderForbiddenPhrases(payload.items || []);
+      showUiNotice("Фраза добавлена", "success");
+    } catch (err) {
+      showUiNotice("Не удалось добавить фразу", "error");
+    }
+  }
+
+  async function removeForbiddenPhrase(phrase) {
+    try {
+      const payload = await fetchJson("/api/preferences/forbidden-phrases/remove", {
+        method: "POST",
+        body: JSON.stringify({ phrase }),
+      });
+      renderForbiddenPhrases(payload.items || []);
+      showUiNotice("Фраза удалена", "success");
+    } catch (err) {
+      showUiNotice("Не удалось удалить фразу", "error");
+    }
+  }
+
   async function addKeywordItem(topicIdx, field, form, button) {
     const input = form?.querySelector("input[name='word']");
     const word = String(input?.value || "").trim();
@@ -104,13 +154,30 @@ export function createSettingsModule(deps) {
       <article class="status-card"><strong>${escapeHtml(item.source)}</strong> <span class="${item.enabled ? "status-good" : "status-bad"}">${item.enabled ? "вкл" : "выкл"}</span></article>
     `).join("")}
     `;
-    elements.draftDetail.innerHTML = renderBackButton() + `<div class="detail-empty">${renderGuidedState({
-      eyebrow: inSettings ? "Настройки" : "Статус",
-      title: inSettings ? "Откройте источник слева" : "Проверьте состояние источников",
-      body: inSettings
-        ? "Здесь будут переключатели mini app и системные параметры каждого источника."
-        : "Слева собраны все подключенные источники и их текущее состояние.",
-    })}</div>`;
+    elements.draftDetail.innerHTML = renderBackButton() + (inSettings ? `
+      <div class="detail-grid">
+        <div class="detail-top">
+          <p class="eyebrow">${uiIcon("gear")}<span>Настройки</span></p>
+          <h2 class="detail-title">Дополнительные параметры</h2>
+        </div>
+        <section class="section settings-section">
+          <h3>Запрещённые фразы</h3>
+          <p class="settings-hint">Эти фразы будут исключены из всех сгенерированных текстов.</p>
+          <div id="forbiddenPhrasesList" class="chips-list keyword-items"></div>
+          <div class="keyword-form keyword-add-row">
+            <input id="forbiddenPhraseInput" type="text" placeholder="Добавить фразу…">
+            <button class="secondary-button" type="button" onclick="addForbiddenPhrase()">Добавить</button>
+          </div>
+        </section>
+      </div>
+    ` : `<div class="detail-empty">${renderGuidedState({
+      eyebrow: "Статус",
+      title: "Проверьте состояние источников",
+      body: "Слева собраны все подключенные источники и их текущее состояние.",
+    })}</div>`);
+    if (inSettings) {
+      void loadForbiddenPhrases();
+    }
     syncMobileNavigation();
   }
 
@@ -188,5 +255,8 @@ export function createSettingsModule(deps) {
     renderSettingsSwitcher,
     renderStatus,
     renderKeywords,
+    loadForbiddenPhrases,
+    addForbiddenPhrase,
+    removeForbiddenPhrase,
   };
 }
