@@ -331,7 +331,6 @@ def test_mobile_tabs_and_drafts_render_in_russian(page):
     assert "🫁Практики" in tabs_handbook
     assert "🔔Звуки" in tabs_handbook
 
-    page.locator("#modeContent").click()
     page.locator("#btnTabDrafts").click()
     page.wait_for_timeout(300)
     page.evaluate("window.goBackToList()")
