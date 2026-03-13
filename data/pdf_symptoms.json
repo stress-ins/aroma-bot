@@ -1,0 +1,7400 @@
+[
+  {
+    "slug": "symptom-аллергическии-ринит",
+    "name": "АЛЛЕРГИЧЕСКИЙ РИНИТ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "АЛЛЕРГИЯ ПИЩЕВАЯ",
+      "recommended_oil_names": [
+        "Fennel",
+        "Eucalyptus Blue",
+        "Lavender",
+        "Ocotea",
+        "Roman Chamomile",
+        "Peppermint",
+        "German Chamomile",
+        "Marjoram",
+        "Sacred",
+        "(Священный ладан)",
+        "Frankincense"
+      ],
+      "recommended_blend_names": [
+        "DiGize",
+        "Harmony",
+        "JuvaCleanse",
+        "Valor",
+        "Valor Roll-On",
+        "R.C",
+        "Raven"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "fennel",
+        "",
+        "lavender",
+        "",
+        "roman-chamomile",
+        "peppermint",
+        "german-chamomile",
+        "marjoram",
+        "",
+        "",
+        "frankincense"
+      ],
+      "recommended_blend_slugs": [
+        "",
+        "blend-harmony",
+        "",
+        "blend-valor",
+        "blend-valor-roll-on",
+        "",
+        "blend-raven"
+      ]
+    }
+  },
+  {
+    "slug": "symptom-боль-в-животе",
+    "name": "БОЛЬ В ЖИВОТЕ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "БОЛЬ",
+      "recommended_oil_names": [
+        "Helichrysum",
+        "Tarragon",
+        "Vetiver",
+        "Peppermint",
+        "Nutmeg",
+        "Thyme",
+        "Idaho Blue Spruce",
+        "Basil",
+        "РЕКОМЕНДАЦИИ",
+        ". Rosemary",
+        "Copaiba"
+      ],
+      "recommended_blend_names": [
+        "Aroma Siez",
+        "Relieve It",
+        "PanAway Питательные добавки:"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "helichrysum",
+        "",
+        "vetiver",
+        "peppermint",
+        "nutmeg",
+        "thyme",
+        "blue-spruce",
+        "basil",
+        "",
+        "",
+        "copaiba"
+      ],
+      "recommended_blend_slugs": [
+        "",
+        "blend-relieve-it",
+        ""
+      ]
+    }
+  },
+  {
+    "slug": "symptom-боль-в-ухе",
+    "name": "БОЛЬ В УХЕ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "БОЛЬ В СУСТАВАХ",
+      "recommended_oil_names": [
+        "Basil",
+        "Marjoram",
+        "Idaho Blue Spruce",
+        "Helichrysum",
+        "Balsam Fir Idaho",
+        "Peppermint"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "basil",
+        "marjoram",
+        "blue-spruce",
+        "helichrysum",
+        "balsam-fir",
+        "peppermint"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-боль-головная-при-синусите-воспалении-околоносовых-пазух",
+    "name": "Боль ГОЛОВНАЯ ПРИ СИНУСИТЕ / ВОСПАЛЕНИИ ОКОЛОНОСОВЫХ ПАЗУХ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "БОЛЬ В СУСТАВАХ",
+      "recommended_oil_names": [
+        "Dorado Azul",
+        "Eucalyptus Blue",
+        "Eucalyptus Radiata",
+        "Mastrante",
+        "Geranium",
+        "Lavender",
+        "Peppermint"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "",
+        "",
+        "",
+        "",
+        "geranium",
+        "lavender",
+        "peppermint"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-боль-хроническая",
+    "name": "БОЛЬ ХРОНИЧЕСКАЯ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "БОЛЬ В СУСТАВАХ",
+      "recommended_oil_names": [
+        "Helichrysum",
+        "Wintergreen",
+        "Clove",
+        "Peppermint",
+        "Dorado Azul",
+        "Palo Santo",
+        "Idaho Blue Spruce",
+        "Elemi",
+        "Oregano"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "helichrysum",
+        "wintergreen",
+        "clove",
+        "peppermint",
+        "",
+        "palo-santo",
+        "blue-spruce",
+        "elemi",
+        "oregano"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-вздутие-живота",
+    "name": "ВЗДУТИЕ ЖИВОТА",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "БОЛЬ В СУСТАВАХ",
+      "recommended_oil_names": [
+        "Juniper",
+        "Tangerine",
+        "Clary Sage",
+        "Cypress",
+        "Peppermint",
+        "Fennel",
+        "Tarragon",
+        "Nutmeg"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "juniper",
+        "tangerine",
+        "clary-sage",
+        "cypress",
+        "peppermint",
+        "fennel",
+        "",
+        "nutmeg"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-воспаление",
+    "name": "ВОСПАЛЕНИЕ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "БОЛЬ В СУСТАВАХ",
+      "recommended_oil_names": [
+        "Wintergreen",
+        "Vetiver",
+        "German Chamomile",
+        "Idaho Blue Spruce",
+        "Myrrh",
+        "Ravintsara",
+        "(Равинсара)",
+        "Hinoki",
+        "(Хиноки)",
+        "Copaiba",
+        "(Копайба)",
+        "Palo Santo",
+        "(Пало Санто)",
+        "Clove",
+        "(Гвоздика)",
+        "Nutmeg",
+        "(Мускатный орех)",
+        "Lavender"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "wintergreen",
+        "vetiver",
+        "german-chamomile",
+        "blue-spruce",
+        "myrrh",
+        "ravintsara",
+        "",
+        "",
+        "",
+        "copaiba",
+        "",
+        "palo-santo",
+        "",
+        "clove",
+        "",
+        "nutmeg",
+        "",
+        "lavender"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-воспаление-из-за-инфекции",
+    "name": "ВОСПАЛЕНИЕ ИЗ-ЗА ИНФЕКЦИИ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "БОЛЬ В СУСТАВАХ",
+      "recommended_oil_names": [
+        "Ravintsara",
+        "Thyme",
+        "Myrrh",
+        "Hissop"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "ravintsara",
+        "thyme",
+        "myrrh",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-головокружение",
+    "name": "ГОЛОВОКРУЖЕНИЕ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ГАНГРЕНА",
+      "recommended_oil_names": [
+        "Peppermint",
+        "Ocotea",
+        "Eucalyptus Blue",
+        "Dorado Azul",
+        "Tangerine",
+        "Basil",
+        "Cardamom",
+        "Niaouli",
+        "Sandalwood"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "peppermint",
+        "",
+        "",
+        "",
+        "tangerine",
+        "basil",
+        "",
+        "",
+        "sandalwood"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-жар-высокая-температура",
+    "name": "ЖАР / ВЫСОКАЯ ТЕМПЕРАТУРА",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ДИАБЕТ",
+      "recommended_oil_names": [
+        "Peppermint",
+        "Eucalyptus Blue",
+        "Nutmeg",
+        "German Chamomile",
+        "Balsam Fir Idaho",
+        "Copaiba"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "peppermint",
+        "",
+        "nutmeg",
+        "german-chamomile",
+        "balsam-fir",
+        "copaiba"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-ганглиевые-кисты",
+    "name": "ГАНГЛИЕВЫЕ кисты",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ИКОТА",
+      "recommended_oil_names": [
+        "Oregano",
+        "Plectranthus",
+        "(Шпороцветник ароматный)",
+        "Thyme",
+        "Myrrh"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "oregano",
+        "",
+        "",
+        "thyme",
+        "myrrh"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-кома",
+    "name": "КОМА",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ИКОТА",
+      "recommended_oil_names": [
+        "Valerian",
+        "Vetiver",
+        "Sandalwood",
+        "Blue Cypress",
+        "Black Pepper",
+        "Peppermint",
+        "Idaho Balsam Fir",
+        "Copaiba",
+        "РЕКОМЕНДАЦИИ",
+        "Sacred",
+        "Frankincense",
+        "(Священный ладан)"
+      ],
+      "recommended_blend_names": [
+        "Hope",
+        "Valor",
+        "Valor Roll-On",
+        "Surrender",
+        "The Gift",
+        "Inspiration",
+        "Brain Power",
+        "Trauma Life",
+        "R.C"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "valerian",
+        "vetiver",
+        "sandalwood",
+        "",
+        "black-pepper",
+        "peppermint",
+        "",
+        "copaiba",
+        "",
+        "",
+        "frankincense",
+        ""
+      ],
+      "recommended_blend_slugs": [
+        "blend-hope",
+        "blend-valor",
+        "blend-valor-roll-on",
+        "blend-surrender",
+        "blend-the-gift",
+        "",
+        "blend-brain-power",
+        "blend-trauma-life",
+        ""
+      ]
+    }
+  },
+  {
+    "slug": "symptom-альцгеимера",
+    "name": "Альцгеймера.",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ОТРАВЛЕНИЕ АЛЮМИНИЕМ",
+      "recommended_oil_names": [
+        "Helichrysum",
+        "wk Lemon",
+        "Orange",
+        "Tangerine",
+        "Clove",
+        "wk Patchouli",
+        "(Пачули)"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "helichrysum",
+        "",
+        "orange",
+        "tangerine",
+        "clove",
+        "",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-усталость-умственная",
+    "name": "УСТАЛОСТЬ УМСТВЕННАЯ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "СИНДРОМ ХРОНИЧЕСКОЙ УСТАЛОСТИ",
+      "recommended_oil_names": [
+        "Idaho Blue Spruce",
+        "Peppermint",
+        "Spearmint",
+        "Balsam",
+        "бальзамическая Айдахо)",
+        "Sacred",
+        "(Священный ладан)",
+        "Frankincense",
+        "Frereana Frankincense",
+        "Rosemary",
+        "Black Pepper",
+        "Sage",
+        "Nutmeg",
+        "Pine",
+        "РЕКОМЕНДАЦИИ",
+        "Vetiver",
+        "Cedarwood"
+      ],
+      "recommended_blend_names": [
+        "Brain Power",
+        "Clarity",
+        "Envision",
+        "Valor",
+        "Valor Roll-On",
+        "Oola Balance",
+        "Oola Grow",
+        "RutaVaLa",
+        "RutaVaLa Roll-On",
+        "Motivation",
+        "En-R-Gee",
+        "Common Sense",
+        "Tranquil Roll-On Питательные",
+        "добавки:"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "blue-spruce",
+        "peppermint",
+        "spearmint",
+        "",
+        "",
+        "",
+        "",
+        "frankincense",
+        "",
+        "rosemary",
+        "black-pepper",
+        "",
+        "nutmeg",
+        "pine",
+        "",
+        "vetiver",
+        "cedarwood"
+      ],
+      "recommended_blend_slugs": [
+        "blend-brain-power",
+        "",
+        "blend-envision",
+        "blend-valor",
+        "blend-valor-roll-on",
+        "",
+        "",
+        "blend-rutavala",
+        "",
+        "blend-motivation",
+        "blend-en-r-gee",
+        "blend-common-sense",
+        "",
+        ""
+      ]
+    }
+  },
+  {
+    "slug": "symptom-аутоиммунные-заболевания",
+    "name": "АУТОИММУННЫЕ ЗАБОЛЕВАНИЯ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "УСТАЛОСТЬ ФИЗИЧЕСКАЯ",
+      "recommended_oil_names": [
+        "Myrrh",
+        "Wintergreen",
+        "Basil",
+        "Eucalyptus Globulus",
+        "Thyme",
+        "Nutmeg"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "myrrh",
+        "wintergreen",
+        "basil",
+        "eucalyptus-globulus",
+        "thyme",
+        "nutmeg"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-смесь-от-волчанки",
+    "name": "Смесь от волчанки",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "УСТАЛОСТЬ ФИЗИЧЕСКАЯ",
+      "recommended_oil_names": [],
+      "recommended_blend_names": [
+        "Valor",
+        "Valor Roll-On",
+        "PanAway",
+        "R.C",
+        "Breathe Again Roll-On",
+        "EndoFlex"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [],
+      "recommended_blend_slugs": [
+        "blend-valor",
+        "blend-valor-roll-on",
+        "blend-panaway",
+        "",
+        "blend-breathe-again-roll-on",
+        "blend-endoflex"
+      ]
+    }
+  },
+  {
+    "slug": "symptom-целлюлит",
+    "name": "ЦЕЛЛЮЛИТ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ФИБРОМИАЛГИЯ",
+      "recommended_oil_names": [
+        "Grapefruit",
+        "Spearmint",
+        "Rosemary",
+        "Lemon",
+        "Tangerine",
+        "Cypress",
+        "Fennel",
+        "Juniper"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "grapefruit",
+        "spearmint",
+        "rosemary",
+        "lemon",
+        "tangerine",
+        "cypress",
+        "fennel",
+        "juniper"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-желудочно-кишечныи-тракт",
+    "name": "ЖЕЛУДОЧНО-КИШЕЧНЫЙ ТРАКТ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ФИБРОМИАЛГИЯ",
+      "recommended_oil_names": [
+        "Ginger",
+        "Nutmeg",
+        "Wintergreen",
+        "German Chamomile",
+        "Peppermint",
+        "Copaiba",
+        "Fennel"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "ginger",
+        "nutmeg",
+        "wintergreen",
+        "german-chamomile",
+        "peppermint",
+        "copaiba",
+        "fennel"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-повышенная-кислотность",
+    "name": "ПОВЫШЕННАЯ КИСЛОТНОСТЬ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ИЗЖОГА",
+      "recommended_oil_names": [
+        "Peppermint",
+        "Nutmeg",
+        "Fennel",
+        "Ginger",
+        "Cumin",
+        "Spearmint",
+        "Grapefruit"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "peppermint",
+        "nutmeg",
+        "fennel",
+        "ginger",
+        "",
+        "spearmint",
+        "grapefruit"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-одинарные",
+    "name": "Одинарные.",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "СПАЗМЫ ЖЕЛУДКА",
+      "recommended_oil_names": [],
+      "recommended_blend_names": [
+        "DiGize"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [],
+      "recommended_blend_slugs": [
+        ""
+      ]
+    }
+  },
+  {
+    "slug": "symptom-тошнота",
+    "name": "ТОШНОТА",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "СПАЗМЫ ЖЕЛУДКА",
+      "recommended_oil_names": [
+        "Peppermint",
+        "Ginger",
+        "Nutmeg",
+        "Ocotea"
+      ],
+      "recommended_blend_names": [
+        "РЕКОМЕНДАЦИИ",
+        "DiGize",
+        "JuvaCleanse",
+        "GLF"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "peppermint",
+        "ginger",
+        "nutmeg",
+        ""
+      ],
+      "recommended_blend_slugs": [
+        "",
+        "",
+        "",
+        "blend-glf"
+      ]
+    }
+  },
+  {
+    "slug": "symptom-утренняя-тошнота",
+    "name": "УТРЕННЯЯ ТОШНОТА",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "УКАЧИВАНИЕ / МОРСКАЯ БОЛЕЗНЬ",
+      "recommended_oil_names": [
+        "Peppermint",
+        "Ginger",
+        "Spearmint",
+        "Lavender",
+        "Lemon"
+      ],
+      "recommended_blend_names": [
+        "DiGize",
+        "Gentle Baby"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "peppermint",
+        "ginger",
+        "spearmint",
+        "lavender",
+        "lemon"
+      ],
+      "recommended_blend_slugs": [
+        "",
+        "blend-gentle-baby"
+      ]
+    }
+  },
+  {
+    "slug": "symptom-язва",
+    "name": "ЯЗВА",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "УКАЧИВАНИЕ / МОРСКАЯ БОЛЕЗНЬ",
+      "recommended_oil_names": [
+        "Lemongrass",
+        "Copaiba",
+        "Lemon",
+        "Myrtle",
+        "German Chamomile",
+        "Myrrh"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "lemongrass",
+        "copaiba",
+        "lemon",
+        "myrtle",
+        "german-chamomile",
+        "myrrh"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-застои-желчи",
+    "name": "ЗАСТОЙ ЖЕЛЧИ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ИНФЕКЦИЯ ЖЕЛЧНОГО ПУЗЫРЯ",
+      "recommended_oil_names": [
+        "Lemon",
+        "Helichrysum",
+        "Sacred Frankincense",
+        "(Священный ладан)",
+        "Frankincense",
+        "Orange",
+        "Grapefruit",
+        "Tangerine",
+        "РЕКОМЕНДАЦИИ",
+        "Mandarin",
+        "Juniper",
+        "Rosemary",
+        "Idaho Balsam Fir",
+        "Carrot Seed",
+        "Ьмеси:",
+        "GLF",
+        "Citrus Fresh",
+        "Juva Cleanse"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "lemon",
+        "helichrysum",
+        "",
+        "",
+        "frankincense",
+        "orange",
+        "grapefruit",
+        "tangerine",
+        "",
+        "mandarin",
+        "juniper",
+        "rosemary",
+        "",
+        "carrot-seed",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-принимать-внутрь-капсулы",
+    "name": "Принимать внутрь капсулы",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ХОЛЕЦИСТИТ",
+      "recommended_oil_names": [
+        "Lemon",
+        "w Cistus",
+        "(Ладанник)",
+        "Myrrh",
+        "Ledum",
+        "* Hissop",
+        "(Hissop (Иссоп)) w Juniper",
+        "(Можжевельник) 4 German",
+        "Chamomile",
+        "Oregano"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "lemon",
+        "",
+        "",
+        "myrrh",
+        "ledum",
+        "",
+        "",
+        "",
+        "",
+        "oregano"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-газы",
+    "name": "ГАЗЫ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "КИШЕЧНИК",
+      "recommended_oil_names": [
+        "Myrrh",
+        "* Helichrysum",
+        "Cypress",
+        "Cistus",
+        "Lemon",
+        "Spikenard",
+        "Peppermint",
+        "Basil"
+      ],
+      "recommended_blend_names": [
+        "РЕКОМЕНДАЦИИ",
+        "Deep Relief",
+        "Melrose",
+        "Purification",
+        "Aroma Siez",
+        "Aroma Life",
+        "PanAway"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "myrrh",
+        "",
+        "cypress",
+        "cistus",
+        "lemon",
+        "",
+        "peppermint",
+        "basil"
+      ],
+      "recommended_blend_slugs": [
+        "",
+        "",
+        "blend-melrose",
+        "blend-purification",
+        "",
+        "blend-aroma-life",
+        "blend-panaway"
+      ]
+    }
+  },
+  {
+    "slug": "symptom-колики",
+    "name": "Колики",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ЗАПОР",
+      "recommended_oil_names": [
+        "Peppermint",
+        "* Nutmeg",
+        "Oregano",
+        "Plectranthus",
+        "(Шпорочцетник душистый)",
+        "Thyme",
+        "Clove",
+        "Ginger",
+        "Cumin"
+      ],
+      "recommended_blend_names": [
+        "Oregano  4 DiGize",
+        "РЕКОМЕНДАЦИИ",
+        "Anise",
+        "Fennel",
+        "Carrot Seed",
+        "Thieves",
+        "Longevity"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "peppermint",
+        "",
+        "oregano",
+        "",
+        "",
+        "thyme",
+        "clove",
+        "ginger",
+        ""
+      ],
+      "recommended_blend_slugs": [
+        "",
+        "",
+        "",
+        "",
+        "",
+        "blend-thieves",
+        "blend-longevity"
+      ]
+    }
+  },
+  {
+    "slug": "symptom-колит-вирусныи",
+    "name": "Колит ВИРУСНЫЙ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ЗАПОР",
+      "recommended_oil_names": [
+        "Melissa",
+        "Lemongrass",
+        "Clove",
+        "Blue Cypress",
+        "Oregano",
+        "Plectranthus Oregano",
+        "Caraway",
+        "Tea Tree",
+        "Tarragon",
+        "Смесь от колита толстой кишки",
+        "Purification",
+        "DiGize"
+      ],
+      "recommended_blend_names": [
+        "Melrose",
+        "Thieves"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "melissa",
+        "lemongrass",
+        "clove",
+        "",
+        "oregano",
+        "",
+        "caraway",
+        "tea-tree",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "recommended_blend_slugs": [
+        "blend-melrose",
+        "blend-thieves"
+      ]
+    }
+  },
+  {
+    "slug": "symptom-колит-спастическии",
+    "name": "КОЛИТ СПАСТИЧЕСКИЙ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ЗАПОР",
+      "recommended_oil_names": [
+        "Spearmint",
+        "Wintergreen",
+        "Peppermint",
+        "Tarragon",
+        "Anise Seed",
+        "Fennel"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "spearmint",
+        "wintergreen",
+        "peppermint",
+        "",
+        "",
+        "fennel"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-метеоризм",
+    "name": "МЕТЕОРИЗМ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ЗАПОР",
+      "recommended_oil_names": [],
+      "recommended_blend_names": [
+        "DiGize",
+        "GLF",
+        "JuvaCleanse"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [],
+      "recommended_blend_slugs": [
+        "",
+        "blend-glf",
+        ""
+      ]
+    }
+  },
+  {
+    "slug": "symptom-очищение-восстановление-клеток-печени",
+    "name": "ОЧИЩЕНИЕ, ВОССТАНОВЛЕНИЕ КЛЕТОК ПЕЧЕНИ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ЖЕЛТУХА",
+      "recommended_oil_names": [
+        "Orange",
+        "Ledum",
+        "Celery Seed",
+        "Lemon",
+        "Cardamom",
+        "Geranium",
+        "Carrot Seed",
+        "German Chamomile",
+        "Rosemary"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "orange",
+        "ledum",
+        "",
+        "lemon",
+        "",
+        "geranium",
+        "carrot-seed",
+        "german-chamomile",
+        "rosemary"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-кровеносная-сердечно-сосудистая-система",
+    "name": "КРОВЕНОСНАЯ / СЕРДЕЧНО-СОСУДИСТАЯ СИСТЕМА",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ПАНКРЕАТИТ",
+      "recommended_oil_names": [
+        "Peppermint",
+        "Lemon",
+        "Orange",
+        "Tarragon",
+        "Fennel",
+        "Ginger",
+        "Patchouli"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "peppermint",
+        "lemon",
+        "orange",
+        "",
+        "fennel",
+        "ginger",
+        "patchouli"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-анемия",
+    "name": "АНЕМИЯ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ПАНКРЕАТИТ",
+      "recommended_oil_names": [
+        "German Chamomile",
+        "Thyme",
+        "Sacred Frankincense",
+        "Frankincense",
+        "Helichrysum",
+        "Lemon",
+        "Mountain Savory",
+        "РЕКОМЕНДАЦИИ",
+        "Rosemary",
+        "Carrot Seed",
+        "Смеси",
+        "Juva Cleanse",
+        "DiGize",
+        "Endoflex",
+        "JuvaFlex"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "german-chamomile",
+        "thyme",
+        "",
+        "frankincense",
+        "helichrysum",
+        "lemon",
+        "",
+        "",
+        "rosemary",
+        "carrot-seed",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-мерцательная-аритмия",
+    "name": "МЕРЦАТЕЛЬНАЯ АРИТМИЯ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "АНЕВРИЗМА",
+      "recommended_oil_names": [
+        "Ylang Ylang",
+        "Amazonian Ylang Ylang (Амазонский",
+        "иланг-иланг)",
+        "Valerian",
+        "Goldenrod",
+        "Marjoram"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "ylang-ylang",
+        "",
+        "",
+        "valerian",
+        "",
+        "marjoram"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-ацидоз",
+    "name": "АЦИДОЗ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "АНЕВРИЗМА",
+      "recommended_oil_names": [
+        "Peppermint",
+        "Dill",
+        "Tarragon",
+        "Lemon"
+      ],
+      "recommended_blend_names": [
+        "РЕКОМЕНДАЦИИ",
+        "DiGize",
+        "Endoflex",
+        "BLF",
+        "JuvaCleanse"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "peppermint",
+        "",
+        "",
+        "lemon"
+      ],
+      "recommended_blend_slugs": [
+        "",
+        "",
+        "blend-endoflex",
+        "",
+        ""
+      ]
+    }
+  },
+  {
+    "slug": "symptom-варикозное-расширение-вен",
+    "name": "ВАРИКОЗНОЕ РАСШИРЕНИЕ ВЕН",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "АНЕВРИЗМА",
+      "recommended_oil_names": [
+        "Helichrysum",
+        "Cypress",
+        "Cistus",
+        "Elemi",
+        "Geranium",
+        "Clove",
+        "Peppermint",
+        "Lemon",
+        "Lavender"
+      ],
+      "recommended_blend_names": [
+        "Aroma Life",
+        "Citrus Fresh",
+        "Aroma Siez"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "helichrysum",
+        "cypress",
+        "cistus",
+        "elemi",
+        "geranium",
+        "clove",
+        "peppermint",
+        "lemon",
+        "lavender"
+      ],
+      "recommended_blend_slugs": [
+        "blend-aroma-life",
+        "blend-citrus-fresh",
+        ""
+      ]
+    }
+  },
+  {
+    "slug": "symptom-гематома",
+    "name": "ГЕМАТОМА",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "АНЕВРИЗМА",
+      "recommended_oil_names": [
+        "Lavender",
+        "Coriander",
+        "Dill",
+        "Fennel",
+        "РЕКОМЕНДАЦИИ",
+        "Cinnamon Bark"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "lavender",
+        "",
+        "",
+        "fennel",
+        "",
+        "cinnamon"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-геморрагические-инсульты",
+    "name": "ГЕМОРРАГИЧЕСКИЕ ИНСУЛЬТЫ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ИНСУЛЬТЫ",
+      "recommended_oil_names": [
+        "Cypress",
+        "Cistus",
+        "Helichrysum",
+        "Sandalwood"
+      ],
+      "recommended_blend_names": [
+        "Brain Power",
+        "РЕКОМЕНДАЦИИ",
+        "Common Sense",
+        "Clarity",
+        "Longevity",
+        "Stress Away Roll-On",
+        "Peace & Calming"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "cypress",
+        "cistus",
+        "helichrysum",
+        "sandalwood"
+      ],
+      "recommended_blend_slugs": [
+        "blend-brain-power",
+        "",
+        "blend-common-sense",
+        "",
+        "blend-longevity",
+        "blend-stress-away-roll-on",
+        ""
+      ]
+    }
+  },
+  {
+    "slug": "symptom-тромботические-инсульты",
+    "name": "ТРОМБОТИЧЕСКИЕ ИНСУЛЬТЫ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ИНСУЛЬТЫ",
+      "recommended_oil_names": [
+        "Helichrysum",
+        "Cistus",
+        "Nutmeg",
+        "Cypress",
+        "Sandalwood",
+        "Juniper",
+        "Grapefruit",
+        "Orange"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "helichrysum",
+        "cistus",
+        "nutmeg",
+        "cypress",
+        "sandalwood",
+        "juniper",
+        "grapefruit",
+        "orange"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-кровообращение-плохое",
+    "name": "КРОВООБРАЩЕНИЕ ПЛОХОЕ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ИНФАРКТ МИОКАРДА",
+      "recommended_oil_names": [
+        "Helichrysum",
+        "Cypress",
+        "Balsam Fir Idaho",
+        "Cistus",
+        "Clove"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "helichrysum",
+        "cypress",
+        "balsam-fir",
+        "cistus",
+        "clove"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-кровотечение",
+    "name": "КРОВОТЕЧЕНИЕ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ИНФАРКТ МИОКАРДА",
+      "recommended_oil_names": [
+        "Helichrysum",
+        "Geranium",
+        "Cistus",
+        "Cypress"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "helichrysum",
+        "geranium",
+        "cistus",
+        "cypress"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-очищение-крови",
+    "name": "ОЧИЩЕНИЕ КРОВИ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ИНФАРКТ МИОКАРДА",
+      "recommended_oil_names": [
+        "Helichrysum",
+        "Goldenrod",
+        "Geranium",
+        "German Chamomile (Немецкая"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "helichrysum",
+        "",
+        "geranium",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-сердечные-заболевания",
+    "name": "СЕРДЕЧНЫЕ ЗАБОЛЕВАНИЯ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ОЧИЩЕНИЕ СОСУДОВ",
+      "recommended_oil_names": [
+        "Rosemary",
+        "Peppermint",
+        "Ylang Ylang",
+        "Amazonian Ylang Ylang",
+        "(Амазонский иланг-иланг)",
+        "Goldenrod",
+        "Anise Seed",
+        "РЕКОМЕНДАЦИИ",
+        "Mandarin",
+        "Thyme",
+        "Marjoram"
+      ],
+      "recommended_blend_names": [
+        "Aroma Life",
+        "Peace & Calming",
+        "Release",
+        "Joy"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "rosemary",
+        "peppermint",
+        "ylang-ylang",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "mandarin",
+        "thyme",
+        "marjoram"
+      ],
+      "recommended_blend_slugs": [
+        "blend-aroma-life",
+        "",
+        "blend-release",
+        "blend-joy"
+      ]
+    }
+  },
+  {
+    "slug": "symptom-синяки",
+    "name": "СИНЯКИ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "СЕРДЕЧНЫЙ ПРИСТУП",
+      "recommended_oil_names": [
+        "Helichrysum",
+        "Cistus",
+        "Cypress",
+        "Roman Chamomile"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "helichrysum",
+        "cistus",
+        "cypress",
+        "roman-chamomile"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-стенокардия",
+    "name": "СТЕНОКАРДИЯ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "СЕРДЕЧНЫЙ ПРИСТУП",
+      "recommended_oil_names": [
+        "Clove",
+        "Marjoram",
+        "Helichrysum",
+        "Goldenrod",
+        "Orange",
+        "Lemon",
+        "Wintergreen",
+        "Carrot Seed"
+      ],
+      "recommended_blend_names": [
+        "DiGize",
+        "Aroma Life",
+        "Peace & Calming",
+        "Stress Away Roll-On",
+        "Valor",
+        "Valor Roll-On",
+        "RutaVaLa",
+        "RutaVaLa Roll-On",
+        "Longevity"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "clove",
+        "marjoram",
+        "helichrysum",
+        "",
+        "orange",
+        "lemon",
+        "wintergreen",
+        "carrot-seed"
+      ],
+      "recommended_blend_slugs": [
+        "",
+        "blend-aroma-life",
+        "",
+        "blend-stress-away-roll-on",
+        "blend-valor",
+        "blend-valor-roll-on",
+        "blend-rutavala",
+        "",
+        "blend-longevity"
+      ]
+    }
+  },
+  {
+    "slug": "symptom-тахикардия",
+    "name": "ТАХИКАРДИЯ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "СЕРДЕЧНЫЙ ПРИСТУП",
+      "recommended_oil_names": [
+        "Ylang Ylang",
+        "Amazonian Ylang Ylang",
+        "(Амазонский иланг-иланг)",
+        "Rosemary",
+        "Sandalwood",
+        "Wintergreen",
+        "Marjoram"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "ylang-ylang",
+        "",
+        "",
+        "rosemary",
+        "sandalwood",
+        "wintergreen",
+        "marjoram"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-тромбоцитов-низкии-уровень",
+    "name": "ТРОМБОЦИТОВ НИЗКИЙ УРОВЕНЬ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "СЕРДЕЧНЫЙ ПРИСТУП",
+      "recommended_oil_names": [
+        "Lemon",
+        "Thyme",
+        "Tea Tree (Чайное дерево) 4",
+        "Geranium",
+        "Cypress",
+        "(Кипарис)"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "lemon",
+        "thyme",
+        "",
+        "geranium",
+        "cypress",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-холестерина-налет",
+    "name": "ХОЛЕСТЕРИНА НАЛЕТ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ПРИМЕНЕНИЯ",
+      "recommended_oil_names": [
+        "Rosemary",
+        "k Helichrysum",
+        "k Dorado Azul",
+        "k Cistus"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "rosemary",
+        "",
+        "",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-холестерина-повышенныи-уровень",
+    "name": "ХОЛЕСТЕРИНА ПОВЫШЕННЫЙ УРОВЕНЬ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ПРИМЕНЕНИЯ",
+      "recommended_oil_names": [
+        "Lemongrass",
+        "Rosemary",
+        "Clove",
+        "German Chamomile",
+        "Rome Chamomile",
+        "Spikenard"
+      ],
+      "recommended_blend_names": [
+        "Aroma Life",
+        "Смесь для снижения уровня холестерина",
+        "капли Розмарина",
+        "Longevity Softgels",
+        "Balance Complete",
+        "Slique Tea",
+        "Slique Bars",
+        "Локально",
+        "в местах",
+        "где артерии близки к поверхности (запястья",
+        "внутренняя сторона локтей",
+        "основание горла) 2-3 раза в",
+        "день",
+        "раза в день",
+        "J Делайте массаж тела по 2 раза в неделю",
+        "Прием внутрь",
+        "J Принимайте по 1 капсуле два раза в день или"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "lemongrass",
+        "rosemary",
+        "clove",
+        "german-chamomile",
+        "",
+        ""
+      ],
+      "recommended_blend_slugs": [
+        "blend-aroma-life",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ]
+    }
+  },
+  {
+    "slug": "symptom-дыхательная-система",
+    "name": "ДЫХАТЕЛЬНАЯ СИСТЕМА",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ЭМБОЛИЯ",
+      "recommended_oil_names": [
+        "Tea Tree",
+        "Ravintsara",
+        "Cypress",
+        "Eucalyptus Radiata",
+        "Lemon",
+        "Sacred Frankincense",
+        "(Священный ладан)",
+        "Frankincense",
+        "Thyme"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "tea-tree",
+        "ravintsara",
+        "cypress",
+        "",
+        "lemon",
+        "",
+        "",
+        "frankincense",
+        "thyme"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-тонзилит",
+    "name": "Тонзилит",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ЛАРИНГИТ",
+      "recommended_oil_names": [
+        "Clove",
+        "Tea Tree Melaleuca alternifolia",
+        "(Чайное дерево Мелалеука чайная)",
+        "Myrrh",
+        "Dorado Azul",
+        "Cassia",
+        "Ocotea",
+        "Goldenrod",
+        "Oregano",
+        "Plectranthus Oregano"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "clove",
+        "",
+        "",
+        "myrrh",
+        "",
+        "cassia",
+        "",
+        "",
+        "oregano",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-апноэ",
+    "name": "АПНОЭ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ЛЕГКИЕ",
+      "recommended_oil_names": [
+        "Spruce",
+        "Balsam Fir Idaho",
+        "Cedarwood",
+        "Juniper",
+        "Ylang Ylang",
+        "Amazonian Ylang Ylang (Амазонский  4 Common Sense",
+        "Иланг-иланг)",
+        "Lavender",
+        "Sacred Frankincense (Священный  4 RutaVaLa Roll-On",
+        "Clarity",
+        "Valor",
+        "Valor Roll-On"
+      ],
+      "recommended_blend_names": [
+        "Stress Away Roll-On",
+        "RutaVaLa",
+        "White Angelica",
+        "Sacred Mountain",
+        "Present Time"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "spruce",
+        "balsam-fir",
+        "cedarwood",
+        "juniper",
+        "ylang-ylang",
+        "",
+        "",
+        "lavender",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "recommended_blend_slugs": [
+        "blend-stress-away-roll-on",
+        "blend-rutavala",
+        "blend-white-angelica",
+        "blend-sacred-mountain",
+        "blend-present-time"
+      ]
+    }
+  },
+  {
+    "slug": "symptom-астма",
+    "name": "АСТМА",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ЛЕГКИЕ",
+      "recommended_oil_names": [
+        "Dorado Azul",
+        "Eucalyptus Radiata",
+        "Sacred Frankincense",
+        "(Священный ладан)",
+        "Frankincense",
+        "Eucalyptus Blue",
+        "Ravintsara"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "",
+        "",
+        "",
+        "",
+        "frankincense",
+        "",
+        "ravintsara"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-затрудненное-дыхание",
+    "name": "Затрудненное дыхание",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "БРОНХИТ",
+      "recommended_oil_names": [
+        "Dorado Azul",
+        "Myrtle",
+        "Ravintsara",
+        "Eucalyptus Blue (Голубой",
+        "РЕКОМЕНДАЦИИ",
+        "эвкалипт)",
+        "Palo Santo",
+        "Rosemary",
+        "Eucalyptus Radiata",
+        "Eucalyptus Globulus",
+        "Thyme",
+        "Idaho Ponderosa Pine",
+        "Wintergreen",
+        "Pine",
+        "Oregano",
+        "Plectranthus Oregano",
+        "ТeaTree Melaleuca alternifolia",
+        "(Чайное дерево Мелалеука чайная)",
+        "Idaho Balsam Fir",
+        "Bay Laurel",
+        "Copaiba",
+        "Clove",
+        "Myrrh"
+      ],
+      "recommended_blend_names": [
+        "Raven",
+        "Melrose",
+        "Purification",
+        "PanAway",
+        "R.C",
+        "Thieves",
+        "Breathe Again Roll-On",
+        "Exodus II"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "",
+        "myrtle",
+        "ravintsara",
+        "",
+        "",
+        "",
+        "palo-santo",
+        "rosemary",
+        "",
+        "eucalyptus-globulus",
+        "thyme",
+        "",
+        "wintergreen",
+        "pine",
+        "oregano",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "copaiba",
+        "clove",
+        "myrrh"
+      ],
+      "recommended_blend_slugs": [
+        "blend-raven",
+        "blend-melrose",
+        "blend-purification",
+        "blend-panaway",
+        "",
+        "blend-thieves",
+        "blend-breathe-again-roll-on",
+        "blend-exodus-ii"
+      ]
+    }
+  },
+  {
+    "slug": "symptom-полипы-носовые",
+    "name": "Полипы НОСОВЫЕ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "НАЗОФАРИНГИТ",
+      "recommended_oil_names": [
+        "Citronella",
+        "Helichrysum",
+        "Sacred Frankincense",
+        "РЕКОМЕНДАЦИИ",
+        "(Священный ладан)",
+        "Frankincense"
+      ],
+      "recommended_blend_names": [
+        "Purification"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "citronella",
+        "helichrysum",
+        "",
+        "",
+        "",
+        "frankincense"
+      ],
+      "recommended_blend_slugs": [
+        "blend-purification"
+      ]
+    }
+  },
+  {
+    "slug": "symptom-сухость-носа",
+    "name": "СУХОСТЬ НОСА",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "СИНУСИТ",
+      "recommended_oil_names": [
+        "Myrrh",
+        "Lavender",
+        "Lemon"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "myrrh",
+        "lavender",
+        "lemon"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-плеврит",
+    "name": "ПЛЕВРИТ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "КАШЕЛЬ, ЗАСТОЙНЫЙ И СУХОЙ",
+      "recommended_oil_names": [
+        "Ravintsara",
+        "Eucalyptus Blue (Голубой",
+        "РЕКОМЕНДАЦИИ",
+        "эвкалипт)",
+        "Dorado Azul",
+        "Eucalyptus Radiata (Эвкалипт",
+        "лучистый)",
+        "Wintergreen",
+        "Myrrh",
+        "German Chamomile"
+      ],
+      "recommended_blend_names": [
+        "PanAway",
+        "Raven",
+        "A- Exodus II",
+        "Thieves"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "ravintsara",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "wintergreen",
+        "myrrh",
+        "german-chamomile"
+      ],
+      "recommended_blend_slugs": [
+        "blend-panaway",
+        "blend-raven",
+        "",
+        "blend-thieves"
+      ]
+    }
+  },
+  {
+    "slug": "symptom-пневмония",
+    "name": "ПНЕВМОНИЯ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "КАШЕЛЬ, ЗАСТОЙНЫЙ И СУХОЙ",
+      "recommended_oil_names": [
+        "Thyme",
+        "Ravintsara",
+        "Eucalyptus Radiata",
+        "Eucalyptus Globulus",
+        "Mountain Savory",
+        "Clove",
+        "Oregano",
+        "Plectranthus Oregano",
+        "Tea Tree Melaleuca Alternifolia"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "thyme",
+        "ravintsara",
+        "",
+        "eucalyptus-globulus",
+        "",
+        "clove",
+        "oregano",
+        "",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-смесь-от-пневмонии",
+    "name": "Смесь от пневмонии",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "КАШЕЛЬ, ЗАСТОЙНЫЙ И СУХОЙ",
+      "recommended_oil_names": [],
+      "recommended_blend_names": [
+        "Raven",
+        "Melrose",
+        "R.C",
+        "Thieves",
+        "Again"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [],
+      "recommended_blend_slugs": [
+        "blend-raven",
+        "blend-melrose",
+        "",
+        "blend-thieves",
+        ""
+      ]
+    }
+  },
+  {
+    "slug": "symptom-отхаркивающая-смесь",
+    "name": "Отхаркивающая смесь",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "Т.Д.",
+      "recommended_oil_names": [],
+      "recommended_blend_names": [
+        "DiGize",
+        "Raven",
+        "Purification",
+        "I- R.C",
+        "Breathe Again Roll-On"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [],
+      "recommended_blend_slugs": [
+        "",
+        "blend-raven",
+        "blend-purification",
+        "",
+        "blend-breathe-again-roll-on"
+      ]
+    }
+  },
+  {
+    "slug": "symptom-туберкулез",
+    "name": "ТУБЕРКУЛЕЗ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "Т.Д.",
+      "recommended_oil_names": [
+        "Melissa",
+        "Oregano",
+        "Plectranthus Oregano",
+        "(шпороцветник ароматный)",
+        "Thyme",
+        "wk Eucalyptus",
+        "Blue",
+        "wk Dorado Azul",
+        "wk Sacred Frankincense",
+        "(Священный ладан)",
+        "wk",
+        "Frankincense",
+        "wk Palo",
+        "Santo",
+        "wk Ravintsara",
+        "(Равинсара)",
+        "wk Rosemary",
+        "(Розмарин)",
+        "wk Cinnamon",
+        "(Корица)",
+        "wk Eucalyptus Radiata",
+        "(Эвкалипт"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "melissa",
+        "oregano",
+        "",
+        "",
+        "thyme",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "frankincense",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-лимфатическая-система",
+    "name": "ЛИМФАТИЧЕСКАЯ СИСТЕМА",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "Т.Д.",
+      "recommended_oil_names": [
+        "Myrtle",
+        "Grapefruit",
+        "Lemongrass",
+        "Tangerine",
+        "Orange",
+        "Rosemary",
+        "Cypress",
+        "Hissop",
+        "Myrrh"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "myrtle",
+        "grapefruit",
+        "lemongrass",
+        "tangerine",
+        "orange",
+        "rosemary",
+        "cypress",
+        "",
+        "myrrh"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-отек",
+    "name": "ОТЕК",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "НАДПОЧЕЧНИКОВ ЗАБОЛЕВАНИЯ",
+      "recommended_oil_names": [
+        "German Chamomile",
+        "Peppermint",
+        "Lavender",
+        "Grapefruit",
+        "Helichrysum",
+        "Tangerine",
+        "* Geranium",
+        "Cypress",
+        "Wintergreen",
+        "Fennel",
+        "Juniper",
+        "Patchouli",
+        "Carrot Seed"
+      ],
+      "recommended_blend_names": [
+        "Aroma Life",
+        "Endoflex",
+        "DiGize"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "german-chamomile",
+        "peppermint",
+        "lavender",
+        "grapefruit",
+        "helichrysum",
+        "tangerine",
+        "",
+        "cypress",
+        "wintergreen",
+        "fennel",
+        "juniper",
+        "patchouli",
+        "carrot-seed"
+      ],
+      "recommended_blend_slugs": [
+        "blend-aroma-life",
+        "blend-endoflex",
+        ""
+      ]
+    }
+  },
+  {
+    "slug": "symptom-артрит",
+    "name": "АРТРИТ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "СУСТАВЫ I СВЯЗКИ",
+      "recommended_oil_names": [
+        "Wintergreen",
+        "Peppermint",
+        "Vetiver",
+        "Valerian",
+        "Palo Santo",
+        "Balsam Fir Idaho",
+        "Eucalyptus Globulus",
+        "Sacred Frankincense",
+        "(Священный ладан)",
+        "Frankincense",
+        "Frereana Frankincense",
+        "Idaho Ponderosa Pine"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "wintergreen",
+        "peppermint",
+        "vetiver",
+        "valerian",
+        "palo-santo",
+        "balsam-fir",
+        "eucalyptus-globulus",
+        "",
+        "",
+        "frankincense",
+        "",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-подагра",
+    "name": "ПОДАГРА",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "РЕВМАТОИДНЫЙ АРТРИТ",
+      "recommended_oil_names": [
+        "Juniper",
+        "Lemon",
+        "Idaho Blue Spruce",
+        "Sacred Frankincense",
+        "Frankincense",
+        "Roman Chamomile (Римская"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "juniper",
+        "lemon",
+        "blue-spruce",
+        "",
+        "frankincense",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-растяжение-или-разрыв-связок",
+    "name": "РАСТЯЖЕНИЕ ИЛИ РАЗРЫВ СВЯЗОК",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "РЕВМАТОИДНЫЙ АРТРИТ",
+      "recommended_oil_names": [
+        "Basil",
+        "Dorado Azul (Хиптис пахучий) 4",
+        "Idaho Blue Spruce",
+        "Peppermint",
+        "Copaiba",
+        "Balsam Fir",
+        "Idaho",
+        "Wintergreen",
+        "Lemongrass",
+        "Helichrysum",
+        "Смесь от растяжений",
+        "капель Лемонграсса",
+        "РЕКОМЕНДАЦИИ",
+        "Lavender",
+        "Elemi",
+        "Marjoram",
+        "Palo",
+        "Santo"
+      ],
+      "recommended_blend_names": [
+        "PanAway",
+        "Relieve It",
+        "Aroma Siez",
+        "Deep Relief Roll-On"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "basil",
+        "",
+        "blue-spruce",
+        "peppermint",
+        "copaiba",
+        "balsam-fir",
+        "",
+        "wintergreen",
+        "lemongrass",
+        "helichrysum",
+        "",
+        "",
+        "",
+        "lavender",
+        "elemi",
+        "marjoram",
+        "",
+        ""
+      ],
+      "recommended_blend_slugs": [
+        "blend-panaway",
+        "blend-relieve-it",
+        "",
+        "blend-deep-relief-roll-on"
+      ]
+    }
+  },
+  {
+    "slug": "symptom-соединительнои-ткани-воспаление",
+    "name": "СОЕДИНИТЕЛЬНОЙ ТКАНИ ВОСПАЛЕНИЕ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "РЕВМАТИЗМ",
+      "recommended_oil_names": [
+        "Rosemary",
+        "Nutmeg",
+        "Clove",
+        "Basil",
+        "Marjoram",
+        "Peppermint",
+        "Wintergreen"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "rosemary",
+        "nutmeg",
+        "clove",
+        "basil",
+        "marjoram",
+        "peppermint",
+        "wintergreen"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-ежедневные-процедуры-при-сзст",
+    "name": "Ежедневные процедуры при СЗСТ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "РЕВМАТИЗМ",
+      "recommended_oil_names": [
+        "Lemongrass",
+        "(способствует восстановлению соединительной ткани)",
+        "Rosewood",
+        "Sandalwood",
+        "Marjoram",
+        "РЕКОМЕНДАЦИИ",
+        "Copaiba",
+        "Basil",
+        "Elemi (Элеми) Смеси",
+        "PanAway",
+        "Relieve It",
+        "Deep Relief Roll-On",
+        "Aroma Siez"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "lemongrass",
+        "",
+        "",
+        "sandalwood",
+        "marjoram",
+        "",
+        "copaiba",
+        "basil",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-травма-коленного-хряща-локтя-и-др",
+    "name": "ТРАВМА КОЛЕННОГО ХРЯЩА, ЛОКТЯ, И ДР.",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "РЕВМАТИЗМ",
+      "recommended_oil_names": [
+        "Wintergreen",
+        "Copaiba",
+        "Lemongrass",
+        "Palo Santo",
+        "Peppermint",
+        "Idaho Balsam Fir",
+        "Marjoram",
+        "Eucalyptus Blue",
+        "Dorado Azul",
+        "Idaho Blue Spruce (Голубая ель"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "wintergreen",
+        "copaiba",
+        "lemongrass",
+        "palo-santo",
+        "peppermint",
+        "",
+        "marjoram",
+        "",
+        "",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-тугоподвижность-суставов",
+    "name": "ТУГОПОДВИЖНОСТЬ СУСТАВОВ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "РЕВМАТИЗМ",
+      "recommended_oil_names": [
+        "Wintergreen",
+        "Palo Santo",
+        "Idaho Blue Spruce",
+        "Douglas Fir",
+        "Elemi",
+        "Balsam Fir Idaho",
+        "German Chamomile",
+        "Peppermint",
+        "Pine"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "wintergreen",
+        "palo-santo",
+        "blue-spruce",
+        "",
+        "elemi",
+        "balsam-fir",
+        "german-chamomile",
+        "peppermint",
+        "pine"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-перелом",
+    "name": "ПЕРЕЛОМ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "КОСТНАЯ СИСТЕМА",
+      "recommended_oil_names": [
+        "* Thyme",
+        "Helichrysum",
+        "Wintergreen",
+        "Peppermint",
+        "Spruce",
+        "Balsam Fir Idaho",
+        "Pine",
+        "Copaiba",
+        "Palo Santo",
+        "Myrrh"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "",
+        "helichrysum",
+        "wintergreen",
+        "peppermint",
+        "spruce",
+        "balsam-fir",
+        "pine",
+        "copaiba",
+        "palo-santo",
+        "myrrh"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-грыжа-межпозвоночного-диска-повреждение-дисков",
+    "name": "ГРЫЖА МЕЖПОЗВОНОЧНОГО ДИСКА/ ПОВРЕЖДЕНИЕ ДИСКОВ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "КОСТНАЯ СИСТЕМА",
+      "recommended_oil_names": [
+        "Basil",
+        "Tarragon",
+        "Idaho Blue Spruce",
+        "Sacred Frankincense",
+        "Frankincense",
+        "Balsam Fir Idaho",
+        "Helichrysum"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "basil",
+        "",
+        "blue-spruce",
+        "",
+        "frankincense",
+        "balsam-fir",
+        "helichrysum"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-позвоночника-травмы-и-боли",
+    "name": "ПОЗВОНОЧНИКА ТРАВМЫ И БОЛИ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "РАСЩЕЛИНА ПОЗВОНОЧНИКА",
+      "recommended_oil_names": [
+        "Idaho Blue Spruce (Голубая ель",
+        "Айдахо)",
+        "Dorado Azul",
+        "Wintergreen",
+        "Marjoram",
+        "Balsam Fir Idaho (Пихта",
+        "бальзамическая Айдахо)",
+        "Helichrysum",
+        "Palo Santo"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "",
+        "",
+        "",
+        "wintergreen",
+        "marjoram",
+        "",
+        "",
+        "helichrysum",
+        "palo-santo"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-боль-в-стопах",
+    "name": "Боль В СТОПАХ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "РАСЩЕЛИНА ПОЗВОНОЧНИКА",
+      "recommended_oil_names": [
+        "wk Peppermint",
+        "wk White Fir",
+        "wk Lavender",
+        "wk Patchouli",
+        "wk Myrrh",
+        "wk Sacred Frankincense",
+        "(Священный ладан)"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-заболевания-и-проблемы-стоп",
+    "name": "ЗАБОЛЕВАНИЯ И ПРОБЛЕМЫ СТОП",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "РАСЩЕЛИНА ПОЗВОНОЧНИКА",
+      "recommended_oil_names": [
+        "Peppermint",
+        "White Fir",
+        "Lavender",
+        "Patchouli",
+        "Myrrh",
+        "Sacred Frankincense",
+        "(Священный ладан)",
+        "Frankincense",
+        "Sandalwood",
+        "Vetiver"
+      ],
+      "recommended_blend_names": [
+        "Melrose",
+        "PanAway",
+        "Relieve It"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "peppermint",
+        "",
+        "lavender",
+        "patchouli",
+        "myrrh",
+        "",
+        "",
+        "frankincense",
+        "sandalwood",
+        "vetiver"
+      ],
+      "recommended_blend_slugs": [
+        "blend-melrose",
+        "blend-panaway",
+        "blend-relieve-it"
+      ]
+    }
+  },
+  {
+    "slug": "symptom-шишка-на-наружнои-стороне-большого-пальца-ноги",
+    "name": "ШИШКА НА НАРУЖНОЙ СТОРОНЕ БОЛЬШОГО ПАЛЬЦА НОГИ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "РАСЩЕЛИНА ПОЗВОНОЧНИКА",
+      "recommended_oil_names": [
+        "Eucalyptus Radiata",
+        "Lemon"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "",
+        "lemon"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-боль-в-спине",
+    "name": "Боль В СПИНЕ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "РАСЩЕЛИНА ПОЗВОНОЧНИКА",
+      "recommended_oil_names": [
+        "Lavender",
+        "Balsam Fir Idaho",
+        "Wintergreen",
+        "German Chamomile",
+        "Basil",
+        "Copaiba",
+        "Смесь от боли в спине",
+        "РЕКОМЕНДАЦИИ",
+        "Marjoram",
+        "Peppermint",
+        "Aroma Siez",
+        "PanAway",
+        "Relieve It",
+        "Deep Relief Roll-On"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "lavender",
+        "balsam-fir",
+        "wintergreen",
+        "german-chamomile",
+        "basil",
+        "copaiba",
+        "",
+        "",
+        "marjoram",
+        "peppermint",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-воспаление-из-за-травмы",
+    "name": "ВОСПАЛЕНИЕ ИЗ-ЗА ТРАВМЫ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "РАСЩЕЛИНА ПОЗВОНОЧНИКА",
+      "recommended_oil_names": [
+        "Wintergreen",
+        "German Chamomile",
+        "Nutmeg",
+        "Palo Santo",
+        "Peppermint",
+        "Frereana Frankincense",
+        "Lavender",
+        "Idaho Ponderosa Pine (Желтая ель"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "wintergreen",
+        "german-chamomile",
+        "nutmeg",
+        "palo-santo",
+        "peppermint",
+        "",
+        "lavender",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-дистрофия-мышц",
+    "name": "ДИСТРОФИЯ мышц",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "РАСЩЕЛИНА ПОЗВОНОЧНИКА",
+      "recommended_oil_names": [
+        "Palo Santo",
+        "Pine",
+        "Lavender",
+        "Marjoram",
+        "Lemongrass",
+        "Vetiver",
+        "Balsam",
+        "Fir Idaho"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "palo-santo",
+        "pine",
+        "lavender",
+        "marjoram",
+        "lemongrass",
+        "vetiver",
+        "",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-ушиб-мышцы",
+    "name": "УШИБ МЫШЦЫ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ПРИМЕНЕНИЯ",
+      "recommended_oil_names": [
+        "Helichrysum",
+        "Copaiba",
+        "German Chamomile",
+        "Wintergreen",
+        "Peppermint",
+        "Geranium",
+        "Lavender"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "helichrysum",
+        "copaiba",
+        "german-chamomile",
+        "wintergreen",
+        "peppermint",
+        "geranium",
+        "lavender"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-региональном",
+    "name": "Региональном",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "РАК",
+      "recommended_oil_names": [
+        "Sacred Frankincense",
+        "Frankincense",
+        "Idaho Blue Spruce",
+        "Balsam Fir Idaho",
+        "Sandalwood",
+        "Palo Santo",
+        "(Пало Санто)",
+        "Hissop",
+        "Thyme"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "",
+        "frankincense",
+        "blue-spruce",
+        "balsam-fir",
+        "sandalwood",
+        "palo-santo",
+        "",
+        "",
+        "thyme"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-добавки-для-повышения",
+    "name": "Добавки для повышения",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "РАК",
+      "recommended_oil_names": [],
+      "recommended_blend_names": [
+        "Citrus Fresh",
+        "Thieves",
+        "Exodus II",
+        "Melrose",
+        "GLF",
+        "ImmuPower",
+        "DiGize",
+        "РЕКОМЕНДАЦИИ",
+        "включая рак молочной железы",
+        "Противовоспалительные  эфирные  масла  подходят",
+        "при лечении большинства видов рака:",
+        "Frankincense",
+        "Clove",
+        "Balsam  Fir",
+        "Idaho",
+        "Palo  Santo",
+        "Ledum",
+        "Myrrh",
+        "Wintergreen",
+        "(Грушанка)",
+        "Иммунитет и рак",
+        "Восстановление",
+        "важным",
+        "иммунитета",
+        "лечения рака",
+        "является"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [],
+      "recommended_blend_slugs": [
+        "blend-citrus-fresh",
+        "blend-thieves",
+        "blend-exodus-ii",
+        "blend-melrose",
+        "blend-glf",
+        "blend-immupower",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ]
+    }
+  },
+  {
+    "slug": "symptom-рак-груди",
+    "name": "РАК ГРУДИ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "РАК",
+      "recommended_oil_names": [
+        "Sacred Frankincense",
+        "Frankincense",
+        "Sandalwood",
+        "Myrtle"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "",
+        "frankincense",
+        "sandalwood",
+        "myrtle"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-рак-легких",
+    "name": "РАК ЛЕГКИХ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "РАК",
+      "recommended_oil_names": [
+        "Sacred Frankincense",
+        "Frankincense",
+        "Idaho Blue Spruce",
+        "Palo Santo",
+        "Sandalwood",
+        "Clove"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "",
+        "frankincense",
+        "blue-spruce",
+        "palo-santo",
+        "sandalwood",
+        "clove"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-рак-матки",
+    "name": "РАК МАТКИ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "РАК",
+      "recommended_oil_names": [
+        "Sacred Frankincense",
+        "Frankincense",
+        "Sage",
+        "Western Red Cedar",
+        "Thyme"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "",
+        "frankincense",
+        "",
+        "",
+        "thyme"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-опухоли",
+    "name": "ОПУХОЛИ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "РАК ШЕЙКИ МАТКИ",
+      "recommended_oil_names": [
+        "Sacred Frankincense",
+        "Frankincense",
+        "Western Red Cedar",
+        "Sage"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "",
+        "frankincense",
+        "",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-сибирская-язва",
+    "name": "СИБИРСКАЯ ЯЗВА",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "РАК ШЕЙКИ МАТКИ",
+      "recommended_oil_names": [
+        "wk Ravintsara",
+        "wk Thyme",
+        "Oregano",
+        "wk",
+        "Plectranthus Oregano",
+        "(Шпороцветник Орегано)",
+        "Clove",
+        "Cinnamon",
+        "чк",
+        "Citronella",
+        "Lemongrass"
+      ],
+      "recommended_blend_names": [
+        "РЕКОМЕНДАЦИИ",
+        "wk Raven",
+        "II",
+        "Thieves",
+        "i The Gift",
+        "wk",
+        "ImmuPower",
+        "wk Melrose",
+        "Longevity Питательные добавки:",
+        "i Life 5",
+        "wk Inner Defense",
+        "wk NingXia Red"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "",
+        "",
+        "oregano",
+        "",
+        "",
+        "",
+        "clove",
+        "cinnamon",
+        "",
+        "citronella",
+        "lemongrass"
+      ],
+      "recommended_blend_slugs": [
+        "",
+        "",
+        "",
+        "blend-thieves",
+        "",
+        "",
+        "blend-immupower",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ]
+    }
+  },
+  {
+    "slug": "symptom-цинга",
+    "name": "ЦИНГА",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "РАК ШЕЙКИ МАТКИ",
+      "recommended_oil_names": [
+        "Orange",
+        "w- Lemon",
+        "Spearmint",
+        "Lavender"
+      ],
+      "recommended_blend_names": [
+        "Thieves",
+        "GLF",
+        "РЕКОМЕНДАЦИИ",
+        "Deep Relief"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "orange",
+        "",
+        "spearmint",
+        "lavender"
+      ],
+      "recommended_blend_slugs": [
+        "blend-thieves",
+        "blend-glf",
+        "",
+        ""
+      ]
+    }
+  },
+  {
+    "slug": "symptom-альцгеимера-болезнь",
+    "name": "АЛЬЦГЕЙМЕРА БОЛЕЗНЬ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "РАК ШЕЙКИ МАТКИ",
+      "recommended_oil_names": [
+        "Melissa",
+        "Sandalwood",
+        "Helichrysum",
+        "Ginger",
+        "Nutmeg (Мускатный орех) это",
+        "общемозговой стимулятор",
+        "который",
+        "действует подобно гормонам коры",
+        "надпочечников"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "melissa",
+        "sandalwood",
+        "helichrysum",
+        "ginger",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-конвульсии-судороги",
+    "name": "КОНВУЛЬСИИ/ СУДОРОГИ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "РАК ШЕЙКИ МАТКИ",
+      "recommended_oil_names": [
+        "wk Sacred Frankincense",
+        "(Священный ладан)",
+        "wk",
+        "Frankincense",
+        "wk Palo",
+        "Santo",
+        "Eucalyptus Blue",
+        "wk Copaiba",
+        "(Копайба)"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "",
+        "",
+        "",
+        "frankincense",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-концентрация-нарушенная",
+    "name": "КОНЦЕНТРАЦИЯ НАРУШЕННАЯ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "РАК ШЕЙКИ МАТКИ",
+      "recommended_oil_names": [
+        "wk Peppermint",
+        "РЕКОМЕНДАЦИИ",
+        "Basil",
+        "Lemon",
+        "Bergamot",
+        "Rosemary",
+        "A- Sacred Frankincense",
+        "(Священный ладан)",
+        "Frankincense",
+        "^Dorado Azul"
+      ],
+      "recommended_blend_names": [
+        "Brain Power",
+        "Clarity",
+        "RutaVaLa",
+        "RutaVaLa Roll-On",
+        "Harmony",
+        "Valor",
+        "Valor Roll-On",
+        "Oola Balance",
+        "Oola Grow",
+        "Common Sense"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "",
+        "",
+        "basil",
+        "lemon",
+        "bergamot",
+        "rosemary",
+        "",
+        "",
+        "frankincense",
+        ""
+      ],
+      "recommended_blend_slugs": [
+        "blend-brain-power",
+        "",
+        "blend-rutavala",
+        "",
+        "blend-harmony",
+        "blend-valor",
+        "blend-valor-roll-on",
+        "",
+        "",
+        "blend-common-sense"
+      ]
+    }
+  },
+  {
+    "slug": "symptom-обморок",
+    "name": "ОБМОРОК",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "РАК ШЕЙКИ МАТКИ",
+      "recommended_oil_names": [
+        "Idaho Blue Spruce",
+        "Melissa",
+        "Peppermint",
+        "Sandalwood"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "blue-spruce",
+        "melissa",
+        "peppermint",
+        "sandalwood"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-память-нарушенная",
+    "name": "ПАМЯТЬ НАРУШЕННАЯ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "РАК ШЕЙКИ МАТКИ",
+      "recommended_oil_names": [
+        "Rosemary",
+        "Peppermint",
+        "улучшает умственную концентрацию и",
+        "память. Доктор Дембер провел",
+        "исследование в Университете Цинциннати",
+        "в 1994 году",
+        "доказав",
+        "что вдыхание мяты",
+        "перечной увеличивает психическую",
+        "точность на 28%",
+        "Cardamom",
+        "Basil",
+        "Vetiver",
+        "Rose"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "rosemary",
+        "peppermint",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "basil",
+        "vetiver",
+        "rose"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-мелколепестник-канадскии",
+    "name": "Мелколепестник канадский /",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "РАССЕЯННОСТЬ",
+      "recommended_oil_names": [],
+      "recommended_blend_names": [
+        "Clarity",
+        "M-Grain",
+        "Brain Power",
+        "Common Sense",
+        "Oola Balance",
+        "Oola Grow"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [],
+      "recommended_blend_slugs": [
+        "",
+        "blend-m-grain",
+        "blend-brain-power",
+        "blend-common-sense",
+        "",
+        ""
+      ]
+    }
+  },
+  {
+    "slug": "symptom-спутанность-сознания",
+    "name": "СПУТАННОСТЬ СОЗНАНИЯ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "РАССЕЯННОСТЬ",
+      "recommended_oil_names": [
+        "Peppermint",
+        "Lemon",
+        "Rosemary",
+        "Basil",
+        "Sacred",
+        "Frankincense"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "peppermint",
+        "lemon",
+        "rosemary",
+        "basil",
+        "",
+        "frankincense"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-признаки-и-симптомы",
+    "name": "Признаки и симптомы",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ЦЕРЕБРАЛЬНЫЙ ПАРАЛИЧ",
+      "recommended_oil_names": [
+        "Sacred Frankincense",
+        "(Священный ладан)",
+        "Frankincense",
+        "Myrrh",
+        "Balsam Fir Idaho",
+        "Peppermint",
+        "* Canadian Fleabane /Conyza",
+        "(Канадский мелколепестник/Кониза)"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "",
+        "",
+        "frankincense",
+        "myrrh",
+        "balsam-fir",
+        "peppermint",
+        "",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-парасимпатическая-нервная-система",
+    "name": "ПАРАСИМПАТИЧЕСКАЯ НЕРВНАЯ СИСТЕМА",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ВЕГЕТАТИВНАЯ НЕРВНАЯ СИСТЕМА",
+      "recommended_oil_names": [
+        "Lavender",
+        "Valerian",
+        "Patchouli",
+        "Marjoram",
+        "Ylang Ylang",
+        "Amazonian Ylang Ylang",
+        "(Амазонский иланг- иланг)",
+        "Rose"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "lavender",
+        "valerian",
+        "patchouli",
+        "marjoram",
+        "ylang-ylang",
+        "",
+        "",
+        "rose"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-болезнь-паркинсона",
+    "name": "БОЛЕЗНЬ ПАРКИНСОНА",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "БОКОВОЙ АМИОТРОФИЧЕСКИЙ СКЛЕРОЗ",
+      "recommended_oil_names": [
+        "Helichrysum",
+        "Lavender",
+        "Peppermint",
+        "Cedarwood",
+        "Myrrh",
+        "Basil",
+        "Sandalwood",
+        "Rosewood"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "helichrysum",
+        "lavender",
+        "peppermint",
+        "cedarwood",
+        "myrrh",
+        "basil",
+        "sandalwood",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-невралгия",
+    "name": "НЕВРАЛГИЯ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "БОКОВОЙ АМИОТРОФИЧЕСКИЙ СКЛЕРОЗ",
+      "recommended_oil_names": [
+        "Wintergreen",
+        "Peppermint",
+        "Marjoram",
+        "Helichrysum",
+        "Nutmeg",
+        "Tea Tree Melaleuca alternifolia",
+        "(Чайное дерево Мелалеука",
+        "РЕКОМЕНДАЦИИ",
+        "чайная)",
+        "Roman Chamomile",
+        "Rosemary"
+      ],
+      "recommended_blend_names": [
+        "RutaVaLa",
+        "RutaVaLa Roll-On",
+        "Relieve It",
+        "Peace & Calming",
+        "Deep Relief Roll-On",
+        "PanAway"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "wintergreen",
+        "peppermint",
+        "marjoram",
+        "helichrysum",
+        "nutmeg",
+        "",
+        "",
+        "",
+        "",
+        "roman-chamomile",
+        "rosemary"
+      ],
+      "recommended_blend_slugs": [
+        "blend-rutavala",
+        "",
+        "blend-relieve-it",
+        "",
+        "blend-deep-relief-roll-on",
+        "blend-panaway"
+      ]
+    }
+  },
+  {
+    "slug": "symptom-кистевои-туннельныи-синдром",
+    "name": "КИСТЕВОЙ ТУННЕЛЬНЫЙ СИНДРОМ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "БОКОВОЙ АМИОТРОФИЧЕСКИЙ СКЛЕРОЗ",
+      "recommended_oil_names": [
+        "Wintergreen",
+        "Marjoram",
+        "Peppermint",
+        "Vetiver",
+        "Basil",
+        "Cypress",
+        "Lemongrass",
+        "Myrrh"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "wintergreen",
+        "marjoram",
+        "peppermint",
+        "vetiver",
+        "basil",
+        "cypress",
+        "lemongrass",
+        "myrrh"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-паралич-белла",
+    "name": "ПАРАЛИЧ БЕЛЛА",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "НЕВРОПАТИЯ",
+      "recommended_oil_names": [
+        "Peppermint",
+        "Rosemary",
+        "Vetiver",
+        "Cypress",
+        "Sandalwood",
+        "Helichrysum",
+        "Pine"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "peppermint",
+        "rosemary",
+        "vetiver",
+        "cypress",
+        "sandalwood",
+        "helichrysum",
+        "pine"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-припадки",
+    "name": "ПРИПАДКИ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "С .",
+      "recommended_oil_names": [
+        "Peppermint",
+        "Sacred Frankincense",
+        "(Священный ладан)",
+        "Frankincense",
+        "Sandalwood",
+        "Melissa",
+        "Jasmine",
+        "Basil"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "peppermint",
+        "",
+        "",
+        "frankincense",
+        "sandalwood",
+        "melissa",
+        "jasmine",
+        "basil"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-состояния-нервнои-системы",
+    "name": "СОСТОЯНИЯ НЕРВНОЙ СИСТЕМЫ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ШИЗОФРЕНИЯ",
+      "recommended_oil_names": [
+        "Vetiver",
+        "Patchouli",
+        "(Пачули)",
+        "Lavender",
+        "Eucalyptus Globulus",
+        "Melissa",
+        "Cedarwood",
+        "Sandalwood",
+        "Frankincense",
+        "Myrrh",
+        "Balsam Fir Idaho",
+        "РЕКОМЕНДАЦИИ",
+        "Conyza",
+        "Peppermint",
+        "Cistus",
+        "Cypress",
+        "Sacred Frankincense"
+      ],
+      "recommended_blend_names": [
+        "Brain Power",
+        "GLF",
+        "Valor",
+        "Valor Roll-On",
+        "Clarity",
+        "СПОСОБЫ",
+        "ПРИМЕНЕНИЯ",
+        "напиток",
+        "Peace & Calming",
+        "Common Sense",
+        "The Gift",
+        "Питательные",
+        "добавки:",
+        "Balance Complete",
+        "Ингаляция",
+        "s Распыляйте в диффузоре выбранные масла в течение",
+        "получаса 3 раза в день или по желанию",
+        "мере необходимости",
+        "вставьте в вентиляционное отверстие дома",
+        "в машине и Т.Д",
+        "Локально",
+        "затылок",
+        "по желанию",
+        "освежает",
+        "S Втирайте массажными движениями 2-4 капли масла в",
+        "детям",
+        "Прием внутрь",
+        "J Принимайте по 2 капсулы",
+        "состоящих из 50:50",
+        "J Добавьте 2-3 капли масла на ложку меда или в",
+        "ГИПЕРАКТИВНОСТЬ",
+        "Смесь от Аутизма",
+        "или Ладана",
+        "капель Перечной мяты",
+        "Принимайте по 3 капсулы в день: утром",
+        "в полдень и"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "vetiver",
+        "patchouli",
+        "",
+        "lavender",
+        "eucalyptus-globulus",
+        "melissa",
+        "cedarwood",
+        "sandalwood",
+        "frankincense",
+        "myrrh",
+        "balsam-fir",
+        "",
+        "",
+        "peppermint",
+        "cistus",
+        "cypress",
+        ""
+      ],
+      "recommended_blend_slugs": [
+        "blend-brain-power",
+        "blend-glf",
+        "blend-valor",
+        "blend-valor-roll-on",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "blend-common-sense",
+        "blend-the-gift",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ]
+    }
+  },
+  {
+    "slug": "symptom-обезболивание",
+    "name": "ОБЕЗБОЛИВАНИЕ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ШИЗОФРЕНИЯ",
+      "recommended_oil_names": [
+        "Clove",
+        "Helichrysum",
+        "Dorado  Azul",
+        "Palo Santo",
+        "Elemi",
+        "Смесь для облегчения боли:",
+        "Равные части",
+        "Грушанки",
+        "Ели",
+        "Черного Перца",
+        "Ингаляция",
+        "z Распыляйте в диффузоре выбранные",
+        "РЕКОМЕНДАЦИИ",
+        "Wintergreen",
+        "Copaiba (Копайба) Смеси",
+        "PanAway",
+        "Aroma Siez",
+        "Deep Relief Roll-On",
+        "Thieves",
+        "Inner Defense",
+        "Brain Power",
+        "Relieve It"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "clove",
+        "helichrysum",
+        "",
+        "palo-santo",
+        "elemi",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "wintergreen",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-перевозбуждение",
+    "name": "ПЕРЕВОЗБУЖДЕНИЕ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ШИЗОФРЕНИЯ",
+      "recommended_oil_names": [
+        "Lavender",
+        "Roman Chamomile",
+        "Ромашка)",
+        "Ocotea",
+        "РЕКОМЕНДАЦИИ",
+        "+-",
+        "Valerian",
+        "Balsam Fir",
+        "Idaho",
+        "ладан)",
+        "ж  Myrrh",
+        "Sacred Frankincense (Священный  4 4",
+        "Ч-  Frankincense",
+        "Frereana Frankincense",
+        "Melissa",
+        "Humility",
+        "White Angelica"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "lavender",
+        "roman-chamomile",
+        "",
+        "",
+        "",
+        "",
+        "valerian",
+        "balsam-fir",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "melissa",
+        "",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-ушные-проблемы",
+    "name": "УШНЫЕ ПРОБЛЕМЫ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "СИНДРОМ ДЕФИЦИТА ВНИМАНИЯ",
+      "recommended_oil_names": [
+        "Helichrysum",
+        "Lavender",
+        "Tea Tree",
+        "Roman Chamomile",
+        "Ravintsara"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "helichrysum",
+        "lavender",
+        "tea-tree",
+        "roman-chamomile",
+        "ravintsara"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-нарушение-слуха",
+    "name": "НАРУШЕНИЕ СЛУХА",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "СИНДРОМ ДЕФИЦИТА ВНИМАНИЯ",
+      "recommended_oil_names": [
+        "Helichrysum",
+        "Juniper",
+        "Geranium"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "helichrysum",
+        "juniper",
+        "geranium"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-ушная-инфекция",
+    "name": "УШНАЯ ИНФЕКЦИЯ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "СИНДРОМ ДЕФИЦИТА ВНИМАНИЯ",
+      "recommended_oil_names": [
+        "Myrrh",
+        "Thyme",
+        "Wintergreen",
+        "Helichrysum",
+        "Mountain Savory",
+        "Basil"
+      ],
+      "recommended_blend_names": [
+        "ImmuPower",
+        "Melrose",
+        "Thieves",
+        "Purification",
+        "Exodus II"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "myrrh",
+        "thyme",
+        "wintergreen",
+        "helichrysum",
+        "",
+        "basil"
+      ],
+      "recommended_blend_slugs": [
+        "blend-immupower",
+        "blend-melrose",
+        "blend-thieves",
+        "blend-purification",
+        "blend-exodus-ii"
+      ]
+    }
+  },
+  {
+    "slug": "symptom-вагинальная-дрожжевая-инфекция",
+    "name": "ВАГИНАЛЬНАЯ ДРОЖЖЕВАЯ ИНФЕКЦИЯ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "БЕРЕМЕННОСТЬ",
+      "recommended_oil_names": [
+        "Clove",
+        "Tangerine",
+        "Lemon",
+        "Cypress",
+        "Orange",
+        "Patchouli"
+      ],
+      "recommended_blend_names": [
+        "РЕКОМЕНДАЦИИ",
+        "Purification",
+        "Thieves",
+        "Melrose",
+        "Citrus Fresh"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "clove",
+        "tangerine",
+        "lemon",
+        "cypress",
+        "orange",
+        "patchouli"
+      ],
+      "recommended_blend_slugs": [
+        "",
+        "blend-purification",
+        "blend-thieves",
+        "blend-melrose",
+        "blend-citrus-fresh"
+      ]
+    }
+  },
+  {
+    "slug": "symptom-грудное-вскармливание",
+    "name": "ГРУДНОЕ ВСКАРМЛИВАНИЕ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "УТРЕННЕЕ НЕДОМОГАНИЕ",
+      "recommended_oil_names": [
+        "Myrrh",
+        "Melissa",
+        "Tea Tree",
+        "Thyme",
+        "Patchouli",
+        "Roman Chamomile (Римская",
+        "РЕКОМЕНДАЦИИ",
+        "Ромашка)",
+        "Rosemary",
+        "Lemon",
+        "Vetiver",
+        "Lavender",
+        "Copaiba",
+        "Blue Spruce",
+        "Mountain Savory",
+        "ImmuPower",
+        "PanAway"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "myrrh",
+        "melissa",
+        "tea-tree",
+        "thyme",
+        "patchouli",
+        "",
+        "",
+        "",
+        "rosemary",
+        "lemon",
+        "vetiver",
+        "lavender",
+        "copaiba",
+        "blue-spruce",
+        "",
+        "",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-трещины-на-сосках-соски-сухие",
+    "name": "ТРЕЩИНЫ НА СОСКАХ / соски СУХИЕ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "УТРЕННЕЕ НЕДОМОГАНИЕ",
+      "recommended_oil_names": [
+        "A- Myrrh",
+        "(Мирра)",
+        "Vetiver",
+        "(Ветивер)",
+        "Sandalwood"
+      ],
+      "recommended_blend_names": [
+        "Valor",
+        "Valor Roll-on"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "",
+        "",
+        "vetiver",
+        "",
+        "sandalwood"
+      ],
+      "recommended_blend_slugs": [
+        "blend-valor",
+        "blend-valor-roll-on"
+      ]
+    }
+  },
+  {
+    "slug": "symptom-гистерэктомия-удаленная-матка",
+    "name": "ГИСТЕРЭКТОМИЯ - УДАЛЕННАЯ МАТКА",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "УТРЕННЕЕ НЕДОМОГАНИЕ",
+      "recommended_oil_names": [
+        "Sage",
+        "Clary Sage"
+      ],
+      "recommended_blend_names": [
+        "Dragon Time",
+        "Ингаляция",
+        "РЕКОМЕНДАЦИИ",
+        "Lady Sclareol",
+        "SclarEssence"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "",
+        "clary-sage"
+      ],
+      "recommended_blend_slugs": [
+        "blend-dragon-time",
+        "",
+        "",
+        "blend-lady-sclareol",
+        "blend-sclaressence"
+      ]
+    }
+  },
+  {
+    "slug": "symptom-кисты-яичников-и-матки",
+    "name": "Кисты ЯИЧНИКОВ И МАТКИ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "УТРЕННЕЕ НЕДОМОГАНИЕ",
+      "recommended_oil_names": [
+        "Myrrh",
+        "Geranium",
+        "Sacred",
+        "Frankincense",
+        "Tea Tree"
+      ],
+      "recommended_blend_names": [
+        "РЕКОМЕНДАЦИИ",
+        "Dragon Time",
+        "SclarEssence",
+        "Питательные",
+        "вки:",
+        "доба",
+        "EndoGize",
+        "Estro",
+        "FemiGen",
+        "Крема для тела и сыворотки:",
+        "Protec",
+        "Prenolone Plus Body Cream",
+        "Progessence Plus",
+        "Женская смесь от кист №1",
+        "Ладана"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "myrrh",
+        "geranium",
+        "",
+        "frankincense",
+        "tea-tree"
+      ],
+      "recommended_blend_slugs": [
+        "",
+        "blend-dragon-time",
+        "blend-sclaressence",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ]
+    }
+  },
+  {
+    "slug": "symptom-бесплодие-у-женщин",
+    "name": "БЕСПЛОДИЕ У ЖЕНЩИН",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "СЕКСУАЛЬНАЯ ДИСФУНКЦИЯ У ЖЕНЩИН",
+      "recommended_oil_names": [
+        "Шалфей",
+        "Ylang Ylang",
+        "Amazonian Ylang Ylang",
+        "(Амазонский иланг-иланг)",
+        "Sage",
+        "Anise Seed",
+        "Fennel",
+        "Yarrow",
+        "Geranium"
+      ],
+      "recommended_blend_names": [
+        "РЕКОМЕНДАЦИИ",
+        "Dragon Time",
+        "Acceptance",
+        "Mister",
+        "SclarEssence",
+        "Lady Sclareol",
+        "EndoFlex"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "",
+        "ylang-ylang",
+        "",
+        "",
+        "",
+        "",
+        "fennel",
+        "",
+        "geranium"
+      ],
+      "recommended_blend_slugs": [
+        "",
+        "blend-dragon-time",
+        "blend-acceptance",
+        "blend-mister",
+        "blend-sclaressence",
+        "blend-lady-sclareol",
+        "blend-endoflex"
+      ]
+    }
+  },
+  {
+    "slug": "symptom-отсутствие-либидо-полового-влечения-у-женщин",
+    "name": "ОТСУТСТВИЕ ЛИБИДО / Полового ВЛЕЧЕНИЯ У ЖЕНЩИН",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ПОЛОВОЕ ВЛЕЧЕНИЕ",
+      "recommended_oil_names": [
+        "Clary Sage (Шалфей мускатный) -",
+        "помогает преодолеть отсутствие",
+        "сексуального влечения",
+        "особенно у",
+        "женщин",
+        "путем регулирования и",
+        "балансировки гормонов",
+        "Nutmeg",
+        "поддерживает нервную систему для",
+        "преодоления фригидности",
+        "Geranium",
+        "Ylang Ylang",
+        "иланг- иланг способствует",
+        "уравновешиванию сексуальных эмоций и",
+        "проблем полового влечения"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "nutmeg",
+        "",
+        "",
+        "geranium",
+        "ylang-ylang",
+        "",
+        "",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-воздеиствие-его-аромата",
+    "name": "Воздействие его аромата",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ПОЛОВОЕ ВЛЕЧЕНИЕ",
+      "recommended_oil_names": [],
+      "recommended_blend_names": [
+        "SclarEssence",
+        "Sensation",
+        "Lady Sclareol",
+        "Joy",
+        "Valor",
+        "Valor Roll-On",
+        "Live with Passion Питательные",
+        "добавки:",
+        "EndoGize",
+        "Estro",
+        "FemiGen"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [],
+      "recommended_blend_slugs": [
+        "blend-sclaressence",
+        "blend-sensation",
+        "blend-lady-sclareol",
+        "blend-joy",
+        "blend-valor",
+        "blend-valor-roll-on",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ]
+    }
+  },
+  {
+    "slug": "symptom-фригидность-у-женщин",
+    "name": "ФРИГИДНОСТЬ У ЖЕНЩИН",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ПОЛОВОЕ ВЛЕЧЕНИЕ",
+      "recommended_oil_names": [
+        "Jasmine",
+        "Rose",
+        "Ylang Ylang",
+        "Amazonian Ylang Ylang",
+        "(Амазонский иланг-иланг)",
+        "(Иланг- иланг и Амазонский иланг- иланг",
+        "способствует уравновешиванию",
+        "сексуальных эмоций и проблем полового",
+        "влечения. Воздействие его аромата",
+        "повышает сексуальную энергию и",
+        "улучшает отношения)",
+        "Clary Sage"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "jasmine",
+        "rose",
+        "ylang-ylang",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "clary-sage"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-мужское-здоровье",
+    "name": "МУЖСКОЕ ЗДОРОВЬЕ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ЧРЕЗМЕРНОЕ ПОЛОВОЕ ВЛЕЧЕНИЕ",
+      "recommended_oil_names": [
+        "Myrrh",
+        "Balsam Fir Idaho",
+        "Oregano",
+        "Plectranthus Oregano",
+        "(Шпороцветник ароматный)",
+        "Sage",
+        "Yarrow",
+        "РЕКОМЕНДАЦИИ",
+        "Thyme",
+        "Wintergreen",
+        "Mister",
+        "EndoFlex",
+        "Australian Blue Питательные",
+        "добавки:",
+        "Prostate Health (богатый источник цинка",
+        "который помогает уменьшить"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "myrrh",
+        "balsam-fir",
+        "oregano",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "thyme",
+        "wintergreen",
+        "",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-доброкачественная-гиперплазия-предстательнои-железы",
+    "name": "ДОБРОКАЧЕСТВЕННАЯ ГИПЕРПЛАЗИЯ ПРЕДСТАТЕЛЬНОЙ ЖЕЛЕЗЫ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ЧРЕЗМЕРНОЕ ПОЛОВОЕ ВЛЕЧЕНИЕ",
+      "recommended_oil_names": [
+        "Sacred Frankincense",
+        "(Священный ладан)",
+        "Frankincense",
+        "Myrrh",
+        "(Мирра)",
+        "Balsam Fir Idaho",
+        "Blue Cypress",
+        "Sage"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "",
+        "",
+        "frankincense",
+        "myrrh",
+        "",
+        "balsam-fir",
+        "",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-бесплодие-у-мужчин",
+    "name": "БЕСПЛОДИЕ У МУЖЧИН",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "СЕКСУАЛЬНАЯ ДИСФУНКЦИЯ У МУЖЧИН",
+      "recommended_oil_names": [
+        "Idaho Blue Spruce (Голубая ель",
+        "Айдахо)",
+        "* Sage",
+        "^k Sacred",
+        "Frankincense",
+        "РЕКОМЕНДАЦИИ",
+        "*k Frankincense",
+        "k Clary Sage",
+        "A- Goldenrod"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "",
+        "",
+        "",
+        "",
+        "frankincense",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-импотенция-у-мужчин",
+    "name": "ИМПОТЕНЦИЯ У МУЖЧИН",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "СЕКСУАЛЬНАЯ ДИСФУНКЦИЯ У МУЖЧИН",
+      "recommended_oil_names": [
+        "Idaho Blue Spruce",
+        "Goldenrod",
+        "Sacred Frankincense",
+        "Frankincense",
+        "Myrrh",
+        "РЕКОМЕНДАЦИИ",
+        "Ginger",
+        "Nutmeg",
+        "Jasmine",
+        "Ylang Ylang",
+        "Amazonian Ylang Ylang"
+      ],
+      "recommended_blend_names": [
+        "Valor"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "blue-spruce",
+        "",
+        "",
+        "frankincense",
+        "myrrh",
+        "",
+        "ginger",
+        "nutmeg",
+        "jasmine",
+        "ylang-ylang",
+        ""
+      ],
+      "recommended_blend_slugs": [
+        "blend-valor"
+      ]
+    }
+  },
+  {
+    "slug": "symptom-отсутствие-либидо-у-мужчин",
+    "name": "ОТСУТСТВИЕ ЛИБИДО У МУЖЧИН",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "СЕКСУАЛЬНАЯ ДИСФУНКЦИЯ У МУЖЧИН",
+      "recommended_oil_names": [
+        "Idaho Blue Spruce",
+        "Pine"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "blue-spruce",
+        "pine"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-чрезмерное-половое-влечение",
+    "name": "ЧРЕЗМЕРНОЕ ПОЛОВОЕ ВЛЕЧЕНИЕ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "СЕКСУАЛЬНАЯ ДИСФУНКЦИЯ У МУЖЧИН",
+      "recommended_oil_names": [
+        "Rose",
+        "*4 Myrrh",
+        "Marjoram",
+        "*4 Valerian"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "rose",
+        "",
+        "marjoram",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-гормональная-система",
+    "name": "ГОРМОНАЛЬНАЯ СИСТЕМА",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "СЕКСУАЛЬНАЯ ДИСФУНКЦИЯ У МУЖЧИН",
+      "recommended_oil_names": [
+        "Conyza",
+        "Myrtle",
+        "Sacred Frankincense",
+        "(Священный ладан)",
+        "Fennel",
+        "Idaho Blue Spruce (Голубая ель"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "",
+        "myrtle",
+        "",
+        "",
+        "fennel",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-менопауза",
+    "name": "МЕНОПАУЗА",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ГОРМОНАЛЬНЫЕ И МЕНСТРУАЛЬНЫЕ НАРУШЕНИЯ У ЖЕНЩИН",
+      "recommended_oil_names": [
+        "Geranium",
+        "Clary Sage",
+        "Sage"
+      ],
+      "recommended_blend_names": [
+        "РЕКОМЕНДАЦИИ",
+        "Dragon Time",
+        "Lady Sclareol",
+        "Transformation",
+        "SclarEssence"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "geranium",
+        "clary-sage",
+        ""
+      ],
+      "recommended_blend_slugs": [
+        "",
+        "blend-dragon-time",
+        "blend-lady-sclareol",
+        "blend-transformation",
+        "blend-sclaressence"
+      ]
+    }
+  },
+  {
+    "slug": "symptom-обильные-менструальные-кровотечения",
+    "name": "ОБИЛЬНЫЕ МЕНСТРУАЛЬНЫЕ КРОВОТЕЧЕНИЯ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "НЕРЕГУЛЯРНЫЕ МЕНСТРУАЦИИ",
+      "recommended_oil_names": [
+        "Helichrysum",
+        "Cistus",
+        "Cypress"
+      ],
+      "recommended_blend_names": [
+        "PanAway",
+        "Deep Relief Roll-On",
+        "Relieve It"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "helichrysum",
+        "cistus",
+        "cypress"
+      ],
+      "recommended_blend_slugs": [
+        "blend-panaway",
+        "blend-deep-relief-roll-on",
+        "blend-relieve-it"
+      ]
+    }
+  },
+  {
+    "slug": "symptom-гормональные-нарушения-у-мужчин",
+    "name": "ГОРМОНАЛЬНЫЕ НАРУШЕНИЯ У МУЖЧИН",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ЭНДОМЕТРИОЗ",
+      "recommended_oil_names": [
+        "Idaho Blue Spruce",
+        "i Rosemary",
+        "Sage",
+        "^k Fennel",
+        "Geranium",
+        "Clary Sage"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "blue-spruce",
+        "",
+        "",
+        "",
+        "geranium",
+        "clary-sage"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-аутоиммунныи-тиреодит-болезнь-хашимото-низкоактивная-щитовидная",
+    "name": "АУТОИММУННЫЙ ТИРЕОДИТ (БОЛЕЗНЬ ХАШИМОТО) / НИЗКОАКТИВНАЯ ЩИТОВИДНАЯ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ЩИТОВИДНАЯ ЖЕЛЕЗА",
+      "recommended_oil_names": [
+        "Lemongrass",
+        "Spearmint",
+        "Ledum",
+        "Myrtle",
+        "Peppermint",
+        "Myrrh"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "lemongrass",
+        "spearmint",
+        "ledum",
+        "myrtle",
+        "peppermint",
+        "myrrh"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-нарколепсия-приступы-сонливости",
+    "name": "НАРКОЛЕПСИЯ / ПРИСТУПЫ сонливости",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "БЕССОННИЦА",
+      "recommended_oil_names": [
+        "Peppermint",
+        "Lemon",
+        "Conyza",
+        "Rosemary",
+        "Black Pepper"
+      ],
+      "recommended_blend_names": [
+        "РЕКОМЕНДАЦИИ",
+        "Clarity",
+        "Brain Power",
+        "Awaken",
+        "Common Sense",
+        "Motivation",
+        "M-Grain"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "peppermint",
+        "lemon",
+        "",
+        "rosemary",
+        "black-pepper"
+      ],
+      "recommended_blend_slugs": [
+        "",
+        "",
+        "blend-brain-power",
+        "blend-awaken",
+        "blend-common-sense",
+        "blend-motivation",
+        "blend-m-grain"
+      ]
+    }
+  },
+  {
+    "slug": "symptom-храп",
+    "name": "ХРАП",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "БЕССОННИЦА",
+      "recommended_oil_names": [
+        "Balsam Fir Idaho",
+        "Galbanum",
+        "Sandalwood",
+        "Rose",
+        "Lavender",
+        "Valerian",
+        "Western Red Cedar"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "balsam-fir",
+        "",
+        "sandalwood",
+        "rose",
+        "lavender",
+        "valerian",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-окотею-ocotea",
+    "name": "Окотею (Ocotea).",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "АНТИСЕПТИКИ И ДЕЗИНФИЦИРУЮЩИЕ СРЕДСТВА",
+      "recommended_oil_names": [
+        "Thyme",
+        "Clove",
+        "Oregano",
+        "Plectranthus Oregano",
+        "(Шпороцветник орегано)",
+        "Rosemary",
+        "Mountain Savory",
+        "Eucalyptus Radiata (Эвкалипт",
+        "лучистый)",
+        "Eucalyptus  Globulus",
+        "тимоловый)",
+        "Eucalyptus  Polybractea",
+        "Lavendin",
+        "Cinnamon Cassia (Коричник",
+        "китайский)",
+        "Ravintsara",
+        "Tea Tree",
+        "Ocotea"
+      ],
+      "recommended_blend_names": [
+        "Raven",
+        "Purification",
+        "Melrose",
+        "R.C",
+        "Eucalyptus  Dives",
+        "(Эвкалипт",
+        "Breathe Again Roll-On",
+        "Thieves"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "thyme",
+        "clove",
+        "oregano",
+        "",
+        "",
+        "rosemary",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "ravintsara",
+        "tea-tree",
+        ""
+      ],
+      "recommended_blend_slugs": [
+        "blend-raven",
+        "blend-purification",
+        "blend-melrose",
+        "",
+        "",
+        "",
+        "blend-breathe-again-roll-on",
+        "blend-thieves"
+      ]
+    }
+  },
+  {
+    "slug": "symptom-грибок-стопы",
+    "name": "ГРИБОК СТОПЫ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ГРИБОК НА КОЖЕ",
+      "recommended_oil_names": [
+        "Lemongrass",
+        "Geranium",
+        "Tea Tree",
+        "Mastrante",
+        "Niaouli",
+        "Ravintsara",
+        "Thyme",
+        "Peppermint",
+        "Lavender",
+        "РЕКОМЕНДАЦИИ",
+        "Айдахо)",
+        "Rosemary",
+        "Palmarosa",
+        "Idaho",
+        "Ponderosa Pine (Сосна желтая"
+      ],
+      "recommended_blend_names": [
+        "Melrose",
+        "Raven",
+        "R.C",
+        "ImmuPower",
+        "Breathe Again Roll-On"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "lemongrass",
+        "geranium",
+        "tea-tree",
+        "",
+        "",
+        "ravintsara",
+        "thyme",
+        "peppermint",
+        "lavender",
+        "",
+        "",
+        "rosemary",
+        "palmarosa",
+        "",
+        ""
+      ],
+      "recommended_blend_slugs": [
+        "blend-melrose",
+        "blend-raven",
+        "",
+        "blend-immupower",
+        "blend-breathe-again-roll-on"
+      ]
+    }
+  },
+  {
+    "slug": "symptom-лямблиоз",
+    "name": "ЛЯМБЛИОЗ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ПАРАЗИТЫ",
+      "recommended_oil_names": [
+        "Basil",
+        "Patchouli",
+        "Peppermint",
+        "Spearmint"
+      ],
+      "recommended_blend_names": [
+        "JuvaCleanse",
+        "DiGize",
+        "Melrose",
+        "Purification"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "basil",
+        "patchouli",
+        "peppermint",
+        "spearmint"
+      ],
+      "recommended_blend_slugs": [
+        "",
+        "",
+        "blend-melrose",
+        "blend-purification"
+      ]
+    }
+  },
+  {
+    "slug": "symptom-брюшнои-тиф",
+    "name": "БРЮШНОЙ ТИФ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ПАРАЗИТЫ",
+      "recommended_oil_names": [
+        "Clove",
+        "Thyme",
+        "Ravintsara",
+        "Cinnamon",
+        "Cassia",
+        "Peppermint",
+        "Black Pepper"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "clove",
+        "thyme",
+        "ravintsara",
+        "cinnamon",
+        "cassia",
+        "peppermint",
+        "black-pepper"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-ветрянка",
+    "name": "ВЕТРЯНКА",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ПАРАЗИТЫ",
+      "recommended_oil_names": [
+        "Lemongrass",
+        "Lavender",
+        "Tea Tree",
+        "Sandalwood",
+        "Melissa",
+        "Clove",
+        "Cypress",
+        "Geranium"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "lemongrass",
+        "lavender",
+        "tea-tree",
+        "sandalwood",
+        "melissa",
+        "clove",
+        "cypress",
+        "geranium"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-венерические-заболевания",
+    "name": "ВЕНЕРИЧЕСКИЕ ЗАБОЛЕВАНИЯ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ВИРУС ЗАПАДНОГО НИЛА",
+      "recommended_oil_names": [
+        "Melissa",
+        "Dorado Azul",
+        "Ravintsara",
+        "Palo Santo",
+        "Tea Tree Melaleuca Alternifolia",
+        "(Чайное дерево Мелалеука чайная]"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "melissa",
+        "",
+        "ravintsara",
+        "palo-santo",
+        "",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-мононуклеоз",
+    "name": "МОНОНУКЛЕОЗ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "Т.Д.",
+      "recommended_oil_names": [
+        "Ravintsara",
+        "Hissop",
+        "Thyme",
+        "Sacred Frankincense",
+        "(Священный ладан)",
+        "Frankincense",
+        "Palo Santo",
+        "Mountain Savory"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "ravintsara",
+        "",
+        "thyme",
+        "",
+        "",
+        "frankincense",
+        "palo-santo",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-обратитесь-к-врачу",
+    "name": "Обратитесь к врачу.",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ДИФТЕРИЯ ЗЕВА",
+      "recommended_oil_names": [
+        "Oregano",
+        "Plectranthus Oregano",
+        "(Шпороцветник ароматный)",
+        "Thyme",
+        "Clove",
+        "Mountain Savory",
+        "Eucalyptus Radiata",
+        "Palo Santo",
+        "Sacred Frankincense",
+        "(Священный ладан)",
+        "Frankincense"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "oregano",
+        "",
+        "",
+        "thyme",
+        "clove",
+        "",
+        "",
+        "palo-santo",
+        "",
+        "",
+        "frankincense"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-простуда",
+    "name": "ПРОСТУДА",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ПОЛИОМИЕЛИТ",
+      "recommended_oil_names": [
+        "Ravintsara",
+        "Cypress",
+        "Peppermint",
+        "Thyme",
+        "Laurus Nobilis",
+        "Hissop",
+        "Oregano",
+        "Plectranthus",
+        "Eucalyptus Blue",
+        "Eucalyptus Radiata",
+        "Tea Tree",
+        "Rosemary",
+        "Clove",
+        "Смесь от простуды №1",
+        "z 5 капель Розмарина"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "ravintsara",
+        "cypress",
+        "peppermint",
+        "thyme",
+        "",
+        "",
+        "oregano",
+        "",
+        "",
+        "",
+        "tea-tree",
+        "rosemary",
+        "clove",
+        "",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-холера",
+    "name": "ХОЛЕРА",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ПОЛИОМИЕЛИТ",
+      "recommended_oil_names": [
+        "Lemon",
+        "Clove",
+        "Thyme",
+        "Rosemary",
+        "Oregano"
+      ],
+      "recommended_blend_names": [
+        "DiGize",
+        "РЕКОМЕНДАЦИИ"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "lemon",
+        "clove",
+        "thyme",
+        "rosemary",
+        "oregano"
+      ],
+      "recommended_blend_slugs": [
+        "",
+        ""
+      ]
+    }
+  },
+  {
+    "slug": "symptom-дряблость-кожи",
+    "name": "ДРЯБЛОСТЬ КОЖИ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "УХОД ЗА КОЖЕЙ",
+      "recommended_oil_names": [
+        "Lavender",
+        "Helichrysum",
+        "Patchouli",
+        "* Cypress",
+        "(Кипарис)",
+        "* Tangerine",
+        "(Мандарин)",
+        "Sandalwood",
+        "(Сандал)",
+        "Geranium",
+        "РЕКОМЕНДАЦИИ",
+        "СМРСИ-",
+        "Humility",
+        "Inspiration",
+        "Joy"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "lavender",
+        "helichrysum",
+        "patchouli",
+        "",
+        "",
+        "",
+        "",
+        "sandalwood",
+        "",
+        "geranium",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-морщины",
+    "name": "МОРЩИНЫ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "УХОД ЗА КОЖЕЙ",
+      "recommended_oil_names": [
+        "Sacred Frankincense",
+        "(Священный ладан)",
+        "Frankincense",
+        "Myrrh",
+        "(Мирра)",
+        "Vetiver",
+        "Helichrysum",
+        "Cypress",
+        "Rose",
+        "Lavender",
+        "Patchouli",
+        "Geranium",
+        "Sandalwood",
+        "Neroli"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "",
+        "",
+        "frankincense",
+        "myrrh",
+        "",
+        "vetiver",
+        "helichrysum",
+        "cypress",
+        "rose",
+        "lavender",
+        "patchouli",
+        "geranium",
+        "sandalwood",
+        "neroli"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-смесь-от-морщин",
+    "name": "Смесь от морщин",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "УХОД ЗА КОЖЕЙ",
+      "recommended_oil_names": [],
+      "recommended_blend_names": [
+        "Gentle Baby",
+        "Sensation",
+        "White Angelica",
+        "Highest Potential"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [],
+      "recommended_blend_slugs": [
+        "blend-gentle-baby",
+        "blend-sensation",
+        "blend-white-angelica",
+        "blend-highest-potential"
+      ]
+    }
+  },
+  {
+    "slug": "symptom-обветренная-кожа",
+    "name": "ОБВЕТРЕННАЯ КОЖА",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "УХОД ЗА КОЖЕЙ",
+      "recommended_oil_names": [
+        "Neroli",
+        "Rose",
+        "Cedarwood",
+        "Roman Chamomile",
+        "Palmarosa",
+        "Geranium",
+        "РЕКОМЕНДАЦИИ",
+        "Lavender",
+        "Spikenard",
+        "Myrrh",
+        "Sandalwood",
+        "Крема для ухода за телом",
+        "мази и",
+        "сыворотки:",
+        "A-R-T Night Reconstructor"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "neroli",
+        "rose",
+        "cedarwood",
+        "roman-chamomile",
+        "palmarosa",
+        "geranium",
+        "",
+        "lavender",
+        "",
+        "myrrh",
+        "sandalwood",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-поры-закупоренные",
+    "name": "ПОРЫ ЗАКУПОРЕННЫЕ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "УХОД ЗА КОЖЕЙ",
+      "recommended_oil_names": [
+        "Lemon",
+        "Orange",
+        "Geranium",
+        "Cypress"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "lemon",
+        "orange",
+        "geranium",
+        "cypress"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-витилиго",
+    "name": "Витилиго",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "АКНЕ",
+      "recommended_oil_names": [
+        "Sandalwood",
+        "Myrrh",
+        "Vetiver",
+        "Patchouli"
+      ],
+      "recommended_blend_names": [
+        "Brain Power",
+        "Локально"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "sandalwood",
+        "myrrh",
+        "vetiver",
+        "patchouli"
+      ],
+      "recommended_blend_slugs": [
+        "blend-brain-power",
+        ""
+      ]
+    }
+  },
+  {
+    "slug": "symptom-волдыри",
+    "name": "ВОЛДЫРИ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "АКНЕ",
+      "recommended_oil_names": [
+        "Tea Tree",
+        "Myrrh",
+        "Lavender",
+        "German Chamomile (немецкая ромашка) или",
+        "Roman Chamomile",
+        "Spikenard",
+        "Helichrysum"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "tea-tree",
+        "myrrh",
+        "lavender",
+        "",
+        "roman-chamomile",
+        "",
+        "helichrysum"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-зудящая-сыпь-от-контакта-с-ядовитым-плющом",
+    "name": "ЗУДЯЩАЯ СЫПЬ от КОНТАКТА С ЯДОВИТЫМ ПЛЮЩОМ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ДЕРМАТИТ",
+      "recommended_oil_names": [
+        "Peppermint",
+        "Myrrh",
+        "Patchouli",
+        "Vetiver",
+        "Eucalyptus Blue",
+        "German Chamomile",
+        "Roman Chamomile",
+        "Rose",
+        "Lemon",
+        "Idaho Tansy"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "peppermint",
+        "myrrh",
+        "patchouli",
+        "vetiver",
+        "",
+        "german-chamomile",
+        "roman-chamomile",
+        "rose",
+        "lemon",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-крапивница",
+    "name": "КРАПИВНИЦА",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ДЕРМАТИТ",
+      "recommended_oil_names": [
+        "Myrrh",
+        "German Chamomile",
+        "Roman Chamomile",
+        "Ravintsara",
+        "~ Lavender",
+        "'4- Eucalyptus Radiata",
+        "Tea Tree Melaleuca Alternifolia"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "myrrh",
+        "german-chamomile",
+        "roman-chamomile",
+        "ravintsara",
+        "",
+        "",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-лишаи",
+    "name": "ЛИШАЙ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ДЕРМАТИТ",
+      "recommended_oil_names": [
+        "Tea Tree Melaleuca Ericifolia",
+        "(Чайное дерево Мелалеука вересколистная)",
+        "Geranium",
+        "Tea Tree Melaleuca Alternifolia",
+        "(Чайное дерево Мелалеука чайная)",
+        "Niaouli",
+        "Cypress"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "",
+        "",
+        "geranium",
+        "",
+        "",
+        "",
+        "cypress"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-опрелости",
+    "name": "ОПРЕЛОСТИ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ОЖОГИ ТРЕТЕЙ СТЕПЕНИ",
+      "recommended_oil_names": [
+        "Lavender",
+        "Helichrysum",
+        "German Chamomile",
+        "Cypress"
+      ],
+      "recommended_blend_names": [
+        "Gentle",
+        "Purification",
+        "Valor",
+        "Baby"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "lavender",
+        "helichrysum",
+        "german-chamomile",
+        "cypress"
+      ],
+      "recommended_blend_slugs": [
+        "",
+        "blend-purification",
+        "blend-valor",
+        ""
+      ]
+    }
+  },
+  {
+    "slug": "symptom-пигментные-пятна",
+    "name": "ПИГМЕНТНЫЕ ПЯТНА",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ОЖОГИ ТРЕТЕЙ СТЕПЕНИ",
+      "recommended_oil_names": [
+        "Idaho Tansy",
+        "Sandalwood"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "",
+        "sandalwood"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-порезы",
+    "name": "ПОРЕЗЫ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ОЖОГИ ТРЕТЕЙ СТЕПЕНИ",
+      "recommended_oil_names": [
+        "Lavender",
+        "lea Tree Melaleuca alternifolia",
+        "(Чайное дерево Мелалеука чайная)",
+        "Helichrysum",
+        "Rosemary",
+        "Eucalyptus Globulus",
+        "Dorado Azul",
+        "Cypress",
+        "Wintergreen",
+        "Thyme",
+        "Oregano",
+        "Plectranthus Oregano"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "lavender",
+        "",
+        "",
+        "helichrysum",
+        "rosemary",
+        "eucalyptus-globulus",
+        "",
+        "cypress",
+        "wintergreen",
+        "thyme",
+        "oregano",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-для-дезинфекции",
+    "name": "ДЛЯ ДЕЗИНФЕКЦИИ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ОЖОГИ ТРЕТЕЙ СТЕПЕНИ",
+      "recommended_oil_names": [
+        "Tea У гее Melaleuca alternifolia",
+        "(Чайное дерево Мелалеука чайная)",
+        "Oregano",
+        "Plectranthus Oregano",
+        "(шпороцветник ароматный)"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "",
+        "",
+        "oregano",
+        "",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-разведите-рекомендуемые-масла",
+    "name": "Разведите рекомендуемые масла",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ОЖОГИ ТРЕТЕЙ СТЕПЕНИ",
+      "recommended_oil_names": [
+        "Sacred Frankincense",
+        "(Священный ладан)",
+        "Frankincense",
+        "Sandalwood",
+        "Melissa",
+        "Lavender"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "",
+        "",
+        "frankincense",
+        "sandalwood",
+        "melissa",
+        "lavender"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-для-уменьшения-кровоточивости",
+    "name": "Для УМЕНЬШЕНИЯ КРОВОТОЧИВОСТИ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ОЖОГИ ТРЕТЕЙ СТЕПЕНИ",
+      "recommended_oil_names": [
+        "Helichrysum",
+        "Cistus",
+        "Cypress",
+        "Lemon",
+        "Geranium",
+        "Vetiver"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "helichrysum",
+        "cistus",
+        "cypress",
+        "lemon",
+        "geranium",
+        "vetiver"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-для-уменьшения-образования-рубцов",
+    "name": "ДЛЯ УМЕНЬШЕНИЯ ОБРАЗОВАНИЯ РУБЦОВ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ОЖОГИ ТРЕТЕЙ СТЕПЕНИ",
+      "recommended_oil_names": [
+        "Sacred Frankincense",
+        "(Священный ладан)",
+        "Frankincense",
+        "Lavender",
+        "Sandalwood",
+        "Cistus",
+        "Geranium",
+        "Helichrysum",
+        "Myrrh",
+        "Spikenard",
+        "Vetiver",
+        "Patchouli"
+      ],
+      "recommended_blend_names": [
+        "Gentle Baby",
+        "Valor",
+        "Melrose",
+        "Ладана",
+        "Смесь от шрамов №2",
+        "капли Пачули"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "",
+        "",
+        "frankincense",
+        "lavender",
+        "sandalwood",
+        "cistus",
+        "geranium",
+        "helichrysum",
+        "myrrh",
+        "",
+        "vetiver",
+        "patchouli"
+      ],
+      "recommended_blend_slugs": [
+        "blend-gentle-baby",
+        "blend-valor",
+        "blend-melrose",
+        "",
+        "",
+        ""
+      ]
+    }
+  },
+  {
+    "slug": "symptom-растяжки",
+    "name": "РАСТЯЖКИ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "РАНЫ",
+      "recommended_oil_names": [
+        "Sacred Frankincense",
+        "(Священный ладан)",
+        "Frankincense",
+        "Elemi",
+        "Spikenard",
+        "Geranium",
+        "Lavender",
+        "Myrrh"
+      ],
+      "recommended_blend_names": [
+        "РЕКОМЕНДАЦИИ",
+        "Gentle Baby",
+        "Sensation",
+        "Valor",
+        "White Angelica"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "",
+        "",
+        "frankincense",
+        "elemi",
+        "",
+        "geranium",
+        "lavender",
+        "myrrh"
+      ],
+      "recommended_blend_slugs": [
+        "",
+        "blend-gentle-baby",
+        "blend-sensation",
+        "blend-valor",
+        "blend-white-angelica"
+      ]
+    }
+  },
+  {
+    "slug": "symptom-родинки",
+    "name": "Родинки",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "РАНЫ",
+      "recommended_oil_names": [
+        "Oregano",
+        "Plectranthus Oregano",
+        "(Шпороцветник ароматный)"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "oregano",
+        "",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-рубцовая-ткань",
+    "name": "РУБЦОВАЯ ТКАНЬ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "РАНЫ",
+      "recommended_oil_names": [
+        "Sacred Frankincense",
+        "Frankincense",
+        "Sandalwood",
+        "Cypress",
+        "Elemi",
+        "Yarrow",
+        "Rose",
+        "Cistus",
+        "Смесь от шрамов",
+        "капли Мирры",
+        "/ 3 капли Лаванды",
+        "z 2 капли Бессмертника",
+        "v 1 капля Сандала"
+      ],
+      "recommended_blend_names": [
+        "Gentle Baby",
+        "Australian Blue"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "",
+        "frankincense",
+        "sandalwood",
+        "cypress",
+        "elemi",
+        "",
+        "rose",
+        "cistus",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "recommended_blend_slugs": [
+        "blend-gentle-baby",
+        ""
+      ]
+    }
+  },
+  {
+    "slug": "symptom-царапины",
+    "name": "ЦАРАПИНЫ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "КАРБУНКУЛЫ",
+      "recommended_oil_names": [
+        "Palo Santo",
+        "Peppermint",
+        "Citronella",
+        "Rosemary",
+        "Palmarosa",
+        "Lavandin",
+        "Eucalyptus Globulus (Эвкалипт"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "palo-santo",
+        "peppermint",
+        "citronella",
+        "rosemary",
+        "palmarosa",
+        "",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-язвы-на-коже",
+    "name": "ЯЗВЫ НА КОЖЕ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ЭКЗЕМА",
+      "recommended_oil_names": [
+        "Helichrysum",
+        "Roman Chamomile",
+        "Patchouli",
+        "Lavender",
+        "Clove",
+        "Myrrh"
+      ],
+      "recommended_blend_names": [
+        "Thieves",
+        "Purification",
+        "Relieve It",
+        "Melrose"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "helichrysum",
+        "roman-chamomile",
+        "patchouli",
+        "lavender",
+        "clove",
+        "myrrh"
+      ],
+      "recommended_blend_slugs": [
+        "blend-thieves",
+        "blend-purification",
+        "blend-relieve-it",
+        "blend-melrose"
+      ]
+    }
+  },
+  {
+    "slug": "symptom-проблемы-с-волосами-и-кожеи-головы",
+    "name": "ПРОБЛЕМЫ С ВОЛОСАМИ И КОЖЕЙ ГОЛОВЫ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ЭКЗЕМА",
+      "recommended_oil_names": [
+        "Lavender",
+        "Cedarwood (Кедр)",
+        "Peppermint",
+        "(жирная кожа головы)",
+        "Rosemary",
+        "Clary Sage",
+        "Sage",
+        "Basil",
+        "Juniper",
+        "Ylang Ylang",
+        "Amazonian Ylang Ylang (Амазонский",
+        "иланг-иланг)",
+        "Sandalwood",
+        "Lemon",
+        "Cypress",
+        "Rosewood"
+      ],
+      "recommended_blend_names": [
+        "Melrose",
+        "Thieves",
+        "Citrus Fresh",
+        "Purification",
+        "Inspiration",
+        "The Gift"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "lavender",
+        "cedarwood",
+        "peppermint",
+        "",
+        "rosemary",
+        "clary-sage",
+        "",
+        "basil",
+        "juniper",
+        "ylang-ylang",
+        "",
+        "",
+        "sandalwood",
+        "lemon",
+        "cypress",
+        ""
+      ],
+      "recommended_blend_slugs": [
+        "blend-melrose",
+        "blend-thieves",
+        "blend-citrus-fresh",
+        "blend-purification",
+        "",
+        "blend-the-gift"
+      ]
+    }
+  },
+  {
+    "slug": "symptom-перхоть",
+    "name": "ПЕРХОТЬ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ОБЛЫСЕНИЕ /ВЫПАДЕНИЕ ВОЛОС",
+      "recommended_oil_names": [
+        "Tea Tree Melaleuca Alternifolia",
+        "(Чайное дерево Мелалеука чайная)",
+        "Cedarwood",
+        "Lavender",
+        "Rosemary",
+        "Peppermint",
+        "Copaiba",
+        "Eucalyptus Blue"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "",
+        "",
+        "cedarwood",
+        "lavender",
+        "rosemary",
+        "peppermint",
+        "copaiba",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-смесь-от-перхоти",
+    "name": "Смесь от перхоти",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ОБЛЫСЕНИЕ /ВЫПАДЕНИЕ ВОЛОС",
+      "recommended_oil_names": [],
+      "recommended_blend_names": [
+        "Citrus Fresh",
+        "Melrose",
+        "Thieves",
+        "The Gift",
+        "Шампуни и ополаскиватели:",
+        "Lavender Mint Daily Shampoo and",
+        "Conditioner",
+        "Copaiba Vanilla Moisturizing",
+        "Shampoo and Conditioner",
+        "Lavender Shampoo and"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [],
+      "recommended_blend_slugs": [
+        "blend-citrus-fresh",
+        "blend-melrose",
+        "blend-thieves",
+        "blend-the-gift",
+        "",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ]
+    }
+  },
+  {
+    "slug": "symptom-ногти",
+    "name": "НОГТИ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ОБЛЫСЕНИЕ /ВЫПАДЕНИЕ ВОЛОС",
+      "recommended_oil_names": [
+        "Myrrh",
+        "Lemon",
+        "Sacred",
+        "Frankincense",
+        "Balsam Fir Idaho"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "myrrh",
+        "lemon",
+        "",
+        "frankincense",
+        "balsam-fir"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-катаракта",
+    "name": "КАТАРАКТА",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ВОЗРАСТНАЯ МАКУЛЯРНАЯ ДЕГЕНЕРАЦИЯ",
+      "recommended_oil_names": [
+        "Lavender",
+        "Sacred Frankincense",
+        "(Священный ладан)",
+        "Frankincense",
+        "Lemon",
+        "Lemongrass",
+        "Cypress"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "lavender",
+        "",
+        "",
+        "frankincense",
+        "lemon",
+        "lemongrass",
+        "cypress"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-смесь-для-глаз",
+    "name": "Смесь для глаз",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ВОЗРАСТНАЯ МАКУЛЯРНАЯ ДЕГЕНЕРАЦИЯ",
+      "recommended_oil_names": [],
+      "recommended_blend_names": [
+        "Longevity",
+        "Melrose",
+        "En-R-Gee",
+        "Purification"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [],
+      "recommended_blend_slugs": [
+        "blend-longevity",
+        "blend-melrose",
+        "blend-en-r-gee",
+        "blend-purification"
+      ]
+    }
+  },
+  {
+    "slug": "symptom-глазные-заболевания",
+    "name": "ГЛАЗНЫЕ ЗАБОЛЕВАНИЯ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ВОЗРАСТНАЯ МАКУЛЯРНАЯ ДЕГЕНЕРАЦИЯ",
+      "recommended_oil_names": [
+        "wk Lavender",
+        "(Лаванда)",
+        "Sacred",
+        "Frankincense",
+        "(Священный ладан)",
+        "wk",
+        "Cypress"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "",
+        "",
+        "",
+        "frankincense",
+        "",
+        "",
+        "cypress"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-конъюнктивит",
+    "name": "Конъюнктивит",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ВОЗРАСТНАЯ МАКУЛЯРНАЯ ДЕГЕНЕРАЦИЯ",
+      "recommended_oil_names": [
+        "wk Myrrh",
+        "(Мирра)",
+        "wk Lavender",
+        "(Лаванда)",
+        "wk Vetiver",
+        "(Ветивер)",
+        "РЕКОМЕНДАЦИИ"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-зубная-боль-и-боль-при-прорезывании-зубов",
+    "name": "ЗУБНАЯ БОЛЬ И БОЛЬ ПРИ ПРОРЕЗЫВАНИИ ЗУБОВ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "УХОД ЗА ПОЛОСТЬЮ РТА, ЗУБАМИ И ДЕСНАМИ",
+      "recommended_oil_names": [
+        "Clove",
+        "Sacred Frankincense",
+        "Frankincense",
+        "German Chamomile",
+        "Tea Tree Melaleuca Alternifolia",
+        "(Чайное дерево Мелалеука чайная)"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "clove",
+        "",
+        "frankincense",
+        "german-chamomile",
+        "",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-гингивит-и-периодонтит",
+    "name": "Гингивит И ПЕРИОДОНТИТ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "УХОД ЗА ПОЛОСТЬЮ РТА, ЗУБАМИ И ДЕСНАМИ",
+      "recommended_oil_names": [
+        "Clove",
+        "Tea Tree Melaleuca Alternifolia",
+        "(Чайное дерево Мелалеука чайная)",
+        "Thyme",
+        "Mountain Savory",
+        "Wintergreen",
+        "Peppermint",
+        "Oregano",
+        "Plectranthus Oregano",
+        "(Шпороцветник ароматный)",
+        "Eucalyptus Globulus"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "clove",
+        "",
+        "",
+        "thyme",
+        "",
+        "wintergreen",
+        "peppermint",
+        "oregano",
+        "",
+        "",
+        "eucalyptus-globulus"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-кровоточивость-десен",
+    "name": "КРОВОТОЧИВОСТЬ ДЕСЕН",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "УХОД ЗА ПОЛОСТЬЮ РТА, ЗУБАМИ И ДЕСНАМИ",
+      "recommended_oil_names": [
+        "чк Clove",
+        "Sacred Frankincense",
+        "(Священный ладан)",
+        "чк",
+        "Frankincense",
+        "Helichrysum",
+        "Wintergreen",
+        "Cinnamon"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "",
+        "",
+        "",
+        "",
+        "frankincense",
+        "helichrysum",
+        "wintergreen",
+        "cinnamon"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-пиорея-системное-поражение-околозубнои-ткани",
+    "name": "ПИОРЕЯ - СИСТЕМНОЕ ПОРАЖЕНИЕ ОКОЛОЗУБНОЙ ТКАНИ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ОСМОТР СТОМАТОЛОГА",
+      "recommended_oil_names": [
+        "Clove (Гвоздика)",
+        "Thyme (Чабрец)",
+        "Oregano (Орегано)",
+        "Wintergreen"
+      ],
+      "recommended_blend_names": [
+        "Thieves",
+        "Exodus II (при желании",
+        "РЕКОМЕНДАЦИИ",
+        "разбавленный)",
+        "Уход за полостью рта:",
+        "Thieves Fresh Essence Plus",
+        "Mouthwash",
+        "Thieves Spray",
+        "Thieves AromaBright Toothpaste",
+        "KidScents Slique Toothpaste",
+        "Thieves Dentarome Ultra",
+        "Toothpaste",
+        "Thieves Dentarome Plus"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "clove",
+        "thyme",
+        "oregano",
+        "wintergreen"
+      ],
+      "recommended_blend_slugs": [
+        "blend-thieves",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ]
+    }
+  },
+  {
+    "slug": "symptom-ротовая-инфекция",
+    "name": "РОТОВАЯ ИНФЕКЦИЯ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ОСМОТР СТОМАТОЛОГА",
+      "recommended_oil_names": [
+        "Clove",
+        "Myrrh",
+        "Oregano",
+        "Plectranthus Oregano",
+        "(Шпороцветник ароматный)",
+        "Thyme",
+        "Helichrysum",
+        "Eucalyptus Radiata (Эвкалипт"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "clove",
+        "myrrh",
+        "oregano",
+        "",
+        "",
+        "thyme",
+        "helichrysum",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-стоматит",
+    "name": "СТОМАТИТ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "СКРЕЖЕТАНИЕ ЗУБАМИ",
+      "recommended_oil_names": [
+        "Tea Tree",
+        "Thyme",
+        "Myrrh",
+        "Lavender",
+        "*4 Peppermint",
+        "Ocotea",
+        "Oregano"
+      ],
+      "recommended_blend_names": [
+        "Локально",
+        "Thieves",
+        "Exodus II"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "tea-tree",
+        "thyme",
+        "myrrh",
+        "lavender",
+        "",
+        "",
+        "oregano"
+      ],
+      "recommended_blend_slugs": [
+        "",
+        "blend-thieves",
+        "blend-exodus-ii"
+      ]
+    }
+  },
+  {
+    "slug": "symptom-кандидозныи-стоматит",
+    "name": "КАНДИДОЗНЫЙ СТОМАТИТ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "СКРЕЖЕТАНИЕ ЗУБАМИ",
+      "recommended_oil_names": [
+        "Clove",
+        "Cinnamon",
+        "Peppermint",
+        "Rosemary",
+        "Mastrante",
+        "Geranium",
+        "Rosewood"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "clove",
+        "cinnamon",
+        "peppermint",
+        "rosemary",
+        "",
+        "geranium",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-зависимости",
+    "name": "ЗАВИСИМОСТИ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ПОСЛЕРОДОВАЯ ДЕПРЕССИЯ",
+      "recommended_oil_names": [
+        "Orange",
+        "Ledum",
+        "Fennel",
+        "Tarragon"
+      ],
+      "recommended_blend_names": [
+        "GLF",
+        "Thieves",
+        "Harmony",
+        "РЕКОМЕНДАЦИИ",
+        "Peace & Calming",
+        "JuvaCleanse",
+        "JuvaFlex"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "orange",
+        "ledum",
+        "fennel",
+        ""
+      ],
+      "recommended_blend_slugs": [
+        "blend-glf",
+        "blend-thieves",
+        "blend-harmony",
+        "",
+        "",
+        "",
+        "blend-juvaflex"
+      ]
+    }
+  },
+  {
+    "slug": "symptom-ладана-frankincense",
+    "name": "Ладана (Frankincense).",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "НАСИЛИЕ, ПСИХИЧЕСКОЕ И ФИЗИЧЕСКОЕ",
+      "recommended_oil_names": [
+        "Sacred Frankincense",
+        "(Священный ладан)",
+        "Frankincense",
+        "Balsam Fir Idaho",
+        "Sandalwood",
+        "Melissa",
+        "Ylang Ylang",
+        "Amazonian Ylang Ylang",
+        "(Амазонский иланг-иланг)"
+      ],
+      "recommended_blend_names": [
+        "Trauma Life",
+        "L SARA",
+        "Release",
+        "Acceptance",
+        "Forgiveness",
+        "Surrender",
+        "Humility",
+        "White Angelica",
+        "Inner Child",
+        "Harmony",
+        "Hope",
+        "Tranquil Roll-On",
+        "Valor",
+        "Valor Roll-On",
+        "Peace & Calming",
+        "The Gift",
+        "Oola Grow",
+        "Common Sense"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "",
+        "",
+        "frankincense",
+        "balsam-fir",
+        "sandalwood",
+        "melissa",
+        "ylang-ylang",
+        "",
+        ""
+      ],
+      "recommended_blend_slugs": [
+        "blend-trauma-life",
+        "",
+        "blend-release",
+        "blend-acceptance",
+        "blend-forgiveness",
+        "blend-surrender",
+        "blend-humility",
+        "blend-white-angelica",
+        "blend-inner-child",
+        "blend-harmony",
+        "blend-hope",
+        "blend-tranquil-roll-on",
+        "blend-valor",
+        "blend-valor-roll-on",
+        "",
+        "blend-the-gift",
+        "",
+        "blend-common-sense"
+      ]
+    }
+  },
+  {
+    "slug": "symptom-анорексия",
+    "name": "АНОРЕКСИЯ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ПИЩЕВЫЕ РАССТРОЙСТВА",
+      "recommended_oil_names": [
+        "Lemon",
+        "Tangerine",
+        "Ginger",
+        "_Mandarin"
+      ],
+      "recommended_blend_names": [
+        "Valor",
+        "РЕКОМЕНДАЦИИ",
+        "Valor Roll-On",
+        "Motivation",
+        "Brain Power",
+        "Stress Away Roll-On"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "lemon",
+        "tangerine",
+        "ginger",
+        ""
+      ],
+      "recommended_blend_slugs": [
+        "blend-valor",
+        "",
+        "blend-valor-roll-on",
+        "blend-motivation",
+        "blend-brain-power",
+        "blend-stress-away-roll-on"
+      ]
+    }
+  },
+  {
+    "slug": "symptom-булимия",
+    "name": "БУЛИМИЯ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ПИЩЕВЫЕ РАССТРОЙСТВА",
+      "recommended_oil_names": [
+        "Balsam Fir Idaho",
+        "Fennel",
+        "Nutmeg"
+      ],
+      "recommended_blend_names": [
+        "РЕКОМЕНДАЦИИ",
+        "Slique Essence",
+        "Common Sense",
+        "DiGize",
+        "Forgiveness"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "balsam-fir",
+        "fennel",
+        "nutmeg"
+      ],
+      "recommended_blend_slugs": [
+        "",
+        "blend-slique-essence",
+        "blend-common-sense",
+        "",
+        "blend-forgiveness"
+      ]
+    }
+  },
+  {
+    "slug": "symptom-насекомыеживотные",
+    "name": "НАСЕКОМЫЕ/ЖИВОТНЫЕ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ЧУВСТВА МЕСТИ",
+      "recommended_oil_names": [
+        "Lavender",
+        "Citronella",
+        "Eucalyptus Globulus",
+        "Tea Tree Melaleuca Alternifolia",
+        "(Чайное дерево Мелалеука чайная)",
+        "Peppermint (Перечная",
+        "мята)",
+        "Rosemary"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "lavender",
+        "citronella",
+        "eucalyptus-globulus",
+        "",
+        "",
+        "",
+        "",
+        "rosemary"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-укусы-змеиные",
+    "name": "УКУСЫ ЗМЕИНЫЕ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "ЧУВСТВА МЕСТИ",
+      "recommended_oil_names": [
+        "Clove",
+        "Eucalyptus Blue",
+        "Balsam Fir Idaho",
+        "Copaiba",
+        "Lemon"
+      ],
+      "recommended_blend_names": [
+        "Purification",
+        "Melrose",
+        "Thieves Спреи:",
+        "Thieves Spray"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "clove",
+        "",
+        "balsam-fir",
+        "copaiba",
+        "lemon"
+      ],
+      "recommended_blend_slugs": [
+        "blend-purification",
+        "blend-melrose",
+        "",
+        ""
+      ]
+    }
+  },
+  {
+    "slug": "symptom-болезнь-лаима-пятнистая-лихорадка-скалистых-гор",
+    "name": "БОЛЕЗНЬ ЛАЙМА / ПЯТНИСТАЯ ЛИХОРАДКА СКАЛИСТЫХ ГОР",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "УКУСЫ КЛЕЩЕЙ",
+      "recommended_oil_names": [
+        "Melissa",
+        "Oregano",
+        "Plectranthus Oregano",
+        "(Шпороцветник ароматный)",
+        "Myrrh",
+        "Eucalyptus Blue (Голубой"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "melissa",
+        "oregano",
+        "",
+        "",
+        "myrrh",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-чешутся",
+    "name": "Чешутся",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "УКУСЫ КЛОПОВ ПОСТЕЛЬНЫХ",
+      "recommended_oil_names": [
+        "Idaho Tansy",
+        "Palo Santo",
+        "Eucalyptus Blue",
+        "РЕКОМЕНДАЦИИ",
+        "Purification",
+        "Thieves",
+        "Эти смеси подходят для большинства клопов",
+        "Смесь для уничтожения постельных клопов № 1",
+        "поэкспериментировать",
+        "чтобы определить это. Спрысните простыни и одежду",
+        "чтобы убить насекомых",
+        "которые могут",
+        "находиться в тканях или любые другие места",
+        "где вы подозреваете их присутствие",
+        "Смесь от укусов насекомых № 2"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "",
+        "palo-santo",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-укусы-комаров",
+    "name": "УКУСЫ КОМАРОВ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "УКУСЫ КЛОПОВ ПОСТЕЛЬНЫХ",
+      "recommended_oil_names": [
+        "Peppermint",
+        "Tea Tree Melaleuca Alternifolia",
+        "(Чайное дерево Мелалеука чайная)",
+        "Lavender",
+        "Rosemary",
+        "Myrrh"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "peppermint",
+        "",
+        "",
+        "lavender",
+        "rosemary",
+        "myrrh"
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-укус-коричневого-паука-отшельника",
+    "name": "УКУС КОРИЧНЕВОГО ПАУКА-ОТШЕЛЬНИКА",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "УКУС ПАУКА «ЧЁРНАЯ ВДОВА»",
+      "recommended_oil_names": [
+        "Myrrh",
+        "Sacred Frankincense",
+        "(Священный ладан)",
+        "Frankincense",
+        "Rosemary",
+        "Ocotea",
+        "Idaho Tansy"
+      ],
+      "recommended_blend_names": [
+        "к Purification",
+        "к Thieves",
+        "PanAway"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "myrrh",
+        "",
+        "",
+        "frankincense",
+        "rosemary",
+        "",
+        ""
+      ],
+      "recommended_blend_slugs": [
+        "",
+        "",
+        "blend-panaway"
+      ]
+    }
+  },
+  {
+    "slug": "symptom-укусы-пчел",
+    "name": "УКУСЫ ПЧЕЛ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "УКУС ПАУКА «ЧЁРНАЯ ВДОВА»",
+      "recommended_oil_names": [
+        "Lavender",
+        "чк Idaho Tansy",
+        "чк Peppermint",
+        "чк Palo Santo",
+        "чк",
+        "Spikenard"
+      ],
+      "recommended_blend_names": [],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "lavender",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "recommended_blend_slugs": []
+    }
+  },
+  {
+    "slug": "symptom-средства-для-отпугивания-насекомых",
+    "name": "СРЕДСТВА ДЛЯ ОТПУГИВАНИЯ НАСЕКОМЫХ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "УКУС СКОРПИОНА",
+      "recommended_oil_names": [
+        "Idaho Tansy",
+        "Palo Santo",
+        "Tea Tree",
+        "Geranium",
+        "Lemon",
+        "k-",
+        "Rosemary",
+        "z 6 капель Перечной мяты",
+        "Lemongrass",
+        "Смесь для отпугивания насекомых № 1",
+        "Смесь для отпугивания насекомых № 2",
+        "Спрей Ed & Steven Geiger",
+        "процеженного и охлажденного",
+        "Рецепты для отпугивания насекомых",
+        "от блох и клещей",
+        "Погрузите котовник в 3",
+        "Средства от насекомых",
+        "Средство от комаров: Пало Санто",
+        "Лимон",
+        "Пижма Айдахо",
+        "Цитронелла",
+        "Средство от моли: Пачули",
+        "Пало Санто",
+        "Средство от слепней: Пижма Айдахо",
+        "литрах соленой воды",
+        "хорошо встряхните и распылите на растения"
+      ],
+      "recommended_blend_names": [
+        "Purification",
+        "Melrose",
+        "Thieves",
+        "DiGize",
+        "Peppermint"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "",
+        "palo-santo",
+        "tea-tree",
+        "geranium",
+        "lemon",
+        "",
+        "rosemary",
+        "",
+        "lemongrass",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "lemon",
+        "",
+        "citronella",
+        "",
+        "palo-santo",
+        "",
+        "",
+        ""
+      ],
+      "recommended_blend_slugs": [
+        "blend-purification",
+        "blend-melrose",
+        "blend-thieves",
+        "",
+        ""
+      ]
+    }
+  }
+]

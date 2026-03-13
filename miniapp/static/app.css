@@ -2661,3 +2661,34 @@ body.is-mobile-layout[data-mode="handbook"] .tabs {
   cursor: pointer;
   opacity: 0.85;
 }
+
+/* ── Cross-reference chips ──────────────────────────────────────────────── */
+.crossref-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 4px 0;
+}
+.crossref-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--text);
+  transition: background var(--duration-fast) var(--ease-standard);
+  font-family: var(--font-ui);
+  line-height: 1.4;
+}
+.crossref-chip:hover,
+.crossref-chip:active {
+  background: rgba(86, 129, 173, 0.18);
+  border-color: rgba(86, 129, 173, 0.4);
+}
+.crossref-chip--plain {
+  cursor: default;
+  opacity: 0.7;
+}
