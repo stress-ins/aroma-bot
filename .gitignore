@@ -15,3 +15,7 @@ data/*.db
 data/*.json
 !data/reference_cards_*.json
 !data/aroma_cards_seed.json
+!data/pdf_oils_patch.json
+!data/pdf_oils_new.json
+!data/pdf_blends.json
+!data/pdf_symptoms.json

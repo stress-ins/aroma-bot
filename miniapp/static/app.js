@@ -56,6 +56,8 @@ const MODE_TABS = {
   ],
   handbook: [
     { id: "aromas", label: "Ароматы" },
+    { id: "blends", label: "Смеси" },
+    { id: "symptoms", label: "Симптомы" },
     { id: "concepts", label: "Теория" },
     { id: "practices", label: "Практики" },
     { id: "sounds", label: "Звуки" },
@@ -166,11 +168,35 @@ const HANDBOOK_CATEGORY_META = {
     locked: "Доступ к справочнику звуков ограничен.",
     count: (items) => `${items.length} карточек`,
   },
+  blends: {
+    category: "blend",
+    title: "Смеси",
+    label: "смесь",
+    searchLabel: "Поиск смеси",
+    searchPlaceholder: "Harmony, Joy, Grounding...",
+    empty: "Смеси не найдены.",
+    selectPrompt: "Выберите смесь из списка.",
+    locked: "Доступ к разделу Смеси закрыт.",
+    count: (items) => `${items.length} смесей`,
+  },
+  symptoms: {
+    category: "symptom",
+    title: "Симптомы",
+    label: "симптом",
+    searchLabel: "Поиск симптома",
+    searchPlaceholder: "бессонница, мигрень, стресс...",
+    empty: "Симптомы не найдены.",
+    selectPrompt: "Введите симптом для поиска.",
+    locked: "Доступ к разделу Симптомы закрыт.",
+    count: (items) => `${items.length} симптомов`,
+  },
 };
 
 function handbookCategoryIcon(tabId) {
   const glyphMap = {
     aromas: "🌿",
+    blends: "🌀",
+    symptoms: "🫀",
     concepts: "🧭",
     practices: "🫁",
     sounds: "🔔",
@@ -195,6 +221,8 @@ function aromaCardIcon(item, tabId) {
     if (name.includes("иланг") || name.includes("ylang")) return "🌸";
     return "🌿";
   }
+  if (tabId === "blends") return "🌀";
+  if (tabId === "symptoms") return "🫀";
   if (tabId === "practices") {
     const type = (item.source_type || "").toLowerCase();
     if (type.includes("active") || type.includes("актив")) return "⚡";
@@ -208,6 +236,8 @@ function aromaCardIcon(item, tabId) {
 function handbookCardBadge(tabId, item = {}) {
   const sourceType = String(item.source_type || "").trim();
   if (tabId === "aromas" && sourceType) return sourceType;
+  if (tabId === "blends") return "Смесь";
+  if (tabId === "symptoms") return item.category_group ? String(item.category_group).split(" ")[0] : "Симптом";
   if (tabId === "concepts") {
     return conceptTypeMeta(sourceType).label;
   }

@@ -15,7 +15,7 @@ from db.session import AsyncSessionLocal
 BASE_DIR = Path(__file__).resolve().parents[2]
 SEED_FILE = BASE_DIR / "data" / "reference_cards_seed.json"
 EXTRA_SEED_FILE = BASE_DIR / "data" / "reference_cards_extra.json"
-REFERENCE_CATEGORIES = {"aroma", "practice", "sound", "concept"}
+REFERENCE_CATEGORIES = {"aroma", "practice", "sound", "concept", "blend", "symptom"}
 REFERENCE_IMAGES_DIR = BASE_DIR / "assets" / "reference_images"
 INTERNAL_SEED_KEY = "__seed_payload"
 INTERNAL_OVERRIDES_KEY = "__manual_overrides"
@@ -398,15 +398,20 @@ async def list_reference_cards(category: str) -> list[dict[str, str]]:
         result = await session.execute(select(AromaCardModel).where(AromaCardModel.category == category))
         models = result.scalars().all()
     models = sorted(models, key=lambda item: _normalize(item.name))
-    return [
-        {
+    items = []
+    for model in models:
+        payload = _public_payload(model.payload or {})
+        items.append({
             "slug": model.slug,
             "name": model.name,
-            "description": str((model.payload or {}).get("description", "")),
+            "description": str(payload.get("description", "")),
             "category": model.category,
-        }
-        for model in models
-    ]
+            "source_type": model.source_type,
+            # Extra fields used by frontend search / grouping
+            "conditions_for_use": str(payload.get("conditions_for_use", "")),
+            "category_group": str(payload.get("category_group", "")),
+        })
+    return items
 
 
 async def build_reference_context(
