@@ -331,8 +331,8 @@ def test_mobile_tabs_and_drafts_render_in_russian(page):
     assert "🫁Практики" in tabs_handbook
     assert "🔔Звуки" in tabs_handbook
 
-    page.get_by_role("button", name="Контент").click()
-    page.get_by_role("button", name="Черновики").click()
+    page.locator("#modeContent").click()
+    page.locator("#btnTabDrafts").click()
     page.wait_for_timeout(300)
     page.evaluate("window.goBackToList()")
 
@@ -342,7 +342,7 @@ def test_mobile_tabs_and_drafts_render_in_russian(page):
 
 
 def test_reels_tab_opens_storyboard_without_empty_state(page):
-    page.get_by_role("button", name="Рилсы").click()
+    page.locator("#btnTabReels").click()
     page.wait_for_load_state("networkidle")
 
     assert page.locator(".reels-card").count() == 1
@@ -360,7 +360,7 @@ def test_reels_tab_opens_storyboard_without_empty_state(page):
 
 
 def test_reels_detail_shows_production_overview_and_frame_status(page):
-    page.get_by_role("button", name="Рилсы").click()
+    page.locator("#btnTabReels").click()
     page.wait_for_load_state("networkidle")
     page.locator(".reels-card").first.click()
     page.wait_for_timeout(300)
@@ -407,7 +407,7 @@ def test_reels_detail_falls_back_to_payload_storyboard(page):
         route.fulfill(status=200, content_type="application/json", body=json.dumps(payload, ensure_ascii=False))
 
     page.route("**/api/reels/reels001", _fulfill_reel)
-    page.get_by_role("button", name="Рилсы").click()
+    page.locator("#btnTabReels").click()
     page.wait_for_load_state("networkidle")
     page.locator(".reels-card").first.click()
     page.wait_for_timeout(250)
@@ -417,16 +417,16 @@ def test_reels_detail_falls_back_to_payload_storyboard(page):
 
 
 def test_overview_lists_use_consistent_card_meta(page):
-    page.get_by_role("button", name="Черновики").click()
+    page.locator("#btnTabDrafts").click()
     page.wait_for_timeout(250)
     assert page.locator(".draft-card .overview-card-date").first.inner_text().strip()
 
-    page.get_by_role("button", name="Планы").click()
+    page.locator("#btnTabPlans").click()
     page.wait_for_timeout(250)
     assert page.locator(".plan-card .draft-kind").first.is_visible()
     assert page.locator(".plan-card .overview-card-date").first.is_visible()
 
-    page.get_by_role("button", name="Рилсы").click()
+    page.locator("#btnTabReels").click()
     page.wait_for_timeout(250)
     assert page.locator(".reels-card .draft-meta .tag").count() >= 2
 
@@ -456,7 +456,7 @@ def test_create_tab_uses_guided_empty_state_before_tool_selection(desktop_page):
 
 
 def test_draft_search_empty_state_offers_guidance(page):
-    page.get_by_role("button", name="Черновики").click()
+    page.locator("#btnTabDrafts").click()
     page.wait_for_timeout(250)
     page.locator("#queryFilter").fill("совсем-нет-такой-темы")
     page.wait_for_timeout(450)
@@ -477,7 +477,7 @@ def test_settings_and_keywords_use_guided_detail_copy(desktop_page):
 
 def test_mobile_layout_has_no_overlapping_controls(page):
     for tab_name in ["Черновики", "Рилсы", "Создать"]:
-        page.get_by_role("button", name=tab_name).click()
+        {"Черновики": page.locator("#btnTabDrafts"), "Рилсы": page.locator("#btnTabReels"), "Создать": page.locator("#btnTabCreate")}[tab_name].click()
         page.wait_for_timeout(300)
 
         overlaps = page.evaluate(
@@ -586,7 +586,7 @@ def test_mobile_handbook_tab_remembers_last_section(page):
 
 
 def test_mobile_swipe_back_from_left_edge_works_over_interactive_controls(page):
-    page.get_by_role("button", name="Черновики").click()
+    page.locator("#btnTabDrafts").click()
     page.wait_for_timeout(250)
     page.get_by_text("Сенсорная карусель для вечернего ритуала").first.click()
     page.wait_for_timeout(300)
@@ -640,7 +640,7 @@ def test_dark_theme_class_styles_bottom_tab_bar(page):
 
 
 def test_dark_theme_keeps_reels_storyboard_text_readable(page):
-    page.get_by_role("button", name="Рилсы").click()
+    page.locator("#btnTabReels").click()
     page.wait_for_load_state("networkidle")
     page.locator(".reels-card").first.click()
     page.wait_for_timeout(250)
@@ -674,7 +674,7 @@ def test_dark_theme_keeps_reels_storyboard_text_readable(page):
 
 
 def test_reels_and_plans_render_markdown_in_detail_views(page):
-    page.get_by_role("button", name="Рилсы").click()
+    page.locator("#btnTabReels").click()
     page.wait_for_load_state("networkidle")
     page.locator(".reels-card").first.click()
     page.wait_for_timeout(250)
@@ -687,7 +687,7 @@ def test_reels_and_plans_render_markdown_in_detail_views(page):
     assert "**Текст на экране:**" not in frame_markup["text"]
     assert "## Сцена" not in frame_markup["text"]
 
-    page.get_by_role("button", name="Планы").click()
+    page.locator("#btnTabPlans").click()
     page.wait_for_timeout(250)
     page.locator(".plan-card").first.click()
     page.wait_for_timeout(250)
@@ -735,7 +735,7 @@ def test_desktop_layout_keeps_split_panels_and_comfortable_controls(desktop_page
 
 
 def test_mobile_detail_actions_do_not_overlap(page):
-    page.get_by_role("button", name="Черновики").click()
+    page.locator("#btnTabDrafts").click()
     page.wait_for_timeout(300)
     page.evaluate("window.goBackToList()")
     page.locator(".draft-card").first.wait_for(state="visible")
@@ -777,7 +777,7 @@ def test_mobile_detail_actions_do_not_overlap(page):
 
 
 def test_carousel_detail_shows_prompt_copy_buttons(page):
-    page.get_by_role("button", name="Черновики").click()
+    page.locator("#btnTabDrafts").click()
     page.wait_for_timeout(300)
     page.evaluate("window.goBackToList()")
     page.get_by_text("Сенсорная карусель для вечернего ритуала").first.wait_for(state="visible")
@@ -793,7 +793,7 @@ def test_carousel_detail_shows_prompt_copy_buttons(page):
 
 
 def test_mobile_carousel_actions_use_two_columns(page):
-    page.get_by_role("button", name="Черновики").click()
+    page.locator("#btnTabDrafts").click()
     page.wait_for_timeout(300)
     page.get_by_text("Сенсорная карусель для вечернего ритуала").first.click()
     page.wait_for_timeout(300)
@@ -841,7 +841,7 @@ def test_reels_storyboard_regenerate_enters_pending_images_state(page):
     page.wait_for_timeout(250)
     page.locator(".reels-card").first.click()
     page.wait_for_timeout(250)
-    page.get_by_role("button", name="Пересобрать структуру рилса").click()
+    page.get_by_role("button", name="Пересобрать раскадровку").click()
     page.wait_for_timeout(450)
 
     assert page.get_by_text("Генерирую кадры для рилса.").count() >= 1
@@ -849,7 +849,7 @@ def test_reels_storyboard_regenerate_enters_pending_images_state(page):
 
 
 def test_create_tool_selection_isolates_form(page):
-    page.get_by_role("button", name="Создать").click()
+    page.locator("#btnTabCreate").click()
     page.wait_for_timeout(300)
 
     page.get_by_role("heading", name="Карусель").click()
@@ -925,7 +925,7 @@ def test_create_carousel_routes_into_draft_detail(page):
         route.continue_()
 
     page.route("**/*", handle_route)
-    page.get_by_role("button", name="Создать").click()
+    page.locator("#btnTabCreate").click()
     page.wait_for_timeout(200)
     page.get_by_role("heading", name="Карусель").click()
     page.locator("textarea[name='topic']").fill("Тестовая карусель")
@@ -934,7 +934,7 @@ def test_create_carousel_routes_into_draft_detail(page):
 
     assert page.locator(".detail-title").inner_text().strip() == "Тестовая карусель"
     assert page.locator(".slide").count() == 2
-    assert page.get_by_role("button", name="Черновики").get_attribute("class")
+    assert page.locator("#btnTabDrafts").get_attribute("class")
 
 
 def test_plan_detail_allows_creating_and_opening_linked_draft(page):
@@ -1034,7 +1034,7 @@ def test_plan_detail_allows_creating_and_opening_linked_draft(page):
         route.continue_()
 
     page.route("**/*", handle_route)
-    page.get_by_role("button", name="Планы").click()
+    page.locator("#btnTabPlans").click()
     page.wait_for_timeout(300)
 
     page.locator(".plan-card").first.click()
@@ -1049,7 +1049,7 @@ def test_plan_detail_allows_creating_and_opening_linked_draft(page):
     page.wait_for_timeout(500)
 
     assert page.locator(".detail-title").inner_text().strip() == "Почему вечерний ритуал помогает нервной системе"
-    assert page.get_by_role("button", name="Черновики").get_attribute("class")
+    assert page.locator("#btnTabDrafts").get_attribute("class")
 
 
 def test_content_review_detail_supports_save_polish_and_feedback(page):
@@ -1093,7 +1093,7 @@ def test_content_review_detail_supports_save_polish_and_feedback(page):
         route.continue_()
 
     page.route("**/*", handle_route)
-    page.get_by_role("button", name="Черновики").click()
+    page.locator("#btnTabDrafts").click()
     page.wait_for_timeout(300)
     page.get_by_text("Как мягко выйти из рабочего напряжения").first.click()
     page.wait_for_timeout(300)
@@ -1116,7 +1116,7 @@ def test_content_review_detail_supports_save_polish_and_feedback(page):
 
 
 def test_content_review_detail_highlights_editor_focus_and_summary(page):
-    page.get_by_role("button", name="Черновики").click()
+    page.locator("#btnTabDrafts").click()
     page.wait_for_timeout(300)
     page.get_by_text("Как мягко выйти из рабочего напряжения").first.click()
     page.wait_for_timeout(300)
@@ -1147,7 +1147,7 @@ def test_content_review_detail_highlights_editor_focus_and_summary(page):
 
 
 def test_create_and_detail_forms_show_helper_microcopy(page):
-    page.get_by_role("button", name="Создать").click()
+    page.locator("#btnTabCreate").click()
     page.wait_for_timeout(250)
     page.get_by_text("Пост для соцсетей").click()
     page.wait_for_timeout(250)
@@ -1155,13 +1155,13 @@ def test_create_and_detail_forms_show_helper_microcopy(page):
     assert page.get_by_text("Сформулируйте тему как готовую мысль").is_visible()
     assert page.get_by_role("button", name="Собрать черновик").is_visible()
 
-    page.get_by_role("button", name="Черновики").click()
+    page.locator("#btnTabDrafts").click()
     page.wait_for_timeout(300)
     page.get_by_text("Как мягко выйти из рабочего напряжения").first.click()
     page.wait_for_timeout(300)
 
     assert page.get_by_text("Сохраняйте версию после смыслового прохода").is_visible()
-    assert page.get_by_role("button", name="Отметить как согласовано").is_visible()
+    assert page.get_by_role("button", name="Согласовать").is_visible()
 
 
 def test_keywords_detail_supports_add_and_remove(page):
@@ -1213,7 +1213,7 @@ def test_keywords_detail_supports_add_and_remove(page):
         route.continue_()
 
     page.route("**/*", handle_route)
-    page.get_by_role("button", name="Ключи").click()
+    page.evaluate("window.openSettingsSection('keywords')")
     page.wait_for_timeout(300)
     page.locator(".keyword-topic").first.click()
     page.wait_for_timeout(300)
@@ -1241,7 +1241,7 @@ def test_keywords_detail_supports_add_and_remove(page):
 
 
 def test_tap_outside_textarea_dismisses_keyboard_focus(page):
-    page.get_by_role("button", name="Создать").click()
+    page.locator("#btnTabCreate").click()
     page.wait_for_timeout(200)
     page.get_by_role("heading", name="Пост для соцсетей").click()
     page.wait_for_timeout(300)
@@ -1256,7 +1256,7 @@ def test_tap_outside_textarea_dismisses_keyboard_focus(page):
 
 
 def test_focusing_lower_review_field_keeps_it_in_view(page):
-    page.get_by_role("button", name="Черновики").click()
+    page.locator("#btnTabDrafts").click()
     page.wait_for_timeout(300)
     page.get_by_text("Как мягко выйти из рабочего напряжения").first.click()
     page.wait_for_timeout(300)
@@ -1287,14 +1287,14 @@ def test_focusing_lower_review_field_keeps_it_in_view(page):
 
 
 def test_visual_mobile_drafts_list_baseline(page):
-    page.get_by_role("button", name="Черновики").click()
+    page.locator("#btnTabDrafts").click()
     page.wait_for_timeout(300)
     _prepare_visual_state(page)
     _assert_visual_snapshot(page.locator(".shell"), "mobile-drafts-list.png")
 
 
 def test_visual_mobile_draft_detail_baseline(page):
-    page.get_by_role("button", name="Черновики").click()
+    page.locator("#btnTabDrafts").click()
     page.wait_for_timeout(300)
     page.get_by_text("Как мягко выйти из рабочего напряжения").first.click()
     page.wait_for_timeout(300)
@@ -1303,7 +1303,7 @@ def test_visual_mobile_draft_detail_baseline(page):
 
 
 def test_visual_mobile_plan_detail_baseline(page):
-    page.get_by_role("button", name="Планы").click()
+    page.locator("#btnTabPlans").click()
     page.wait_for_timeout(300)
     page.locator(".plan-card").first.click()
     page.wait_for_timeout(300)
@@ -1312,7 +1312,7 @@ def test_visual_mobile_plan_detail_baseline(page):
 
 
 def test_visual_mobile_reels_detail_baseline(page):
-    page.get_by_role("button", name="Рилсы").click()
+    page.locator("#btnTabReels").click()
     page.wait_for_timeout(300)
     page.locator(".reels-card").first.click()
     page.wait_for_timeout(300)
@@ -1365,7 +1365,7 @@ def test_dark_theme_class_applies_without_js_errors(page):
 def test_dark_theme_storyboard_and_section_accent_use_dark_backgrounds(page):
     """After CSS fix: .storyboard-frame and .section-accent must render with
     dark surface colors (not hardcoded near-white) when tg-theme-dark is active."""
-    page.get_by_role("button", name="Рилсы").click()
+    page.locator("#btnTabReels").click()
     page.wait_for_load_state("networkidle")
     page.locator(".reels-card").first.click()
     page.wait_for_timeout(250)
