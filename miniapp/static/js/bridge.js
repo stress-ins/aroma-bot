@@ -40,10 +40,15 @@ export function registerWindowBridge(deps) {
     addKeywordItem,
     removeKeywordItem,
     goBackToList,
+    renderReferences,
   } = deps;
 
   window.retryCurrentTab = retryCurrentTab;
   window.goBackToList = goBackToList;
+  window.setReferenceFilter = (value) => {
+    state.referenceFilter = String(value || "");
+    renderReferences();
+  };
 
   window.openDraft = openDraft;
   window.openAroma = openAroma;

@@ -28,6 +28,8 @@ export function createReelsModule(deps) {
     callbacks,
   } = deps;
 
+  const regenInProgressKeys = new Set();
+
   function bufferedReelsNote(draftId, index, fallback = "") {
     const key = frameDraftKey(draftId, index);
     return Object.prototype.hasOwnProperty.call(state.pendingReelsNotes, key)
@@ -42,7 +44,10 @@ export function createReelsModule(deps) {
       : String(fallback || "");
   }
 
-  function reelsFrameStatusMarkup(frame = {}) {
+  function reelsFrameStatusMarkup(frame = {}, isRegenerating = false) {
+    if (isRegenerating) {
+      return `<div class="slide-status is-pending">${uiIcon("sparkle")}<span>Обновляю кадр…</span></div>`;
+    }
     if (frame.current_asset?.url) {
       return `<div class="slide-status is-ready">${uiIcon("approve")}<span>Кадр готов</span></div>`;
     }
@@ -283,20 +288,31 @@ export function createReelsModule(deps) {
   }
 
   async function regenerateReelsFrame(draftId, frameIndex, button) {
-    await withButtonFeedback(button, "Запускаю...", async () => {
-      const prompt = String(document.getElementById(`reelsFramePrompt${frameIndex}`)?.value || bufferedReelsPrompt(draftId, frameIndex, "")).trim();
-      const note = String(document.getElementById(`reelsFrameNote${frameIndex}`)?.value || bufferedReelsNote(draftId, frameIndex, "")).trim();
-      if (prompt) await persistReelsFramePrompt(draftId, frameIndex, prompt);
-      if (note) await persistReelsFrameNote(draftId, frameIndex, note);
-      const draft = await fetchJson(`/api/reels/${draftId}/frames/${frameIndex}/regenerate`, {
-        method: "POST",
-        body: "{}",
-      });
-      mergeReelsIntoState(draft);
-      callbacks.renderReels?.();
-      callbacks.renderReelsDetail?.(draft);
-      scheduleReelsRefresh(draft.draft_id);
-    }, "Запущено");
+    const key = frameDraftKey(draftId, frameIndex);
+    regenInProgressKeys.add(key);
+    if (state.selectedReels?.draft_id === draftId) callbacks.renderReelsDetail?.(state.selectedReels);
+    try {
+      await withButtonFeedback(button, "Запускаю...", async () => {
+        const prompt = String(document.getElementById(`reelsFramePrompt${frameIndex}`)?.value || bufferedReelsPrompt(draftId, frameIndex, "")).trim();
+        const note = String(document.getElementById(`reelsFrameNote${frameIndex}`)?.value || bufferedReelsNote(draftId, frameIndex, "")).trim();
+        if (prompt) await persistReelsFramePrompt(draftId, frameIndex, prompt);
+        if (note) await persistReelsFrameNote(draftId, frameIndex, note);
+        const draft = await fetchJson(`/api/reels/${draftId}/frames/${frameIndex}/regenerate`, {
+          method: "POST",
+          body: "{}",
+          timeout: 90000,
+        });
+        mergeReelsIntoState(draft);
+        callbacks.renderReels?.();
+        callbacks.renderReelsDetail?.(draft);
+        scheduleReelsRefresh(draft.draft_id);
+      }, "Запущено");
+    } catch (error) {
+      showRequestError("Не удалось обновить кадр", error);
+    } finally {
+      regenInProgressKeys.delete(key);
+      if (state.selectedReels?.draft_id === draftId) callbacks.renderReelsDetail?.(state.selectedReels);
+    }
   }
 
   function renderReelsFrames(draftId, frames = []) {
@@ -315,10 +331,11 @@ export function createReelsModule(deps) {
             const prompt = bufferedReelsPrompt(draftId, index, frame.gemini_prompt || "");
             const note = bufferedReelsNote(draftId, index, frame.review_note || "");
             const assetUrl = frame.current_asset?.url || "";
+            const isRegenerating = regenInProgressKeys.has(frameDraftKey(draftId, index));
             return `
               <article class="storyboard-frame">
                 <strong>Кадр ${index + 1}${frame.timecode ? ` • ${escapeHtml(frame.timecode)}` : ""}</strong>
-                ${reelsFrameStatusMarkup(frame)}
+                ${reelsFrameStatusMarkup(frame, isRegenerating)}
                 ${renderReelsFrameNarrative(frame)}
                 ${assetUrl
                   ? `<img class="frame-image" src="${escapeHtml(assetUrl)}" alt="Кадр ${index + 1}" />`
@@ -419,6 +436,7 @@ export function createReelsModule(deps) {
         </section>
         ${renderReelsProductionOverview(r)}
         ${generationStateMarkup(r, "reels")}
+        ${r.generation_pending ? `<div class="actions-row" style="padding: 0 var(--space-4)"><button class="secondary-button compact" type="button" onclick="retryCurrentTab()">Обновить вручную</button></div>` : ""}
         ${hasFrames ? renderReelsFrames(r.draft_id, frames) : `
           <section class="section section-accent">
             <div class="section-heading">
