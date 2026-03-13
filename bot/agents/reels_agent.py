@@ -125,6 +125,8 @@ _DIRECTOR_PROMPT = """\
 Промпты пиши на английском. Включай: конкретные предметы сцены, цветовую палитру бренда (terracotta/beige/sage), освещение (soft natural light), настроение. Стиль: atmospheric, cinematic still, no people.
 """
 
+_REFERENCE_CONTEXT_MAX_CHARS = 1800
+
 
 @dataclass
 class StoryboardFrame:
@@ -179,22 +181,25 @@ def generate_reels_topics_sync(trends_text: str) -> list[str]:
     return topics[:7]
 
 
+def _render_reference_context_block(reference_context: str) -> str:
+    text = str(reference_context or "").strip()
+    if not text:
+        return ""
+    bounded = text[:_REFERENCE_CONTEXT_MAX_CHARS].rstrip()
+    return (
+        "\nДанные из нашего справочника (используй для точности описаний и формулировок):\n"
+        + bounded
+        + "\n"
+    )
+
+
 def generate_reels_scenario_sync(topic: str, reference_context: str = "") -> str:
     import anthropic
-
-    if reference_context:
-        reference_context_block = (
-            "\nДанные из нашего справочника (используй для точности описаний и формулировок):\n"
-            + reference_context
-            + "\n"
-        )
-    else:
-        reference_context_block = ""
 
     client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
     prompt = _SCENARIO_PROMPT.format(
         brand_context=_BRAND_CONTEXT,
-        reference_context_block=reference_context_block,
+        reference_context_block=_render_reference_context_block(reference_context),
         topic=topic,
     )
     resp = client.messages.create(

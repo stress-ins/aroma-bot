@@ -359,6 +359,7 @@ aroma/
 - JSON-файлы в `data/` и `scripts/` не являются runtime-хранилищем для draft/plan flow.
 - JSON в проекте используется только как seed/import-источник для справочника и вспомогательных офлайн-скриптов.
 - Если меняется схема данных, source of truth должен обновляться через модели и Alembic-миграции, а не через новые JSON-paths.
+- Для инженерных границ по storage/PR scope см. [docs/engineering-workflow.md](docs/engineering-workflow.md).
 
 ---
 

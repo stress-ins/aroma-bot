@@ -53,6 +53,8 @@
 - Всегда вызывать store-функции через `await`.
 - JSON-файлы в `data/` и `scripts/` допустимы только как seed/import-артефакты для справочника и одноразовых утилит.
 - Нельзя добавлять новые runtime-paths для `Drafts`/`Plans` через JSON без отдельного архитектурного решения.
+- Coverage/alignment PR и product/behavior PR лучше держать раздельно; если scope изменился, PR должен быть переименован или разделен.
+- `miniapp/static/app.js` должен оставаться orchestration-слоем, а общие helper-куски выносятся в `miniapp/static/js/*`.
 
 **Тесты:**
 - Тесты находятся в `tests/` и запускаются командой: `.venv/bin/pytest`

@@ -310,6 +310,7 @@ export function createShellModule(deps) {
         if (!targetTab) return;
 
         if (targetTab === "aromas") {
+          const rememberedHandbookTab = state.lastHandbookTab || "aromas";
           if (state.mode === "handbook" && state.mobileView === "detail") {
             goBackToList(false);
             return;
@@ -317,7 +318,7 @@ export function createShellModule(deps) {
           if (state.mode !== "handbook") {
             setMode("handbook");
           }
-          setTab("aromas");
+          setTab(rememberedHandbookTab);
           void safeLoadCurrentTab("Не удалось загрузить справочник");
           return;
         }

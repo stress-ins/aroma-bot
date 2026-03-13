@@ -27,10 +27,13 @@ from bot.services.miniapp_content_review import (
     polish_content_review_draft,
     update_content_review_draft,
 )
-from bot.services.miniapp_references import enrich_reference_card, get_reference_card, list_reference_cards, update_reference_card
-from db.models import AromaCardModel
-from db.session import AsyncSessionLocal
-from sqlalchemy import select as sa_select
+from bot.services.miniapp_references import (
+    build_reference_context,
+    enrich_reference_card,
+    get_reference_card,
+    list_reference_cards,
+    update_reference_card,
+)
 from bot.services.miniapp_plan_actions import normalize_plan_format, normalize_plan_goal
 from bot.services.reels_assets import ASSETS_DIR, populate_reels_frame_assets, regenerate_reels_frame_asset
 from bot.services.carousel_assets import (
@@ -341,63 +344,10 @@ async def _complete_carousel_generation(draft_id: str, topic: str) -> None:
         )
 
 
-async def _build_reference_context() -> str:
-    """Return compact reference text for the miniapp handbook to inject into generation prompts."""
-    section_titles = {
-        "aroma": "Ароматы",
-        "concept": "Теория",
-        "practice": "Практики",
-        "sound": "Звуки",
-    }
-    detail_fields = (
-        "psychological_properties",
-        "therapeutic_properties",
-        "description",
-        "course_notes",
-        "history",
-    )
-    try:
-        async with AsyncSessionLocal() as session:
-            result = await session.execute(
-                sa_select(AromaCardModel).where(AromaCardModel.category.in_(tuple(section_titles)))
-            )
-            cards = result.scalars().all()
-        grouped: dict[str, list[str]] = {category: [] for category in section_titles}
-        for card in sorted(cards, key=lambda c: (str(c.category or ""), str(c.name or "").lower())):
-            category = str(card.category or "").strip()
-            if category not in section_titles:
-                continue
-            payload = card.payload or {}
-            key = str(payload.get("key", "") or "").strip()
-            source_type = str(card.source_type or "").strip()
-            detail = ""
-            for field in detail_fields:
-                value = str(payload.get(field, "") or "").strip()
-                if value:
-                    detail = value[:140]
-                    break
-            line = f"- {card.name}"
-            meta_parts = [part for part in [source_type, key] if part]
-            if meta_parts:
-                line += f" ({', '.join(meta_parts)})"
-            if detail:
-                line += f": {detail}"
-            grouped[category].append(line)
-
-        sections = []
-        for category, title in section_titles.items():
-            if not grouped[category]:
-                continue
-            sections.append(f"{title}:\n" + "\n".join(grouped[category]))
-        return "\n\n".join(sections)
-    except Exception:
-        return ""
-
-
 async def _complete_reels_generation(draft_id: str, topic: str) -> None:
     try:
         loop = asyncio.get_running_loop()
-        reference_context = await _build_reference_context()
+        reference_context = await build_reference_context()
         scenario = await loop.run_in_executor(
             None, generate_reels_scenario_sync, topic, reference_context
         )
@@ -980,7 +930,7 @@ async def plan_generate(plan_id: str, payload: PlanGeneratePayload, _: None = De
 
     if target == "reels":
         loop = asyncio.get_running_loop()
-        reference_context = await _build_reference_context()
+        reference_context = await build_reference_context()
         scenario = await loop.run_in_executor(
             None, generate_reels_scenario_sync, topic, reference_context
         )
