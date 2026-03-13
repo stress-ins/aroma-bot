@@ -13,6 +13,7 @@ export function createPlansModule(deps) {
     sourceTone,
     formatPlanDate,
     renderBackButton,
+    renderMarkdown,
     renderGuidedState,
     setEmptyState,
     fetchJson,
@@ -126,7 +127,7 @@ export function createPlansModule(deps) {
         </div>
         <section class="section">
           <h3>${uiIcon("text")}Исходный план</h3>
-          <div class="detail-preview detail-markdown">${escapeHtml(p.raw_text || "План без исходного текста")}</div>
+          <div class="detail-preview detail-markdown">${renderMarkdown(p.raw_text || "План без исходного текста")}</div>
         </section>
         <section class="section">
           <h3>${uiIcon("slides")}Темы и форматы</h3>

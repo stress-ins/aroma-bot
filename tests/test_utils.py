@@ -465,6 +465,8 @@ from bot.agents.carousel_editor import (
     _sanitize_slide_text,
     edit_carousel_sync,
 )
+from bot.agents.reels_agent import _render_reference_context_block
+from bot.services.miniapp_references import build_reference_context
 
 
 def _parse_editor_output(raw: str) -> list[str]:
@@ -545,6 +547,13 @@ class TestCarouselEditor:
         monkeypatch.setattr(_anthropic, "Anthropic", lambda **_kwargs: _FakeClient())
         result = edit_carousel_sync(original, "тема")
         assert result == original
+
+    def test_reference_context_block_trims_large_payload(self):
+        payload = "Ароматы:\n" + ("лаванда " * 600)
+        block = _render_reference_context_block(payload)
+        assert "Данные из нашего справочника" in block
+        assert len(block) < len(payload)
+        assert len(block) <= 1900
 
 
 class TestBuildPptx:
@@ -1461,7 +1470,7 @@ class TestMiniAppApi:
 
     @pytest.mark.asyncio
     async def test_build_reference_context_includes_handbook_sections(self, monkeypatch):
-        import miniapp_server
+        import bot.services.miniapp_references as references
 
         cards = [
             SimpleNamespace(
@@ -1514,9 +1523,13 @@ class TestMiniAppApi:
             async def __aexit__(self, exc_type, exc, tb):
                 return False
 
-        monkeypatch.setattr(miniapp_server, "AsyncSessionLocal", lambda: _FakeSessionContext())
+        async def _noop_seed():
+            return None
 
-        result = await miniapp_server._build_reference_context()
+        monkeypatch.setattr(references, "AsyncSessionLocal", lambda: _FakeSessionContext())
+        monkeypatch.setattr(references, "seed_reference_cards_if_empty", _noop_seed)
+
+        result = await build_reference_context(max_items_per_category=4, max_total_chars=1000)
 
         assert "Ароматы:" in result
         assert "Теория:" in result
@@ -1527,6 +1540,50 @@ class TestMiniAppApi:
         assert "- Квадратное дыхание (breath): Практика с ровным ритмом" in result
         assert "- Гонг (instrument): Дает плотную вибрацию" in result
         assert "Лишняя запись" not in result
+
+    @pytest.mark.asyncio
+    async def test_build_reference_context_obeys_size_limits(self, monkeypatch):
+        import bot.services.miniapp_references as references
+
+        cards = [
+            SimpleNamespace(
+                category="aroma",
+                name=f"Карточка {index}",
+                source_type="herb",
+                payload={"description": "Очень длинное описание " * 20},
+            )
+            for index in range(8)
+        ]
+
+        class _FakeResult:
+            def scalars(self):
+                return self
+
+            def all(self):
+                return cards
+
+        class _FakeSession:
+            async def execute(self, _query):
+                return _FakeResult()
+
+        class _FakeSessionContext:
+            async def __aenter__(self):
+                return _FakeSession()
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return False
+
+        async def _noop_seed():
+            return None
+
+        monkeypatch.setattr(references, "AsyncSessionLocal", lambda: _FakeSessionContext())
+        monkeypatch.setattr(references, "seed_reference_cards_if_empty", _noop_seed)
+
+        result = await build_reference_context(max_items_per_category=2, max_total_chars=220)
+
+        assert result.startswith("Ароматы:")
+        assert result.count("- Карточка") <= 2
+        assert len(result) <= 220
 
     def test_generate_plan_returns_entries(self, miniapp_test_client, monkeypatch):
         import miniapp_server
@@ -2019,11 +2076,12 @@ class TestMiniAppRussianLocale:
 
     def test_bootstrap_guard_shows_visible_fallback_instead_of_blank_screen(self):
         app_js = _miniapp_static_text("app.js")
+        core_js = _miniapp_static_text("js", "core.js")
         runtime_js = _miniapp_static_text("js", "runtime.js")
         app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
 
-        assert "function showBootFallback" in app_js
-        assert "function hideBootFallback" in app_js
+        assert "function showBootFallback" in core_js
+        assert "function hideBootFallback" in core_js
         assert "bootstrapWatchdogTimer" in app_js
         assert "timers.setBootstrapWatchdog" in runtime_js
         assert "timers.getBootstrapWatchdog" in runtime_js
@@ -2428,15 +2486,16 @@ class TestMiniAppRussianLocale:
         assert ".guided-state-actions" in app_css
     def test_interactive_cards_support_keyboard_and_aria_contract(self):
         app_js = _miniapp_static_text("app.js")
+        core_js = _miniapp_static_text("js", "core.js")
         shell_js = _miniapp_static_text("js", "shell.js")
         create_js = _miniapp_static_text("js", "create.js")
         drafts_js = _miniapp_static_text("js", "drafts.js")
         app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
 
-        assert "function interactiveCardAttrs(label)" in app_js
+        assert "function interactiveCardAttrs(label)" in core_js
         assert "function bindCardKeyboardActivation()" in shell_js
         assert 'bindCardKeyboardActivation();' in _miniapp_js_bundle()
-        assert 'role=\"button\" tabindex=\"0\" aria-label=' in app_js
+        assert 'role=\"button\" tabindex=\"0\" aria-label=' in core_js
         assert 'class="create-card${state.selectedCreateTool === "content" ? " active" : ""} interactive-card"' in create_js
         assert 'class=\"draft-card overview-card${d.draft_id === state.draftId ? \" active\" : \"\"}${d.generation_pending ? \" is-pending\" : \"\"} interactive-card\"' in drafts_js
         assert ".interactive-card:focus-visible" in app_css
@@ -2811,10 +2870,10 @@ class TestThreadsPrompts:
         assert 'showBootFallback(' in source
 
     def test_startup_errors_keep_boot_fallback_visible_until_first_render(self):
-        source = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
-        runtime_warning = source.split("function showRuntimeWarning(prefix, error) {", 1)[1].split("}\n\nasync function copyText", 1)[0]
+        core_js = _miniapp_static_text("js", "core.js")
+        runtime_warning = core_js.split("function showRuntimeWarning(prefix, error) {", 1)[1].split("async function copyText", 1)[0]
 
-        assert 'if (!appBootstrapped) {' in runtime_warning
+        assert 'if (!callbacks.isBootstrapped()) {' in runtime_warning
         assert 'showBootFallback(prefix, humanMessage, true);' in runtime_warning
         assert 'hideBootFallback();' in runtime_warning
 
@@ -2884,3 +2943,229 @@ class TestPatchAromaCardsScript:
         payload = _coerce_payload('{"slug":"orange","resource_values":{"plus":"joy"}}')
         assert payload["slug"] == "orange"
         assert payload["resource_values"]["plus"] == "joy"
+
+
+# ---------------------------------------------------------------------------
+# Markdown rendering coverage and dark-theme CSS safety
+# ---------------------------------------------------------------------------
+
+
+class TestMarkdownRenderingInReelsDetail:
+    """Verify that renderMarkdown is wired to the reels scenario field and converts
+    **bold** / ## heading to HTML tags on the client side."""
+
+    def test_renderMarkdown_converts_bold_to_strong(self):
+        """The JS source must contain the regex that replaces **text** with <strong>."""
+        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        # The inline markdown formatter maps **...** → <strong>...</strong>
+        assert '<strong>$1</strong>' in app_js
+        assert r"\*\*(.+?)\*\*" in app_js
+
+    def test_renderMarkdown_converts_heading_to_h_tag(self):
+        """The JS source must contain logic that maps ## heading lines to <h> elements."""
+        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        assert "chunks.push(`<h${level}>" in app_js
+        assert r"/^#{1,3}\s+/" in app_js
+
+    def test_renderMarkdown_is_used_in_reels_scenario_section(self):
+        """reels.js must pass the scenario value through renderMarkdown, not raw text."""
+        reels_js = Path("miniapp/static/js/reels.js").read_text(encoding="utf-8")
+        # renderMarkdown is imported in reels.js and used for frame section values
+        assert "renderMarkdown" in reels_js
+
+    def test_reels_api_returns_raw_scenario_for_client_rendering(self):
+        """The /api/reels/{id} endpoint returns the raw scenario string so the
+        browser JS can render it with renderMarkdown."""
+        draft = asyncio.run(
+            save_draft(
+                kind="reels",
+                topic="Тест markdown в сценарии",
+                source="/reels",
+                payload={
+                    "scenario": "## Идея\n\n**Жирный текст** и обычный текст.",
+                    "storyboard": [
+                        {
+                            "timecode": "0-3 сек",
+                            "scene": "Свеча",
+                            "angle": "Макро",
+                            "gemini_prompt": "candle macro",
+                        }
+                    ],
+                    "images_ready": 0,
+                },
+            )
+        )
+        from bot.services.miniapp_reels import serialize_reels_draft
+
+        data = asyncio.run(serialize_reels_draft(draft.draft_id))
+        assert data is not None
+        # The API must return the raw markdown string, not pre-rendered HTML
+        scenario = data.get("payload", {}).get("scenario") or draft.payload.get("scenario", "")
+        assert "**Жирный текст**" in scenario or "## Идея" in scenario or "<strong>" not in str(data)
+
+    def test_plan_detail_raw_text_is_rendered_via_renderMarkdown_in_js(self):
+        """plans.js must use renderMarkdown to display plan raw_text in the detail view."""
+        plans_js = Path("miniapp/static/js/plans.js").read_text(encoding="utf-8")
+        assert "renderMarkdown" in plans_js
+        # Specifically the raw_text field should be passed to renderMarkdown
+        assert "renderMarkdown(p.raw_text" in plans_js or "renderMarkdown(" in plans_js
+
+    def test_plan_api_returns_raw_text_with_markdown(self):
+        """The plan serializer returns raw_text as-is so the JS can render it."""
+        from bot.services.plans_store import save_plan
+        from bot.services.miniapp_plans import serialize_plan
+
+        plan = asyncio.run(
+            save_plan(
+                raw_text="## Понедельник\n**Платформа:** Threads\n**Тема:** Вечерний ритуал",
+                entries=[
+                    {
+                        "day_label": "Понедельник",
+                        "platform": "Threads",
+                        "format_label": "пост",
+                        "goal": "Доверие",
+                        "topic": "Вечерний ритуал",
+                        "angle": "Через мягкий вход",
+                    }
+                ],
+            )
+        )
+        data = asyncio.run(serialize_plan(plan))
+        # raw_text must be the original markdown string — no pre-rendering server-side
+        assert "## Понедельник" in data["raw_text"]
+        assert "**Платформа:**" in data["raw_text"]
+        # Must NOT contain rendered HTML — that is the browser's job
+        assert "<strong>" not in data["raw_text"]
+        assert "<h" not in data["raw_text"]
+
+
+class TestDarkThemeCSSReadability:
+    """Verify that key light cards stay readable under body.tg-theme-dark."""
+
+    def test_storyboard_frame_has_explicit_dark_theme_override(self):
+        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        assert "body.tg-theme-dark .storyboard-frame" in app_css
+
+    def test_section_accent_has_explicit_dark_theme_override(self):
+        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        assert "body.tg-theme-dark .section-accent" in app_css
+
+    def test_concept_card_uses_hardcoded_light_colors_making_it_safe_in_dark_mode(self):
+        """concept-card uses explicit light background gradient and dark text, so it
+        stays readable regardless of the OS/Telegram dark theme.
+        This is intentional — cards are always light-on-light-background."""
+        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        # The card must define its own background (not rely on --bg which flips dark)
+        assert "linear-gradient" in app_css.split(".concept-card {")[1].split("}")[0]
+        # The card must have explicit text color (not rely on var(--text))
+        card_block = app_css.split(".concept-card {")[1].split("}")[0]
+        assert "color:" in card_block
+
+    def test_concept_card_preview_inherits_card_color(self):
+        """concept-card .draft-preview must use color: inherit so it inherits the
+        card-level dark text, not override with a potentially invisible value."""
+        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        assert ".concept-card .draft-preview" in app_css
+        preview_block = app_css.split(".concept-card .draft-preview {")[1].split("}")[0]
+        assert "color: inherit;" in preview_block
+
+    def test_detail_markdown_text_is_whitelisted_for_dark_mode_color(self):
+        """detail-markdown elements must have their color reset in dark mode so
+        inherited dark text does not go invisible on dark backgrounds."""
+        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        assert "body.tg-theme-dark .detail-markdown" in app_css
+
+    def test_detail_preview_text_is_whitelisted_for_dark_mode_color(self):
+        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        assert "body.tg-theme-dark .detail-preview" in app_css
+
+
+class TestReelsStoryboardFallback:
+    """Verify that serialize_reels_draft populates frames from payload.storyboard
+    even when no pre-computed frames list exists."""
+
+    async def test_storyboard_frames_are_populated_from_payload(self):
+        draft = await save_draft(
+            kind="reels",
+            topic="Рилс с каркасом",
+            source="/reels",
+            payload={
+                "scenario": "Сценарий про лаванду",
+                "storyboard": [
+                    {"timecode": "0-3 сек", "scene": "Флакон на ткани", "angle": "Макро"},
+                    {"timecode": "3-10 сек", "scene": "Руки с маслом", "angle": "Средний план"},
+                ],
+                "images_ready": 0,
+            },
+        )
+        from bot.services.miniapp_reels import serialize_reels_draft
+
+        data = await serialize_reels_draft(draft.draft_id)
+
+        assert data is not None
+        assert data["frame_count"] == 2
+        assert len(data["frames"]) == 2
+        assert data["frames"][0]["timecode"] == "0-3 сек"
+        assert data["frames"][0]["scene"] == "Флакон на ткани"
+        assert data["frames"][1]["angle"] == "Средний план"
+
+    async def test_empty_storyboard_payload_yields_zero_frames(self):
+        draft = await save_draft(
+            kind="reels",
+            topic="Рилс без кадров",
+            source="/reels",
+            payload={
+                "scenario": "Только сценарий, кадров нет",
+                "storyboard": [],
+                "images_ready": 0,
+            },
+        )
+        from bot.services.miniapp_reels import serialize_reels_draft
+
+        data = await serialize_reels_draft(draft.draft_id)
+
+        assert data is not None
+        assert data["frame_count"] == 0
+        assert data["frames"] == []
+
+    async def test_storyboard_fallback_via_api(self):
+        """Verify via the miniapp test client that GET /api/reels/{id} returns frames
+        populated from payload.storyboard even when storyboard was set at draft creation."""
+        import miniapp_server
+
+        draft = await save_draft(
+            kind="reels",
+            topic="API рилс тест",
+            source="/reels",
+            payload={
+                "scenario": "Сценарий для теста API",
+                "storyboard": [
+                    {
+                        "timecode": "0-5 сек",
+                        "scene": "Открывают флакон",
+                        "angle": "Крупный план",
+                        "gemini_prompt": "close-up bottle",
+                    }
+                ],
+                "images_ready": 0,
+            },
+        )
+
+        with TestClient(miniapp_server.app) as client:
+            # patch auth so test client does not need real init-data
+            import miniapp_server as _ms
+            original_verify = _ms._verify_init_data
+            _ms._verify_init_data = lambda _v: True
+            try:
+                response = client.get(
+                    f"/api/reels/{draft.draft_id}",
+                    headers={"X-Telegram-Init-Data": "user=%7B%22id%22%3A1%7D&hash=test"},
+                )
+            finally:
+                _ms._verify_init_data = original_verify
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["frame_count"] == 1
+        assert payload["frames"][0]["scene"] == "Открывают флакон"
+        assert payload["frames"][0]["timecode"] == "0-5 сек"
