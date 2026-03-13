@@ -109,7 +109,8 @@ export function createSessionModule(deps) {
         if (isCurrentDraftDetail(draft.draft_id)) {
           state.selected = draft;
           renderDraftList();
-          if (!isEditingDetailForm() && !hasPendingCarouselOperations(draft.draft_id)) {
+          const detailHasFocus = elements.draftDetail?.contains(document.activeElement);
+          if (!isEditingDetailForm() && !detailHasFocus && !hasPendingCarouselOperations(draft.draft_id)) {
             renderDraftDetail(draft);
           }
         }
