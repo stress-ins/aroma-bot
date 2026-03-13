@@ -2162,7 +2162,7 @@ class TestMiniAppRussianLocale:
         assert 'label: "Практики"' in app_js
         assert 'id: "sounds"' in app_js
         assert 'label: "Звуки"' in app_js
-        assert 'id="settingsButton"' in html
+        assert 'id="btnTabSettings"' in html
 
     def test_handbook_concepts_have_meta_and_render_course_fields(self):
         app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
