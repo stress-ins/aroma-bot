@@ -36,7 +36,8 @@ _MOCK_PDF_TEXT = """\
 
 _MOCK_CLAUDE_RESPONSE = {
     "name": "Лаванда",
-    "description": "Балансирующее масло, помогает при стрессе и тревоге.",
+    "description": "Лаванда (Lavandula angustifolia) — одно из самых универсальных эфирных масел. Балансирующее масло, помогает при стрессе и тревоге, улучшает качество сна.",
+    "description_short": "Лаванда — балансирующее масло покоя и поддержки. Снимает тревогу, улучшает сон.",
     "therapeutic_properties": "Снимает стресс, помогает при тревоге, улучшает сон",
     "psychological_properties": "Мягко успокаивает внутренний диалог",
     "botanical_family": "Яснотковые",
@@ -45,6 +46,14 @@ _MOCK_CLAUDE_RESPONSE = {
     "origin_countries": "Франция, Болгария",
     "key": "Успокоение и гармония",
     "volatility": "Средняя (middle note)",
+    "resource_plus": "Спокойствие, принятие, покой",
+    "resource_minus": "Тревога, беспокойство, нервозность",
+    "questions": "Где не хватает покоя?; Что мешает расслабиться?",
+    "nps_effect": "Адаптоген, балансирует нервную систему",
+    "history": "Используется более 2500 лет в медицине и косметологии",
+    "applications": "Диффузия 3-5 капель; 2% в базовом масле для массажа",
+    "precautions": "Избегать при аллергии на растения семейства Яснотковые",
+    "conditions_for_use": "Стресс, тревога, бессонница, головная боль",
 }
 
 
@@ -237,3 +246,92 @@ async def test_graceful_skip_empty_pdf(tmp_path):
 
     assert processed == []
     mock_upsert.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# Test 8: second upsert merges payload, does not overwrite existing keys
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_upsert_merges_with_existing_payload():
+    """Second upsert must merge payload, preserving keys not present in new data."""
+    # First upsert: seed with cross-refs and resource_values
+    await importer._upsert_card(
+        slug="lavender-merge-test",
+        name="Лаванда Мерж",
+        source_type="flower",
+        aliases=[],
+        payload={
+            "description": "old description",
+            "cross_refs": ["ylang-ylang", "bergamot"],
+            "resource_values": {"plus": "Спокойствие", "minus": "Тревога"},
+        },
+    )
+
+    # Second upsert: new PDF data with description_short but no cross_refs
+    await importer._upsert_card(
+        slug="lavender-merge-test",
+        name="Лаванда Мерж",
+        source_type="flower",
+        aliases=[],
+        payload={
+            "description": "new description from pdf",
+            "description_short": "Краткое описание",
+        },
+    )
+
+    from db.session import AsyncSessionLocal
+    from db.models import AromaCardModel
+    from sqlalchemy import select
+
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(
+            select(AromaCardModel).where(AromaCardModel.slug == "lavender-merge-test")
+        )
+        card = result.scalar_one()
+
+    # New fields updated
+    assert card.payload["description"] == "new description from pdf"
+    assert card.payload["description_short"] == "Краткое описание"
+    # Existing seed data preserved
+    assert card.payload["cross_refs"] == ["ylang-ylang", "bergamot"]
+    assert card.payload["resource_values"]["plus"] == "Спокойствие"
+
+
+# ---------------------------------------------------------------------------
+# Test 9: parse returns description_short field
+# ---------------------------------------------------------------------------
+
+def test_parse_returns_description_short():
+    """_parse_with_claude must return description_short distinct from description."""
+    mock_client = MagicMock()
+    mock_content = MagicMock()
+    mock_content.text = json.dumps(_MOCK_CLAUDE_RESPONSE)
+    mock_client.messages.create.return_value = MagicMock(content=[mock_content])
+
+    with patch("anthropic.Anthropic", return_value=mock_client):
+        result = importer._parse_with_claude(_MOCK_PDF_TEXT, api_key="fake-key")
+
+    assert "description_short" in result
+    assert result["description_short"]  # non-empty
+    assert result["description_short"] != result["description"]
+
+
+# ---------------------------------------------------------------------------
+# Test 10: parse returns resource_values structure
+# ---------------------------------------------------------------------------
+
+def test_parse_returns_resource_values():
+    """_parse_with_claude must return resource_plus and resource_minus fields."""
+    mock_client = MagicMock()
+    mock_content = MagicMock()
+    mock_content.text = json.dumps(_MOCK_CLAUDE_RESPONSE)
+    mock_client.messages.create.return_value = MagicMock(content=[mock_content])
+
+    with patch("anthropic.Anthropic", return_value=mock_client):
+        result = importer._parse_with_claude(_MOCK_PDF_TEXT, api_key="fake-key")
+
+    assert "resource_plus" in result
+    assert "resource_minus" in result
+    assert result["resource_plus"]
+    assert result["resource_minus"]
