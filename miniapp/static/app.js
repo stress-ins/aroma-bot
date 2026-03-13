@@ -354,7 +354,7 @@ function renderMarkdown(value) {
   for (const key of Object.keys(fenceMap)) {
     const escaped = escapeHtml(fenceMap[key]);
     const raw = fenceMap[key];
-    const block = `<div class="code-block"><pre>${escaped}</pre><button class="copy-btn" onclick="navigator.clipboard.writeText(${JSON.stringify(raw)}).then(()=>{this.textContent='✓';setTimeout(()=>this.textContent='Копировать',1200)})">Копировать</button></div>`;
+    const block = `<div class="code-block"><pre>${escaped}</pre><button class="copy-btn" onclick="navigator.clipboard.writeText(this.previousElementSibling.textContent).then(()=>{this.textContent='✓';setTimeout(()=>this.textContent='Копировать',1200)})">Копировать</button></div>`;
     result = result.replace(escapeHtml(key), block).replace(key, block);
   }
 
