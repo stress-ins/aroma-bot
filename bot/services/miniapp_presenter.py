@@ -66,6 +66,7 @@ async def serialize_draft(record: DraftRecord) -> dict[str, Any]:
         generation_pending = generation_pending or images_ready < storyboard_count
     return {
         "draft_id": record.draft_id,
+        "seq_id": record.seq_id,
         "kind": record.kind,
         "topic": record.topic,
         "source": record.source,
@@ -95,6 +96,7 @@ async def serialize_draft_summary(record: DraftRecord) -> dict[str, Any]:
         generation_pending = generation_pending or images_ready < storyboard_count
     return {
         "draft_id": record.draft_id,
+        "seq_id": record.seq_id,
         "kind": record.kind,
         "topic": record.topic,
         "source": record.source,

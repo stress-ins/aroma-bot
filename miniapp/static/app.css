@@ -1356,6 +1356,14 @@ body.tg-theme-dark .detail-markdown h5 {
     margin-bottom: 8px;
   }
 
+  /* In detail view the topbar-main is hidden, so back button sticks right at the top */
+  body.is-mobile-layout.is-detail-view .topbar-main {
+    display: none;
+  }
+  body.is-mobile-layout.is-detail-view .back-button.visible {
+    top: var(--tg-content-inset-top, env(safe-area-inset-top, 0px));
+  }
+
   .bottom-tab-bar {
     position: fixed;
     left: 0;
