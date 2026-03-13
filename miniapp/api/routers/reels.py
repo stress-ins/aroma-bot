@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 
-from bot.services.drafts_store import get_draft
+from bot.services.drafts_store import DraftRecord, get_draft
 from bot.services.miniapp_reels import (
     build_reels_export_payload,
     list_reels_drafts,
@@ -15,6 +15,7 @@ from bot.services.miniapp_reels import (
 )
 from bot.services.reels_assets import regenerate_reels_frame_asset
 from ..auth import _require_auth
+from ..deps import require_draft
 from ..generation import complete_reels_regenerate_all, set_generation_state
 from ..models import ReelsFrameFieldsPayload, ReelsFrameNotePayload, ReelsFramePromptPayload, ReelsScenarioPayload
 
@@ -118,21 +119,17 @@ async def reels_storyboard_regenerate(
 
 @router.post("/api/reels/{draft_id}/frames/regenerate-all")
 async def reels_frames_regenerate_all(
-    draft_id: str,
     background_tasks: BackgroundTasks,
-    _: None = Depends(_require_auth),
+    draft: DraftRecord = Depends(require_draft("reels")),
 ):
-    draft = await get_draft(draft_id)
-    if not draft or draft.kind != "reels":
-        raise HTTPException(status_code=404, detail="reels_not_found")
     await set_generation_state(
-        draft_id, pending=True, stage="images", message="Перегенерирую все кадры рилса."
+        draft.draft_id, pending=True, stage="images", message="Перегенерирую все кадры рилса."
     )
-    background_tasks.add_task(complete_reels_regenerate_all, draft_id)
-    draft = await serialize_reels_draft(draft_id)
-    if not draft:
+    background_tasks.add_task(complete_reels_regenerate_all, draft.draft_id)
+    serialized = await serialize_reels_draft(draft.draft_id)
+    if not serialized:
         raise HTTPException(status_code=404, detail="reels_not_found")
-    return draft
+    return serialized
 
 
 @router.post("/api/reels/{draft_id}/frames/{frame_index}/fields")

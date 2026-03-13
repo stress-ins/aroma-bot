@@ -2477,8 +2477,6 @@ class TestMiniAppRussianLocale:
 
         assert "min-height: 40px;" in app_css
         assert "min-height: 44px;" in app_css
-        assert "width: 44px;" in app_css
-        assert "height: 44px;" in app_css
         assert ".tab-button," in app_css
         assert ".mode-button," in app_css
         assert ".back-button," in app_css

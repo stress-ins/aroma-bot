@@ -286,19 +286,7 @@ async def update_carousel_slide_text(
     slide_index: int,
     text: str,
 ) -> dict[str, object] | None:
-    draft = await get_draft(draft_id)
-    if not draft or draft.kind != "carousel":
-        return None
-
-    slides: list[str] = list(draft.payload.get("slides", []))
-    if slide_index < 0 or slide_index >= len(slides):
-        return None
-
-    slides[slide_index] = text.strip()
-    payload = dict(draft.payload)
-    payload["slides"] = slides
-    updated = await update_draft(draft_id, payload=payload)
-    return dict(updated.payload) if updated else None
+    return await _update_carousel_list_field(draft_id, "slides", slide_index, text)
 
 
 async def update_carousel_slide_note(
@@ -306,21 +294,32 @@ async def update_carousel_slide_note(
     slide_index: int,
     note: str,
 ) -> dict[str, object] | None:
+    return await _update_carousel_list_field(
+        draft_id, "img_prompt_notes", slide_index, note, pad_to="img_prompts"
+    )
+
+
+async def _update_carousel_list_field(
+    draft_id: str,
+    field_key: str,
+    index: int,
+    value: str,
+    *,
+    pad_to: str | None = None,
+) -> dict | None:
     draft = await get_draft(draft_id)
     if not draft or draft.kind != "carousel":
         return None
-
-    prompts: list[str] = list(draft.payload.get("img_prompts", []))
-    if slide_index < 0 or slide_index >= len(prompts):
+    items: list = list(draft.payload.get(field_key, []))
+    if pad_to:
+        ref_len = len(draft.payload.get(pad_to, []))
+        while len(items) < ref_len:
+            items.append("")
+    if index < 0 or index >= len(items):
         return None
-
-    notes: list[str] = list(draft.payload.get("img_prompt_notes", []))
-    while len(notes) < len(prompts):
-        notes.append("")
-
-    notes[slide_index] = note.strip()
+    items[index] = value.strip()
     payload = dict(draft.payload)
-    payload["img_prompt_notes"] = notes
+    payload[field_key] = items
     updated = await update_draft(draft_id, payload=payload)
     return dict(updated.payload) if updated else None
 

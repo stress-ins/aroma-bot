@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Awaitable
 
 from bot.agents.reels_agent import generate_reels_director_sync, generate_reels_scenario_sync
 from bot.handlers.carousel import _generate_carousel_sync
@@ -32,6 +33,24 @@ async def set_generation_state(
     else:
         payload.pop("generation_error", None)
     await update_draft(draft_id, payload=payload, status="draft")
+
+
+async def _run_generation_task(
+    draft_id: str,
+    coro: Awaitable[None],
+    error_message: str,
+) -> None:
+    try:
+        await coro
+        await set_generation_state(draft_id, pending=False)
+    except Exception as exc:
+        await set_generation_state(
+            draft_id,
+            pending=False,
+            stage="error",
+            message=error_message,
+            error=str(exc),
+        )
 
 
 async def complete_carousel_generation(draft_id: str, topic: str) -> None:
@@ -128,28 +147,16 @@ async def complete_reels_generation(draft_id: str, topic: str) -> None:
 
 
 async def complete_carousel_regenerate_all(draft_id: str) -> None:
-    try:
-        await regenerate_all_carousel_slide_assets(draft_id)
-        await set_generation_state(draft_id, pending=False)
-    except Exception as exc:
-        await set_generation_state(
-            draft_id,
-            pending=False,
-            stage="error",
-            message="Не удалось перегенерировать все картинки. Попробуйте ещё раз.",
-            error=str(exc),
-        )
+    await _run_generation_task(
+        draft_id,
+        regenerate_all_carousel_slide_assets(draft_id),
+        "Не удалось перегенерировать все картинки. Попробуйте ещё раз.",
+    )
 
 
 async def complete_reels_regenerate_all(draft_id: str) -> None:
-    try:
-        await populate_reels_frame_assets(draft_id, overwrite_existing=True)
-        await set_generation_state(draft_id, pending=False)
-    except Exception as exc:
-        await set_generation_state(
-            draft_id,
-            pending=False,
-            stage="error",
-            message="Не удалось перегенерировать кадры. Попробуйте ещё раз.",
-            error=str(exc),
-        )
+    await _run_generation_task(
+        draft_id,
+        populate_reels_frame_assets(draft_id, overwrite_existing=True),
+        "Не удалось перегенерировать кадры. Попробуйте ещё раз.",
+    )
