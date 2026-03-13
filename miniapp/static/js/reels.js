@@ -18,6 +18,7 @@ export function createReelsModule(deps) {
     renderBackButton,
     renderDetailLoader,
     renderMarkdown,
+    isPromptDisclosureOpen,
     fetchJson,
     withButtonFeedback,
     showRequestError,
@@ -321,9 +322,13 @@ export function createReelsModule(deps) {
                 ${assetUrl
                   ? `<img class="frame-image" src="${escapeHtml(assetUrl)}" alt="Кадр ${index + 1}" />`
                   : `<div class="frame-loading">Картинка ещё не готова. Карточка обновится автоматически, как только кадр будет сгенерирован.</div>`}
-                <div class="prompt-disclosure${!assetUrl ? " is-open" : ""}" data-prompt-key="${escapeHtml(`reels:${draftId}:${index}`)}">
-                  <button class="secondary-button prompt-toggle" type="button" aria-expanded="${!assetUrl ? "true" : "false"}" data-default-open="${!assetUrl ? "true" : "false"}" data-open-label="${escapeHtml(prompt ? "Открыть редактирование кадра" : "Открыть описание кадра")}" data-close-label="Скрыть редактирование кадра" onclick='togglePromptDisclosure(${JSON.stringify(`reels:${draftId}:${index}`)}, this)'>${actionLabel("eye", !assetUrl ? "Скрыть редактирование кадра" : (prompt ? "Открыть редактирование кадра" : "Открыть описание кадра"))}</button>
-                  <div class="prompt-card"${!assetUrl ? "" : " hidden"}>
+                ${(() => {
+                  const discOpen = isPromptDisclosureOpen(`reels:${draftId}:${index}`, !assetUrl);
+                  const openLbl = prompt ? "Открыть редактирование кадра" : "Открыть описание кадра";
+                  return `
+                <div class="prompt-disclosure${discOpen ? " is-open" : ""}" data-prompt-key="${escapeHtml(`reels:${draftId}:${index}`)}">
+                  <button class="secondary-button prompt-toggle" type="button" aria-expanded="${discOpen ? "true" : "false"}" data-default-open="${!assetUrl ? "true" : "false"}" data-open-label="${escapeHtml(openLbl)}" data-close-label="Скрыть редактирование кадра" onclick='togglePromptDisclosure(${JSON.stringify(`reels:${draftId}:${index}`)}, this)'>${actionLabel("eye", discOpen ? "Скрыть редактирование кадра" : openLbl)}</button>
+                  <div class="prompt-card"${discOpen ? "" : " hidden"}>
                     <div class="reels-frame-edit-grid">
                       <label class="prompt-note-field">
                         <span>Текст / действие кадра</span>
@@ -361,6 +366,8 @@ export function createReelsModule(deps) {
                     `}
                   </div>
                 </div>
+                `;
+                })()}
               </article>
             `;
           }).join("")}
@@ -399,6 +406,7 @@ export function createReelsModule(deps) {
             <span>Концепция</span>
             <textarea id="reelsConceptField" placeholder="Коротко: идея, настроение, обещание результата">${escapeHtml(r.payload?.concept || "")}</textarea>
           </label>
+          ${r.payload?.scenario ? `<div class="detail-preview detail-markdown">${renderMarkdown(r.payload.scenario)}</div>` : ""}
           <label class="prompt-note-field">
             <span>Сценарий</span>
             <textarea id="reelsScenarioField" placeholder="Соберите полный сценарий с переходами между кадрами">${escapeHtml(r.payload?.scenario || "")}</textarea>

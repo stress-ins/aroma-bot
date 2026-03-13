@@ -13,6 +13,7 @@ export function createCarouselModule(deps) {
     confirmAction,
     authQueryString,
     isCurrentDraftDetail,
+    isPromptDisclosureOpen,
     mergeDraftIntoState,
     renderDraftList,
     renderDraftDetail,
@@ -65,7 +66,7 @@ export function createCarouselModule(deps) {
 
   function renderSlideVersions(draftId, slideIndex, currentImage, versions = []) {
     const items = Array.isArray(versions) ? versions : [];
-    if (!items.length) return "";
+    if (items.length <= 1) return "";
     const currentFilename = String(currentImage?.filename || "").trim();
     return `
       <div class="slide-versions">
@@ -138,10 +139,12 @@ export function createCarouselModule(deps) {
                 <div class="actions-row prompt-actions actions-grid-two">
                   <button class="primary-button" type="button" aria-label="Сохранить текст слайда" onclick="saveCarouselSlideText(${JSON.stringify(draftId)}, ${index}, this)">${actionLabel("text", "Сохранить подпись")}</button>
                 </div>
-                ${prompt ? `
-                  <div class="prompt-disclosure${!img?.url ? " is-open" : ""}" data-prompt-key="${escapeHtml(`carousel:${draftId}:${index}`)}">
-                    <button class="secondary-button prompt-toggle" type="button" aria-expanded="${!img?.url ? "true" : "false"}" data-default-open="${!img?.url ? "true" : "false"}" data-open-label="Показать промпт" data-close-label="Скрыть промпт" onclick='togglePromptDisclosure(${JSON.stringify(`carousel:${draftId}:${index}`)}, this)'>${actionLabel("eye", !img?.url ? "Скрыть промпт" : "Показать промпт")}</button>
-                    <div class="prompt-card"${!img?.url ? "" : " hidden"}>
+                ${prompt ? (() => {
+                    const discOpen = isPromptDisclosureOpen(`carousel:${draftId}:${index}`, !img?.url);
+                    return `
+                  <div class="prompt-disclosure${discOpen ? " is-open" : ""}" data-prompt-key="${escapeHtml(`carousel:${draftId}:${index}`)}">
+                    <button class="secondary-button prompt-toggle" type="button" aria-expanded="${discOpen ? "true" : "false"}" data-default-open="${!img?.url ? "true" : "false"}" data-open-label="Показать промпт" data-close-label="Скрыть промпт" onclick='togglePromptDisclosure(${JSON.stringify(`carousel:${draftId}:${index}`)}, this)'>${actionLabel("eye", discOpen ? "Скрыть промпт" : "Показать промпт")}</button>
+                    <div class="prompt-card"${discOpen ? "" : " hidden"}>
                       <div class="detail-preview prompt-preview">${escapeHtml(prompt)}</div>
                       <label class="prompt-note-field">
                         <span>Замечание к картинке</span>
@@ -154,7 +157,8 @@ export function createCarouselModule(deps) {
                       </div>
                     </div>
                   </div>
-                ` : ""}
+                `;
+                  })() : ""}
                 ${renderSlideVersions(draftId, index, img, versions)}
               </article>
             `;

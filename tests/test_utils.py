@@ -2217,6 +2217,58 @@ class TestMiniAppRussianLocale:
         assert positions == sorted(positions)
         assert 'data-tab="settings"' in html
 
+    def test_safe_area_insets_protect_content_from_telegram_chrome_and_dynamic_island(self):
+        """Content and interactive buttons must not be hidden under the
+        Dynamic Island, iPhone notch, or Telegram WebApp chrome (close/nav bar).
+
+        Requirements:
+        - viewport-fit=cover in HTML so env(safe-area-inset-*) works in WKWebView
+        - env(safe-area-inset-top) applied on shell/body so top content starts below
+          Dynamic Island / Telegram close button — no useful content or buttons hidden
+        - env(safe-area-inset-bottom) applied on bottom tab bar so tab buttons stay
+          above the iPhone home indicator bar
+        """
+        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        html = Path("miniapp/index.html").read_text(encoding="utf-8")
+
+        # Required for env(safe-area-inset-*) to work inside WKWebView / Telegram
+        assert "viewport-fit=cover" in html
+
+        # Top safe area — prevents content/buttons from being hidden under
+        # Dynamic Island (iPhone 14 Pro+) or Telegram's Close button chrome
+        assert "env(safe-area-inset-top" in app_css
+
+        # Bottom safe area — prevents bottom tab buttons from sitting under
+        # the iPhone home indicator bar or Telegram bottom chrome
+        assert "env(safe-area-inset-bottom" in app_css
+
+        # The bottom tab bar itself must apply the bottom inset
+        tab_bar_css = app_css.split(".bottom-tab-bar", 1)[1] if ".bottom-tab-bar" in app_css else ""
+        assert "safe-area-inset-bottom" in tab_bar_css
+
+    def test_prompt_disclosure_state_uses_isPromptDisclosureOpen_in_carousel_and_reels(self):
+        """Prompt disclosure panels must use isPromptDisclosureOpen() so their open/closed
+        state survives polling refreshes without resetting."""
+        carousel_js = Path("miniapp/static/js/carousel.js").read_text(encoding="utf-8")
+        reels_js = Path("miniapp/static/js/reels.js").read_text(encoding="utf-8")
+
+        # carousel.js must declare isPromptDisclosureOpen in deps destructuring
+        assert "isPromptDisclosureOpen," in carousel_js
+        # carousel.js must call isPromptDisclosureOpen for its disclosure key
+        assert "isPromptDisclosureOpen(`carousel:" in carousel_js
+
+        # reels.js must declare isPromptDisclosureOpen in deps destructuring
+        assert "isPromptDisclosureOpen," in reels_js
+        # reels.js must call isPromptDisclosureOpen for its disclosure key
+        assert "isPromptDisclosureOpen(`reels:" in reels_js
+
+        # app.js must pass isPromptDisclosureOpen to both module factories
+        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        carousel_block = app_js[app_js.index("createCarouselModule("):app_js.index("createCarouselModule(") + 600]
+        reels_block = app_js[app_js.index("createReelsModule("):app_js.index("createReelsModule(") + 600]
+        assert "isPromptDisclosureOpen," in carousel_block
+        assert "isPromptDisclosureOpen," in reels_block
+
     def test_reels_opened_from_drafts_route_into_storyboard_detail(self):
         drafts_js = _miniapp_static_text("js", "drafts.js")
 
