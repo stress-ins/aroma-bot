@@ -667,7 +667,7 @@ function formatPlanDate(value) {
   if (!text) return "";
   const date = new Date(text);
   if (Number.isNaN(date.getTime())) return text;
-  return date.toLocaleDateString("ru-RU");
+  return date.toLocaleDateString("ru-RU") + " " + date.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
 }
 
 function humanizeRequestMessage(message) {
@@ -1269,6 +1269,7 @@ const SECTION_TITLES = {
   drafts: "Черновики", reels: "Рилсы", plans: "Планы",
   create: "Создать", settings: "Настройки",
   aromas: "Ароматы", concepts: "Концепции", practices: "Практики", sounds: "Звуки",
+  blends: "Смеси", symptoms: "Симптомы",
 };
 
 function setTab(t) {
