@@ -87,8 +87,27 @@ export function createReferencesModule(deps) {
     enterDetailView();
   }
 
+  function zipNamesAndSlugs(names, slugs) {
+    const nameArr = Array.isArray(names) ? names : [];
+    const slugArr = Array.isArray(slugs) ? slugs : [];
+    return nameArr.map((name, i) => ({ name, slug: slugArr[i] || null }));
+  }
+
+  function renderCrossRefChips(pairs, targetTab) {
+    if (!pairs || !pairs.length) return "";
+    const chips = pairs.map(({ slug, name }) => {
+      if (!name) return "";
+      if (slug) {
+        return `<button class="crossref-chip" onclick="openReference(${JSON.stringify(slug)}, ${JSON.stringify(targetTab)})">${escapeHtml(name)}</button>`;
+      }
+      return `<span class="crossref-chip crossref-chip--plain">${escapeHtml(name)}</span>`;
+    }).join("");
+    return `<div class="crossref-chips">${chips}</div>`;
+  }
+
   function renderReferencePassport(reference) {
     const parts = [
+      reference.article_number ? `Артикул: ${reference.article_number}` : "",
       reference.key ? `Ключ: ${reference.key}` : "",
       reference.botanical_family ? `Семейство / тип: ${reference.botanical_family}` : "",
       reference.origin_countries ? `Источник / традиция: ${reference.origin_countries}` : "",
@@ -126,7 +145,9 @@ export function createReferencesModule(deps) {
     const meta = currentHandbookMeta();
     const items = state.referenceItems || [];
     const query = (state.referenceSearch || "").trim().toLowerCase();
-    const filtered = items.filter((item) => `${item.name} ${item.description || ""} ${item.course_notes || ""}`.toLowerCase().includes(query));
+    const filtered = items.filter((item) =>
+      `${item.name} ${item.description || ""} ${item.course_notes || ""} ${item.conditions_for_use || ""} ${item.category_group || ""}`.toLowerCase().includes(query)
+    );
     const reference = state.selectedReference;
 
     elements.listTitle.textContent = meta.title;
@@ -186,22 +207,82 @@ export function createReferencesModule(deps) {
       return;
     }
 
-    elements.draftDetail.innerHTML = `
-      <div class="detail-grid">
-        ${renderBackButton()}
-        ${renderReferenceImage(reference)}
-        ${aromaSection("Паспорт карточки", renderReferencePassport(reference))}
-        ${aromaSection("Описание", reference.description)}
-        ${aromaSection("Психологические свойства", reference.psychological_properties)}
-        ${aromaSection('Ресурс "+"', reference.resource_values?.plus)}
-        ${aromaSection('Ресурс "-"', reference.resource_values?.minus)}
-        ${aromaSection("Какие вопросы поднимает", reference.questions)}
-        ${aromaSection("Действие на НПС", reference.nps_effect)}
-        ${aromaSection("Терапевтические свойства", reference.therapeutic_properties)}
-        ${aromaSection("Материалы курса", reference.course_notes)}
-        ${aromaSection("Исторические сведения", reference.history)}
-      </div>
-    `;
+    let detailHtml;
+    if (state.tab === "blends") {
+      const ingredientChips = renderCrossRefChips(
+        zipNamesAndSlugs(reference.ingredient_names, reference.ingredient_slugs),
+        "aromas"
+      );
+      const compChips = renderCrossRefChips(
+        zipNamesAndSlugs(reference.complementary_oil_names, reference.complementary_oil_slugs),
+        "aromas"
+      );
+      detailHtml = `
+        <div class="detail-grid">
+          ${renderBackButton()}
+          ${renderReferenceImage(reference)}
+          ${aromaSection("Паспорт карточки", renderReferencePassport(reference))}
+          ${aromaSection("Описание", reference.description)}
+          ${aromaSection("Терапевтические свойства", reference.therapeutic_properties)}
+          ${aromaSection("При каких состояниях", reference.conditions_for_use)}
+          ${ingredientChips ? `<section class="section"><h3>🧪 Состав</h3><div class="detail-preview">${ingredientChips}</div></section>` : ""}
+          ${compChips ? `<section class="section"><h3>🌿 Комплементарные масла</h3><div class="detail-preview">${compChips}</div></section>` : ""}
+          ${aromaSection("Применение", reference.applications)}
+          ${aromaSection("Меры предосторожности", reference.precautions)}
+        </div>
+      `;
+    } else if (state.tab === "symptoms") {
+      const oilChips = renderCrossRefChips(
+        zipNamesAndSlugs(reference.recommended_oil_names, reference.recommended_oil_slugs),
+        "aromas"
+      );
+      const blendChips = renderCrossRefChips(
+        zipNamesAndSlugs(reference.recommended_blend_names, reference.recommended_blend_slugs),
+        "blends"
+      );
+      detailHtml = `
+        <div class="detail-grid">
+          ${renderBackButton()}
+          ${renderReferenceImage(reference)}
+          ${reference.category_group ? `<section class="section"><p class="eyebrow">${escapeHtml(reference.category_group)}</p></section>` : ""}
+          ${aromaSection("Описание", reference.description)}
+          ${oilChips ? `<section class="section"><h3>🌿 Рекомендуемые масла</h3><div class="detail-preview">${oilChips}</div></section>` : ""}
+          ${blendChips ? `<section class="section"><h3>🌀 Рекомендуемые смеси</h3><div class="detail-preview">${blendChips}</div></section>` : ""}
+          ${aromaSection("Применение", reference.applications)}
+        </div>
+      `;
+    } else {
+      const compChips = renderCrossRefChips(
+        zipNamesAndSlugs(reference.complementary_oil_names, reference.complementary_oil_slugs),
+        "aromas"
+      );
+      const blendsChips = renderCrossRefChips(
+        zipNamesAndSlugs(reference.blends_containing_names, reference.blends_containing_slugs),
+        "blends"
+      );
+      detailHtml = `
+        <div class="detail-grid">
+          ${renderBackButton()}
+          ${renderReferenceImage(reference)}
+          ${aromaSection("Паспорт карточки", renderReferencePassport(reference))}
+          ${aromaSection("Описание", reference.description)}
+          ${aromaSection("Психологические свойства", reference.psychological_properties)}
+          ${aromaSection('Ресурс "+"', reference.resource_values?.plus)}
+          ${aromaSection('Ресурс "-"', reference.resource_values?.minus)}
+          ${aromaSection("Какие вопросы поднимает", reference.questions)}
+          ${aromaSection("Действие на НПС", reference.nps_effect)}
+          ${aromaSection("Терапевтические свойства", reference.therapeutic_properties)}
+          ${aromaSection("При каких состояниях", reference.conditions_for_use)}
+          ${compChips ? `<section class="section"><h3>🌿 Комплементарные масла</h3><div class="detail-preview">${compChips}</div></section>` : ""}
+          ${blendsChips ? `<section class="section"><h3>🌀 Входит в смеси</h3><div class="detail-preview">${blendsChips}</div></section>` : ""}
+          ${aromaSection("Применение", reference.applications)}
+          ${aromaSection("Меры предосторожности", reference.precautions)}
+          ${aromaSection("Материалы курса", reference.course_notes)}
+          ${aromaSection("Исторические сведения", reference.history)}
+        </div>
+      `;
+    }
+    elements.draftDetail.innerHTML = detailHtml;
     syncMobileNavigation();
   }
 

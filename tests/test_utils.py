@@ -3421,3 +3421,153 @@ class TestForbiddenPhrasesAssets:
     def test_actions_row_pair_class_in_css(self):
         css = _miniapp_static_text("app.css")
         assert "actions-row-pair" in css
+
+
+class TestHandbookPdfImport:
+    """Tests for PDF-imported blends, symptoms, and cross-reference chips."""
+
+    def test_app_js_has_blends_category_meta(self):
+        js = _miniapp_js_bundle()
+        assert 'id: "blends"' in js
+        assert 'label: "Смеси"' in js
+        assert 'category: "blend"' in js
+        assert 'count: (items) =>' in js
+
+    def test_app_js_has_symptoms_category_meta(self):
+        js = _miniapp_js_bundle()
+        assert 'id: "symptoms"' in js
+        assert 'label: "Симптомы"' in js
+        assert 'category: "symptom"' in js
+
+    def test_app_js_handbook_icons_include_blends_and_symptoms(self):
+        js = _miniapp_js_bundle()
+        assert 'blends: "🌀"' in js
+        assert 'symptoms: "🫀"' in js
+
+    def test_references_js_has_cross_ref_chips(self):
+        js = _miniapp_js_bundle()
+        assert "crossref-chip" in js
+        assert "openReference" in js
+        assert "zipNamesAndSlugs" in js
+        assert "renderCrossRefChips" in js
+
+    def test_references_js_uses_correct_target_tabs(self):
+        js = _miniapp_js_bundle()
+        # Oil cross-refs link to aromas tab
+        assert '"aromas"' in js
+        # Blend cross-refs link to blends tab
+        assert '"blends"' in js
+
+    def test_app_css_has_crossref_chip_styles(self):
+        css = _miniapp_static_text("app.css")
+        assert ".crossref-chips" in css
+        assert ".crossref-chip" in css
+        assert ".crossref-chip--plain" in css
+
+    def test_references_js_symptom_detail_renders_recommended_oils(self):
+        js = _miniapp_js_bundle()
+        assert "recommended_oil_names" in js
+        assert "recommended_oil_slugs" in js
+        assert "recommended_blend_names" in js
+        assert "Рекомендуемые масла" in js
+
+    def test_references_js_blend_detail_renders_ingredients(self):
+        js = _miniapp_js_bundle()
+        assert "ingredient_names" in js
+        assert "ingredient_slugs" in js
+        assert "Состав" in js
+
+    def test_references_js_passport_includes_article_number(self):
+        js = _miniapp_js_bundle()
+        assert "reference.article_number" in js
+        assert "Артикул:" in js
+
+    def test_search_filter_includes_conditions_and_category_group(self):
+        js = _miniapp_js_bundle()
+        assert "conditions_for_use" in js
+        assert "category_group" in js
+
+    @pytest.mark.asyncio
+    async def test_list_reference_cards_blend_returns_items(self, tmp_path):
+        import bot.services.miniapp_references as refs
+        from db.models import AromaCardModel
+        from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+        from db.models import Base
+
+        engine = create_async_engine(f"sqlite+aiosqlite:///{tmp_path}/test.db")
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        TestSession = async_sessionmaker(engine, expire_on_commit=False)
+
+        blend_card = AromaCardModel(
+            slug="blend-grounding",
+            name="Grounding",
+            category="blend",
+            source_type="blend",
+            aliases=["Заземление"],
+            payload={"article_number": "#309708", "description": "Баланс и устойчивость"},
+        )
+
+        async with TestSession() as session:
+            session.add(blend_card)
+            await session.commit()
+
+        async def _noop(): pass
+        orig_session = refs.AsyncSessionLocal
+        orig_seed = refs.seed_reference_cards_if_empty
+        try:
+            refs.AsyncSessionLocal = TestSession
+            refs.seed_reference_cards_if_empty = _noop
+            items = await refs.list_reference_cards("blend")
+        finally:
+            refs.AsyncSessionLocal = orig_session
+            refs.seed_reference_cards_if_empty = orig_seed
+
+        assert len(items) == 1
+        assert items[0]["slug"] == "blend-grounding"
+        assert items[0]["category"] == "blend"
+
+    @pytest.mark.asyncio
+    async def test_get_reference_card_blend_returns_payload_fields(self, tmp_path):
+        import bot.services.miniapp_references as refs
+        from db.models import AromaCardModel
+        from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+        from db.models import Base
+
+        engine = create_async_engine(f"sqlite+aiosqlite:///{tmp_path}/test.db")
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        TestSession = async_sessionmaker(engine, expire_on_commit=False)
+
+        blend_card = AromaCardModel(
+            slug="blend-grounding",
+            name="Grounding",
+            category="blend",
+            source_type="blend",
+            aliases=["Заземление"],
+            payload={
+                "article_number": "#309708",
+                "ingredient_names": ["White Spruce", "Vetiver"],
+                "ingredient_slugs": ["spruce", "vetiver"],
+            },
+        )
+
+        async with TestSession() as session:
+            session.add(blend_card)
+            await session.commit()
+
+        async def _noop(): pass
+        orig_session = refs.AsyncSessionLocal
+        orig_seed = refs.seed_reference_cards_if_empty
+        try:
+            refs.AsyncSessionLocal = TestSession
+            refs.seed_reference_cards_if_empty = _noop
+            card = await refs.get_reference_card("blend", "blend-grounding")
+        finally:
+            refs.AsyncSessionLocal = orig_session
+            refs.seed_reference_cards_if_empty = orig_seed
+
+        assert card is not None
+        assert card["slug"] == "blend-grounding"
+        assert card["article_number"] == "#309708"
+        assert card["ingredient_names"] == ["White Spruce", "Vetiver"]
