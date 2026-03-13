@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 
-from bot.services.drafts_store import DraftRecord, get_draft
+from bot.services.drafts_store import DraftRecord
 from bot.services.miniapp_reels import (
     build_reels_export_payload,
     list_reels_drafts,
