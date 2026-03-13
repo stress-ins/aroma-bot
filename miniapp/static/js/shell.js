@@ -316,7 +316,9 @@ export function createShellModule(deps) {
             return;
           }
           if (state.mode === "handbook" && state.mobileView === "list") {
-            return; // already on handbook list — no-op
+            // Already on handbook list — scroll to top
+            if (elements.listPanel) elements.listPanel.scrollTop = 0;
+            return;
           }
           if (state.mode !== "handbook") {
             setMode("handbook");

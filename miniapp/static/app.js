@@ -97,6 +97,7 @@ const elements = {
   bootFallbackText: document.getElementById("bootFallbackText"),
   bootFallbackReload: document.getElementById("bootFallbackReload"),
   bottomTabBar: document.getElementById("bottomTabBar"),
+  topbarTitle: document.querySelector(".topbar-title"),
 };
 
 const RU_KIND_LABELS = {
@@ -178,6 +179,32 @@ function handbookCategoryIcon(tabId) {
   return `<span class="kind-glyph handbook-glyph" aria-hidden="true">${glyph}</span>`;
 }
 
+function aromaCardIcon(item, tabId) {
+  if (tabId === "aromas") {
+    const name = (item.name || "").toLowerCase();
+    const family = (item.botanical_family || "").toLowerCase();
+    if (name.includes("апельсин") || name.includes("orange") || family.includes("rutaceae")) return "🍊";
+    if (name.includes("лаванд") || name.includes("lavend")) return "🪻";
+    if (name.includes("мята") || name.includes("mint") || name.includes("peppermint")) return "🌿";
+    if (name.includes("роза") || name.includes("rose")) return "🌹";
+    if (name.includes("лимон") || name.includes("lemon")) return "🍋";
+    if (name.includes("кедр") || name.includes("cedar") || name.includes("сосн") || name.includes("pine")) return "🌲";
+    if (name.includes("ромашк") || name.includes("chamomile")) return "🌼";
+    if (name.includes("имбир") || name.includes("ginger")) return "🫚";
+    if (name.includes("эвкалипт") || name.includes("eucalyptus")) return "🍃";
+    if (name.includes("иланг") || name.includes("ylang")) return "🌸";
+    return "🌿";
+  }
+  if (tabId === "practices") {
+    const type = (item.source_type || "").toLowerCase();
+    if (type.includes("active") || type.includes("актив")) return "⚡";
+    if (type.includes("calm") || type.includes("спокой") || type.includes("relax")) return "🧘";
+    if (type.includes("breath") || type.includes("дыхан")) return "🫁";
+    return "🫁";
+  }
+  return handbookCategoryIcon(tabId);
+}
+
 function handbookCardBadge(tabId, item = {}) {
   const sourceType = String(item.source_type || "").trim();
   if (tabId === "aromas" && sourceType) return sourceType;
@@ -249,7 +276,18 @@ function formatInlineMarkdown(value) {
 function renderMarkdown(value) {
   const source = String(value || "").trim();
   if (!source) return "";
-  const lines = source.split(/\r?\n/);
+
+  // Handle code fences first
+  const FENCE_RE = /```([\s\S]*?)```/g;
+  const fenceMap = {};
+  let fenceIndex = 0;
+  const withoutFences = source.replace(FENCE_RE, (_, content) => {
+    const key = `\x00FENCE${fenceIndex++}\x00`;
+    fenceMap[key] = content.trim();
+    return key;
+  });
+
+  const lines = withoutFences.split(/\r?\n/);
   const chunks = [];
   let listItems = [];
 
@@ -280,7 +318,17 @@ function renderMarkdown(value) {
     chunks.push(`<p>${formatInlineMarkdown(escapedLine)}</p>`);
   }
   flushList();
-  return chunks.join("");
+  let result = chunks.join("");
+
+  // Replace fence sentinels with code blocks
+  for (const key of Object.keys(fenceMap)) {
+    const escaped = escapeHtml(fenceMap[key]);
+    const raw = fenceMap[key];
+    const block = `<div class="code-block"><pre>${escaped}</pre><button class="copy-btn" onclick="navigator.clipboard.writeText(${JSON.stringify(raw)}).then(()=>{this.textContent='✓';setTimeout(()=>this.textContent='Копировать',1200)})">Копировать</button></div>`;
+    result = result.replace(escapeHtml(key), block).replace(key, block);
+  }
+
+  return result;
 }
 
 function stripMarkdown(value) {
@@ -619,6 +667,14 @@ function openKeywordTopic(topicIdx) {
   return openKeywordTopicImpl(topicIdx);
 }
 
+async function addForbiddenPhrase() {
+  return addForbiddenPhraseImpl();
+}
+
+async function removeForbiddenPhrase(phrase) {
+  return removeForbiddenPhraseImpl(phrase);
+}
+
 const {
   syncMobileNavigation,
   renderBackButton,
@@ -911,6 +967,7 @@ const {
   renderDetailLoader,
   renderGuidedState,
   handbookCategoryIcon,
+  aromaCardIcon,
   handbookCardBadge,
   aromaSection,
   fetchJson,
@@ -983,6 +1040,9 @@ const {
   loadSettings: loadSettingsImpl,
   renderStatus: renderStatusImpl,
   renderKeywords: renderKeywordsImpl,
+  loadForbiddenPhrases: loadForbiddenPhrasesImpl,
+  addForbiddenPhrase: addForbiddenPhraseImpl,
+  removeForbiddenPhrase: removeForbiddenPhraseImpl,
 } = createSettingsModule({
   state,
   elements,
@@ -1175,10 +1235,17 @@ function setMode(m) {
   syncMobileNavigation();
 }
 
+const SECTION_TITLES = {
+  drafts: "Черновики", reels: "Рилсы", plans: "Планы",
+  create: "Создать", settings: "Настройки",
+  aromas: "Ароматы", concepts: "Концепции", practices: "Практики", sounds: "Звуки",
+};
+
 function setTab(t) {
   clearBackgroundRefreshes();
   state.tab = t;
   document.body.dataset.tab = t;
+  if (elements.topbarTitle) elements.topbarTitle.textContent = SECTION_TITLES[t] ?? t;
   state.mobileView = "list";
   state.selectedCreateTool = null;
   if (t !== "keywords" && t !== "settings") state.selectedKeywordTopicIdx = null;
@@ -1266,6 +1333,8 @@ registerWindowBridge({
   openKeywordTopic,
   addKeywordItem,
   removeKeywordItem,
+  addForbiddenPhrase,
+  removeForbiddenPhrase,
   goBackToList,
 });
 

@@ -409,7 +409,7 @@ def _generate_slide_image_prompts_sync(slides: list[str], topic: str, arc: str |
     return result
 
 
-def _generate_carousel_sync(topic: str) -> tuple[list[str], list[str], str]:
+def _generate_carousel_sync(topic: str, user_forbidden: list[str] | None = None) -> tuple[list[str], list[str], str]:
     """Draft → editor → 6 refined slides + per-slide image prompts + detected arc.
 
     Returns (slides, img_prompts, arc) where arc is one of:
@@ -427,7 +427,7 @@ def _generate_carousel_sync(topic: str) -> tuple[list[str], list[str], str]:
                     time.sleep(3)
                     continue
                 return [], [], "problem_solution"
-            refined = edit_carousel_sync(raw_slides, topic)
+            refined = edit_carousel_sync(raw_slides, topic, user_forbidden=user_forbidden or [])
             if not refined:
                 logger.warning("edit_carousel_sync empty on attempt %d, topic: %s", attempt + 1, topic)
                 if attempt == 0:
