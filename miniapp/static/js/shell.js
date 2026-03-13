@@ -315,6 +315,9 @@ export function createShellModule(deps) {
             goBackToList(false);
             return;
           }
+          if (state.mode === "handbook" && state.mobileView === "list") {
+            return; // already on handbook list — no-op
+          }
           if (state.mode !== "handbook") {
             setMode("handbook");
           }

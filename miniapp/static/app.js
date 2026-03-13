@@ -8,6 +8,7 @@ import { createPlansModule } from "./js/plans.js";
 import { createReferencesModule } from "./js/references.js";
 import { createReelsModule } from "./js/reels.js";
 import { createRuntimeModule } from "./js/runtime.js";
+import { createSessionModule } from "./js/session.js";
 import { createSettingsModule } from "./js/settings.js";
 import { createShellModule } from "./js/shell.js";
 
@@ -59,6 +60,9 @@ const MODE_TABS = {
     { id: "sounds", label: "Звуки" },
   ],
 };
+
+document.body.dataset.mode = "content";
+document.body.dataset.tab = state.tab;
 
 let reelRefreshTimer = null;
 let carouselRefreshTimer = null;
@@ -413,28 +417,6 @@ function frameDraftKey(draftId, index) {
   return `${draftId}:${index}`;
 }
 
-
-function clearBackgroundRefreshes() {
-  window.clearTimeout(reelRefreshTimer);
-  window.clearTimeout(carouselRefreshTimer);
-  reelRefreshTimer = null;
-  carouselRefreshTimer = null;
-}
-
-function isCurrentDraftDetail(draftId) {
-  return state.mode === "content" && state.tab === "drafts" && state.mobileView === "detail" && state.draftId === draftId;
-}
-
-function isCurrentReelsDetail(draftId) {
-  return state.mode === "content" && state.tab === "reels" && state.mobileView === "detail" && state.selectedReels?.draft_id === draftId;
-}
-
-function _authQueryString() {
-  const initData = window.Telegram?.WebApp?.initData;
-  if (!initData) return "";
-  return `?init_data=${encodeURIComponent(initData)}`;
-}
-
 async function sendDraftToChat(draftId, button) {
   await withButtonFeedback(button, "Отправляю...", async () => {
     await fetchJson(`/api/drafts/${draftId}/send`, { method: "POST", body: "{}" });
@@ -646,13 +628,55 @@ const {
   sectionHeadingIcon,
   renderBackButton,
   renderMarkdown,
-  getInitDataHeaders: _initDataHeader,
+  getInitDataHeaders: () => {
+    const initData = window.Telegram?.WebApp?.initData;
+    return initData ? { "X-Telegram-Init-Data": initData } : {};
+  },
   getCurrentDraftId: () => state.draftId || state.selectedReels?.draft_id || "",
   timers: {
     getUiNotice: () => uiNoticeTimer,
     setUiNotice: (value) => { uiNoticeTimer = value; },
   },
   callbacks: coreCallbacks,
+});
+
+const sessionCallbacks = {
+  refreshReelsDetail: null,
+};
+
+const {
+  clearBackgroundRefreshes,
+  isCurrentDraftDetail,
+  isCurrentReelsDetail,
+  authQueryString,
+  applyTelegramTheme,
+  filtersToQueryString,
+  initDataHeaders,
+  scheduleReelsRefresh,
+  scheduleCarouselRefresh,
+  loadDrafts,
+} = createSessionModule({
+  state,
+  elements,
+  timers: {
+    getReelRefresh: () => reelRefreshTimer,
+    setReelRefresh: (value) => { reelRefreshTimer = value; },
+    getCarouselRefresh: () => carouselRefreshTimer,
+    setCarouselRefresh: (value) => { carouselRefreshTimer = value; },
+  },
+  fetchJson,
+  renderDraftList: () => renderDraftList(),
+  renderDraftDetail: (draft) => renderDraftDetail(draft),
+  renderReels: () => renderReels(),
+  renderReelsDetail: (draft) => renderReelsDetail(draft),
+  renderEmptyDetail: () => renderEmptyDetail(),
+  renderDetailError,
+  hasPendingCarouselOperations,
+  isEditingDetailForm,
+  syncMobileNavigation,
+  enterDetailView,
+  openDraft: (draftId) => openDraft(draftId),
+  scheduleReelsDetailRefresh: (draftId) => sessionCallbacks.refreshReelsDetail(draftId),
 });
 
 const {
@@ -678,7 +702,7 @@ const {
   withButtonFeedback,
   showRequestError,
   confirmAction,
-  authQueryString: _authQueryString,
+  authQueryString,
   isCurrentDraftDetail,
   mergeDraftIntoState,
   renderDraftList,
@@ -766,100 +790,11 @@ const {
   fetchJson,
   withButtonFeedback,
   showRequestError,
+  confirmAction,
   mergeReelsIntoState,
   scheduleReelsRefresh,
   callbacks: reelsCallbacks,
 });
-
-function applyTelegramTheme() {
-  const tg = window.Telegram?.WebApp;
-  if (!tg) return;
-  tg.ready();
-  tg.expand();
-  const bgColor = tg.themeParams.secondary_bg_color;
-  const textColor = tg.themeParams.text_color;
-  if (bgColor) document.documentElement.style.setProperty("--panel", bgColor);
-  if (textColor) document.documentElement.style.setProperty("--text", textColor);
-  document.body.classList.toggle("tg-theme-dark", tg.colorScheme === "dark");
-}
-
-function filtersToQueryString() {
-  const params = new URLSearchParams();
-  if (elements.kindFilter.value) params.set("kind", elements.kindFilter.value);
-  if (elements.statusFilter.value) params.set("status", elements.statusFilter.value);
-  if (elements.feedbackFilter.value) params.set("feedback", elements.feedbackFilter.value);
-  if (elements.queryFilter.value.trim()) params.set("query", elements.queryFilter.value.trim());
-  params.set("limit", "100");
-  return params.toString();
-}
-
-function _initDataHeader() {
-  const initData = window.Telegram?.WebApp?.initData;
-  return initData ? { "X-Telegram-Init-Data": initData } : {};
-}
-
-function scheduleReelsRefresh(draftId, attempts = 10) {
-  if (!draftId || attempts <= 0) return;
-  window.clearTimeout(reelRefreshTimer);
-  reelRefreshTimer = window.setTimeout(async () => {
-    try {
-      const { shouldContinue } = await refreshReelsDetailImpl(draftId);
-      if (shouldContinue) scheduleReelsRefresh(draftId, attempts - 1);
-    } catch (_e) { scheduleReelsRefresh(draftId, attempts - 1); }
-  }, 4000);
-}
-
-function scheduleCarouselRefresh(draftId, attempts = 12) {
-  if (!draftId || attempts <= 0) return;
-  window.clearTimeout(carouselRefreshTimer);
-  carouselRefreshTimer = window.setTimeout(async () => {
-    try {
-      const draft = await fetchJson(`/api/carousel/${draftId}`);
-      const payload = draft.payload || {};
-      const slideImages = Array.isArray(payload.slide_images) ? payload.slide_images : [];
-      const slideCount = Array.isArray(payload.slides) ? payload.slides.length : 0;
-      const readyCount = slideImages.filter(Boolean).length;
-      state.drafts = state.drafts.map((d) => d.draft_id === draft.draft_id ? { ...d, ...draft } : d);
-      if (isCurrentDraftDetail(draft.draft_id)) {
-        state.selected = draft;
-        renderDraftList();
-        if (!isEditingDetailForm() && !hasPendingCarouselOperations(draft.draft_id)) renderDraftDetail(draft);
-      }
-      if (draft.generation_pending || readyCount < slideCount) scheduleCarouselRefresh(draftId, attempts - 1);
-    } catch (_e) { scheduleCarouselRefresh(draftId, attempts - 1); }
-  }, 5000);
-}
-
-async function loadDrafts() {
-  const data = await fetchJson(`/api/drafts?${filtersToQueryString()}`, { timeout: 20000 });
-  state.drafts = data.items || [];
-  renderDraftList();
-  const preferredId = state.draftId || "";
-  if (!preferredId) {
-    renderEmptyDetail();
-    return;
-  }
-  if (isPendingDraftId(preferredId)) {
-    if (state.selected?.draft_id === preferredId) {
-      renderDraftDetail(state.selected);
-      enterDetailView();
-      return;
-    }
-    state.draftId = "";
-    renderEmptyDetail();
-    return;
-  }
-  try {
-    await openDraft(preferredId);
-  } catch (error) {
-    console.error("miniapp failed to open preferred draft", error);
-    const message = error?.message === "request_timeout"
-      ? "Карточка открывается слишком долго. Список уже загружен, можно повторить открытие."
-      : (error?.message || "Не удалось открыть карточку.");
-    elements.draftDetail.innerHTML = renderDetailError("Не удалось открыть карточку", message, `openDraft('${preferredId}')`);
-    syncMobileNavigation();
-  }
-}
 
 async function loadInbox() { return loadInboxImpl(); }
 
@@ -1123,6 +1058,8 @@ const {
   },
 });
 
+sessionCallbacks.refreshReelsDetail = refreshReelsDetailImpl;
+
 function renderDraftList() {
   return renderDraftListImpl();
 }
@@ -1144,6 +1081,7 @@ function renderEmptyDetail() {
 function setMode(m) {
   clearBackgroundRefreshes();
   state.mode = m;
+  document.body.dataset.mode = m;
   elements.modeContent.classList.toggle("active", m === "content");
   elements.modeHandbook.classList.toggle("active", m === "handbook");
   elements.settingsButton?.classList.toggle("active", m === "content" && state.tab === "settings");
@@ -1174,12 +1112,13 @@ function setMode(m) {
 
 function setTab(t) {
   clearBackgroundRefreshes();
-  state.tab = t; 
-  state.mobileView = "list"; 
-  state.selectedCreateTool = null; 
+  state.tab = t;
+  document.body.dataset.tab = t;
+  state.mobileView = "list";
+  state.selectedCreateTool = null;
   if (t !== "keywords" && t !== "settings") state.selectedKeywordTopicIdx = null;
   elements.settingsButton?.classList.toggle("active", state.mode === "content" && t === "settings");
-  
+
   if (HANDBOOK_CATEGORY_META[t]) {
     state.lastHandbookTab = t;
     state.referenceSearch = "";
@@ -1187,15 +1126,15 @@ function setTab(t) {
       state.selectedReference = null;
     }
   }
-  
+
   const p = new URLSearchParams(window.location.search);
   p.set("tab", t);
   p.delete("draft_id");
   history.replaceState({}, "", `${window.location.pathname}?${p.toString()}`);
-  
+
   syncMobileNavigation();
   elements.tabsContainer.querySelectorAll(".tab-button").forEach(b => b.classList.toggle("active", b.dataset.tab === t));
-  elements.filtersContainer.hidden = (t !== "drafts");
+  elements.filtersContainer.hidden = !["drafts", "inbox"].includes(t);
   
   // Clear panels immediately to prevent showing tools/content from previous tab
   elements.listTitle.textContent = "Загрузка...";
