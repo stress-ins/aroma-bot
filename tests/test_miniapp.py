@@ -197,6 +197,25 @@ class TestMiniAppPresenter:
         assert data["images_ready"] == 1
         assert data["generation_pending"] is True
 
+    async def test_serialize_draft_exposes_seq_id(self):
+        draft = DraftRecord(
+            draft_id="seqtest1",
+            kind="threads",
+            topic="Тест seq_id",
+            source="/miniapp",
+            created_at="2026-03-13T10:00:00+00:00",
+            status="draft",
+            feedback="",
+            payload={"caption": "Текст"},
+            seq_id=42,
+        )
+
+        full = await serialize_draft(draft)
+        summary = await serialize_draft_summary(draft)
+
+        assert full["seq_id"] == 42
+        assert summary["seq_id"] == 42
+
 
 @pytest.fixture()
 def miniapp_test_client(monkeypatch):

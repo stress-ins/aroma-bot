@@ -290,6 +290,8 @@ function handbookCategoryIcon(tabId) {
 
 function aromaCardIcon(item, tabId) {
   if (tabId === "aromas") {
+    const sourceIcon = SOURCE_TYPE_ICONS[String(item.source_type || "").toLowerCase()];
+    if (sourceIcon) return sourceIcon;
     const name = (item.name || "").toLowerCase();
     const family = (item.botanical_family || "").toLowerCase();
     if (name.includes("апельсин") || name.includes("orange") || family.includes("rutaceae")) return "🍊";

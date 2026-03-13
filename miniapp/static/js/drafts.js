@@ -88,7 +88,7 @@ export function createDraftsModule(deps) {
       <article ${interactiveCardAttrs(`Открыть черновик ${d.topic}`)} class="draft-card overview-card${d.draft_id === state.draftId ? " active" : ""}${d.generation_pending ? " is-pending" : ""} interactive-card" onclick="openDraft('${d.draft_id}')">
         <div class="overview-card-top">
           <div class="draft-kind">${contentKindIcon(d.kind)}<span>${escapeHtml(kindLabel(d.kind))}</span></div>
-          <span class="overview-card-date">#${idx + 1} · ${escapeHtml(formatPlanDate(d.created_at) || "Новый черновик")}</span>
+          <span class="overview-card-date">#${d.seq_id ?? idx + 1} · ${escapeHtml(formatPlanDate(d.created_at) || "Новый черновик")}</span>
         </div>
         <h3 class="draft-topic">${escapeHtml(d.topic)}</h3>
         <div class="draft-preview">${escapeHtml(stripMarkdown(d.preview || "Без превью"))}</div>
@@ -146,6 +146,7 @@ export function createDraftsModule(deps) {
     const p = d.payload || {};
     const mainText = p.caption || p.scenario || "";
     const heroFacts = [
+      detailFactMarkup("ID", `#${d.seq_id}`),
       detailFactMarkup("Тип", kindLabel(d.kind)),
       detailFactMarkup("Источник", sourceLabel(d.source)),
       detailFactMarkup("Статус", statusLabel(d.status)),
