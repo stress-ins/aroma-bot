@@ -2138,6 +2138,8 @@ class TestMiniAppRussianLocale:
         assert "Скопировать промпт кадра" in app_js
         assert "Скопировать промпт слайда" in app_js
         assert "function copyText" in app_js
+        assert "function togglePromptDisclosure" in app_js
+        assert "state.openPromptPanels" in app_js
         assert "function renderMarkdown" in app_js
         assert "function stripMarkdown" in app_js
 
@@ -2197,6 +2199,29 @@ class TestMiniAppRussianLocale:
         assert 'data-tool="carousel"' in app_js
         assert 'contentKindIcon("content")' in app_js
         assert 'contentKindIcon("plan")' in app_js
+
+    def test_mobile_shell_moves_primary_navigation_to_bottom_bar(self):
+        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        html = Path("miniapp/index.html").read_text(encoding="utf-8")
+
+        assert 'body.is-mobile-layout .topbar {' in app_css
+        assert 'display: none;' in app_css.split('body.is-mobile-layout .topbar {', 1)[1].split('}', 1)[0]
+        expected_order = [
+            'id="btnTabDrafts"',
+            'id="btnTabPlans"',
+            'id="btnTabCreate"',
+            'id="btnTabHandbook"',
+            'id="btnTabSettings"',
+        ]
+        positions = [html.index(marker) for marker in expected_order]
+        assert positions == sorted(positions)
+        assert 'data-tab="settings"' in html
+
+    def test_reels_opened_from_drafts_route_into_storyboard_detail(self):
+        drafts_js = _miniapp_static_text("js", "drafts.js")
+
+        assert 'if (d?.kind === "reels" && callbacks.openReels)' in drafts_js
+        assert "await callbacks.openReels(d.draft_id);" in drafts_js
 
     def test_carousel_detail_uses_actions_instead_of_raw_json(self):
         app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))

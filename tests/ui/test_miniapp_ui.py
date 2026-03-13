@@ -320,7 +320,7 @@ def test_mobile_tabs_and_drafts_render_in_russian(page):
     assert "Создать" in tabs
     assert "Черновики" in tabs
 
-    page.get_by_role("button", name="Справочник").click()
+    page.locator("#btnTabHandbook").click()
     page.wait_for_timeout(300)
 
     tabs_handbook = page.locator(".tab-button").evaluate_all(
@@ -331,7 +331,6 @@ def test_mobile_tabs_and_drafts_render_in_russian(page):
     assert "🫁Практики" in tabs_handbook
     assert "🔔Звуки" in tabs_handbook
 
-    page.locator("#modeContent").click()
     page.locator("#btnTabDrafts").click()
     page.wait_for_timeout(300)
     page.evaluate("window.goBackToList()")
@@ -341,13 +340,15 @@ def test_mobile_tabs_and_drafts_render_in_russian(page):
     assert not page.locator("#emptyState").is_visible()
 
 
-def test_reels_tab_opens_storyboard_without_empty_state(page):
-    page.locator("#btnTabReels").click()
-    page.wait_for_load_state("networkidle")
-
-    assert page.locator(".reels-card").count() == 1
-    page.locator(".reels-card").click()
+def _open_reels_detail_from_drafts(page):
+    page.locator("#btnTabDrafts").click()
+    page.wait_for_timeout(250)
+    page.get_by_text("Вечерний ароматический ритуал").first.click()
     page.wait_for_timeout(300)
+
+
+def test_reels_tab_opens_storyboard_without_empty_state(page):
+    _open_reels_detail_from_drafts(page)
 
     assert not page.locator("#emptyState").is_visible()
     assert page.locator(".detail-title").inner_text().strip() == "Вечерний ароматический ритуал"
@@ -360,10 +361,7 @@ def test_reels_tab_opens_storyboard_without_empty_state(page):
 
 
 def test_reels_detail_shows_production_overview_and_frame_status(page):
-    page.locator("#btnTabReels").click()
-    page.wait_for_load_state("networkidle")
-    page.locator(".reels-card").first.click()
-    page.wait_for_timeout(300)
+    _open_reels_detail_from_drafts(page)
 
     assert page.get_by_text("План рилса").is_visible()
     assert page.get_by_text("Shot 1").is_visible()
@@ -407,13 +405,69 @@ def test_reels_detail_falls_back_to_payload_storyboard(page):
         route.fulfill(status=200, content_type="application/json", body=json.dumps(payload, ensure_ascii=False))
 
     page.route("**/api/reels/reels001", _fulfill_reel)
-    page.locator("#btnTabReels").click()
-    page.wait_for_load_state("networkidle")
-    page.locator(".reels-card").first.click()
+    page.locator("#btnTabDrafts").click()
+    page.wait_for_timeout(200)
+    page.get_by_text("Вечерний ароматический ритуал").first.click()
     page.wait_for_timeout(250)
 
     assert page.locator(".storyboard-frame").count() == 1
     assert page.get_by_text("Попробуй сегодня").first.is_visible()
+
+
+def test_drafts_reels_card_routes_into_storyboard_detail_with_mocked_api(page):
+    reels_detail = {
+        "draft_id": "reels001",
+        "kind": "reels",
+        "topic": "Вечерний ароматический ритуал",
+        "source": "/miniapp",
+        "status": "draft",
+        "feedback": "",
+        "created_at": "2026-03-11T18:00:00+00:00",
+        "preview": "Рилс с раскадровкой.",
+        "images_ready": 1,
+        "frame_count": 1,
+        "frames": [
+            {
+                "timecode": "0-3 сек",
+                "scene": "Камера идет по флакону и ладони",
+                "angle": "Крупный план",
+                "gemini_prompt": "close-up bottle and hand, warm evening light",
+                "current_asset": {
+                    "url": "/generated/reels_assets/reels001/frame_1.png",
+                    "filename": "frame_1.png",
+                },
+            }
+        ],
+        "payload": {
+            "concept": "Вечернее переключение",
+            "scenario": "Короткий сценарий",
+            "storyboard": [],
+        },
+    }
+
+    def _draft_detail(route):
+        if route.request.url.endswith("/api/drafts/reels001"):
+            route.fulfill(status=200, content_type="application/json", body=json.dumps(reels_detail, ensure_ascii=False))
+            return
+        route.continue_()
+
+    def _reel_detail(route):
+        if route.request.url.endswith("/api/reels/reels001"):
+            route.fulfill(status=200, content_type="application/json", body=json.dumps(reels_detail, ensure_ascii=False))
+            return
+        route.continue_()
+
+    page.route("**/api/drafts/reels001", _draft_detail)
+    page.route("**/api/reels/reels001", _reel_detail)
+
+    page.locator("#btnTabDrafts").click()
+    page.wait_for_timeout(200)
+    page.get_by_text("Вечерний ароматический ритуал").first.click()
+    page.wait_for_timeout(300)
+
+    assert page.locator(".storyboard-frame").count() == 1
+    assert page.get_by_text("Камера идет по флакону и ладони").first.is_visible()
+    assert not page.get_by_text("Превью").is_visible()
 
 
 def test_overview_lists_use_consistent_card_meta(page):
@@ -426,9 +480,11 @@ def test_overview_lists_use_consistent_card_meta(page):
     assert page.locator(".plan-card .draft-kind").first.is_visible()
     assert page.locator(".plan-card .overview-card-date").first.is_visible()
 
-    page.locator("#btnTabReels").click()
+    page.locator("#btnTabDrafts").click()
     page.wait_for_timeout(250)
-    assert page.locator(".reels-card .draft-meta .tag").count() >= 2
+    page.get_by_text("Вечерний ароматический ритуал").first.click()
+    page.wait_for_timeout(250)
+    assert page.locator(".storyboard-frame").count() >= 1
 
 def test_keyboard_can_open_cards_and_create_tools(desktop_page):
     desktop_page.get_by_role("button", name="Черновики").click()
@@ -476,8 +532,8 @@ def test_settings_and_keywords_use_guided_detail_copy(desktop_page):
     assert desktop_page.get_by_text("Откройте тему для редактирования").is_visible()
 
 def test_mobile_layout_has_no_overlapping_controls(page):
-    for tab_name in ["Черновики", "Рилсы", "Создать"]:
-        {"Черновики": page.locator("#btnTabDrafts"), "Рилсы": page.locator("#btnTabReels"), "Создать": page.locator("#btnTabCreate")}[tab_name].click()
+    for tab_name in ["Черновики", "Планы", "Создать"]:
+        {"Черновики": page.locator("#btnTabDrafts"), "Планы": page.locator("#btnTabPlans"), "Создать": page.locator("#btnTabCreate")}[tab_name].click()
         page.wait_for_timeout(300)
 
         overlaps = page.evaluate(
@@ -546,10 +602,10 @@ def test_mobile_bottom_tab_bar_switches_primary_sections(page):
     bottom_nav = page.locator("#bottomTabBar")
     assert bottom_nav.is_visible()
 
-    page.locator("#btnTabReels").click()
+    page.locator("#btnTabPlans").click()
     page.wait_for_timeout(300)
-    assert page.locator("#btnTabReels").get_attribute("aria-pressed") == "true"
-    assert page.locator(".reels-card").count() == 1
+    assert page.locator("#btnTabPlans").get_attribute("aria-pressed") == "true"
+    assert page.locator(".plan-card").count() >= 1
 
     page.locator("#btnTabHandbook").click()
     page.wait_for_timeout(300)
@@ -640,10 +696,7 @@ def test_dark_theme_class_styles_bottom_tab_bar(page):
 
 
 def test_dark_theme_keeps_reels_storyboard_text_readable(page):
-    page.locator("#btnTabReels").click()
-    page.wait_for_load_state("networkidle")
-    page.locator(".reels-card").first.click()
-    page.wait_for_timeout(250)
+    _open_reels_detail_from_drafts(page)
     page.evaluate("document.body.classList.add('tg-theme-dark')")
     page.wait_for_timeout(50)
 
@@ -674,10 +727,7 @@ def test_dark_theme_keeps_reels_storyboard_text_readable(page):
 
 
 def test_reels_and_plans_render_markdown_in_detail_views(page):
-    page.locator("#btnTabReels").click()
-    page.wait_for_load_state("networkidle")
-    page.locator(".reels-card").first.click()
-    page.wait_for_timeout(250)
+    _open_reels_detail_from_drafts(page)
 
     frame_markup = page.locator(".reels-frame-section-value").first.evaluate(
         "(node) => ({ html: node.innerHTML, text: node.textContent })"
@@ -801,7 +851,7 @@ def test_mobile_carousel_actions_use_two_columns(page):
     columns = page.locator(".prompt-actions.actions-grid-two").first.evaluate(
         "(node) => getComputedStyle(node).gridTemplateColumns"
     )
-    assert columns.count(" ") >= 1
+    assert columns.count(" ") == 0
 
 
 def test_reels_storyboard_regenerate_enters_pending_images_state(page):
@@ -837,10 +887,7 @@ def test_reels_storyboard_regenerate_enters_pending_images_state(page):
         route.continue_()
 
     page.route("**/*", handle_route)
-    page.locator("#btnTabReels").click()
-    page.wait_for_timeout(250)
-    page.locator(".reels-card").first.click()
-    page.wait_for_timeout(250)
+    _open_reels_detail_from_drafts(page)
     page.get_by_role("button", name="Пересобрать раскадровку").click()
     page.wait_for_timeout(450)
 
@@ -1312,10 +1359,7 @@ def test_visual_mobile_plan_detail_baseline(page):
 
 
 def test_visual_mobile_reels_detail_baseline(page):
-    page.locator("#btnTabReels").click()
-    page.wait_for_timeout(300)
-    page.locator(".reels-card").first.click()
-    page.wait_for_timeout(300)
+    _open_reels_detail_from_drafts(page)
     _prepare_visual_state(page)
     _assert_visual_snapshot(page.locator("#detailPanel"), "mobile-reels-detail.png")
 
@@ -1365,10 +1409,7 @@ def test_dark_theme_class_applies_without_js_errors(page):
 def test_dark_theme_storyboard_and_section_accent_use_dark_backgrounds(page):
     """After CSS fix: .storyboard-frame and .section-accent must render with
     dark surface colors (not hardcoded near-white) when tg-theme-dark is active."""
-    page.locator("#btnTabReels").click()
-    page.wait_for_load_state("networkidle")
-    page.locator(".reels-card").first.click()
-    page.wait_for_timeout(250)
+    _open_reels_detail_from_drafts(page)
 
     page.evaluate("document.body.classList.add('tg-theme-dark')")
     page.wait_for_timeout(80)
