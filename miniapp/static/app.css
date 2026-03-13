@@ -2085,7 +2085,8 @@ body.tg-theme-dark .concept-card {
   border-radius: var(--radius-sm);
   padding: 10px 12px;
   color: var(--text);
-  resize: vertical;
+  resize: none;
+  overflow-y: hidden;
 }
 
 .prompt-note-field input {
@@ -2619,6 +2620,7 @@ body.is-mobile-layout[data-mode="handbook"] .tabs {
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
   flex-wrap: nowrap;
+  overscroll-behavior-x: contain;
 }
 body.is-mobile-layout[data-mode="handbook"] .tabs::-webkit-scrollbar { display: none; }
 
@@ -2726,6 +2728,7 @@ body.is-mobile-layout[data-mode="handbook"] .tabs::-webkit-scrollbar { display: 
   overflow-x: auto;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
 }
 .filter-chips::-webkit-scrollbar { display: none; }
 .filter-chip {

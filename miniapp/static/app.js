@@ -1482,4 +1482,20 @@ function renderReelsDetail(r) {
 function renderKeywords() {
   return renderKeywordsImpl();
 }
+// Auto-resize .prompt-note-field textareas so content fits without inner scroll
+document.addEventListener("input", (e) => {
+  if (e.target.matches(".prompt-note-field textarea")) {
+    const el = e.target;
+    el.style.height = "auto";
+    el.style.height = el.scrollHeight + "px";
+  }
+});
+document.addEventListener("click", () => {
+  requestAnimationFrame(() => {
+    document.querySelectorAll(".prompt-note-field textarea").forEach((el) => {
+      el.style.height = "auto";
+      el.style.height = el.scrollHeight + "px";
+    });
+  });
+});
 bootstrap();
