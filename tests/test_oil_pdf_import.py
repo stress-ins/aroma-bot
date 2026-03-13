@@ -54,6 +54,11 @@ _MOCK_CLAUDE_RESPONSE = {
     "applications": "Диффузия 3-5 капель; 2% в базовом масле для массажа",
     "precautions": "Избегать при аллергии на растения семейства Яснотковые",
     "conditions_for_use": "Стресс, тревога, бессонница, головная боль",
+    "spiritual_emotional": "Помогает отпустить контроль, раскрывает сердечный центр",
+    "health_effects": "Снижает артериальное давление, противовоспалительное действие",
+    "mind_effect": "Снижает умственное напряжение, улучшает концентрацию",
+    "blends_containing": "Peace & Calming, Stress Away",
+    "complementary_oils": "Ладан, Бергамот, Герань",
 }
 
 
@@ -335,3 +340,60 @@ def test_parse_returns_resource_values():
     assert "resource_minus" in result
     assert result["resource_plus"]
     assert result["resource_minus"]
+
+
+# ---------------------------------------------------------------------------
+# Test 11: new fields (spiritual_emotional, health_effects, mind_effect) in payload
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_new_fields_included_in_payload(tmp_path):
+    """spiritual_emotional, health_effects, mind_effect must appear in upserted payload."""
+    (tmp_path / "ЛАВАНДА.pdf").write_bytes(b"%PDF fake")
+
+    captured_payload: dict = {}
+
+    async def fake_upsert(slug, name, source_type, aliases, payload):
+        captured_payload.update(payload)
+        return "created"
+
+    with (
+        patch.object(importer, "PDF_DIR", tmp_path),
+        patch.object(importer, "_extract_text_pdfplumber", return_value=_MOCK_PDF_TEXT),
+        patch.object(importer, "_parse_with_claude", return_value=_MOCK_CLAUDE_RESPONSE),
+        patch.object(importer, "_upsert_card", side_effect=fake_upsert),
+    ):
+        await importer.run(dry_run=False, only_file="ЛАВАНДА")
+
+    assert captured_payload["spiritual_emotional"] == "Помогает отпустить контроль, раскрывает сердечный центр"
+    assert captured_payload["health_effects"] == "Снижает артериальное давление, противовоспалительное действие"
+    assert captured_payload["mind_effect"] == "Снижает умственное напряжение, улучшает концентрацию"
+
+
+# ---------------------------------------------------------------------------
+# Test 12: blends_containing and complementary_oils are parsed into lists
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_blends_and_complementary_parsed_to_lists(tmp_path):
+    """blends_containing_names and complementary_oil_names must be lists, not strings."""
+    (tmp_path / "ЛАВАНДА.pdf").write_bytes(b"%PDF fake")
+
+    captured_payload: dict = {}
+
+    async def fake_upsert(slug, name, source_type, aliases, payload):
+        captured_payload.update(payload)
+        return "created"
+
+    with (
+        patch.object(importer, "PDF_DIR", tmp_path),
+        patch.object(importer, "_extract_text_pdfplumber", return_value=_MOCK_PDF_TEXT),
+        patch.object(importer, "_parse_with_claude", return_value=_MOCK_CLAUDE_RESPONSE),
+        patch.object(importer, "_upsert_card", side_effect=fake_upsert),
+    ):
+        await importer.run(dry_run=False, only_file="ЛАВАНДА")
+
+    assert isinstance(captured_payload["blends_containing_names"], list)
+    assert "Peace & Calming" in captured_payload["blends_containing_names"]
+    assert isinstance(captured_payload["complementary_oil_names"], list)
+    assert "Ладан" in captured_payload["complementary_oil_names"]

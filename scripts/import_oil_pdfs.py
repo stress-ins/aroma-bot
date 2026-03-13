@@ -75,6 +75,11 @@ _PARSE_PROMPT = """\
 - applications: способы применения (диффузия, массаж, и т.д.)
 - precautions: меры предосторожности (если есть отдельно от contraindications)
 - conditions_for_use: показания / условия применения
+- spiritual_emotional: духовное и эмоциональное воздействие
+- health_effects: влияние на здоровье (физическое воздействие)
+- mind_effect: влияние на ум / умственное и когнитивное действие
+- blends_containing: список смесей, в состав которых входит масло (через запятую, пустая строка если нет)
+- complementary_oils: комплиментарные эфирные масла (через запятую, пустая строка если нет)
 
 Верни ТОЛЬКО JSON без обёрток. Текст карточки:
 {text}
@@ -201,6 +206,10 @@ async def run(dry_run: bool = False, only_file: str | None = None) -> list[str]:
         name = fields.get("name") or stem
         resource_plus = fields.get("resource_plus", "")
         resource_minus = fields.get("resource_minus", "")
+        raw_blends = fields.get("blends_containing", "") or ""
+        raw_comp = fields.get("complementary_oils", "") or ""
+        blends_list = [b.strip() for b in raw_blends.split(",") if b.strip()]
+        comp_list = [c.strip() for c in raw_comp.split(",") if c.strip()]
         payload = {
             "description":             fields.get("description", ""),
             "description_short":       fields.get("description_short", ""),
@@ -219,6 +228,11 @@ async def run(dry_run: bool = False, only_file: str | None = None) -> list[str]:
             "applications":            fields.get("applications", ""),
             "precautions":             fields.get("precautions", ""),
             "conditions_for_use":      fields.get("conditions_for_use", ""),
+            "spiritual_emotional":     fields.get("spiritual_emotional", ""),
+            "health_effects":          fields.get("health_effects", ""),
+            "mind_effect":             fields.get("mind_effect", ""),
+            "blends_containing_names": blends_list,
+            "complementary_oil_names": comp_list,
             "source": "pdf_import",
         }
 
