@@ -57,15 +57,24 @@ _PARSE_PROMPT = """\
 Ниже текст, извлечённый из PDF-карточки эфирного масла.
 Верни JSON-объект со следующими полями (строки, пустая строка если нет данных):
 - name: название масла на русском
-- description: краткое описание (1-3 предложения)
+- description: полное описание из PDF (сохранить как есть, 1-5 предложений)
+- description_short: краткое описание 2-3 предложения, самая суть масла без потери ключевых свойств
 - therapeutic_properties: терапевтические свойства
 - psychological_properties: психологические свойства / эмоциональное действие
 - botanical_family: ботаническое семейство
 - extraction_method: способ получения
-- contraindications: противопоказания
+- contraindications: противопоказания / предосторожности
 - origin_countries: страны происхождения
 - key: ключевая фраза или ключ масла (1 строка)
 - volatility: летучесть (top/middle/base или описание)
+- resource_plus: ресурсные значения «+» — что усиливает, поддерживает
+- resource_minus: ресурсные значения «-» — с чем помогает справиться, дефицит
+- questions: вопросы для работы с маслом (через точку с запятой)
+- nps_effect: действие на нервную систему / НПС
+- history: история использования масла
+- applications: способы применения (диффузия, массаж, и т.д.)
+- precautions: меры предосторожности (если есть отдельно от contraindications)
+- conditions_for_use: показания / условия применения
 
 Верни ТОЛЬКО JSON без обёрток. Текст карточки:
 {text}
@@ -190,8 +199,11 @@ async def run(dry_run: bool = False, only_file: str | None = None) -> list[str]:
             continue
 
         name = fields.get("name") or stem
+        resource_plus = fields.get("resource_plus", "")
+        resource_minus = fields.get("resource_minus", "")
         payload = {
             "description":             fields.get("description", ""),
+            "description_short":       fields.get("description_short", ""),
             "key":                     fields.get("key", ""),
             "therapeutic_properties":  fields.get("therapeutic_properties", ""),
             "psychological_properties":fields.get("psychological_properties", ""),
@@ -200,6 +212,13 @@ async def run(dry_run: bool = False, only_file: str | None = None) -> list[str]:
             "contraindications":       fields.get("contraindications", ""),
             "origin_countries":        fields.get("origin_countries", ""),
             "volatility":              fields.get("volatility", ""),
+            "resource_values":         {"plus": resource_plus, "minus": resource_minus},
+            "questions":               fields.get("questions", ""),
+            "nps_effect":              fields.get("nps_effect", ""),
+            "history":                 fields.get("history", ""),
+            "applications":            fields.get("applications", ""),
+            "precautions":             fields.get("precautions", ""),
+            "conditions_for_use":      fields.get("conditions_for_use", ""),
             "source": "pdf_import",
         }
 
