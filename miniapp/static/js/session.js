@@ -1,0 +1,152 @@
+export function createSessionModule(deps) {
+  const {
+    state,
+    elements,
+    timers,
+    fetchJson,
+    renderDraftList,
+    renderDraftDetail,
+    renderReels,
+    renderReelsDetail,
+    renderEmptyDetail,
+    renderDetailError,
+    hasPendingCarouselOperations,
+    isEditingDetailForm,
+    syncMobileNavigation,
+    enterDetailView,
+    openDraft,
+    scheduleReelsDetailRefresh,
+  } = deps;
+
+  function clearBackgroundRefreshes() {
+    window.clearTimeout(timers.getReelRefresh());
+    window.clearTimeout(timers.getCarouselRefresh());
+    timers.setReelRefresh(null);
+    timers.setCarouselRefresh(null);
+  }
+
+  function isCurrentDraftDetail(draftId) {
+    return state.mode === "content" && state.tab === "drafts" && state.mobileView === "detail" && state.draftId === draftId;
+  }
+
+  function isCurrentReelsDetail(draftId) {
+    return state.mode === "content" && state.tab === "reels" && state.mobileView === "detail" && state.selectedReels?.draft_id === draftId;
+  }
+
+  function authQueryString() {
+    const initData = window.Telegram?.WebApp?.initData;
+    if (!initData) return "";
+    return `?init_data=${encodeURIComponent(initData)}`;
+  }
+
+  function applyTelegramTheme() {
+    const tg = window.Telegram?.WebApp;
+    if (!tg) return;
+    tg.ready();
+    tg.expand();
+    const bgColor = tg.themeParams.secondary_bg_color;
+    const textColor = tg.themeParams.text_color;
+    if (bgColor) document.documentElement.style.setProperty("--panel", bgColor);
+    if (textColor) document.documentElement.style.setProperty("--text", textColor);
+    document.body.classList.toggle("tg-theme-dark", tg.colorScheme === "dark");
+  }
+
+  function filtersToQueryString() {
+    const params = new URLSearchParams();
+    if (elements.kindFilter.value) params.set("kind", elements.kindFilter.value);
+    if (elements.statusFilter.value) params.set("status", elements.statusFilter.value);
+    if (elements.feedbackFilter.value) params.set("feedback", elements.feedbackFilter.value);
+    if (elements.queryFilter.value.trim()) params.set("query", elements.queryFilter.value.trim());
+    params.set("limit", "100");
+    return params.toString();
+  }
+
+  function initDataHeaders() {
+    const initData = window.Telegram?.WebApp?.initData;
+    return initData ? { "X-Telegram-Init-Data": initData } : {};
+  }
+
+  function scheduleReelsRefresh(draftId, attempts = 10) {
+    if (!draftId || attempts <= 0) return;
+    window.clearTimeout(timers.getReelRefresh());
+    timers.setReelRefresh(window.setTimeout(async () => {
+      try {
+        const { shouldContinue } = await scheduleReelsDetailRefresh(draftId);
+        if (shouldContinue) scheduleReelsRefresh(draftId, attempts - 1);
+      } catch (_error) {
+        scheduleReelsRefresh(draftId, attempts - 1);
+      }
+    }, 4000));
+  }
+
+  function scheduleCarouselRefresh(draftId, attempts = 12) {
+    if (!draftId || attempts <= 0) return;
+    window.clearTimeout(timers.getCarouselRefresh());
+    timers.setCarouselRefresh(window.setTimeout(async () => {
+      try {
+        const draft = await fetchJson(`/api/carousel/${draftId}`);
+        const payload = draft.payload || {};
+        const slideImages = Array.isArray(payload.slide_images) ? payload.slide_images : [];
+        const slideCount = Array.isArray(payload.slides) ? payload.slides.length : 0;
+        const readyCount = slideImages.filter(Boolean).length;
+        state.drafts = state.drafts.map((item) => item.draft_id === draft.draft_id ? { ...item, ...draft } : item);
+        if (isCurrentDraftDetail(draft.draft_id)) {
+          state.selected = draft;
+          renderDraftList();
+          if (!isEditingDetailForm() && !hasPendingCarouselOperations(draft.draft_id)) {
+            renderDraftDetail(draft);
+          }
+        }
+        if (draft.generation_pending || readyCount < slideCount) {
+          scheduleCarouselRefresh(draftId, attempts - 1);
+        }
+      } catch (_error) {
+        scheduleCarouselRefresh(draftId, attempts - 1);
+      }
+    }, 5000));
+  }
+
+  async function loadDrafts() {
+    const data = await fetchJson(`/api/drafts?${filtersToQueryString()}`, { timeout: 20000 });
+    state.drafts = data.items || [];
+    renderDraftList();
+    const preferredId = state.draftId || "";
+    if (!preferredId) {
+      renderEmptyDetail();
+      return;
+    }
+    if (String(preferredId).startsWith("pending-")) {
+      if (state.selected?.draft_id === preferredId) {
+        renderDraftDetail(state.selected);
+        enterDetailView();
+        return;
+      }
+      state.draftId = "";
+      renderEmptyDetail();
+      return;
+    }
+    try {
+      await openDraft(preferredId);
+    } catch (error) {
+      console.error("miniapp failed to open preferred draft", error);
+      const message = error?.message === "request_timeout"
+        ? "Карточка открывается слишком долго. Список уже загружен, можно повторить открытие."
+        : (error?.message || "Не удалось открыть карточку.");
+      elements.draftDetail.innerHTML = renderDetailError("Не удалось открыть карточку", message, `openDraft('${preferredId}')`);
+      syncMobileNavigation();
+    }
+  }
+
+  return {
+    clearBackgroundRefreshes,
+    isCurrentDraftDetail,
+    isCurrentReelsDetail,
+    authQueryString,
+    applyTelegramTheme,
+    filtersToQueryString,
+    initDataHeaders,
+    scheduleReelsRefresh,
+    scheduleCarouselRefresh,
+    loadDrafts,
+  };
+}

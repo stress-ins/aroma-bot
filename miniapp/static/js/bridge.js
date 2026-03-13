@@ -1,0 +1,100 @@
+export function registerWindowBridge(deps) {
+  const {
+    state,
+    setMode,
+    setTab,
+    loadSettings,
+    renderCreate,
+    renderCreateTool,
+    retryCurrentTab,
+    openDraft,
+    openAroma,
+    openReference,
+    copyText,
+    openReels,
+    openPlan,
+    generateDraftFromPlan,
+    openPlanRelatedDraft,
+    updateDraft,
+    sendDraftToChat,
+    deleteDraft,
+    saveCarouselSlideText,
+    regenerateCarouselSlide,
+    regenerateCarouselAll,
+    selectCarouselSlideVersion,
+    deleteCarouselSlideVersion,
+    handleCarouselSlideNoteInput,
+    downloadCarouselPptx,
+    saveReelsScenario,
+    regenerateReelsStoryboard,
+    regenerateAllReelsFrames,
+    saveReelsFrameFields,
+    saveReelsFramePrompt,
+    saveReelsFrameNote,
+    regenerateReelsFrame,
+    handleReelsFramePromptInput,
+    handleReelsFrameNoteInput,
+    saveContentReviewDraft,
+    polishContentDraft,
+    openKeywordTopic,
+    addKeywordItem,
+    removeKeywordItem,
+    goBackToList,
+  } = deps;
+
+  window.retryCurrentTab = retryCurrentTab;
+  window.goBackToList = goBackToList;
+
+  window.openDraft = openDraft;
+  window.openAroma = openAroma;
+  window.openReference = openReference;
+  window.copyText = copyText;
+  window.openReels = openReels;
+  window.openPlan = openPlan;
+  window.generateDraftFromPlan = generateDraftFromPlan;
+  window.openPlanRelatedDraft = openPlanRelatedDraft;
+  window.updateDraft = updateDraft;
+  window.sendDraftToChat = sendDraftToChat;
+  window.deleteDraft = deleteDraft;
+
+  window.saveCarouselSlideText = saveCarouselSlideText;
+  window.regenerateCarouselSlide = regenerateCarouselSlide;
+  window.regenerateCarouselAll = regenerateCarouselAll;
+  window.selectCarouselSlideVersion = selectCarouselSlideVersion;
+  window.deleteCarouselSlideVersion = deleteCarouselSlideVersion;
+  window.handleCarouselSlideNoteInput = handleCarouselSlideNoteInput;
+  window.downloadCarouselPptx = downloadCarouselPptx;
+
+  window.saveReelsScenario = saveReelsScenario;
+  window.regenerateReelsStoryboard = regenerateReelsStoryboard;
+  window.regenerateAllReelsFrames = regenerateAllReelsFrames;
+  window.saveReelsFrameFields = saveReelsFrameFields;
+  window.saveReelsFramePrompt = saveReelsFramePrompt;
+  window.saveReelsFrameNote = saveReelsFrameNote;
+  window.regenerateReelsFrame = regenerateReelsFrame;
+  window.handleReelsFramePromptInput = handleReelsFramePromptInput;
+  window.handleReelsFrameNoteInput = handleReelsFrameNoteInput;
+
+  window.saveContentReviewDraft = saveContentReviewDraft;
+  window.polishContentDraft = polishContentDraft;
+  window.openKeywordTopic = openKeywordTopic;
+  window.addKeywordItem = addKeywordItem;
+  window.removeKeywordItem = removeKeywordItem;
+  window.renderCreateTool = renderCreateTool;
+
+  window.openCreateTool = (toolId = "content") => {
+    setMode("content");
+    setTab("create");
+    renderCreate();
+    renderCreateTool(toolId);
+  };
+
+  window.openSettingsSection = async (section) => {
+    state.settingsSection = section === "keywords" ? "keywords" : "status";
+    if (state.tab !== "settings") {
+      setMode("content");
+      setTab("settings");
+    }
+    await loadSettings();
+  };
+}
