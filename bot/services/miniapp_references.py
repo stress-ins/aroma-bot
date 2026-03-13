@@ -27,6 +27,7 @@ REFERENCE_CONTEXT_TITLES = {
 }
 EDITABLE_FIELDS = (
     "description",
+    "description_short",
     "questions",
     "nps_effect",
     "therapeutic_properties",
@@ -37,6 +38,7 @@ EDITABLE_FIELDS = (
     "origin_countries",
     "extraction_method",
     "key",
+    "applications",
 )
 RESOURCE_FIELDS = ("plus", "minus")
 SHARED_IMAGE_OVERRIDES = {
@@ -412,6 +414,29 @@ async def list_reference_cards(category: str) -> list[dict[str, str]]:
             "category_group": str(payload.get("category_group", "")),
         })
     return items
+
+
+async def list_reference_cards_missing_description(category: str) -> list[dict[str, str]]:
+    """Return cards where description (and description_short) are empty — for content audit."""
+    await seed_reference_cards_if_empty()
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(select(AromaCardModel).where(AromaCardModel.category == category))
+        models = result.scalars().all()
+    items = []
+    for model in models:
+        payload = _public_payload(model.payload or {})
+        description = str(payload.get("description", "") or "").strip()
+        description_short = str(payload.get("description_short", "") or "").strip()
+        course_notes = str(payload.get("course_notes", "") or "").strip()
+        if not description and not description_short and not course_notes:
+            items.append({
+                "slug": model.slug,
+                "name": model.name,
+                "category": model.category,
+                "source_type": model.source_type,
+                "description": "",
+            })
+    return sorted(items, key=lambda x: _normalize(x["name"]))
 
 
 async def build_reference_context(

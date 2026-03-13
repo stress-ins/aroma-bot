@@ -125,12 +125,35 @@ export function createReferencesModule(deps) {
     if (!pairs || !pairs.length) return "";
     const chips = pairs.map(({ slug, name }) => {
       if (!name) return "";
-      if (slug) {
+      // Filter out empty/placeholder slugs that would open nothing
+      if (slug && String(slug).trim() !== "") {
         return `<button class="crossref-chip" onclick='openReference(${JSON.stringify(slug)}, ${JSON.stringify(targetTab)})'>${escapeHtml(name)}</button>`;
       }
       return `<span class="crossref-chip crossref-chip--plain">${escapeHtml(name)}</span>`;
-    }).join("");
+    }).filter(Boolean).join("");
+    if (!chips) return "";
     return `<div class="crossref-chips">${chips}</div>`;
+  }
+
+  function renderCollapsibleDescription(reference) {
+    const short = String(reference.description_short || "").trim();
+    const full = String(reference.description || "").trim();
+    if (!short && !full) return "";
+    // If short exists and is different from full, render collapsible
+    if (short && full && short !== full) {
+      return `
+        <section class="section">
+          <h3>Описание</h3>
+          <div class="detail-preview">${escapeHtml(short)}</div>
+          <details class="description-collapsible">
+            <summary class="description-toggle">▼ Полный текст</summary>
+            <div class="detail-preview description-full">${escapeHtml(full)}</div>
+          </details>
+        </section>
+      `;
+    }
+    // Fallback to whichever is present
+    return `<section class="section"><h3>Описание</h3><div class="detail-preview">${escapeHtml(short || full)}</div></section>`;
   }
 
   function renderReferencePassport(reference) {
@@ -263,7 +286,32 @@ export function createReferencesModule(deps) {
     return `<div class="filter-chips">${parentChips.join("")}</div>${childChips}`;
   }
 
+  function renderReferenceAudit(items) {
+    const empty = items.filter((item) => !String(item.description || item.course_notes || "").trim());
+    elements.listTitle.textContent = "Аудит: пустые описания";
+    elements.draftCount.textContent = `${empty.length} карточек без описания`;
+    setEmptyState(empty.length > 0, "Все карточки заполнены!");
+    elements.draftList.innerHTML = `
+      <div class="audit-header">
+        <h3>📋 Карточки без описания (требуют заполнения):</h3>
+      </div>
+      <ul class="audit-list">${empty.map((item) =>
+        `<li class="audit-item">• <strong>${escapeHtml(item.name)}</strong> (${escapeHtml(item.category || "")}) — description пустой</li>`
+      ).join("")}</ul>
+    `;
+    elements.draftDetail.innerHTML = `${renderBackButton()}<div class="detail-empty"></div>`;
+  }
+
   function renderReferences() {
+    // Audit mode: ?audit=1 shows empty-description list
+    if (new URLSearchParams(window.location.search).get("audit") === "1") {
+      const items = state.referenceItems || [];
+      if (items.length > 0) {
+        renderReferenceAudit(items);
+        return;
+      }
+    }
+
     const meta = currentHandbookMeta();
     const tabId = state.tab;
     const items = state.referenceItems || [];
@@ -404,6 +452,59 @@ export function createReferencesModule(deps) {
           ${aromaSection("Применение", reference.applications)}
         </div>
       `;
+    } else if (state.tab === "practices") {
+      const compOilChips = renderCrossRefChips(
+        zipNamesAndSlugs(reference.complementary_oil_names, reference.complementary_oil_slugs),
+        "aromas"
+      );
+      const blendPracticeChips = renderCrossRefChips(
+        zipNamesAndSlugs(reference.blend_names, reference.blend_slugs),
+        "blends"
+      );
+      detailHtml = `
+        <div class="detail-grid">
+          ${renderBackButton()}
+          ${renderReferenceImage(reference)}
+          ${aromaSection("Паспорт карточки", renderReferencePassport(reference))}
+          ${renderCollapsibleDescription(reference)}
+          ${aromaSection("Психологические свойства", reference.psychological_properties)}
+          ${aromaSection("Терапевтические свойства", reference.therapeutic_properties)}
+          ${compOilChips ? `<section class="section"><h3>🌿 Масла для практики</h3><div class="detail-preview">${compOilChips}</div></section>` : ""}
+          ${blendPracticeChips ? `<section class="section"><h3>🌀 Рекомендуемые смеси</h3><div class="detail-preview">${blendPracticeChips}</div></section>` : ""}
+          ${aromaSection("📋 Применение", reference.applications)}
+          ${aromaSection("Меры предосторожности", reference.precautions)}
+          ${aromaSection("Материалы курса", reference.course_notes)}
+        </div>
+      `;
+    } else if (state.tab === "concepts") {
+      const compOilChips = renderCrossRefChips(
+        zipNamesAndSlugs(reference.complementary_oil_names, reference.complementary_oil_slugs),
+        "aromas"
+      );
+      const practiceChips = renderCrossRefChips(
+        zipNamesAndSlugs(reference.practice_names, reference.practice_slugs),
+        "practices"
+      );
+      const blendsChips = renderCrossRefChips(
+        zipNamesAndSlugs(reference.blends_containing_names, reference.blends_containing_slugs),
+        "blends"
+      );
+      detailHtml = `
+        <div class="detail-grid">
+          ${renderBackButton()}
+          ${renderReferenceImage(reference)}
+          ${aromaSection("Паспорт карточки", renderReferencePassport(reference))}
+          ${renderCollapsibleDescription(reference)}
+          ${aromaSection("Психологические свойства", reference.psychological_properties)}
+          ${aromaSection('Ресурс "+"', reference.resource_values?.plus)}
+          ${aromaSection('Ресурс "-"', reference.resource_values?.minus)}
+          ${aromaSection("Какие вопросы поднимает", reference.questions)}
+          ${compOilChips ? `<section class="section"><h3>🌿 Комплементарные масла</h3><div class="detail-preview">${compOilChips}</div></section>` : ""}
+          ${practiceChips ? `<section class="section"><h3>🧘 Практики</h3><div class="detail-preview">${practiceChips}</div></section>` : ""}
+          ${blendsChips ? `<section class="section"><h3>🌀 Входит в смеси</h3><div class="detail-preview">${blendsChips}</div></section>` : ""}
+          ${aromaSection("Материалы курса", reference.course_notes)}
+        </div>
+      `;
     } else {
       const compChips = renderCrossRefChips(
         zipNamesAndSlugs(reference.complementary_oil_names, reference.complementary_oil_slugs),
@@ -418,7 +519,7 @@ export function createReferencesModule(deps) {
           ${renderBackButton()}
           ${renderReferenceImage(reference)}
           ${aromaSection("Паспорт карточки", renderReferencePassport(reference))}
-          ${aromaSection("Описание", reference.description)}
+          ${renderCollapsibleDescription(reference)}
           ${aromaSection("Психологические свойства", reference.psychological_properties)}
           ${aromaSection('Ресурс "+"', reference.resource_values?.plus)}
           ${aromaSection('Ресурс "-"', reference.resource_values?.minus)}
