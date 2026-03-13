@@ -11,6 +11,7 @@ const REFERENCE_SOURCE_TYPE_LABELS = {
 };
 
 export function createReferencesModule(deps) {
+  let openReferenceInFlight = false;
   const {
     state,
     elements,
@@ -75,6 +76,11 @@ export function createReferencesModule(deps) {
     const data = await fetchJson(`/api/references/${meta.category}`);
     state.referenceItems = data.items || [];
 
+    // Skip rendering if openReference is currently in flight — it will call
+    // renderReferences itself when the detail fetch completes, preventing a
+    // race condition where the list load overwrites the detail with empty state.
+    if (openReferenceInFlight) return;
+
     const selectedSlug = state.selectedReference?.category === meta.category
       ? state.selectedReference?.slug
       : "";
@@ -91,12 +97,17 @@ export function createReferencesModule(deps) {
     if (!slug || !meta) return;
     elements.draftDetail.innerHTML = `${renderBackButton()}${renderDetailLoader("Открываю карточку справочника")}`;
     enterDetailView();
-    state.selectedReference = await fetchJson(`/api/references/${meta.category}/${encodeURIComponent(slug)}`);
-    state.selectedReference.category = meta.category;
-    state.tab = tabId;
-    elements.tabsContainer.querySelectorAll(".tab-button").forEach((b) => b.classList.toggle("active", b.dataset.tab === tabId));
-    renderReferences();
-    enterDetailView();
+    openReferenceInFlight = true;
+    try {
+      state.selectedReference = await fetchJson(`/api/references/${meta.category}/${encodeURIComponent(slug)}`);
+      state.selectedReference.category = meta.category;
+      state.tab = tabId;
+      elements.tabsContainer.querySelectorAll(".tab-button").forEach((b) => b.classList.toggle("active", b.dataset.tab === tabId));
+      renderReferences();
+      enterDetailView();
+    } finally {
+      openReferenceInFlight = false;
+    }
   }
 
   function zipNamesAndSlugs(names, slugs) {
@@ -110,7 +121,7 @@ export function createReferencesModule(deps) {
     const chips = pairs.map(({ slug, name }) => {
       if (!name) return "";
       if (slug) {
-        return `<button class="crossref-chip" onclick="openReference(${JSON.stringify(slug)}, ${JSON.stringify(targetTab)})">${escapeHtml(name)}</button>`;
+        return `<button class="crossref-chip" onclick='openReference(${JSON.stringify(slug)}, ${JSON.stringify(targetTab)})'>${escapeHtml(name)}</button>`;
       }
       return `<span class="crossref-chip crossref-chip--plain">${escapeHtml(name)}</span>`;
     }).join("");
@@ -174,7 +185,7 @@ export function createReferencesModule(deps) {
       ...values.map((v) => {
         const label = tabId === "aromas" ? (REFERENCE_SOURCE_TYPE_LABELS[v] || v) : v;
         const isActive = activeFilter === v;
-        return `<button class="filter-chip${isActive ? " active" : ""}" onclick="setReferenceFilter(${JSON.stringify(v)})">${escapeHtml(label)}</button>`;
+        return `<button class="filter-chip${isActive ? " active" : ""}" onclick='setReferenceFilter(${JSON.stringify(v)})'>${escapeHtml(label)}</button>`;
       }),
     ];
     return `<div class="filter-chips">${chips.join("")}</div>`;
@@ -237,7 +248,7 @@ export function createReferencesModule(deps) {
     if (filterChipsEl) filterChipsEl.innerHTML = renderFilterChips(items, tabId);
 
     listContainer.innerHTML = filtered.map((item) => `
-      <article ${interactiveCardAttrs(`Открыть карточку ${item.name}`)} class="draft-card overview-card reference-card${state.tab === "concepts" ? " is-theory concept-card" : ""}${item.slug === reference?.slug ? " active" : ""} interactive-card" onclick="openReference(${JSON.stringify(item.slug)}, ${JSON.stringify(state.tab)})">
+      <article ${interactiveCardAttrs(`Открыть карточку ${item.name}`)} class="draft-card overview-card reference-card${state.tab === "concepts" ? " is-theory concept-card" : ""}${item.slug === reference?.slug ? " active" : ""} interactive-card" onclick='openReference(${JSON.stringify(item.slug)}, ${JSON.stringify(state.tab)})'>
         <div class="overview-card-top">
           <div class="draft-kind"><span class="kind-glyph handbook-glyph" aria-hidden="true">${aromaCardIcon(item, state.tab)}</span>${handbookCardBadge(state.tab, item) ? `<span>${state.tab === "concepts" ? `<span class="concept-kind-mark" aria-hidden="true">${escapeHtml(conceptTypeMeta(item.source_type).icon)}</span>` : ""}${escapeHtml(handbookCardBadge(state.tab, item))}</span>` : ""}</div>
           <span class="overview-card-date">${escapeHtml(formatCourseSourceLabel(item.course_source) || meta.title)}</span>
