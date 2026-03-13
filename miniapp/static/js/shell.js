@@ -64,6 +64,7 @@ export function createShellModule(deps) {
   }
 
   function goBackToList(animated = false) {
+    window.Telegram?.WebApp?.BackButton?.hide();
     if (animated) {
       animateBackToList();
       return;
@@ -84,6 +85,7 @@ export function createShellModule(deps) {
   function enterDetailView() {
     state.mobileView = "detail";
     syncMobileNavigation();
+    window.Telegram?.WebApp?.BackButton?.show();
     if (elements.detailPanel) {
       elements.detailPanel.classList.remove("is-entering");
       window.clearTimeout(detailEntryTimer);

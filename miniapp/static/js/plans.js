@@ -30,6 +30,70 @@ export function createPlansModule(deps) {
     openReels,
   } = deps;
 
+  async function loadTodo() {
+    try {
+      const data = await fetchJson("/api/todo");
+      state.todoItems = data.items || [];
+    } catch (_e) {
+      state.todoItems = state.todoItems || [];
+    }
+    renderTodoSection();
+  }
+
+  function renderTodoSection() {
+    const el = document.getElementById("plansTodoSection");
+    if (!el) return;
+    const items = state.todoItems || [];
+    el.innerHTML = `
+      <section class="section todo-section">
+        <h3>${uiIcon("text")}<span>Список дел</span></h3>
+        <ul class="todo-list">
+          ${items.map((item) => `
+            <li class="todo-item">
+              <span class="todo-text">${escapeHtml(item.text)}</span>
+              <button class="ghost-button todo-remove-btn" type="button" onclick="removeTodoItem(${JSON.stringify(item.id)})" aria-label="Удалить">${uiIcon("trash")}</button>
+            </li>
+          `).join("")}
+        </ul>
+        <div class="todo-add-row">
+          <input class="todo-input" id="todoNewItemInput" type="text" placeholder="Новое дело…" maxlength="200" />
+          <button class="primary-button todo-add-btn" type="button" onclick="addTodoItem()">${uiIcon("plus")}<span>Добавить</span></button>
+        </div>
+      </section>
+    `;
+  }
+
+  async function addTodoItemImpl() {
+    const input = document.getElementById("todoNewItemInput");
+    if (!(input instanceof HTMLInputElement)) return;
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = "";
+    try {
+      const data = await fetchJson("/api/todo/add", {
+        method: "POST",
+        body: JSON.stringify({ text }),
+      });
+      state.todoItems = data.items || [];
+    } catch (_e) {
+      state.todoItems = [...(state.todoItems || []), { id: String(Date.now()), text }];
+    }
+    renderTodoSection();
+  }
+
+  async function removeTodoItemImpl(id) {
+    try {
+      const data = await fetchJson("/api/todo/remove", {
+        method: "POST",
+        body: JSON.stringify({ id }),
+      });
+      state.todoItems = data.items || [];
+    } catch (_e) {
+      state.todoItems = (state.todoItems || []).filter((item) => item.id !== id);
+    }
+    renderTodoSection();
+  }
+
   async function loadPlans() {
     const data = await fetchJson("/api/plans?limit=20");
     state.plans = data.items || [];
@@ -176,7 +240,7 @@ export function createPlansModule(deps) {
       actionLabel: "Открыть создание",
       action: "setTab('create')",
     });
-    elements.draftList.innerHTML = state.plans.map((plan) => `
+    elements.draftList.innerHTML = `<div id="plansTodoSection"></div>` + state.plans.map((plan) => `
       <article ${interactiveCardAttrs(`Открыть план ${plan.plan_id}`)} class="plan-card overview-card${plan.plan_id === state.selectedPlan?.plan_id ? " active" : ""} interactive-card" onclick="openPlan('${plan.plan_id}')">
         <div class="overview-card-top">
           <div class="draft-kind">${contentKindIcon("plan")}<span>План</span></div>
@@ -197,11 +261,15 @@ export function createPlansModule(deps) {
         body: "Внутри плана можно создавать черновики по каждой карточке и сразу открывать связанный материал.",
       })}</div>`;
     }
+    renderTodoSection();
     syncMobileNavigation();
   }
 
   return {
     loadPlans,
+    loadTodo,
+    addTodoItemImpl,
+    removeTodoItemImpl,
     planEntryTargetKind,
     planEntryFormatLabel,
     relatedDraftsForEntry,
