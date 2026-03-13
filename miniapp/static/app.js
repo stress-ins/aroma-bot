@@ -314,14 +314,12 @@ function handbookCardBadge(tabId, item = {}) {
   const sourceType = String(item.source_type || "").trim();
   if (tabId === "aromas" && sourceType) {
     const key = sourceType.toLowerCase();
-    const icon = SOURCE_TYPE_ICONS[key] ? SOURCE_TYPE_ICONS[key] + "\u00a0" : "";
-    return icon + (SOURCE_TYPE_LABELS[key] || sourceType);
+    return SOURCE_TYPE_LABELS[key] || sourceType;
   }
   if (tabId === "blends") return "Смесь";
   if (tabId === "symptoms") {
     const firstWord = item.category_group ? String(item.category_group).split(" ")[0] : "";
-    const icon = firstWord && SYMPTOM_CATEGORY_ICONS[firstWord] ? SYMPTOM_CATEGORY_ICONS[firstWord] + "\u00a0" : "";
-    return icon + (firstWord || "Симптом");
+    return firstWord || "Симптом";
   }
   if (tabId === "concepts") {
     return conceptTypeMeta(sourceType).label;
