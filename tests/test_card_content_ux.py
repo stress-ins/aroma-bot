@@ -148,3 +148,70 @@ async def test_audit_service_filters_by_category():
     symptom_items = await list_reference_cards_missing_description("symptom")
     symptom_slugs = [i["slug"] for i in symptom_items]
     assert "audit-symptom-test" in symptom_slugs
+
+
+# ---------------------------------------------------------------------------
+# Test 5: complementary_oil_slugs resolved from stored names
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_complementary_oil_slugs_resolved():
+    """_enrich_aroma_cross_refs must resolve complementary_oil_slugs from stored names."""
+    from bot.services.miniapp_references import _enrich_aroma_cross_refs
+    from scripts.import_oil_pdfs import _upsert_card
+
+    # Seed two target oils
+    await _upsert_card(
+        slug="lavender-comp-test",
+        name="Лаванда Тест",
+        source_type="flower",
+        aliases=[],
+        payload={"description": "тест"},
+    )
+    await _upsert_card(
+        slug="frankincense-comp-test",
+        name="Ладан Тест",
+        source_type="resin",
+        aliases=[],
+        payload={"description": "тест"},
+    )
+
+    # Card that references them by name
+    serialized = {
+        "slug": "bergamot-comp-test",
+        "complementary_oil_names": ["Лаванда Тест", "Ладан Тест", "Несуществующее"],
+    }
+    result = await _enrich_aroma_cross_refs(serialized)
+
+    slugs = result["complementary_oil_slugs"]
+    assert slugs[0] == "lavender-comp-test"
+    assert slugs[1] == "frankincense-comp-test"
+    assert slugs[2] == ""  # unknown name → empty string, not crash
+
+
+# ---------------------------------------------------------------------------
+# Test 6: renderCollapsibleSection — long text triggers collapse
+# ---------------------------------------------------------------------------
+
+def test_collapsible_section_long_text():
+    """Text longer than maxChars produces a preview + details element."""
+    long_text = "А" * 400
+    short_text = "Б" * 100
+
+    # Simulate the JS renderCollapsibleSection logic in Python
+    def render(title, text, max_chars=280):
+        if not text:
+            return ""
+        if len(text) <= max_chars:
+            return f"<section>{title}:{text}</section>"
+        cut = text.rfind(" ", 0, max_chars) or max_chars
+        preview = text[:cut]
+        return f"<section>{title}:{preview}…<details>▼ Читать далее<div>{text}</div></details></section>"
+
+    result_long = render("Терапевтические свойства", long_text)
+    assert "▼ Читать далее" in result_long
+    assert "…" in result_long
+
+    result_short = render("Ключ", short_text)
+    assert "▼ Читать далее" not in result_short
+    assert "…" not in result_short

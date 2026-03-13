@@ -184,6 +184,27 @@ export function createReferencesModule(deps) {
     return `<section class="section"><h3>💧 Применение и дозировки</h3><div class="detail-preview applications-list">${rendered.join("")}</div></section>`;
   }
 
+  function renderCollapsibleSection(title, text, maxChars = 280) {
+    const str = String(text || "").trim();
+    if (!str) return "";
+    if (str.length <= maxChars) {
+      return `<section class="section"><h3>${escapeHtml(title)}</h3><div class="detail-preview">${escapeHtml(str)}</div></section>`;
+    }
+    // Trim to last space within maxChars to avoid cutting mid-word
+    const cutAt = str.lastIndexOf(" ", maxChars) || maxChars;
+    const preview = str.slice(0, cutAt);
+    return `
+      <section class="section">
+        <h3>${escapeHtml(title)}</h3>
+        <div class="detail-preview">${escapeHtml(preview)}…</div>
+        <details class="description-collapsible">
+          <summary class="description-toggle">▼ Читать далее</summary>
+          <div class="detail-preview description-full">${escapeHtml(str)}</div>
+        </details>
+      </section>
+    `;
+  }
+
   function renderReferencePassport(reference) {
     const parts = [
       reference.article_number ? `Артикул: ${reference.article_number}` : "",
@@ -553,17 +574,17 @@ export function createReferencesModule(deps) {
           ${aromaSection('Ресурс "-"', reference.resource_values?.minus)}
           ${aromaSection("Какие вопросы поднимает", reference.questions)}
           ${aromaSection("Действие на НПС", reference.nps_effect)}
-          ${aromaSection("Терапевтические свойства", reference.therapeutic_properties)}
-          ${aromaSection("Влияние на здоровье", reference.health_effects)}
-          ${aromaSection("Влияние на ум", reference.mind_effect)}
-          ${aromaSection("Духовное и эмоциональное воздействие", reference.spiritual_emotional)}
-          ${aromaSection("При каких состояниях", reference.conditions_for_use)}
+          ${renderCollapsibleSection("Терапевтические свойства", reference.therapeutic_properties)}
+          ${renderCollapsibleSection("Влияние на здоровье", reference.health_effects)}
+          ${renderCollapsibleSection("Влияние на ум", reference.mind_effect)}
+          ${renderCollapsibleSection("Духовное и эмоциональное воздействие", reference.spiritual_emotional)}
+          ${renderCollapsibleSection("При каких состояниях", reference.conditions_for_use)}
           ${compChips ? `<section class="section"><h3>🌿 Комплементарные масла</h3><div class="detail-preview">${compChips}</div></section>` : ""}
           ${blendsChips ? `<section class="section"><h3>🌀 Входит в смеси</h3><div class="detail-preview">${blendsChips}</div></section>` : ""}
           ${renderApplicationsWithIcons(reference.applications)}
-          ${aromaSection("Меры предосторожности", reference.precautions)}
+          ${renderCollapsibleSection("Меры предосторожности", reference.precautions)}
           ${aromaSection("Материалы курса", reference.course_notes)}
-          ${aromaSection("Исторические сведения", reference.history)}
+          ${renderCollapsibleSection("Исторические сведения", reference.history)}
         </div>
       `;
     }
