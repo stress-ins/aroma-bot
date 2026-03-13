@@ -2593,6 +2593,11 @@ body.is-mobile-layout[data-mode="content"]:not([data-tab="drafts"]):not([data-ta
   display: none;
 }
 
+/* In mobile detail view, filters are irrelevant — hide the toolbar */
+body.is-mobile-layout.is-detail-view .toolbar {
+  display: none;
+}
+
 /* In handbook mode on mobile, keep the sub-tab strip (Ароматы/Практики/etc.) */
 body.is-mobile-layout[data-mode="handbook"] .tabs {
   display: flex;
