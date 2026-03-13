@@ -19,6 +19,12 @@ REFERENCE_CATEGORIES = {"aroma", "practice", "sound", "concept"}
 REFERENCE_IMAGES_DIR = BASE_DIR / "assets" / "reference_images"
 INTERNAL_SEED_KEY = "__seed_payload"
 INTERNAL_OVERRIDES_KEY = "__manual_overrides"
+REFERENCE_CONTEXT_TITLES = {
+    "aroma": "Ароматы",
+    "concept": "Теория",
+    "practice": "Практики",
+    "sound": "Звуки",
+}
 EDITABLE_FIELDS = (
     "description",
     "questions",
@@ -263,6 +269,20 @@ def _public_payload(payload: dict[str, object]) -> dict[str, object]:
     return public
 
 
+def _compact_reference_detail(payload: dict[str, object], *, max_chars: int = 140) -> str:
+    for field in (
+        "psychological_properties",
+        "therapeutic_properties",
+        "description",
+        "course_notes",
+        "history",
+    ):
+        value = str(payload.get(field, "") or "").strip()
+        if value:
+            return value[:max_chars]
+    return ""
+
+
 def _seeded_payload(seed_payload: dict[str, object], overrides: set[str] | None = None) -> dict[str, object]:
     payload = dict(seed_payload)
     payload[INTERNAL_SEED_KEY] = dict(seed_payload)
@@ -387,6 +407,56 @@ async def list_reference_cards(category: str) -> list[dict[str, str]]:
         }
         for model in models
     ]
+
+
+async def build_reference_context(
+    *,
+    categories: tuple[str, ...] | None = None,
+    max_items_per_category: int = 6,
+    max_total_chars: int = 1800,
+) -> str:
+    await seed_reference_cards_if_empty()
+    category_order = tuple(categories or REFERENCE_CONTEXT_TITLES.keys())
+    allowed_categories = tuple(category for category in category_order if category in REFERENCE_CATEGORIES)
+    if not allowed_categories:
+        return ""
+
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(select(AromaCardModel).where(AromaCardModel.category.in_(allowed_categories)))
+        models = result.scalars().all()
+
+    grouped: dict[str, list[str]] = {category: [] for category in allowed_categories}
+    for model in sorted(models, key=lambda item: (str(item.category or ""), _normalize(item.name))):
+        category = str(model.category or "")
+        if category not in grouped or len(grouped[category]) >= max_items_per_category:
+            continue
+        payload = _public_payload(model.payload or {})
+        key = str(payload.get("key", "") or "").strip()
+        source_type = str(model.source_type or "").strip()
+        detail = _compact_reference_detail(payload)
+        line = f"- {model.name}"
+        meta_parts = [part for part in (source_type, key) if part]
+        if meta_parts:
+            line += f" ({', '.join(meta_parts)})"
+        if detail:
+            line += f": {detail}"
+        grouped[category].append(line)
+
+    sections: list[str] = []
+    total_chars = 0
+    for category in allowed_categories:
+        items = grouped.get(category, [])
+        if not items:
+            continue
+        section = f"{REFERENCE_CONTEXT_TITLES.get(category, category.title())}:\n" + "\n".join(items)
+        projected = total_chars + len(section) + (2 if sections else 0)
+        if sections and projected > max_total_chars:
+            break
+        if not sections and len(section) > max_total_chars:
+            return section[:max_total_chars].rstrip()
+        sections.append(section)
+        total_chars = projected
+    return "\n\n".join(sections)
 
 
 async def get_reference_card(category: str, slug_or_name: str) -> dict[str, object] | None:

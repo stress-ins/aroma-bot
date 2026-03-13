@@ -148,7 +148,7 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
         "storyboard": [
             {
                 "timecode": "0-3 сек",
-                "scene": "Руки закрывают ноутбук",
+                "scene": "**Текст на экране:** Попробуй сегодня\n\n## Сцена\nРуки закрывают ноутбук",
                 "angle": "Крупный план",
                 "gemini_prompt": "warm evening desk, close-up hands closing laptop",
                 "current_asset": {
@@ -219,7 +219,7 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
         "INSERT INTO plans (plan_id, raw_text, entries, created_at) VALUES (?, ?, ?, ?)",
         (
             "20260311180000",
-            "Понедельник: Threads, Среда: Reels",
+            "## Контент-план\n- Понедельник: Threads\n- Среда: Reels",
             json.dumps(
                 [
                     {
@@ -284,6 +284,8 @@ def page(miniapp_server: str):
             extra_http_headers={"X-Telegram-Init-Data": "user=%7B%22id%22%3A12345%2C%22username%22%3A%22test%22%7D"},
         )
         page = context.new_page()
+        page.on("console", lambda msg: print(f"\nBROWSER [{msg.type}]: {msg.text}"))
+        page.on("pageerror", lambda err: print(f"\nBROWSER ERROR: {err}"))
         page.goto(miniapp_server, wait_until="networkidle")
         yield page
         context.close()
@@ -303,6 +305,8 @@ def desktop_page(miniapp_server: str):
             extra_http_headers={"X-Telegram-Init-Data": "user=%7B%22id%22%3A12345%2C%22username%22%3A%22test%22%7D"},
         )
         page = context.new_page()
+        page.on("console", lambda msg: print(f"\nBROWSER [{msg.type}]: {msg.text}"))
+        page.on("pageerror", lambda err: print(f"\nBROWSER ERROR: {err}"))
         page.goto(miniapp_server, wait_until="networkidle")
         yield page
         context.close()
@@ -365,6 +369,51 @@ def test_reels_detail_shows_production_overview_and_frame_status(page):
     assert page.get_by_text("Shot 1").is_visible()
     assert page.get_by_text("Кадр готов").first.is_visible()
     assert page.get_by_text("Открыть редактирование кадра").first.is_visible()
+
+
+def test_reels_detail_falls_back_to_payload_storyboard(page):
+    def _fulfill_reel(route):
+        if not route.request.url.endswith("/api/reels/reels001"):
+            route.continue_()
+            return
+        payload = {
+            "draft_id": "reels001",
+            "kind": "reels",
+            "topic": "Вечерний ароматический ритуал",
+            "source": "/miniapp",
+            "status": "draft",
+            "feedback": "",
+            "created_at": "2026-03-11T18:00:00+00:00",
+            "preview": "Рилс с fallback-раскадровкой.",
+            "images_ready": 1,
+            "frame_count": 0,
+            "frames": [],
+            "payload": {
+                "concept": "Вечернее переключение",
+                "scenario": "Короткий сценарий",
+                "storyboard": [
+                    {
+                        "timecode": "0-3 сек",
+                        "scene": "**Текст на экране:** Попробуй сегодня",
+                        "angle": "Крупный план",
+                        "current_asset": {
+                            "url": "/generated/reels_assets/reels001/frame_1.png",
+                            "filename": "frame_1.png",
+                        },
+                    }
+                ],
+            },
+        }
+        route.fulfill(status=200, content_type="application/json", body=json.dumps(payload, ensure_ascii=False))
+
+    page.route("**/api/reels/reels001", _fulfill_reel)
+    page.get_by_role("button", name="Рилсы").click()
+    page.wait_for_load_state("networkidle")
+    page.locator(".reels-card").first.click()
+    page.wait_for_timeout(250)
+
+    assert page.locator(".storyboard-frame").count() == 1
+    assert page.get_by_text("Попробуй сегодня").first.is_visible()
 
 
 def test_overview_lists_use_consistent_card_meta(page):
@@ -518,6 +567,24 @@ def test_mobile_bottom_tab_bar_switches_primary_sections(page):
     assert page.locator(".draft-card").count() >= 2
 
 
+def test_mobile_handbook_tab_remembers_last_section(page):
+    page.locator("#btnTabHandbook").click()
+    page.wait_for_timeout(250)
+    page.get_by_role("button", name="Практики").click()
+    page.wait_for_timeout(250)
+
+    active_before = page.locator(".tab-button.active").inner_text().strip()
+    assert "Практики" in active_before
+
+    page.locator("#btnTabDrafts").click()
+    page.wait_for_timeout(250)
+    page.locator("#btnTabHandbook").click()
+    page.wait_for_timeout(250)
+
+    active_after = page.locator(".tab-button.active").inner_text().strip()
+    assert "Практики" in active_after
+
+
 def test_mobile_swipe_back_from_left_edge_works_over_interactive_controls(page):
     page.get_by_role("button", name="Черновики").click()
     page.wait_for_timeout(250)
@@ -570,6 +637,67 @@ def test_dark_theme_class_styles_bottom_tab_bar(page):
     assert theme_state["bodyDark"] is True
     assert "37, 30, 24" in theme_state["tabBarBackground"]
     assert "255, 230, 200" in theme_state["tabBarBorder"]
+
+
+def test_dark_theme_keeps_reels_storyboard_text_readable(page):
+    page.get_by_role("button", name="Рилсы").click()
+    page.wait_for_load_state("networkidle")
+    page.locator(".reels-card").first.click()
+    page.wait_for_timeout(250)
+    page.evaluate("document.body.classList.add('tg-theme-dark')")
+    page.wait_for_timeout(50)
+
+    frame_style = page.evaluate(
+        """
+        () => {
+          const card = document.querySelector('.storyboard-frame');
+          const text = document.querySelector('.reels-frame-section-value');
+          const section = card.closest('.section');
+          const cardStyle = getComputedStyle(card);
+          const textStyle = getComputedStyle(text);
+          const sectionStyle = getComputedStyle(section);
+          return {
+            cardBackgroundImage: cardStyle.backgroundImage,
+            sectionBackgroundImage: sectionStyle.backgroundImage,
+            textColor: textStyle.color,
+          };
+        }
+        """
+    )
+
+    assert "gradient" in frame_style["cardBackgroundImage"] or "gradient" in frame_style["sectionBackgroundImage"]
+    # After dark-mode fix, text uses dark-theme --text (#f0e8df = 240,232,223) instead of old hardcoded light #2a1e16
+    text_color = frame_style["textColor"]
+    assert "240, 232, 223" in text_color or "42, 30, 22" not in text_color, (
+        f"Expected dark-theme text color (light on dark), got: {text_color}"
+    )
+
+
+def test_reels_and_plans_render_markdown_in_detail_views(page):
+    page.get_by_role("button", name="Рилсы").click()
+    page.wait_for_load_state("networkidle")
+    page.locator(".reels-card").first.click()
+    page.wait_for_timeout(250)
+
+    frame_markup = page.locator(".reels-frame-section-value").first.evaluate(
+        "(node) => ({ html: node.innerHTML, text: node.textContent })"
+    )
+    assert "<strong>" in frame_markup["html"]
+    assert "<h4>" in frame_markup["html"]
+    assert "**Текст на экране:**" not in frame_markup["text"]
+    assert "## Сцена" not in frame_markup["text"]
+
+    page.get_by_role("button", name="Планы").click()
+    page.wait_for_timeout(250)
+    page.locator(".plan-card").first.click()
+    page.wait_for_timeout(250)
+
+    plan_markup = page.locator(".detail-preview.detail-markdown").first.evaluate(
+        "(node) => ({ html: node.innerHTML, text: node.textContent })"
+    )
+    assert "<h4>Контент-план</h4>" in plan_markup["html"]
+    assert "<li>Понедельник: Threads</li>" in plan_markup["html"]
+    assert "## Контент-план" not in plan_markup["text"]
 
 
 def test_desktop_layout_keeps_split_panels_and_comfortable_controls(desktop_page):
@@ -1199,3 +1327,75 @@ def test_visual_desktop_split_view_baseline(desktop_page):
     desktop_page.wait_for_timeout(300)
     _prepare_visual_state(desktop_page)
     _assert_visual_snapshot(desktop_page.locator(".shell"), "desktop-split-view.png")
+
+
+def test_dark_theme_class_applies_without_js_errors(page):
+    """Smoke test: adding body.tg-theme-dark triggers no JS exceptions and
+    the dark CSS vars are applied so the shell background darkens."""
+    js_errors: list[str] = []
+    page.on("pageerror", lambda err: js_errors.append(str(err)))
+
+    page.evaluate("document.body.classList.add('tg-theme-dark')")
+    page.wait_for_timeout(80)
+
+    result = page.evaluate(
+        """
+        () => {
+          const style = getComputedStyle(document.body);
+          return {
+            hasDarkClass: document.body.classList.contains('tg-theme-dark'),
+            bgColor: style.backgroundColor,
+          };
+        }
+        """
+    )
+
+    assert result["hasDarkClass"] is True, "body.tg-theme-dark class was not set"
+    # --bg in dark mode is #1a1512 = rgb(26,21,18); just verify it's not bright white
+    bg = result["bgColor"]
+    # rgb values for a dark background have all channels < 100
+    import re
+    channels = [int(v) for v in re.findall(r"\d+", bg)[:3]]
+    assert all(c < 100 for c in channels), (
+        f"Expected dark background on body in tg-theme-dark, got: {bg}"
+    )
+    assert js_errors == [], f"JS errors when applying tg-theme-dark: {js_errors}"
+
+
+def test_dark_theme_storyboard_and_section_accent_use_dark_backgrounds(page):
+    """After CSS fix: .storyboard-frame and .section-accent must render with
+    dark surface colors (not hardcoded near-white) when tg-theme-dark is active."""
+    page.get_by_role("button", name="Рилсы").click()
+    page.wait_for_load_state("networkidle")
+    page.locator(".reels-card").first.click()
+    page.wait_for_timeout(250)
+
+    page.evaluate("document.body.classList.add('tg-theme-dark')")
+    page.wait_for_timeout(80)
+
+    styles = page.evaluate(
+        """
+        () => {
+          const frame = document.querySelector('.storyboard-frame');
+          const sectionAccent = document.querySelector('.section-accent');
+          const frameStyle = frame ? getComputedStyle(frame) : null;
+          const accentStyle = sectionAccent ? getComputedStyle(sectionAccent) : null;
+          return {
+            frameBg: frameStyle ? frameStyle.backgroundImage || frameStyle.backgroundColor : null,
+            accentBg: accentStyle ? accentStyle.backgroundImage || accentStyle.backgroundColor : null,
+          };
+        }
+        """
+    )
+
+    # storyboard-frame must have a gradient background (dark surface gradient)
+    assert styles["frameBg"] is not None, ".storyboard-frame not found in reels detail"
+    assert "gradient" in styles["frameBg"], (
+        f".storyboard-frame should have gradient background in dark mode, got: {styles['frameBg']}"
+    )
+
+    # section-accent must not use the old near-white rgba(255,255,255,...) background
+    if styles["accentBg"] is not None:
+        assert "rgba(255, 255, 255" not in styles["accentBg"] and "rgba(255,255,255" not in styles["accentBg"], (
+            f".section-accent should not have near-white background in dark mode, got: {styles['accentBg']}"
+        )
