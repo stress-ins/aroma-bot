@@ -2483,6 +2483,14 @@ class TestMiniAppRussianLocale:
         assert ".mode-button," in app_css
         assert ".back-button," in app_css
 
+    def test_section_titles_have_russian_translations_for_all_handbook_tabs(self):
+        app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
+        assert '"blends": "Смеси"' in app_js or "'blends': \"Смеси\"" in app_js or "blends: \"Смеси\"" in app_js
+        assert '"symptoms": "Симптомы"' in app_js or "symptoms: \"Симптомы\"" in app_js
+        # Ensure the fallback `?? t` is not hit for any known handbook tab
+        for tab_key in ("aromas", "concepts", "practices", "sounds", "blends", "symptoms"):
+            assert f'{tab_key}:' in app_js or f'"{tab_key}":' in app_js, f"SECTION_TITLES missing key: {tab_key}"
+
     def test_draft_detail_supports_reject_and_delete_actions(self):
         app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
         server_py = Path("miniapp_server.py").read_text(encoding="utf-8") + "".join(

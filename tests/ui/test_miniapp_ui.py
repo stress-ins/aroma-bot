@@ -211,10 +211,18 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
         "INSERT INTO drafts (draft_id, kind, topic, source, status, feedback, payload, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
         ("carousel001", "carousel", "Сенсорная карусель для вечернего ритуала", "/miniapp", "draft", "", json.dumps(carousel_payload), now),
     )
-    cursor.execute(
-        "INSERT INTO aroma_cards (slug, name, category, source_type, aliases, payload, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-        ("lavender", "Лаванда", "aroma", "herb", json.dumps([]), json.dumps({}), now, now),
-    )
+    for slug, name, category, source_type in [
+        ("lavender", "Лаванда", "aroma", "herb"),
+        ("grounding", "Grounding", "blend", "blend"),
+        ("stress", "Стресс", "symptom", "symptom"),
+        ("limbic-system", "Лимбическая система", "concept", "theory"),
+        ("box-breathing", "Квадратное дыхание", "practice", "practice"),
+        ("gong", "Гонг", "sound", "instrument"),
+    ]:
+        cursor.execute(
+            "INSERT INTO aroma_cards (slug, name, category, source_type, aliases, payload, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (slug, name, category, source_type, json.dumps([]), json.dumps({}), now, now),
+        )
     cursor.execute(
         "INSERT INTO plans (plan_id, raw_text, entries, created_at) VALUES (?, ?, ?, ?)",
         (
@@ -1439,3 +1447,62 @@ def test_dark_theme_storyboard_and_section_accent_use_dark_backgrounds(page):
         assert "rgba(255, 255, 255" not in styles["accentBg"] and "rgba(255,255,255" not in styles["accentBg"], (
             f".section-accent should not have near-white background in dark mode, got: {styles['accentBg']}"
         )
+
+
+def test_handbook_section_titles_are_russian(page):
+    """Topbar title must show Russian name when navigating handbook tabs, not the raw tab key."""
+    page.locator("#btnTabHandbook").click()
+    page.wait_for_timeout(300)
+
+    # Check blends tab title
+    page.get_by_role("button", name="Смеси").click()
+    page.wait_for_timeout(300)
+    title = page.locator(".topbar-title").inner_text().strip()
+    assert title == "Смеси", f"Expected 'Смеси', got '{title}'"
+
+    # Check symptoms tab title
+    page.get_by_role("button", name="Симптомы").click()
+    page.wait_for_timeout(300)
+    title = page.locator(".topbar-title").inner_text().strip()
+    assert title == "Симптомы", f"Expected 'Симптомы', got '{title}'"
+
+    # Check aromas tab title
+    page.get_by_role("button", name="Ароматы").click()
+    page.wait_for_timeout(300)
+    title = page.locator(".topbar-title").inner_text().strip()
+    assert title == "Ароматы", f"Expected 'Ароматы', got '{title}'"
+
+
+def test_handbook_cards_open_in_all_sections(page):
+    """Clicking a card in each handbook section must open the detail view without errors."""
+    page.locator("#btnTabHandbook").click()
+    page.wait_for_timeout(300)
+
+    sections = [
+        ("Ароматы", "Лаванда"),
+        ("Смеси", "Grounding"),
+        ("Симптомы", "Стресс"),
+        ("Практики", "Квадратное дыхание"),
+        ("Звуки", "Гонг"),
+    ]
+
+    for tab_label, card_name in sections:
+        page.get_by_role("button", name=tab_label).click()
+        page.wait_for_timeout(400)
+
+        card = page.locator(".reference-card").filter(has_text=card_name).first
+        assert card.is_visible(), f"Card '{card_name}' not found in '{tab_label}' tab"
+        card.click()
+        page.wait_for_timeout(400)
+
+        # Detail view must be visible and show the card name
+        detail = page.locator("#draftDetail")
+        assert card_name in detail.inner_text(), (
+            f"Card '{card_name}' detail did not open (tab: '{tab_label}')"
+        )
+
+        # Go back
+        back_btn = page.locator("#draftDetail .back-button")
+        if back_btn.count() > 0:
+            back_btn.first.click()
+            page.wait_for_timeout(200)
