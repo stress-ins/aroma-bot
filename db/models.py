@@ -47,3 +47,15 @@ class AromaCardModel(Base):
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
     )
+
+
+class DraftRevisionModel(Base):
+    __tablename__ = "draft_revisions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    draft_id: Mapped[str] = mapped_column(String(32), index=True)
+    rev_num: Mapped[int] = mapped_column(Integer)
+    payload: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    author: Mapped[str] = mapped_column(String(64), default="user")
+    note: Mapped[str] = mapped_column(String(512), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
