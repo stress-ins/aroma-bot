@@ -171,12 +171,16 @@ export function createReferencesModule(deps) {
 
   function renderFilterChips(items, tabId) {
     if (!["aromas", "symptoms", "concepts", "practices"].includes(tabId)) return "";
+
+    if (tabId === "symptoms") {
+      return renderSymptomFilterChips(items);
+    }
+
     const seen = new Set();
     const values = [];
     for (const item of items) {
       let raw = "";
       if (tabId === "aromas") raw = String(item.source_type || "").trim().toLowerCase();
-      else if (tabId === "symptoms") raw = String(item.category_group || "").split(" ")[0].trim();
       else if (tabId === "concepts") raw = String(item.source_type || "").trim().toLowerCase();
       else if (tabId === "practices") raw = String(item.source_type || "").trim().toLowerCase();
       if (raw && !seen.has(raw)) {
@@ -194,9 +198,6 @@ export function createReferencesModule(deps) {
         if (tabId === "aromas") {
           const icon = SOURCE_TYPE_ICONS?.[v] ? SOURCE_TYPE_ICONS[v] + "\u00a0" : "";
           label = icon + (REFERENCE_SOURCE_TYPE_LABELS[v] || v);
-        } else if (tabId === "symptoms") {
-          const icon = SYMPTOM_CATEGORY_ICONS?.[v] ? SYMPTOM_CATEGORY_ICONS[v] + "\u00a0" : "";
-          label = icon + v;
         } else if (tabId === "concepts") {
           const meta = conceptTypeMeta(v);
           const icon = meta.icon ? meta.icon + "\u00a0" : "";
@@ -214,17 +215,72 @@ export function createReferencesModule(deps) {
     return `<div class="filter-chips">${chips.join("")}</div>`;
   }
 
+  function renderSymptomFilterChips(items) {
+    // Build 2-level structure: parent_group → [category_group]
+    const parentGroups = [];
+    const parentSeen = new Set();
+    const childrenByParent = {};
+
+    for (const item of items) {
+      const parent = String(item.parent_group || item.category_group || "").trim();
+      const child = String(item.category_group || "").trim();
+      if (!parent) continue;
+      if (!parentSeen.has(parent)) {
+        parentSeen.add(parent);
+        parentGroups.push(parent);
+        childrenByParent[parent] = new Set();
+      }
+      if (child && child !== parent) {
+        childrenByParent[parent].add(child);
+      }
+    }
+
+    if (!parentGroups.length) return "";
+
+    const activeFilter = state.referenceFilter || "";
+    const activeParent = state.referenceFilterParent || "";
+    const allActive = !activeFilter && !activeParent;
+
+    const parentChips = [
+      `<button class="filter-chip${allActive ? " active" : ""}" onclick="setReferenceFilter('')">Все</button>`,
+      ...parentGroups.map((p) => {
+        const icon = SYMPTOM_CATEGORY_ICONS?.[p.split(" ")[0]] ? SYMPTOM_CATEGORY_ICONS[p.split(" ")[0]] + "\u00a0" : "";
+        const isActive = activeParent === p || activeFilter === p;
+        return `<button class="filter-chip${isActive ? " active" : ""}" onclick='setSymptomParentFilter(${JSON.stringify(p)})'>${escapeHtml(icon + p)}</button>`;
+      }),
+    ];
+
+    let childChips = "";
+    if (activeParent && childrenByParent[activeParent]?.size > 0) {
+      const children = [...childrenByParent[activeParent]];
+      const childButtons = children.map((c) => {
+        const isActive = activeFilter === c;
+        return `<button class="filter-chip filter-chip--child${isActive ? " active" : ""}" onclick='setReferenceFilter(${JSON.stringify(c)})'>${escapeHtml(c)}</button>`;
+      });
+      childChips = `<div class="filter-chips filter-chips--level2">${childButtons.join("")}</div>`;
+    }
+
+    return `<div class="filter-chips">${parentChips.join("")}</div>${childChips}`;
+  }
+
   function renderReferences() {
     const meta = currentHandbookMeta();
     const tabId = state.tab;
     const items = state.referenceItems || [];
     const activeFilter = state.referenceFilter || "";
 
+    const activeParent = state.referenceFilterParent || "";
     let visible = items;
-    if (activeFilter) {
+    if (activeFilter || activeParent) {
       visible = items.filter((item) => {
         if (tabId === "aromas") return String(item.source_type || "").trim().toLowerCase() === activeFilter;
-        if (tabId === "symptoms") return String(item.category_group || "").split(" ")[0].trim() === activeFilter;
+        if (tabId === "symptoms") {
+          const itemParent = String(item.parent_group || item.category_group || "").trim();
+          const itemChild = String(item.category_group || "").trim();
+          if (activeFilter) return itemChild === activeFilter || itemParent === activeFilter;
+          if (activeParent) return itemParent === activeParent || itemChild === activeParent;
+          return true;
+        }
         if (tabId === "concepts" || tabId === "practices") return String(item.source_type || "").toLowerCase() === activeFilter;
         return true;
       });
@@ -329,11 +385,19 @@ export function createReferencesModule(deps) {
         zipNamesAndSlugs(reference.recommended_blend_names, reference.recommended_blend_slugs),
         "blends"
       );
+      const parentGroup = reference.parent_group || "";
+      const categoryGroup = reference.category_group || "";
+      let breadcrumb = "";
+      if (parentGroup && categoryGroup && parentGroup !== categoryGroup) {
+        breadcrumb = `<section class="section"><p class="eyebrow">${escapeHtml(parentGroup)} › ${escapeHtml(categoryGroup)}</p></section>`;
+      } else if (categoryGroup) {
+        breadcrumb = `<section class="section"><p class="eyebrow">${escapeHtml(categoryGroup)}</p></section>`;
+      }
       detailHtml = `
         <div class="detail-grid">
           ${renderBackButton()}
           ${renderReferenceImage(reference)}
-          ${reference.category_group ? `<section class="section"><p class="eyebrow">${escapeHtml(reference.category_group)}</p></section>` : ""}
+          ${breadcrumb}
           ${aromaSection("Описание", reference.description)}
           ${oilChips ? `<section class="section"><h3>🌿 Рекомендуемые масла</h3><div class="detail-preview">${oilChips}</div></section>` : ""}
           ${blendChips ? `<section class="section"><h3>🌀 Рекомендуемые смеси</h3><div class="detail-preview">${blendChips}</div></section>` : ""}

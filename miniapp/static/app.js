@@ -22,6 +22,7 @@ const state = {
   referenceItems: [],
   referenceSearch: "",
   referenceFilter: "",
+  referenceFilterParent: "",
   selectedReference: null,
   inbox: [],
   inboxKind: "all",
@@ -1399,6 +1400,7 @@ function setTab(t) {
     state.lastHandbookTab = t;
     state.referenceSearch = "";
     state.referenceFilter = "";
+    state.referenceFilterParent = "";
     if (state.selectedReference?.category !== HANDBOOK_CATEGORY_META[t].category) {
       state.selectedReference = null;
     }
