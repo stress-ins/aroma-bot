@@ -3,24 +3,7 @@ from __future__ import annotations
 import re
 
 from config import settings
-
-_DEFAULT_FORBIDDEN_PHRASES = [
-    "голова не отключается",
-    "кажется, что ничего не помогает",
-    "твоему телу нужен сигнал",
-    "запах это первое что замечает нервную систему",
-    "у каждого свой аромат",
-    "земляная база",
-    "в ДМ",
-]
-
-_SOFT_REWRITES: tuple[tuple[str, str], ...] = (
-    (r"\bв\s*дм\b", "в личные сообщения"),
-    (r"земляная база", "ощущение опоры под ногами"),
-    (r"твоему телу нужен сигнал", "телу важно почувствовать, что можно выдохнуть"),
-    (r"запах это первое что замечает нервную систему", "аромат тело замечает почти сразу"),
-    (r"кажется,\s*что ничего не помогает", "ты уже многое пробовала, а напряжение все равно держится"),
-)
+from bot.services.policy_engine import enforce_policy, load_policy_config
 
 _EDITOR_PROMPT = """\
 Ты — главред контента для Instagram с 10-летним опытом в нише wellbeing и психологии.
@@ -91,9 +74,10 @@ SLIDE6: [текст]
 
 
 def _forbidden_phrases() -> list[str]:
+    cfg = load_policy_config()
     seen: set[str] = set()
     result: list[str] = []
-    for phrase in [*_DEFAULT_FORBIDDEN_PHRASES, *getattr(settings, "carousel_forbidden_phrases_list", [])]:
+    for phrase in [*cfg.forbidden_phrases, *getattr(settings, "carousel_forbidden_phrases_list", [])]:
         value = str(phrase).strip()
         lowered = value.lower()
         if not value or lowered in seen:
@@ -116,10 +100,8 @@ def _build_editor_prompt(topic: str, raw_slides: str) -> str:
 
 
 def _sanitize_slide_text(text: str) -> str:
-    updated = text
-    for pattern, replacement in _SOFT_REWRITES:
-        updated = re.sub(pattern, replacement, updated, flags=re.IGNORECASE)
-    return updated.strip()
+    result = enforce_policy(text, platform="instagram")
+    return result.text.strip()
 
 
 def edit_carousel_sync(raw_slides: list[str], topic: str, user_forbidden: list[str] | None = None) -> list[str]:

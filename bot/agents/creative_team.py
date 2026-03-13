@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from config import settings
+from bot.services.policy_engine import enforce_policy
 
 _PLATFORM_RULES = {
     "threads": (
@@ -93,4 +94,7 @@ def edit_post_sync(raw: str, topic: str, platform: str = "default", user_forbidd
     )
     result = resp.content[0].text.strip()
     # Fallback: if editor returns something too short, keep original
-    return result if len(result) > 30 else raw
+    result = result if len(result) > 30 else raw
+    # Apply policy enforcement (soft rewrites + forbidden phrase detection)
+    policy_result = enforce_policy(result, platform)
+    return policy_result.text

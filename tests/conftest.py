@@ -7,7 +7,6 @@ import bot.services.plans_store
 import bot.services.miniapp_references
 import bot.services.draft_revisions_store
 import bot.services.kb_context_builder
-
 @pytest.fixture(autouse=True, scope="function")
 async def setup_test_db(monkeypatch, tmp_path):
     test_database_url = f"sqlite+aiosqlite:///{tmp_path / 'test.db'}"
