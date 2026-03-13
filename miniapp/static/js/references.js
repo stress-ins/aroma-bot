@@ -191,13 +191,13 @@ export function createReferencesModule(deps) {
         ${renderReferenceImage(reference)}
         ${aromaSection("Паспорт карточки", renderReferencePassport(reference))}
         ${aromaSection("Описание", reference.description)}
+        ${aromaSection("Психологические свойства", reference.psychological_properties)}
+        ${aromaSection('Ресурс "+"', reference.resource_values?.plus)}
+        ${aromaSection('Ресурс "-"', reference.resource_values?.minus)}
         ${aromaSection("Какие вопросы поднимает", reference.questions)}
         ${aromaSection("Действие на НПС", reference.nps_effect)}
         ${aromaSection("Терапевтические свойства", reference.therapeutic_properties)}
-        ${aromaSection("Психологические свойства", reference.psychological_properties)}
         ${aromaSection("Материалы курса", reference.course_notes)}
-        ${aromaSection('Ресурс "+"', reference.resource_values?.plus)}
-        ${aromaSection('Ресурс "-"', reference.resource_values?.minus)}
         ${aromaSection("Исторические сведения", reference.history)}
       </div>
     `;

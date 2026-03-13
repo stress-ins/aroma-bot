@@ -183,11 +183,11 @@ export function createContentModule(deps) {
       actionLabel: "Открыть создание",
       action: "setTab('create')",
     });
-    elements.draftList.innerHTML = state.reels.map((reel) => `
+    elements.draftList.innerHTML = state.reels.map((reel, idx) => `
       <article ${interactiveCardAttrs(`Открыть рилс ${reel.topic}`)} class="reels-card overview-card${reel.draft_id === state.selectedReels?.draft_id ? " active" : ""} interactive-card" onclick="openReels('${reel.draft_id}')">
         <div class="overview-card-top">
           <div class="draft-kind">${contentKindIcon("reels")}<span>Рилс</span></div>
-          <span class="overview-card-date">${escapeHtml(formatPlanDate(reel.created_at) || "Видео")}</span>
+          <span class="overview-card-date">#${idx + 1} · ${escapeHtml(formatPlanDate(reel.created_at) || "Видео")}</span>
         </div>
         <h3 class="draft-topic">${escapeHtml(reel.topic)}</h3>
         <div class="draft-preview">${escapeHtml(stripMarkdown(reel.preview || ""))}</div>

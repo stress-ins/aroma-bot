@@ -306,9 +306,10 @@ export function createReelsModule(deps) {
     const header = readyCount > 0
       ? `Кадры и промпты <span class="meta">${readyCount} / ${frameItems.length} готовы</span>`
       : "Кадры и промпты";
+    const swipeHint = frameItems.length > 1 ? `<span class="storyboard-swipe-hint">← свайп →</span>` : "";
     return `
       <section class="section">
-        <h3>${sectionHeadingIcon("Кадры и промпты")}${header}</h3>
+        <h3>${sectionHeadingIcon("Кадры и промпты")}${header}${swipeHint}</h3>
         <div class="storyboard">
           ${frameItems.map((frame, index) => {
             const prompt = bufferedReelsPrompt(draftId, index, frame.gemini_prompt || "");
