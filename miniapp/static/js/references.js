@@ -198,8 +198,9 @@ export function createReferencesModule(deps) {
           const icon = SYMPTOM_CATEGORY_ICONS?.[v] ? SYMPTOM_CATEGORY_ICONS[v] + "\u00a0" : "";
           label = icon + v;
         } else if (tabId === "concepts") {
-          const icon = CONCEPT_TYPE_ICONS?.[v] ? CONCEPT_TYPE_ICONS[v] + "\u00a0" : "";
-          label = icon + v;
+          const meta = conceptTypeMeta(v);
+          const icon = meta.icon ? meta.icon + "\u00a0" : "";
+          label = icon + (meta.label || v);
         } else if (tabId === "practices") {
           const icon = PRACTICE_TYPE_ICONS?.[v] ? PRACTICE_TYPE_ICONS[v] + "\u00a0" : "";
           label = icon + (PRACTICE_RU_LABELS?.[v] || v);

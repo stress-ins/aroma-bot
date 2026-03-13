@@ -197,6 +197,25 @@ class TestMiniAppPresenter:
         assert data["images_ready"] == 1
         assert data["generation_pending"] is True
 
+    async def test_serialize_draft_exposes_seq_id(self):
+        draft = DraftRecord(
+            draft_id="seqtest1",
+            kind="threads",
+            topic="Тест seq_id",
+            source="/miniapp",
+            created_at="2026-03-13T10:00:00+00:00",
+            status="draft",
+            feedback="",
+            payload={"caption": "Текст"},
+            seq_id=42,
+        )
+
+        full = await serialize_draft(draft)
+        summary = await serialize_draft_summary(draft)
+
+        assert full["seq_id"] == 42
+        assert summary["seq_id"] == 42
+
 
 @pytest.fixture()
 def miniapp_test_client(monkeypatch):
@@ -992,6 +1011,47 @@ class TestMiniAppRussianLocale:
         assert sound is not None
         assert practice["image_url"] == "/reference-images/shared/nature.jpg"
         assert sound["image_url"] == "/reference-images/shared/instrument.jpg"
+
+    async def test_aroma_card_includes_blends_containing_cross_refs(self):
+        from datetime import datetime, timezone
+        from db.session import AsyncSessionLocal
+        from db.models import AromaCardModel
+
+        # Manually insert a blend that contains "orange" so the test is self-contained
+        # (blends are seeded via import_handbook_data.py, not via seed_reference_cards_if_empty)
+        now = datetime.now(timezone.utc)
+        async with AsyncSessionLocal() as session:
+            session.add(AromaCardModel(
+                category="blend",
+                slug="test-blend-a",
+                name="Тестовая смесь А",
+                source_type="blend",
+                aliases=[],
+                payload={"ingredient_slugs": ["orange", "lavender"], "ingredient_names": ["Orange", "Lavender"]},
+                created_at=now,
+                updated_at=now,
+            ))
+            session.add(AromaCardModel(
+                category="blend",
+                slug="test-blend-b",
+                name="Тестовая смесь Б",
+                source_type="blend",
+                aliases=[],
+                payload={"ingredient_slugs": ["frankincense"], "ingredient_names": ["Frankincense"]},
+                created_at=now,
+                updated_at=now,
+            ))
+            await session.commit()
+
+        card = await get_reference_card("aroma", "orange")
+        assert card is not None
+        assert "blends_containing_names" in card
+        assert "blends_containing_slugs" in card
+        assert isinstance(card["blends_containing_names"], list)
+        assert isinstance(card["blends_containing_slugs"], list)
+        # Only test-blend-a contains orange
+        assert card["blends_containing_names"] == ["Тестовая смесь А"]
+        assert card["blends_containing_slugs"] == ["test-blend-a"]
 
     async def test_seed_does_not_overwrite_manual_reference_edits(self, monkeypatch, tmp_path):
         seed_file = tmp_path / "seed.json"
