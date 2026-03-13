@@ -177,8 +177,10 @@ export function createSettingsModule(deps) {
     })}</div>`);
     if (inSettings) {
       void loadForbiddenPhrases();
+      enterDetailView();
+    } else {
+      syncMobileNavigation();
     }
-    syncMobileNavigation();
   }
 
   function renderKeywords() {
