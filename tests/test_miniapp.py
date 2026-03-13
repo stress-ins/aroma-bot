@@ -1518,7 +1518,7 @@ class TestMiniAppRussianLocale:
 
         assert "function isEditingDetailForm()" in app_js
         assert "if (!isEditingDetailForm()) renderReelsDetail(reel);" in app_js
-        assert "if (!isEditingDetailForm() && !hasPendingCarouselOperations(draft.draft_id)) {" in app_js
+        assert "!isEditingDetailForm() && !detailHasFocus && !hasPendingCarouselOperations(draft.draft_id)" in app_js
         assert "onclick=\"updateDraft('status', {status:'approved'}, this)\"" in app_js
         assert "onclick=\"sendDraftToChat('${d.draft_id}', this)\"" in app_js
         assert "onclick=\"deleteDraft('${d.draft_id}', 'drafts', this)\"" in app_js

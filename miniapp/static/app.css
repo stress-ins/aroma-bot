@@ -621,6 +621,14 @@ textarea,
 
 .detail-grid { display: flex; flex-direction: column; gap: var(--space-4); }
 
+body.is-mobile-layout .detail-grid {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+body.is-mobile-layout .detail-top {
+  padding: var(--space-3) var(--space-4);
+}
+
 .detail-panel {
   --swipe-offset: 0px;
 }
@@ -1023,6 +1031,16 @@ textarea,
   font-weight: 600;
   cursor: pointer;
   margin-bottom: 4px;
+}
+
+body.is-mobile-layout .back-button.visible {
+  position: sticky;
+  top: calc(var(--tg-content-inset-top, env(safe-area-inset-top, 0px)) + 52px);
+  z-index: 9;
+  background: var(--bg);
+  border-radius: 999px;
+  padding: 6px 14px;
+  margin-bottom: 8px;
 }
 
 .bottom-tab-bar {
@@ -1992,6 +2010,9 @@ body.tg-theme-dark .concept-card {
 
 /* ── Slides / storyboard ─────────────────────────────────────────────────── */
 .slides { display: flex; flex-direction: column; gap: 10px; }
+.slides .slide {
+  min-height: 100px;
+}
 .storyboard { display: flex; flex-direction: column; gap: 10px; }
 
 .slide, .storyboard-frame {
@@ -2064,7 +2085,8 @@ body.tg-theme-dark .concept-card {
   border-radius: var(--radius-sm);
   padding: 10px 12px;
   color: var(--text);
-  resize: vertical;
+  resize: none;
+  overflow-y: hidden;
 }
 
 .prompt-note-field input {
@@ -2555,6 +2577,7 @@ body.is-mobile-layout .topbar-main {
   top: var(--tg-content-inset-top, env(safe-area-inset-top, 0px));
   z-index: 10;
   padding: var(--space-3);
+  padding-left: 88px;
 }
 
 body.is-mobile-layout .topbar-main .mode-selector,
@@ -2566,6 +2589,7 @@ body.is-mobile-layout .topbar-main .topbar-copy {
   display: flex;
   align-items: center;
   gap: 0;
+  padding-right: 88px;
 }
 
 /* In content mode on mobile, top tab strip is redundant (bottom bar handles it) */
@@ -2588,6 +2612,17 @@ body.is-mobile-layout.is-detail-view .toolbar {
 body.is-mobile-layout[data-mode="handbook"] .tabs {
   display: flex;
 }
+body.is-mobile-layout[data-mode="handbook"] .topbar-main {
+  overflow: visible;
+}
+body.is-mobile-layout[data-mode="handbook"] .tabs {
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  flex-wrap: nowrap;
+  overscroll-behavior-x: contain;
+}
+body.is-mobile-layout[data-mode="handbook"] .tabs::-webkit-scrollbar { display: none; }
 
 /* Compact topbar-main padding on mobile since title is hidden.
    Add --tg-content-inset-top (set by JS from Telegram.WebApp.contentSafeAreaInset.top)
@@ -2687,10 +2722,15 @@ body.is-mobile-layout[data-mode="handbook"] .tabs {
 /* ── Filter chips (handbook) ─────────────────────────────────────────────── */
 .filter-chips {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 6px;
-  padding: var(--space-3) var(--space-4) 0;
+  padding: var(--space-3) var(--space-4) 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
 }
+.filter-chips::-webkit-scrollbar { display: none; }
 .filter-chip {
   padding: 4px 12px;
   border-radius: 20px;
@@ -2702,6 +2742,7 @@ body.is-mobile-layout[data-mode="handbook"] .tabs {
   transition: background var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
   font-family: var(--font-ui);
   line-height: 1.4;
+  flex-shrink: 0;
 }
 .filter-chip.active {
   background: var(--brand);
