@@ -25,7 +25,7 @@ class DraftRecord:
         status: str,
         feedback: str,
         payload: dict[str, Any],
-        seq_id: int = 0,
+        seq_id: int | None = None,
     ):
         self.draft_id = draft_id
         self.kind = kind
@@ -73,11 +73,17 @@ async def save_draft(kind: str, topic: str, source: str, payload: dict[str, Any]
         return DraftRecord.from_model(model)
 
 
-async def list_recent_drafts(limit: int = 10, kind: str | None = None) -> list[DraftRecord]:
+async def list_recent_drafts(
+    limit: int = 10,
+    kind: str | None = None,
+    newest_first: bool = False,
+) -> list[DraftRecord]:
     async with AsyncSessionLocal() as session:
-        query = select(DraftModel).order_by(DraftModel.id.asc()).limit(limit)
+        order = DraftModel.id.desc() if newest_first else DraftModel.id.asc()
+        query = select(DraftModel).order_by(order)
         if kind:
             query = query.filter(DraftModel.kind == kind)
+        query = query.limit(limit)
         result = await session.execute(query)
         models = result.scalars().all()
         return [DraftRecord.from_model(m) for m in models]

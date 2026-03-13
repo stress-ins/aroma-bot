@@ -290,8 +290,13 @@ function handbookCategoryIcon(tabId) {
 
 function aromaCardIcon(item, tabId) {
   if (tabId === "aromas") {
-    const sourceIcon = SOURCE_TYPE_ICONS[String(item.source_type || "").toLowerCase()];
-    if (sourceIcon) return sourceIcon;
+    const sourceType = String(item.source_type || "").toLowerCase();
+    // For non-herb types use the category icon directly (citrus→🍋, spice→🌶️ etc.).
+    // For herb-type cards let name-based matching run first (lavender→🪻, rose→🌹).
+    if (sourceType && sourceType !== "herb") {
+      const sourceIcon = SOURCE_TYPE_ICONS[sourceType];
+      if (sourceIcon) return sourceIcon;
+    }
     const name = (item.name || "").toLowerCase();
     const family = (item.botanical_family || "").toLowerCase();
     if (name.includes("апельсин") || name.includes("orange") || family.includes("rutaceae")) return "🍊";
