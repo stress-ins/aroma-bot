@@ -2260,8 +2260,10 @@ class TestMiniAppRussianLocale:
         app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
         html = Path("miniapp/index.html").read_text(encoding="utf-8")
 
-        assert 'body.is-mobile-layout .topbar {' in app_css
-        assert 'display: none;' in app_css.split('body.is-mobile-layout .topbar {', 1)[1].split('}', 1)[0]
+        # On mobile the topbar-main is now sticky (shows section title) rather than hidden;
+        # primary tab navigation still lives in the bottom bar.
+        assert 'body.is-mobile-layout .topbar-main {' in app_css
+        assert 'position: sticky' in app_css
         expected_order = [
             'id="btnTabDrafts"',
             'id="btnTabPlans"',
@@ -3325,3 +3327,97 @@ class TestReelsStoryboardFallback:
         assert payload["frame_count"] == 1
         assert payload["frames"][0]["scene"] == "Открывают флакон"
         assert payload["frames"][0]["timecode"] == "0-5 сек"
+
+
+# ---------------------------------------------------------------------------
+# Forbidden phrases API + JS/CSS asset checks
+# ---------------------------------------------------------------------------
+
+class TestForbiddenPhrasesAPI:
+    """Tests for /api/preferences/forbidden-phrases endpoints."""
+
+    def _patch_auth(self, _ms_auth):
+        original = _ms_auth._verify_init_data
+        _ms_auth._verify_init_data = lambda _v: True
+        return original
+
+    def test_get_forbidden_phrases_returns_empty_list(self, tmp_path, monkeypatch):
+        import miniapp_server
+        import miniapp.api.auth as _ms_auth
+        monkeypatch.chdir(tmp_path)
+        original = self._patch_auth(_ms_auth)
+        try:
+            with TestClient(miniapp_server.app) as client:
+                response = client.get(
+                    "/api/preferences/forbidden-phrases",
+                    headers={"X-Telegram-Init-Data": "user=%7B%22id%22%3A1%7D&hash=test"},
+                )
+        finally:
+            _ms_auth._verify_init_data = original
+        assert response.status_code == 200
+        assert response.json() == {"items": []}
+
+    def test_add_forbidden_phrase(self, tmp_path, monkeypatch):
+        import miniapp_server
+        import miniapp.api.auth as _ms_auth
+        monkeypatch.chdir(tmp_path)
+        original = self._patch_auth(_ms_auth)
+        try:
+            with TestClient(miniapp_server.app) as client:
+                response = client.post(
+                    "/api/preferences/forbidden-phrases/add",
+                    json={"phrase": "тестовая фраза"},
+                    headers={"X-Telegram-Init-Data": "user=%7B%22id%22%3A1%7D&hash=test"},
+                )
+        finally:
+            _ms_auth._verify_init_data = original
+        assert response.status_code == 200
+        assert "тестовая фраза" in response.json()["items"]
+
+    def test_remove_forbidden_phrase(self, tmp_path, monkeypatch):
+        import miniapp_server
+        import miniapp.api.auth as _ms_auth
+        from bot.services.forbidden_phrases import save_forbidden_phrases
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / "data").mkdir()
+        save_forbidden_phrases(["фраза для удаления", "другая фраза"])
+        original = self._patch_auth(_ms_auth)
+        try:
+            with TestClient(miniapp_server.app) as client:
+                response = client.post(
+                    "/api/preferences/forbidden-phrases/remove",
+                    json={"phrase": "фраза для удаления"},
+                    headers={"X-Telegram-Init-Data": "user=%7B%22id%22%3A1%7D&hash=test"},
+                )
+        finally:
+            _ms_auth._verify_init_data = original
+        assert response.status_code == 200
+        items = response.json()["items"]
+        assert "фраза для удаления" not in items
+        assert "другая фраза" in items
+
+
+class TestForbiddenPhrasesAssets:
+    """Smoke checks that JS/CSS assets contain the expected patterns."""
+
+    def test_aroma_card_icon_function_exists_in_app_js(self):
+        js = _miniapp_static_text("app.js")
+        assert "aromaCardIcon" in js
+
+    def test_dark_mode_concept_card_rule_exists_in_css(self):
+        css = _miniapp_static_text("app.css")
+        assert "tg-theme-dark .concept-card" in css
+
+    def test_code_block_class_exists_in_css(self):
+        css = _miniapp_static_text("app.css")
+        assert ".code-block" in css
+
+    def test_forbidden_phrases_section_in_settings_js(self):
+        js = _miniapp_static_text("js", "settings.js")
+        assert "forbiddenPhrasesList" in js
+        assert "addForbiddenPhrase" in js
+        assert "removeForbiddenPhrase" in js
+
+    def test_actions_row_pair_class_in_css(self):
+        css = _miniapp_static_text("app.css")
+        assert "actions-row-pair" in css
