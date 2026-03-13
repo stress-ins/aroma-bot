@@ -42,8 +42,8 @@
     --surface-3:    #352c24;
     --border:       rgba(255, 230, 200, 0.10);
     --text:         #f0e8df;
-    --muted:        #a89080;
-    --hint:         #7a6a60;
+    --muted:        #c2aea0;
+    --hint:         #a58f80;
     --brand-bg:     rgba(180, 92, 61, 0.18);
     --brand-border: rgba(180, 92, 61, 0.40);
     --sage-bg:      rgba(93, 110, 58, 0.18);
@@ -1105,8 +1105,8 @@ body.tg-theme-dark {
   --surface-3:    #352c24;
   --border:       rgba(255, 230, 200, 0.10);
   --text:         #f0e8df;
-  --muted:        #a89080;
-  --hint:         #7a6a60;
+  --muted:        #c2aea0;
+  --hint:         #a58f80;
   --brand-bg:     rgba(180, 92, 61, 0.18);
   --brand-border: rgba(180, 92, 61, 0.40);
   --sage-bg:      rgba(93, 110, 58, 0.18);
@@ -1223,6 +1223,12 @@ body.tg-theme-dark .detail-markdown h5 {
   color: var(--muted);
   cursor: pointer;
   transition: background var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard), transform var(--duration-fast) var(--ease-standard);
+}
+
+.bottom-tab-btn-create {
+  background: linear-gradient(180deg, rgba(180, 92, 61, 0.16), rgba(180, 92, 61, 0.08));
+  border: 1px solid rgba(180, 92, 61, 0.20);
+  color: var(--brand);
 }
 
 .bottom-tab-btn .ui-icon {
@@ -1587,7 +1593,7 @@ body.tg-theme-dark .detail-markdown h5 {
   margin: 0 0 10px;
   font-size: 12px;
   line-height: 1.45;
-  color: var(--hint);
+  color: var(--muted);
 }
 
 .slide-versions {
@@ -1991,29 +1997,27 @@ body.tg-theme-dark .detail-markdown h5 {
   background: linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
 }
 
-.storyboard-frame strong { display: block; margin-bottom: 0; font-size: 13px; }
+.storyboard-frame strong {
+  display: block;
+  margin-bottom: 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--text);
+}
 .frame-meta-line { color: var(--muted); margin-top: 6px; }
 .prompt-card {
   display: grid;
-  gap: 8px;
+  gap: 10px;
   margin-top: 10px;
-  padding: 10px 12px;
+  padding: 12px 14px;
   border: 1px dashed var(--border);
   border-radius: var(--radius-sm);
-  background: var(--surface);
+  background: linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
 }
 
 .prompt-disclosure {
   display: grid;
   gap: 8px;
-}
-
-.prompt-disclosure summary {
-  list-style: none;
-}
-
-.prompt-disclosure summary::-webkit-details-marker {
-  display: none;
 }
 
 .prompt-toggle {
@@ -2022,15 +2026,20 @@ body.tg-theme-dark .detail-markdown h5 {
 
 .prompt-preview {
   font-family: "SF Mono", "Fira Code", monospace;
-  font-size: 12px;
-  line-height: 1.55;
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--text);
 }
 
 .prompt-note-field {
   display: grid;
   gap: 6px;
   font-size: 12px;
-  color: var(--hint);
+  color: var(--muted);
+}
+
+.prompt-note-field > span {
+  font-weight: 600;
 }
 
 .prompt-note-field textarea {
@@ -2052,6 +2061,19 @@ body.tg-theme-dark .detail-markdown h5 {
   border-radius: var(--radius-sm);
   padding: 10px 12px;
   color: var(--text);
+}
+
+.prompt-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.prompt-actions > button {
+  width: 100%;
+  min-width: 0;
+  white-space: normal;
+  text-align: center;
 }
 
 .reels-overview-grid {
@@ -2486,8 +2508,8 @@ body.tg-theme-dark .detail-markdown h5 {
 
 /* ── Mobile chrome reduction (#1 / #3 / #6) ─────────────────────────────── */
 
-/* Hide title+eyebrow on mobile — mode selector + settings stays */
-body.is-mobile-layout .topbar-copy {
+/* Hide the top mobile chrome: primary navigation lives in the bottom bar */
+body.is-mobile-layout .topbar {
   display: none;
 }
 
@@ -2509,8 +2531,25 @@ body.is-mobile-layout[data-mode="handbook"] .tabs {
 
 /* Compact topbar-main padding on mobile since title is hidden */
 @media (max-width: 760px) {
+  body.is-mobile-layout .shell {
+    padding-top: 8px;
+  }
+
   body.is-mobile-layout .topbar-main {
     padding: 8px 12px;
     gap: 0;
+  }
+
+  .draft-preview,
+  .detail-preview,
+  .detail-markdown,
+  .reels-frame-section-value,
+  .prompt-preview {
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  .prompt-actions {
+    grid-template-columns: 1fr;
   }
 }
