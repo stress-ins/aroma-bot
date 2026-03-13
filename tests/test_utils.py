@@ -1243,12 +1243,62 @@ class TestMiniAppPresenter:
 @pytest.fixture()
 def miniapp_test_client(monkeypatch):
     import miniapp_server
+    import miniapp.api.auth as _miniapp_auth
+    from config import settings as _cfg
 
-    monkeypatch.setattr(miniapp_server, "_verify_init_data", lambda _value: True)
-    monkeypatch.setattr(miniapp_server.settings, "anthropic_api_key", "test-key")
+    monkeypatch.setattr(_miniapp_auth, "_verify_init_data", lambda _value: True)
+    monkeypatch.setattr(_cfg, "anthropic_api_key", "test-key")
 
     with TestClient(miniapp_server.app) as client:
         yield client
+
+
+class TestInitDataAuth:
+    """Unit tests for _verify_init_data in miniapp.api.auth."""
+
+    def _make_init_data(self, bot_token: str, user_id: int = 1, auth_date: int | None = None) -> str:
+        import hashlib
+        import hmac
+        import time
+        import urllib.parse
+
+        if auth_date is None:
+            auth_date = int(time.time())
+        fields = {"user": f'{{"id":{user_id}}}', "auth_date": str(auth_date)}
+        check_string = "\n".join(f"{k}={v}" for k, v in sorted(fields.items()))
+        secret_key = hmac.new(b"WebAppData", bot_token.encode(), hashlib.sha256).digest()
+        hash_val = hmac.new(secret_key, check_string.encode(), hashlib.sha256).hexdigest()
+        fields["hash"] = hash_val
+        return urllib.parse.urlencode(fields)
+
+    def test_valid_fresh_init_data_passes(self, monkeypatch):
+        import miniapp.api.auth as _auth
+        monkeypatch.setattr(_auth.settings, "telegram_bot_token", "test-token")
+        data = self._make_init_data("test-token")
+        assert _auth._verify_init_data(data) is True
+
+    def test_stale_init_data_rejected(self, monkeypatch):
+        import time
+        import miniapp.api.auth as _auth
+        monkeypatch.setattr(_auth.settings, "telegram_bot_token", "test-token")
+        stale_date = int(time.time()) - 90000  # 25 hours ago
+        data = self._make_init_data("test-token", auth_date=stale_date)
+        assert _auth._verify_init_data(data) is False
+
+    def test_wrong_hash_rejected(self, monkeypatch):
+        import miniapp.api.auth as _auth
+        monkeypatch.setattr(_auth.settings, "telegram_bot_token", "test-token")
+        data = self._make_init_data("other-token")  # signed with wrong token
+        assert _auth._verify_init_data(data) is False
+
+    def test_bypass_env_skips_all_checks(self, monkeypatch):
+        import time
+        import miniapp.api.auth as _auth
+        monkeypatch.setenv("AROMA_BYPASS_AUTH", "1")
+        # stale + wrong hash — still passes when bypass is set
+        stale = int(time.time()) - 200000
+        data = self._make_init_data("wrong-token", auth_date=stale)
+        assert _auth._verify_init_data(data) is True
 
 
 class TestMiniAppApi:
@@ -1331,8 +1381,9 @@ class TestMiniAppApi:
                 slides=[],
             )
 
+        import miniapp.api.routers.create as _create_router
         monkeypatch.setattr(
-            miniapp_server,
+            _create_router,
             "generate_content_draft",
             _fake_generate_content,
         )
@@ -1358,7 +1409,8 @@ class TestMiniAppApi:
         async def _noop_complete_carousel_generation(*_args, **_kwargs):
             return None
 
-        monkeypatch.setattr(miniapp_server, "_complete_carousel_generation", _noop_complete_carousel_generation)
+        import miniapp.api.routers.create as _create_router
+        monkeypatch.setattr(_create_router, "complete_carousel_generation", _noop_complete_carousel_generation)
 
         response = miniapp_test_client.post(
             "/api/generate/carousel",
@@ -1385,7 +1437,8 @@ class TestMiniAppApi:
         async def _noop_complete_reels_generation(*_args, **_kwargs):
             return None
 
-        monkeypatch.setattr(miniapp_server, "_complete_reels_generation", _noop_complete_reels_generation)
+        import miniapp.api.routers.create as _create_router
+        monkeypatch.setattr(_create_router, "complete_reels_generation", _noop_complete_reels_generation)
 
         response = miniapp_test_client.post(
             "/api/generate/reels",
@@ -1440,10 +1493,11 @@ class TestMiniAppApi:
                 "frames": [],
             }
 
-        monkeypatch.setattr(miniapp_server, "regenerate_reels_storyboard", _fake_regenerate_reels_storyboard)
-        monkeypatch.setattr(miniapp_server, "_set_generation_state", _fake_set_generation_state)
-        monkeypatch.setattr(miniapp_server, "_complete_reels_regenerate_all", _fake_complete_reels_regenerate_all)
-        monkeypatch.setattr(miniapp_server, "serialize_reels_draft", _fake_serialize_reels_draft)
+        import miniapp.api.routers.reels as _reels_router
+        monkeypatch.setattr(_reels_router, "regenerate_reels_storyboard", _fake_regenerate_reels_storyboard)
+        monkeypatch.setattr(_reels_router, "set_generation_state", _fake_set_generation_state)
+        monkeypatch.setattr(_reels_router, "complete_reels_regenerate_all", _fake_complete_reels_regenerate_all)
+        monkeypatch.setattr(_reels_router, "serialize_reels_draft", _fake_serialize_reels_draft)
 
         response = miniapp_test_client.post(
             "/api/reels/reels001/storyboard/regenerate",
@@ -1590,8 +1644,9 @@ class TestMiniAppApi:
         import analytics.aggregator
         import cache.store
 
+        import miniapp.api.routers.plans as _plans_router
         monkeypatch.setattr(
-            miniapp_server,
+            _plans_router,
             "generate_plan_sync",
             lambda trends_text: (
                 "📅 Понедельник\n"
@@ -1602,7 +1657,8 @@ class TestMiniAppApi:
                 "Угол: Через мягкий вход\n"
             ),
         )
-        monkeypatch.setattr(miniapp_server, "_format_trends", lambda _results: "threads: signal")
+        import miniapp.api.routers.plans as _plans_router
+        monkeypatch.setattr(_plans_router, "_format_trends", lambda _results: "threads: signal")
         monkeypatch.setattr(analytics.aggregator, "collect_all", lambda: [])
         monkeypatch.setattr(cache.store.cache, "get", lambda _key: ["cached"])
         monkeypatch.setattr(cache.store.cache, "set", lambda _key, _value: None)
@@ -2277,7 +2333,9 @@ class TestMiniAppRussianLocale:
 
     def test_carousel_detail_uses_actions_instead_of_raw_json(self):
         app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
-        server_py = Path("miniapp_server.py").read_text(encoding="utf-8")
+        server_py = Path("miniapp_server.py").read_text(encoding="utf-8") + "".join(
+            p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/api").rglob("*.py"))
+        )
 
         assert "JSON</h3>" not in app_js
         assert "Обновить все слайды" in app_js
@@ -2304,7 +2362,9 @@ class TestMiniAppRussianLocale:
 
     def test_reels_detail_supports_editing_and_reference_generation(self):
         app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
-        server_py = Path("miniapp_server.py").read_text(encoding="utf-8")
+        server_py = Path("miniapp_server.py").read_text(encoding="utf-8") + "".join(
+            p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/api").rglob("*.py"))
+        )
 
         assert "Сохранить концепцию и сценарий" in app_js
         assert "Пересобрать раскадровку" in app_js
@@ -2329,7 +2389,9 @@ class TestMiniAppRussianLocale:
     def test_content_review_detail_supports_editing_polish_and_feedback(self):
         app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
         app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
-        server_py = Path("miniapp_server.py").read_text(encoding="utf-8")
+        server_py = Path("miniapp_server.py").read_text(encoding="utf-8") + "".join(
+            p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/api").rglob("*.py"))
+        )
 
         assert "function isContentReviewKind" in app_js
         assert "Редакторский review" in app_js
@@ -2369,7 +2431,9 @@ class TestMiniAppRussianLocale:
     def test_keywords_detail_supports_editing_and_ui_notices(self):
         app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
         app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
-        server_py = Path("miniapp_server.py").read_text(encoding="utf-8")
+        server_py = Path("miniapp_server.py").read_text(encoding="utf-8") + "".join(
+            p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/api").rglob("*.py"))
+        )
 
         assert "function showUiNotice" in app_js
         assert "function confirmAction" in app_js
@@ -2419,7 +2483,9 @@ class TestMiniAppRussianLocale:
 
     def test_draft_detail_supports_reject_and_delete_actions(self):
         app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
-        server_py = Path("miniapp_server.py").read_text(encoding="utf-8")
+        server_py = Path("miniapp_server.py").read_text(encoding="utf-8") + "".join(
+            p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/api").rglob("*.py"))
+        )
         html = Path("miniapp/index.html").read_text(encoding="utf-8")
 
         assert "Вернуть на доработку" in app_js
@@ -2427,7 +2493,7 @@ class TestMiniAppRussianLocale:
         assert 'actionLabel("trash"' in app_js
         assert "deleteDraft" in app_js
         assert "rejected" in app_js
-        assert '@app.delete("/api/drafts/{draft_id}")' in server_py
+        assert '@router.delete("/api/drafts/{draft_id}")' in server_py
         assert 'option value="rejected"' in html
 
     def test_buttons_have_loading_feedback_animation(self):
@@ -2452,7 +2518,9 @@ class TestMiniAppRussianLocale:
     def test_drafts_tab_uses_inline_a_loader_and_timeout_state(self):
         app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
         app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
-        server_py = Path("miniapp_server.py").read_text(encoding="utf-8")
+        server_py = Path("miniapp_server.py").read_text(encoding="utf-8") + "".join(
+            p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/api").rglob("*.py"))
+        )
 
         assert "function renderPanelLoader" in app_js
         assert "function renderPanelError" in app_js
@@ -2467,7 +2535,9 @@ class TestMiniAppRussianLocale:
 
     def test_index_uses_dynamic_asset_versioning(self):
         html = Path("miniapp/index.html").read_text(encoding="utf-8")
-        server_py = Path("miniapp_server.py").read_text(encoding="utf-8")
+        server_py = Path("miniapp_server.py").read_text(encoding="utf-8") + "".join(
+            p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/api").rglob("*.py"))
+        )
 
         assert "__ASSET_VERSION__" in html
         assert "def _asset_version()" in server_py
@@ -2904,7 +2974,9 @@ class TestEditPostFallback:
 
 class TestMiniAppReelsPolling:
     def test_server_populates_all_initial_reels_frames(self):
-        source = Path("miniapp_server.py").read_text(encoding="utf-8")
+        source = Path("miniapp_server.py").read_text(encoding="utf-8") + "".join(
+            p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/api").rglob("*.py"))
+        )
         assert "frame_indexes=[0, 1]" not in source
         assert "background_tasks.add_task(" in source
 
@@ -2969,7 +3041,9 @@ class TestThreadsPrompts:
 
     def test_index_disables_html_cache_and_bumps_static_version(self):
         index_html = Path("miniapp/index.html").read_text(encoding="utf-8")
-        server_py = Path("miniapp_server.py").read_text(encoding="utf-8")
+        server_py = Path("miniapp_server.py").read_text(encoding="utf-8") + "".join(
+            p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/api").rglob("*.py"))
+        )
 
         assert "app.css?v=4" in index_html or "app.css?v=__ASSET_VERSION__" in index_html
         assert "app.js?v=4" in index_html or "app.js?v=__ASSET_VERSION__" in index_html
@@ -3235,16 +3309,16 @@ class TestReelsStoryboardFallback:
 
         with TestClient(miniapp_server.app) as client:
             # patch auth so test client does not need real init-data
-            import miniapp_server as _ms
-            original_verify = _ms._verify_init_data
-            _ms._verify_init_data = lambda _v: True
+            import miniapp.api.auth as _ms_auth
+            original_verify = _ms_auth._verify_init_data
+            _ms_auth._verify_init_data = lambda _v: True
             try:
                 response = client.get(
                     f"/api/reels/{draft.draft_id}",
                     headers={"X-Telegram-Init-Data": "user=%7B%22id%22%3A1%7D&hash=test"},
                 )
             finally:
-                _ms._verify_init_data = original_verify
+                _ms_auth._verify_init_data = original_verify
 
         assert response.status_code == 200
         payload = response.json()
