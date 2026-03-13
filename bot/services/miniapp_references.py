@@ -464,6 +464,27 @@ async def build_reference_context(
     return "\n\n".join(sections)
 
 
+async def _enrich_aroma_cross_refs(serialized: dict[str, object]) -> dict[str, object]:
+    """Compute blends_containing_* cross-references for an aroma card."""
+    slug = serialized.get("slug")
+    if not slug:
+        return serialized
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(select(AromaCardModel).where(AromaCardModel.category == "blend"))
+        blend_models = result.scalars().all()
+    blends_containing_names: list[str] = []
+    blends_containing_slugs: list[str] = []
+    for blend in blend_models:
+        payload = _public_payload(blend.payload or {})
+        ingredient_slugs = payload.get("ingredient_slugs") or []
+        if isinstance(ingredient_slugs, list) and slug in ingredient_slugs:
+            blends_containing_names.append(blend.name)
+            blends_containing_slugs.append(blend.slug)
+    serialized["blends_containing_names"] = blends_containing_names
+    serialized["blends_containing_slugs"] = blends_containing_slugs
+    return serialized
+
+
 async def get_reference_card(category: str, slug_or_name: str) -> dict[str, object] | None:
     await seed_reference_cards_if_empty()
     key = _normalize(slug_or_name)
@@ -473,7 +494,10 @@ async def get_reference_card(category: str, slug_or_name: str) -> dict[str, obje
     for model in models:
         aliases = [_normalize(alias) for alias in (model.aliases or [])]
         if model.slug == slug_or_name or _normalize(model.name) == key or key in aliases:
-            return _serialize_model(model)
+            serialized = _serialize_model(model)
+            if category == "aroma":
+                serialized = await _enrich_aroma_cross_refs(serialized)
+            return serialized
     return None
 
 
