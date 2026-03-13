@@ -115,10 +115,7 @@ textarea,
 
 /* ── Toolbar ─────────────────────────────────────────────────────────────── */
 .topbar {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 10px;
-  align-items: stretch;
+  display: block;
 }
 
 .topbar-main {
@@ -1216,11 +1213,11 @@ body.tg-theme-dark .detail-markdown h5 {
 .bottom-tab-btn {
   display: grid;
   justify-items: center;
-  gap: 3px;
-  min-height: 48px;
-  padding: 6px 4px;
+  gap: 4px;
+  min-height: 56px;
+  padding: 8px 4px 6px;
   border: 0;
-  border-radius: 16px;
+  border-radius: 18px;
   background: transparent;
   color: var(--muted);
   cursor: pointer;
@@ -1232,24 +1229,33 @@ body.tg-theme-dark .detail-markdown h5 {
   border: none;
   color: #fff;
   box-shadow: 0 3px 12px rgba(180, 92, 61, 0.40);
+  align-self: center;
+  min-height: 52px;
+}
+
+/* Filled knob circles for the sliders/settings icon */
+.bottom-tab-btn .ui-icon svg circle {
+  fill: currentColor;
+  stroke: none;
 }
 
 .bottom-tab-btn .ui-icon {
-  width: 18px;
-  height: 18px;
-  flex-basis: 18px;
+  width: 26px;
+  height: 26px;
+  flex-basis: 26px;
 }
 
 .bottom-tab-btn .ui-icon svg {
-  width: 18px;
-  height: 18px;
+  width: 26px;
+  height: 26px;
 }
 
 .bottom-tab-btn span:last-child {
-  font-size: 12px;
+  font-size: 10px;
   line-height: 1.1;
   font-weight: 600;
   text-align: center;
+  letter-spacing: 0.01em;
 }
 
 .bottom-tab-btn.active {
@@ -1330,7 +1336,7 @@ body.tg-theme-dark .detail-markdown h5 {
 /* ── Mobile Layout Fixes ─────────────────────────────────────────────────── */
 @media (max-width: 760px) {
   body.is-mobile-layout {
-    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
   }
 
   .detail-title {
@@ -2566,7 +2572,7 @@ body.tg-theme-dark .concept-card {
 /* On mobile the topbar shows only the title (sticky); mode selector and eyebrow are hidden */
 body.is-mobile-layout .topbar-main {
   position: sticky;
-  top: 0;
+  top: var(--tg-content-inset-top, env(safe-area-inset-top, 0px));
   z-index: 10;
   padding: var(--space-3);
 }
