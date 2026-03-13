@@ -116,7 +116,7 @@ def _parse_with_claude(text: str, api_key: str) -> dict:
     prompt = _PARSE_PROMPT.format(text=truncated)
     resp = client.messages.create(
         model="claude-haiku-4-5-20251001",
-        max_tokens=800,
+        max_tokens=2500,
         messages=[{"role": "user", "content": prompt}],
     )
     raw = resp.content[0].text.strip()
