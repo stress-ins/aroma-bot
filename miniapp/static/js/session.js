@@ -82,7 +82,7 @@ export function createSessionModule(deps) {
     return initData ? { "X-Telegram-Init-Data": initData } : {};
   }
 
-  function scheduleReelsRefresh(draftId, attempts = 10) {
+  function scheduleReelsRefresh(draftId, attempts = 25) {
     if (!draftId || attempts <= 0) return;
     window.clearTimeout(timers.getReelRefresh());
     timers.setReelRefresh(window.setTimeout(async () => {

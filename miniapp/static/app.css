@@ -2683,3 +2683,28 @@ body.is-mobile-layout[data-mode="handbook"] .tabs {
   cursor: default;
   opacity: 0.7;
 }
+
+/* ── Filter chips (handbook) ─────────────────────────────────────────────── */
+.filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: var(--space-3) var(--space-4) 0;
+}
+.filter-chip {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
+  font-family: var(--font-ui);
+  line-height: 1.4;
+}
+.filter-chip.active {
+  background: var(--brand);
+  color: #fff;
+  border-color: var(--brand);
+}
