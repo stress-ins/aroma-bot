@@ -1310,6 +1310,14 @@ body.tg-theme-dark .detail-markdown h5 {
   }
 }
 
+/* ── Safe Area Insets (Dynamic Island, Telegram chrome) ─────────────────── */
+/* env(safe-area-inset-top) keeps content below Dynamic Island / Telegram     */
+/* close button bar. env(safe-area-inset-bottom) keeps bottom tab bar above  */
+/* the iPhone home indicator. Requires viewport-fit=cover in HTML <meta>.    */
+.shell {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
 /* ── Mobile Layout Fixes ─────────────────────────────────────────────────── */
 @media (max-width: 760px) {
   body.is-mobile-layout {
