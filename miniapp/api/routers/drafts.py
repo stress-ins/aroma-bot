@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from telegram import Bot
 
 from bot.services.drafts_store import delete_draft, get_draft, list_recent_drafts, update_draft
+from bot.services.draft_revisions_store import create_revision, get_revision, list_revisions
 from bot.services.miniapp_content_review import polish_content_review_draft, update_content_review_draft
 from bot.services.miniapp_presenter import filter_drafts, serialize_draft, serialize_draft_summary
 from config import settings
@@ -96,6 +97,7 @@ async def update_content(draft_id: str, payload: DraftContentPayload, _: None = 
     draft = await get_draft(draft_id)
     if not draft:
         raise HTTPException(status_code=404, detail="draft_not_found")
+    await create_revision(draft_id, draft.payload, author="user", note="manual save")
     return await serialize_draft(draft)
 
 
@@ -109,7 +111,42 @@ async def polish_content(draft_id: str, _: None = Depends(_require_auth)):
     draft = await get_draft(draft_id)
     if not draft:
         raise HTTPException(status_code=404, detail="draft_not_found")
+    await create_revision(draft_id, draft.payload, author="ai:polish", note="AI polish")
     return await serialize_draft(draft)
+
+
+@router.get("/api/drafts/{draft_id}/revisions")
+async def list_draft_revisions(draft_id: str, _: None = Depends(_require_auth)):
+    draft = await get_draft(draft_id)
+    if not draft:
+        raise HTTPException(status_code=404, detail="draft_not_found")
+    revisions = await list_revisions(draft_id)
+    return {"items": [r.to_dict() for r in revisions]}
+
+
+@router.get("/api/drafts/{draft_id}/revisions/{rev_num}")
+async def get_draft_revision(draft_id: str, rev_num: int, _: None = Depends(_require_auth)):
+    revision = await get_revision(draft_id, rev_num)
+    if not revision:
+        raise HTTPException(status_code=404, detail="revision_not_found")
+    return revision.to_dict()
+
+
+@router.post("/api/drafts/{draft_id}/revisions/{rev_num}/restore")
+async def restore_draft_revision(draft_id: str, rev_num: int, _: None = Depends(_require_auth)):
+    revision = await get_revision(draft_id, rev_num)
+    if not revision:
+        raise HTTPException(status_code=404, detail="revision_not_found")
+    draft = await get_draft(draft_id)
+    if not draft:
+        raise HTTPException(status_code=404, detail="draft_not_found")
+    # Snapshot current before restoring
+    await create_revision(draft_id, draft.payload, author="system", note=f"snapshot before restore to rev {rev_num}")
+    updated = await update_draft(draft_id, payload=revision.payload)
+    if not updated:
+        raise HTTPException(status_code=404, detail="draft_not_found")
+    await create_revision(draft_id, revision.payload, author="system", note=f"restored from rev {rev_num}")
+    return await serialize_draft(updated)
 
 
 @router.post("/api/drafts/{draft_id}/send")
