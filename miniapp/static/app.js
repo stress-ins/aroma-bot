@@ -1,5 +1,6 @@
 import { createCarouselModule } from "./js/carousel.js";
 import { createContentModule } from "./js/content.js";
+import { createCoreModule } from "./js/core.js";
 import { createCreateModule } from "./js/create.js";
 import { createDraftsModule } from "./js/drafts.js";
 import { createPlansModule } from "./js/plans.js";
@@ -33,6 +34,7 @@ const state = {
   keywords: null,
   settingsSection: "status",
   mobileView: "list", // 'list' or 'detail'
+  lastHandbookTab: "aromas",
   pendingCarouselNotes: {},
   pendingCarouselOps: {},
   pendingReelsNotes: {},
@@ -357,10 +359,6 @@ function actionLabel(icon, text) {
   return `${uiIcon(icon)}<span>${escapeHtml(text)}</span>`;
 }
 
-function interactiveCardAttrs(label) {
-  return `role="button" tabindex="0" aria-label="${escapeHtml(label)}"`;
-}
-
 function tagMarkup(label, tone = "neutral") {
   const safeTone = String(tone || "neutral")
     .replace(/[^a-z0-9_-]/gi, "")
@@ -404,258 +402,6 @@ function promptSection(title, prompt, copyLabel = "Скопировать про
   `;
 }
 
-function renderDetailLoader(label = "Открываю карточку", subtitle = "Подгружаю данные и собираю экран.", extraClass = "") {
-  return `
-    <div class="detail-loader-card${extraClass ? ` ${escapeHtml(extraClass)}` : ""}" aria-live="polite">
-      <div class="brand-loader" aria-hidden="true">
-        <span class="brand-loader-ring"></span>
-        <span class="brand-loader-letter">A</span>
-      </div>
-      <div class="detail-loader-copy">
-        <strong>${escapeHtml(label)}</strong>
-        <span>${escapeHtml(subtitle)}</span>
-      </div>
-    </div>
-  `;
-}
-
-function renderPanelLoader(label = "Загружаю данные") {
-  return `
-    <div class="detail-loader-card panel-loader-card" aria-live="polite">
-      <div class="brand-loader" aria-hidden="true">
-        <span class="brand-loader-ring"></span>
-        <span class="brand-loader-letter">A</span>
-      </div>
-      <div class="detail-loader-copy">
-        <strong>${escapeHtml(label)}</strong>
-        <span>Собираю и обновляю содержимое раздела.</span>
-      </div>
-    </div>
-  `;
-}
-
-function renderPanelError(title, message) {
-  return `
-    <div class="boot-fallback boot-fallback-inline is-error">
-      <div class="boot-fallback-copy">
-        <p class="eyebrow">Нужна повторная попытка</p>
-        <h2>${escapeHtml(title)}</h2>
-        <p>${escapeHtml(message)}</p>
-      </div>
-      <button class="secondary-button" type="button" onclick="retryCurrentTab()">Повторить</button>
-    </div>
-  `;
-}
-
-function renderGuidedState({
-  eyebrow = "Следующий шаг",
-  title,
-  body = "",
-  actionLabel = "",
-  action = "",
-  tone = "soft",
-} = {}) {
-  return `
-    <div class="guided-state tone-${escapeHtml(tone)}">
-      <div class="guided-state-copy">
-        <p class="eyebrow">${escapeHtml(eyebrow)}</p>
-        <h3>${escapeHtml(title || "Пока ничего не выбрано")}</h3>
-        ${body ? `<p>${escapeHtml(body)}</p>` : ""}
-      </div>
-      ${actionLabel && action ? `<div class="guided-state-actions"><button class="secondary-button" type="button" onclick="${action}">${escapeHtml(actionLabel)}</button></div>` : ""}
-    </div>
-  `;
-}
-
-function showUiNotice(message, tone = "info") {
-  let notice = document.getElementById("uiNotice");
-  if (!notice) {
-    notice = document.createElement("div");
-    notice.id = "uiNotice";
-    notice.className = "ui-notice";
-    document.body.appendChild(notice);
-  }
-  notice.textContent = String(message || "");
-  notice.className = `ui-notice is-visible tone-${tone}`;
-  window.clearTimeout(uiNoticeTimer);
-  uiNoticeTimer = window.setTimeout(() => {
-    notice.classList.remove("is-visible");
-  }, 2400);
-}
-
-function renderDetailError(title, message, retryAction = "retryCurrentTab()") {
-  return `
-    <div class="detail-grid">
-      ${renderBackButton()}
-      <div class="boot-fallback boot-fallback-inline is-error">
-        <div class="boot-fallback-copy">
-          <p class="eyebrow">Нужна повторная попытка</p>
-          <h2>${escapeHtml(title)}</h2>
-          <p>${escapeHtml(message)}</p>
-        </div>
-        <button class="secondary-button" type="button" onclick="${retryAction}">Повторить</button>
-      </div>
-    </div>
-  `;
-}
-
-function draftSummaryFromDraft(draft) {
-  if (!draft) return null;
-  return {
-    draft_id: draft.draft_id,
-    kind: draft.kind,
-    topic: draft.topic,
-    source: draft.source,
-    created_at: draft.created_at,
-    status: draft.status,
-    feedback: draft.feedback || "",
-    preview: draft.preview || "",
-    slides_count: draft.slides_count || 0,
-    storyboard_count: draft.storyboard_count || 0,
-    images_ready: draft.images_ready || 0,
-    generation_pending: Boolean(draft.generation_pending),
-  };
-}
-
-function upsertDraftSummary(summary) {
-  if (!summary?.draft_id) return;
-  state.drafts = [
-    summary,
-    ...state.drafts.filter((item) => item.draft_id !== summary.draft_id),
-  ];
-}
-
-function draftGenerationLabel(draft) {
-  if (!draft?.generation_pending) return "";
-  if (draft.kind === "carousel") {
-    const total = Number(draft.slides_count || 0);
-    const ready = Number(draft.images_ready || 0);
-    return total ? `Ещё генерируется ${ready}/${total}` : "Ещё генерируется";
-  }
-  if (draft.kind === "reels") {
-    const total = Number(draft.storyboard_count || 0);
-    const ready = Number(draft.images_ready || 0);
-    return total ? `Ещё генерируется ${ready}/${total}` : "Ещё генерируется";
-  }
-  return "Ещё генерируется";
-}
-
-function generationStateMarkup(item, kind = "draft") {
-  if (!item?.generation_pending) return "";
-  const stage = String(item.generation_stage || "").trim();
-  const message = String(item.generation_message || "").trim();
-  const title = kind === "reels"
-    ? (stage === "scenario" ? "Собираю сценарий и раскадровку" : stage === "images" ? "Генерирую кадры" : "Собираю рилс")
-    : (stage === "slides" ? "Собираю структуру карусели" : stage === "images" ? "Генерирую картинки" : "Собираю карточку");
-  return `
-    <section class="section section-accent">
-      <div class="section-heading">
-        <h3>${uiIcon("sparkle")}${escapeHtml(title)}</h3>
-        <p>${escapeHtml(message || "Подождите ещё немного, мы обновим карточку автоматически.")}</p>
-      </div>
-      ${renderDetailLoader(title, message || "Подождите ещё немного, данные догружаются.", "detail-loader-card-compact")}
-    </section>
-  `;
-}
-
-function isPendingDraftId(value) {
-  return String(value || "").startsWith("pending-");
-}
-
-function buildPendingDraft(kind, topic) {
-  const draftId = `pending-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
-  return {
-    draft_id: draftId,
-    kind,
-    topic,
-    source: "/miniapp",
-    created_at: new Date().toISOString(),
-    status: "draft",
-    feedback: "",
-    preview: "Генерируем черновик...",
-    slides_count: kind === "carousel" ? 5 : 0,
-    storyboard_count: kind === "reels" ? 4 : 0,
-    images_ready: 0,
-    generation_pending: true,
-    payload: {},
-  };
-}
-
-function openPendingDraftCreation(kind, topic) {
-  const draft = buildPendingDraft(kind, topic);
-  state.pendingCreateRecovery = {
-    draft_id: draft.draft_id,
-    kind,
-    topic,
-    started_at: Date.now(),
-  };
-  state.draftId = draft.draft_id;
-  state.selected = draft;
-  setTab("drafts");
-  upsertDraftSummary(draftSummaryFromDraft(draft));
-  renderDraftList();
-  renderDraftDetail(draft);
-  enterDetailView();
-  return draft;
-}
-
-function finalizePendingDraftCreation(draft) {
-  const d = draft;
-  if (!d?.draft_id) return;
-  state.pendingCreateRecovery = null;
-  state.draftId = d.draft_id;
-  state.selected = d;
-  state.drafts = state.drafts.filter((item) => !isPendingDraftId(item.draft_id));
-  upsertDraftSummary(draftSummaryFromDraft(d));
-  renderDraftList();
-  renderDraftDetail(d);
-  enterDetailView();
-  void loadDrafts();
-}
-
-async function recoverPendingDraftCreation(kind, topic, pendingDraftId) {
-  const startedAt = Date.now();
-  state.pendingCreateRecovery = {
-    draft_id: pendingDraftId,
-    kind,
-    topic,
-    started_at: startedAt,
-  };
-  for (let attempt = 0; attempt < 8; attempt += 1) {
-    try {
-      const params = new URLSearchParams();
-      params.set("limit", "20");
-      params.set("kind", kind);
-      const data = await fetchJson(`/api/drafts?${params.toString()}`, { timeout: 20000 });
-      state.drafts = (data.items || []).filter((item) => item.draft_id !== pendingDraftId);
-      const recovered = state.drafts.find((item) => {
-        const createdAt = new Date(item.created_at || 0).getTime();
-        return item.kind === kind
-          && item.topic === topic
-          && item.source === "/miniapp"
-          && (Number.isNaN(createdAt) || createdAt >= startedAt - 10_000);
-      });
-      if (recovered?.draft_id) {
-        state.pendingCreateRecovery = null;
-        state.draftId = recovered.draft_id;
-        renderDraftList();
-        await openDraft(recovered.draft_id);
-        return true;
-      }
-      renderDraftList();
-    } catch (_error) {
-      // Keep pending UI visible while the backend finishes creating the draft.
-    }
-    await new Promise((resolve) => window.setTimeout(resolve, 1500));
-  }
-  elements.draftDetail.innerHTML = renderDetailError(
-    "Черновик создаётся дольше обычного",
-    "Мы продолжаем ждать создание карточки. Откройте Черновики ещё раз или повторите позже.",
-    "retryCurrentTab()",
-  );
-  syncMobileNavigation();
-  return false;
-}
 
 function isContentReviewKind(kind) {
   const normalized = String(kind || "").trim().toLowerCase();
@@ -666,49 +412,6 @@ function frameDraftKey(draftId, index) {
   return `${draftId}:${index}`;
 }
 
-function mergeDraftIntoState(draft) {
-  if (!draft?.draft_id) return;
-  state.selected = draft;
-  state.draftId = draft.draft_id;
-  state.drafts = state.drafts.map((item) => item.draft_id === draft.draft_id ? { ...item, ...draft } : item);
-}
-
-function mergeReelsIntoState(draft) {
-  if (!draft?.draft_id) return;
-  state.selectedReels = draft;
-  state.reels = state.reels.map((item) => item.draft_id === draft.draft_id ? { ...item, ...draft } : item);
-}
-
-const {
-  bufferedCarouselNote,
-  hasPendingCarouselOperations,
-  renderSlides,
-  saveCarouselSlideText,
-  handleCarouselSlideNoteInput,
-  regenerateCarouselSlide,
-  regenerateCarouselAll,
-  selectCarouselSlideVersion,
-  deleteCarouselSlideVersion,
-  downloadCarouselPptx,
-} = createCarouselModule({
-  state,
-  carouselNoteSaveTimers,
-  frameDraftKey,
-  escapeHtml,
-  uiIcon,
-  actionLabel,
-  formatPlanDate,
-  fetchJson,
-  withButtonFeedback,
-  showRequestError,
-  confirmAction,
-  authQueryString: _authQueryString,
-  isCurrentDraftDetail,
-  mergeDraftIntoState,
-  renderDraftList,
-  renderDraftDetail,
-  scheduleCarouselRefresh,
-});
 
 function clearBackgroundRefreshes() {
   window.clearTimeout(reelRefreshTimer);
@@ -783,43 +486,6 @@ async function deleteDraft(draftId, kind = "drafts", button) {
   }
 }
 
-async function withButtonFeedback(button, pendingLabel, handler, doneLabel = "Готово") {
-  const target = button instanceof HTMLElement ? button : null;
-  const originalHtml = target?.innerHTML || "";
-  if (target) {
-    target.disabled = true;
-    target.classList.remove("did-complete", "did-error");
-    target.classList.add("is-busy");
-    target.innerHTML = `<span class="button-spinner" aria-hidden="true"></span><span>${escapeHtml(pendingLabel)}</span>`;
-  }
-  try {
-    const result = await handler();
-    if (target) {
-      target.disabled = false;
-      target.classList.remove("is-busy");
-      target.classList.add("did-complete");
-      target.innerHTML = `<span>${escapeHtml(doneLabel)}</span>`;
-      window.setTimeout(() => {
-        target.classList.remove("did-complete");
-        target.innerHTML = originalHtml;
-      }, 900);
-    }
-    return result;
-  } catch (error) {
-    if (target) {
-      target.disabled = false;
-      target.classList.remove("is-busy");
-      target.classList.add("did-error");
-      target.innerHTML = "<span>Ошибка</span>";
-      window.setTimeout(() => {
-        target.classList.remove("did-error");
-        target.innerHTML = originalHtml;
-      }, 1200);
-    }
-    throw error;
-  }
-}
-
 function kindLabel(value) {
   return RU_KIND_LABELS[String(value || "").toLowerCase()] || String(value || "");
 }
@@ -881,32 +547,6 @@ function formatPlanDate(value) {
   return date.toLocaleDateString("ru-RU");
 }
 
-function setEmptyState(hidden, text = "Ничего не найдено.") {
-  elements.emptyState.hidden = hidden;
-  if (hidden) {
-    elements.emptyState.textContent = "";
-  } else if (typeof text === "string") {
-    elements.emptyState.textContent = text;
-  } else {
-    elements.emptyState.innerHTML = renderGuidedState(text || {});
-  }
-  elements.emptyState.style.display = hidden ? "none" : "block";
-}
-
-function showBootFallback(title, text, isError = false) {
-  if (!elements.bootFallback) return;
-  elements.bootFallback.hidden = false;
-  elements.bootFallback.classList.toggle("is-error", isError);
-  if (elements.bootFallbackTitle) elements.bootFallbackTitle.textContent = title;
-  if (elements.bootFallbackText) elements.bootFallbackText.textContent = text;
-}
-
-function hideBootFallback() {
-  if (!elements.bootFallback) return;
-  elements.bootFallback.hidden = true;
-  elements.bootFallback.classList.remove("is-error");
-}
-
 function humanizeRequestMessage(message) {
   if (message === "request_timeout") {
     return "Сервер отвечает слишком долго. Действие могло уже запуститься, проверьте карточку ещё раз.";
@@ -920,49 +560,6 @@ function humanizeRequestMessage(message) {
 function showRequestError(prefix, error) {
   const message = error?.message || String(error || "unknown_error");
   showUiNotice(`${prefix}: ${humanizeRequestMessage(message)}`, "error");
-}
-
-function showRuntimeWarning(prefix, error) {
-  const message = error?.message || String(error || "unknown_error");
-  const humanMessage = humanizeRequestMessage(message);
-  if (!appBootstrapped) {
-    showBootFallback(prefix, humanMessage, true);
-    return;
-  }
-  hideBootFallback();
-  setEmptyState(true);
-  elements.listTitle.textContent = "Загрузка";
-  elements.draftCount.textContent = "";
-  elements.draftList.innerHTML = renderPanelError(prefix, humanMessage);
-  if (!elements.draftDetail.innerHTML.trim()) {
-    elements.draftDetail.innerHTML = renderDetailLoader("Подождите ещё немного");
-  }
-}
-
-async function copyText(value) {
-  const text = String(value || "").trim();
-  if (!text) return;
-  try {
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(text);
-    } else {
-      const field = document.createElement("textarea");
-      field.value = text;
-      field.setAttribute("readonly", "readonly");
-      field.style.position = "absolute";
-      field.style.left = "-9999px";
-      document.body.appendChild(field);
-      field.select();
-      document.execCommand("copy");
-      document.body.removeChild(field);
-    }
-  } catch (error) {
-    showRequestError("Не удалось скопировать промпт", error);
-    return;
-  }
-  const tg = window.Telegram?.WebApp;
-  if (tg?.showAlert) tg.showAlert("Промпт скопирован");
-  else showUiNotice("Промпт скопирован", "success");
 }
 
 async function addKeywordItem(topicIdx, field, form, button) {
@@ -1002,6 +599,94 @@ const {
 
 window.goBackToList = goBackToList;
 
+const coreCallbacks = {
+  setTab: (...args) => setTab(...args),
+  renderDraftList: () => renderDraftList(),
+  renderDraftDetail: (draft) => renderDraftDetail(draft),
+  enterDetailView: () => enterDetailView(),
+  loadDrafts: () => loadDrafts(),
+  openDraft: (draftId) => openDraft(draftId),
+  syncMobileNavigation: () => syncMobileNavigation(),
+  isBootstrapped: () => appBootstrapped,
+  renderReels: () => renderReels(),
+  renderReelsDetail: (draft) => renderReelsDetail(draft),
+};
+
+const {
+  interactiveCardAttrs,
+  renderDetailLoader,
+  renderPanelLoader,
+  renderPanelError,
+  renderGuidedState,
+  showUiNotice,
+  renderDetailError,
+  draftSummaryFromDraft,
+  upsertDraftSummary,
+  draftGenerationLabel,
+  generationStateMarkup,
+  isPendingDraftId,
+  openPendingDraftCreation,
+  finalizePendingDraftCreation,
+  recoverPendingDraftCreation,
+  mergeDraftIntoState,
+  mergeReelsIntoState,
+  setEmptyState,
+  showBootFallback,
+  hideBootFallback,
+  showRuntimeWarning,
+  copyText,
+  fetchJson,
+  withButtonFeedback,
+  updateCurrentDraft,
+  aromaSection,
+} = createCoreModule({
+  state,
+  elements,
+  escapeHtml,
+  uiIcon,
+  sectionHeadingIcon,
+  renderBackButton,
+  renderMarkdown,
+  getInitDataHeaders: _initDataHeader,
+  getCurrentDraftId: () => state.draftId || state.selectedReels?.draft_id || "",
+  timers: {
+    getUiNotice: () => uiNoticeTimer,
+    setUiNotice: (value) => { uiNoticeTimer = value; },
+  },
+  callbacks: coreCallbacks,
+});
+
+const {
+  bufferedCarouselNote,
+  hasPendingCarouselOperations,
+  renderSlides,
+  saveCarouselSlideText,
+  handleCarouselSlideNoteInput,
+  regenerateCarouselSlide,
+  regenerateCarouselAll,
+  selectCarouselSlideVersion,
+  deleteCarouselSlideVersion,
+  downloadCarouselPptx,
+} = createCarouselModule({
+  state,
+  carouselNoteSaveTimers,
+  frameDraftKey,
+  escapeHtml,
+  uiIcon,
+  actionLabel,
+  formatPlanDate,
+  fetchJson,
+  withButtonFeedback,
+  showRequestError,
+  confirmAction,
+  authQueryString: _authQueryString,
+  isCurrentDraftDetail,
+  mergeDraftIntoState,
+  renderDraftList,
+  renderDraftDetail,
+  scheduleCarouselRefresh,
+});
+
 const {
   loadPlans: loadPlansImpl,
   planEntryTargetKind,
@@ -1026,6 +711,7 @@ const {
   sourceTone,
   formatPlanDate,
   renderBackButton,
+  renderMarkdown,
   renderGuidedState,
   setEmptyState,
   renderDetailLoader,
@@ -1077,6 +763,7 @@ const {
   generationStateMarkup,
   renderBackButton,
   renderDetailLoader,
+  renderMarkdown,
   fetchJson,
   withButtonFeedback,
   showRequestError,
@@ -1142,37 +829,6 @@ function scheduleCarouselRefresh(draftId, attempts = 12) {
       if (draft.generation_pending || readyCount < slideCount) scheduleCarouselRefresh(draftId, attempts - 1);
     } catch (_e) { scheduleCarouselRefresh(draftId, attempts - 1); }
   }, 5000);
-}
-
-async function fetchJson(url, options = {}) {
-  const { timeout = 12000, ...fetchOptions } = options;
-  const extraHeaders = url.startsWith("/api/") ? _initDataHeader() : {};
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeout);
-  let response;
-  try {
-    response = await fetch(url, {
-      headers: { "Content-Type": "application/json", ...extraHeaders },
-      signal: controller.signal,
-      ...fetchOptions,
-    });
-  } catch (error) {
-    clearTimeout(timer);
-    if (error?.name === "AbortError") {
-      throw new Error("request_timeout");
-    }
-    throw error;
-  }
-  clearTimeout(timer);
-  if (!response.ok) {
-    let detail = "";
-    try {
-      const payload = await response.json();
-      detail = payload?.detail ? ` (${payload.detail})` : "";
-    } catch (_e) {}
-    throw new Error(`${response.status} ${response.statusText}${detail}`);
-  }
-  return response.json();
 }
 
 async function loadDrafts() {
@@ -1468,11 +1124,6 @@ const {
   },
 });
 
-function aromaSection(title, content) {
-  if (!content) return "";
-  return `<section class="section"><h3>${sectionHeadingIcon(title)}${escapeHtml(title)}</h3><div class="detail-preview detail-markdown">${renderMarkdown(content)}</div></section>`;
-}
-
 function renderDraftList() {
   return renderDraftListImpl();
 }
@@ -1531,6 +1182,7 @@ function setTab(t) {
   elements.settingsButton?.classList.toggle("active", state.mode === "content" && t === "settings");
   
   if (HANDBOOK_CATEGORY_META[t]) {
+    state.lastHandbookTab = t;
     state.referenceSearch = "";
     if (state.selectedReference?.category !== HANDBOOK_CATEGORY_META[t].category) {
       state.selectedReference = null;
@@ -1582,23 +1234,7 @@ window.openReels = openReels;
 window.openPlan = openPlan;
 window.generateDraftFromPlan = generateDraftFromPlan;
 window.openPlanRelatedDraft = openPlanRelatedDraft;
-window.updateDraft = async (action, payload, button) => {
-  const currentDraftId = state.draftId || state.selectedReels?.draft_id || "";
-  if (!currentDraftId) return;
-  const request = async () => fetchJson(`/api/drafts/${currentDraftId}/${action}`, { method: "POST", body: JSON.stringify(payload) });
-  const d = button instanceof HTMLElement
-    ? await withButtonFeedback(button, "Сохраняю...", request, "Готово")
-    : await request();
-  if (state.tab === "reels" || d.kind === "reels") {
-    mergeReelsIntoState(d);
-    renderReels();
-    renderReelsDetail(d);
-    return;
-  }
-  mergeDraftIntoState(d);
-  renderDraftDetail(d);
-  renderDraftList();
-};
+window.updateDraft = updateCurrentDraft;
 window.sendDraftToChat = sendDraftToChat;
 window.deleteDraft = deleteDraft;
 window.saveCarouselSlideText = saveCarouselSlideText;

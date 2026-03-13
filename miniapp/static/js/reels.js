@@ -17,6 +17,7 @@ export function createReelsModule(deps) {
     generationStateMarkup,
     renderBackButton,
     renderDetailLoader,
+    renderMarkdown,
     fetchJson,
     withButtonFeedback,
     showRequestError,
@@ -49,6 +50,22 @@ export function createReelsModule(deps) {
     return `<div class="slide-status is-empty">${uiIcon("image")}<span>Кадр еще не подготовлен</span></div>`;
   }
 
+  function normalizedReelsFrames(reel = {}) {
+    if (Array.isArray(reel.frames) && reel.frames.length) return reel.frames;
+    const payloadStoryboard = reel.payload?.storyboard;
+    return Array.isArray(payloadStoryboard) ? payloadStoryboard : [];
+  }
+
+  function reelsFrameCount(reel = {}) {
+    return normalizedReelsFrames(reel).length || Number(reel.frame_count || 0);
+  }
+
+  function reelsReadyCount(reel = {}) {
+    const payloadReady = Number(reel.images_ready || 0);
+    const derivedReady = normalizedReelsFrames(reel).filter((frame) => frame?.current_asset?.url).length;
+    return Math.max(payloadReady, derivedReady);
+  }
+
   function renderReelsFrameNarrative(frame = {}) {
     const sections = [
       { label: "Видеоряд", value: frame.scene || "" },
@@ -63,7 +80,7 @@ export function createReelsModule(deps) {
         ${sections.map((item) => `
           <div class="reels-frame-section">
             <span class="reels-frame-section-label">${escapeHtml(item.label)}</span>
-            <div class="reels-frame-section-value">${escapeHtml(item.value)}</div>
+            <div class="reels-frame-section-value detail-markdown">${renderMarkdown(item.value)}</div>
           </div>
         `).join("")}
       </div>
@@ -77,8 +94,8 @@ export function createReelsModule(deps) {
       : { required: [], optional: [] };
     const requiredNotes = Array.isArray(productionNotes.required) ? productionNotes.required : [];
     const optionalNotes = Array.isArray(productionNotes.optional) ? productionNotes.optional : [];
-    const readyFrames = Number(reel.images_ready || 0);
-    const totalFrames = Number(reel.frame_count || 0);
+    const readyFrames = reelsReadyCount(reel);
+    const totalFrames = reelsFrameCount(reel);
 
     if (!shotList.length && !requiredNotes.length && !optionalNotes.length && !totalFrames) return "";
 
@@ -351,7 +368,8 @@ export function createReelsModule(deps) {
   }
 
   function renderReelsDetail(r) {
-    const hasFrames = Array.isArray(r.frames) && r.frames.length > 0;
+    const frames = normalizedReelsFrames(r);
+    const hasFrames = frames.length > 0;
     return `
       <div class="detail-grid">
         ${renderBackButton()}
@@ -361,7 +379,7 @@ export function createReelsModule(deps) {
           <div class="draft-meta">
             ${tagMarkup(statusLabel(r.status || "draft"), statusTone(r.status || "draft"))}
             ${r.generation_pending ? tagMarkup(draftGenerationLabel({ ...r, kind: "reels" }), "pending") : ""}
-            ${tagMarkup(`${r.images_ready || 0}/${r.frame_count || 0} кадров`, "progress")}
+            ${tagMarkup(`${reelsReadyCount(r)}/${reelsFrameCount(r)} кадров`, "progress")}
             ${tagMarkup(sourceLabel(r.source || "/miniapp"), sourceTone(r.source || "/miniapp"))}
           </div>
           <div class="actions-row">
@@ -386,7 +404,7 @@ export function createReelsModule(deps) {
         </section>
         ${renderReelsProductionOverview(r)}
         ${generationStateMarkup(r, "reels")}
-        ${hasFrames ? renderReelsFrames(r.draft_id, r.frames) : `
+        ${hasFrames ? renderReelsFrames(r.draft_id, frames) : `
           <section class="section section-accent">
             <div class="section-heading">
               <h3>${uiIcon("slides")}Кадры и промпты</h3>
