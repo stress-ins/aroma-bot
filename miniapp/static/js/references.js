@@ -156,6 +156,34 @@ export function createReferencesModule(deps) {
     return `<section class="section"><h3>Описание</h3><div class="detail-preview">${escapeHtml(short || full)}</div></section>`;
   }
 
+  const APPLICATION_METHOD_ICONS = [
+    { keywords: ["диффузи", "аромалампа", "аромадиффузор", "аромат"], icon: "💨" },
+    { keywords: ["массаж", "втирать", "наносить на кожу"], icon: "💆" },
+    { keywords: ["топикально", "локально", "нанесение на кожу"], icon: "🩹" },
+    { keywords: ["ванн", "ванна", "купание"], icon: "🛁" },
+    { keywords: ["внутрь", "перорально", "капсул"], icon: "💊" },
+    { keywords: ["ингаляц", "вдыхать", "пары"], icon: "🌬️" },
+    { keywords: ["компресс"], icon: "🩼" },
+    { keywords: ["спрей", "распылить"], icon: "🌫️" },
+  ];
+
+  function renderApplicationsWithIcons(text) {
+    if (!text) return "";
+    const lines = text.split("\n").filter(Boolean);
+    const rendered = lines.map((line) => {
+      const lower = line.toLowerCase();
+      let icon = "•";
+      for (const { keywords, icon: i } of APPLICATION_METHOD_ICONS) {
+        if (keywords.some((kw) => lower.includes(kw))) {
+          icon = i;
+          break;
+        }
+      }
+      return `<div class="application-line">${icon} ${escapeHtml(line)}</div>`;
+    });
+    return `<section class="section"><h3>💧 Применение и дозировки</h3><div class="detail-preview applications-list">${rendered.join("")}</div></section>`;
+  }
+
   function renderReferencePassport(reference) {
     const parts = [
       reference.article_number ? `Артикул: ${reference.article_number}` : "",
@@ -526,10 +554,13 @@ export function createReferencesModule(deps) {
           ${aromaSection("Какие вопросы поднимает", reference.questions)}
           ${aromaSection("Действие на НПС", reference.nps_effect)}
           ${aromaSection("Терапевтические свойства", reference.therapeutic_properties)}
+          ${aromaSection("Влияние на здоровье", reference.health_effects)}
+          ${aromaSection("Влияние на ум", reference.mind_effect)}
+          ${aromaSection("Духовное и эмоциональное воздействие", reference.spiritual_emotional)}
           ${aromaSection("При каких состояниях", reference.conditions_for_use)}
           ${compChips ? `<section class="section"><h3>🌿 Комплементарные масла</h3><div class="detail-preview">${compChips}</div></section>` : ""}
           ${blendsChips ? `<section class="section"><h3>🌀 Входит в смеси</h3><div class="detail-preview">${blendsChips}</div></section>` : ""}
-          ${aromaSection("Применение", reference.applications)}
+          ${renderApplicationsWithIcons(reference.applications)}
           ${aromaSection("Меры предосторожности", reference.precautions)}
           ${aromaSection("Материалы курса", reference.course_notes)}
           ${aromaSection("Исторические сведения", reference.history)}

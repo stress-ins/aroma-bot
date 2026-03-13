@@ -196,7 +196,11 @@ def extract_field_after(lines: list[str], start: int, end: int, marker: str) -> 
         "При каких заболеваниях",
         "Духовное и эмоциональное",
         "Влияние на ум",
+        "Влияние на здоровье",
         "Применение и дозировки",
+        "Использование",
+        "Состояние",
+        "Способ получения",
         "Входит в состав",
         "Комплементарные масла",
         "Комплиментарные",
@@ -316,6 +320,18 @@ def parse_oils(lines: list[str], oil_start: int, oil_end: int) -> list[dict]:
             # Духовное и эмоциональное воздействие
             spiritual = extract_field_after(block_lines, 0, len(block_lines), "Духовное и эмоциональное воздействие")
 
+            # Влияние на ум
+            mind_effect = extract_field_after(block_lines, 0, len(block_lines), "Влияние на ум")
+
+            # Влияние на здоровье
+            health_effects = extract_field_after(block_lines, 0, len(block_lines), "Влияние на здоровье")
+
+            # Способ получения
+            extraction_method = extract_field_after(block_lines, 0, len(block_lines), "Способ получения")
+
+            # Использование (synonym for applications in some PDF layouts)
+            usage = extract_field_after(block_lines, 0, len(block_lines), "Использование")
+
             # Russian name — look for Ru characters after EN name
             ru_name = ""
             for bl in block_lines[1:8]:
@@ -336,11 +352,14 @@ def parse_oils(lines: list[str], oil_start: int, oil_end: int) -> list[dict]:
                 "article_number": article,
                 "therapeutic_properties": norm(lech),
                 "conditions_for_use": norm(conditions),
-                "applications": applications,
+                "applications": applications or norm(usage),
                 "blends_containing_names": blends_containing,
                 "complementary_oil_names": complementary,
                 "precautions": norm(precautions),
                 "spiritual_emotional": norm(spiritual),
+                "mind_effect": norm(mind_effect),
+                "health_effects": norm(health_effects),
+                "extraction_method": norm(extraction_method),
             }
             entries.append(entry)
             i = block_end
@@ -896,6 +915,9 @@ def main() -> None:
                     "complementary_oil_names": entry.get("complementary_oil_names", []),
                     "precautions": entry.get("precautions", ""),
                     "spiritual_emotional": entry.get("spiritual_emotional", ""),
+                    "mind_effect": entry.get("mind_effect", ""),
+                    "health_effects": entry.get("health_effects", ""),
+                    "extraction_method": entry.get("extraction_method", ""),
                 },
             }
             oils_new.append(card)
