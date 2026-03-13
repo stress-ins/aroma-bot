@@ -112,6 +112,10 @@ export function createDraftsModule(deps) {
     elements.draftDetail.innerHTML = `${renderBackButton()}${renderDetailLoader("Открываю черновик")}`;
     enterDetailView();
     const d = await fetchJson(`/api/drafts/${id}`, { timeout: 20000 });
+    if (d?.kind === "reels" && callbacks.openReels) {
+      await callbacks.openReels(d.draft_id);
+      return;
+    }
     state.selected = d;
     state.draftId = id;
     renderDraftList();
@@ -227,7 +231,7 @@ export function createDraftsModule(deps) {
         ${generationStateMarkup(d, "draft")}
         ${reviewActions}
         ${renderSlides(d.draft_id, p.slides, p.img_prompts, p.slide_images, p.img_prompt_notes, p.slide_image_versions)}
-        ${promptSection("Промпт для изображения", p.visual_prompt)}
+        ${promptSection("Промпт для изображения", p.visual_prompt, "Скопировать промпт", `draft:${d.draft_id}:visual`)}
       </div>
     `;
     if (d.kind === "carousel") {

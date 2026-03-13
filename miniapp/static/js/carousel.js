@@ -122,7 +122,6 @@ export function createCarouselModule(deps) {
             const prompt = String(promptItems[index] || "");
             const note = bufferedCarouselNote(draftId, index, String(noteItems[index] || ""));
             const versions = Array.isArray(versionItems[index]) ? versionItems[index] : [];
-            const showPromptOpen = !img?.url;
             const imgHtml = img?.url
               ? `<img class="frame-image" src="${escapeHtml(img.url)}" alt="Слайд ${index + 1}" />`
               : `<div class="frame-loading">Картинка недоступна или еще генерируется. Откройте промпт ниже для ручной генерации.</div>`;
@@ -140,9 +139,9 @@ export function createCarouselModule(deps) {
                   <button class="primary-button" type="button" aria-label="Сохранить текст слайда" onclick="saveCarouselSlideText(${JSON.stringify(draftId)}, ${index}, this)">${actionLabel("text", "Сохранить подпись")}</button>
                 </div>
                 ${prompt ? `
-                  <details class="prompt-disclosure"${showPromptOpen ? " open" : ""}>
-                    <summary class="secondary-button prompt-toggle">${actionLabel("eye", "Показать промпт")}</summary>
-                    <div class="prompt-card">
+                  <div class="prompt-disclosure${!img?.url ? " is-open" : ""}" data-prompt-key="${escapeHtml(`carousel:${draftId}:${index}`)}">
+                    <button class="secondary-button prompt-toggle" type="button" aria-expanded="${!img?.url ? "true" : "false"}" data-default-open="${!img?.url ? "true" : "false"}" data-open-label="Показать промпт" data-close-label="Скрыть промпт" onclick='togglePromptDisclosure(${JSON.stringify(`carousel:${draftId}:${index}`)}, this)'>${actionLabel("eye", !img?.url ? "Скрыть промпт" : "Показать промпт")}</button>
+                    <div class="prompt-card"${!img?.url ? "" : " hidden"}>
                       <div class="detail-preview prompt-preview">${escapeHtml(prompt)}</div>
                       <label class="prompt-note-field">
                         <span>Замечание к картинке</span>
@@ -154,7 +153,7 @@ export function createCarouselModule(deps) {
                         <button class="primary-button" type="button" onclick="regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, this)">${actionLabel("note", "Обновить по замечанию")}</button>
                       </div>
                     </div>
-                  </details>
+                  </div>
                 ` : ""}
                 ${renderSlideVersions(draftId, index, img, versions)}
               </article>

@@ -313,7 +313,6 @@ export function createReelsModule(deps) {
             const prompt = bufferedReelsPrompt(draftId, index, frame.gemini_prompt || "");
             const note = bufferedReelsNote(draftId, index, frame.review_note || "");
             const assetUrl = frame.current_asset?.url || "";
-            const showPromptOpen = !assetUrl;
             return `
               <article class="storyboard-frame">
                 <strong>Кадр ${index + 1}${frame.timecode ? ` • ${escapeHtml(frame.timecode)}` : ""}</strong>
@@ -322,9 +321,9 @@ export function createReelsModule(deps) {
                 ${assetUrl
                   ? `<img class="frame-image" src="${escapeHtml(assetUrl)}" alt="Кадр ${index + 1}" />`
                   : `<div class="frame-loading">Картинка ещё не готова. Карточка обновится автоматически, как только кадр будет сгенерирован.</div>`}
-                <details class="prompt-disclosure"${showPromptOpen ? " open" : ""}>
-                  <summary class="secondary-button prompt-toggle">${actionLabel("eye", prompt ? "Открыть редактирование кадра" : "Открыть описание кадра")}</summary>
-                  <div class="prompt-card">
+                <div class="prompt-disclosure${!assetUrl ? " is-open" : ""}" data-prompt-key="${escapeHtml(`reels:${draftId}:${index}`)}">
+                  <button class="secondary-button prompt-toggle" type="button" aria-expanded="${!assetUrl ? "true" : "false"}" data-default-open="${!assetUrl ? "true" : "false"}" data-open-label="${escapeHtml(prompt ? "Открыть редактирование кадра" : "Открыть описание кадра")}" data-close-label="Скрыть редактирование кадра" onclick='togglePromptDisclosure(${JSON.stringify(`reels:${draftId}:${index}`)}, this)'>${actionLabel("eye", !assetUrl ? "Скрыть редактирование кадра" : (prompt ? "Открыть редактирование кадра" : "Открыть описание кадра"))}</button>
+                  <div class="prompt-card"${!assetUrl ? "" : " hidden"}>
                     <div class="reels-frame-edit-grid">
                       <label class="prompt-note-field">
                         <span>Текст / действие кадра</span>
@@ -361,7 +360,7 @@ export function createReelsModule(deps) {
                       </div>
                     `}
                   </div>
-                </details>
+                </div>
               </article>
             `;
           }).join("")}

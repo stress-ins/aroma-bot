@@ -41,6 +41,7 @@ const state = {
   pendingCarouselOps: {},
   pendingReelsNotes: {},
   pendingReelsPrompts: {},
+  openPromptPanels: {},
 };
 
 const MODE_TABS = {
@@ -389,20 +390,81 @@ function contentKindIcon(kind) {
   return `<span class="kind-glyph kind-glyph-${escapeHtml(normalized)}" aria-hidden="true">${glyph}</span>`;
 }
 
-function promptSection(title, prompt, copyLabel = "Скопировать промпт") {
+function promptDisclosureKey(rawKey = "", fallbackSeed = "") {
+  const normalized = String(rawKey || fallbackSeed || "prompt")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9:_-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return normalized || "prompt";
+}
+
+function isPromptDisclosureOpen(rawKey = "", defaultOpen = false) {
+  const key = promptDisclosureKey(rawKey);
+  if (Object.prototype.hasOwnProperty.call(state.openPromptPanels, key)) {
+    return Boolean(state.openPromptPanels[key]);
+  }
+  return Boolean(defaultOpen);
+}
+
+function promptDisclosureMarkup(rawKey, bodyMarkup, {
+  defaultOpen = false,
+  openLabel = "Показать промпт",
+  closeLabel = "Скрыть промпт",
+} = {}) {
+  const key = promptDisclosureKey(rawKey);
+  const isOpen = isPromptDisclosureOpen(key, defaultOpen);
+  return `
+    <div class="prompt-disclosure${isOpen ? " is-open" : ""}" data-prompt-key="${escapeHtml(key)}">
+      <button
+        class="secondary-button prompt-toggle"
+        type="button"
+        aria-expanded="${isOpen ? "true" : "false"}"
+        data-default-open="${defaultOpen ? "true" : "false"}"
+        data-open-label="${escapeHtml(openLabel)}"
+        data-close-label="${escapeHtml(closeLabel)}"
+        onclick='togglePromptDisclosure(${JSON.stringify(key)}, this)'
+      >${actionLabel("eye", isOpen ? closeLabel : openLabel)}</button>
+      <div class="prompt-card"${isOpen ? "" : " hidden"}>${bodyMarkup}</div>
+    </div>
+  `;
+}
+
+function togglePromptDisclosure(rawKey = "", button) {
+  const key = promptDisclosureKey(rawKey);
+  const container = button instanceof HTMLElement ? button.closest(".prompt-disclosure") : null;
+  const card = container?.querySelector(".prompt-card");
+  const defaultOpen = button instanceof HTMLElement && button.dataset.defaultOpen === "true";
+  const nextOpen = !isPromptDisclosureOpen(key, defaultOpen);
+  state.openPromptPanels[key] = nextOpen;
+  if (container instanceof HTMLElement) {
+    container.classList.toggle("is-open", nextOpen);
+  }
+  if (card instanceof HTMLElement) {
+    card.hidden = !nextOpen;
+  }
+  if (button instanceof HTMLElement) {
+    const openLabel = button.dataset.openLabel || "Показать промпт";
+    const closeLabel = button.dataset.closeLabel || "Скрыть промпт";
+    button.setAttribute("aria-expanded", nextOpen ? "true" : "false");
+    button.innerHTML = actionLabel("eye", nextOpen ? closeLabel : openLabel);
+  }
+}
+
+window.togglePromptDisclosure = togglePromptDisclosure;
+
+function promptSection(title, prompt, copyLabel = "Скопировать промпт", promptKey = "") {
   if (!prompt) return "";
+  const disclosureKey = promptDisclosureKey(promptKey, `${title}:${String(prompt).slice(0, 48)}`);
   return `
     <section class="section">
       <h3>${uiIcon("prompt")}${escapeHtml(title)}</h3>
-      <details class="prompt-disclosure">
-        <summary class="secondary-button prompt-toggle">${actionLabel("eye", "Показать промпт")}</summary>
-        <div class="prompt-card">
-          <div class="detail-preview prompt-preview">${escapeHtml(prompt)}</div>
-          <div class="actions-row prompt-actions">
-            <button class="secondary-button" type="button" onclick='copyText(${JSON.stringify(String(prompt))})'>${actionLabel("prompt", copyLabel)}</button>
-          </div>
+      ${promptDisclosureMarkup(disclosureKey, `
+        <div class="detail-preview prompt-preview">${escapeHtml(prompt)}</div>
+        <div class="actions-row prompt-actions">
+          <button class="secondary-button" type="button" onclick='copyText(${JSON.stringify(String(prompt))})'>${actionLabel("prompt", copyLabel)}</button>
         </div>
-      </details>
+      `)}
     </section>
   `;
 }
@@ -907,6 +969,7 @@ const {
   callbacks: {
     renderDraftList: (...args) => renderDraftList(...args),
     renderDraftDetail: (...args) => renderDraftDetail(...args),
+    openReels: (...args) => openReels(...args),
   },
 });
 
