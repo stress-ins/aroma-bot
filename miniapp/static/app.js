@@ -1178,9 +1178,14 @@ const {
   loadSettings: loadSettingsImpl,
   renderStatus: renderStatusImpl,
   renderKeywords: renderKeywordsImpl,
+  renderBrand: renderBrandImpl,
   loadForbiddenPhrases: loadForbiddenPhrasesImpl,
   addForbiddenPhrase: addForbiddenPhraseImpl,
   removeForbiddenPhrase: removeForbiddenPhraseImpl,
+  loadPolicy: loadPolicyImpl,
+  addRewrite: addRewriteImpl,
+  removeRewrite: removeRewriteImpl,
+  savePlatformTone: savePlatformToneImpl,
 } = createSettingsModule({
   state,
   elements,
@@ -1475,6 +1480,9 @@ registerWindowBridge({
   removeKeywordItem,
   addForbiddenPhrase,
   removeForbiddenPhrase,
+  addRewrite: addRewriteImpl,
+  removeRewrite: removeRewriteImpl,
+  savePlatformTone: savePlatformToneImpl,
   addTodoItem: addTodoItemImpl,
   removeTodoItem: removeTodoItemImpl,
   goBackToList,
@@ -1486,6 +1494,10 @@ function renderInbox() { return renderInboxImpl(); }
 function renderStatus() {
   return renderStatusImpl();
 }
+
+function addRewrite() { return addRewriteImpl(); }
+function removeRewrite(pattern) { return removeRewriteImpl(pattern); }
+function savePlatformTone(platform) { return savePlatformToneImpl(platform); }
 
 function renderPlans() {
   return renderPlansImpl();

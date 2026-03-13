@@ -728,7 +728,8 @@ class TestForbiddenPhrasesAPI:
         _ms_auth._verify_init_data = lambda _v: True
         return original
 
-    def test_get_forbidden_phrases_returns_empty_list(self, tmp_path, monkeypatch):
+    def test_get_forbidden_phrases_returns_defaults(self, tmp_path, monkeypatch):
+        """When no custom config file exists, defaults are returned (not empty list)."""
         import miniapp_server
         import miniapp.api.auth as _ms_auth
         monkeypatch.chdir(tmp_path)
@@ -742,7 +743,10 @@ class TestForbiddenPhrasesAPI:
         finally:
             _ms_auth._verify_init_data = original
         assert response.status_code == 200
-        assert response.json() == {"items": []}
+        data = response.json()
+        # PolicyEngine merges defaults when no config file exists
+        assert isinstance(data["items"], list)
+        assert len(data["items"]) > 0
 
     def test_add_forbidden_phrase(self, tmp_path, monkeypatch):
         import miniapp_server
