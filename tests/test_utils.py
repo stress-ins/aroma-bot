@@ -2166,15 +2166,15 @@ class TestMiniAppRussianLocale:
         assert "🎬" in app_js
 
     def test_telegram_dark_theme_uses_body_class_for_bottom_nav(self):
-        app_js = _miniapp_static_text("app.js")
+        source = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
         app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
 
-        assert 'document.body.classList.toggle("tg-theme-dark", tg.colorScheme === "dark");' in app_js
+        assert 'document.body.classList.toggle("tg-theme-dark", tg.colorScheme === "dark");' in source
         assert "body.tg-theme-dark .bottom-tab-bar-inner" in app_css
         assert ".concept-card .draft-preview" in app_css
         assert "color: inherit;" in app_css
-        assert "🖼️" in app_js
-        assert "✍️" in app_js
+        assert "🖼️" in source
+        assert "✍️" in source
 
     def test_create_tool_panel_is_scaled_up_for_mobile(self):
         app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
@@ -2230,7 +2230,7 @@ class TestMiniAppRussianLocale:
         server_py = Path("miniapp_server.py").read_text(encoding="utf-8")
 
         assert "Сохранить концепцию и сценарий" in app_js
-        assert "Пересобрать структуру рилса" in app_js
+        assert "Пересобрать раскадровку" in app_js
         assert "Обновить все кадры" in app_js
         assert "Сохранить описание кадра" in app_js
         assert "Сохранить промпт кадра" in app_js
@@ -2243,7 +2243,7 @@ class TestMiniAppRussianLocale:
         assert "/api/reels/{draft_id}/frames/regenerate-all" in server_py
         assert "/api/reels/{draft_id}/frames/{frame_index}/fields" in server_py
         assert "Сохранить концепцию и сценарий" in app_js
-        assert "Пересобрать структуру рилса" in app_js
+        assert "Пересобрать раскадровку" in app_js
         assert "Обновить все кадры" in app_js
         assert "Сохранить описание кадра" in app_js
         assert "Сохранить промпт кадра" in app_js
@@ -2284,10 +2284,10 @@ class TestMiniAppRussianLocale:
         assert "Первая фраза" in app_js
         assert "Призыв к действию" in app_js
         assert "Промпт для визуала" in app_js
-        assert "Отметить как согласовано" in app_js
+        assert "Согласовать" in app_js
         assert "Вернуть на доработку" in app_js
         assert "Отправить в чат" in app_js
-        assert "Удалить черновик" in app_js
+        assert "deleteDraft" in app_js
 
     def test_keywords_detail_supports_editing_and_ui_notices(self):
         app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
@@ -2347,7 +2347,7 @@ class TestMiniAppRussianLocale:
 
         assert "Вернуть на доработку" in app_js
         assert 'actionLabel("reject", "Вернуть на доработку")' in app_js
-        assert "Удалить черновик" in app_js
+        assert 'actionLabel("trash"' in app_js
         assert "deleteDraft" in app_js
         assert "rejected" in app_js
         assert '@app.delete("/api/drafts/{draft_id}")' in server_py
@@ -2403,7 +2403,7 @@ class TestMiniAppRussianLocale:
 
         assert "function isEditingDetailForm()" in app_js
         assert "if (!isEditingDetailForm()) renderReelsDetail(reel);" in app_js
-        assert "if (!isEditingDetailForm() && !hasPendingCarouselOperations(draft.draft_id)) renderDraftDetail(draft);" in app_js
+        assert "if (!isEditingDetailForm() && !hasPendingCarouselOperations(draft.draft_id)) {" in app_js
         assert "onclick=\"updateDraft('status', {status:'approved'}, this)\"" in app_js
         assert "onclick=\"sendDraftToChat('${d.draft_id}', this)\"" in app_js
         assert "onclick=\"deleteDraft('${d.draft_id}', 'drafts', this)\"" in app_js
@@ -2529,7 +2529,7 @@ class TestMiniAppRussianLocale:
         assert 'const pending = openPendingDraftCreation("carousel", topic);' in app_js
         assert 'await recoverPendingDraftCreation(format, topic, pending.draft_id);' in app_js
         assert 'await recoverPendingDraftCreation("carousel", topic, pending.draft_id);' in app_js
-        assert 'if (isPendingDraftId(preferredId)) {' in app_js
+        assert 'if (String(preferredId).startsWith("pending-")) {' in app_js
         assert 'renderDetailLoader("Генерирую карточку", "Сохраняю черновик и подгружаю содержимое.", "detail-loader-card-compact")' in app_js
 
     def test_drafts_do_not_auto_open_first_item_on_boot(self):

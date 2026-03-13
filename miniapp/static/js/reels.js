@@ -21,6 +21,7 @@ export function createReelsModule(deps) {
     fetchJson,
     withButtonFeedback,
     showRequestError,
+    confirmAction,
     mergeReelsIntoState,
     scheduleReelsRefresh,
     callbacks,
@@ -158,6 +159,8 @@ export function createReelsModule(deps) {
   }
 
   async function regenerateReelsStoryboard(draftId, button) {
+    const confirmed = await confirmAction("Пересобрать раскадровку? Текущие кадры и промпты будут заменены.");
+    if (!confirmed) return;
     await withButtonFeedback(button, "Запускаю...", async () => {
       const draft = await fetchJson(`/api/reels/${draftId}/storyboard/regenerate`, {
         method: "POST",
@@ -383,12 +386,12 @@ export function createReelsModule(deps) {
             ${tagMarkup(sourceLabel(r.source || "/miniapp"), sourceTone(r.source || "/miniapp"))}
           </div>
           <div class="actions-row">
-            <button class="secondary-button" type="button" onclick="saveReelsScenario('${r.draft_id}', this)">${actionLabel("text", "Сохранить концепцию и сценарий")}</button>
-            <button class="secondary-button" type="button" onclick="regenerateReelsStoryboard('${r.draft_id}', this)">${actionLabel("regenerate", "Пересобрать структуру рилса")}</button>
+            <button class="primary-button" type="button" onclick="saveReelsScenario('${r.draft_id}', this)">${actionLabel("text", "Сохранить концепцию и сценарий")}</button>
+            <button class="secondary-button" type="button" onclick="regenerateReelsStoryboard('${r.draft_id}', this)">${actionLabel("regenerate", "Пересобрать раскадровку")}</button>
             <button class="secondary-button" type="button" onclick="regenerateAllReelsFrames('${r.draft_id}', this)">${actionLabel("reel", "Обновить все кадры")}</button>
             <button class="secondary-button" type="button" onclick="updateDraft('status', {status:'rejected'}, this)">${actionLabel("reject", "Вернуть на доработку")}</button>
             <button class="secondary-button" type="button" onclick="sendDraftToChat('${r.draft_id}', this)">${actionLabel("chat", "Отправить в чат")}</button>
-            <button class="secondary-button" type="button" onclick="deleteDraft('${r.draft_id}', 'reels', this)">${actionLabel("trash", "Удалить рилс")}</button>
+            <button class="danger-button" type="button" onclick="deleteDraft('${r.draft_id}', 'reels', this)">${actionLabel("trash", "Удалить рилс")}</button>
           </div>
         </div>
         <section class="section">

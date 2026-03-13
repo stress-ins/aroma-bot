@@ -212,12 +212,12 @@ export function createDraftsModule(deps) {
             <div class="detail-facts">${heroFacts}</div>
           </div>
           <div class="actions-row detail-actions">
-            <button class="secondary-button" onclick="updateDraft('status', {status:'approved'}, this)">${actionLabel("approve", "Отметить как согласовано")}</button>
+            <button class="primary-button" onclick="updateDraft('status', {status:'approved'}, this)">${actionLabel("approve", "Согласовать")}</button>
             <button class="secondary-button" onclick="updateDraft('status', {status:'rejected'}, this)">${actionLabel("reject", "Вернуть на доработку")}</button>
             <button class="secondary-button" onclick="sendDraftToChat('${d.draft_id}', this)">${actionLabel("chat", "Отправить в чат")}</button>
             ${d.kind === "carousel" ? `<button class="secondary-button" onclick="downloadCarouselPptx('${d.draft_id}', this)">${actionLabel("pptx", "Скачать презентацию")}</button>` : ""}
             ${d.kind === "carousel" ? `<button class="secondary-button" onclick="regenerateCarouselAll('${d.draft_id}', this)">${actionLabel("regenerate", "Обновить все слайды")}</button>` : ""}
-            <button class="secondary-button" onclick="deleteDraft('${d.draft_id}', 'drafts', this)">${actionLabel("trash", "Удалить черновик")}</button>
+            <button class="danger-button" onclick="deleteDraft('${d.draft_id}', 'drafts', this)">${actionLabel("trash", "Удалить")}</button>
           </div>
         </div>
         ${payloadSection("Превью", d.preview)}
