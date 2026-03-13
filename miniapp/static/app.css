@@ -2578,10 +2578,12 @@ body.is-mobile-layout[data-mode="handbook"] .tabs {
   display: flex;
 }
 
-/* Compact topbar-main padding on mobile since title is hidden */
+/* Compact topbar-main padding on mobile since title is hidden.
+   Add --tg-content-inset-top (set by JS from Telegram.WebApp.contentSafeAreaInset.top)
+   so content is not hidden under Telegram's chrome bar in full-screen mode. */
 @media (max-width: 760px) {
   body.is-mobile-layout .shell {
-    padding-top: 8px;
+    padding-top: calc(8px + var(--tg-content-inset-top, env(safe-area-inset-top, 0px)));
   }
 
   body.is-mobile-layout .topbar-main {

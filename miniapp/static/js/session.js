@@ -49,13 +49,20 @@ export function createSessionModule(deps) {
     if (bgColor) document.documentElement.style.setProperty("--panel", bgColor);
     if (textColor) document.documentElement.style.setProperty("--text", textColor);
     document.body.classList.toggle("tg-theme-dark", tg.colorScheme === "dark");
-    // contentSafeAreaInset.top covers the Telegram chrome bar (Close button) height
-    // in addition to the iPhone notch/Dynamic Island safe area.
-    // Available since Telegram Bot API 8.0; fallback is env(safe-area-inset-top) in CSS.
-    const contentTop = tg.contentSafeAreaInset?.top;
-    if (contentTop != null) {
-      document.documentElement.style.setProperty("--tg-content-inset-top", `${contentTop}px`);
+    // contentSafeAreaInset.top covers Telegram chrome bar + iPhone notch (Bot API 8.0+).
+    // safeAreaInset.top covers only the iPhone notch (Bot API 7.7+).
+    // We use the larger of the two so content is never hidden under Telegram chrome.
+    function applyInset() {
+      const contentTop = tg.contentSafeAreaInset?.top ?? 0;
+      const safeTop = tg.safeAreaInset?.top ?? 0;
+      const top = Math.max(contentTop, safeTop);
+      if (top > 0) {
+        document.documentElement.style.setProperty("--tg-content-inset-top", `${top}px`);
+      }
     }
+    applyInset();
+    tg.onEvent("safeAreaChanged", applyInset);
+    tg.onEvent("contentSafeAreaChanged", applyInset);
   }
 
   function filtersToQueryString() {
