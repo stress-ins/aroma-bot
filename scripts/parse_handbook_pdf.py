@@ -685,6 +685,7 @@ def parse_symptoms(lines: list[str], sym_start: int) -> list[dict]:
     """
     entries: list[dict] = []
     current_category = "ОБЩЕЕ СОСТОЯНИЕ ОРГАНИЗМА"
+    current_parent_group = ""  # top-level section (CAPS without indent)
     # Preprocess: merge multi-line parentheticals in symptom section
     lines = list(lines)  # copy
     lines[sym_start:] = _preprocess_symptom_lines(lines[sym_start:])
@@ -710,6 +711,17 @@ def parse_symptoms(lines: list[str], sym_start: int) -> list[dict]:
         if not _is_valid_symptom_name(line):
             continue
 
+        # ALL-CAPS lines (< 60 chars) are always section/category headers, not symptoms.
+        # Classify by indentation and skip look-ahead.
+        if line == line.upper() and len(line) < 60:
+            has_indent = len(raw) > len(raw.lstrip())
+            if has_indent:
+                current_category = line
+            else:
+                current_parent_group = line
+                current_category = line  # reset sub-group on new top section
+            continue
+
         # Look ahead up to 80 lines for Одинарные: or Смеси:
         look_ahead_end = min(i + 80, len(lines))
         has_recs = False
@@ -726,9 +738,6 @@ def parse_symptoms(lines: list[str], sym_start: int) -> list[dict]:
                 break
 
         if not has_recs:
-            # Treat as category group header
-            if line == line.upper() and len(line) < 60:
-                current_category = line
             continue
 
         # Found a symptom! Collect its block
@@ -774,6 +783,7 @@ def parse_symptoms(lines: list[str], sym_start: int) -> list[dict]:
             "source_type": "symptom",
             "aliases": [],
             "payload": {
+                "parent_group": current_parent_group,
                 "category_group": current_category,
                 "recommended_oil_names": oils,
                 "recommended_blend_names": blends,

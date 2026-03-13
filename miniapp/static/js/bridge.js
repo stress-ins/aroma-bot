@@ -51,6 +51,11 @@ export function registerWindowBridge(deps) {
     state.referenceFilter = String(value || "");
     renderReferences();
   };
+  window.setSymptomParentFilter = (value) => {
+    state.referenceFilterParent = String(value || "");
+    state.referenceFilter = "";
+    renderReferences();
+  };
 
   window.openDraft = openDraft;
   window.openAroma = openAroma;
