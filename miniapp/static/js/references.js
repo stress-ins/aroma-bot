@@ -34,6 +34,10 @@ export function createReferencesModule(deps) {
     formatCourseSourceLabel,
     tagMarkup,
     stripMarkdown,
+    SOURCE_TYPE_ICONS,
+    SYMPTOM_CATEGORY_ICONS,
+    CONCEPT_TYPE_ICONS,
+    PRACTICE_TYPE_ICONS,
   } = deps;
 
   function currentHandbookMeta() {
@@ -165,13 +169,15 @@ export function createReferencesModule(deps) {
   }
 
   function renderFilterChips(items, tabId) {
-    if (tabId !== "aromas" && tabId !== "symptoms") return "";
+    if (!["aromas", "symptoms", "concepts", "practices"].includes(tabId)) return "";
     const seen = new Set();
     const values = [];
     for (const item of items) {
       let raw = "";
       if (tabId === "aromas") raw = String(item.source_type || "").trim().toLowerCase();
       else if (tabId === "symptoms") raw = String(item.category_group || "").split(" ")[0].trim();
+      else if (tabId === "concepts") raw = String(item.source_type || "").trim().toLowerCase();
+      else if (tabId === "practices") raw = String(item.source_type || "").trim().toLowerCase();
       if (raw && !seen.has(raw)) {
         seen.add(raw);
         values.push(raw);
@@ -183,7 +189,22 @@ export function createReferencesModule(deps) {
     const chips = [
       `<button class="filter-chip${allActive ? " active" : ""}" onclick="setReferenceFilter('')">Все</button>`,
       ...values.map((v) => {
-        const label = tabId === "aromas" ? (REFERENCE_SOURCE_TYPE_LABELS[v] || v) : v;
+        let label;
+        if (tabId === "aromas") {
+          const icon = SOURCE_TYPE_ICONS?.[v] ? SOURCE_TYPE_ICONS[v] + "\u00a0" : "";
+          label = icon + (REFERENCE_SOURCE_TYPE_LABELS[v] || v);
+        } else if (tabId === "symptoms") {
+          const icon = SYMPTOM_CATEGORY_ICONS?.[v] ? SYMPTOM_CATEGORY_ICONS[v] + "\u00a0" : "";
+          label = icon + v;
+        } else if (tabId === "concepts") {
+          const icon = CONCEPT_TYPE_ICONS?.[v] ? CONCEPT_TYPE_ICONS[v] + "\u00a0" : "";
+          label = icon + v;
+        } else if (tabId === "practices") {
+          const icon = PRACTICE_TYPE_ICONS?.[v] ? PRACTICE_TYPE_ICONS[v] + "\u00a0" : "";
+          label = icon + v;
+        } else {
+          label = v;
+        }
         const isActive = activeFilter === v;
         return `<button class="filter-chip${isActive ? " active" : ""}" onclick='setReferenceFilter(${JSON.stringify(v)})'>${escapeHtml(label)}</button>`;
       }),
@@ -202,6 +223,7 @@ export function createReferencesModule(deps) {
       visible = items.filter((item) => {
         if (tabId === "aromas") return String(item.source_type || "").trim().toLowerCase() === activeFilter;
         if (tabId === "symptoms") return String(item.category_group || "").split(" ")[0].trim() === activeFilter;
+        if (tabId === "concepts" || tabId === "practices") return String(item.source_type || "").toLowerCase() === activeFilter;
         return true;
       });
     }

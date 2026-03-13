@@ -115,6 +115,70 @@ const SOURCE_TYPE_LABELS = {
   wood:    "Деревянистые",
 };
 
+const SOURCE_TYPE_ICONS = {
+  herb:   "🌿",
+  citrus: "🍋",
+  flower: "🌸",
+  tree:   "🌲",
+  resin:  "🫚",
+  spice:  "🌶️",
+  grass:  "🌾",
+  root:   "🌱",
+  wood:   "🪵",
+};
+
+const SYMPTOM_CATEGORY_ICONS = {
+  "БЕССОННИЦА":   "😴",
+  "БОЛЬ":         "⚡",
+  "СТРЕСС":       "🧠",
+  "КОЖА":         "🫧",
+  "СИНДРОМ":      "🩺",
+  "ГОРМОНАЛЬНЫЕ": "⚗️",
+  "ИНФЕКЦИЯ":     "🦠",
+  "РАК":          "🎗️",
+  "СЕРДЕЧНЫЙ":    "❤️",
+  "ГРИПП":        "🤧",
+  "ДИАБЕТ":       "💉",
+  "ВИРУС":        "🦠",
+  "ОЖОГИ":        "🔥",
+  "РАНЫ":         "🩹",
+  "ЭКЗЕМА":       "🫧",
+  "ДЕРМАТИТ":     "🫧",
+  "ЗАПОР":        "🌀",
+  "КАШЕЛЬ":       "💨",
+  "АЛЛЕРГИЯ":     "🌸",
+  "АСТМА":        "💨",
+  "АРТРИТ":       "🦴",
+  "ДЕПРЕССИЯ":    "💭",
+  "ТРЕВОГА":      "💭",
+  "УСТАЛОСТЬ":    "🔋",
+  "ВЫСОКОЕ":      "❤️",
+  "НИЗКОЕ":       "❤️",
+  "МИГРЕНЬ":      "🤕",
+  "ГОЛОВНАЯ":     "🤕",
+  "ОЖИРЕНИЕ":     "⚖️",
+  "ВОСПАЛЕНИЕ":   "🔥",
+  "ГРИБОК":       "🍄",
+  "ПАРАЗИТЫ":     "🦠",
+  "АКНЕ":         "🫧",
+  "ВАРИКОЗ":      "🩸",
+  "ОТЁКИ":        "💧",
+};
+
+const CONCEPT_TYPE_ICONS = {
+  chakra:  "✦",
+  system:  "◎",
+  founder: "◍",
+  energy:  "≈",
+  method:  "◌",
+};
+
+const PRACTICE_TYPE_ICONS = {
+  breath:     "🫁",
+  meditation: "🧘",
+  body:       "⚡",
+};
+
 const RU_KIND_LABELS = {
   threads: "Тредс",
   instagram: "Инстаграм",
@@ -248,9 +312,17 @@ function aromaCardIcon(item, tabId) {
 
 function handbookCardBadge(tabId, item = {}) {
   const sourceType = String(item.source_type || "").trim();
-  if (tabId === "aromas" && sourceType) return SOURCE_TYPE_LABELS[sourceType.toLowerCase()] || sourceType;
+  if (tabId === "aromas" && sourceType) {
+    const key = sourceType.toLowerCase();
+    const icon = SOURCE_TYPE_ICONS[key] ? SOURCE_TYPE_ICONS[key] + "\u00a0" : "";
+    return icon + (SOURCE_TYPE_LABELS[key] || sourceType);
+  }
   if (tabId === "blends") return "Смесь";
-  if (tabId === "symptoms") return item.category_group ? String(item.category_group).split(" ")[0] : "Симптом";
+  if (tabId === "symptoms") {
+    const firstWord = item.category_group ? String(item.category_group).split(" ")[0] : "";
+    const icon = firstWord && SYMPTOM_CATEGORY_ICONS[firstWord] ? SYMPTOM_CATEGORY_ICONS[firstWord] + "\u00a0" : "";
+    return icon + (firstWord || "Симптом");
+  }
   if (tabId === "concepts") {
     return conceptTypeMeta(sourceType).label;
   }
@@ -1021,6 +1093,10 @@ const {
   formatCourseSourceLabel,
   tagMarkup,
   stripMarkdown,
+  SOURCE_TYPE_ICONS,
+  SYMPTOM_CATEGORY_ICONS,
+  CONCEPT_TYPE_ICONS,
+  PRACTICE_TYPE_ICONS,
 });
 
 const {

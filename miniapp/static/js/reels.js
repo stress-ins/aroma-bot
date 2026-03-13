@@ -104,7 +104,8 @@ export function createReelsModule(deps) {
     const readyFrames = reelsReadyCount(reel);
     const totalFrames = reelsFrameCount(reel);
 
-    if (!shotList.length && !requiredNotes.length && !optionalNotes.length && !totalFrames) return "";
+    const payloadStoryboard = Array.isArray(reel.payload?.storyboard) ? reel.payload.storyboard : [];
+    if (!shotList.length && !requiredNotes.length && !optionalNotes.length && !totalFrames && !payloadStoryboard.length) return "";
 
     return `
       <section class="section section-accent">
@@ -123,6 +124,17 @@ export function createReelsModule(deps) {
                 </div>
                 ${shot.action ? `<div class="detail-preview">${escapeHtml(shot.action)}</div>` : ""}
               </article>
+            `).join("")}
+          </div>
+        ` : ""}
+        ${!shotList.length && payloadStoryboard.length ? `
+          <div class="reels-storyboard-list">
+            ${payloadStoryboard.map((frame, i) => `
+              <div class="reels-storyboard-item">
+                <strong>Кадр ${i + 1}${frame.timecode ? " · " + escapeHtml(frame.timecode) : ""}</strong>
+                ${frame.scene ? `<div class="detail-preview">${escapeHtml(frame.scene)}</div>` : ""}
+                ${frame.angle ? `<div class="reels-storyboard-meta">${escapeHtml(frame.angle)}</div>` : ""}
+              </div>
             `).join("")}
           </div>
         ` : ""}
@@ -153,10 +165,11 @@ export function createReelsModule(deps) {
   async function saveReelsScenario(draftId, button) {
     const scenario = String(document.getElementById("reelsScenarioField")?.value || "").trim();
     const concept = String(document.getElementById("reelsConceptField")?.value || "").trim();
+    const revisionNote = String(document.getElementById("reelsRevisionNoteField")?.value || "").trim();
     await withButtonFeedback(button, "Сохраняю...", async () => {
       const draft = await fetchJson(`/api/reels/${draftId}/scenario`, {
         method: "POST",
-        body: JSON.stringify({ scenario, concept }),
+        body: JSON.stringify({ scenario, concept, revision_note: revisionNote }),
       });
       state.selectedReels = draft;
       callbacks.renderReels?.();
@@ -428,11 +441,15 @@ export function createReelsModule(deps) {
             <span>Концепция</span>
             <textarea id="reelsConceptField" placeholder="Коротко: идея, настроение, обещание результата">${escapeHtml(r.payload?.concept || "")}</textarea>
           </label>
-          ${r.payload?.scenario ? `<div class="detail-preview detail-markdown">${renderMarkdown(r.payload.scenario)}</div>` : ""}
           <label class="prompt-note-field">
             <span>Сценарий</span>
             <textarea id="reelsScenarioField" placeholder="Соберите полный сценарий с переходами между кадрами">${escapeHtml(r.payload?.scenario || "")}</textarea>
           </label>
+          <label class="prompt-note-field">
+            <span>Замечания для переработки</span>
+            <textarea id="reelsRevisionNoteField" placeholder="Опишите что изменить: тон, акценты, структуру…">${escapeHtml(r.payload?.revision_note || "")}</textarea>
+          </label>
+          <button class="secondary-button" type="button" onclick="regenerateReelsStoryboard('${r.draft_id}', this)">${actionLabel("regenerate", "Перегенерировать с учётом замечаний")}</button>
         </section>
         ${renderReelsProductionOverview(r)}
         ${generationStateMarkup(r, "reels")}
