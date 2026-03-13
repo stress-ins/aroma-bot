@@ -65,7 +65,10 @@ export function createSessionModule(deps) {
     tg.onEvent("contentSafeAreaChanged", applyInset);
     if (tg.enableClosingConfirmation) tg.enableClosingConfirmation();
     if (tg.disableVerticalSwipes) tg.disableVerticalSwipes();
-    if (tg.BackButton) tg.BackButton.onClick(() => window.goBackToList?.(true));
+    if (tg.BackButton && tg.isVersionAtLeast?.("6.9")) {
+      document.body.classList.add("tg-webapp");
+      tg.BackButton.onClick(() => window.goBackToList?.(true));
+    }
   }
 
   function filtersToQueryString() {

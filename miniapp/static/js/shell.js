@@ -78,7 +78,7 @@ export function createShellModule(deps) {
   function renderBackButton() {
     const isMobile = window.matchMedia("(max-width: 760px)").matches;
     syncBottomTabBar();
-    if (isMobile) return "";
+    if (!isMobile) return "";
     return `<button class="back-button visible" onclick="goBackToList(true)">${uiIcon("back")}<span>Назад к списку</span></button>`;
   }
 

@@ -1035,6 +1035,8 @@ body.is-mobile-layout .detail-top {
 }
 
 
+body.tg-webapp .back-button { display: none !important; }
+
 .bottom-tab-bar {
   display: none;
 }
@@ -1342,6 +1344,16 @@ body.tg-theme-dark .detail-markdown h5 {
 
   .back-button.visible {
     display: inline-flex;
+  }
+
+  body.is-mobile-layout .back-button.visible {
+    position: sticky;
+    top: calc(var(--tg-content-inset-top, env(safe-area-inset-top, 0px)) + 52px);
+    z-index: 9;
+    background: var(--bg);
+    border-radius: 999px;
+    padding: 6px 14px;
+    margin-bottom: 8px;
   }
 
   .bottom-tab-bar {
