@@ -32,8 +32,94 @@ export function createSettingsModule(deps) {
       <section class="settings-switcher">
         <button class="tab-button${activeSection === "status" ? " active" : ""}" type="button" onclick="openSettingsSection('status')">${uiIcon("gear")}<span>Статус</span></button>
         <button class="tab-button${activeSection === "keywords" ? " active" : ""}" type="button" onclick="openSettingsSection('keywords')">${uiIcon("text")}<span>Ключи</span></button>
+        <button class="tab-button${activeSection === "brand" ? " active" : ""}" type="button" onclick="openSettingsSection('brand')">${uiIcon("card")}<span>Бренд</span></button>
       </section>
     `;
+  }
+
+  // ── Brand Voice (Policy Engine) ──────────────────────────────────────────
+
+  async function loadPolicy() {
+    try {
+      const cfg = await fetchJson("/api/preferences/policy");
+      renderForbiddenPhrases(cfg.forbidden_phrases || []);
+      renderRewrites(cfg.soft_rewrites || []);
+      renderPlatformTone(cfg.per_platform_tone || {});
+    } catch (_err) {
+      // fallback: load legacy forbidden phrases
+      try {
+        const payload = await fetchJson("/api/preferences/forbidden-phrases");
+        renderForbiddenPhrases(payload.items || []);
+      } catch (_e2) { /* silently ignore */ }
+    }
+  }
+
+  function renderRewrites(rewrites) {
+    const container = document.getElementById("rewritesList");
+    if (!container) return;
+    container.innerHTML = (rewrites || []).map((r) => {
+      const [pattern, replacement] = r;
+      return `<span class="keyword-chip rewrite-chip">
+        <span>${escapeHtml(pattern)} → ${escapeHtml(replacement)}</span>
+        <button type="button" aria-label="Удалить замену" onclick='removeRewrite(${JSON.stringify(String(pattern))})'>×</button>
+      </span>`;
+    }).join("") || `<span class="plan-entry-hint">Нет авто-замен.</span>`;
+  }
+
+  function renderPlatformTone(tone) {
+    for (const platform of ["instagram", "telegram", "threads"]) {
+      const el = document.getElementById(`tone-${platform}`);
+      if (el) el.value = tone[platform] || "";
+    }
+  }
+
+  async function addRewrite() {
+    const patternEl = document.getElementById("rewritePatternInput");
+    const replacementEl = document.getElementById("rewriteReplacementInput");
+    const pattern = String(patternEl?.value || "").trim();
+    const replacement = String(replacementEl?.value || "").trim();
+    if (!pattern) { patternEl?.focus(); return; }
+    try {
+      const cfg = await fetchJson("/api/preferences/policy/rewrites/add", {
+        method: "POST",
+        body: JSON.stringify({ pattern, replacement }),
+      });
+      if (patternEl) patternEl.value = "";
+      if (replacementEl) replacementEl.value = "";
+      renderRewrites(cfg.soft_rewrites || []);
+      showUiNotice("Замена добавлена", "success");
+    } catch (_err) {
+      showUiNotice("Не удалось добавить замену", "error");
+    }
+  }
+
+  async function removeRewrite(pattern) {
+    try {
+      const cfg = await fetchJson("/api/preferences/policy/rewrites/remove", {
+        method: "POST",
+        body: JSON.stringify({ pattern }),
+      });
+      renderRewrites(cfg.soft_rewrites || []);
+      showUiNotice("Замена удалена", "success");
+    } catch (_err) {
+      showUiNotice("Не удалось удалить замену", "error");
+    }
+  }
+
+  async function savePlatformTone(platform) {
+    const el = document.getElementById(`tone-${platform}`);
+    const value = String(el?.value || "").trim();
+    try {
+      const cfg = await fetchJson("/api/preferences/policy");
+      const tone = { ...(cfg.per_platform_tone || {}), [platform]: value };
+      await fetchJson("/api/preferences/policy", {
+        method: "PUT",
+        body: JSON.stringify({ per_platform_tone: tone }),
+      });
+      showUiNotice("Тон сохранён", "success");
+    } catch (_err) {
+      showUiNotice("Не удалось сохранить тон", "error");
+    }
   }
 
   async function loadForbiddenPhrases() {
@@ -137,10 +223,63 @@ export function createSettingsModule(deps) {
       renderKeywords();
       return;
     }
+    if (state.settingsSection === "brand") {
+      renderBrand();
+      return;
+    }
     if (!state.status) {
       state.status = await fetchJson("/api/status");
     }
     renderStatus();
+  }
+
+  function renderBrand() {
+    elements.listTitle.textContent = "Настройки";
+    elements.draftCount.textContent = "Голос бренда";
+    elements.draftList.innerHTML = renderSettingsSwitcher("brand");
+    elements.draftDetail.innerHTML = renderBackButton() + `
+      <div class="detail-grid">
+        <div class="detail-top">
+          <p class="eyebrow">${uiIcon("card")}<span>Настройки</span></p>
+          <h2 class="detail-title">Голос бренда</h2>
+        </div>
+        <section class="section settings-section">
+          <h3>Запрещённые фразы</h3>
+          <p class="settings-hint">Эти фразы будут исключены из всех сгенерированных текстов.</p>
+          <div id="forbiddenPhrasesList" class="chips-list keyword-items"></div>
+          <div class="keyword-form keyword-add-row">
+            <input id="forbiddenPhraseInput" type="text" placeholder="Добавить фразу…">
+            <button class="secondary-button" type="button" onclick="addForbiddenPhrase()">Добавить</button>
+          </div>
+        </section>
+        <section class="section settings-section">
+          <h3>Авто-замены</h3>
+          <p class="settings-hint">При генерации текст «было» автоматически заменяется на «стало».</p>
+          <div id="rewritesList" class="chips-list keyword-items"></div>
+          <div class="keyword-form" style="gap:6px;flex-direction:column;">
+            <div class="keyword-add-row">
+              <input id="rewritePatternInput" type="text" placeholder="Было (regex или слово)">
+              <input id="rewriteReplacementInput" type="text" placeholder="Стало">
+            </div>
+            <button class="secondary-button" type="button" onclick="addRewrite()" style="align-self:flex-start;">Добавить замену</button>
+          </div>
+        </section>
+        <section class="section settings-section">
+          <h3>Тон по платформам</h3>
+          <p class="settings-hint">Описание стиля для AI-редактора. Сохраняется при потере фокуса.</p>
+          ${["instagram", "telegram", "threads"].map((p) => `
+            <div class="keyword-field" style="margin-bottom:12px;">
+              <strong>${p}</strong>
+              <textarea id="tone-${p}" class="draft-textarea" rows="2"
+                placeholder="Например: personal, visual, emotional"
+                onblur='savePlatformTone("${p}")'></textarea>
+            </div>
+          `).join("")}
+        </section>
+      </div>
+    `;
+    void loadPolicy();
+    enterDetailView();
   }
 
   function renderStatus() {
@@ -160,15 +299,6 @@ export function createSettingsModule(deps) {
           <p class="eyebrow">${uiIcon("gear")}<span>Настройки</span></p>
           <h2 class="detail-title">Дополнительные параметры</h2>
         </div>
-        <section class="section settings-section">
-          <h3>Запрещённые фразы</h3>
-          <p class="settings-hint">Эти фразы будут исключены из всех сгенерированных текстов.</p>
-          <div id="forbiddenPhrasesList" class="chips-list keyword-items"></div>
-          <div class="keyword-form keyword-add-row">
-            <input id="forbiddenPhraseInput" type="text" placeholder="Добавить фразу…">
-            <button class="secondary-button" type="button" onclick="addForbiddenPhrase()">Добавить</button>
-          </div>
-        </section>
       </div>
     ` : `<div class="detail-empty">${renderGuidedState({
       eyebrow: "Статус",
@@ -176,7 +306,6 @@ export function createSettingsModule(deps) {
       body: "Слева собраны все подключенные источники и их текущее состояние.",
     })}</div>`);
     if (inSettings) {
-      void loadForbiddenPhrases();
       enterDetailView();
     } else {
       syncMobileNavigation();
@@ -257,8 +386,13 @@ export function createSettingsModule(deps) {
     renderSettingsSwitcher,
     renderStatus,
     renderKeywords,
+    renderBrand,
     loadForbiddenPhrases,
     addForbiddenPhrase,
     removeForbiddenPhrase,
+    loadPolicy,
+    addRewrite,
+    removeRewrite,
+    savePlatformTone,
   };
 }
