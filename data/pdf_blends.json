@@ -4082,5 +4082,40 @@
       "ingredient_slugs": [],
       "complementary_oil_slugs": []
     }
+  },
+  {
+    "slug": "smesh-ot-morshchin",
+    "name": "Смесь от морщин",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от морщин",
+      "name_en": "Anti-Wrinkle Blend",
+      "key": "Смесь от морщин",
+      "description": "Антивозрастная смесь эфирных масел для борьбы с морщинами. Сочетает Sacred Frankincense, Sandalwood, Geranium и Lavender — масла, известные своими регенерирующими и омолаживающими свойствами для кожи.",
+      "therapeutic_properties": "регенерация кожи, антивозрастное, увлажняющее, противовоспалительное, тонизирующее",
+      "conditions_for_use": "Морщины, дряблость кожи, пигментные пятна, сухость кожи",
+      "applications": "• Нанести 2–3 капли на проблемные зоны лица, разбавив с базовым маслом 1:4\n• Добавить в ночной крем 1–2 капли\n• Массаж лица с базовым маслом",
+      "ingredient_names": [
+        "Sacred Frankincense",
+        "Sandalwood",
+        "Geranium",
+        "Lavender"
+      ],
+      "ingredient_drops": [6, 5, 4, 3],
+      "ingredient_slugs": [
+        "sacred-frankincense",
+        "sandalwood",
+        "geranium",
+        "lavender"
+      ],
+      "complementary_oil_names": [],
+      "complementary_oil_slugs": [],
+      "precautions": "Разбавлять базовым маслом перед нанесением на кожу. Избегать зоны глаз.",
+      "blend_category": "Красота и уход за кожей",
+      "category_group": "beauty",
+      "source_pdf": "handbook"
+    }
   }
 ]

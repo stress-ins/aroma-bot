@@ -481,6 +481,39 @@ def test_open_reference_clears_context_on_same_tab():
     assert "state._fromContext = null" in src
 
 
+# ---------------------------------------------------------------------------
+# Tests for PR-4: wrinkles blend
+# ---------------------------------------------------------------------------
+
+def test_wrinkles_blend_in_pdf_blends():
+    """smesh-ot-morshchin must be present in data/pdf_blends.json."""
+    import json
+    data = json.loads((ROOT / "data" / "pdf_blends.json").read_text(encoding="utf-8"))
+    slugs = [b["slug"] for b in data]
+    assert "smesh-ot-morshchin" in slugs
+
+
+def test_wrinkles_symptom_has_blend_ref():
+    """symptom-морщины must have smesh-ot-morshchin in recommended_blend_slugs."""
+    import json
+    data = json.loads((ROOT / "data" / "pdf_symptoms.json").read_text(encoding="utf-8"))
+    morshchin = next(
+        (s for s in data if s.get("slug") == "symptom-морщины"),
+        None
+    )
+    assert morshchin is not None, "symptom-морщины not found"
+    assert "smesh-ot-morshchin" in morshchin["payload"].get("recommended_blend_slugs", [])
+
+
+def test_seed_wrinkles_blend_script_exists():
+    """seed_wrinkles_blend.py must exist and support --dry-run."""
+    script = ROOT / "scripts" / "seed_wrinkles_blend.py"
+    assert script.exists()
+    content = script.read_text(encoding="utf-8")
+    assert "--dry-run" in content
+    assert "smesh-ot-morshchin" in content
+
+
 def test_enrich_applications_script_exists():
     """Applications enrichment script must exist and support required flags."""
     script = ROOT / "scripts" / "enrich_applications.py"
