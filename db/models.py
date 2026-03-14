@@ -18,6 +18,9 @@ class DraftModel(Base):
     status: Mapped[str] = mapped_column(String(32), default="draft")
     feedback: Mapped[str] = mapped_column(String(255), default="")
     payload: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    scheduled_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, default=None)
+    publish_platforms: Mapped[list[str]] = mapped_column(JSON, default=list)
+    external_ids: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
@@ -55,6 +58,20 @@ class TodoModel(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     todo_id: Mapped[str] = mapped_column(String(36), unique=True, index=True)
     text: Mapped[str] = mapped_column(String(1000))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class PublishLogModel(Base):
+    __tablename__ = "publish_log"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    draft_id: Mapped[str] = mapped_column(String(32), index=True)
+    platform: Mapped[str] = mapped_column(String(32))  # "threads" | "instagram" | "telegram"
+    action: Mapped[str] = mapped_column(String(32))  # "publish" | "schedule" | "cancel"
+    status: Mapped[str] = mapped_column(String(32), default="pending")  # "pending" | "success" | "failed"
+    external_id: Mapped[str] = mapped_column(String(255), default="")
+    error_message: Mapped[str] = mapped_column(String(1000), default="")
+    attempt_num: Mapped[int] = mapped_column(Integer, default=1)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
