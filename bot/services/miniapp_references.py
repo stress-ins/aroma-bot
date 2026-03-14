@@ -277,7 +277,7 @@ def _serialize_model(model: AromaCardModel) -> dict[str, object]:
     if model.category == "blend":
         name_ru = str(payload.get("name_ru", "")).strip()
         payload["name"] = name_ru or model.name
-        payload["name_en"] = model.name if name_ru else ""
+        payload["name_en"] = model.name if (name_ru and model.name != name_ru) else ""
     else:
         payload["name"] = model.name
     payload["category"] = model.category
@@ -476,7 +476,7 @@ async def list_reference_cards(category: str) -> list[dict[str, str]]:
         items.append({
             "slug": model.slug,
             "name": name_ru or model.name,
-            "name_en": model.name if name_ru else "",
+            "name_en": model.name if (name_ru and model.name != name_ru) else "",
             "description": str(payload.get("description", "")),
             "category": model.category,
             "source_type": model.source_type,
