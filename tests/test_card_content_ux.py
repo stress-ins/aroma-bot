@@ -464,6 +464,23 @@ def test_enrich_short_descriptions_script_exists():
     assert "BATCH_SIZE" in content
 
 
+# ---------------------------------------------------------------------------
+# Tests for PR-3: back navigation _fromContext fix
+# ---------------------------------------------------------------------------
+
+def test_back_nav_clears_stale_from_context():
+    """goBackToList must guard against _fromContext from a different tab."""
+    src = (ROOT / "miniapp" / "static" / "js" / "shell.js").read_text(encoding="utf-8")
+    assert "_fromContext.tab !== state.tab" in src
+
+
+def test_open_reference_clears_context_on_same_tab():
+    """openReference must clear _fromContext when navigating within the same tab."""
+    src = (ROOT / "miniapp" / "static" / "js" / "references.js").read_text(encoding="utf-8")
+    # The else branch must set _fromContext = null
+    assert "state._fromContext = null" in src
+
+
 def test_enrich_applications_script_exists():
     """Applications enrichment script must exist and support required flags."""
     script = ROOT / "scripts" / "enrich_applications.py"
