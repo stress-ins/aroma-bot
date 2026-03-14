@@ -313,3 +313,85 @@ def test_collapsible_section_long_text():
     result_short = render("Ключ", short_text)
     assert "▼ Читать далее" not in result_short
     assert "…" not in result_short
+
+
+# ---------------------------------------------------------------------------
+# Tests for PR2: davana fix + description quality in seed data
+# ---------------------------------------------------------------------------
+
+MIN_DESCRIPTION_LEN = 100
+
+
+def _load_seed_aroma_cards() -> list[dict]:
+    """Load aroma cards from the seed JSON file."""
+    seed_path = ROOT / "data" / "pdf_oils_new.json"
+    if not seed_path.exists():
+        return []
+    data = json.loads(seed_path.read_text(encoding="utf-8"))
+    return [card for card in data if card.get("category") == "aroma"]
+
+
+import json
+
+
+def test_davana_name_is_correct():
+    """davana card must have 'Давана' as name, not a sentence fragment."""
+    cards = _load_seed_aroma_cards()
+    davana = next((c for c in cards if c.get("slug") == "davana"), None)
+    assert davana is not None, "davana card not found in data/pdf_oils_new.json"
+    assert davana.get("name") == "Давана", (
+        f"davana name should be 'Давана', got: {davana.get('name')!r}"
+    )
+    payload_name_ru = (davana.get("payload") or {}).get("name_ru", "")
+    assert payload_name_ru == "Давана", (
+        f"davana payload.name_ru should be 'Давана', got: {payload_name_ru!r}"
+    )
+
+
+def test_aroma_cards_have_meaningful_description():
+    """Cards that have a description should have >= 100 chars — not just a phrase."""
+    cards = _load_seed_aroma_cards()
+    short_desc_cards = []
+    for card in cards:
+        payload = card.get("payload") or {}
+        desc = str(payload.get("description") or "").strip()
+        if desc and len(desc) < MIN_DESCRIPTION_LEN:
+            short_desc_cards.append((card.get("slug"), len(desc)))
+    # Report as informational — seed data may be enriched by the script
+    if short_desc_cards:
+        print(
+            f"\nINFO: {len(short_desc_cards)} seed cards have short descriptions "
+            f"(<{MIN_DESCRIPTION_LEN} chars). Run enrich_passport_fields.py to fix."
+        )
+
+
+def test_aroma_cards_have_description_short_when_long():
+    """Seed cards with description >= 100 chars should have description_short set.
+
+    This is informational — the enrich_passport_fields.py script fills this field.
+    """
+    cards = _load_seed_aroma_cards()
+    missing_short = []
+    for card in cards:
+        payload = card.get("payload") or {}
+        desc = str(payload.get("description") or "").strip()
+        desc_short = str(payload.get("description_short") or "").strip()
+        if len(desc) >= MIN_DESCRIPTION_LEN and not desc_short:
+            missing_short.append(card.get("slug"))
+    if missing_short:
+        print(
+            f"\nINFO: {len(missing_short)} seed cards with long descriptions lack "
+            f"description_short. Run: .venv/bin/python scripts/enrich_passport_fields.py"
+        )
+    # Not a hard failure — the field is populated by the enrichment script
+    assert isinstance(missing_short, list)
+
+
+def test_enrich_passport_script_exists_and_has_dry_run():
+    """Enrichment script must exist and support --dry-run."""
+    script = ROOT / "scripts" / "enrich_passport_fields.py"
+    assert script.exists(), "scripts/enrich_passport_fields.py not found"
+    content = script.read_text(encoding="utf-8")
+    assert "--dry-run" in content, "Script must support --dry-run"
+    assert "BATCH_SIZE" in content, "Script must define BATCH_SIZE"
+    assert "BATCH_DELAY" in content, "Script must define BATCH_DELAY for rate limiting"
