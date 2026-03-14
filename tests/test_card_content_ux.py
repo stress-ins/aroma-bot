@@ -436,6 +436,34 @@ def test_references_js_card_category_icon_function():
     assert "function cardCategoryIcon" in src
 
 
+# ---------------------------------------------------------------------------
+# Tests for PR-2: psychological_properties collapsible + summarize script
+# ---------------------------------------------------------------------------
+
+def test_psychological_properties_uses_collapsible():
+    """psychological_properties must use renderCollapsibleSection, not aromaSection."""
+    src = (ROOT / "miniapp" / "static" / "js" / "references.js").read_text(encoding="utf-8")
+    assert 'renderCollapsibleSection("Психологические свойства"' in src
+    assert 'aromaSection("Психологические свойства"' not in src
+
+
+def test_summarize_script_includes_psychological():
+    """summarize_aroma_fields.py must process psychological_properties field."""
+    src = (ROOT / "scripts" / "summarize_aroma_fields.py").read_text(encoding="utf-8")
+    assert "psychological_properties" in src
+    assert "psychological_properties_summary" in src
+
+
+def test_enrich_short_descriptions_script_exists():
+    """enrich_short_descriptions.py must exist and support --dry-run."""
+    script = ROOT / "scripts" / "enrich_short_descriptions.py"
+    assert script.exists(), "scripts/enrich_short_descriptions.py not found"
+    content = script.read_text(encoding="utf-8")
+    assert "--dry-run" in content
+    assert "--min-length" in content
+    assert "BATCH_SIZE" in content
+
+
 def test_enrich_applications_script_exists():
     """Applications enrichment script must exist and support required flags."""
     script = ROOT / "scripts" / "enrich_applications.py"

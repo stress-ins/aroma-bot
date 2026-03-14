@@ -702,7 +702,7 @@ export function createReferencesModule(deps) {
           ${renderReferenceImage(reference)}
           ${aromaHtmlSection("Паспорт аромата", renderReferencePassport(reference))}
           ${renderCollapsibleDescription(reference)}
-          ${aromaSection("Психологические свойства", reference.psychological_properties)}
+          ${renderCollapsibleSection("Психологические свойства", reference.psychological_properties, 280, reference.psychological_properties_summary)}
           ${aromaSection("Терапевтические свойства", reference.therapeutic_properties)}
           ${compOilChips ? `<section class="section"><h3>🌿 Масла для практики</h3><div class="detail-preview">${compOilChips}</div></section>` : ""}
           ${blendPracticeChips ? `<section class="section"><h3>🌀 Рекомендуемые смеси</h3><div class="detail-preview">${blendPracticeChips}</div></section>` : ""}
@@ -730,7 +730,7 @@ export function createReferencesModule(deps) {
           ${renderReferenceImage(reference)}
           ${aromaHtmlSection("Паспорт аромата", renderReferencePassport(reference))}
           ${renderCollapsibleDescription(reference)}
-          ${aromaSection("Психологические свойства", reference.psychological_properties)}
+          ${renderCollapsibleSection("Психологические свойства", reference.psychological_properties, 280, reference.psychological_properties_summary)}
           ${aromaSection('Ресурс "+"', reference.resource_values?.plus)}
           ${aromaSection('Ресурс "-"', reference.resource_values?.minus)}
           ${aromaSection("Какие вопросы поднимает", reference.questions)}
@@ -760,7 +760,7 @@ export function createReferencesModule(deps) {
           ${renderReferenceImage(reference)}
           ${aromaHtmlSection("Паспорт аромата", renderReferencePassport(reference))}
           ${renderCollapsibleDescription(reference)}
-          ${aromaSection("Психологические свойства", reference.psychological_properties)}
+          ${renderCollapsibleSection("Психологические свойства", reference.psychological_properties, 280, reference.psychological_properties_summary)}
           ${aromaSection('Ресурс "+"', reference.resource_values?.plus)}
           ${aromaSection('Ресурс "-"', reference.resource_values?.minus)}
           ${aromaSection("Какие вопросы поднимает", reference.questions)}
