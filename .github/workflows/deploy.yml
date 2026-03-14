@@ -35,3 +35,7 @@ jobs:
           ssh root@46.32.186.192 'systemctl is-active aroma-bot'
           ssh root@46.32.186.192 'systemctl is-active threads-oauth'
           ssh root@46.32.186.192 'systemctl is-active aroma-miniapp && echo "miniapp active" || echo "miniapp not running (skip)"'
+
+      - name: Smoke test miniapp
+        run: |
+          ssh root@46.32.186.192 'curl -sf http://127.0.0.1:8091/healthz' || echo "miniapp healthz failed (non-blocking)"

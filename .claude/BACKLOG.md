@@ -23,7 +23,7 @@
 
 - [ ] **[MED] Промпты генерации изображений по category** — разделить промпт по категории: aroma=botanical illustration, symptom=medical/conceptual, blend=purpose illustration (beauty, mood, immunity), practice=meditative scene. Это позволит каждой карточке иметь осмысленное изображение, а не шаблонные травы.
 
-- [ ] **Smoke-тесты после деплоя** — директории `tests/smoke/` нет. Создать по шаблону из CLAUDE.md (test_miniapp_responds, test_safe_area_css_present, test_no_text_truncation_pattern, test_bot_service_running).
+- [x] **Smoke-тесты после деплоя** — ✅ Создано `tests/smoke/test_smoke.py` + healthz check в deploy.yml.
 
 - [ ] **29 aroma карточек без description** — после запуска enrich_passport_fields.py проверить что все aromas имеют description. Запустить fill_missing_descriptions.py --category aroma если нужно.
 
