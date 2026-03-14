@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-import json
 import uuid
-from pathlib import Path
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from sqlalchemy import select, delete
 
 from config import settings
 from bot.services.forbidden_phrases import (
@@ -19,11 +18,11 @@ from bot.services.policy_engine import (
     load_policy_config,
     save_policy_config,
 )
+from db.models import TodoModel
+from db.session import AsyncSessionLocal
 from ..auth import _require_auth
 
 router = APIRouter()
-
-_TODO_PATH = Path("data/todo.json")
 
 
 class ForbiddenPhrasePayload(BaseModel):
@@ -53,15 +52,25 @@ class TodoRemovePayload(BaseModel):
     id: str
 
 
-def _load_todo() -> list[dict]:
-    if not _TODO_PATH.exists():
-        return []
-    return json.loads(_TODO_PATH.read_text(encoding="utf-8"))
+async def _load_todo() -> list[dict]:
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(select(TodoModel).order_by(TodoModel.created_at))
+        return [{"id": row.todo_id, "text": row.text} for row in result.scalars().all()]
 
 
-def _save_todo(items: list[dict]) -> None:
-    _TODO_PATH.parent.mkdir(parents=True, exist_ok=True)
-    _TODO_PATH.write_text(json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8")
+async def _add_todo(text: str) -> list[dict]:
+    async with AsyncSessionLocal() as session:
+        item = TodoModel(todo_id=str(uuid.uuid4()), text=text)
+        session.add(item)
+        await session.commit()
+    return await _load_todo()
+
+
+async def _remove_todo(todo_id: str) -> list[dict]:
+    async with AsyncSessionLocal() as session:
+        await session.execute(delete(TodoModel).where(TodoModel.todo_id == todo_id))
+        await session.commit()
+    return await _load_todo()
 
 
 @router.get("/api/status")
@@ -152,22 +161,17 @@ async def remove_rewrite(payload: RewriteRemovePayload, _: None = Depends(_requi
 
 @router.get("/api/todo")
 async def get_todo(_: None = Depends(_require_auth)):
-    return {"items": _load_todo()}
+    return {"items": await _load_todo()}
 
 
 @router.post("/api/todo/add")
 async def add_todo(payload: TodoAddPayload, _: None = Depends(_require_auth)):
     text = payload.text.strip()
     if not text:
-        return {"items": _load_todo()}
-    items = _load_todo()
-    items.append({"id": str(uuid.uuid4()), "text": text})
-    _save_todo(items)
-    return {"items": items}
+        return {"items": await _load_todo()}
+    return {"items": await _add_todo(text)}
 
 
 @router.post("/api/todo/remove")
 async def remove_todo(payload: TodoRemovePayload, _: None = Depends(_require_auth)):
-    items = [item for item in _load_todo() if item.get("id") != payload.id]
-    _save_todo(items)
-    return {"items": items}
+    return {"items": await _remove_todo(payload.id)}

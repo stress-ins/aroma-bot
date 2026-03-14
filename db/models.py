@@ -49,6 +49,15 @@ class AromaCardModel(Base):
     )
 
 
+class TodoModel(Base):
+    __tablename__ = "todos"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    todo_id: Mapped[str] = mapped_column(String(36), unique=True, index=True)
+    text: Mapped[str] = mapped_column(String(1000))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
 class DraftRevisionModel(Base):
     __tablename__ = "draft_revisions"
 
