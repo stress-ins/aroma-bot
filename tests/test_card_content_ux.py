@@ -586,3 +586,22 @@ def test_enrich_applications_script_exists():
     assert "--category" in content, "Script must support --category flag"
     assert "symptom" in content, "Script must handle symptom category"
     assert "applications" in content, "Script must populate applications field"
+
+
+# ---------------------------------------------------------------------------
+# Tests for KB-002: card name casing normalization
+# ---------------------------------------------------------------------------
+
+def test_fix_card_name_casing_script_exists():
+    """fix_card_name_casing.py must exist and support --dry-run."""
+    script = ROOT / "scripts" / "fix_card_name_casing.py"
+    assert script.exists(), "scripts/fix_card_name_casing.py not found"
+    assert "--dry-run" in script.read_text(encoding="utf-8")
+
+
+def test_pdf_symptoms_no_all_caps_names():
+    """Symptom names in pdf_symptoms.json must not be ALL CAPS (except ≤3 char abbreviations)."""
+    data = json.loads((ROOT / "data" / "pdf_symptoms.json").read_text(encoding="utf-8"))
+    for s in data:
+        name = s.get("name", "")
+        assert name != name.upper() or len(name) <= 3, f"ALL CAPS: {name}"
