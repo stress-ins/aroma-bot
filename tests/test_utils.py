@@ -868,6 +868,25 @@ class TestHandbookPdfImport:
         assert "ingredient_slugs" in js
         assert "Состав" in js
 
+    def test_references_js_concept_cards_have_kind_mark(self):
+        js = _miniapp_js_bundle()
+        assert 'class="concept-kind-mark" aria-hidden="true"' in js
+        assert "conceptTypeMeta" in js
+
+    def test_app_css_has_concept_kind_mark_style(self):
+        css = _miniapp_static_text("app.css")
+        assert ".concept-kind-mark" in css
+        assert ".concept-card::before" in css
+
+    def test_references_js_aroma_detail_section_order(self):
+        refs_js = _miniapp_static_text("js", "references.js")
+        # In the aroma detail view, psychology and resource sections come before questions
+        psychology_index = refs_js.index('aromaSection("Психологические свойства", reference.psychological_properties)')
+        plus_index = refs_js.index('aromaSection(\'Ресурс "+"\', reference.resource_values?.plus)')
+        minus_index = refs_js.index('aromaSection(\'Ресурс "-"\', reference.resource_values?.minus)')
+        questions_index = refs_js.index('aromaSection("Какие вопросы поднимает", reference.questions)')
+        assert psychology_index < plus_index < minus_index < questions_index
+
     def test_references_js_passport_includes_article_number(self):
         js = _miniapp_js_bundle()
         assert "reference.article_number" in js
