@@ -1,0 +1,8 @@
+# /etc/cron.d/aroma-gen-images
+# Nightly image generation for reference cards without images (03:00 MSK = 00:00 UTC)
+# Deploy: scp scripts/cron/aroma-gen-images root@46.32.186.192:/etc/cron.d/aroma-gen-images
+
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+0 0 * * * root cd /opt/aroma && .venv/bin/python scripts/generate_missing_images.py 2>&1 >> /tmp/gen_images_cron.log
