@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import quote
@@ -225,6 +226,11 @@ def _source_image(source_type: str, title: str, category: str) -> str:
     primary, secondary, label = palette.get(source_type, palette["herb"])
     card_label = _image_label(category)
     motif = _source_motif_svg(source_type, title)
+    # Only show "source of oil" hint for aroma cards; other categories get category label instead
+    if category == "aroma":
+        category_hint = f"<text x='54' y='262' font-size='18' font-family='Arial' fill='#8a7565'>Что является источником этого масла</text>"
+    else:
+        category_hint = ""
     svg = f"""
     <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 640 420'>
       <defs>
@@ -240,7 +246,7 @@ def _source_image(source_type: str, title: str, category: str) -> str:
       <text x='74' y='81' font-size='18' font-family='Arial' fill='{primary}'>{label}</text>
       <text x='54' y='176' font-size='42' font-family='Arial' font-weight='700' fill='#2d241e'>{title}</text>
       <text x='54' y='224' font-size='22' font-family='Arial' fill='#6a5a4a'>{card_label}</text>
-      <text x='54' y='262' font-size='18' font-family='Arial' fill='#8a7565'>Что является источником этого масла</text>
+      {category_hint}
       {motif}
     </svg>
     """.strip()
@@ -269,6 +275,20 @@ def _serialize_model(model: AromaCardModel) -> dict[str, object]:
     payload["category"] = model.category
     payload["aliases"] = list(model.aliases or [])
     payload["source_type"] = model.source_type
+    # For blend cards: extract Russian ingredient names from "English (Russian)" patterns
+    if model.category == "blend":
+        raw_ingredient_names = list(payload.get("ingredient_names") or [])
+        ingredient_names_ru = []
+        for n in raw_ingredient_names:
+            s = str(n).strip()
+            if not s or len(s) > 60:
+                continue
+            if re.search(r"\.\s+[A-ZА-Я]", s):
+                continue
+            # Only keep items that look like oil names (have parentheses or are short single-word names)
+            if "(" in s and ")" in s:
+                ingredient_names_ru.append(_extract_ru_name(s))
+        payload["ingredient_names_ru"] = ingredient_names_ru
     payload["image_url"] = (
         _payload_image_url(payload)
         or _local_reference_image_url(model.category, model.slug)
@@ -529,6 +549,140 @@ async def build_reference_context(
     return "\n\n".join(sections)
 
 
+_SYMPTOM_STOP_WORDS: frozenset[str] = frozenset({
+    "рекомендации", "одинарные", "смеси", "питательные добавки",
+    "рекомендуемые", "способы применения", "применение",
+})
+
+
+def _extract_ru_name(raw: str) -> str:
+    """Extract Russian name from 'English (Russian)' pattern, or return cleaned raw."""
+    # First strip any sentence continuation (text after '. Capital')
+    clean = re.split(r"\.\s+[A-ZА-Я]", raw)[0].strip()
+    # Extract content in parentheses as Russian name
+    m = re.search(r"\(([^)]+)\)", clean)
+    if m:
+        return " ".join(m.group(1).split())  # normalize spaces
+    return " ".join(clean.split())
+
+
+def _resolve_symptom_refs(
+    raw_names: list[str],
+    name_to_slug: dict[str, str],
+    slug_to_ru: dict[str, str],
+) -> tuple[list[str], list[str]]:
+    """Filter stop-words/artifacts from symptom oil/blend names, resolve to RU names + slugs."""
+    result_names: list[str] = []
+    result_slugs: list[str] = []
+    seen_slugs: set[str] = set()
+    for raw in raw_names:
+        name = str(raw).strip()
+        if not name:
+            continue
+        if name.lower() in _SYMPTOM_STOP_WORDS:
+            continue
+        if len(name) > 60:
+            continue
+        if name.startswith(("•", ".", "-", "·")):
+            continue
+        # Extract Russian name from "English (Russian)" pattern if present
+        ru_from_parens = _extract_ru_name(name) if "(" in name else ""
+        # Try to find slug using both the extracted RU name and the raw name
+        slug = (
+            name_to_slug.get(_normalize(ru_from_parens)) if ru_from_parens else None
+        ) or name_to_slug.get(_normalize(name)) or ""
+        # Deduplicate by slug
+        if slug and slug in seen_slugs:
+            continue
+        if slug:
+            seen_slugs.add(slug)
+        # Prefer stored Russian name from aroma DB over extracted
+        display_name = slug_to_ru.get(slug, "") if slug else ""
+        if not display_name:
+            display_name = ru_from_parens or name
+        result_names.append(display_name)
+        result_slugs.append(slug)
+    return result_names, result_slugs
+
+
+async def _enrich_symptom_cross_refs(serialized: dict[str, object]) -> dict[str, object]:
+    """Resolve recommended oil/blend names to Russian + slugs for a symptom card.
+
+    Uses stored recommended_oil_slugs as primary source (already resolved during import).
+    Filters stop-words/artifacts from the names list.
+    """
+    raw_oil_names: list[str] = list(serialized.get("recommended_oil_names") or [])
+    stored_oil_slugs: list[str] = list(serialized.get("recommended_oil_slugs") or [])
+    raw_blend_names: list[str] = list(serialized.get("recommended_blend_names") or [])
+    stored_blend_slugs: list[str] = list(serialized.get("recommended_blend_slugs") or [])
+
+    async with AsyncSessionLocal() as session:
+        aroma_result = await session.execute(select(AromaCardModel).where(AromaCardModel.category == "aroma"))
+        aroma_models = aroma_result.scalars().all()
+        blend_result = await session.execute(select(AromaCardModel).where(AromaCardModel.category == "blend"))
+        blend_models = blend_result.scalars().all()
+
+    aroma_slug_to_name: dict[str, str] = {m.slug: m.name for m in aroma_models}
+    blend_slug_to_name: dict[str, str] = {}
+    for m in blend_models:
+        payload = _public_payload(m.payload or {})
+        name_ru = str(payload.get("name_ru", "")).strip()
+        blend_slug_to_name[m.slug] = name_ru or m.name
+
+    # Strategy: zip stored names + slugs, filter stop-words/artifacts, resolve RU names via slug
+    oil_names: list[str] = []
+    oil_slugs: list[str] = []
+    seen: set[str] = set()
+    for i, raw_name in enumerate(raw_oil_names):
+        name = str(raw_name).strip()
+        if not name or name.lower() in _SYMPTOM_STOP_WORDS or len(name) > 60:
+            continue
+        # Skip items that start with bullet/dot (application instructions)
+        if name.startswith(("•", ".", "-", "·")):
+            continue
+        slug = stored_oil_slugs[i] if i < len(stored_oil_slugs) else ""
+        if slug and slug in seen:
+            continue
+        if slug:
+            seen.add(slug)
+        # Prefer Russian name from aroma DB; fall back to extracted/raw name
+        db_display = aroma_slug_to_name.get(slug, "") if slug else ""
+        # Validate DB name is not a garbage artifact (starts with bullet/dot/etc.)
+        if db_display and not db_display.startswith(("•", ".", "-", "·")):
+            display = db_display
+        else:
+            display = _extract_ru_name(name) if "(" in name else name
+        oil_names.append(display)
+        oil_slugs.append(slug)
+
+    # Do the same for blend recommendations
+    blend_names: list[str] = []
+    blend_slugs: list[str] = []
+    seen_blends: set[str] = set()
+    for i, raw_name in enumerate(raw_blend_names):
+        name = str(raw_name).strip()
+        if not name or name.lower() in _SYMPTOM_STOP_WORDS or len(name) > 60:
+            continue
+        if name.startswith(("•", ".", "-", "·")):
+            continue
+        slug = stored_blend_slugs[i] if i < len(stored_blend_slugs) else ""
+        if slug and slug in seen_blends:
+            continue
+        if slug:
+            seen_blends.add(slug)
+        display = blend_slug_to_name.get(slug, "") if slug else ""
+        if not display:
+            display = _extract_ru_name(name) if "(" in name else name
+        blend_names.append(display)
+        blend_slugs.append(slug)
+
+    serialized["recommended_oil_names"] = oil_names
+    serialized["recommended_oil_slugs"] = oil_slugs
+    serialized["recommended_blend_names"] = blend_names
+    serialized["recommended_blend_slugs"] = blend_slugs
+    return serialized
+
+
 async def _enrich_aroma_cross_refs(serialized: dict[str, object]) -> dict[str, object]:
     """Compute blends_containing_* and complementary_oil_* cross-references for an aroma card."""
     slug = serialized.get("slug")
@@ -576,6 +730,42 @@ async def _enrich_aroma_cross_refs(serialized: dict[str, object]) -> dict[str, o
     serialized["blends_containing_slugs"] = blends_containing_slugs
     serialized["complementary_oil_names"] = complementary_oil_names
     serialized["complementary_oil_slugs"] = complementary_oil_slugs
+
+    # Find symptoms where this oil is recommended (cross-ref back)
+    related_symptom_names: list[str] = []
+    related_symptom_slugs: list[str] = []
+    async with AsyncSessionLocal() as session:
+        sym_result = await session.execute(select(AromaCardModel).where(AromaCardModel.category == "symptom"))
+        symptom_models = sym_result.scalars().all()
+    for sym in symptom_models:
+        sym_payload = _public_payload(sym.payload or {})
+        oil_slugs_in_sym = sym_payload.get("recommended_oil_slugs") or []
+        if isinstance(oil_slugs_in_sym, list) and slug in oil_slugs_in_sym:
+            related_symptom_names.append(sym.name)
+            related_symptom_slugs.append(sym.slug)
+    serialized["related_symptom_names"] = related_symptom_names
+    serialized["related_symptom_slugs"] = related_symptom_slugs
+    return serialized
+
+
+async def _enrich_blend_cross_refs(serialized: dict[str, object]) -> dict[str, object]:
+    """Find symptoms where this blend is recommended (cross-ref back)."""
+    slug = serialized.get("slug")
+    if not slug:
+        return serialized
+    related_symptom_names: list[str] = []
+    related_symptom_slugs: list[str] = []
+    async with AsyncSessionLocal() as session:
+        sym_result = await session.execute(select(AromaCardModel).where(AromaCardModel.category == "symptom"))
+        symptom_models = sym_result.scalars().all()
+    for sym in symptom_models:
+        sym_payload = _public_payload(sym.payload or {})
+        blend_slugs_in_sym = sym_payload.get("recommended_blend_slugs") or []
+        if isinstance(blend_slugs_in_sym, list) and slug in blend_slugs_in_sym:
+            related_symptom_names.append(sym.name)
+            related_symptom_slugs.append(sym.slug)
+    serialized["related_symptom_names"] = related_symptom_names
+    serialized["related_symptom_slugs"] = related_symptom_slugs
     return serialized
 
 
@@ -591,6 +781,10 @@ async def get_reference_card(category: str, slug_or_name: str) -> dict[str, obje
             serialized = _serialize_model(model)
             if category == "aroma":
                 serialized = await _enrich_aroma_cross_refs(serialized)
+            elif category == "symptom":
+                serialized = await _enrich_symptom_cross_refs(serialized)
+            elif category == "blend":
+                serialized = await _enrich_blend_cross_refs(serialized)
             return serialized
     return None
 

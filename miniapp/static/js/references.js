@@ -121,6 +121,25 @@ export function createReferencesModule(deps) {
     return nameArr.map((name, i) => ({ name, slug: slugArr[i] || null }));
   }
 
+  // Client-side filter for ingredient names — removes garbage/artifacts that slip through parsing
+  function cleanIngredientNames(names) {
+    return (names || []).filter((n) => {
+      const s = String(n).trim();
+      if (!s || s.length > 60) return false;
+      if (/\.\s+[А-ЯA-Z]/.test(s)) return false;  // sentence continuation
+      if (s.startsWith("•") || s.startsWith(".") || s.startsWith("-")) return false;
+      return true;
+    });
+  }
+
+  function renderStructuredList(title, text) {
+    if (!text) return "";
+    const items = String(text).split(/[\n•;]/).map((s) => s.replace(/^[-•]\s*/, "").trim()).filter((s) => s.length > 3);
+    if (!items.length) return "";
+    if (items.length === 1) return aromaSection(title, text);
+    return `<section class="section"><h3>${escapeHtml(title)}</h3><ul class="card-list">${items.map((i) => `<li>${escapeHtml(i)}</li>`).join("")}</ul></section>`;
+  }
+
   function renderCrossRefChips(pairs, targetTab) {
     if (!pairs || !pairs.length) return "";
     const chips = pairs.map(({ slug, name }) => {
@@ -444,13 +463,21 @@ export function createReferencesModule(deps) {
 
     let detailHtml;
     if (state.tab === "blends") {
+      // Use Russian ingredient names from backend; fall back to cleaned English names
+      const rawIngredientNames = Array.isArray(reference.ingredient_names_ru) && reference.ingredient_names_ru.length
+        ? reference.ingredient_names_ru
+        : cleanIngredientNames(reference.ingredient_names);
       const ingredientChips = renderCrossRefChips(
-        zipNamesAndSlugs(reference.ingredient_names, reference.ingredient_slugs),
+        zipNamesAndSlugs(rawIngredientNames, reference.ingredient_slugs),
         "aromas"
       );
       const compChips = renderCrossRefChips(
         zipNamesAndSlugs(reference.complementary_oil_names, reference.complementary_oil_slugs),
         "aromas"
+      );
+      const symptomChips = renderCrossRefChips(
+        zipNamesAndSlugs(reference.related_symptom_names, reference.related_symptom_slugs),
+        "symptoms"
       );
       detailHtml = `
         <div class="detail-grid">
@@ -459,9 +486,10 @@ export function createReferencesModule(deps) {
           ${aromaSection("Паспорт карточки", renderReferencePassport(reference))}
           ${aromaSection("Описание", reference.description)}
           ${aromaSection("Терапевтические свойства", reference.therapeutic_properties)}
-          ${aromaSection("При каких состояниях", reference.conditions_for_use)}
+          ${renderStructuredList("При каких состояниях", reference.conditions_for_use)}
           ${ingredientChips ? `<section class="section"><h3>🧪 Состав</h3><div class="detail-preview">${ingredientChips}</div></section>` : ""}
           ${compChips ? `<section class="section"><h3>🌿 Комплементарные масла</h3><div class="detail-preview">${compChips}</div></section>` : ""}
+          ${symptomChips ? `<section class="section"><h3>💊 Помогает при</h3><div class="detail-preview">${symptomChips}</div></section>` : ""}
           ${aromaSection("Применение", reference.applications)}
           ${aromaSection("Меры предосторожности", reference.precautions)}
         </div>
@@ -491,7 +519,7 @@ export function createReferencesModule(deps) {
           ${aromaSection("Описание", reference.description)}
           ${oilChips ? `<section class="section"><h3>🌿 Рекомендуемые масла</h3><div class="detail-preview">${oilChips}</div></section>` : ""}
           ${blendChips ? `<section class="section"><h3>🌀 Рекомендуемые смеси</h3><div class="detail-preview">${blendChips}</div></section>` : ""}
-          ${aromaSection("Применение", reference.applications)}
+          ${renderStructuredList("Применение", reference.applications)}
         </div>
       `;
     } else if (state.tab === "practices") {
@@ -548,6 +576,7 @@ export function createReferencesModule(deps) {
         </div>
       `;
     } else {
+      // Aroma detail view
       const compChips = renderCrossRefChips(
         zipNamesAndSlugs(reference.complementary_oil_names, reference.complementary_oil_slugs),
         "aromas"
@@ -555,6 +584,10 @@ export function createReferencesModule(deps) {
       const blendsChips = renderCrossRefChips(
         zipNamesAndSlugs(reference.blends_containing_names, reference.blends_containing_slugs),
         "blends"
+      );
+      const symptomChips = renderCrossRefChips(
+        zipNamesAndSlugs(reference.related_symptom_names, reference.related_symptom_slugs),
+        "symptoms"
       );
       detailHtml = `
         <div class="detail-grid">
@@ -574,6 +607,7 @@ export function createReferencesModule(deps) {
           ${renderCollapsibleSection("При каких состояниях", reference.conditions_for_use)}
           ${compChips ? `<section class="section"><h3>🌿 Комплементарные масла</h3><div class="detail-preview">${compChips}</div></section>` : ""}
           ${blendsChips ? `<section class="section"><h3>🌀 Входит в смеси</h3><div class="detail-preview">${blendsChips}</div></section>` : ""}
+          ${symptomChips ? `<section class="section"><h3>💊 Помогает при</h3><div class="detail-preview">${symptomChips}</div></section>` : ""}
           ${renderApplicationsWithIcons(reference.applications)}
           ${renderCollapsibleSection("Меры предосторожности", reference.precautions)}
           ${aromaSection("Материалы курса", reference.course_notes)}
