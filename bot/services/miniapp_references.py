@@ -222,6 +222,8 @@ def _source_image(source_type: str, title: str, category: str) -> str:
         "sound": ("#5468b8", "#dbe1fb", "звук"),
         "instrument": ("#8b6e4a", "#eadcc9", "инструмент"),
         "voice": ("#ad5f9e", "#f0d7eb", "голос"),
+        "blend": ("#b45c3d", "#f2e2d8", "смесь"),
+        "symptom": ("#7a4f8a", "#e9ddf5", "симптом"),
     }
     primary, secondary, label = palette.get(source_type, palette["herb"])
     card_label = _image_label(category)
@@ -299,7 +301,7 @@ def _serialize_model(model: AromaCardModel) -> dict[str, object]:
         _payload_image_url(payload)
         or _local_reference_image_url(model.category, model.slug)
         or _shared_reference_image_url(model.category, model.slug, model.source_type)
-        or _source_image(model.source_type, model.name, model.category)
+        or _source_image(model.source_type, str(payload.get("name") or model.name), model.category)
     )
     payload["image_alt"] = f"{model.name}: {_image_label(model.category)}"
     return payload

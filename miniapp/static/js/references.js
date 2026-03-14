@@ -153,11 +153,12 @@ export function createReferencesModule(deps) {
     if (!pairs || !pairs.length) return "";
     const chips = pairs.map(({ slug, name }) => {
       if (!name) return "";
+      const display = targetTab === "symptoms" ? toSentenceCase(name) : name;
       // Filter out empty/placeholder slugs that would open nothing
       if (slug && String(slug).trim() !== "") {
-        return `<button class="crossref-chip" onclick='openReference(${JSON.stringify(slug)}, ${JSON.stringify(targetTab)})'>${escapeHtml(name)}</button>`;
+        return `<button class="crossref-chip" onclick='openReference(${JSON.stringify(slug)}, ${JSON.stringify(targetTab)})'>${escapeHtml(display)}</button>`;
       }
-      return `<span class="crossref-chip crossref-chip--plain">${escapeHtml(name)}</span>`;
+      return `<span class="crossref-chip crossref-chip--plain">${escapeHtml(display)}</span>`;
     }).filter(Boolean).join("");
     if (!chips) return "";
     return `<div class="crossref-chips">${chips}</div>`;
