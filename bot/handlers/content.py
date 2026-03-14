@@ -407,11 +407,12 @@ async def _generate_and_show_draft(
         ),
     )
 
-    # Threads publish button
+    # Publish button — via publisher (upload-post) if draft exists
     if format_key == "threads" and draft.caption and threads_api_enabled():
         context.user_data["threads_publish_text"] = draft.caption
+        context.user_data["threads_publish_draft_id"] = saved.draft_id
         await msg.reply_text(
-            "Если текст готов, можешь отправить его прямо в Threads:",
+            "Если текст готов, можешь опубликовать прямо отсюда или через Mini App:",
             reply_markup=publish_threads_keyboard(),
         )
 
