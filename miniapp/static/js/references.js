@@ -124,10 +124,11 @@ export function createReferencesModule(deps) {
     }
   }
 
-  function zipNamesAndSlugs(names, slugs) {
+  function zipNamesAndSlugs(names, slugs, metas) {
     const nameArr = Array.isArray(names) ? names : [];
     const slugArr = Array.isArray(slugs) ? slugs : [];
-    return nameArr.map((name, i) => ({ name, slug: slugArr[i] || null }));
+    const metaArr = Array.isArray(metas) ? metas : [];
+    return nameArr.map((name, i) => ({ name, slug: slugArr[i] || null, meta: metaArr[i] || null }));
   }
 
   // Client-side filter for ingredient names — removes garbage/artifacts that slip through parsing
@@ -151,14 +152,24 @@ export function createReferencesModule(deps) {
 
   function renderCrossRefChips(pairs, targetTab) {
     if (!pairs || !pairs.length) return "";
-    const chips = pairs.map(({ slug, name }) => {
+    const chips = pairs.map(({ slug, name, meta }) => {
       if (!name) return "";
       const display = targetTab === "symptoms" ? toSentenceCase(name) : name;
+      let icon = "";
+      if (meta) {
+        if (targetTab === "aromas") {
+          const ic = SOURCE_TYPE_ICONS[String(meta)];
+          if (ic) icon = ic + "\u00a0";
+        } else if (targetTab === "blends") {
+          const ic = BLEND_CATEGORY_ICONS[String(meta).toUpperCase()];
+          if (ic) icon = ic + "\u00a0";
+        }
+      }
       // Filter out empty/placeholder slugs that would open nothing
       if (slug && String(slug).trim() !== "") {
-        return `<button class="crossref-chip" onclick='openReference(${JSON.stringify(slug)}, ${JSON.stringify(targetTab)})'>${escapeHtml(display)}</button>`;
+        return `<button class="crossref-chip" onclick='openReference(${JSON.stringify(slug)}, ${JSON.stringify(targetTab)})'>${icon}${escapeHtml(display)}</button>`;
       }
-      return `<span class="crossref-chip crossref-chip--plain">${escapeHtml(display)}</span>`;
+      return `<span class="crossref-chip crossref-chip--plain">${icon}${escapeHtml(display)}</span>`;
     }).filter(Boolean).join("");
     if (!chips) return "";
     return `<div class="crossref-chips">${chips}</div>`;
@@ -614,11 +625,11 @@ export function createReferencesModule(deps) {
     } else {
       // Aroma detail view
       const compChips = renderCrossRefChips(
-        zipNamesAndSlugs(reference.complementary_oil_names, reference.complementary_oil_slugs),
+        zipNamesAndSlugs(reference.complementary_oil_names, reference.complementary_oil_slugs, reference.complementary_oil_source_types),
         "aromas"
       );
       const blendsChips = renderCrossRefChips(
-        zipNamesAndSlugs(reference.blends_containing_names, reference.blends_containing_slugs),
+        zipNamesAndSlugs(reference.blends_containing_names, reference.blends_containing_slugs, reference.blends_containing_categories),
         "blends"
       );
       const symptomChips = renderCrossRefChips(
