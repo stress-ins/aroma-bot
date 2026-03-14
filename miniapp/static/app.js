@@ -197,11 +197,11 @@ const SYMPTOM_PARENT_GROUP_ICONS = {
 };
 
 const CONCEPT_TYPE_ICONS = {
-  chakra:  "✦",
-  system:  "◎",
-  founder: "◍",
-  energy:  "≈",
-  method:  "◌",
+  chakra:  "🔮",
+  system:  "🧬",
+  founder: "👤",
+  energy:  "✨",
+  method:  "🛠️",
 };
 
 const PRACTICE_TYPE_ICONS = {
