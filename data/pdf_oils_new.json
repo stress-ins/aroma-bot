@@ -703,7 +703,7 @@
   },
   {
     "slug": "hong-kuai",
-    "name": "•  использовать неразведенным",
+    "name": "Хон Куай",
     "category": "aroma",
     "source_type": "herb",
     "aliases": [
@@ -711,7 +711,7 @@
     ],
     "payload": {
       "name_en": "Hong Kuai",
-      "name_ru": "•  использовать неразведенным",
+      "name_ru": "Хон Куай",
       "key": "•  использовать неразведенным",
       "article_number": "",
       "therapeutic_properties": "противогрибковое, противораковое, противоопухолевое, иммунная поддержка",
@@ -927,7 +927,7 @@
   },
   {
     "slug": "laurus",
-    "name": "розмарин, ромашка, фенхель, чайное дерево, сосна,",
+    "name": "Лавр",
     "category": "aroma",
     "source_type": "herb",
     "aliases": [
@@ -935,7 +935,7 @@
     ],
     "payload": {
       "name_en": "Laurus",
-      "name_ru": "розмарин, ромашка, фенхель, чайное дерево, сосна,",
+      "name_ru": "Лавр",
       "key": "розмарин, ромашка, фенхель, чайное дерево, сосна,",
       "article_number": "",
       "therapeutic_properties": "",

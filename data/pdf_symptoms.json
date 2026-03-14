@@ -1,7 +1,7 @@
 [
   {
     "slug": "symptom-аллергическии-ринит",
-    "name": "АЛЛЕРГИЧЕСКИЙ РИНИТ",
+    "name": "Аллергический ринит",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -57,7 +57,7 @@
   },
   {
     "slug": "symptom-боль-в-животе",
-    "name": "БОЛЬ В ЖИВОТЕ",
+    "name": "Боль в животе",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -105,7 +105,7 @@
   },
   {
     "slug": "symptom-боль-в-ухе",
-    "name": "БОЛЬ В УХЕ",
+    "name": "Боль в ухе",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -167,7 +167,7 @@
   },
   {
     "slug": "symptom-боль-хроническая",
-    "name": "БОЛЬ ХРОНИЧЕСКАЯ",
+    "name": "Боль хроническая",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -203,7 +203,7 @@
   },
   {
     "slug": "symptom-вздутие-живота",
-    "name": "ВЗДУТИЕ ЖИВОТА",
+    "name": "Вздутие живота",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -237,7 +237,7 @@
   },
   {
     "slug": "symptom-воспаление",
-    "name": "ВОСПАЛЕНИЕ",
+    "name": "Воспаление",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -291,7 +291,7 @@
   },
   {
     "slug": "symptom-воспаление-из-за-инфекции",
-    "name": "ВОСПАЛЕНИЕ ИЗ-ЗА ИНФЕКЦИИ",
+    "name": "Воспаление из-за инфекции",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -317,7 +317,7 @@
   },
   {
     "slug": "symptom-головокружение",
-    "name": "ГОЛОВОКРУЖЕНИЕ",
+    "name": "Головокружение",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -353,7 +353,7 @@
   },
   {
     "slug": "symptom-жар-высокая-температура",
-    "name": "ЖАР / ВЫСОКАЯ ТЕМПЕРАТУРА",
+    "name": "Жар / высокая температура",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -411,7 +411,7 @@
   },
   {
     "slug": "symptom-кома",
-    "name": "КОМА",
+    "name": "Кома",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -505,7 +505,7 @@
   },
   {
     "slug": "symptom-усталость-умственная",
-    "name": "УСТАЛОСТЬ УМСТВЕННАЯ",
+    "name": "Усталость умственная",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -587,7 +587,7 @@
   },
   {
     "slug": "symptom-аутоиммунные-заболевания",
-    "name": "АУТОИММУННЫЕ ЗАБОЛЕВАНИЯ",
+    "name": "Аутоиммунные заболевания",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -647,7 +647,7 @@
   },
   {
     "slug": "symptom-целлюлит",
-    "name": "ЦЕЛЛЮЛИТ",
+    "name": "Целлюлит",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -681,7 +681,7 @@
   },
   {
     "slug": "symptom-желудочно-кишечныи-тракт",
-    "name": "ЖЕЛУДОЧНО-КИШЕЧНЫЙ ТРАКТ",
+    "name": "Желудочно-кишечный тракт",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -713,7 +713,7 @@
   },
   {
     "slug": "symptom-повышенная-кислотность",
-    "name": "ПОВЫШЕННАЯ КИСЛОТНОСТЬ",
+    "name": "Повышенная кислотность",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -765,7 +765,7 @@
   },
   {
     "slug": "symptom-тошнота",
-    "name": "ТОШНОТА",
+    "name": "Тошнота",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -801,7 +801,7 @@
   },
   {
     "slug": "symptom-утренняя-тошнота",
-    "name": "УТРЕННЯЯ ТОШНОТА",
+    "name": "Утренняя тошнота",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -835,7 +835,7 @@
   },
   {
     "slug": "symptom-язва",
-    "name": "ЯЗВА",
+    "name": "Язва",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -865,7 +865,7 @@
   },
   {
     "slug": "symptom-застои-желчи",
-    "name": "ЗАСТОЙ ЖЕЛЧИ",
+    "name": "Застой желчи",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -957,7 +957,7 @@
   },
   {
     "slug": "symptom-газы",
-    "name": "ГАЗЫ",
+    "name": "Газы",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -1107,7 +1107,7 @@
   },
   {
     "slug": "symptom-колит-спастическии",
-    "name": "КОЛИТ СПАСТИЧЕСКИЙ",
+    "name": "Колит спастический",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -1137,7 +1137,7 @@
   },
   {
     "slug": "symptom-метеоризм",
-    "name": "МЕТЕОРИЗМ",
+    "name": "Метеоризм",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -1161,7 +1161,7 @@
   },
   {
     "slug": "symptom-очищение-восстановление-клеток-печени",
-    "name": "ОЧИЩЕНИЕ, ВОССТАНОВЛЕНИЕ КЛЕТОК ПЕЧЕНИ",
+    "name": "Очищение, восстановление клеток печени",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -1197,7 +1197,7 @@
   },
   {
     "slug": "symptom-кровеносная-сердечно-сосудистая-система",
-    "name": "КРОВЕНОСНАЯ / СЕРДЕЧНО-СОСУДИСТАЯ СИСТЕМА",
+    "name": "Кровеносная / сердечно-сосудистая система",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -1229,7 +1229,7 @@
   },
   {
     "slug": "symptom-анемия",
-    "name": "АНЕМИЯ",
+    "name": "Анемия",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -1277,7 +1277,7 @@
   },
   {
     "slug": "symptom-мерцательная-аритмия",
-    "name": "МЕРЦАТЕЛЬНАЯ АРИТМИЯ",
+    "name": "Мерцательная аритмия",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -1307,7 +1307,7 @@
   },
   {
     "slug": "symptom-ацидоз",
-    "name": "АЦИДОЗ",
+    "name": "Ацидоз",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -1345,7 +1345,7 @@
   },
   {
     "slug": "symptom-варикозное-расширение-вен",
-    "name": "ВАРИКОЗНОЕ РАСШИРЕНИЕ ВЕН",
+    "name": "Варикозное расширение вен",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -1389,7 +1389,7 @@
   },
   {
     "slug": "symptom-гематома",
-    "name": "ГЕМАТОМА",
+    "name": "Гематома",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -1419,7 +1419,7 @@
   },
   {
     "slug": "symptom-геморрагические-инсульты",
-    "name": "ГЕМОРРАГИЧЕСКИЕ ИНСУЛЬТЫ",
+    "name": "Геморрагические инсульты",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -1461,7 +1461,7 @@
   },
   {
     "slug": "symptom-тромботические-инсульты",
-    "name": "ТРОМБОТИЧЕСКИЕ ИНСУЛЬТЫ",
+    "name": "Тромботические инсульты",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -1495,7 +1495,7 @@
   },
   {
     "slug": "symptom-кровообращение-плохое",
-    "name": "КРОВООБРАЩЕНИЕ ПЛОХОЕ",
+    "name": "Кровообращение плохое",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -1523,7 +1523,7 @@
   },
   {
     "slug": "symptom-кровотечение",
-    "name": "КРОВОТЕЧЕНИЕ",
+    "name": "Кровотечение",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -1549,7 +1549,7 @@
   },
   {
     "slug": "symptom-очищение-крови",
-    "name": "ОЧИЩЕНИЕ КРОВИ",
+    "name": "Очищение крови",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -1575,7 +1575,7 @@
   },
   {
     "slug": "symptom-сердечные-заболевания",
-    "name": "СЕРДЕЧНЫЕ ЗАБОЛЕВАНИЯ",
+    "name": "Сердечные заболевания",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -1625,7 +1625,7 @@
   },
   {
     "slug": "symptom-синяки",
-    "name": "СИНЯКИ",
+    "name": "Синяки",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -1651,7 +1651,7 @@
   },
   {
     "slug": "symptom-стенокардия",
-    "name": "СТЕНОКАРДИЯ",
+    "name": "Стенокардия",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -1705,7 +1705,7 @@
   },
   {
     "slug": "symptom-тахикардия",
-    "name": "ТАХИКАРДИЯ",
+    "name": "Тахикардия",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -1737,7 +1737,7 @@
   },
   {
     "slug": "symptom-тромбоцитов-низкии-уровень",
-    "name": "ТРОМБОЦИТОВ НИЗКИЙ УРОВЕНЬ",
+    "name": "Тромбоцитов низкий уровень",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -1767,7 +1767,7 @@
   },
   {
     "slug": "symptom-холестерина-налет",
-    "name": "ХОЛЕСТЕРИНА НАЛЕТ",
+    "name": "Холестерина налет",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -1793,7 +1793,7 @@
   },
   {
     "slug": "symptom-холестерина-повышенныи-уровень",
-    "name": "ХОЛЕСТЕРИНА ПОВЫШЕННЫЙ УРОВЕНЬ",
+    "name": "Холестерина повышенный уровень",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -1859,7 +1859,7 @@
   },
   {
     "slug": "symptom-дыхательная-система",
-    "name": "ДЫХАТЕЛЬНАЯ СИСТЕМА",
+    "name": "Дыхательная система",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -1933,7 +1933,7 @@
   },
   {
     "slug": "symptom-апноэ",
-    "name": "АПНОЭ",
+    "name": "Апноэ",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -1987,7 +1987,7 @@
   },
   {
     "slug": "symptom-астма",
-    "name": "АСТМА",
+    "name": "Астма",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -2135,7 +2135,7 @@
   },
   {
     "slug": "symptom-сухость-носа",
-    "name": "СУХОСТЬ НОСА",
+    "name": "Сухость носа",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -2159,7 +2159,7 @@
   },
   {
     "slug": "symptom-плеврит",
-    "name": "ПЛЕВРИТ",
+    "name": "Плеврит",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -2207,7 +2207,7 @@
   },
   {
     "slug": "symptom-пневмония",
-    "name": "ПНЕВМОНИЯ",
+    "name": "Пневмония",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -2299,7 +2299,7 @@
   },
   {
     "slug": "symptom-туберкулез",
-    "name": "ТУБЕРКУЛЕЗ",
+    "name": "Туберкулез",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -2361,7 +2361,7 @@
   },
   {
     "slug": "symptom-лимфатическая-система",
-    "name": "ЛИМФАТИЧЕСКАЯ СИСТЕМА",
+    "name": "Лимфатическая система",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -2397,7 +2397,7 @@
   },
   {
     "slug": "symptom-отек",
-    "name": "ОТЕК",
+    "name": "Отек",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -2449,7 +2449,7 @@
   },
   {
     "slug": "symptom-артрит",
-    "name": "АРТРИТ",
+    "name": "Артрит",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -2491,7 +2491,7 @@
   },
   {
     "slug": "symptom-подагра",
-    "name": "ПОДАГРА",
+    "name": "Подагра",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -2521,7 +2521,7 @@
   },
   {
     "slug": "symptom-растяжение-или-разрыв-связок",
-    "name": "РАСТЯЖЕНИЕ ИЛИ РАЗРЫВ СВЯЗОК",
+    "name": "Растяжение или разрыв связок",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -2585,7 +2585,7 @@
   },
   {
     "slug": "symptom-соединительнои-ткани-воспаление",
-    "name": "СОЕДИНИТЕЛЬНОЙ ТКАНИ ВОСПАЛЕНИЕ",
+    "name": "Соединительной ткани воспаление",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -2661,7 +2661,7 @@
   },
   {
     "slug": "symptom-травма-коленного-хряща-локтя-и-др",
-    "name": "ТРАВМА КОЛЕННОГО ХРЯЩА, ЛОКТЯ, И ДР.",
+    "name": "Травма коленного хряща, локтя, и др.",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -2699,7 +2699,7 @@
   },
   {
     "slug": "symptom-тугоподвижность-суставов",
-    "name": "ТУГОПОДВИЖНОСТЬ СУСТАВОВ",
+    "name": "Тугоподвижность суставов",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -2735,7 +2735,7 @@
   },
   {
     "slug": "symptom-перелом",
-    "name": "ПЕРЕЛОМ",
+    "name": "Перелом",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -2773,7 +2773,7 @@
   },
   {
     "slug": "symptom-грыжа-межпозвоночного-диска-повреждение-дисков",
-    "name": "ГРЫЖА МЕЖПОЗВОНОЧНОГО ДИСКА/ ПОВРЕЖДЕНИЕ ДИСКОВ",
+    "name": "Грыжа межпозвоночного диска/ повреждение дисков",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -2805,7 +2805,7 @@
   },
   {
     "slug": "symptom-позвоночника-травмы-и-боли",
-    "name": "ПОЗВОНОЧНИКА ТРАВМЫ И БОЛИ",
+    "name": "Позвоночника травмы и боли",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -2873,7 +2873,7 @@
   },
   {
     "slug": "symptom-заболевания-и-проблемы-стоп",
-    "name": "ЗАБОЛЕВАНИЯ И ПРОБЛЕМЫ СТОП",
+    "name": "Заболевания и проблемы стоп",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -2919,7 +2919,7 @@
   },
   {
     "slug": "symptom-шишка-на-наружнои-стороне-большого-пальца-ноги",
-    "name": "ШИШКА НА НАРУЖНОЙ СТОРОНЕ БОЛЬШОГО ПАЛЬЦА НОГИ",
+    "name": "Шишка на наружной стороне большого пальца ноги",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -2987,7 +2987,7 @@
   },
   {
     "slug": "symptom-воспаление-из-за-травмы",
-    "name": "ВОСПАЛЕНИЕ ИЗ-ЗА ТРАВМЫ",
+    "name": "Воспаление из-за травмы",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -3055,7 +3055,7 @@
   },
   {
     "slug": "symptom-ушиб-мышцы",
-    "name": "УШИБ МЫШЦЫ",
+    "name": "Ушиб мышцы",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -3193,7 +3193,7 @@
   },
   {
     "slug": "symptom-рак-груди",
-    "name": "РАК ГРУДИ",
+    "name": "Рак груди",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -3219,7 +3219,7 @@
   },
   {
     "slug": "symptom-рак-легких",
-    "name": "РАК ЛЕГКИХ",
+    "name": "Рак легких",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -3249,7 +3249,7 @@
   },
   {
     "slug": "symptom-рак-матки",
-    "name": "РАК МАТКИ",
+    "name": "Рак матки",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -3277,7 +3277,7 @@
   },
   {
     "slug": "symptom-опухоли",
-    "name": "ОПУХОЛИ",
+    "name": "Опухоли",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -3303,7 +3303,7 @@
   },
   {
     "slug": "symptom-сибирская-язва",
-    "name": "СИБИРСКАЯ ЯЗВА",
+    "name": "Сибирская язва",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -3369,7 +3369,7 @@
   },
   {
     "slug": "symptom-цинга",
-    "name": "ЦИНГА",
+    "name": "Цинга",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -3405,7 +3405,7 @@
   },
   {
     "slug": "symptom-альцгеимера-болезнь",
-    "name": "АЛЬЦГЕЙМЕРА БОЛЕЗНЬ",
+    "name": "Альцгеймера болезнь",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -3441,7 +3441,7 @@
   },
   {
     "slug": "symptom-конвульсии-судороги",
-    "name": "КОНВУЛЬСИИ/ СУДОРОГИ",
+    "name": "Конвульсии/ судороги",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -3477,7 +3477,7 @@
   },
   {
     "slug": "symptom-концентрация-нарушенная",
-    "name": "КОНЦЕНТРАЦИЯ НАРУШЕННАЯ",
+    "name": "Концентрация нарушенная",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -3537,7 +3537,7 @@
   },
   {
     "slug": "symptom-обморок",
-    "name": "ОБМОРОК",
+    "name": "Обморок",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -3563,7 +3563,7 @@
   },
   {
     "slug": "symptom-память-нарушенная",
-    "name": "ПАМЯТЬ НАРУШЕННАЯ",
+    "name": "Память нарушенная",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -3639,7 +3639,7 @@
   },
   {
     "slug": "symptom-спутанность-сознания",
-    "name": "СПУТАННОСТЬ СОЗНАНИЯ",
+    "name": "Спутанность сознания",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -3703,7 +3703,7 @@
   },
   {
     "slug": "symptom-парасимпатическая-нервная-система",
-    "name": "ПАРАСИМПАТИЧЕСКАЯ НЕРВНАЯ СИСТЕМА",
+    "name": "Парасимпатическая нервная система",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -3737,7 +3737,7 @@
   },
   {
     "slug": "symptom-болезнь-паркинсона",
-    "name": "БОЛЕЗНЬ ПАРКИНСОНА",
+    "name": "Болезнь паркинсона",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -3771,7 +3771,7 @@
   },
   {
     "slug": "symptom-невралгия",
-    "name": "НЕВРАЛГИЯ",
+    "name": "Невралгия",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -3825,7 +3825,7 @@
   },
   {
     "slug": "symptom-кистевои-туннельныи-синдром",
-    "name": "КИСТЕВОЙ ТУННЕЛЬНЫЙ СИНДРОМ",
+    "name": "Кистевой туннельный синдром",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -3859,7 +3859,7 @@
   },
   {
     "slug": "symptom-паралич-белла",
-    "name": "ПАРАЛИЧ БЕЛЛА",
+    "name": "Паралич белла",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -3891,7 +3891,7 @@
   },
   {
     "slug": "symptom-припадки",
-    "name": "ПРИПАДКИ",
+    "name": "Припадки",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -3925,7 +3925,7 @@
   },
   {
     "slug": "symptom-состояния-нервнои-системы",
-    "name": "СОСТОЯНИЯ НЕРВНОЙ СИСТЕМЫ",
+    "name": "Состояния нервной системы",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -4051,7 +4051,7 @@
   },
   {
     "slug": "symptom-обезболивание",
-    "name": "ОБЕЗБОЛИВАНИЕ",
+    "name": "Обезболивание",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -4113,7 +4113,7 @@
   },
   {
     "slug": "symptom-перевозбуждение",
-    "name": "ПЕРЕВОЗБУЖДЕНИЕ",
+    "name": "Перевозбуждение",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -4165,7 +4165,7 @@
   },
   {
     "slug": "symptom-ушные-проблемы",
-    "name": "УШНЫЕ ПРОБЛЕМЫ",
+    "name": "Ушные проблемы",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -4193,7 +4193,7 @@
   },
   {
     "slug": "symptom-нарушение-слуха",
-    "name": "НАРУШЕНИЕ СЛУХА",
+    "name": "Нарушение слуха",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -4217,7 +4217,7 @@
   },
   {
     "slug": "symptom-ушная-инфекция",
-    "name": "УШНАЯ ИНФЕКЦИЯ",
+    "name": "Ушная инфекция",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -4259,7 +4259,7 @@
   },
   {
     "slug": "symptom-беременность",
-    "name": "БЕРЕМЕННОСТЬ",
+    "name": "Беременность",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -4315,7 +4315,7 @@
   },
   {
     "slug": "symptom-вагинальная-дрожжевая-инфекция",
-    "name": "ВАГИНАЛЬНАЯ ДРОЖЖЕВАЯ ИНФЕКЦИЯ",
+    "name": "Вагинальная дрожжевая инфекция",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -4357,7 +4357,7 @@
   },
   {
     "slug": "symptom-грудное-вскармливание",
-    "name": "ГРУДНОЕ ВСКАРМЛИВАНИЕ",
+    "name": "Грудное вскармливание",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -4443,7 +4443,7 @@
   },
   {
     "slug": "symptom-гистерэктомия-удаленная-матка",
-    "name": "ГИСТЕРЭКТОМИЯ - УДАЛЕННАЯ МАТКА",
+    "name": "Гистерэктомия - удаленная матка",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -4537,7 +4537,7 @@
   },
   {
     "slug": "symptom-бесплодие-у-женщин",
-    "name": "БЕСПЛОДИЕ У ЖЕНЩИН",
+    "name": "Бесплодие у женщин",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -4677,7 +4677,7 @@
   },
   {
     "slug": "symptom-фригидность-у-женщин",
-    "name": "ФРИГИДНОСТЬ У ЖЕНЩИН",
+    "name": "Фригидность у женщин",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -4719,7 +4719,7 @@
   },
   {
     "slug": "symptom-мужское-здоровье",
-    "name": "МУЖСКОЕ ЗДОРОВЬЕ",
+    "name": "Мужское здоровье",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -4769,7 +4769,7 @@
   },
   {
     "slug": "symptom-доброкачественная-гиперплазия-предстательнои-железы",
-    "name": "ДОБРОКАЧЕСТВЕННАЯ ГИПЕРПЛАЗИЯ ПРЕДСТАТЕЛЬНОЙ ЖЕЛЕЗЫ",
+    "name": "Доброкачественная гиперплазия предстательной железы",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -4803,7 +4803,7 @@
   },
   {
     "slug": "symptom-бесплодие-у-мужчин",
-    "name": "БЕСПЛОДИЕ У МУЖЧИН",
+    "name": "Бесплодие у мужчин",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -4839,7 +4839,7 @@
   },
   {
     "slug": "symptom-импотенция-у-мужчин",
-    "name": "ИМПОТЕНЦИЯ У МУЖЧИН",
+    "name": "Импотенция у мужчин",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -4883,7 +4883,7 @@
   },
   {
     "slug": "symptom-отсутствие-либидо-у-мужчин",
-    "name": "ОТСУТСТВИЕ ЛИБИДО У МУЖЧИН",
+    "name": "Отсутствие либидо у мужчин",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -4905,7 +4905,7 @@
   },
   {
     "slug": "symptom-чрезмерное-половое-влечение",
-    "name": "ЧРЕЗМЕРНОЕ ПОЛОВОЕ ВЛЕЧЕНИЕ",
+    "name": "Чрезмерное половое влечение",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -4931,7 +4931,7 @@
   },
   {
     "slug": "symptom-гормональная-система",
-    "name": "ГОРМОНАЛЬНАЯ СИСТЕМА",
+    "name": "Гормональная система",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -4961,7 +4961,7 @@
   },
   {
     "slug": "symptom-менопауза",
-    "name": "МЕНОПАУЗА",
+    "name": "Менопауза",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -4997,7 +4997,7 @@
   },
   {
     "slug": "symptom-обильные-менструальные-кровотечения",
-    "name": "ОБИЛЬНЫЕ МЕНСТРУАЛЬНЫЕ КРОВОТЕЧЕНИЯ",
+    "name": "Обильные менструальные кровотечения",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -5029,7 +5029,7 @@
   },
   {
     "slug": "symptom-гормональные-нарушения-у-мужчин",
-    "name": "ГОРМОНАЛЬНЫЕ НАРУШЕНИЯ У МУЖЧИН",
+    "name": "Гормональные нарушения у мужчин",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -5059,7 +5059,7 @@
   },
   {
     "slug": "symptom-аутоиммунныи-тиреодит-болезнь-хашимото-низкоактивная-щитовидная",
-    "name": "АУТОИММУННЫЙ ТИРЕОДИТ (БОЛЕЗНЬ ХАШИМОТО) / НИЗКОАКТИВНАЯ ЩИТОВИДНАЯ",
+    "name": "Аутоиммунный тиреодит (болезнь хашимото) / низкоактивная щитовидная",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -5133,7 +5133,7 @@
   },
   {
     "slug": "symptom-храп",
-    "name": "ХРАП",
+    "name": "Храп",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -5237,7 +5237,7 @@
   },
   {
     "slug": "symptom-грибок-стопы",
-    "name": "ГРИБОК СТОПЫ",
+    "name": "Грибок стопы",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -5297,7 +5297,7 @@
   },
   {
     "slug": "symptom-лямблиоз",
-    "name": "ЛЯМБЛИОЗ",
+    "name": "Лямблиоз",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -5333,7 +5333,7 @@
   },
   {
     "slug": "symptom-брюшнои-тиф",
-    "name": "БРЮШНОЙ ТИФ",
+    "name": "Брюшной тиф",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -5365,7 +5365,7 @@
   },
   {
     "slug": "symptom-ветрянка",
-    "name": "ВЕТРЯНКА",
+    "name": "Ветрянка",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -5399,7 +5399,7 @@
   },
   {
     "slug": "symptom-венерические-заболевания",
-    "name": "ВЕНЕРИЧЕСКИЕ ЗАБОЛЕВАНИЯ",
+    "name": "Венерические заболевания",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -5429,7 +5429,7 @@
   },
   {
     "slug": "symptom-мононуклеоз",
-    "name": "МОНОНУКЛЕОЗ",
+    "name": "Мононуклеоз",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -5503,7 +5503,7 @@
   },
   {
     "slug": "symptom-простуда",
-    "name": "ПРОСТУДА",
+    "name": "Простуда",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -5551,7 +5551,7 @@
   },
   {
     "slug": "symptom-холера",
-    "name": "ХОЛЕРА",
+    "name": "Холера",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -5585,7 +5585,7 @@
   },
   {
     "slug": "symptom-дряблость-кожи",
-    "name": "ДРЯБЛОСТЬ КОЖИ",
+    "name": "Дряблость кожи",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -5633,7 +5633,7 @@
   },
   {
     "slug": "symptom-морщины",
-    "name": "МОРЩИНЫ",
+    "name": "Морщины",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -5655,7 +5655,9 @@
         "Sandalwood",
         "Neroli"
       ],
-      "recommended_blend_names": ["Смесь от морщин"],
+      "recommended_blend_names": [
+        "Смесь от морщин"
+      ],
       "applications": "",
       "description": "",
       "recommended_oil_slugs": [
@@ -5674,7 +5676,9 @@
         "sandalwood",
         "neroli"
       ],
-      "recommended_blend_slugs": ["smesh-ot-morshchin"]
+      "recommended_blend_slugs": [
+        "smesh-ot-morshchin"
+      ]
     }
   },
   {
@@ -5705,7 +5709,7 @@
   },
   {
     "slug": "symptom-обветренная-кожа",
-    "name": "ОБВЕТРЕННАЯ КОЖА",
+    "name": "Обветренная кожа",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -5753,7 +5757,7 @@
   },
   {
     "slug": "symptom-поры-закупоренные",
-    "name": "ПОРЫ ЗАКУПОРЕННЫЕ",
+    "name": "Поры закупоренные",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -5811,7 +5815,7 @@
   },
   {
     "slug": "symptom-волдыри",
-    "name": "ВОЛДЫРИ",
+    "name": "Волдыри",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -5881,7 +5885,7 @@
   },
   {
     "slug": "symptom-крапивница",
-    "name": "КРАПИВНИЦА",
+    "name": "Крапивница",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -5913,7 +5917,7 @@
   },
   {
     "slug": "symptom-лишаи",
-    "name": "ЛИШАЙ",
+    "name": "Лишай",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -5945,7 +5949,7 @@
   },
   {
     "slug": "symptom-опрелости",
-    "name": "ОПРЕЛОСТИ",
+    "name": "Опрелости",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -5981,7 +5985,7 @@
   },
   {
     "slug": "symptom-пигментные-пятна",
-    "name": "ПИГМЕНТНЫЕ ПЯТНА",
+    "name": "Пигментные пятна",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -6003,7 +6007,7 @@
   },
   {
     "slug": "symptom-порезы",
-    "name": "ПОРЕЗЫ",
+    "name": "Порезы",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -6045,7 +6049,7 @@
   },
   {
     "slug": "symptom-для-дезинфекции",
-    "name": "ДЛЯ ДЕЗИНФЕКЦИИ",
+    "name": "Для дезинфекции",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -6133,7 +6137,7 @@
   },
   {
     "slug": "symptom-для-уменьшения-образования-рубцов",
-    "name": "ДЛЯ УМЕНЬШЕНИЯ ОБРАЗОВАНИЯ РУБЦОВ",
+    "name": "Для уменьшения образования рубцов",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -6189,7 +6193,7 @@
   },
   {
     "slug": "symptom-растяжки",
-    "name": "РАСТЯЖКИ",
+    "name": "Растяжки",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -6259,7 +6263,7 @@
   },
   {
     "slug": "symptom-рубцовая-ткань",
-    "name": "РУБЦОВАЯ ТКАНЬ",
+    "name": "Рубцовая ткань",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -6309,7 +6313,7 @@
   },
   {
     "slug": "symptom-царапины",
-    "name": "ЦАРАПИНЫ",
+    "name": "Царапины",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -6341,7 +6345,7 @@
   },
   {
     "slug": "symptom-язвы-на-коже",
-    "name": "ЯЗВЫ НА КОЖЕ",
+    "name": "Язвы на коже",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -6381,7 +6385,7 @@
   },
   {
     "slug": "symptom-проблемы-с-волосами-и-кожеи-головы",
-    "name": "ПРОБЛЕМЫ С ВОЛОСАМИ И КОЖЕЙ ГОЛОВЫ",
+    "name": "Проблемы с волосами и кожей головы",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -6445,7 +6449,7 @@
   },
   {
     "slug": "symptom-перхоть",
-    "name": "ПЕРХОТЬ",
+    "name": "Перхоть",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -6517,7 +6521,7 @@
   },
   {
     "slug": "symptom-ногти",
-    "name": "НОГТИ",
+    "name": "Ногти",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -6545,7 +6549,7 @@
   },
   {
     "slug": "symptom-катаракта",
-    "name": "КАТАРАКТА",
+    "name": "Катаракта",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -6603,7 +6607,7 @@
   },
   {
     "slug": "symptom-глазные-заболевания",
-    "name": "ГЛАЗНЫЕ ЗАБОЛЕВАНИЯ",
+    "name": "Глазные заболевания",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -6667,7 +6671,7 @@
   },
   {
     "slug": "symptom-зубная-боль-и-боль-при-прорезывании-зубов",
-    "name": "ЗУБНАЯ БОЛЬ И БОЛЬ ПРИ ПРОРЕЗЫВАНИИ ЗУБОВ",
+    "name": "Зубная боль и боль при прорезывании зубов",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -6737,7 +6741,7 @@
   },
   {
     "slug": "symptom-кровоточивость-десен",
-    "name": "КРОВОТОЧИВОСТЬ ДЕСЕН",
+    "name": "Кровоточивость десен",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -6771,7 +6775,7 @@
   },
   {
     "slug": "symptom-пиорея-системное-поражение-околозубнои-ткани",
-    "name": "ПИОРЕЯ - СИСТЕМНОЕ ПОРАЖЕНИЕ ОКОЛОЗУБНОЙ ТКАНИ",
+    "name": "Пиорея - системное поражение околозубной ткани",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -6825,7 +6829,7 @@
   },
   {
     "slug": "symptom-ротовая-инфекция",
-    "name": "РОТОВАЯ ИНФЕКЦИЯ",
+    "name": "Ротовая инфекция",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -6859,7 +6863,7 @@
   },
   {
     "slug": "symptom-стоматит",
-    "name": "СТОМАТИТ",
+    "name": "Стоматит",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -6899,7 +6903,7 @@
   },
   {
     "slug": "symptom-кандидозныи-стоматит",
-    "name": "КАНДИДОЗНЫЙ СТОМАТИТ",
+    "name": "Кандидозный стоматит",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -6931,7 +6935,7 @@
   },
   {
     "slug": "symptom-зависимости",
-    "name": "ЗАВИСИМОСТИ",
+    "name": "Зависимости",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -7047,7 +7051,7 @@
   },
   {
     "slug": "symptom-анорексия",
-    "name": "АНОРЕКСИЯ",
+    "name": "Анорексия",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -7087,7 +7091,7 @@
   },
   {
     "slug": "symptom-булимия",
-    "name": "БУЛИМИЯ",
+    "name": "Булимия",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -7123,7 +7127,7 @@
   },
   {
     "slug": "symptom-насекомыеживотные",
-    "name": "НАСЕКОМЫЕ/ЖИВОТНЫЕ",
+    "name": "Насекомые/животные",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -7157,7 +7161,7 @@
   },
   {
     "slug": "symptom-укусы-змеиные",
-    "name": "УКУСЫ ЗМЕИНЫЕ",
+    "name": "Укусы змеиные",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -7195,7 +7199,7 @@
   },
   {
     "slug": "symptom-болезнь-лаима-пятнистая-лихорадка-скалистых-гор",
-    "name": "БОЛЕЗНЬ ЛАЙМА / ПЯТНИСТАЯ ЛИХОРАДКА СКАЛИСТЫХ ГОР",
+    "name": "Болезнь лайма / пятнистая лихорадка скалистых гор",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -7273,7 +7277,7 @@
   },
   {
     "slug": "symptom-укусы-комаров",
-    "name": "УКУСЫ КОМАРОВ",
+    "name": "Укусы комаров",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -7303,7 +7307,7 @@
   },
   {
     "slug": "symptom-укус-коричневого-паука-отшельника",
-    "name": "УКУС КОРИЧНЕВОГО ПАУКА-ОТШЕЛЬНИКА",
+    "name": "Укус коричневого паука-отшельника",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -7343,7 +7347,7 @@
   },
   {
     "slug": "symptom-укусы-пчел",
-    "name": "УКУСЫ ПЧЕЛ",
+    "name": "Укусы пчел",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
@@ -7373,7 +7377,7 @@
   },
   {
     "slug": "symptom-средства-для-отпугивания-насекомых",
-    "name": "СРЕДСТВА ДЛЯ ОТПУГИВАНИЯ НАСЕКОМЫХ",
+    "name": "Средства для отпугивания насекомых",
     "category": "symptom",
     "source_type": "symptom",
     "aliases": [],
