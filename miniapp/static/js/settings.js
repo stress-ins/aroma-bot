@@ -305,11 +305,7 @@ export function createSettingsModule(deps) {
       title: "Проверьте состояние источников",
       body: "Слева собраны все подключенные источники и их текущее состояние.",
     })}</div>`);
-    if (inSettings) {
-      enterDetailView();
-    } else {
-      syncMobileNavigation();
-    }
+    syncMobileNavigation();
   }
 
   function renderKeywords() {
