@@ -1756,3 +1756,19 @@ class TestMiniAppRussianLocale:
         assert "z\\s+" in js        # z-bullet normalization
         assert r"/^\d{1,3}$/" in js  # page number stripping
         assert 'result.endsWith("-")' in js  # hyphen-join
+
+    def test_drafts_api_uses_newest_first_ordering(self):
+        """API должен запрашивать черновики новейшими первыми."""
+        src = Path("miniapp/api/routers/drafts.py").read_text(encoding="utf-8")
+        assert "newest_first=True" in src
+
+    def test_content_polish_uses_asyncio_to_thread(self):
+        """polish_content_review_draft не должен блокировать event loop."""
+        src = Path("bot/services/miniapp_content_review.py").read_text(encoding="utf-8")
+        assert "asyncio.to_thread" in src
+
+    def test_content_agent_uses_get_running_loop(self):
+        """content.py должен использовать get_running_loop, не get_event_loop."""
+        src = Path("bot/agents/content.py").read_text(encoding="utf-8")
+        assert "get_event_loop" not in src
+        assert "get_running_loop" in src or "asyncio.to_thread" in src
