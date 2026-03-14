@@ -26,6 +26,9 @@ class DraftRecord:
         feedback: str,
         payload: dict[str, Any],
         seq_id: int | None = None,
+        scheduled_at: str | None = None,
+        publish_platforms: list[str] | None = None,
+        external_ids: dict[str, Any] | None = None,
     ):
         self.draft_id = draft_id
         self.kind = kind
@@ -36,9 +39,15 @@ class DraftRecord:
         self.feedback = feedback
         self.payload = payload
         self.seq_id = seq_id
+        self.scheduled_at = scheduled_at
+        self.publish_platforms = publish_platforms or []
+        self.external_ids = external_ids or {}
 
     @classmethod
     def from_model(cls, model: DraftModel) -> DraftRecord:
+        scheduled_at = None
+        if model.scheduled_at:
+            scheduled_at = model.scheduled_at.isoformat() if isinstance(model.scheduled_at, datetime) else str(model.scheduled_at)
         return cls(
             draft_id=model.draft_id,
             kind=model.kind,
@@ -49,6 +58,9 @@ class DraftRecord:
             feedback=model.feedback,
             payload=model.payload,
             seq_id=model.id,
+            scheduled_at=scheduled_at,
+            publish_platforms=model.publish_platforms or [],
+            external_ids=model.external_ids or {},
         )
 
 
@@ -99,6 +111,9 @@ async def get_draft(draft_id: str) -> DraftRecord | None:
         return None
 
 
+_SENTINEL = object()
+
+
 async def update_draft(
     draft_id: str,
     *,
@@ -106,15 +121,18 @@ async def update_draft(
     status: str | None = None,
     feedback: str | None = None,
     payload: dict[str, Any] | None = None,
+    scheduled_at: Any = _SENTINEL,
+    publish_platforms: list[str] | None = None,
+    external_ids: dict[str, Any] | None = None,
 ) -> DraftRecord | None:
     async with AsyncSessionLocal() as session:
         query = select(DraftModel).filter(DraftModel.draft_id == draft_id)
         result = await session.execute(query)
         model = result.scalar_one_or_none()
-        
+
         if not model:
             return None
-            
+
         if topic is not None:
             model.topic = topic
         if status is not None:
@@ -122,10 +140,14 @@ async def update_draft(
         if feedback is not None:
             model.feedback = feedback
         if payload is not None:
-            # SQLAlchemy JSON columns sometimes need explicit flagging to track mutations
-            # Reassigning a new dict usually works best
             model.payload = dict(payload)
-            
+        if scheduled_at is not _SENTINEL:
+            model.scheduled_at = scheduled_at
+        if publish_platforms is not None:
+            model.publish_platforms = list(publish_platforms)
+        if external_ids is not None:
+            model.external_ids = dict(external_ids)
+
         await session.commit()
         await session.refresh(model)
         return DraftRecord.from_model(model)
