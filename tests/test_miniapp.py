@@ -1199,8 +1199,8 @@ class TestMiniAppRussianLocale:
         assert 'tone-${escapeHtml(item.tone)}' in app_js
         assert 'reference-hero-card is-theory' in app_js
         assert 'reference-card${state.tab === "concepts" ? " is-theory concept-card" : ""}' in app_js
-        assert 'reference.chakra_focus ? `Фокус / чакры: ${reference.chakra_focus}` : ""' in app_js
-        assert 'reference.course_source ? `Источник курса: ${formatCourseSourceLabel(reference.course_source)}` : ""' in app_js
+        assert 'reference.chakra_focus && { icon: "✦", label: "Чакры", value: reference.chakra_focus }' in app_js
+        assert 'reference.course_source && { icon: "📚", label: "Курс", value: formatCourseSourceLabel(reference.course_source) }' in app_js
         assert '${aromaSection("Материалы курса", reference.course_notes)}' in app_js
         assert ".reference-card .overview-card-date" in app_css
         assert ".reference-hero-card.is-theory" in app_css

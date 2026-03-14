@@ -64,6 +64,12 @@ export function createShellModule(deps) {
   }
 
   function goBackToList(animated = false) {
+    if (state._fromContext) {
+      const ctx = state._fromContext;
+      state._fromContext = null;
+      void window.openReference(ctx.slug, ctx.tab);
+      return;
+    }
     window.Telegram?.WebApp?.BackButton?.hide();
     if (animated) {
       animateBackToList();
