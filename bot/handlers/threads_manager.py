@@ -19,7 +19,7 @@ def threads_api_enabled() -> bool:
 
 def publish_threads_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([[
-        InlineKeyboardButton("🚀 Опубликовать в Threads", callback_data="tm:publish:last"),
+        InlineKeyboardButton("📤 Опубликовать", callback_data="tm:publish:last"),
     ]])
 
 
@@ -154,14 +154,29 @@ async def cb_threads_manager(update: Update, context: ContextTypes.DEFAULT_TYPE)
         if not text:
             await query.message.reply_text("❌ Текст для публикации не найден. Сгенерируй пост заново.")
             return
-        status = await query.message.reply_text("🚀 Публикую пост в Threads...")
-        loop = asyncio.get_event_loop()
-        try:
-            post_id = await loop.run_in_executor(_executor, lambda: ThreadsClient().publish_text_post(text))
-        except ThreadsAPIError as exc:
-            await status.edit_text(f"❌ Не удалось опубликовать пост.\n{exc}")
-            return
-        await status.edit_text(f"✅ Пост опубликован в Threads.\nPost ID: {post_id}")
+        draft_id = context.user_data.get("threads_publish_draft_id", "")
+        if draft_id:
+            from bot.services.publisher import publish
+            status = await query.message.reply_text("📤 Публикую через upload-post...")
+            try:
+                results = await publish(draft_id, ["threads"])
+                threads_result = results.get("threads", {})
+                if threads_result.get("status") == "success":
+                    await status.edit_text(f"✅ Опубликовано.\nRequest ID: {threads_result.get('external_id', 'n/a')}")
+                else:
+                    await status.edit_text(f"❌ Ошибка: {threads_result.get('error', 'unknown')}")
+            except Exception as exc:
+                await status.edit_text(f"❌ Не удалось опубликовать.\n{exc}")
+        else:
+            # Fallback: direct Threads API for legacy posts without draft
+            status = await query.message.reply_text("🚀 Публикую пост в Threads...")
+            loop = asyncio.get_event_loop()
+            try:
+                post_id = await loop.run_in_executor(_executor, lambda: ThreadsClient().publish_text_post(text))
+            except ThreadsAPIError as exc:
+                await status.edit_text(f"❌ Не удалось опубликовать пост.\n{exc}")
+                return
+            await status.edit_text(f"✅ Пост опубликован в Threads.\nPost ID: {post_id}")
         return
 
     if data == "tm:refresh":

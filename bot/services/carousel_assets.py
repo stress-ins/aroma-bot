@@ -31,6 +31,27 @@ _FALLBACK_PROMPT = (
 )
 
 
+def extract_images_from_pptx(pptx_bytes: bytes) -> list[bytes | None]:
+    """Extract the largest image from each slide in a PPTX file."""
+    import io
+    from pptx import Presentation
+    from pptx.enum.shapes import MSO_SHAPE_TYPE
+
+    prs = Presentation(io.BytesIO(pptx_bytes))
+    images: list[bytes | None] = []
+    for slide in prs.slides:
+        pictures = [
+            shape for shape in slide.shapes
+            if shape.shape_type == MSO_SHAPE_TYPE.PICTURE
+        ]
+        if not pictures:
+            images.append(None)
+            continue
+        biggest = max(pictures, key=lambda s: s.width * s.height)
+        images.append(biggest.image.blob)
+    return images
+
+
 def _prompt_with_note(prompt: str, note: str = "") -> str:
     base = (prompt or _FALLBACK_PROMPT).strip()
     note = note.strip()

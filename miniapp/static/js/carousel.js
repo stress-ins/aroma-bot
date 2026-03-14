@@ -303,6 +303,38 @@ export function createCarouselModule(deps) {
     }
   }
 
+  async function importCarouselPptx(draftId, button) {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".pptx";
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      if (button instanceof HTMLElement) button.textContent = "Загружаю...";
+      const formData = new FormData();
+      formData.append("file", file);
+      try {
+        const resp = await fetch(`/api/carousel/${draftId}/pptx/import`, {
+          method: "POST",
+          headers: deps.initDataHeaders ? deps.initDataHeaders() : {},
+          body: formData,
+        });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        if (button instanceof HTMLElement) {
+          button.textContent = "Импортировано";
+          button.classList.add("did-complete");
+          window.setTimeout(() => button.classList.remove("did-complete"), 900);
+        }
+        // Refresh the draft detail
+        if (window.openDraft) window.openDraft(draftId);
+      } catch (err) {
+        if (button instanceof HTMLElement) button.textContent = "Ошибка импорта";
+        console.error("PPTX import failed", err);
+      }
+    };
+    input.click();
+  }
+
   async function downloadCarouselPptx(draftId, button) {
     const downloadUrl = `${window.location.origin}/api/carousel/${draftId}/pptx${authQueryString()}`;
     if (button instanceof HTMLElement) {
@@ -332,5 +364,6 @@ export function createCarouselModule(deps) {
     selectCarouselSlideVersion,
     deleteCarouselSlideVersion,
     downloadCarouselPptx,
+    importCarouselPptx,
   };
 }

@@ -20,6 +20,7 @@ export function createRuntimeModule(deps) {
     loadInbox,
     loadPlans,
     loadReels,
+    loadSchedule,
     loadReferences,
     loadSettings,
     loadStatus,
@@ -36,6 +37,7 @@ export function createRuntimeModule(deps) {
     if (state.tab === "inbox") return loadInbox();
     if (state.tab === "plans") return loadPlans();
     if (state.tab === "reels") return loadReels();
+    if (state.tab === "schedule") return loadSchedule();
     if (deps.HANDBOOK_CATEGORY_META[state.tab]) return loadReferences(state.tab);
     if (state.tab === "settings") return loadSettings();
     if (state.tab === "status") return loadStatus();
