@@ -472,7 +472,7 @@ async def list_reference_cards(category: str) -> list[dict[str, str]]:
     items = []
     for model in models:
         payload = _public_payload(model.payload or {})
-        name_ru = str(payload.get("name_ru", "")).strip() if model.category == "blend" else ""
+        name_ru = str(payload.get("name_ru", "")).strip()
         items.append({
             "slug": model.slug,
             "name": name_ru or model.name,
