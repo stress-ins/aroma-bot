@@ -890,7 +890,7 @@ class TestHandbookPdfImport:
     def test_references_js_passport_includes_article_number(self):
         js = _miniapp_js_bundle()
         assert "reference.article_number" in js
-        assert "Артикул:" in js
+        assert '"Артикул"' in js
 
     def test_search_filter_includes_conditions_and_category_group(self):
         js = _miniapp_js_bundle()

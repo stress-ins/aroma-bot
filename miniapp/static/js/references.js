@@ -26,6 +26,7 @@ export function createReferencesModule(deps) {
     aromaCardIcon,
     handbookCardBadge,
     aromaSection,
+    aromaHtmlSection,
     fetchJson,
     enterDetailView,
     syncMobileNavigation,
@@ -113,6 +114,12 @@ export function createReferencesModule(deps) {
     enterDetailView();
     openReferenceInFlight = true;
     try {
+      // Track cross-tab navigation context for back button
+      if (tabId !== state.tab && state.selectedReference?.slug) {
+        state._fromContext = { tab: state.tab, slug: state.selectedReference.slug };
+      } else if (tabId === state.tab) {
+        state._fromContext = null;
+      }
       state.selectedReference = await fetchJson(`/api/references/${meta.category}/${encodeURIComponent(slug)}`);
       state.selectedReference.category = meta.category;
       state.tab = tabId;
@@ -150,11 +157,23 @@ export function createReferencesModule(deps) {
     return `<section class="section"><h3>${escapeHtml(title)}</h3><ul class="card-list">${items.map((i) => `<li>${escapeHtml(i)}</li>`).join("")}</ul></section>`;
   }
 
+  // Normalize symptom names that contain mixed-case PDF artifacts.
+  // "Боль ГОЛОВНАЯ ПРИ СИНУСИТЕ" → "Боль головная при синусите"
+  function normalizePdfSymptomName(raw) {
+    const s = String(raw || "").replace(/[.\s]+$/, "").trim();
+    if (!s) return s;
+    // If contains all-caps word (3+ letters) AND has lowercase letters → mixed PDF artifact
+    if (/\b[А-ЯЁA-Z]{3,}\b/.test(s) && /[а-яёa-z]/.test(s)) {
+      return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+    }
+    return toSentenceCase(s);
+  }
+
   function renderCrossRefChips(pairs, targetTab) {
     if (!pairs || !pairs.length) return "";
     const chips = pairs.map(({ slug, name, meta }) => {
       if (!name) return "";
-      const display = targetTab === "symptoms" ? toSentenceCase(name.replace(/[.\s]+$/, "")) : name;
+      const display = targetTab === "symptoms" ? normalizePdfSymptomName(name) : name;
       let icon = "";
       if (meta) {
         if (targetTab === "aromas") {
@@ -244,19 +263,56 @@ export function createReferencesModule(deps) {
     return `<section class="section"><h3>${escapeHtml(title)}</h3><div class="detail-preview">${escapeHtml(preview)}…</div><details class="description-collapsible"><summary class="description-toggle">▼ Читать далее</summary><div class="detail-preview description-full">${escapeHtml(str)}</div></details></section>`;
   }
 
+  const COUNTRY_FLAGS = {
+    "США": "🇺🇸", "Юта": "🇺🇸", "Калифорния": "🇺🇸", "Флорида": "🇺🇸",
+    "Франция": "🇫🇷", "Прованс": "🇫🇷", "Индия": "🇮🇳", "Гватемала": "🇬🇹",
+    "Южная Африка": "🇿🇦", "Бразилия": "🇧🇷", "Марокко": "🇲🇦", "Болгария": "🇧🇬",
+    "Австралия": "🇦🇺", "Япония": "🇯🇵", "Китай": "🇨🇳", "Россия": "🇷🇺",
+    "Шри-Ланка": "🇱🇰", "Мадагаскар": "🇲🇬", "Италия": "🇮🇹", "Испания": "🇪🇸",
+    "Израиль": "🇮🇱", "Египет": "🇪🇬", "Сомали": "🇸🇴", "Эфиопия": "🇪🇹",
+    "Оман": "🇴🇲", "Перу": "🇵🇪", "Мексика": "🇲🇽", "Канада": "🇨🇦",
+    "Германия": "🇩🇪", "Непал": "🇳🇵", "Индонезия": "🇮🇩", "Вьетнам": "🇻🇳",
+  };
+
+  function addCountryFlags(text) {
+    if (!text) return "";
+    return text.split(/[,;]/).map((seg) => {
+      const t = seg.trim();
+      for (const [country, flag] of Object.entries(COUNTRY_FLAGS)) {
+        if (t.includes(country)) return `${flag}\u00a0${t}`;
+      }
+      return t;
+    }).filter(Boolean).join(", ");
+  }
+
+  function renderVolatilityScale(v) {
+    if (!v) return v;
+    const s = String(v).toLowerCase();
+    if (s.includes("высок")) return "▓▓▓ Высокая";
+    if (s.includes("средн")) return "▓▓░ Средняя";
+    if (s.includes("низк"))  return "▓░░ Низкая";
+    return v;
+  }
+
   function renderReferencePassport(reference) {
-    const parts = [
-      reference.article_number ? `Артикул: ${reference.article_number}` : "",
-      reference.key ? `Ключ: ${reference.key}` : "",
-      reference.botanical_family ? `Семейство / тип: ${reference.botanical_family}` : "",
-      reference.origin_countries ? `Источник / традиция: ${reference.origin_countries}` : "",
-      reference.extraction_method ? `Форма / метод: ${reference.extraction_method}` : "",
-      reference.volatility ? `Длительность / летучесть: ${reference.volatility}` : "",
-      reference.chakra_focus ? `Фокус / чакры: ${reference.chakra_focus}` : "",
-      reference.polarity ? `Полярность: ${reference.polarity}` : "",
-      reference.course_source ? `Источник курса: ${formatCourseSourceLabel(reference.course_source)}` : "",
+    const rows = [
+      reference.article_number && { icon: "🔖", label: "Артикул", value: reference.article_number },
+      reference.botanical_family && { icon: "🌿", label: "Семейство", value: reference.botanical_family },
+      reference.origin_countries && { icon: "📍", label: "Происхождение", value: addCountryFlags(reference.origin_countries) },
+      reference.extraction_method && { icon: "⚗️", label: "Метод", value: reference.extraction_method },
+      reference.volatility && { icon: "💨", label: "Летучесть", value: renderVolatilityScale(reference.volatility) },
+      reference.chakra_focus && { icon: "✦", label: "Чакры", value: reference.chakra_focus },
+      reference.polarity && { icon: "⚡", label: "Полярность", value: reference.polarity },
+      reference.course_source && { icon: "📚", label: "Курс", value: formatCourseSourceLabel(reference.course_source) },
     ].filter(Boolean);
-    return parts.join("\n");
+    if (!rows.length) return "";
+    return `<div class="passport-grid">${rows.map(({ icon, label, value }) =>
+      `<div class="passport-row">
+        <span class="passport-icon">${icon}</span>
+        <span class="passport-label">${escapeHtml(label)}</span>
+        <span class="passport-value">${escapeHtml(value)}</span>
+      </div>`
+    ).join("")}</div>`;
   }
 
   function renderReferenceImage(reference) {
@@ -270,28 +326,44 @@ export function createReferencesModule(deps) {
     } else {
       eyebrowLabel = `${handbookCategoryIcon(state.tab)}<span>${escapeHtml(currentHandbookMeta().title)}</span>`;
     }
-    // For symptoms: use category_group as keyline, not source_type key
+    // Keyline: for aromas always use source_type family label
     let keyline;
     if (state.tab === "symptoms") {
       keyline = toSentenceCase(reference.category_group || reference.parent_group || "");
+    } else if (state.tab === "aromas") {
+      keyline = REFERENCE_SOURCE_TYPE_LABELS[reference.source_type]
+        || handbookCardBadge(state.tab, reference)
+        || currentHandbookMeta().title;
     } else {
       const rawKeyline = reference.key || handbookCardBadge(state.tab, reference) || currentHandbookMeta().title;
       keyline = (rawKeyline && rawKeyline !== reference.name)
         ? rawKeyline
         : (REFERENCE_SOURCE_TYPE_LABELS[reference.source_type] || currentHandbookMeta().title);
     }
-    // For blends: show English name as subtitle
-    const nameEn = state.tab === "blends" && reference.name_en
-      ? `<p class="reference-name-en">${escapeHtml(reference.name_en)}</p>`
-      : "";
+    // Subtitle line below the card title — context for each category type
+    let subtitle = "";
+    if (state.tab === "aromas") {
+      // RU name + family in parens: "Майоран душистый (Пряные)"
+      const nameRu = reference.name_ru && reference.name_ru !== reference.name ? reference.name_ru : "";
+      const subtitleParts = [nameRu, keyline ? `(${keyline})` : ""].filter(Boolean);
+      subtitle = subtitleParts.join(" ");
+    } else if (state.tab === "blends") {
+      // EN blend name · category: "Harmony · Эмоции и настроение"
+      const parts = [reference.name_en, keyline].filter(Boolean);
+      subtitle = parts.join(" · ");
+    } else if (state.tab === "symptoms") {
+      // Category group: "Нарушения сна"
+      subtitle = keyline || "";
+    } else if (state.tab === "practices" || state.tab === "concepts") {
+      // Type label: "Медитация" / "Чакра"
+      subtitle = keyline || "";
+    }
     return `
       <section class="section aroma-hero ${heroClass}">
         <div class="reference-hero-copy">
           <p class="eyebrow">${eyebrowLabel}</p>
           <h2 class="detail-title">${escapeHtml(state.tab === "symptoms" ? toSentenceCase(reference.name) : reference.name)}</h2>
-          ${nameEn}
-          <p class="reference-keyline">${escapeHtml(keyline)}</p>
-          <p class="reference-summary">${escapeHtml(stripMarkdown(reference.description || reference.course_notes || ""))}</p>
+          ${subtitle ? `<p class="reference-keyline">${escapeHtml(subtitle)}</p>` : ""}
         </div>
         <div class="reference-hero-media">
           <img class="aroma-image" src="${escapeHtml(reference.image_url)}" alt="${escapeHtml(reference.image_alt)}" />
@@ -539,7 +611,7 @@ export function createReferencesModule(deps) {
         <div class="detail-grid">
           ${renderBackButton()}
           ${renderReferenceImage(reference)}
-          ${aromaSection("Паспорт карточки", renderReferencePassport(reference))}
+          ${aromaHtmlSection("Паспорт аромата", renderReferencePassport(reference))}
           ${aromaSection("Описание", reference.description)}
           ${aromaSection("Терапевтические свойства", reference.therapeutic_properties)}
           ${renderStructuredList("При каких состояниях", reference.conditions_for_use)}
@@ -591,7 +663,7 @@ export function createReferencesModule(deps) {
         <div class="detail-grid">
           ${renderBackButton()}
           ${renderReferenceImage(reference)}
-          ${aromaSection("Паспорт карточки", renderReferencePassport(reference))}
+          ${aromaHtmlSection("Паспорт аромата", renderReferencePassport(reference))}
           ${renderCollapsibleDescription(reference)}
           ${aromaSection("Психологические свойства", reference.psychological_properties)}
           ${aromaSection("Терапевтические свойства", reference.therapeutic_properties)}
@@ -619,7 +691,7 @@ export function createReferencesModule(deps) {
         <div class="detail-grid">
           ${renderBackButton()}
           ${renderReferenceImage(reference)}
-          ${aromaSection("Паспорт карточки", renderReferencePassport(reference))}
+          ${aromaHtmlSection("Паспорт аромата", renderReferencePassport(reference))}
           ${renderCollapsibleDescription(reference)}
           ${aromaSection("Психологические свойства", reference.psychological_properties)}
           ${aromaSection('Ресурс "+"', reference.resource_values?.plus)}
@@ -649,7 +721,7 @@ export function createReferencesModule(deps) {
         <div class="detail-grid">
           ${renderBackButton()}
           ${renderReferenceImage(reference)}
-          ${aromaSection("Паспорт карточки", renderReferencePassport(reference))}
+          ${aromaHtmlSection("Паспорт аромата", renderReferencePassport(reference))}
           ${renderCollapsibleDescription(reference)}
           ${aromaSection("Психологические свойства", reference.psychological_properties)}
           ${aromaSection('Ресурс "+"', reference.resource_values?.plus)}
