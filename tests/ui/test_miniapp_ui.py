@@ -106,6 +106,47 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
             status VARCHAR(32),
             feedback VARCHAR(255),
             payload JSON,
+            scheduled_at DATETIME,
+            publish_platforms JSON DEFAULT '[]',
+            external_ids JSON DEFAULT '{}',
+            created_at DATETIME
+        )
+        """
+    )
+    cursor.execute(
+        """
+        CREATE TABLE draft_revisions (
+            id INTEGER PRIMARY KEY,
+            draft_id VARCHAR(32),
+            rev_num INTEGER,
+            payload JSON,
+            author VARCHAR(64) DEFAULT 'user',
+            note VARCHAR(512) DEFAULT '',
+            created_at DATETIME
+        )
+        """
+    )
+    cursor.execute(
+        """
+        CREATE TABLE publish_log (
+            id INTEGER PRIMARY KEY,
+            draft_id VARCHAR(32),
+            platform VARCHAR(32),
+            action VARCHAR(32),
+            status VARCHAR(32) DEFAULT 'pending',
+            external_id VARCHAR(255) DEFAULT '',
+            error_message VARCHAR(1000) DEFAULT '',
+            attempt_num INTEGER DEFAULT 1,
+            created_at DATETIME
+        )
+        """
+    )
+    cursor.execute(
+        """
+        CREATE TABLE todos (
+            id INTEGER PRIMARY KEY,
+            todo_id VARCHAR(36) UNIQUE,
+            text VARCHAR(1000),
             created_at DATETIME
         )
         """
