@@ -274,6 +274,18 @@ export function createReferencesModule(deps) {
     return `<section class="section"><h3>💧 Применение и дозировки</h3><div class="detail-preview applications-list">${rendered.join("")}</div></section>`;
   }
 
+  function renderRecipeDrops(ref) {
+    const names = ref.ingredient_names || [];
+    const drops = ref.ingredient_drops || [];
+    if (!drops.length || drops.length !== names.length) return "";
+    const lines = names.map((name, i) => {
+      const d = drops[i];
+      const unit = d === 1 ? "капля" : (d >= 2 && d <= 4) ? "капли" : "капель";
+      return `<div class="recipe-line">${d} ${unit} <strong>${escapeHtml(name)}</strong></div>`;
+    });
+    return `<section class="section"><h3>📋 Рецепт</h3><div class="detail-preview recipe-drops">${lines.join("")}</div></section>`;
+  }
+
   function renderCollapsibleSection(title, text, maxChars = 280, summary = null) {
     const str = String(text || "").trim();
     if (!str) return "";
@@ -651,9 +663,10 @@ export function createReferencesModule(deps) {
           ${renderBackButton()}
           ${renderReferenceImage(reference)}
           ${aromaHtmlSection("Паспорт аромата", renderReferencePassport(reference))}
-          ${aromaSection("Описание", reference.description)}
+          ${renderCollapsibleSection("Описание", reference.description, 280, reference.description_short)}
           ${aromaSection("Терапевтические свойства", reference.therapeutic_properties)}
           ${renderStructuredList("При каких состояниях", reference.conditions_for_use)}
+          ${renderRecipeDrops(reference)}
           ${ingredientChips ? `<section class="section"><h3>🧪 Состав</h3><div class="detail-preview">${ingredientChips}</div></section>` : ""}
           ${compChips ? `<section class="section"><h3>🌿 Комплементарные масла</h3><div class="detail-preview">${compChips}</div></section>` : ""}
           ${symptomChips ? `<section class="section"><h3>💊 Помогает при</h3><div class="detail-preview">${symptomChips}</div></section>` : ""}

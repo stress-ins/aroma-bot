@@ -125,6 +125,11 @@ textarea,
   opacity: 1;
 }
 
+.recipe-line {
+  padding: 4px 0;
+  font-size: 14px;
+}
+
 /* ── Toolbar ─────────────────────────────────────────────────────────────── */
 .topbar {
   display: block;
@@ -1197,6 +1202,23 @@ body.tg-theme-dark .reference-hero-card.is-theory {
     radial-gradient(circle at top right, rgba(180, 92, 61, 0.1), transparent 33%),
     linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
   border-color: rgba(180, 92, 61, 0.2);
+}
+
+/* settings section inputs — dark theme */
+.settings-section input[type="text"],
+.settings-section textarea {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: inherit;
+  width: 100%;
+  box-sizing: border-box;
+}
+.settings-section input[type="text"]:focus,
+.settings-section textarea:focus {
+  border-color: var(--brand-border);
+  outline: none;
 }
 
 /* content-review elements had hardcoded white backgrounds */
