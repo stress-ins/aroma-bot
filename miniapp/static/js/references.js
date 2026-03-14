@@ -643,8 +643,8 @@ export function createReferencesModule(deps) {
           ${ingredientChips ? `<section class="section"><h3>🧪 Состав</h3><div class="detail-preview">${ingredientChips}</div></section>` : ""}
           ${compChips ? `<section class="section"><h3>🌿 Комплементарные масла</h3><div class="detail-preview">${compChips}</div></section>` : ""}
           ${symptomChips ? `<section class="section"><h3>💊 Помогает при</h3><div class="detail-preview">${symptomChips}</div></section>` : ""}
-          ${aromaSection("Применение", reference.applications)}
-          ${aromaSection("Меры предосторожности", reference.precautions)}
+          ${renderStructuredList("Применение", reference.applications)}
+          ${renderStructuredList("Меры предосторожности", reference.precautions)}
         </div>
       `;
     } else if (state.tab === "symptoms") {
@@ -694,8 +694,8 @@ export function createReferencesModule(deps) {
           ${aromaSection("Терапевтические свойства", reference.therapeutic_properties)}
           ${compOilChips ? `<section class="section"><h3>🌿 Масла для практики</h3><div class="detail-preview">${compOilChips}</div></section>` : ""}
           ${blendPracticeChips ? `<section class="section"><h3>🌀 Рекомендуемые смеси</h3><div class="detail-preview">${blendPracticeChips}</div></section>` : ""}
-          ${aromaSection("📋 Применение", reference.applications)}
-          ${aromaSection("Меры предосторожности", reference.precautions)}
+          ${renderStructuredList("📋 Применение", reference.applications)}
+          ${renderStructuredList("Меры предосторожности", reference.precautions)}
           ${aromaSection("Материалы курса", reference.course_notes)}
         </div>
       `;
@@ -762,7 +762,7 @@ export function createReferencesModule(deps) {
           ${blendsChips ? `<section class="section"><h3>🌀 Входит в смеси</h3><div class="detail-preview">${blendsChips}</div></section>` : ""}
           ${symptomChips ? `<section class="section"><h3>💊 Помогает при</h3><div class="detail-preview">${symptomChips}</div></section>` : ""}
           ${renderApplicationsWithIcons(reference.applications)}
-          ${renderCollapsibleSection("Меры предосторожности", reference.precautions)}
+          ${renderStructuredList("Меры предосторожности", reference.precautions)}
           ${aromaSection("Материалы курса", reference.course_notes)}
           ${renderCollapsibleSection("Исторические сведения", reference.history, 280, reference.history_summary)}
         </div>

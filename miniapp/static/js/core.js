@@ -456,7 +456,9 @@ export function createCoreModule(deps) {
 
   function aromaSection(title, content) {
     if (!content) return "";
-    return `<section class="section"><h3>${deps.sectionHeadingIcon(title)}${escapeHtml(title)}</h3><div class="detail-preview detail-markdown">${renderMarkdown(content)}</div></section>`;
+    const str = String(content);
+    if (str.includes("Нет данных") || str.includes("Стоит дополнить")) return "";
+    return `<section class="section"><h3>${deps.sectionHeadingIcon(title)}${escapeHtml(title)}</h3><div class="detail-preview detail-markdown">${renderMarkdown(str)}</div></section>`;
   }
 
   function aromaHtmlSection(title, htmlContent) {
