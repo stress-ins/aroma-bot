@@ -459,6 +459,11 @@ export function createCoreModule(deps) {
     return `<section class="section"><h3>${deps.sectionHeadingIcon(title)}${escapeHtml(title)}</h3><div class="detail-preview detail-markdown">${renderMarkdown(content)}</div></section>`;
   }
 
+  function aromaHtmlSection(title, htmlContent) {
+    if (!htmlContent) return "";
+    return `<section class="section"><h3>${deps.sectionHeadingIcon(title)}${escapeHtml(title)}</h3><div class="detail-preview passport-preview">${htmlContent}</div></section>`;
+  }
+
   return {
     interactiveCardAttrs,
     renderDetailLoader,
@@ -486,5 +491,6 @@ export function createCoreModule(deps) {
     withButtonFeedback,
     updateCurrentDraft,
     aromaSection,
+    aromaHtmlSection,
   };
 }

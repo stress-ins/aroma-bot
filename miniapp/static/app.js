@@ -44,6 +44,7 @@ const state = {
   pendingReelsNotes: {},
   pendingReelsPrompts: {},
   openPromptPanels: {},
+  _fromContext: null,
 };
 
 const MODE_TABS = {
@@ -581,6 +582,7 @@ function sectionHeadingIcon(title) {
     "Текст": "text",
     "CTA": "chat",
     "Паспорт карточки": "passport",
+    "Паспорт аромата": "passport",
     "Описание": "card",
     "Какие вопросы поднимает": "prompt",
     "Действие на НПС": "nps",
@@ -925,6 +927,7 @@ const {
   withButtonFeedback,
   updateCurrentDraft,
   aromaSection,
+  aromaHtmlSection,
 } = createCoreModule({
   state,
   elements,
@@ -1161,6 +1164,7 @@ const {
   aromaCardIcon,
   handbookCardBadge,
   aromaSection,
+  aromaHtmlSection,
   fetchJson,
   enterDetailView,
   syncMobileNavigation,
