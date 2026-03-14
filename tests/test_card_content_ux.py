@@ -395,3 +395,16 @@ def test_enrich_passport_script_exists_and_has_dry_run():
     assert "--dry-run" in content, "Script must support --dry-run"
     assert "BATCH_SIZE" in content, "Script must define BATCH_SIZE"
     assert "BATCH_DELAY" in content, "Script must define BATCH_DELAY for rate limiting"
+
+
+def test_enrich_applications_script_exists():
+    """Applications enrichment script must exist and support required flags."""
+    script = ROOT / "scripts" / "enrich_applications.py"
+    assert script.exists(), "scripts/enrich_applications.py not found"
+    content = script.read_text(encoding="utf-8")
+    assert "--dry-run" in content, "Script must support --dry-run"
+    assert "BATCH_SIZE" in content, "Script must define BATCH_SIZE"
+    assert "BATCH_DELAY" in content, "Script must define BATCH_DELAY for rate limiting"
+    assert "--category" in content, "Script must support --category flag"
+    assert "symptom" in content, "Script must handle symptom category"
+    assert "applications" in content, "Script must populate applications field"
