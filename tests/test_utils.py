@@ -981,3 +981,20 @@ class TestHandbookPdfImport:
         assert card["slug"] == "blend-grounding"
         assert card["article_number"] == "#309708"
         assert card["ingredient_names"] == ["White Spruce", "Vetiver"]
+
+    def test_concept_and_blend_cards_no_double_icon(self):
+        refs_js = _miniapp_static_text("js", "references.js")
+        # kind-glyph must be suppressed for concepts and blends (they have icon in badge)
+        glyph_line = next(l for l in refs_js.splitlines() if "kind-glyph handbook-glyph" in l)
+        assert "concepts" in glyph_line
+        assert "blends" in glyph_line
+
+    def test_symptom_cross_ref_chips_have_icons(self):
+        refs_js = _miniapp_static_text("js", "references.js")
+        assert "SYMPTOM_PARENT_GROUP_ICONS" in refs_js
+        assert "related_symptom_parent_groups" in refs_js
+
+    def test_aroma_crossref_blend_names_use_name_ru(self):
+        backend = Path("bot/services/miniapp_references.py").read_text(encoding="utf-8")
+        # blends_containing_names must use name_ru, not raw blend.name
+        assert "name_ru or blend.name" in backend

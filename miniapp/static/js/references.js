@@ -154,7 +154,7 @@ export function createReferencesModule(deps) {
     if (!pairs || !pairs.length) return "";
     const chips = pairs.map(({ slug, name, meta }) => {
       if (!name) return "";
-      const display = targetTab === "symptoms" ? toSentenceCase(name) : name;
+      const display = targetTab === "symptoms" ? toSentenceCase(name.replace(/[.\s]+$/, "")) : name;
       let icon = "";
       if (meta) {
         if (targetTab === "aromas") {
@@ -162,6 +162,9 @@ export function createReferencesModule(deps) {
           if (ic) icon = ic + "\u00a0";
         } else if (targetTab === "blends") {
           const ic = BLEND_CATEGORY_ICONS[String(meta).toUpperCase()];
+          if (ic) icon = ic + "\u00a0";
+        } else if (targetTab === "symptoms") {
+          const ic = SYMPTOM_PARENT_GROUP_ICONS[String(meta).toUpperCase()];
           if (ic) icon = ic + "\u00a0";
         }
       }
@@ -268,9 +271,15 @@ export function createReferencesModule(deps) {
       eyebrowLabel = `${handbookCategoryIcon(state.tab)}<span>${escapeHtml(currentHandbookMeta().title)}</span>`;
     }
     // For symptoms: use category_group as keyline, not source_type key
-    const keyline = state.tab === "symptoms"
-      ? toSentenceCase(reference.category_group || reference.parent_group || "")
-      : (reference.key || handbookCardBadge(state.tab, reference) || currentHandbookMeta().title);
+    let keyline;
+    if (state.tab === "symptoms") {
+      keyline = toSentenceCase(reference.category_group || reference.parent_group || "");
+    } else {
+      const rawKeyline = reference.key || handbookCardBadge(state.tab, reference) || currentHandbookMeta().title;
+      keyline = (rawKeyline && rawKeyline !== reference.name)
+        ? rawKeyline
+        : (REFERENCE_SOURCE_TYPE_LABELS[reference.source_type] || currentHandbookMeta().title);
+    }
     // For blends: show English name as subtitle
     const nameEn = state.tab === "blends" && reference.name_en
       ? `<p class="reference-name-en">${escapeHtml(reference.name_en)}</p>`
@@ -485,7 +494,7 @@ export function createReferencesModule(deps) {
     listContainer.innerHTML = filtered.map((item) => `
       <article ${interactiveCardAttrs(`Открыть карточку ${item.name}`)} class="draft-card overview-card reference-card${state.tab === "concepts" ? " is-theory concept-card" : ""}${item.slug === reference?.slug ? " active" : ""} interactive-card" onclick='openReference(${JSON.stringify(item.slug)}, ${JSON.stringify(state.tab)})'>
         <div class="overview-card-top">
-          <div class="draft-kind">${state.tab !== "symptoms" ? `<span class="kind-glyph handbook-glyph" aria-hidden="true">${aromaCardIcon(item, state.tab)}</span>` : ""}${handbookCardBadge(state.tab, item) ? `<span>${state.tab === "concepts" ? `<span class="concept-kind-mark" aria-hidden="true">${escapeHtml(aromaCardIcon(item, state.tab))}</span>` : ""}${escapeHtml(handbookCardBadge(state.tab, item))}</span>` : ""}</div>
+          <div class="draft-kind">${!["symptoms", "concepts", "blends"].includes(state.tab) ? `<span class="kind-glyph handbook-glyph" aria-hidden="true">${aromaCardIcon(item, state.tab)}</span>` : ""}${handbookCardBadge(state.tab, item) ? `<span>${state.tab === "concepts" ? `<span class="concept-kind-mark" aria-hidden="true">${escapeHtml(aromaCardIcon(item, state.tab))}</span>` : ""}${escapeHtml(handbookCardBadge(state.tab, item))}</span>` : ""}</div>
           <span class="overview-card-date">${escapeHtml(formatCourseSourceLabel(item.course_source) || meta.title)}</span>
         </div>
         <h3 class="draft-topic">${escapeHtml(state.tab === "symptoms" ? toSentenceCase(item.name) : item.name)}</h3>
@@ -633,7 +642,7 @@ export function createReferencesModule(deps) {
         "blends"
       );
       const symptomChips = renderCrossRefChips(
-        zipNamesAndSlugs(reference.related_symptom_names, reference.related_symptom_slugs),
+        zipNamesAndSlugs(reference.related_symptom_names, reference.related_symptom_slugs, reference.related_symptom_parent_groups),
         "symptoms"
       );
       detailHtml = `

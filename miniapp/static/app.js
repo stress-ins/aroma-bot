@@ -373,7 +373,8 @@ function handbookCardBadge(tabId, item = {}) {
     const pg = String(item.parent_group || "").trim();
     if (pg) {
       const icon = SYMPTOM_PARENT_GROUP_ICONS[pg] || "";
-      const raw = pg.length > 22 ? pg.split(" ").slice(0, 2).join(" ") : pg;
+      const words = pg.split(" ");
+      const raw = words.length > 1 && pg.length > 14 ? words[0] + "\u2026" : pg;
       const label = toSentenceCase(raw);
       return icon ? icon + "\u00a0" + label : label;
     }
