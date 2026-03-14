@@ -116,7 +116,7 @@ async def test_generation_failure_skips_card(tmp_path):
     async def fake_audit(category):
         return cards
 
-    def fake_generate(name, desc, api_key):
+    def fake_generate(name, desc, api_key, category="aroma"):
         if name == "Проблемная":
             return None  # simulate failure
         return fake_bytes
