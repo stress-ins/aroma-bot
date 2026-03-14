@@ -333,8 +333,9 @@ function handbookCardBadge(tabId, item = {}) {
   }
   if (tabId === "blends") return "Смесь";
   if (tabId === "symptoms") {
-    const firstWord = item.category_group ? String(item.category_group).split(" ")[0] : "";
-    return firstWord || "Симптом";
+    const pg = String(item.parent_group || "").trim();
+    if (pg) return pg.length > 22 ? pg.split(" ").slice(0, 2).join(" ") : pg;
+    return "Симптом";
   }
   if (tabId === "concepts") {
     return conceptTypeMeta(sourceType).label;

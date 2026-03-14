@@ -1754,6 +1754,13 @@ body.tg-theme-dark .detail-markdown h5 {
   font-weight: 600;
 }
 
+.reference-name-en {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: -2px;
+  margin-bottom: 4px;
+}
+
 .reference-summary {
   color: var(--muted);
   font-size: 14px;

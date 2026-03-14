@@ -78,8 +78,14 @@ export function createReferencesModule(deps) {
       renderReferencesLocked();
       return;
     }
+    // Clear stale items before fetch to prevent cross-category contamination
+    state.referenceItems = [];
+    renderReferences();
     const data = await fetchJson(`/api/references/${meta.category}`);
-    state.referenceItems = data.items || [];
+    // Client-side guard: filter out any items that belong to a different category
+    state.referenceItems = (data.items || []).filter(
+      (i) => !i.category || i.category === meta.category
+    );
 
     // Skip rendering if openReference is currently in flight — it will call
     // renderReferences itself when the detail fetch completes, preventing a
@@ -213,15 +219,30 @@ export function createReferencesModule(deps) {
 
   function renderReferenceImage(reference) {
     const heroClass = state.tab === "concepts" ? "reference-hero-card is-theory" : "reference-hero-card";
-    const eyebrowLabel = state.tab === "concepts"
-      ? `${handbookCategoryIcon(state.tab)}<span>${escapeHtml(currentHandbookMeta().title)} · учебный модуль</span>`
-      : `${handbookCategoryIcon(state.tab)}<span>${escapeHtml(currentHandbookMeta().title)}</span>`;
+    let eyebrowLabel;
+    if (state.tab === "concepts") {
+      eyebrowLabel = `${handbookCategoryIcon(state.tab)}<span>${escapeHtml(currentHandbookMeta().title)} · учебный модуль</span>`;
+    } else if (state.tab === "symptoms") {
+      const eyebrowText = String(reference.parent_group || reference.category_group || currentHandbookMeta().title);
+      eyebrowLabel = `${handbookCategoryIcon(state.tab)}<span>${escapeHtml(eyebrowText)}</span>`;
+    } else {
+      eyebrowLabel = `${handbookCategoryIcon(state.tab)}<span>${escapeHtml(currentHandbookMeta().title)}</span>`;
+    }
+    // For symptoms: use category_group as keyline, not source_type key
+    const keyline = state.tab === "symptoms"
+      ? (reference.category_group || reference.parent_group || "")
+      : (reference.key || handbookCardBadge(state.tab, reference) || currentHandbookMeta().title);
+    // For blends: show English name as subtitle
+    const nameEn = state.tab === "blends" && reference.name_en
+      ? `<p class="reference-name-en">${escapeHtml(reference.name_en)}</p>`
+      : "";
     return `
       <section class="section aroma-hero ${heroClass}">
         <div class="reference-hero-copy">
           <p class="eyebrow">${eyebrowLabel}</p>
           <h2 class="detail-title">${escapeHtml(reference.name)}</h2>
-          <p class="reference-keyline">${escapeHtml(reference.key || handbookCardBadge(state.tab, reference) || currentHandbookMeta().title)}</p>
+          ${nameEn}
+          <p class="reference-keyline">${escapeHtml(keyline)}</p>
           <p class="reference-summary">${escapeHtml(stripMarkdown(reference.description || reference.course_notes || ""))}</p>
         </div>
         <div class="reference-hero-media">
@@ -424,6 +445,7 @@ export function createReferencesModule(deps) {
           <span class="overview-card-date">${escapeHtml(formatCourseSourceLabel(item.course_source) || meta.title)}</span>
         </div>
         <h3 class="draft-topic">${escapeHtml(item.name)}</h3>
+        ${item.name_en ? `<div class="reference-name-en">${escapeHtml(item.name_en)}</div>` : ""}
         <div class="draft-preview">${escapeHtml(stripMarkdown(item.description || item.course_notes || ""))}</div>
         <div class="draft-meta overview-card-footer">
           ${item.chakra_focus ? tagMarkup(item.chakra_focus, "source") : ""}
