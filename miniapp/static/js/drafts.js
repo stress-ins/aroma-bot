@@ -30,6 +30,7 @@ export function createDraftsModule(deps) {
     isPendingDraftId,
     isContentReviewKind,
     renderSlides,
+    renderPublishPanel,
     fetchJson,
     withButtonFeedback,
     mergeDraftIntoState,
@@ -221,6 +222,7 @@ export function createDraftsModule(deps) {
             <button class="secondary-button" onclick="updateDraft('status', {status:'rejected'}, this)">${actionLabel("reject", "Вернуть на доработку")}</button>
             <button class="secondary-button" onclick="sendDraftToChat('${d.draft_id}', this)">${actionLabel("chat", "Отправить в чат")}</button>
             ${d.kind === "carousel" ? `<button class="secondary-button" onclick="downloadCarouselPptx('${d.draft_id}', this)">${actionLabel("pptx", "Скачать презентацию")}</button>` : ""}
+            ${d.kind === "carousel" ? `<button class="secondary-button" onclick="importCarouselPptx('${d.draft_id}', this)">${actionLabel("pptx", "Импорт из Canva")}</button>` : ""}
             ${d.kind === "carousel" ? `<button class="secondary-button" onclick="regenerateCarouselAll('${d.draft_id}', this)">${actionLabel("regenerate", "Обновить все слайды")}</button>` : ""}
             <button class="danger-button" onclick="deleteDraft('${d.draft_id}', 'drafts', this)">${actionLabel("trash", "Удалить")}</button>
           </div>
@@ -231,6 +233,7 @@ export function createDraftsModule(deps) {
         ${payloadSection("CTA", p.cta)}
         ${generationStateMarkup(d, "draft")}
         ${reviewActions}
+        ${renderPublishPanel(d.draft_id, d.status)}
         ${renderSlides(d.draft_id, p.slides, p.img_prompts, p.slide_images, p.img_prompt_notes, p.slide_image_versions)}
         ${promptSection("Промпт для изображения", p.visual_prompt, "Скопировать промпт", `draft:${d.draft_id}:visual`)}
       </div>

@@ -4,6 +4,8 @@ import { createContentModule } from "./js/content.js";
 import { createCoreModule } from "./js/core.js";
 import { createCreateModule } from "./js/create.js";
 import { createDraftsModule } from "./js/drafts.js";
+import { createPublishModule } from "./js/publish.js";
+import { createScheduleModule } from "./js/schedule.js";
 import { createPlansModule } from "./js/plans.js";
 import { createReferencesModule } from "./js/references.js";
 import { createReelsModule } from "./js/reels.js";
@@ -54,6 +56,7 @@ const MODE_TABS = {
     { id: "drafts", label: "Черновики" },
     { id: "plans", label: "Планы" },
     { id: "reels", label: "Рилсы" },
+    { id: "schedule", label: "Расписание" },
     { id: "keywords", label: "Ключи" },
     { id: "status", label: "Статус" },
   ],
@@ -231,6 +234,7 @@ const RU_STATUS_LABELS = {
   approved: "Согласовано",
   rejected: "Не согласовано",
   published: "Опубликовано",
+  scheduled: "Запланировано",
 };
 
 const RU_FEEDBACK_LABELS = {
@@ -785,6 +789,7 @@ function feedbackLabel(value) {
 function statusTone(value) {
   const normalized = String(value || "").toLowerCase();
   if (normalized === "approved" || normalized === "published") return "status-positive";
+  if (normalized === "scheduled") return "status-review";
   if (normalized === "rejected") return "status-negative";
   if (normalized === "in_review") return "status-review";
   return "status-neutral";
@@ -998,6 +1003,7 @@ const {
   selectCarouselSlideVersion,
   deleteCarouselSlideVersion,
   downloadCarouselPptx,
+  importCarouselPptx,
 } = createCarouselModule({
   state,
   carouselNoteSaveTimers,
@@ -1011,6 +1017,7 @@ const {
   showRequestError,
   confirmAction,
   authQueryString,
+  initDataHeaders,
   isCurrentDraftDetail,
   isPromptDisclosureOpen,
   mergeDraftIntoState,
@@ -1123,6 +1130,12 @@ async function loadPlans() {
 
 async function loadReels() { return loadReelsImpl(); }
 
+async function loadSchedule() {
+  await loadScheduleImpl();
+  renderScheduleListImpl();
+  renderScheduleDetailImpl();
+}
+
 async function loadKeywords() {
   return loadKeywordsImpl();
 }
@@ -1184,6 +1197,41 @@ const {
 });
 
 const {
+  renderPublishPanel,
+  publishDraft: publishDraftImpl,
+  cancelPublishSchedule: cancelPublishScheduleImpl,
+  loadPublishStatus: loadPublishStatusImpl,
+} = createPublishModule({
+  fetchJson,
+  withButtonFeedback,
+  escapeHtml,
+  tagMarkup,
+  uiIcon,
+});
+
+const {
+  loadSchedule: loadScheduleImpl,
+  renderScheduleList: renderScheduleListImpl,
+  renderScheduleDetail: renderScheduleDetailImpl,
+} = createScheduleModule({
+  state,
+  elements,
+  escapeHtml,
+  tagMarkup,
+  kindLabel,
+  contentKindIcon,
+  formatPlanDate,
+  statusLabel,
+  statusTone,
+  fetchJson,
+  withButtonFeedback,
+  setEmptyState,
+  syncMobileNavigation,
+  renderBackButton,
+  interactiveCardAttrs,
+});
+
+const {
   saveContentReviewDraft: saveContentReviewDraftImpl,
   polishContentDraft: polishContentDraftImpl,
   renderDraftList: renderDraftListImpl,
@@ -1221,6 +1269,7 @@ const {
   isPendingDraftId,
   isContentReviewKind,
   renderSlides,
+  renderPublishPanel,
   fetchJson,
   withButtonFeedback,
   mergeDraftIntoState,
@@ -1336,6 +1385,7 @@ const {
   loadInbox,
   loadPlans,
   loadReels,
+  loadSchedule,
   loadReferences,
   loadSettings,
   loadStatus,
@@ -1530,6 +1580,7 @@ registerWindowBridge({
   deleteCarouselSlideVersion,
   handleCarouselSlideNoteInput,
   downloadCarouselPptx,
+  importCarouselPptx,
   saveReelsScenario,
   regenerateReelsStoryboard,
   regenerateAllReelsFrames,
@@ -1551,6 +1602,8 @@ registerWindowBridge({
   savePlatformTone: savePlatformToneImpl,
   addTodoItem: addTodoItemImpl,
   removeTodoItem: removeTodoItemImpl,
+  publishDraft: publishDraftImpl,
+  cancelPublishSchedule: cancelPublishScheduleImpl,
   goBackToList,
   renderReferences,
 });

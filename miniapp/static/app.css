@@ -2881,3 +2881,18 @@ body.is-mobile-layout[data-mode="handbook"] .tabs::-webkit-scrollbar { display: 
   color: #fff;
   border-color: var(--brand);
 }
+
+/* Publish panel */
+.publish-panel { display: grid; gap: var(--space-3); }
+.publish-platforms { display: flex; gap: var(--space-3); flex-wrap: wrap; }
+.publish-platform-toggle { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 14px; }
+.publish-platform-toggle input { accent-color: var(--brand); }
+.publish-schedule-row { display: flex; align-items: center; gap: var(--space-2); }
+.publish-schedule-label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+.publish-datetime { font-size: 14px; padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); }
+.publish-status-list { display: grid; gap: 8px; margin-top: var(--space-2); }
+.publish-status-item { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 6px 10px; border-radius: var(--radius-sm); background: var(--surface); }
+.publish-status-platform { font-weight: 600; min-width: 24px; }
+.publish-status-error { color: var(--danger, #c44); font-size: 12px; }
+.schedule-group { margin-bottom: var(--space-4); }
+.schedule-group-title { font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: var(--space-2); }

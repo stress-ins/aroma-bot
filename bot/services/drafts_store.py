@@ -153,6 +153,24 @@ async def update_draft(
         return DraftRecord.from_model(model)
 
 
+async def list_scheduled_drafts_due() -> list[DraftRecord]:
+    """Drafts where scheduled_at <= now() and status == 'approved'."""
+    now = datetime.now(timezone.utc)
+    async with AsyncSessionLocal() as session:
+        query = (
+            select(DraftModel)
+            .filter(
+                DraftModel.status == "approved",
+                DraftModel.scheduled_at.isnot(None),
+                DraftModel.scheduled_at <= now,
+            )
+            .order_by(DraftModel.scheduled_at.asc())
+        )
+        result = await session.execute(query)
+        models = result.scalars().all()
+        return [DraftRecord.from_model(m) for m in models]
+
+
 async def delete_draft(draft_id: str) -> bool:
     async with AsyncSessionLocal() as session:
         query = select(DraftModel).filter(DraftModel.draft_id == draft_id)

@@ -75,6 +75,7 @@ class ThreadsClient:
         return payload.get("data", [])
 
     def create_text_container(self, text: str, *, reply_to_id: str | None = None) -> str:
+        """Deprecated: Use bot.services.publisher for standalone posts. Kept for reply publishing."""
         params: dict[str, Any] = {
             "media_type": "TEXT",
             "text": text,
@@ -85,10 +86,12 @@ class ThreadsClient:
         return str(payload["id"])
 
     def publish_container(self, creation_id: str) -> str:
+        """Deprecated: Use bot.services.publisher for standalone posts. Kept for reply publishing."""
         payload = self._request("POST", "/me/threads_publish", params={"creation_id": creation_id})
         return str(payload["id"])
 
     def publish_text_post(self, text: str, *, reply_to_id: str | None = None) -> str:
+        """Deprecated for standalone posts: Use bot.services.publisher. Kept for reply publishing."""
         creation_id = self.create_text_container(text, reply_to_id=reply_to_id)
         return self.publish_container(creation_id)
 
