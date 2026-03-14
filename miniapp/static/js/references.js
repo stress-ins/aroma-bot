@@ -169,7 +169,8 @@ export function createReferencesModule(deps) {
 
   function renderApplicationsWithIcons(text) {
     if (!text) return "";
-    const lines = text.split("\n").filter(Boolean);
+    // Split on newlines or semicolons; strip leading bullet chars
+    const lines = text.split(/[\n;]/).map((l) => l.replace(/^[•\-]\s*/, "").trim()).filter(Boolean);
     const rendered = lines.map((line) => {
       const lower = line.toLowerCase();
       let icon = "•";
@@ -190,19 +191,9 @@ export function createReferencesModule(deps) {
     if (str.length <= maxChars) {
       return `<section class="section"><h3>${escapeHtml(title)}</h3><div class="detail-preview">${escapeHtml(str)}</div></section>`;
     }
-    // Trim to last space within maxChars to avoid cutting mid-word
     const cutAt = str.lastIndexOf(" ", maxChars) || maxChars;
     const preview = str.slice(0, cutAt);
-    return `
-      <section class="section">
-        <h3>${escapeHtml(title)}</h3>
-        <div class="detail-preview">${escapeHtml(preview)}…</div>
-        <details class="description-collapsible">
-          <summary class="description-toggle">▼ Читать далее</summary>
-          <div class="detail-preview description-full">${escapeHtml(str)}</div>
-        </details>
-      </section>
-    `;
+    return `<section class="section"><h3>${escapeHtml(title)}</h3><div class="detail-preview">${escapeHtml(preview)}…</div><details class="description-collapsible"><summary class="description-toggle">▼ Читать далее</summary><div class="detail-preview description-full">${escapeHtml(str)}</div></details></section>`;
   }
 
   function renderReferencePassport(reference) {
@@ -294,7 +285,9 @@ export function createReferencesModule(deps) {
     const childrenByParent = {};
 
     for (const item of items) {
-      const parent = String(item.parent_group || item.category_group || "").trim();
+      // L1 chips only from explicit parent_group — never fall back to category_group
+      // (would show every disease as a top-level chip)
+      const parent = String(item.parent_group || "").trim();
       const child = String(item.category_group || "").trim();
       if (!parent) continue;
       if (!parentSeen.has(parent)) {
