@@ -71,19 +71,41 @@ async def _ensure_seeded() -> None:
     await seed_reference_cards_if_empty()
 
 
-def _generate_image_gemini(name: str, description: str, api_key: str) -> bytes | None:
+_CATEGORY_PROMPTS = {
+    "aroma": (
+        "Create a beautiful botanical illustration of the plant '{name}'. "
+        "{description}. "
+        "Style: soft watercolor botanical illustration, muted natural colors, clean white background. "
+    ),
+    "symptom": (
+        "Create a gentle, conceptual medical illustration representing '{name}'. "
+        "{description}. "
+        "Style: soft, calming, abstract medical/anatomical illustration. Muted tones, no text. "
+        "Focus on the body system or concept, not herbs or plants. "
+    ),
+    "blend": (
+        "Create an illustration representing the purpose of an aromatherapy blend called '{name}'. "
+        "{description}. "
+        "Style: warm, inviting illustration showing the blend's therapeutic goal (e.g. relaxation, immunity, beauty). "
+        "Muted natural colors, no text. "
+    ),
+    "practice": (
+        "Create a serene illustration of a meditative or therapeutic practice: '{name}'. "
+        "{description}. "
+        "Style: peaceful, contemplative scene with soft lighting and calming colors. No text. "
+    ),
+}
+
+
+def _generate_image_gemini(name: str, description: str, api_key: str, category: str = "aroma") -> bytes | None:
     """Call Gemini to generate an image. Returns raw JPEG bytes or None."""
     try:
         from google import genai
         from google.genai import types
 
         client = genai.Client(api_key=api_key)
-        prompt = (
-            f"Create a beautiful, artistic reference card image for an essential oil called '{name}'. "
-            f"{description}. "
-            "Style: soft watercolor botanical illustration, muted natural colors, clean white background. "
-            "No text overlays. Square format."
-        )
+        template = _CATEGORY_PROMPTS.get(category, _CATEGORY_PROMPTS["aroma"])
+        prompt = template.format(name=name, description=description) + "No text overlays. Square format."
         response = client.models.generate_content(
             model="gemini-3.1-flash-image-preview",
             contents=prompt,
@@ -155,7 +177,7 @@ async def run(
         desc = card["description"]
         print(f"  [{i+1}/{len(cards)}] Generating image for {slug_val} ({name})...", end=" ", flush=True)
 
-        img_bytes = _generate_image_gemini(name, desc, api_key)
+        img_bytes = _generate_image_gemini(name, desc, api_key, category=cat)
         if not img_bytes:
             print("SKIP (generation failed)")
             time.sleep(15)  # back off before next attempt

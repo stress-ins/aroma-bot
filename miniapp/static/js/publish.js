@@ -4,7 +4,7 @@
  * Supports immediate publish and scheduling.
  */
 export function createPublishModule(deps) {
-  const { fetchJson, withButtonFeedback, escapeHtml, tagMarkup, uiIcon } = deps;
+  const { fetchJson, withButtonFeedback, escapeHtml, tagMarkup, uiIcon, showUiNotice } = deps;
 
   let _pollTimer = null;
 
@@ -57,14 +57,14 @@ export function createPublishModule(deps) {
   async function publishDraft(draftId, withSchedule, button) {
     const platforms = _getSelectedPlatforms();
     if (!platforms.length) {
-      alert("Выберите хотя бы одну платформу");
+      showUiNotice("Выберите хотя бы одну платформу", "error");
       return;
     }
     const body = { platforms };
     if (withSchedule) {
       const dt = document.getElementById("pubScheduleAt")?.value;
       if (!dt) {
-        alert("Укажите дату и время");
+        showUiNotice("Укажите дату и время", "error");
         return;
       }
       body.scheduled_at = new Date(dt).toISOString();

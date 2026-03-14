@@ -9,8 +9,9 @@
   --muted:        #6b5a4e;
   --hint:         #9b8678;
   --brand:        #b45c3d;
-  --brand-bg:     rgba(180, 92, 61, 0.10);
-  --brand-border: rgba(180, 92, 61, 0.35);
+  --brand-rgb:    180, 92, 61;
+  --brand-bg:     rgba(var(--brand-rgb), 0.10);
+  --brand-border: rgba(var(--brand-rgb), 0.35);
   --sage:         #5d6e3a;
   --sage-bg:      rgba(93, 110, 58, 0.10);
   --good:         #2e7d4f;
@@ -44,8 +45,8 @@
     --text:         #f0e8df;
     --muted:        #c2aea0;
     --hint:         #a58f80;
-    --brand-bg:     rgba(180, 92, 61, 0.18);
-    --brand-border: rgba(180, 92, 61, 0.40);
+    --brand-bg:     rgba(var(--brand-rgb), 0.18);
+    --brand-border: rgba(var(--brand-rgb), 0.40);
     --sage-bg:      rgba(93, 110, 58, 0.18);
   }
 }
@@ -77,7 +78,7 @@ textarea,
 }
 
 :focus-visible {
-  outline: 3px solid rgba(180, 92, 61, 0.22);
+  outline: 3px solid rgba(var(--brand-rgb), 0.22);
   outline-offset: 2px;
 }
 
@@ -142,7 +143,7 @@ textarea,
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   background:
-    radial-gradient(circle at top left, rgba(180, 92, 61, 0.12), transparent 32%),
+    radial-gradient(circle at top left, rgba(var(--brand-rgb), 0.12), transparent 32%),
     linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
   box-shadow: var(--shadow-sm);
 }
@@ -219,11 +220,11 @@ textarea,
 }
 
 .tab-button.active {
-  background: linear-gradient(180deg, rgba(180, 92, 61, 0.18), rgba(180, 92, 61, 0.1));
+  background: linear-gradient(180deg, rgba(var(--brand-rgb), 0.18), rgba(var(--brand-rgb), 0.1));
   border-color: var(--brand-border);
   color: var(--brand);
   font-weight: 600;
-  box-shadow: inset 0 0 0 1px rgba(180, 92, 61, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(var(--brand-rgb), 0.12);
 }
 
 /* Filters row */
@@ -362,7 +363,7 @@ textarea,
   transition: border-color var(--duration-fast) var(--ease-standard), background var(--duration-fast) var(--ease-standard), transform var(--duration-medium) var(--ease-standard), box-shadow var(--duration-medium) var(--ease-standard);
 }
 .draft-card:hover  { border-color: var(--brand-border); box-shadow: 0 10px 26px rgba(60, 40, 20, 0.08); transform: translateY(-1px); }
-.draft-card.active { border-color: var(--brand-border); background: linear-gradient(180deg, rgba(180, 92, 61, 0.12), rgba(180, 92, 61, 0.05)); box-shadow: 0 10px 24px rgba(180, 92, 61, 0.12); }
+.draft-card.active { border-color: var(--brand-border); background: linear-gradient(180deg, rgba(var(--brand-rgb), 0.12), rgba(var(--brand-rgb), 0.05)); box-shadow: 0 10px 24px rgba(var(--brand-rgb), 0.12); }
 .draft-card.is-pending {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.015) 100%);
   border-color: rgba(255, 255, 255, 0.12);
@@ -371,7 +372,7 @@ textarea,
 .interactive-card:focus-visible {
   outline-offset: 4px;
   border-color: var(--brand-border);
-  box-shadow: 0 0 0 4px rgba(180, 92, 61, 0.12), 0 10px 24px rgba(60, 40, 20, 0.08);
+  box-shadow: 0 0 0 4px rgba(var(--brand-rgb), 0.12), 0 10px 24px rgba(60, 40, 20, 0.08);
 }
 
 .draft-card.is-pending .draft-kind,
@@ -437,8 +438,8 @@ textarea,
   min-height: 32px;
   padding: 6px 12px;
   border-radius: 999px;
-  background: rgba(180, 92, 61, 0.10);
-  border: 1px solid rgba(180, 92, 61, 0.20);
+  background: rgba(var(--brand-rgb), 0.10);
+  border: 1px solid rgba(var(--brand-rgb), 0.20);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -496,14 +497,14 @@ textarea,
 
 .tag-status-positive { background: rgba(46, 125, 79, 0.12); color: var(--good); border-color: rgba(46, 125, 79, 0.18); }
 .tag-status-negative { background: rgba(176, 58, 46, 0.12); color: var(--bad); border-color: rgba(176, 58, 46, 0.18); }
-.tag-status-review { background: rgba(180, 92, 61, 0.12); color: var(--brand); border-color: rgba(180, 92, 61, 0.2); }
+.tag-status-review { background: rgba(var(--brand-rgb), 0.12); color: var(--brand); border-color: rgba(var(--brand-rgb), 0.2); }
 .tag-status-neutral { background: rgba(107, 90, 78, 0.12); color: var(--muted); border-color: rgba(107, 90, 78, 0.16); }
 .tag-feedback-worked { background: rgba(46, 125, 79, 0.1); color: var(--good); border-color: rgba(46, 125, 79, 0.16); }
 .tag-feedback-missed { background: rgba(176, 58, 46, 0.1); color: var(--bad); border-color: rgba(176, 58, 46, 0.16); }
 .tag-feedback-neutral { background: rgba(107, 90, 78, 0.1); color: var(--muted); border-color: rgba(107, 90, 78, 0.16); }
 .tag-source-plan { background: rgba(93, 110, 58, 0.12); color: var(--sage); border-color: rgba(93, 110, 58, 0.18); }
 .tag-source-content { background: rgba(28, 21, 16, 0.06); color: var(--text); border-color: rgba(28, 21, 16, 0.08); }
-.tag-source-miniapp { background: rgba(180, 92, 61, 0.08); color: var(--brand); border-color: rgba(180, 92, 61, 0.16); }
+.tag-source-miniapp { background: rgba(var(--brand-rgb), 0.08); color: var(--brand); border-color: rgba(var(--brand-rgb), 0.16); }
 .tag-source-neutral { background: rgba(107, 90, 78, 0.1); color: var(--muted); border-color: rgba(107, 90, 78, 0.16); }
 .tag-progress,
 .tag-pending { color: var(--hint); background: rgba(155, 134, 120, 0.12); border-color: rgba(155, 134, 120, 0.18); }
@@ -525,14 +526,14 @@ textarea,
   width: min(100%, 440px);
   padding: 22px;
   border-radius: var(--radius-lg);
-  border: 1px solid rgba(180, 92, 61, 0.12);
+  border: 1px solid rgba(var(--brand-rgb), 0.12);
   background: linear-gradient(180deg, rgba(255, 252, 248, 0.98) 0%, rgba(250, 246, 241, 0.98) 100%);
   box-shadow: 0 12px 28px rgba(45, 31, 22, 0.06);
   text-align: left;
 }
 
 .guided-state.tone-soft {
-  border-color: rgba(180, 92, 61, 0.12);
+  border-color: rgba(var(--brand-rgb), 0.12);
 }
 
 .guided-state-copy {
@@ -600,10 +601,10 @@ textarea,
   position: absolute;
   inset: 0;
   border-radius: 999px;
-  border: 2px solid rgba(180, 92, 61, 0.16);
+  border: 2px solid rgba(var(--brand-rgb), 0.16);
   border-top-color: var(--brand);
   animation: brand-loader-spin 1s linear infinite;
-  box-shadow: 0 0 0 6px rgba(180, 92, 61, 0.06);
+  box-shadow: 0 0 0 6px rgba(var(--brand-rgb), 0.06);
 }
 
 .brand-loader-letter {
@@ -695,7 +696,7 @@ body.is-mobile-layout .detail-top {
   display: grid;
   gap: 10px;
   padding: var(--space-3);
-  border: 1px solid rgba(180, 92, 61, 0.16);
+  border: 1px solid rgba(var(--brand-rgb), 0.16);
   border-radius: var(--radius-md);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0%, rgba(236, 224, 212, 0.58) 100%);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
@@ -808,9 +809,9 @@ body.is-mobile-layout .detail-top {
 }
 
 .section-primary {
-  border-color: rgba(180, 92, 61, 0.18);
+  border-color: rgba(var(--brand-rgb), 0.18);
   background:
-    radial-gradient(circle at top left, rgba(180, 92, 61, 0.08), transparent 34%),
+    radial-gradient(circle at top left, rgba(var(--brand-rgb), 0.08), transparent 34%),
     linear-gradient(180deg, rgba(255, 248, 243, 0.98) 0%, rgba(245, 240, 232, 0.96) 100%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.28),
@@ -982,21 +983,20 @@ body.is-mobile-layout .detail-top {
 
 .content-review-highlight textarea {
   min-height: 92px;
-  background: rgba(255, 255, 255, 0.82);
+  background: var(--surface);
 }
 
 .content-review-lead {
   padding: var(--space-3);
-  border: 1px solid rgba(180, 92, 61, 0.18);
+  border: 1px solid rgba(var(--brand-rgb), 0.18);
   border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.84);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  background: var(--surface);
 }
 
 .content-review-lead textarea {
   min-height: 196px;
   background: transparent;
-  border-color: rgba(180, 92, 61, 0.14);
+  border-color: rgba(var(--brand-rgb), 0.14);
   font-size: 15px;
   line-height: 1.65;
 }
@@ -1056,11 +1056,11 @@ body.is-mobile-layout .detail-top {
 }
 
 .mode-button.active {
-  background: linear-gradient(180deg, rgba(180, 92, 61, 0.24), rgba(180, 92, 61, 0.12));
+  background: linear-gradient(180deg, rgba(var(--brand-rgb), 0.24), rgba(var(--brand-rgb), 0.12));
   color: var(--brand);
   font-weight: 600;
   box-shadow:
-    inset 0 0 0 1px rgba(180, 92, 61, 0.18),
+    inset 0 0 0 1px rgba(var(--brand-rgb), 0.18),
     0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
@@ -1134,8 +1134,8 @@ body.tg-theme-dark {
   --text:         #f0e8df;
   --muted:        #c2aea0;
   --hint:         #a58f80;
-  --brand-bg:     rgba(180, 92, 61, 0.18);
-  --brand-border: rgba(180, 92, 61, 0.40);
+  --brand-bg:     rgba(var(--brand-rgb), 0.18);
+  --brand-border: rgba(var(--brand-rgb), 0.40);
   --sage-bg:      rgba(93, 110, 58, 0.18);
 }
 
@@ -1166,9 +1166,9 @@ body.tg-theme-dark .plan-entry-card {
 
 body.tg-theme-dark .section-primary {
   background:
-    radial-gradient(circle at top left, rgba(180, 92, 61, 0.10), transparent 34%),
+    radial-gradient(circle at top left, rgba(var(--brand-rgb), 0.10), transparent 34%),
     linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
-  border-color: rgba(180, 92, 61, 0.22);
+  border-color: rgba(var(--brand-rgb), 0.22);
   color: var(--text);
 }
 
@@ -1179,7 +1179,7 @@ body.tg-theme-dark .section-accent {
 
 body.tg-theme-dark .detail-facts {
   background: linear-gradient(180deg, var(--surface-2) 0%, var(--surface-3) 100%);
-  border-color: rgba(180, 92, 61, 0.20);
+  border-color: rgba(var(--brand-rgb), 0.20);
   box-shadow: none;
   color: var(--text);
 }
@@ -1187,7 +1187,7 @@ body.tg-theme-dark .detail-facts {
 /* guided-state had hardcoded near-white gradient */
 body.tg-theme-dark .guided-state {
   background: linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
-  border-color: rgba(180, 92, 61, 0.18);
+  border-color: rgba(var(--brand-rgb), 0.18);
   color: var(--text);
 }
 
@@ -1199,9 +1199,9 @@ body.tg-theme-dark .reference-badge {
 
 body.tg-theme-dark .reference-hero-card.is-theory {
   background:
-    radial-gradient(circle at top right, rgba(180, 92, 61, 0.1), transparent 33%),
+    radial-gradient(circle at top right, rgba(var(--brand-rgb), 0.1), transparent 33%),
     linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
-  border-color: rgba(180, 92, 61, 0.2);
+  border-color: rgba(var(--brand-rgb), 0.2);
 }
 
 /* settings section inputs — dark theme */
@@ -1228,7 +1228,7 @@ body.tg-theme-dark .content-review-highlight textarea {
 
 body.tg-theme-dark .content-review-lead {
   background: var(--surface-2);
-  border-color: rgba(180, 92, 61, 0.22);
+  border-color: rgba(var(--brand-rgb), 0.22);
   box-shadow: none;
 }
 
@@ -1274,7 +1274,7 @@ body.tg-theme-dark .detail-markdown h5 {
   background: var(--brand);
   border: none;
   color: #fff;
-  box-shadow: 0 3px 12px rgba(180, 92, 61, 0.40);
+  box-shadow: 0 3px 12px rgba(var(--brand-rgb), 0.40);
   align-self: center;
   min-height: 52px;
 }
@@ -1305,7 +1305,7 @@ body.tg-theme-dark .detail-markdown h5 {
 }
 
 .bottom-tab-btn.active {
-  background: linear-gradient(180deg, rgba(180, 92, 61, 0.18), rgba(180, 92, 61, 0.10));
+  background: linear-gradient(180deg, rgba(var(--brand-rgb), 0.18), rgba(var(--brand-rgb), 0.10));
   color: var(--brand);
 }
 /* Create button keeps its solid brand style regardless of active state */
@@ -1607,13 +1607,13 @@ body.tg-theme-dark .detail-markdown h5 {
 .primary-button.is-busy {
   opacity: 0.88;
   transform: translateY(-1px) scale(1.01);
-  box-shadow: 0 0 0 3px rgba(180, 92, 61, 0.12), 0 10px 24px rgba(180, 92, 61, 0.18);
+  box-shadow: 0 0 0 3px rgba(var(--brand-rgb), 0.12), 0 10px 24px rgba(var(--brand-rgb), 0.18);
 }
 
 .secondary-button.did-complete,
 .primary-button.did-complete {
   transform: translateY(-1px) scale(1.01);
-  box-shadow: 0 10px 24px rgba(180, 92, 61, 0.22);
+  box-shadow: 0 10px 24px rgba(var(--brand-rgb), 0.22);
   border-color: rgba(118, 167, 90, 0.45);
 }
 
@@ -1739,7 +1739,7 @@ body.tg-theme-dark .detail-markdown h5 {
 
 .slide-version-card.is-current {
   border-color: var(--brand-border);
-  background: linear-gradient(180deg, rgba(180, 92, 61, 0.12), rgba(180, 92, 61, 0.05));
+  background: linear-gradient(180deg, rgba(var(--brand-rgb), 0.12), rgba(var(--brand-rgb), 0.05));
 }
 
 .slide-version-thumb {
@@ -1784,16 +1784,16 @@ body.tg-theme-dark .detail-markdown h5 {
   gap: 16px;
   align-items: start;
   background:
-    radial-gradient(circle at top right, rgba(180, 92, 61, 0.12), transparent 34%),
+    radial-gradient(circle at top right, rgba(var(--brand-rgb), 0.12), transparent 34%),
     linear-gradient(180deg, var(--surface), var(--surface-2));
 }
 
 .reference-hero-card.is-theory {
   background:
-    radial-gradient(circle at top right, rgba(180, 92, 61, 0.12), transparent 33%),
+    radial-gradient(circle at top right, rgba(var(--brand-rgb), 0.12), transparent 33%),
     radial-gradient(circle at bottom left, rgba(93, 110, 58, 0.1), transparent 36%),
     linear-gradient(180deg, rgba(255, 252, 248, 0.96), rgba(250, 244, 236, 0.94));
-  border-color: rgba(180, 92, 61, 0.18);
+  border-color: rgba(var(--brand-rgb), 0.18);
 }
 
 .reference-hero-copy {
@@ -1903,12 +1903,12 @@ body.tg-theme-dark .detail-markdown h5 {
 .concept-card {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(250, 245, 238, 0.98));
-  border-color: rgba(180, 92, 61, 0.18);
+  border-color: rgba(var(--brand-rgb), 0.18);
   color: #1c1510;
 }
 
 .concept-card::before {
-  background: linear-gradient(90deg, rgba(180, 92, 61, 0.75), rgba(93, 110, 58, 0.72));
+  background: linear-gradient(90deg, rgba(var(--brand-rgb), 0.75), rgba(93, 110, 58, 0.72));
 }
 
 .concept-card .draft-topic {
@@ -1928,7 +1928,7 @@ body.tg-theme-dark .detail-markdown h5 {
   width: 18px;
   height: 18px;
   border-radius: 999px;
-  background: rgba(180, 92, 61, 0.12);
+  background: rgba(var(--brand-rgb), 0.12);
   color: var(--brand);
   font-size: 11px;
   line-height: 1;
@@ -1940,9 +1940,9 @@ body.tg-theme-dark .detail-markdown h5 {
 }
 
 body.tg-theme-dark .concept-card {
-  background: linear-gradient(180deg, rgba(180, 92, 61, 0.1), rgba(93, 110, 58, 0.06));
+  background: linear-gradient(180deg, rgba(var(--brand-rgb), 0.1), rgba(93, 110, 58, 0.06));
   color: var(--text);
-  border-color: rgba(180, 92, 61, 0.22);
+  border-color: rgba(var(--brand-rgb), 0.22);
 }
 
 .aroma-image {
@@ -2308,8 +2308,8 @@ body.tg-theme-dark .concept-card {
 .keyword-topic.active,
 .reels-card.active {
   border-color: var(--brand-border);
-  background: linear-gradient(180deg, rgba(180, 92, 61, 0.12), rgba(180, 92, 61, 0.05));
-  box-shadow: 0 10px 24px rgba(180, 92, 61, 0.12);
+  background: linear-gradient(180deg, rgba(var(--brand-rgb), 0.12), rgba(var(--brand-rgb), 0.05));
+  box-shadow: 0 10px 24px rgba(var(--brand-rgb), 0.12);
 }
 
 .plan-entries, .related-drafts { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }

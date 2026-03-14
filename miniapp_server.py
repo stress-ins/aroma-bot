@@ -3,9 +3,12 @@ from __future__ import annotations
 import asyncio
 import fcntl
 import hashlib
+import logging
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
@@ -69,7 +72,7 @@ async def _lifespan(app: FastAPI):  # noqa: ARG001
                     else:
                         asyncio.create_task(complete_reels_generation(draft.draft_id, draft.topic))
     except Exception:
-        pass  # Don't block startup if recovery fails
+        logger.exception("Startup recovery failed")
     yield
     if recovery_lock is not None:
         try:
