@@ -482,6 +482,7 @@ async def list_reference_cards(category: str) -> list[dict[str, str]]:
             "conditions_for_use": str(payload.get("conditions_for_use", "")),
             "category_group": str(payload.get("category_group", "")),
             "parent_group": str(payload.get("parent_group", "")),
+            "blend_category": str(payload.get("blend_category", "")),
         })
     return items
 
