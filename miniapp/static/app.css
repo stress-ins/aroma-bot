@@ -633,6 +633,7 @@ textarea,
 body.is-mobile-layout .detail-grid {
   max-width: 100%;
   overflow-x: clip;
+  padding-top: var(--tg-content-inset-top, env(safe-area-inset-top, 0px));
 }
 body.is-mobile-layout .detail-top {
   padding: var(--space-3) var(--space-4);
