@@ -86,12 +86,13 @@ async def run(dry_run: bool = False, force: bool = False) -> None:
     work_items: list[dict] = []
     for m in models:
         payload = m.payload or {}
-        for field, summary_field in [
-            ("therapeutic_properties", "therapeutic_properties_summary"),
-            ("history", "history_summary"),
+        for field, summary_field, min_len in [
+            ("therapeutic_properties", "therapeutic_properties_summary", MIN_CHARS),
+            ("history", "history_summary", MIN_CHARS),
+            ("psychological_properties", "psychological_properties_summary", 200),
         ]:
             text = str(payload.get(field, "") or "").strip()
-            if len(text) < MIN_CHARS:
+            if len(text) < min_len:
                 continue
             if not force and payload.get(summary_field):
                 continue  # already summarised
