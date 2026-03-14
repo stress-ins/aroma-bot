@@ -214,9 +214,14 @@ export function createReferencesModule(deps) {
     return `<section class="section"><h3>💧 Применение и дозировки</h3><div class="detail-preview applications-list">${rendered.join("")}</div></section>`;
   }
 
-  function renderCollapsibleSection(title, text, maxChars = 280) {
+  function renderCollapsibleSection(title, text, maxChars = 280, summary = null) {
     const str = String(text || "").trim();
     if (!str) return "";
+    const summaryStr = String(summary || "").trim();
+    // If an AI summary is available, show it as preview with full text expandable
+    if (summaryStr && summaryStr !== str) {
+      return `<section class="section"><h3>${escapeHtml(title)}</h3><div class="detail-preview">${escapeHtml(summaryStr)}</div><details class="description-collapsible"><summary class="description-toggle">▼ Подробнее</summary><div class="detail-preview description-full">${escapeHtml(str)}</div></details></section>`;
+    }
     if (str.length <= maxChars) {
       return `<section class="section"><h3>${escapeHtml(title)}</h3><div class="detail-preview">${escapeHtml(str)}</div></section>`;
     }
@@ -631,7 +636,7 @@ export function createReferencesModule(deps) {
           ${aromaSection('Ресурс "-"', reference.resource_values?.minus)}
           ${aromaSection("Какие вопросы поднимает", reference.questions)}
           ${aromaSection("Действие на НПС", reference.nps_effect)}
-          ${renderCollapsibleSection("Терапевтические свойства", reference.therapeutic_properties)}
+          ${renderCollapsibleSection("Терапевтические свойства", reference.therapeutic_properties, 280, reference.therapeutic_properties_summary)}
           ${renderCollapsibleSection("Влияние на здоровье", reference.health_effects)}
           ${renderCollapsibleSection("Влияние на ум", reference.mind_effect)}
           ${renderCollapsibleSection("Духовное и эмоциональное воздействие", reference.spiritual_emotional)}
@@ -642,7 +647,7 @@ export function createReferencesModule(deps) {
           ${renderApplicationsWithIcons(reference.applications)}
           ${renderCollapsibleSection("Меры предосторожности", reference.precautions)}
           ${aromaSection("Материалы курса", reference.course_notes)}
-          ${renderCollapsibleSection("Исторические сведения", reference.history)}
+          ${renderCollapsibleSection("Исторические сведения", reference.history, 280, reference.history_summary)}
         </div>
       `;
     }
