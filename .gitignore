@@ -19,3 +19,4 @@ data/*.json
 !data/pdf_oils_new.json
 !data/pdf_blends.json
 !data/pdf_symptoms.json
+!data/base_blends.json

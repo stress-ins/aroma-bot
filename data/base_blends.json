@@ -1,0 +1,4624 @@
+[
+  {
+    "slug": "smesh-ot-tugopodvizhnosti-shei",
+    "name": "Смесь от тугоподвижности шеи",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от тугоподвижности шеи",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при тугоподвижности шеи. Состав: PanAway, Майорана, Перечной мяты (3 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "PanAway",
+        "Marjoram",
+        "Peppermint"
+      ],
+      "ingredient_drops": [
+        5,
+        5,
+        3
+      ],
+      "ingredient_slugs": [
+        "panaway",
+        "marjoram",
+        "peppermint"
+      ],
+      "ingredient_names_ru": [
+        "PanAway",
+        "Майорана",
+        "Перечной мяты"
+      ],
+      "blend_category": "",
+      "category_group": "respiratory",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-boli-v-shee",
+    "name": "Смесь от боли в шее",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от боли в шее",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при боли в шее. Состав: Базилика, Грушанки, Кипариса, Перечной мяты (4 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Basil",
+        "Wintergreen",
+        "Cypress",
+        "Peppermint"
+      ],
+      "ingredient_drops": [
+        7,
+        5,
+        4,
+        2
+      ],
+      "ingredient_slugs": [
+        "basil",
+        "wintergreen",
+        "cypress",
+        "peppermint"
+      ],
+      "ingredient_names_ru": [
+        "Базилика",
+        "Грушанки",
+        "Кипариса",
+        "Перечной мяты"
+      ],
+      "blend_category": "",
+      "category_group": "pain",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-golovnoj-boli-1",
+    "name": "Общая смесь от головной боли №1",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Общая смесь от головной боли №1",
+      "name_en": "Blend No.1",
+      "description": "Терапевтическая смесь эфирных масел при головной боли. Состав: Грушанки, Немецкой ромашки, Лаванды, Копаибы (4 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Wintergreen",
+        "German Chamomile",
+        "Lavender",
+        "Copaiba"
+      ],
+      "ingredient_drops": [
+        4,
+        3,
+        2,
+        2
+      ],
+      "ingredient_slugs": [
+        "wintergreen",
+        "german-chamomile",
+        "lavender",
+        "copaiba"
+      ],
+      "ingredient_names_ru": [
+        "Грушанки",
+        "Немецкой ромашки",
+        "Лаванды",
+        "Копаибы"
+      ],
+      "blend_category": "",
+      "category_group": "pain",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-golovnoj-boli-2",
+    "name": "Общая смесь от головной боли №2",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Общая смесь от головной боли №2",
+      "name_en": "Blend No.2",
+      "description": "Терапевтическая смесь эфирных масел при головной боли. Состав: Перечной мяты, Эвкалипта шаровидного, Мирры (3 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Peppermint",
+        "Eucalyptus Globulus",
+        "Myrrh"
+      ],
+      "ingredient_drops": [
+        6,
+        4,
+        2
+      ],
+      "ingredient_slugs": [
+        "peppermint",
+        "eucalyptus-globulus",
+        "myrrh"
+      ],
+      "ingredient_names_ru": [
+        "Перечной мяты",
+        "Эвкалипта шаровидного",
+        "Мирры"
+      ],
+      "blend_category": "",
+      "category_group": "pain",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-golovnojboli-pri-sinusite",
+    "name": "Смесь от головнойболи при синусите",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от головнойболи при синусите",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при головнойболи при синусите. Состав: Розмарина, Чайного дерева Мелалеуки чайной, Герани, Перечной мяты и др. (6 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Rosemary",
+        "Tea Tree Melaleuca Alternifolia",
+        "Geranium",
+        "Peppermint",
+        "Eucalyptus Blue",
+        "Lavender"
+      ],
+      "ingredient_drops": [
+        9,
+        5,
+        4,
+        3,
+        2,
+        2
+      ],
+      "ingredient_slugs": [
+        "rosemary",
+        "tea-tree-melaleuca-alternifolia",
+        "geranium",
+        "peppermint",
+        "eucalyptus-blue",
+        "lavender"
+      ],
+      "ingredient_names_ru": [
+        "Розмарина",
+        "Чайного дерева Мелалеуки чайной",
+        "Герани",
+        "Перечной мяты",
+        "Голубого эвкалипта",
+        "Лаванды"
+      ],
+      "blend_category": "",
+      "category_group": "pain",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-volchanki",
+    "name": "Смесь от волчанки",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от волчанки",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при волчанки. Состав: Лаванды, Эвкалипта шаровидного, Мирры, Мускатного ореха (4 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Lavender",
+        "Eucalyptus Globulus",
+        "Myrrh",
+        "Nutmeg"
+      ],
+      "ingredient_drops": [
+        10,
+        4,
+        3,
+        3
+      ],
+      "ingredient_slugs": [
+        "lavender",
+        "eucalyptus-globulus",
+        "myrrh",
+        "nutmeg"
+      ],
+      "ingredient_names_ru": [
+        "Лаванды",
+        "Эвкалипта шаровидного",
+        "Мирры",
+        "Мускатного ореха"
+      ],
+      "blend_category": "",
+      "category_group": "immune",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-tsellyulita-1",
+    "name": "Смесь от целлюлита №1",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от целлюлита №1",
+      "name_en": "Blend No.1",
+      "description": "Терапевтическая смесь эфирных масел при целлюлита. Состав: Можжевельника, Лаванды, Апельсина, Бессмертника и др. (8 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Juniper",
+        "Лаванды",
+        "Orange",
+        "Helichrysum",
+        "Cypress",
+        "Patchouli",
+        "Кипариса",
+        "Rosemary"
+      ],
+      "ingredient_drops": [
+        5,
+        5,
+        3,
+        3,
+        3,
+        3,
+        4,
+        3
+      ],
+      "ingredient_slugs": [
+        "juniper",
+        "lavandy",
+        "orange",
+        "helichrysum",
+        "cypress",
+        "patchouli",
+        "kiparisa",
+        "rosemary"
+      ],
+      "ingredient_names_ru": [
+        "Можжевельника",
+        "Лаванды",
+        "Апельсина",
+        "Бессмертника",
+        "Кипариса",
+        "Пачули",
+        "Кипариса",
+        "Розмарин"
+      ],
+      "blend_category": "",
+      "category_group": "beauty",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-izzhogi",
+    "name": "Смесь от изжоги",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от изжоги",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при изжоги. Состав: Шалфея, Сандала, Базилика (3 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Sage",
+        "Sandalwood",
+        "Basil"
+      ],
+      "ingredient_drops": [
+        8,
+        3,
+        2
+      ],
+      "ingredient_slugs": [
+        "sage",
+        "sandalwood",
+        "basil"
+      ],
+      "ingredient_names_ru": [
+        "Шалфея",
+        "Сандала",
+        "Базилика"
+      ],
+      "blend_category": "",
+      "category_group": "digestion",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-gemorroya-1",
+    "name": "Смесь от геморроя № 1",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от геморроя № 1",
+      "name_en": "Blend No.1",
+      "description": "Терапевтическая смесь эфирных масел при геморроя. Состав: Базилика, Кипариса (2 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Basil",
+        "Cypress"
+      ],
+      "ingredient_drops": [
+        4,
+        3
+      ],
+      "ingredient_slugs": [
+        "basil",
+        "cypress"
+      ],
+      "ingredient_names_ru": [
+        "Базилика",
+        "Кипариса"
+      ],
+      "blend_category": "",
+      "category_group": "digestion",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-gemorroya-2",
+    "name": "Смесь от геморроя №2",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от геморроя №2",
+      "name_en": "Blend No.2",
+      "description": "Терапевтическая смесь эфирных масел при геморроя. Состав: Мирры, Бессмертника (2 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Myrrh",
+        "Helichrysum"
+      ],
+      "ingredient_drops": [
+        4,
+        2
+      ],
+      "ingredient_slugs": [
+        "myrrh",
+        "helichrysum"
+      ],
+      "ingredient_names_ru": [
+        "Мирры",
+        "Бессмертника"
+      ],
+      "blend_category": "",
+      "category_group": "digestion",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-diarei",
+    "name": "Смесь от диареи",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от диареи",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при диареи. Состав: Лимона, Горного чабра, Грушанки (3 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Lemon",
+        "Mountain Savory",
+        "Wintergreen"
+      ],
+      "ingredient_drops": [
+        4,
+        3,
+        2
+      ],
+      "ingredient_slugs": [
+        "lemon",
+        "mountain-savory",
+        "wintergreen"
+      ],
+      "ingredient_names_ru": [
+        "Лимона",
+        "Горного чабра",
+        "Грушанки"
+      ],
+      "blend_category": "",
+      "category_group": "health",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-divertikulita",
+    "name": "Смесь от дивертикулита",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от дивертикулита",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при дивертикулита. Состав: DiGize, Melrose (2 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "DiGize",
+        "Melrose"
+      ],
+      "ingredient_drops": [
+        15,
+        5
+      ],
+      "ingredient_slugs": [
+        "digize",
+        "melrose"
+      ],
+      "ingredient_names_ru": [
+        "DiGize",
+        "Melrose"
+      ],
+      "blend_category": "",
+      "category_group": "digestion",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-dizenterii",
+    "name": "Смесь от дизентерии",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от дизентерии",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при дизентерии. Состав: DiGize, Перечной мяты (2 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "DiGize",
+        "Peppermint"
+      ],
+      "ingredient_drops": [
+        5,
+        5
+      ],
+      "ingredient_slugs": [
+        "digize",
+        "peppermint"
+      ],
+      "ingredient_names_ru": [
+        "DiGize",
+        "Перечной мяты"
+      ],
+      "blend_category": "",
+      "category_group": "digestion",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-kolita-tolstoj-kishki",
+    "name": "Смесь от колита толстой кишки",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от колита толстой кишки",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при колита толстой кишки. Состав: Найоли, Орегано, Чабреца Thyme, Немецкой ромашки и др. (6 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Niaouli",
+        "Oregano",
+        "Thyme",
+        "German Chamomile",
+        "Melissa",
+        "Peppermint"
+      ],
+      "ingredient_drops": [
+        3,
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "ingredient_slugs": [
+        "niaouli",
+        "oregano",
+        "thyme",
+        "german-chamomile",
+        "melissa",
+        "peppermint"
+      ],
+      "ingredient_names_ru": [
+        "Найоли",
+        "Орегано",
+        "Чабреца Thyme",
+        "Немецкой ромашки",
+        "Мелиссы",
+        "Перечной мяты"
+      ],
+      "blend_category": "",
+      "category_group": "digestion",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-podderzhki-pecheni",
+    "name": "Смесь для поддержки печени",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь для поддержки печени",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при поддержки печени. Состав: Апельсина, Розмарина, Семян моркови, Немецкой ромашки (4 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Orange",
+        "Rosemary",
+        "Carrot Seed",
+        "German Chamomile"
+      ],
+      "ingredient_drops": [
+        10,
+        5,
+        3,
+        2
+      ],
+      "ingredient_slugs": [
+        "orange",
+        "rosemary",
+        "carrot-seed",
+        "german-chamomile"
+      ],
+      "ingredient_names_ru": [
+        "Апельсина",
+        "Розмарина",
+        "Семян моркови",
+        "Немецкой ромашки"
+      ],
+      "blend_category": "",
+      "category_group": "detox",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-anevrizma",
+    "name": "Смесь от аневризма",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от аневризма",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при аневризма. Состав: Ладанника (1 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Cistus"
+      ],
+      "ingredient_drops": [
+        5
+      ],
+      "ingredient_slugs": [
+        "cistus"
+      ],
+      "ingredient_names_ru": [
+        "Ладанника"
+      ],
+      "blend_category": "",
+      "category_group": "cardiovascular",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-varikoznogo-rasshireniya-ven",
+    "name": "Смесь от варикозного расширения вен",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от варикозного расширения вен",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при варикозного расширения вен. Состав: Герани (1 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Geranium"
+      ],
+      "ingredient_drops": [
+        4
+      ],
+      "ingredient_slugs": [
+        "geranium"
+      ],
+      "ingredient_names_ru": [
+        "Герани"
+      ],
+      "blend_category": "",
+      "category_group": "cardiovascular",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-ushibov-1",
+    "name": "Смесь от ушибов №1",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от ушибов №1",
+      "name_en": "Blend No.1",
+      "description": "Терапевтическая смесь эфирных масел при ушибов. Состав: Бессмертника, Лаванды, Кипариса, Ладанника и др. (6 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Helichrysum",
+        "Lavender",
+        "Cypress",
+        "Cistus",
+        "Geranium",
+        "Cypress"
+      ],
+      "ingredient_drops": [
+        5,
+        4,
+        3,
+        3,
+        3,
+        2
+      ],
+      "ingredient_slugs": [
+        "helichrysum",
+        "lavender",
+        "cypress",
+        "cistus",
+        "geranium",
+        "cypress"
+      ],
+      "ingredient_names_ru": [
+        "Бессмертника",
+        "Лаванды",
+        "Кипариса",
+        "Ладанника",
+        "Герани",
+        "Кипариса"
+      ],
+      "blend_category": "",
+      "category_group": "pain",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-ushibov-2",
+    "name": "Смесь от ушибов №2",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от ушибов №2",
+      "name_en": "Blend No.2",
+      "description": "Терапевтическая смесь эфирных масел при ушибов. Состав: Гвоздики, Черного перца, Перечной мяты, Майорана и др. (5 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Clove",
+        "Black pepper",
+        "Peppermint",
+        "Marjoram",
+        "Geranium"
+      ],
+      "ingredient_drops": [
+        6,
+        4,
+        3,
+        2,
+        2
+      ],
+      "ingredient_slugs": [
+        "clove",
+        "black-pepper",
+        "peppermint",
+        "marjoram",
+        "geranium"
+      ],
+      "ingredient_names_ru": [
+        "Гвоздики",
+        "Черного перца",
+        "Перечной мяты",
+        "Майорана",
+        "Герани"
+      ],
+      "blend_category": "",
+      "category_group": "pain",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-flebita",
+    "name": "Смесь от флебита",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от флебита",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при флебита. Состав: Мандарина, Лимона, Кипариса, Можжевельника (4 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Tangerine",
+        "Lemon",
+        "Cypress",
+        "Juniper"
+      ],
+      "ingredient_drops": [
+        10,
+        7,
+        5,
+        4
+      ],
+      "ingredient_slugs": [
+        "tangerine",
+        "lemon",
+        "cypress",
+        "juniper"
+      ],
+      "ingredient_names_ru": [
+        "Мандарина",
+        "Лимона",
+        "Кипариса",
+        "Можжевельника"
+      ],
+      "blend_category": "",
+      "category_group": "cardiovascular",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-snizheniya-urovnya-kholesterina",
+    "name": "Смесь для снижения уровня холестерина",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь для снижения уровня холестерина",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при снижения уровня холестерина. Состав: Римской ромашки, Лемонграсса, Розмарина, Бессмертника (4 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Roman Chamomile",
+        "Lemongrass",
+        "Rosemary",
+        "Helichrysum"
+      ],
+      "ingredient_drops": [
+        5,
+        5,
+        4,
+        3
+      ],
+      "ingredient_slugs": [
+        "roman-chamomile",
+        "lemongrass",
+        "rosemary",
+        "helichrysum"
+      ],
+      "ingredient_names_ru": [
+        "Римской ромашки",
+        "Лемонграсса",
+        "Розмарина",
+        "Бессмертника"
+      ],
+      "blend_category": "",
+      "category_group": "cardiovascular",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-boli-v-gorle-1",
+    "name": "Смесь от боли в горле №1",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от боли в горле №1",
+      "name_en": "Blend No.1",
+      "description": "Терапевтическая смесь эфирных масел при боли в горле. Состав: Чабреца, Кипариса, Грушанки (3 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Thyme",
+        "Cypress",
+        "Wintergreen"
+      ],
+      "ingredient_drops": [
+        2,
+        2,
+        2
+      ],
+      "ingredient_slugs": [
+        "thyme",
+        "cypress",
+        "wintergreen"
+      ],
+      "ingredient_names_ru": [
+        "Чабреца",
+        "Кипариса",
+        "Грушанки"
+      ],
+      "blend_category": "",
+      "category_group": "pain",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-boli-v-gorle-2",
+    "name": "Смесь от боли в горле №2",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от боли в горле №2",
+      "name_en": "Blend No.2",
+      "description": "Терапевтическая смесь эфирных масел при боли в горле. Состав: Лимона, Эвкалипта шаровидного (2 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Lemon",
+        "Eucalyptus Globulus"
+      ],
+      "ingredient_drops": [
+        5,
+        2
+      ],
+      "ingredient_slugs": [
+        "lemon",
+        "eucalyptus-globulus"
+      ],
+      "ingredient_names_ru": [
+        "Лимона",
+        "Эвкалипта шаровидного"
+      ],
+      "blend_category": "",
+      "category_group": "pain",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-ostrogo-faringita",
+    "name": "Смесь от острого фарингита",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от острого фарингита",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при острого фарингита. Состав: Лаванды, Орегано (2 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Lavender",
+        "Oregano"
+      ],
+      "ingredient_drops": [
+        6,
+        2
+      ],
+      "ingredient_slugs": [
+        "lavender",
+        "oregano"
+      ],
+      "ingredient_names_ru": [
+        "Лаванды",
+        "Орегано"
+      ],
+      "blend_category": "",
+      "category_group": "respiratory",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-bronkhita-1",
+    "name": "Смесь от бронхита №1",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от бронхита №1",
+      "name_en": "Blend No.1",
+      "description": "Терапевтическая смесь эфирных масел при бронхита. Состав: Равинсары, Гвоздики, Мирры, Palo Santo (4 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Ravintsara",
+        "Clove",
+        "Myrrh",
+        "Пало Санто"
+      ],
+      "ingredient_drops": [
+        6,
+        5,
+        4,
+        2
+      ],
+      "ingredient_slugs": [
+        "ravintsara",
+        "clove",
+        "myrrh",
+        ""
+      ],
+      "ingredient_names_ru": [
+        "Равинсары",
+        "Гвоздики",
+        "Мирры",
+        "Palo Santo"
+      ],
+      "blend_category": "",
+      "category_group": "respiratory",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-bronkhita-2",
+    "name": "Смесь от бронхита №2",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от бронхита №2",
+      "name_en": "Blend No.2",
+      "description": "Терапевтическая смесь эфирных масел при бронхита. Состав: Хиптиса пахучего, Голубого эвкалипта, Лаванды (3 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Dorado Azul",
+        "Eucalyptus Blue",
+        "Lavender"
+      ],
+      "ingredient_drops": [
+        10,
+        6,
+        5
+      ],
+      "ingredient_slugs": [
+        "dorado-azul",
+        "eucalyptus-blue",
+        "lavender"
+      ],
+      "ingredient_names_ru": [
+        "Хиптиса пахучего",
+        "Голубого эвкалипта",
+        "Лаванды"
+      ],
+      "blend_category": "",
+      "category_group": "respiratory",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-krovi-iz-nosa",
+    "name": "Смесь при крови из носа",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь при крови из носа",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при крови из носа. Состав: Бессмертника, Ладанника, Кипариса (3 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Helichrysum",
+        "Cistus",
+        "Cypress"
+      ],
+      "ingredient_drops": [
+        3,
+        2,
+        2
+      ],
+      "ingredient_slugs": [
+        "helichrysum",
+        "cistus",
+        "cypress"
+      ],
+      "ingredient_names_ru": [
+        "Бессмертника",
+        "Ладанника",
+        "Кипариса"
+      ],
+      "blend_category": "",
+      "category_group": "respiratory",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-sukhosti-nosa",
+    "name": "Смесь от сухости носа",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от сухости носа",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при сухости носа. Состав: Лаванды (1 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Lavender"
+      ],
+      "ingredient_drops": [
+        2
+      ],
+      "ingredient_slugs": [
+        "lavender"
+      ],
+      "ingredient_names_ru": [
+        "Лаванды"
+      ],
+      "blend_category": "",
+      "category_group": "respiratory",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-kashlya",
+    "name": "Смесь от кашля",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от кашля",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при кашля. Состав: Эвкалипта шаровидного (1 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Eucalyptus 3 капли Эвкалипта лучистого (Eucalyptus Radiata"
+      ],
+      "ingredient_drops": [
+        10
+      ],
+      "ingredient_slugs": [
+        "eucalyptus-3-eucalyptus-radiata"
+      ],
+      "ingredient_names_ru": [
+        "Эвкалипта шаровидного"
+      ],
+      "blend_category": "",
+      "category_group": "respiratory",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-sukhogo-kashlya",
+    "name": "Смесь от сухого кашля",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от сухого кашля",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при сухого кашля. Состав: Лимона (1 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Lemon"
+      ],
+      "ingredient_drops": [
+        2
+      ],
+      "ingredient_slugs": [
+        "lemon"
+      ],
+      "ingredient_names_ru": [
+        "Лимона"
+      ],
+      "blend_category": "",
+      "category_group": "respiratory",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-pnevmonii",
+    "name": "Смесь от пневмонии",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от пневмонии",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при пневмонии. Состав: Эвкалипта шаровидного, Равинсары, Орегано, Хиптиса пахучего (4 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Eucalyptus Globulus",
+        "Ravintsara",
+        "Oregano",
+        "Dorado Azul"
+      ],
+      "ingredient_drops": [
+        10,
+        8,
+        2,
+        2
+      ],
+      "ingredient_slugs": [
+        "eucalyptus-globulus",
+        "ravintsara",
+        "oregano",
+        "dorado-azul"
+      ],
+      "ingredient_names_ru": [
+        "Эвкалипта шаровидного",
+        "Равинсары",
+        "Орегано",
+        "Хиптиса пахучего"
+      ],
+      "blend_category": "",
+      "category_group": "respiratory",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-oteka",
+    "name": "Смесь от отека (общая)",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от отека (общая)",
+      "name_en": "Blend (общая)",
+      "description": "Терапевтическая смесь эфирных масел при отека (общая). Состав: Грушанки, Мандарина, Фенхеля, Пачули (4 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Wintergreen",
+        "Tangerine",
+        "Fennel",
+        "Patchouli"
+      ],
+      "ingredient_drops": [
+        10,
+        8,
+        6,
+        3
+      ],
+      "ingredient_slugs": [
+        "wintergreen",
+        "tangerine",
+        "fennel",
+        "patchouli"
+      ],
+      "ingredient_names_ru": [
+        "Грушанки",
+        "Мандарина",
+        "Фенхеля",
+        "Пачули"
+      ],
+      "blend_category": "",
+      "category_group": "cardiovascular",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-oteka-2",
+    "name": "Смесь от отека (утренняя)",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от отека (утренняя)",
+      "name_en": "Blend (утренняя)",
+      "description": "Терапевтическая смесь эфирных масел при отека (утренняя). Состав: Мандарина, Кипариса, Бессмертника (3 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Tangerine",
+        "Cypress",
+        "Бессмертника"
+      ],
+      "ingredient_drops": [
+        10,
+        10,
+        5
+      ],
+      "ingredient_slugs": [
+        "tangerine",
+        "cypress",
+        "bessmertnika"
+      ],
+      "ingredient_names_ru": [
+        "Мандарина",
+        "Кипариса",
+        "Бессмертника"
+      ],
+      "blend_category": "",
+      "category_group": "cardiovascular",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-oteka-3",
+    "name": "Смесь от отека (вечерняя)",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от отека (вечерняя)",
+      "name_en": "Blend (вечерняя)",
+      "description": "Терапевтическая смесь эфирных масел при отека (вечерняя). Состав: Герани, Кипариса, Можжевельника (3 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Geranium",
+        "Cypress",
+        "Juniper"
+      ],
+      "ingredient_drops": [
+        8,
+        5,
+        4
+      ],
+      "ingredient_slugs": [
+        "geranium",
+        "cypress",
+        "juniper"
+      ],
+      "ingredient_names_ru": [
+        "Герани",
+        "Кипариса",
+        "Можжевельника"
+      ],
+      "blend_category": "",
+      "category_group": "cardiovascular",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-podagry",
+    "name": "Смесь от подагры",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от подагры",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при подагры. Состав: Лимона, Голубой ели Айдахо, Можжевельника, Чайного дерева и др. (5 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Lemon",
+        "Idaho Blue Spruce",
+        "Juniper",
+        "Tea Tree",
+        "Roman Chamomile"
+      ],
+      "ingredient_drops": [
+        10,
+        5,
+        4,
+        4,
+        2
+      ],
+      "ingredient_slugs": [
+        "lemon",
+        "idaho-blue-spruce",
+        "juniper",
+        "tea-tree",
+        "roman-chamomile"
+      ],
+      "ingredient_names_ru": [
+        "Лимона",
+        "Голубой ели Айдахо",
+        "Можжевельника",
+        "Чайного дерева",
+        "Римской ромашки"
+      ],
+      "blend_category": "",
+      "category_group": "pain",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-rastyazhenij",
+    "name": "Смесь от растяжений",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от растяжений",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при растяжений. Состав: Aroma Siez (1 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Aroma Siez"
+      ],
+      "ingredient_drops": [
+        15
+      ],
+      "ingredient_slugs": [
+        "aroma-siez"
+      ],
+      "ingredient_names_ru": [
+        "Aroma Siez"
+      ],
+      "blend_category": "",
+      "category_group": "pain",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-vospalenii-soedinitelnoj-tkani",
+    "name": "Смесь при воспалении соединительной ткани",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь при воспалении соединительной ткани",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при воспалении соединительной ткани. Состав: Базилика, Грушанки, Кипариса, Перечной мяты (4 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Basil",
+        "Wintergreen",
+        "Cypress",
+        "Peppermint"
+      ],
+      "ingredient_drops": [
+        10,
+        8,
+        6,
+        3
+      ],
+      "ingredient_slugs": [
+        "basil",
+        "wintergreen",
+        "cypress",
+        "peppermint"
+      ],
+      "ingredient_names_ru": [
+        "Базилика",
+        "Грушанки",
+        "Кипариса",
+        "Перечной мяты"
+      ],
+      "blend_category": "",
+      "category_group": "health",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-tendinita-1",
+    "name": "Смесь от тендинита №1",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от тендинита №1",
+      "name_en": "Blend No.1",
+      "description": "Терапевтическая смесь эфирных масел при тендинита. Состав: Грушанки Wintergreen, Ветивера, Валерианы, Пало Санто (4 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Грушанки Wintergreen",
+        "Vetiver",
+        "Valerian",
+        "Palo Santo"
+      ],
+      "ingredient_drops": [
+        8,
+        4,
+        4,
+        5
+      ],
+      "ingredient_slugs": [
+        "grushanki-wintergreen",
+        "vetiver",
+        "valerian",
+        "palo-santo"
+      ],
+      "ingredient_names_ru": [
+        "Грушанки Wintergreen",
+        "Ветивера",
+        "Валерианы",
+        "Пало Санто"
+      ],
+      "blend_category": "",
+      "category_group": "pain",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-tendinita-n-2",
+    "name": "Смесь от тендинита .N\"«2 (для снятия боли)",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от тендинита .N\"«2 (для снятия боли)",
+      "name_en": "Blend (для снятия боли)",
+      "description": "Терапевтическая смесь эфирных масел при тендинита .N\"«2 (для снятия боли). Состав: Розмарина, Эвкалипта лучистого, Перечной мяты (3 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Rosemary",
+        "Eucalyptus Radiata",
+        "Peppermint"
+      ],
+      "ingredient_drops": [
+        10,
+        10,
+        10
+      ],
+      "ingredient_slugs": [
+        "rosemary",
+        "eucalyptus-radiata",
+        "peppermint"
+      ],
+      "ingredient_names_ru": [
+        "Розмарина",
+        "Эвкалипта лучистого",
+        "Перечной мяты"
+      ],
+      "blend_category": "",
+      "category_group": "pain",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-khryaschej",
+    "name": "Смесь для хрящей",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь для хрящей",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при хрящей. Состав: Грушанки, Майорана, Лемонграсса (3 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Wintergreen",
+        "Marjoram",
+        "Lemongrass"
+      ],
+      "ingredient_drops": [
+        12,
+        10,
+        9
+      ],
+      "ingredient_slugs": [
+        "wintergreen",
+        "marjoram",
+        "lemongrass"
+      ],
+      "ingredient_names_ru": [
+        "Грушанки",
+        "Майорана",
+        "Лемонграсса"
+      ],
+      "blend_category": "",
+      "category_group": "health",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-boli-v-sustavakh-1",
+    "name": "Смесь при боли в суставах №1",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь при боли в суставах №1",
+      "name_en": "Blend No.1",
+      "description": "Терапевтическая смесь эфирных масел при боли в суставах. Состав: Пихты бальзамической Айдахо, Грушанки, Ветивера, Голубой ромашки (4 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Idaho Balsam Fir",
+        "Wintergreen",
+        "Vetiver",
+        "Blue Chamomile"
+      ],
+      "ingredient_drops": [
+        7,
+        4,
+        3,
+        2
+      ],
+      "ingredient_slugs": [
+        "idaho-balsam-fir",
+        "wintergreen",
+        "vetiver",
+        "blue-chamomile"
+      ],
+      "ingredient_names_ru": [
+        "Пихты бальзамической Айдахо",
+        "Грушанки",
+        "Ветивера",
+        "Голубой ромашки"
+      ],
+      "blend_category": "",
+      "category_group": "pain",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-boli-v-sustavakh-2",
+    "name": "Смесь при боли в суставах №2",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь при боли в суставах №2",
+      "name_en": "Blend No.2",
+      "description": "Терапевтическая смесь эфирных масел при боли в суставах. Состав: Майорана, Голубой ели Айдахо, Розмарина (3 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Marjoram",
+        "Idaho Blue Spruce",
+        "Rosemary"
+      ],
+      "ingredient_drops": [
+        5,
+        5,
+        2
+      ],
+      "ingredient_slugs": [
+        "marjoram",
+        "idaho-blue-spruce",
+        "rosemary"
+      ],
+      "ingredient_names_ru": [
+        "Майорана",
+        "Голубой ели Айдахо",
+        "Розмарина"
+      ],
+      "blend_category": "",
+      "category_group": "pain",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-perelomakh-1",
+    "name": "Смесь при переломах № 1",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь при переломах № 1",
+      "name_en": "Blend No.1",
+      "description": "Терапевтическая смесь эфирных масел при переломах. Состав: Пихты бальзамической Айдахо, Бессмертника, Ветивера, Бессмертника (4 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Balsam Fir Idaho",
+        "Helichrysum",
+        "Vetiver",
+        "Helichrysum"
+      ],
+      "ingredient_drops": [
+        8,
+        6,
+        4,
+        3
+      ],
+      "ingredient_slugs": [
+        "balsam-fir-idaho",
+        "helichrysum",
+        "vetiver",
+        "helichrysum"
+      ],
+      "ingredient_names_ru": [
+        "Пихты бальзамической Айдахо",
+        "Бессмертника",
+        "Ветивера",
+        "Бессмертника"
+      ],
+      "blend_category": "",
+      "category_group": "health",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-perelomakh-2",
+    "name": "Смесь при переломах № 2",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь при переломах № 2",
+      "name_en": "Blend No.2",
+      "description": "Терапевтическая смесь эфирных масел при переломах. Состав: Грушанки, Пало Санто, Сосны, Лемонграсса (4 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Wintergreen",
+        "Palo Santo",
+        "Pine",
+        "Lemongrass"
+      ],
+      "ingredient_drops": [
+        10,
+        4,
+        3,
+        2
+      ],
+      "ingredient_slugs": [
+        "wintergreen",
+        "palo-santo",
+        "pine",
+        "lemongrass"
+      ],
+      "ingredient_names_ru": [
+        "Грушанки",
+        "Пало Санто",
+        "Сосны",
+        "Лемонграсса"
+      ],
+      "blend_category": "",
+      "category_group": "health",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-boli-v-stopakh",
+    "name": "Смесь от боли в стопах",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от боли в стопах",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при боли в стопах. Состав: Грушанки, Перечной мяты, Немецкой ромашки, Голубой ели Айдахо (4 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Wintergreen",
+        "Peppermint",
+        "German Chamomile",
+        "Idaho Blue Spruce"
+      ],
+      "ingredient_drops": [
+        5,
+        3,
+        2,
+        2
+      ],
+      "ingredient_slugs": [
+        "wintergreen",
+        "peppermint",
+        "german-chamomile",
+        "idaho-blue-spruce"
+      ],
+      "ingredient_names_ru": [
+        "Грушанки",
+        "Перечной мяты",
+        "Немецкой ромашки",
+        "Голубой ели Айдахо"
+      ],
+      "blend_category": "",
+      "category_group": "pain",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-mozolej",
+    "name": "Смесь от мозолей",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от мозолей",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при мозолей. Состав: Базилика, Мирры, Кипариса (3 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Basil",
+        "Myrrh",
+        "Cypress"
+      ],
+      "ingredient_drops": [
+        4,
+        2,
+        2
+      ],
+      "ingredient_slugs": [
+        "basil",
+        "myrrh",
+        "cypress"
+      ],
+      "ingredient_names_ru": [
+        "Базилика",
+        "Мирры",
+        "Кипариса"
+      ],
+      "blend_category": "",
+      "category_group": "pain",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-shishek-na-naruzhnoj-storone-bolshogo-paltsa-nogi",
+    "name": "Смесь от шишек на наружной стороне большого пальца ноги",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от шишек на наружной стороне большого пальца ноги",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при шишек на наружной стороне большого пальца ноги. Состав: Эвкалипта лучистого, Raven, Лимона (3 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Eucalyptus Radiata",
+        "Raven",
+        "Lemon"
+      ],
+      "ingredient_drops": [
+        6,
+        4,
+        3
+      ],
+      "ingredient_slugs": [
+        "eucalyptus-radiata",
+        "raven",
+        "lemon"
+      ],
+      "ingredient_names_ru": [
+        "Эвкалипта лучистого",
+        "Raven",
+        "Лимона"
+      ],
+      "blend_category": "",
+      "category_group": "health",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-epidermofitii-stopy",
+    "name": "Смесь от эпидермофитии стопы",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от эпидермофитии стопы",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при эпидермофитии стопы. Состав: Мелалеуки чайной, Перечной мяты, Горного чабра (3 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Мелалеуки чайной",
+        "Peppermint",
+        "Mountain Savory"
+      ],
+      "ingredient_drops": [
+        8,
+        4,
+        2
+      ],
+      "ingredient_slugs": [
+        "melaleuki-chajnoj",
+        "peppermint",
+        "mountain-savory"
+      ],
+      "ingredient_names_ru": [
+        "Мелалеуки чайной",
+        "Перечной мяты",
+        "Горного чабра"
+      ],
+      "blend_category": "",
+      "category_group": "pain",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-boli-v-myshtsakh-1",
+    "name": "Смесь при боли в мышцах №1",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь при боли в мышцах №1",
+      "name_en": "Blend No.1",
+      "description": "Терапевтическая смесь эфирных масел при боли в мышцах. Состав: Пихты бальзамической Айдахо, Майорана, Базилика, Розмарина (4 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Idaho Balsam Fir",
+        "Marjoram",
+        "Basil",
+        "Rosemary"
+      ],
+      "ingredient_drops": [
+        5,
+        4,
+        4,
+        2
+      ],
+      "ingredient_slugs": [
+        "idaho-balsam-fir",
+        "marjoram",
+        "basil",
+        "rosemary"
+      ],
+      "ingredient_names_ru": [
+        "Пихты бальзамической Айдахо",
+        "Майорана",
+        "Базилика",
+        "Розмарина"
+      ],
+      "blend_category": "",
+      "category_group": "pain",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-boli-v-myshtsakh-2",
+    "name": "Смесь от боли в мышцах №2",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от боли в мышцах №2",
+      "name_en": "Blend No.2",
+      "description": "Терапевтическая смесь эфирных масел при боли в мышцах. Состав: Сосны, Розмарина, Имбиря (3 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Pine",
+        "Rosemary",
+        "Ginger"
+      ],
+      "ingredient_drops": [
+        5,
+        4,
+        4
+      ],
+      "ingredient_slugs": [
+        "pine",
+        "rosemary",
+        "ginger"
+      ],
+      "ingredient_names_ru": [
+        "Сосны",
+        "Розмарина",
+        "Имбиря"
+      ],
+      "blend_category": "",
+      "category_group": "pain",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-boli-v-spine",
+    "name": "Смесь от боли в спине",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от боли в спине",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при боли в спине. Состав: Грушанки, Лаванды, Пихты бальзамической Айдахо, Майорана (4 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Wintergreen",
+        "Lavender",
+        "Balsam Fir Idaho",
+        "Marjoram"
+      ],
+      "ingredient_drops": [
+        5,
+        3,
+        3,
+        2
+      ],
+      "ingredient_slugs": [
+        "wintergreen",
+        "lavender",
+        "balsam-fir-idaho",
+        "marjoram"
+      ],
+      "ingredient_names_ru": [
+        "Грушанки",
+        "Лаванды",
+        "Пихты бальзамической Айдахо",
+        "Майорана"
+      ],
+      "blend_category": "",
+      "category_group": "pain",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-travme-myshts",
+    "name": "Смесь при травме мышц",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь при травме мышц",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при травме мышц. Состав: Немецкий ромашки, Лаванды, Marjoram, Тысячелистника и др. (5 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "German Chamomile",
+        "Lavender",
+        "Майорана",
+        "Yarrow",
+        "Peppermint"
+      ],
+      "ingredient_drops": [
+        10,
+        8,
+        6,
+        3,
+        2
+      ],
+      "ingredient_slugs": [
+        "german-chamomile",
+        "lavender",
+        "",
+        "yarrow",
+        "peppermint"
+      ],
+      "ingredient_names_ru": [
+        "Немецкий ромашки",
+        "Лаванды",
+        "Marjoram",
+        "Тысячелистника",
+        "Перечной мяты"
+      ],
+      "blend_category": "",
+      "category_group": "pain",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-ukrepleniya-i-povysheniya-tonusa-myshts-1",
+    "name": "Смесь для укрепления и повышения тонуса мышц № 1:",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь для укрепления и повышения тонуса мышц № 1:",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при укрепления и повышения тонуса мышц № 1:. Состав: Голубого эвкалипта, Пихты бальзамической Айдахо, Можжевельника, Кипариса и др. (7 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Eucalyptus Blue",
+        "Пихты бальзамической Айдахо",
+        "Juniper",
+        "Cypress",
+        "Dorado azul",
+        "Helichrysum",
+        "Peppermint"
+      ],
+      "ingredient_drops": [
+        10,
+        10,
+        10,
+        10,
+        6,
+        5,
+        5
+      ],
+      "ingredient_slugs": [
+        "eucalyptus-blue",
+        "pikhty-balzamicheskoj-ajdakho",
+        "juniper",
+        "cypress",
+        "dorado-azul",
+        "helichrysum",
+        "peppermint"
+      ],
+      "ingredient_names_ru": [
+        "Голубого эвкалипта",
+        "Пихты бальзамической Айдахо",
+        "Можжевельника",
+        "Кипариса",
+        "Хиптиса пахучего",
+        "Бессмертника",
+        "Перечной мяты"
+      ],
+      "blend_category": "",
+      "category_group": "pain",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-ukrepleniya-i-povysheniya",
+    "name": "Смесь для укрепления и повышения",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь для укрепления и повышения",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при укрепления и повышения. Состав: Голубого эвкалипта, Майорана, Майорана, Элеми и др. (6 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Eucalyptus Blue",
+        "Marjoram",
+        "Marjoram",
+        "Elemi",
+        "Vetiver",
+        "Cypress"
+      ],
+      "ingredient_drops": [
+        20,
+        15,
+        10,
+        8,
+        8,
+        5
+      ],
+      "ingredient_slugs": [
+        "eucalyptus-blue",
+        "marjoram",
+        "marjoram",
+        "elemi",
+        "vetiver",
+        "cypress"
+      ],
+      "ingredient_names_ru": [
+        "Голубого эвкалипта",
+        "Майорана",
+        "Майорана",
+        "Элеми",
+        "Ветивера",
+        "Кипариса"
+      ],
+      "blend_category": "",
+      "category_group": "health",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-ukrepleniya-i-povysheniya-tonusa-myshts-2",
+    "name": "Смесь для укрепления и повышения тонуса мышц № 1:",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь для укрепления и повышения тонуса мышц № 1:",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при укрепления и повышения тонуса мышц № 1:. Состав: Голубого эвкалипта, Голубого эвкалипта, Майорана, Можжевельника и др. (7 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Eucalyptus Blue",
+        "Eucalyptus Blue",
+        "Marjoram",
+        "Juniper",
+        "Cypress",
+        "Dorado azul",
+        "Peppermint"
+      ],
+      "ingredient_drops": [
+        10,
+        20,
+        15,
+        10,
+        10,
+        6,
+        5
+      ],
+      "ingredient_slugs": [
+        "eucalyptus-blue",
+        "eucalyptus-blue",
+        "marjoram",
+        "juniper",
+        "cypress",
+        "dorado-azul",
+        "peppermint"
+      ],
+      "ingredient_names_ru": [
+        "Голубого эвкалипта",
+        "Голубого эвкалипта",
+        "Майорана",
+        "Можжевельника",
+        "Кипариса",
+        "Хиптиса пахучего",
+        "Перечной мяты"
+      ],
+      "blend_category": "",
+      "category_group": "pain",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-ukrepleniya-i-povysheniya-2",
+    "name": "Смесь для укрепления и повышения",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь для укрепления и повышения",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при укрепления и повышения. Состав: Пихты бальзамической Айдахо, Майорана, Элеми, Ветивера и др. (6 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Idaho Balsam Fir",
+        "Marjoram",
+        "Elemi",
+        "Vetiver",
+        "Helichrysum",
+        "Cypress"
+      ],
+      "ingredient_drops": [
+        10,
+        10,
+        8,
+        8,
+        5,
+        5
+      ],
+      "ingredient_slugs": [
+        "idaho-balsam-fir",
+        "marjoram",
+        "elemi",
+        "vetiver",
+        "helichrysum",
+        "cypress"
+      ],
+      "ingredient_names_ru": [
+        "Пихты бальзамической Айдахо",
+        "Майорана",
+        "Элеми",
+        "Ветивера",
+        "Бессмертника",
+        "Кипариса"
+      ],
+      "blend_category": "",
+      "category_group": "health",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-pamyati-1",
+    "name": "Смесь для Памяти № 1",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь для Памяти № 1",
+      "name_en": "Blend No.1",
+      "description": "Терапевтическая смесь эфирных масел при Памяти. Состав: Базилика, Розмарина, Бессмертника, Розмарина и др. (5 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Basil",
+        "Rosemary",
+        "Бессмертника",
+        "Rosemary",
+        "Tangerine"
+      ],
+      "ingredient_drops": [
+        5,
+        10,
+        4,
+        3,
+        2
+      ],
+      "ingredient_slugs": [
+        "basil",
+        "rosemary",
+        "bessmertnika",
+        "rosemary",
+        "tangerine"
+      ],
+      "ingredient_names_ru": [
+        "Базилика",
+        "Розмарина",
+        "Бессмертника",
+        "Розмарина",
+        "Мандарина"
+      ],
+      "blend_category": "",
+      "category_group": "nervous",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-pamyati-2",
+    "name": "Смесь для Памяти № 2",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь для Памяти № 2",
+      "name_en": "Blend No.2",
+      "description": "Терапевтическая смесь эфирных масел при Памяти. Состав: Лаванды, Герани, Палисандра, Перечной мяты и др. (5 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Lavender",
+        "Geranium",
+        "Rosewood",
+        "Peppermint",
+        "Cardamom"
+      ],
+      "ingredient_drops": [
+        4,
+        3,
+        3,
+        2,
+        2
+      ],
+      "ingredient_slugs": [
+        "lavender",
+        "geranium",
+        "rosewood",
+        "peppermint",
+        "cardamom"
+      ],
+      "ingredient_names_ru": [
+        "Лаванды",
+        "Герани",
+        "Палисандра",
+        "Перечной мяты",
+        "Кардамона"
+      ],
+      "blend_category": "",
+      "category_group": "nervous",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-tserebralnogo-paralicha",
+    "name": "Смесь от церебрального паралича",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от церебрального паралича",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при церебрального паралича. Состав: Священного Ладана, Мирры, Пихты бальзамической Айдахо, Канадского мелколепестника и др. (5 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Sacred Frankincense",
+        "Myrrh",
+        "Balsam Fir Idaho",
+        "Канадского мелколепестника",
+        "Peppermint"
+      ],
+      "ingredient_drops": [
+        15,
+        12,
+        10,
+        10,
+        4
+      ],
+      "ingredient_slugs": [
+        "sacred-frankincense",
+        "myrrh",
+        "balsam-fir-idaho",
+        "kanadskogo-melkolepestnika",
+        "peppermint"
+      ],
+      "ingredient_names_ru": [
+        "Священного Ладана",
+        "Мирры",
+        "Пихты бальзамической Айдахо",
+        "Канадского мелколепестника",
+        "Перечной мяты"
+      ],
+      "blend_category": "",
+      "category_group": "nervous",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-bas",
+    "name": "Смесь для БАС",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь для БАС",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при БАС. Состав: Розмарина, Гвоздики (2 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Rosemary",
+        "Clove"
+      ],
+      "ingredient_drops": [
+        3,
+        2
+      ],
+      "ingredient_slugs": [
+        "rosemary",
+        "clove"
+      ],
+      "ingredient_names_ru": [
+        "Розмарина",
+        "Гвоздики"
+      ],
+      "blend_category": "",
+      "category_group": "health",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-kistevogo-tunnelnogo-sindroma",
+    "name": "Смесь от кистевого туннельного синдрома",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от кистевого туннельного синдрома",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при кистевого туннельного синдрома. Состав: Грушанки, Кипариса, Мирры, Майорана (4 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Wintergreen",
+        "Cypress",
+        "Myrrh",
+        "Marjoram"
+      ],
+      "ingredient_drops": [
+        5,
+        3,
+        3,
+        2
+      ],
+      "ingredient_slugs": [
+        "wintergreen",
+        "cypress",
+        "myrrh",
+        "marjoram"
+      ],
+      "ingredient_names_ru": [
+        "Грушанки",
+        "Кипариса",
+        "Мирры",
+        "Майорана"
+      ],
+      "blend_category": "",
+      "category_group": "nervous",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-nevropatii-1",
+    "name": "Смесь от невропатии №1",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от невропатии №1",
+      "name_en": "Blend No.1",
+      "description": "Терапевтическая смесь эфирных масел при невропатии. Состав: Священного ладана, Конизы, Лаванды (3 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Sacred Frankincense",
+        "Conyza",
+        "Lavender"
+      ],
+      "ingredient_drops": [
+        3,
+        3,
+        3
+      ],
+      "ingredient_slugs": [
+        "sacred-frankincense",
+        "conyza",
+        "lavender"
+      ],
+      "ingredient_names_ru": [
+        "Священного ладана",
+        "Конизы",
+        "Лаванды"
+      ],
+      "blend_category": "",
+      "category_group": "nervous",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-nevropatii-2",
+    "name": "Смесь от невропатии №2",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от невропатии №2",
+      "name_en": "Blend No.2",
+      "description": "Терапевтическая смесь эфирных масел при невропатии. Состав: Герани, Герани, Перечной мяты (3 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Geranium",
+        "Geranium",
+        "Peppermint"
+      ],
+      "ingredient_drops": [
+        3,
+        3,
+        2
+      ],
+      "ingredient_slugs": [
+        "geranium",
+        "geranium",
+        "peppermint"
+      ],
+      "ingredient_names_ru": [
+        "Герани",
+        "Герани",
+        "Перечной мяты"
+      ],
+      "blend_category": "",
+      "category_group": "nervous",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-vosstanovleniya-nervov",
+    "name": "Смесь для восстановления нервов",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь для восстановления нервов",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при восстановления нервов. Состав: Можжевельника, Aroma Siez, Перечной мяты (3 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Juniper",
+        "Aroma Siez",
+        "Peppermint"
+      ],
+      "ingredient_drops": [
+        5,
+        3,
+        2
+      ],
+      "ingredient_slugs": [
+        "juniper",
+        "aroma-siez",
+        "peppermint"
+      ],
+      "ingredient_names_ru": [
+        "Можжевельника",
+        "Aroma Siez",
+        "Перечной мяты"
+      ],
+      "blend_category": "",
+      "category_group": "nervous",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-pc",
+    "name": "Смесь от PC",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от PC",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при PC. Состав: Герани, Розмарина, Бессмертника, Можжевельника (4 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Geranium",
+        "Rosemary",
+        "Helichrysum",
+        "Juniper"
+      ],
+      "ingredient_drops": [
+        4,
+        4,
+        2,
+        2
+      ],
+      "ingredient_slugs": [
+        "geranium",
+        "rosemary",
+        "helichrysum",
+        "juniper"
+      ],
+      "ingredient_names_ru": [
+        "Герани",
+        "Розмарина",
+        "Бессмертника",
+        "Можжевельника"
+      ],
+      "blend_category": "",
+      "category_group": "health",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-rodakh-ispolzujte-tolko-posle-nachala-rodov",
+    "name": "Смесь при родах (используйте только после начала родов).",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь при родах (используйте только после начала родов).",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при родах (используйте только после начала родов).. Состав: Иланг-иланга, Бессмертника, Фенхеля, Перечной мяты и др. (5 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Ylang Ylang",
+        "Helichrysum",
+        "Fennel",
+        "Peppermint",
+        "Clary Sage"
+      ],
+      "ingredient_drops": [
+        5,
+        4,
+        2,
+        2,
+        2
+      ],
+      "ingredient_slugs": [
+        "ylang-ylang",
+        "helichrysum",
+        "fennel",
+        "peppermint",
+        "clary-sage"
+      ],
+      "ingredient_names_ru": [
+        "Иланг-иланга",
+        "Бессмертника",
+        "Фенхеля",
+        "Перечной мяты",
+        "Шалфея мускатного"
+      ],
+      "blend_category": "",
+      "category_group": "health",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-grudi-1",
+    "name": "Смесь для Груди № 1",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь для Груди № 1",
+      "name_en": "Blend No.1",
+      "description": "Терапевтическая смесь эфирных масел при Груди. Состав: Тимьяна, PanAway, Копайбы (3 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Thyme",
+        "PanAway",
+        "Copaiba"
+      ],
+      "ingredient_drops": [
+        3,
+        7,
+        2
+      ],
+      "ingredient_slugs": [
+        "thyme",
+        "panaway",
+        "copaiba"
+      ],
+      "ingredient_names_ru": [
+        "Тимьяна",
+        "PanAway",
+        "Копайбы"
+      ],
+      "blend_category": "",
+      "category_group": "hormonal",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-grudi-3",
+    "name": "Смесь для Груди № 3",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь для Груди № 3",
+      "name_en": "Blend No.3",
+      "description": "Терапевтическая смесь эфирных масел при Груди. Состав: Мирры, Ветивера (2 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Myrrh",
+        "Vetiver"
+      ],
+      "ingredient_drops": [
+        3,
+        3
+      ],
+      "ingredient_slugs": [
+        "myrrh",
+        "vetiver"
+      ],
+      "ingredient_names_ru": [
+        "Мирры",
+        "Ветивера"
+      ],
+      "blend_category": "",
+      "category_group": "hormonal",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-grudi-2",
+    "name": "Смесь для Груди № 2",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь для Груди № 2",
+      "name_en": "Blend No.2",
+      "description": "Терапевтическая смесь эфирных масел при Груди. Состав: Лимона, Тимьяна, Мелиссы (3 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Lemon",
+        "Thyme",
+        "Melissa"
+      ],
+      "ingredient_drops": [
+        3,
+        4,
+        2
+      ],
+      "ingredient_slugs": [
+        "lemon",
+        "thyme",
+        "melissa"
+      ],
+      "ingredient_names_ru": [
+        "Лимона",
+        "Тимьяна",
+        "Мелиссы"
+      ],
+      "blend_category": "",
+      "category_group": "hormonal",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-grudi-4",
+    "name": "Смесь для Груди № 4",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь для Груди № 4",
+      "name_en": "Blend No.4",
+      "description": "Терапевтическая смесь эфирных масел при Груди. Состав: Мелиссы, Мирры (2 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Melissa",
+        "Myrrh"
+      ],
+      "ingredient_drops": [
+        4,
+        10
+      ],
+      "ingredient_slugs": [
+        "melissa",
+        "myrrh"
+      ],
+      "ingredient_names_ru": [
+        "Мелиссы",
+        "Мирры"
+      ],
+      "blend_category": "",
+      "category_group": "hormonal",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-kist-1",
+    "name": "Женская смесь от кист №1",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Женская смесь от кист №1",
+      "name_en": "Blend No.1",
+      "description": "Терапевтическая смесь эфирных масел при кист. Состав: Священного ладана (1 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Frankincense"
+      ],
+      "ingredient_drops": [
+        9
+      ],
+      "ingredient_slugs": [
+        "frankincense"
+      ],
+      "ingredient_names_ru": [
+        "Священного ладана"
+      ],
+      "blend_category": "",
+      "category_group": "hormonal",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-kist-2",
+    "name": "Женская смесь от кист №2",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Женская смесь от кист №2",
+      "name_en": "Blend No.2",
+      "description": "Терапевтическая смесь эфирных масел при кист. Состав: Священного ладана (1 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Sacred Frankincense"
+      ],
+      "ingredient_drops": [
+        4
+      ],
+      "ingredient_slugs": [
+        "sacred-frankincense"
+      ],
+      "ingredient_names_ru": [
+        "Священного ладана"
+      ],
+      "blend_category": "",
+      "category_group": "hormonal",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-oblegcheniya-menstrualnykh-spazmov",
+    "name": "Смесь для облегчения менструальных спазмов",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь для облегчения менструальных спазмов",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при облегчения менструальных спазмов. Состав: Dragon Time, хмеля (2 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Dragon Time",
+        "Хмеля обыкновенного,"
+      ],
+      "ingredient_drops": [
+        10,
+        5
+      ],
+      "ingredient_slugs": [
+        "dragon-time",
+        ""
+      ],
+      "ingredient_names_ru": [
+        "Dragon Time",
+        "хмеля"
+      ],
+      "blend_category": "",
+      "category_group": "hormonal",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-giperplazii-predstatelnoj-zhelezy",
+    "name": "Смесь от гиперплазии предстательной железы",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от гиперплазии предстательной железы",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при гиперплазии предстательной железы. Состав: Sacred Frankincense, Мирры, Шалфея (3 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Священного ладана",
+        "Myrrh",
+        "Sage"
+      ],
+      "ingredient_drops": [
+        10,
+        5,
+        3
+      ],
+      "ingredient_slugs": [
+        "",
+        "myrrh",
+        "sage"
+      ],
+      "ingredient_names_ru": [
+        "Sacred Frankincense",
+        "Мирры",
+        "Шалфея"
+      ],
+      "blend_category": "",
+      "category_group": "hormonal",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-regulirovki-menstruatsii-1",
+    "name": "Смесь для регулировки менструации № 1",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь для регулировки менструации № 1",
+      "name_en": "Blend No.1",
+      "description": "Терапевтическая смесь эфирных масел при регулировки менструации. Состав: Шалфея мускатного, Шалфея, Конизы, Жасмина (4 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Clary Sage",
+        "Sage",
+        "Conyza",
+        "Jasmine"
+      ],
+      "ingredient_drops": [
+        16,
+        11,
+        9,
+        5
+      ],
+      "ingredient_slugs": [
+        "clary-sage",
+        "sage",
+        "conyza",
+        "jasmine"
+      ],
+      "ingredient_names_ru": [
+        "Шалфея мускатного",
+        "Шалфея",
+        "Конизы",
+        "Жасмина"
+      ],
+      "blend_category": "",
+      "category_group": "hormonal",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-regulirovki-menstruatsii-2",
+    "name": "Смесь для регулировки менструации №2",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь для регулировки менструации №2",
+      "name_en": "Blend No.2",
+      "description": "Терапевтическая смесь эфирных масел при регулировки менструации. Состав: Римской ромашки, Фенхеля, Перечной мяты (3 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Roman Chamomile",
+        "Fennel",
+        "Peppermint"
+      ],
+      "ingredient_drops": [
+        10,
+        10,
+        5
+      ],
+      "ingredient_slugs": [
+        "roman-chamomile",
+        "fennel",
+        "peppermint"
+      ],
+      "ingredient_names_ru": [
+        "Римской ромашки",
+        "Фенхеля",
+        "Перечной мяты"
+      ],
+      "blend_category": "",
+      "category_group": "hormonal",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-obilnykh-menstrualnykh-krovotechenij",
+    "name": "Смесь от обильных менструальных кровотечений",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от обильных менструальных кровотечений",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при обильных менструальных кровотечений. Состав: Бессмертника, Ладанника (2 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Helichrysum",
+        "Cistus"
+      ],
+      "ingredient_drops": [
+        5,
+        5
+      ],
+      "ingredient_slugs": [
+        "helichrysum",
+        "cistus"
+      ],
+      "ingredient_names_ru": [
+        "Бессмертника",
+        "Ладанника"
+      ],
+      "blend_category": "",
+      "category_group": "hormonal",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-bessonitsy",
+    "name": "Смесь от бессоницы",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от бессоницы",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при бессоницы. Состав: Апельсина, Лаванды, Хиптиса пахучего, Валерианы и др. (5 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Orange",
+        "Lavender",
+        "Dorado Azul",
+        "Valerian",
+        "Roman Chamomile"
+      ],
+      "ingredient_drops": [
+        12,
+        8,
+        4,
+        3,
+        2
+      ],
+      "ingredient_slugs": [
+        "orange",
+        "lavender",
+        "dorado-azul",
+        "valerian",
+        "roman-chamomile"
+      ],
+      "ingredient_names_ru": [
+        "Апельсина",
+        "Лаванды",
+        "Хиптиса пахучего",
+        "Валерианы",
+        "Римской ромашки"
+      ],
+      "blend_category": "",
+      "category_group": "health",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-vaginalnoj-drozhzhevoj-infektsii",
+    "name": "Смесь от вагинальной дрожжевой инфекции",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от вагинальной дрожжевой инфекции",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при вагинальной дрожжевой инфекции. Состав: Чайного дерева, Горного чабра, Мирры (3 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Tea Tree",
+        "Mountain Savory",
+        "Myrrh"
+      ],
+      "ingredient_drops": [
+        7,
+        5,
+        2
+      ],
+      "ingredient_slugs": [
+        "tea-tree",
+        "mountain-savory",
+        "myrrh"
+      ],
+      "ingredient_names_ru": [
+        "Чайного дерева",
+        "Горного чабра",
+        "Мирры"
+      ],
+      "blend_category": "",
+      "category_group": "immune",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-gribka-kozhi",
+    "name": "Смесь от грибка кожи",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от грибка кожи",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при грибка кожи. Состав: Пачули, Лемонграсса, Найоли, Чайного дерева Мелалеуки чайной (4 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Patchouli",
+        "Lemongrass",
+        "Niaouli",
+        "Tea Тгее Melaleuca Alternifolia"
+      ],
+      "ingredient_drops": [
+        10,
+        5,
+        4,
+        2
+      ],
+      "ingredient_slugs": [
+        "patchouli",
+        "lemongrass",
+        "niaouli",
+        "tea-melaleuca-alternifolia"
+      ],
+      "ingredient_names_ru": [
+        "Пачули",
+        "Лемонграсса",
+        "Найоли",
+        "Чайного дерева Мелалеуки чайной"
+      ],
+      "blend_category": "",
+      "category_group": "immune",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-bakterii-kandida",
+    "name": "Смесь от бактерии кандида",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от бактерии кандида",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при бактерии кандида. Состав: Лемонграсса, Чабрец, Чайного дерева, Герани (4 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Lemongrass",
+        "Thyme",
+        "Tea Tree",
+        "Geranium"
+      ],
+      "ingredient_drops": [
+        5,
+        4,
+        4,
+        2
+      ],
+      "ingredient_slugs": [
+        "lemongrass",
+        "thyme",
+        "tea-tree",
+        "geranium"
+      ],
+      "ingredient_names_ru": [
+        "Лемонграсса",
+        "Чабрец",
+        "Чайного дерева",
+        "Герани"
+      ],
+      "blend_category": "",
+      "category_group": "immune",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-kozhnoj-bakterii-kandida",
+    "name": "Смесь от кожной бактерии кандида",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от кожной бактерии кандида",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при кожной бактерии кандида. Состав: Чайного дерева Мелалеуки чайной, Лаванды, Герани (3 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Tea Tree Melaleuca Alternifolia",
+        "Lavender",
+        "Geranium"
+      ],
+      "ingredient_drops": [
+        10,
+        4,
+        2
+      ],
+      "ingredient_slugs": [
+        "tea-tree-melaleuca-alternifolia",
+        "lavender",
+        "geranium"
+      ],
+      "ingredient_names_ru": [
+        "Чайного дерева Мелалеуки чайной",
+        "Лаванды",
+        "Герани"
+      ],
+      "blend_category": "",
+      "category_group": "immune",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-dlitelnogo-ispolzovaniya-dlya-borby-s-parazitami",
+    "name": "Смесь для длительного использования для борьбы с паразитами",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь для длительного использования для борьбы с паразитами",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при длительного использования для борьбы с паразитами. Состав: Имбиря, DiGize, комплекса V-6 (3 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Ginger",
+        "DiGize",
+        "комплекса V-6"
+      ],
+      "ingredient_drops": [
+        4,
+        4,
+        16
+      ],
+      "ingredient_slugs": [
+        "ginger",
+        "digize",
+        "kompleksa-v-6"
+      ],
+      "ingredient_names_ru": [
+        "Имбиря",
+        "DiGize",
+        "комплекса V-6"
+      ],
+      "blend_category": "",
+      "category_group": "immune",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-gerpesa-1",
+    "name": "Смесь от герпеса № 1 (локально)",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от герпеса № 1 (локально)",
+      "name_en": "Blend No.1 (локально)",
+      "description": "Терапевтическая смесь эфирных масел при герпеса № 1 (локально). Состав: Хиптиса пахучего, Чайного дерева Мелалеуки чайной (2 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Dorado Azul",
+        "Tea Tree Melaleuca alternifolia"
+      ],
+      "ingredient_drops": [
+        4,
+        2
+      ],
+      "ingredient_slugs": [
+        "dorado-azul",
+        "tea-tree-melaleuca-alternifolia"
+      ],
+      "ingredient_names_ru": [
+        "Хиптиса пахучего",
+        "Чайного дерева Мелалеуки чайной"
+      ],
+      "blend_category": "",
+      "category_group": "immune",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-gerpesa-2",
+    "name": "Смесь от герпеса № 2 (вагинально)",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от герпеса № 2 (вагинально)",
+      "name_en": "Blend No.2 (вагинально)",
+      "description": "Терапевтическая смесь эфирных масел при герпеса № 2 (вагинально). Состав: Хиптиса пахучего, Равинсары (2 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Dorado Azul",
+        "Ravintsara"
+      ],
+      "ingredient_drops": [
+        4,
+        3
+      ],
+      "ingredient_slugs": [
+        "dorado-azul",
+        "ravintsara"
+      ],
+      "ingredient_names_ru": [
+        "Хиптиса пахучего",
+        "Равинсары"
+      ],
+      "blend_category": "",
+      "category_group": "immune",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-opoyasyvayuschego-lishaya-1",
+    "name": "Смесь от опоясывающего лишая №1",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от опоясывающего лишая №1",
+      "name_en": "Blend No.1",
+      "description": "Терапевтическая смесь эфирных масел при опоясывающего лишая. Состав: Немецкой ромашки, Лаванды, Герани (3 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "German Chamomile",
+        "Lavender",
+        "Geranium"
+      ],
+      "ingredient_drops": [
+        10,
+        5,
+        2
+      ],
+      "ingredient_slugs": [
+        "german-chamomile",
+        "lavender",
+        "geranium"
+      ],
+      "ingredient_names_ru": [
+        "Немецкой ромашки",
+        "Лаванды",
+        "Герани"
+      ],
+      "blend_category": "",
+      "category_group": "immune",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-opoyasyvayuschego-lishaya-2",
+    "name": "Смесь от опоясывающего лишая №2",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от опоясывающего лишая №2",
+      "name_en": "Blend No.2",
+      "description": "Терапевтическая смесь эфирных масел при опоясывающего лишая. Состав: Сандала, Сандала, Равинсары (3 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Sandalwood",
+        "Sandalwood",
+        "Ravintsara"
+      ],
+      "ingredient_drops": [
+        10,
+        4,
+        2
+      ],
+      "ingredient_slugs": [
+        "sandalwood",
+        "sandalwood",
+        "ravintsara"
+      ],
+      "ingredient_names_ru": [
+        "Сандала",
+        "Сандала",
+        "Равинсары"
+      ],
+      "blend_category": "",
+      "category_group": "immune",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-mononukleoza",
+    "name": "Смесь от мононуклеоза",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от мононуклеоза",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при мононуклеоза. Состав: Thieves, Чабреца, Горного чабра, Равинсары (4 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Thieves",
+        "Thyme",
+        "Mountain Savory",
+        "Ravintsara"
+      ],
+      "ingredient_drops": [
+        3,
+        3,
+        3,
+        2
+      ],
+      "ingredient_slugs": [
+        "thieves",
+        "thyme",
+        "mountain-savory",
+        "ravintsara"
+      ],
+      "ingredient_names_ru": [
+        "Thieves",
+        "Чабреца",
+        "Горного чабра",
+        "Равинсары"
+      ],
+      "blend_category": "",
+      "category_group": "immune",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-grippa-ili-prostudy",
+    "name": "Смесь от гриппа или простуды",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от гриппа или простуды",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при гриппа или простуды. Состав: Равинсары, Священного ладана (2 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Ravintsara",
+        "Sacred Frankincense"
+      ],
+      "ingredient_drops": [
+        15,
+        6
+      ],
+      "ingredient_slugs": [
+        "ravintsara",
+        "sacred-frankincense"
+      ],
+      "ingredient_names_ru": [
+        "Равинсары",
+        "Священного ладана"
+      ],
+      "blend_category": "",
+      "category_group": "respiratory",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-kori",
+    "name": "Смесь от кори",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от кори",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при кори. Состав: Лаванды, Немецкой ромашки, Равинсары, Чайного дерева Мелалеуки чайной (4 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Lavender",
+        "German Chamomile",
+        "Ravintsara",
+        "Tea Tree Melaleuca alternifolia"
+      ],
+      "ingredient_drops": [
+        10,
+        10,
+        5,
+        5
+      ],
+      "ingredient_slugs": [
+        "lavender",
+        "german-chamomile",
+        "ravintsara",
+        "tea-tree-melaleuca-alternifolia"
+      ],
+      "ingredient_names_ru": [
+        "Лаванды",
+        "Немецкой ромашки",
+        "Равинсары",
+        "Чайного дерева Мелалеуки чайной"
+      ],
+      "blend_category": "",
+      "category_group": "immune",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-poliomielita",
+    "name": "Смесь от полиомиелита",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от полиомиелита",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при полиомиелита. Состав: Мирры, Равинсары, Грушанки, Священного ладана и др. (6 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Myrrh",
+        "Ravintsara",
+        "Wintergreen",
+        "Sacred Frankincense",
+        "Blue Cypress",
+        "Lemon"
+      ],
+      "ingredient_drops": [
+        15,
+        10,
+        10,
+        7,
+        8,
+        6
+      ],
+      "ingredient_slugs": [
+        "myrrh",
+        "ravintsara",
+        "wintergreen",
+        "sacred-frankincense",
+        "blue-cypress",
+        "lemon"
+      ],
+      "ingredient_names_ru": [
+        "Мирры",
+        "Равинсары",
+        "Грушанки",
+        "Священного ладана",
+        "Голубого кипариса",
+        "Лимона"
+      ],
+      "blend_category": "",
+      "category_group": "immune",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-prostudy-1",
+    "name": "Смесь от простуды №1 4 R.C,",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от простуды №1 4 R.C,",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при простуды №1 4 R.C,. Состав: Розмарина, Эвкалипта лучистого, Розмарина, Перечной мяты и др. (9 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Rosemary",
+        "Eucalyptus Radiata",
+        "Rosemary",
+        "Peppermint",
+        "R.C",
+        "Cypress",
+        "Sacred Frankincense",
+        "Lemon",
+        "Peppermint"
+      ],
+      "ingredient_drops": [
+        5,
+        4,
+        5,
+        4,
+        4,
+        3,
+        4,
+        2,
+        2
+      ],
+      "ingredient_slugs": [
+        "rosemary",
+        "eucalyptus-radiata",
+        "rosemary",
+        "peppermint",
+        "r-c",
+        "cypress",
+        "sacred-frankincense",
+        "lemon",
+        "peppermint"
+      ],
+      "ingredient_names_ru": [
+        "Розмарина",
+        "Эвкалипта лучистого",
+        "Розмарина",
+        "Перечной мяты",
+        "R.C",
+        "Кипариса",
+        "Священного ладана",
+        "Лимона",
+        "Перечной мяты"
+      ],
+      "blend_category": "",
+      "category_group": "respiratory",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-omolozheniya-kozhi",
+    "name": "Смесь для омоложения кожи:",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь для омоложения кожи:",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при омоложения кожи:. Состав: Сандала, Герани, Лаванды, Священного ладана (4 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Sandalwood",
+        "Geranium",
+        "Lavender",
+        "Sacred Frankincense"
+      ],
+      "ingredient_drops": [
+        6,
+        4,
+        3,
+        2
+      ],
+      "ingredient_slugs": [
+        "sandalwood",
+        "geranium",
+        "lavender",
+        "sacred-frankincense"
+      ],
+      "ingredient_names_ru": [
+        "Сандала",
+        "Герани",
+        "Лаванды",
+        "Священного ладана"
+      ],
+      "blend_category": "",
+      "category_group": "beauty",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-uprugosti-kozhi",
+    "name": "Смесь для упругости кожи (утренняя)",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь для упругости кожи (утренняя)",
+      "name_en": "Blend (утренняя)",
+      "description": "Терапевтическая смесь эфирных масел при упругости кожи (утренняя). Состав: Мандарина, Кипариса, Герани (3 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Tangerine",
+        "Cypress",
+        "Geranium"
+      ],
+      "ingredient_drops": [
+        3,
+        3,
+        5
+      ],
+      "ingredient_slugs": [
+        "tangerine",
+        "cypress",
+        "geranium"
+      ],
+      "ingredient_names_ru": [
+        "Мандарина",
+        "Кипариса",
+        "Герани"
+      ],
+      "blend_category": "",
+      "category_group": "beauty",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-uprugosti-kozhi-2",
+    "name": "Смесь для упругости кожи (вечерняя)",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь для упругости кожи (вечерняя)",
+      "name_en": "Blend (вечерняя)",
+      "description": "Терапевтическая смесь эфирных масел при упругости кожи (вечерняя). Состав: Пачули, Кипариса (2 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Patchouli",
+        "Cypress"
+      ],
+      "ingredient_drops": [
+        8,
+        5
+      ],
+      "ingredient_slugs": [
+        "patchouli",
+        "cypress"
+      ],
+      "ingredient_names_ru": [
+        "Пачули",
+        "Кипариса"
+      ],
+      "blend_category": "",
+      "category_group": "beauty",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-morschin",
+    "name": "Смесь от морщин",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от морщин",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при морщин. Состав: Священного ладана, Сандала, Герани, Лаванды (4 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Sacred Frankincense",
+        "Sandalwood",
+        "Geranium",
+        "Lavender"
+      ],
+      "ingredient_drops": [
+        6,
+        5,
+        4,
+        3
+      ],
+      "ingredient_slugs": [
+        "sacred-frankincense",
+        "sandalwood",
+        "geranium",
+        "lavender"
+      ],
+      "ingredient_names_ru": [
+        "Священного ладана",
+        "Сандала",
+        "Герани",
+        "Лаванды"
+      ],
+      "blend_category": "",
+      "category_group": "beauty",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-lishaya",
+    "name": "Смесь от лишая",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от лишая",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при лишая. Состав: Чайного дерева Мелалеуки чайной, Мяты курчавой (2 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Tea Tree Melaleuca Alternifolia",
+        "Spearmint"
+      ],
+      "ingredient_drops": [
+        3,
+        3
+      ],
+      "ingredient_slugs": [
+        "tea-tree-melaleuca-alternifolia",
+        "spearmint"
+      ],
+      "ingredient_names_ru": [
+        "Чайного дерева Мелалеуки чайной",
+        "Мяты курчавой"
+      ],
+      "blend_category": "",
+      "category_group": "health",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-pechenochnykh-pyaten",
+    "name": "Смесь от печеночных пятен",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от печеночных пятен",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при печеночных пятен. Состав: масла авокадо, Сандала, Голубого кипариса, Лаванды и др. (5 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "масла авокадо",
+        "Sandalwood",
+        "Blue Cypress",
+        "Lavender",
+        "Nutmeg"
+      ],
+      "ingredient_drops": [
+        20,
+        6,
+        4,
+        4,
+        4
+      ],
+      "ingredient_slugs": [
+        "masla-avokado",
+        "sandalwood",
+        "blue-cypress",
+        "lavender",
+        "nutmeg"
+      ],
+      "ingredient_names_ru": [
+        "масла авокадо",
+        "Сандала",
+        "Голубого кипариса",
+        "Лаванды",
+        "Мускатного ореха"
+      ],
+      "blend_category": "",
+      "category_group": "detox",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-ushibov-i-tsarapin",
+    "name": "Смесь от ушибов и царапин",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от ушибов и царапин",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при ушибов и царапин. Состав: Герани, Лаванды, Чайного дерева, Чайного дерева (4 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Geranium",
+        "Lavender",
+        "Tea Tree",
+        "Чайного дерева"
+      ],
+      "ingredient_drops": [
+        7,
+        4,
+        3,
+        3
+      ],
+      "ingredient_slugs": [
+        "geranium",
+        "lavender",
+        "tea-tree",
+        "chajnogo-dereva"
+      ],
+      "ingredient_names_ru": [
+        "Герани",
+        "Лаванды",
+        "Чайного дерева",
+        "Чайного дерева"
+      ],
+      "blend_category": "",
+      "category_group": "pain",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-poreza-s-zarazheniem-sprej-dlya-pervoj-pomoschi",
+    "name": "Смесь от пореза с заражением Спрей для первой помощи",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от пореза с заражением Спрей для первой помощи",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при пореза с заражением Спрей для первой помощи. Состав: Лаванды, Мирры, Хиптиса пахучего (3 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Lavender",
+        "Myrrh",
+        "Хиптиса пахучего"
+      ],
+      "ingredient_drops": [
+        5,
+        5,
+        2
+      ],
+      "ingredient_slugs": [
+        "lavender",
+        "myrrh",
+        "khiptisa-pakhuchego"
+      ],
+      "ingredient_names_ru": [
+        "Лаванды",
+        "Мирры",
+        "Хиптиса пахучего"
+      ],
+      "blend_category": "",
+      "category_group": "health",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-kompressa-dlya-ran",
+    "name": "Смесь для компресса для ран",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь для компресса для ран",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при компресса для ран. Состав: Герани, Лимона, Немецкой ромашки, Бессмертника (4 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Geranium",
+        "Lemon",
+        "German Chamomile",
+        "Helichrysum"
+      ],
+      "ingredient_drops": [
+        5,
+        5,
+        5,
+        2
+      ],
+      "ingredient_slugs": [
+        "geranium",
+        "lemon",
+        "german-chamomile",
+        "helichrysum"
+      ],
+      "ingredient_names_ru": [
+        "Герани",
+        "Лимона",
+        "Немецкой ромашки",
+        "Бессмертника"
+      ],
+      "blend_category": "",
+      "category_group": "health",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-shramov-2",
+    "name": "Смесь от шрамов №2",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от шрамов №2",
+      "name_en": "Blend No.2",
+      "description": "Терапевтическая смесь эфирных масел при шрамов. Состав: Сандала, Герани, Бессмертника, Священного ладана и др. (5 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Sandalwood",
+        "Geranium",
+        "Helichrysum",
+        "Sacred Frankincense",
+        "Lavender"
+      ],
+      "ingredient_drops": [
+        3,
+        10,
+        8,
+        3,
+        6
+      ],
+      "ingredient_slugs": [
+        "sandalwood",
+        "geranium",
+        "helichrysum",
+        "sacred-frankincense",
+        "lavender"
+      ],
+      "ingredient_names_ru": [
+        "Сандала",
+        "Герани",
+        "Бессмертника",
+        "Священного ладана",
+        "Лаванды"
+      ],
+      "blend_category": "",
+      "category_group": "beauty",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-psoriaza",
+    "name": "Смесь от псориаза",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от псориаза",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при псориаза. Состав: Палисандра, Пачули, Римской ромашки, Ветивера и др. (5 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Rosewood",
+        "Patchouli",
+        "Roman Chamomile",
+        "Vetiver",
+        "Sandalwood"
+      ],
+      "ingredient_drops": [
+        4,
+        2,
+        2,
+        2,
+        2
+      ],
+      "ingredient_slugs": [
+        "rosewood",
+        "patchouli",
+        "roman-chamomile",
+        "vetiver",
+        "sandalwood"
+      ],
+      "ingredient_names_ru": [
+        "Палисандра",
+        "Пачули",
+        "Римской ромашки",
+        "Ветивера",
+        "Сандала"
+      ],
+      "blend_category": "",
+      "category_group": "beauty",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-shramov",
+    "name": "Смесь от шрамов",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от шрамов",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при шрамов. Состав: Мирры, Лаванды, Бессмертника (3 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Myrrh",
+        "Lavender",
+        "Helichrysum"
+      ],
+      "ingredient_drops": [
+        4,
+        3,
+        2
+      ],
+      "ingredient_slugs": [
+        "myrrh",
+        "lavender",
+        "helichrysum"
+      ],
+      "ingredient_names_ru": [
+        "Мирры",
+        "Лаванды",
+        "Бессмертника"
+      ],
+      "blend_category": "",
+      "category_group": "beauty",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-sklerodermii-1",
+    "name": "Смесь от склеродермии №1",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от склеродермии №1",
+      "name_en": "Blend No.1",
+      "description": "Терапевтическая смесь эфирных масел при склеродермии. Состав: Немецкой ромашки, Мирры (2 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "German Chamomile",
+        "Myrrh"
+      ],
+      "ingredient_drops": [
+        2,
+        2
+      ],
+      "ingredient_slugs": [
+        "german-chamomile",
+        "myrrh"
+      ],
+      "ingredient_names_ru": [
+        "Немецкой ромашки",
+        "Мирры"
+      ],
+      "blend_category": "",
+      "category_group": "beauty",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-sklerodermii-2",
+    "name": "Смесь от склеродермии №2",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от склеродермии №2",
+      "name_en": "Blend No.2",
+      "description": "Терапевтическая смесь эфирных масел при склеродермии. Состав: Мирры, Сандала (2 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Myrrh",
+        "Sandalwood"
+      ],
+      "ingredient_drops": [
+        3,
+        2
+      ],
+      "ingredient_slugs": [
+        "myrrh",
+        "sandalwood"
+      ],
+      "ingredient_names_ru": [
+        "Мирры",
+        "Сандала"
+      ],
+      "blend_category": "",
+      "category_group": "beauty",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-vypadeniya-volos-1",
+    "name": "Смесь от выпадения волос №1",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от выпадения волос №1",
+      "name_en": "Blend No.1",
+      "description": "Терапевтическая смесь эфирных масел при выпадения волос. Состав: Кедра, Сандала, Лаванды, Розмарина и др. (5 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Cedarwood",
+        "Sandalwood",
+        "Lavender",
+        "Rosemary",
+        "Palo Santo"
+      ],
+      "ingredient_drops": [
+        10,
+        10,
+        10,
+        8,
+        2
+      ],
+      "ingredient_slugs": [
+        "cedarwood",
+        "sandalwood",
+        "lavender",
+        "rosemary",
+        "palo-santo"
+      ],
+      "ingredient_names_ru": [
+        "Кедра",
+        "Сандала",
+        "Лаванды",
+        "Розмарина",
+        "Пало Санто"
+      ],
+      "blend_category": "",
+      "category_group": "beauty",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-vypadeniya-volos-2",
+    "name": "Смесь от выпадения волос №2",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от выпадения волос №2",
+      "name_en": "Blend No.2",
+      "description": "Терапевтическая смесь эфирных масел при выпадения волос. Состав: Лаванды, Кипариса, Розмарина, Шалфея мускатного (4 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Lavender",
+        "Cypress",
+        "Rosemary",
+        "Clary sage"
+      ],
+      "ingredient_drops": [
+        5,
+        4,
+        3,
+        2
+      ],
+      "ingredient_slugs": [
+        "lavender",
+        "cypress",
+        "rosemary",
+        "clary-sage"
+      ],
+      "ingredient_names_ru": [
+        "Лаванды",
+        "Кипариса",
+        "Розмарина",
+        "Шалфея мускатного"
+      ],
+      "blend_category": "",
+      "category_group": "beauty",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-vypadeniya-volos-3",
+    "name": "Смесь от выпадения волос №3",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от выпадения волос №3",
+      "name_en": "Blend No.3",
+      "description": "Терапевтическая смесь эфирных масел при выпадения волос. Состав: Лаванды, Священного ладана, Лаванды, Кедра и др. (5 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Lavender",
+        "Священного ладана",
+        "Lavender",
+        "Cedarwood",
+        "Sacred Frankincense"
+      ],
+      "ingredient_drops": [
+        5,
+        5,
+        4,
+        4,
+        2
+      ],
+      "ingredient_slugs": [
+        "lavender",
+        "svyaschennogo-ladana",
+        "lavender",
+        "cedarwood",
+        "sacred-frankincense"
+      ],
+      "ingredient_names_ru": [
+        "Лаванды",
+        "Священного ладана",
+        "Лаванды",
+        "Кедра",
+        "Священного ладана"
+      ],
+      "blend_category": "",
+      "category_group": "beauty",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-vypadeniya-volos-4",
+    "name": "Смесь от выпадения волос №4",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от выпадения волос №4",
+      "name_en": "Blend No.4",
+      "description": "Терапевтическая смесь эфирных масел при выпадения волос. Состав: Розмарина, Чабреца, Шалфея мускатного, Голубого эвкалипта (4 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Rosemary",
+        "Thyme",
+        "Clary sage",
+        "Eucalyptus Blue"
+      ],
+      "ingredient_drops": [
+        4,
+        4,
+        2,
+        3
+      ],
+      "ingredient_slugs": [
+        "rosemary",
+        "thyme",
+        "clary-sage",
+        "eucalyptus-blue"
+      ],
+      "ingredient_names_ru": [
+        "Розмарина",
+        "Чабреца",
+        "Шалфея мускатного",
+        "Голубого эвкалипта"
+      ],
+      "blend_category": "",
+      "category_group": "beauty",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-perkhoti",
+    "name": "Смесь от перхоти",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от перхоти",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при перхоти. Состав: Лимона, Лаванды, Перечной мяты (3 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Lemon",
+        "Lavender",
+        "Peppermint"
+      ],
+      "ingredient_drops": [
+        5,
+        2,
+        2
+      ],
+      "ingredient_slugs": [
+        "lemon",
+        "lavender",
+        "peppermint"
+      ],
+      "ingredient_names_ru": [
+        "Лимона",
+        "Лаванды",
+        "Перечной мяты"
+      ],
+      "blend_category": "",
+      "category_group": "beauty",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-ukrepleniya-nogtej",
+    "name": "Смесь для укрепления ногтей",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь для укрепления ногтей",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при укрепления ногтей. Состав: масла зародышей пшеницы, Священного ладана, Мирры, Лимона (4 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Wheat Germ Oil",
+        "Sacred Frankincense",
+        "Myrrh",
+        "Lemon"
+      ],
+      "ingredient_drops": [
+        4,
+        2,
+        2,
+        2
+      ],
+      "ingredient_slugs": [
+        "wheat-germ-oil",
+        "sacred-frankincense",
+        "myrrh",
+        "lemon"
+      ],
+      "ingredient_names_ru": [
+        "масла зародышей пшеницы",
+        "Священного ладана",
+        "Мирры",
+        "Лимона"
+      ],
+      "blend_category": "",
+      "category_group": "beauty",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-glaz",
+    "name": "Смесь для глаз",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь для глаз",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при глаз. Состав: Лемонграсса, Кипариса, Эвкалипта лучистого, Sacred Frankincense (4 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Lemongrass",
+        "Cypress",
+        "Eucalyptus Radiata",
+        "Священного ладана"
+      ],
+      "ingredient_drops": [
+        10,
+        5,
+        3,
+        2
+      ],
+      "ingredient_slugs": [
+        "lemongrass",
+        "cypress",
+        "eucalyptus-radiata",
+        ""
+      ],
+      "ingredient_names_ru": [
+        "Лемонграсса",
+        "Кипариса",
+        "Эвкалипта лучистого",
+        "Sacred Frankincense"
+      ],
+      "blend_category": "",
+      "category_group": "health",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-borby-s-krovotochivostyu-desen",
+    "name": "Смесь для борьбы с кровоточивостью десен",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь для борьбы с кровоточивостью десен",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при борьбы с кровоточивостью десен. Состав: Мирры, Бессмертника (2 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Myrrh",
+        "Helichrysum"
+      ],
+      "ingredient_drops": [
+        2,
+        2
+      ],
+      "ingredient_slugs": [
+        "myrrh",
+        "helichrysum"
+      ],
+      "ingredient_names_ru": [
+        "Мирры",
+        "Бессмертника"
+      ],
+      "blend_category": "",
+      "category_group": "health",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-nepriyatnogo-zapakha-izo-rta-1",
+    "name": "Смесь от неприятного запаха изо рта № 1",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от неприятного запаха изо рта № 1",
+      "name_en": "Blend No.1",
+      "description": "Терапевтическая смесь эфирных масел при неприятного запаха изо рта. Состав: Перечной мяты, Лимона, Гвоздики (3 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Peppermint",
+        "Lemon",
+        "Clove"
+      ],
+      "ingredient_drops": [
+        3,
+        2,
+        2
+      ],
+      "ingredient_slugs": [
+        "peppermint",
+        "lemon",
+        "clove"
+      ],
+      "ingredient_names_ru": [
+        "Перечной мяты",
+        "Лимона",
+        "Гвоздики"
+      ],
+      "blend_category": "",
+      "category_group": "health",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-nepriyatnogo-zapakha-izo-rta-2",
+    "name": "Смесь от неприятного запаха изо рта № 2",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от неприятного запаха изо рта № 2",
+      "name_en": "Blend No.2",
+      "description": "Терапевтическая смесь эфирных масел при неприятного запаха изо рта. Состав: Мяты курчавой, Мандарина, Корицы (3 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Spearmint",
+        "Mandarin",
+        "Cinnamon"
+      ],
+      "ingredient_drops": [
+        4,
+        2,
+        2
+      ],
+      "ingredient_slugs": [
+        "spearmint",
+        "mandarin",
+        "cinnamon"
+      ],
+      "ingredient_names_ru": [
+        "Мяты курчавой",
+        "Мандарина",
+        "Корицы"
+      ],
+      "blend_category": "",
+      "category_group": "health",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-oblegcheniya-psikhologicheskoj-travmy-1",
+    "name": "Смесь для облегчения психологической травмы № 1",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь для облегчения психологической травмы № 1",
+      "name_en": "Blend No.1",
+      "description": "Терапевтическая смесь эфирных масел при облегчения психологической травмы. Состав: Голубой ели Айдахо, Пихты бальзамической, Мяты курчавой (3 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Idaho Blue Spruce",
+        "Balsam Fir Idaho",
+        "Spearmint"
+      ],
+      "ingredient_drops": [
+        10,
+        5,
+        3
+      ],
+      "ingredient_slugs": [
+        "idaho-blue-spruce",
+        "balsam-fir-idaho",
+        "spearmint"
+      ],
+      "ingredient_names_ru": [
+        "Голубой ели Айдахо",
+        "Пихты бальзамической",
+        "Мяты курчавой"
+      ],
+      "blend_category": "",
+      "category_group": "emotional",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-oblegcheniya-psikhologicheskoj-travmy-2",
+    "name": "Смесь для облегчения психологической травмы № 2",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь для облегчения психологической травмы № 2",
+      "name_en": "Blend No.2",
+      "description": "Терапевтическая смесь эфирных масел при облегчения психологической травмы. Состав: Лаванды, Майорана (2 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Lavender",
+        "Marjoram"
+      ],
+      "ingredient_drops": [
+        8,
+        6
+      ],
+      "ingredient_slugs": [
+        "lavender",
+        "marjoram"
+      ],
+      "ingredient_names_ru": [
+        "Лаванды",
+        "Майорана"
+      ],
+      "blend_category": "",
+      "category_group": "emotional",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-ukusov-1",
+    "name": "Смесь от укусов №1",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от укусов №1",
+      "name_en": "Blend No.1",
+      "description": "Терапевтическая смесь эфирных масел при укусов. Состав: Лаванды Смесь от укусов, Пижмы Айдахо, Голубого эвкалипта (3 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Лаванды Смесь от укусов",
+        "Idaho Tansy",
+        "Eucalyptus Blue"
+      ],
+      "ingredient_drops": [
+        10,
+        20,
+        10
+      ],
+      "ingredient_slugs": [
+        "lavandy-smes-ot-ukusov",
+        "idaho-tansy",
+        "eucalyptus-blue"
+      ],
+      "ingredient_names_ru": [
+        "Лаванды Смесь от укусов",
+        "Пижмы Айдахо",
+        "Голубого эвкалипта"
+      ],
+      "blend_category": "",
+      "category_group": "first_aid",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-ukusov-2",
+    "name": "Смесь от укусов №2",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от укусов №2",
+      "name_en": "Blend No.2",
+      "description": "Терапевтическая смесь эфирных масел при укусов. Состав: Эвкалипта лучистого, Немецкой ромашки, Чабреца (3 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Eucalyptus 20 капель Пало Санто (Palo Santo",
+        "German Chamomile",
+        "Thyme"
+      ],
+      "ingredient_drops": [
+        4,
+        3,
+        2
+      ],
+      "ingredient_slugs": [
+        "eucalyptus-20-palo-santo",
+        "german-chamomile",
+        "thyme"
+      ],
+      "ingredient_names_ru": [
+        "Эвкалипта лучистого",
+        "Немецкой ромашки",
+        "Чабреца"
+      ],
+      "blend_category": "",
+      "category_group": "first_aid",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-unichtozheniya-postelnykh-klopov-1",
+    "name": "Смесь для уничтожения постельных клопов № 1",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь для уничтожения постельных клопов № 1",
+      "name_en": "Blend No.1",
+      "description": "Терапевтическая смесь эфирных масел при уничтожения постельных клопов. Состав: Пало Санто, Пижмы Айдахо (2 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Palo Santo",
+        "Idaho Tansy"
+      ],
+      "ingredient_drops": [
+        20,
+        20
+      ],
+      "ingredient_slugs": [
+        "palo-santo",
+        "idaho-tansy"
+      ],
+      "ingredient_names_ru": [
+        "Пало Санто",
+        "Пижмы Айдахо"
+      ],
+      "blend_category": "",
+      "category_group": "first_aid",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-ukusov-nasekomykh-2",
+    "name": "Смесь от укусов насекомых № 2",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от укусов насекомых № 2",
+      "name_en": "Blend No.2",
+      "description": "Терапевтическая смесь эфирных масел при укусов насекомых. Состав: Пало Санто, Пижмы из Айдахо, Голубого эвкалипта (3 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Palo Santo",
+        "Idaho Tansy",
+        "Eucalyptus Blue"
+      ],
+      "ingredient_drops": [
+        20,
+        20,
+        10
+      ],
+      "ingredient_slugs": [
+        "palo-santo",
+        "idaho-tansy",
+        "eucalyptus-blue"
+      ],
+      "ingredient_names_ru": [
+        "Пало Санто",
+        "Пижмы из Айдахо",
+        "Голубого эвкалипта"
+      ],
+      "blend_category": "",
+      "category_group": "first_aid",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-unichtozheniya-postelnykh-klopov-3",
+    "name": "Смесь для уничтожения постельных клопов № 3",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь для уничтожения постельных клопов № 3",
+      "name_en": "Blend No.3",
+      "description": "Терапевтическая смесь эфирных масел при уничтожения постельных клопов. Состав: Thieves с 2-3 стаканами воды (1 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Thieves с 2-3 стаканами воды"
+      ],
+      "ingredient_drops": [
+        20
+      ],
+      "ingredient_slugs": [
+        "thieves-s-2-3-stakanami-vody"
+      ],
+      "ingredient_names_ru": [
+        "Thieves с 2-3 стаканами воды"
+      ],
+      "blend_category": "",
+      "category_group": "first_aid",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-pchelinykh-ukusov",
+    "name": "Смесь от пчелиных укусов",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь от пчелиных укусов",
+      "name_en": "",
+      "description": "Терапевтическая смесь эфирных масел при пчелиных укусов. Состав: Лаванды (1 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Lavender"
+      ],
+      "ingredient_drops": [
+        2
+      ],
+      "ingredient_slugs": [
+        "lavender"
+      ],
+      "ingredient_names_ru": [
+        "Лаванды"
+      ],
+      "blend_category": "",
+      "category_group": "first_aid",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-otpugivaniya-nasekomykh-1",
+    "name": "Смесь для отпугивания насекомых № 1",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь для отпугивания насекомых № 1",
+      "name_en": "Blend No.1",
+      "description": "Терапевтическая смесь эфирных масел при отпугивания насекомых. Состав: Пижмы Айдахо, Перечной мяты, Цитронеллы (3 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Idaho Tansy",
+        "Peppermint",
+        "Citronella"
+      ],
+      "ingredient_drops": [
+        9,
+        6,
+        6
+      ],
+      "ingredient_slugs": [
+        "idaho-tansy",
+        "peppermint",
+        "citronella"
+      ],
+      "ingredient_names_ru": [
+        "Пижмы Айдахо",
+        "Перечной мяты",
+        "Цитронеллы"
+      ],
+      "blend_category": "",
+      "category_group": "first_aid",
+      "source_pdf": "base"
+    }
+  },
+  {
+    "slug": "smesh-ot-otpugivaniya-nasekomykh-2",
+    "name": "Смесь для отпугивания насекомых № 2",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [],
+    "payload": {
+      "name_ru": "Смесь для отпугивания насекомых № 2",
+      "name_en": "Blend No.2",
+      "description": "Терапевтическая смесь эфирных масел при отпугивания насекомых. Состав: Пижмы Айдахо, Palo Santo (2 масел). Рецепт из справочника Essential Oils Desk Reference.",
+      "ingredient_names": [
+        "Idaho Tansy",
+        "Пало Санто"
+      ],
+      "ingredient_drops": [
+        6,
+        6
+      ],
+      "ingredient_slugs": [
+        "idaho-tansy",
+        ""
+      ],
+      "ingredient_names_ru": [
+        "Пижмы Айдахо",
+        "Palo Santo"
+      ],
+      "blend_category": "",
+      "category_group": "first_aid",
+      "source_pdf": "base"
+    }
+  }
+]
