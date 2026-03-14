@@ -1767,6 +1767,17 @@ body.tg-theme-dark .detail-markdown h5 {
   text-align: left;
 }
 
+.card-list {
+  margin: 6px 0 0 0;
+  padding-left: 18px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text);
+}
+.card-list li {
+  margin-bottom: 2px;
+}
+
 .reference-badges {
   display: flex;
   flex-wrap: wrap;
