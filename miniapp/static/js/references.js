@@ -151,10 +151,35 @@ export function createReferencesModule(deps) {
 
   function renderStructuredList(title, text) {
     if (!text) return "";
-    const items = String(text).split(/[\n•;]/).map((s) => s.replace(/^[-•]\s*/, "").trim()).filter((s) => s.length > 3);
+    const s = String(text);
+
+    // 1. Normalize PDF "z " bullet → "•" (PDF font artifact)
+    const normalized = s
+      .replace(/(^|\n)z\s+/g, "$1• ")
+      .replace(/(?<![а-яёА-ЯЁa-zA-Z0-9])z\s+(?=[А-ЯЁа-яёA-Za-z])/g, "• ");
+
+    // 2. Split on "•" — single unified bullet marker
+    const rawParts = normalized.split(/\n?•\s*/);
+
+    // 3. Clean each item: join internal line-breaks, strip page numbers, fix hyphen-splits
+    const items = rawParts.map((part) => {
+      let result = "";
+      for (const rawLine of part.split(/\n/)) {
+        const line = rawLine.trim();
+        if (!line) continue;
+        if (/^\d{1,3}$/.test(line)) continue;      // skip standalone page numbers
+        if (result.endsWith("-")) result = result + line;  // rejoin "V-\n6"
+        else result = result ? result + " " + line : line;
+      }
+      return result.trim();
+    }).filter((s) => s.length > 3);
+
     if (!items.length) return "";
-    if (items.length === 1) return aromaSection(title, text);
-    return `<section class="section"><h3>${escapeHtml(title)}</h3><ul class="card-list">${items.map((i) => `<li>${escapeHtml(i)}</li>`).join("")}</ul></section>`;
+    if (items.length === 1) return aromaSection(title, items[0]);
+
+    return `<section class="section"><h3>${escapeHtml(title)}</h3><ul class="card-list">${
+      items.map((i) => `<li>${escapeHtml(i)}</li>`).join("")
+    }</ul></section>`;
   }
 
   // Normalize symptom names that contain mixed-case PDF artifacts.

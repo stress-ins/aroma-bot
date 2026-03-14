@@ -1749,3 +1749,10 @@ class TestMiniAppRussianLocale:
 
         assert 'const preferredId = state.draftId || "";' in app_js
         assert 'state.drafts[0]?.draft_id' not in app_js
+
+    def test_render_structured_list_pdf_artifacts(self):
+        """renderStructuredList handles z-bullets, page numbers and hyphen-splits."""
+        js = Path("miniapp/static/js/references.js").read_text(encoding="utf-8")
+        assert "z\\s+" in js        # z-bullet normalization
+        assert r"/^\d{1,3}$/" in js  # page number stripping
+        assert 'result.endsWith("-")' in js  # hyphen-join
