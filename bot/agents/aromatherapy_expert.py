@@ -1,0 +1,150 @@
+"""Aromatherapy Expert agent — verifies card content accuracy against expert knowledge."""
+from __future__ import annotations
+
+import json
+import logging
+import os
+from typing import Any
+
+logger = logging.getLogger(__name__)
+
+_EXPERT_SYSTEM_PROMPT = """Ты — сертифицированный ароматерапевт с 15+ летним опытом и знанием ольфактотерапии.
+Верифицируй точность данных карточки эфирного масла согласно принятым стандартам
+аромотерапии (NAHA, IFA). Оцени по шкале 0–1.
+
+Проверяй:
+1. Корректность терапевтических свойств и противопоказаний
+2. Соответствие категоризации (parent_group/category_group) анатомической системе
+3. Логичность комплементарных масел
+4. Правильность классификации source_type (herb/flower/resin/tree/spice/citrus)
+
+Верни JSON строго в формате:
+{
+  "passed": true/false,
+  "score": 0.0–1.0,
+  "issues": ["issue 1", ...],
+  "corrections": {"field": "corrected value"}
+}
+
+Если данных недостаточно для оценки — верни score: 0.5, passed: true, issues: [].
+"""
+
+_KNOWN_SOURCE_TYPES = {"herb", "flower", "resin", "tree", "spice", "citrus", "grass", "root", "wood"}
+
+ANATOMICAL_SYSTEMS = {
+    "НЕРВНАЯ СИСТЕМА", "ПИЩЕВАРИТЕЛЬНАЯ СИСТЕМА", "СЕРДЕЧНО-СОСУДИСТАЯ СИСТЕМА",
+    "ДЫХАТЕЛЬНАЯ СИСТЕМА", "ОПОРНО-ДВИГАТЕЛЬНЫЙ АППАРАТ", "ИММУННАЯ СИСТЕМА",
+    "ЭНДОКРИННАЯ СИСТЕМА", "МОЧЕПОЛОВАЯ СИСТЕМА", "КОЖА И ПОКРОВЫ",
+    "ПСИХОЭМОЦИОНАЛЬНОЕ СОСТОЯНИЕ", "СОН И ОТДЫХ", "ЭНЕРГИЯ И ТОНУС",
+    "ЖЕНСКОЕ ЗДОРОВЬЕ", "ДЕТСКОЕ ЗДОРОВЬЕ", "ИММУНИТЕТ И КОЖА",
+    "ПИЩЕВАРЕНИЕ", "СЕРДЕЧНО-СОСУДИСТАЯ", "ПСИХОЭМОЦИОНАЛЬНОЕ",
+}
+
+
+def _basic_verify(card: dict[str, Any]) -> tuple[float, list[str], dict[str, str]]:
+    """Quick rule-based verification without calling Claude."""
+    issues: list[str] = []
+    corrections: dict[str, str] = {}
+    score = 1.0
+
+    source_type = str(card.get("source_type") or "").strip().lower()
+    if source_type and source_type not in _KNOWN_SOURCE_TYPES:
+        issues.append(f"source_type '{source_type}' is not standard (expected: {', '.join(sorted(_KNOWN_SOURCE_TYPES))})")
+        score -= 0.2
+
+    parent_group = str(card.get("parent_group") or "").strip().upper()
+    if parent_group and parent_group not in ANATOMICAL_SYSTEMS:
+        # Only flag if it looks like a disease/symptom name rather than a system
+        if len(parent_group.split()) <= 3 and not any(word in parent_group for word in ("СИСТЕМА", "ЗДОРОВЬЕ", "СОСТОЯНИЕ", "АППАРАТ", "ОТДЫХ", "ТОНУС", "КОЖА")):
+            issues.append(
+                f"parent_group '{parent_group}' may not be an anatomical system — expected names like НЕРВНАЯ СИСТЕМА"
+            )
+            score -= 0.15
+
+    return max(0.0, round(score, 2)), issues, corrections
+
+
+async def verify_card_content(card: dict[str, Any], *, dry_run: bool = False) -> dict[str, Any]:
+    """Verify aromatherapy KB card content.
+
+    Args:
+        card: Card dict from get_reference_card or _serialize_model.
+        dry_run: If True, only run rule-based checks (no LLM call).
+
+    Returns:
+        {"passed": bool, "score": float, "issues": list[str], "corrections": dict}
+    """
+    score, issues, corrections = _basic_verify(card)
+
+    if dry_run:
+        return {
+            "passed": score >= 0.7,
+            "score": score,
+            "issues": issues,
+            "corrections": corrections,
+        }
+
+    api_key = os.getenv("ANTHROPIC_API_KEY")
+    if not api_key:
+        logger.debug("ANTHROPIC_API_KEY not set — skipping LLM verification, using rule-based only")
+        return {
+            "passed": score >= 0.7,
+            "score": score,
+            "issues": issues,
+            "corrections": corrections,
+        }
+
+    try:
+        import anthropic
+
+        card_summary = {
+            "name": card.get("name"),
+            "source_type": card.get("source_type"),
+            "parent_group": card.get("parent_group"),
+            "category_group": card.get("category_group"),
+            "description_short": (str(card.get("description_short") or ""))[:200],
+            "therapeutic_properties": (str(card.get("therapeutic_properties") or ""))[:300],
+            "applications": (str(card.get("applications") or ""))[:200],
+            "precautions": (str(card.get("precautions") or ""))[:200],
+            "complementary_oil_names": (card.get("complementary_oil_names") or [])[:5],
+        }
+
+        client = anthropic.Anthropic(api_key=api_key)
+        message = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=512,
+            system=_EXPERT_SYSTEM_PROMPT,
+            messages=[
+                {
+                    "role": "user",
+                    "content": f"Верифицируй карточку:\n{json.dumps(card_summary, ensure_ascii=False, indent=2)}",
+                }
+            ],
+        )
+        raw = message.content[0].text.strip()
+        # Extract JSON from response
+        start = raw.find("{")
+        end = raw.rfind("}") + 1
+        if start >= 0 and end > start:
+            result = json.loads(raw[start:end])
+            # Merge with rule-based score (take minimum)
+            llm_score = float(result.get("score", 1.0))
+            final_score = round(min(score, llm_score), 2)
+            all_issues = issues + list(result.get("issues") or [])
+            all_corrections = {**corrections, **(result.get("corrections") or {})}
+            return {
+                "passed": final_score >= 0.7 and not any("wrong" in i.lower() for i in all_issues),
+                "score": final_score,
+                "issues": all_issues,
+                "corrections": all_corrections,
+            }
+    except Exception as e:
+        logger.warning("LLM verification failed: %s", e)
+
+    # Fallback to rule-based
+    return {
+        "passed": score >= 0.7,
+        "score": score,
+        "issues": issues,
+        "corrections": corrections,
+    }

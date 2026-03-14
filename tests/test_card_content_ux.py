@@ -193,6 +193,104 @@ async def test_complementary_oil_slugs_resolved():
 # Test 6: renderCollapsibleSection — long text triggers collapse
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# Test 7: description_short quality — no truncation artifacts
+# ---------------------------------------------------------------------------
+
+def test_description_short_quality():
+    """_parse_with_claude must return description_short that is non-empty, shorter than
+    description, and free from JSON/truncation artifacts."""
+    from scripts.import_oil_pdfs import _parse_with_claude
+    import json
+    from unittest.mock import MagicMock, patch
+
+    long_description = (
+        "Лаванда (Lavandula angustifolia) — одно из самых изученных эфирных масел в мире. "
+        "Применяется более 2500 лет в медицине, парфюмерии и косметологии. "
+        "Обладает широким спектром свойств: успокаивающим, антисептическим, противовоспалительным. "
+        "Особенно ценится в ароматерапии за способность гармонизировать нервную систему и улучшать качество сна."
+    )
+    mock_response = {
+        "name": "Лаванда",
+        "description": long_description,
+        "description_short": "Лаванда — универсальное успокаивающее масло для сна и релаксации.",
+        "resource_plus": "Гармония, покой",
+        "resource_minus": "Пассивность при избытке",
+    }
+
+    mock_client = MagicMock()
+    mock_content = MagicMock()
+    mock_content.text = json.dumps(mock_response)
+    mock_client.messages.create.return_value = MagicMock(content=[mock_content])
+
+    with patch("anthropic.Anthropic", return_value=mock_client):
+        result = _parse_with_claude("Lavender text sample", api_key="fake")
+
+    short = result.get("description_short", "")
+    full = result.get("description", "")
+
+    # Must be non-empty when description is non-empty
+    assert short, "description_short must not be empty when description is present"
+
+    # Must be shorter than the full description
+    assert len(short) < len(full), (
+        f"description_short ({len(short)} chars) must be shorter than description ({len(full)} chars)"
+    )
+
+    # Must not end with truncation artifacts
+    assert not short.endswith("..."), "description_short must not end with '...'"
+    assert not short.endswith("{"), "description_short must not end with '{'"
+    assert not short.endswith('"'), "description_short must not end with '\"'"
+
+    # Must not look like raw JSON
+    assert not short.strip().startswith("{"), "description_short must not be raw JSON"
+    try:
+        import json as _json
+        _json.loads(short)
+        assert False, "description_short must not be a valid JSON string"
+    except (ValueError, TypeError):
+        pass  # Expected: not valid JSON
+
+
+# ---------------------------------------------------------------------------
+# Test 8: description_short survives near-limit token scenario
+# ---------------------------------------------------------------------------
+
+def test_description_short_not_truncated_json():
+    """When Claude response is valid JSON, description_short must be a clean string."""
+    from scripts.import_oil_pdfs import _parse_with_claude
+    import json
+    from unittest.mock import MagicMock, patch
+
+    # Simulate a well-formed response (max_tokens=2500 was set, JSON is complete)
+    response_payload = {
+        "name": "Ладан",
+        "description": "Священное масло с 5000-летней историей. " * 10,
+        "description_short": "Ладан — масло духовного очищения и медитации.",
+        "resource_plus": "Мудрость, покой",
+        "resource_minus": "",
+    }
+
+    mock_client = MagicMock()
+    mock_content = MagicMock()
+    mock_content.text = json.dumps(response_payload)
+    mock_client.messages.create.return_value = MagicMock(content=[mock_content])
+
+    with patch("anthropic.Anthropic", return_value=mock_client):
+        result = _parse_with_claude("Frankincense excerpt", api_key="fake")
+
+    short = result.get("description_short", "")
+    assert short == "Ладан — масло духовного очищения и медитации.", (
+        f"Expected clean description_short, got: {repr(short)}"
+    )
+    assert isinstance(short, str)
+    assert len(short) > 5
+
+
+# ---------------------------------------------------------------------------
+# Test 6: renderCollapsibleSection — long text triggers collapse
+# ---------------------------------------------------------------------------
+
 def test_collapsible_section_long_text():
     """Text longer than maxChars produces a preview + details element."""
     long_text = "А" * 400
