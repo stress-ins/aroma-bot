@@ -674,9 +674,11 @@ export function createReferencesModule(deps) {
       const categoryGroup = reference.category_group || "";
       let breadcrumb = "";
       if (parentGroup && categoryGroup && parentGroup !== categoryGroup) {
-        breadcrumb = `<section class="section"><p class="eyebrow">${escapeHtml(parentGroup)} › ${escapeHtml(categoryGroup)}</p></section>`;
+        const parentJs = JSON.stringify(parentGroup);
+        const childJs = JSON.stringify(categoryGroup);
+        breadcrumb = `<section class="section"><p class="eyebrow"><a href="#" class="breadcrumb-link" onclick='event.preventDefault();setSymptomParentFilter(${parentJs})'>${escapeHtml(parentGroup)}</a> › <a href="#" class="breadcrumb-link" onclick='event.preventDefault();setSymptomParentFilter(${parentJs});setReferenceFilter(${childJs})'>${escapeHtml(categoryGroup)}</a></p></section>`;
       } else if (categoryGroup) {
-        breadcrumb = `<section class="section"><p class="eyebrow">${escapeHtml(categoryGroup)}</p></section>`;
+        breadcrumb = `<section class="section"><p class="eyebrow"><a href="#" class="breadcrumb-link" onclick='event.preventDefault();setReferenceFilter(${JSON.stringify(categoryGroup)})'>${escapeHtml(categoryGroup)}</a></p></section>`;
       }
       detailHtml = `
         <div class="detail-grid">

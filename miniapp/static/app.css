@@ -114,6 +114,17 @@ textarea,
   opacity: 0.8;
 }
 
+.breadcrumb-link {
+  color: var(--brand);
+  text-decoration: none;
+  cursor: pointer;
+}
+.breadcrumb-link:hover,
+.breadcrumb-link:active {
+  text-decoration: underline;
+  opacity: 1;
+}
+
 /* ── Toolbar ─────────────────────────────────────────────────────────────── */
 .topbar {
   display: block;
