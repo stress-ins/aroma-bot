@@ -397,6 +397,45 @@ def test_enrich_passport_script_exists_and_has_dry_run():
     assert "BATCH_DELAY" in content, "Script must define BATCH_DELAY for rate limiting"
 
 
+# ---------------------------------------------------------------------------
+# Tests for PR-1: card header UX + list name_ru + volatility
+# ---------------------------------------------------------------------------
+
+def test_list_reference_cards_uses_name_ru_for_all_categories():
+    """list_reference_cards must use name_ru for all categories, not only blend."""
+    src = (ROOT / "bot" / "services" / "miniapp_references.py").read_text(encoding="utf-8")
+    # Extract only the list_reference_cards function block
+    start = src.find("async def list_reference_cards(")
+    end = src.find("\nasync def ", start + 1)
+    func_src = src[start:end] if end != -1 else src[start:]
+    # The category gate specific to list_reference_cards must be removed
+    assert 'if model.category == "blend"' not in func_src, (
+        "list_reference_cards must not gate name_ru to blend only"
+    )
+    assert "name_ru" in func_src
+
+
+def test_references_js_no_caption_div():
+    """Card image must not show aroma-image-caption div."""
+    src = (ROOT / "miniapp" / "static" / "js" / "references.js").read_text(encoding="utf-8")
+    assert "aroma-image-caption" not in src
+
+
+def test_references_js_volatility_uses_emoji():
+    """Volatility scale must use emoji, not block characters."""
+    src = (ROOT / "miniapp" / "static" / "js" / "references.js").read_text(encoding="utf-8")
+    assert "▓▓▓" not in src
+    assert "🔺 Высокая" in src
+    assert "🔶 Средняя" in src
+    assert "🔹 Низкая" in src
+
+
+def test_references_js_card_category_icon_function():
+    """references.js must define cardCategoryIcon function for per-card icon selection."""
+    src = (ROOT / "miniapp" / "static" / "js" / "references.js").read_text(encoding="utf-8")
+    assert "function cardCategoryIcon" in src
+
+
 def test_enrich_applications_script_exists():
     """Applications enrichment script must exist and support required flags."""
     script = ROOT / "scripts" / "enrich_applications.py"
