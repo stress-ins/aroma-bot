@@ -14,6 +14,7 @@ import argparse
 import asyncio
 import base64
 import sys
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -73,21 +74,25 @@ async def _ensure_seeded() -> None:
 def _generate_image_gemini(name: str, description: str, api_key: str) -> bytes | None:
     """Call Gemini to generate an image. Returns raw JPEG bytes or None."""
     try:
-        import google.generativeai as genai
-        genai.configure(api_key=api_key)
+        from google import genai
+        from google.genai import types
+
+        client = genai.Client(api_key=api_key)
         prompt = (
             f"Create a beautiful, artistic reference card image for an essential oil called '{name}'. "
             f"{description}. "
             "Style: soft watercolor botanical illustration, muted natural colors, clean white background. "
             "No text overlays. Square format."
         )
-        model = genai.GenerativeModel("gemini-3.1-flash-image-preview")
-        response = model.generate_content(
-            prompt,
-            generation_config={"response_modalities": ["image"]},
+        response = client.models.generate_content(
+            model="gemini-3.1-flash-image-preview",
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                response_modalities=["TEXT", "IMAGE"],
+            ),
         )
         for part in response.candidates[0].content.parts:
-            if hasattr(part, "inline_data") and part.inline_data:
+            if part.inline_data is not None:
                 return part.inline_data.data
         return None
     except Exception as exc:
@@ -143,16 +148,17 @@ async def run(
         return []
 
     processed = []
-    for card in cards:
+    for i, card in enumerate(cards):
         slug_val = card["slug"]
         cat = card["category"]
         name = card["name"]
         desc = card["description"]
-        print(f"  Generating image for {slug_val} ({name})...", end=" ", flush=True)
+        print(f"  [{i+1}/{len(cards)}] Generating image for {slug_val} ({name})...", end=" ", flush=True)
 
         img_bytes = _generate_image_gemini(name, desc, api_key)
         if not img_bytes:
             print("SKIP (generation failed)")
+            time.sleep(15)  # back off before next attempt
             continue
 
         save_path = _image_save_path(cat, slug_val)
@@ -167,6 +173,7 @@ async def run(
             display_path = save_path
         print(f"saved → {display_path}")
         processed.append(slug_val)
+        time.sleep(10)  # ~6 req/min to stay within free tier limits
 
     print(f"\nDone: {len(processed)}/{len(cards)} images generated.")
     return processed
