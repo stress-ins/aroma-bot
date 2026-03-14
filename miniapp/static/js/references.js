@@ -328,14 +328,23 @@ export function createReferencesModule(deps) {
         ? rawKeyline
         : (REFERENCE_SOURCE_TYPE_LABELS[reference.source_type] || currentHandbookMeta().title);
     }
-    // Subtitle: RU name + keyline in parens (for aromas); EN name for blends
+    // Subtitle line below the card title — context for each category type
     let subtitle = "";
     if (state.tab === "aromas") {
+      // RU name + family in parens: "Майоран душистый (Пряные)"
       const nameRu = reference.name_ru && reference.name_ru !== reference.name ? reference.name_ru : "";
       const subtitleParts = [nameRu, keyline ? `(${keyline})` : ""].filter(Boolean);
       subtitle = subtitleParts.join(" ");
-    } else if (state.tab === "blends" && reference.name_en) {
-      subtitle = reference.name_en;
+    } else if (state.tab === "blends") {
+      // EN blend name · category: "Harmony · Эмоции и настроение"
+      const parts = [reference.name_en, keyline].filter(Boolean);
+      subtitle = parts.join(" · ");
+    } else if (state.tab === "symptoms") {
+      // Category group: "Нарушения сна"
+      subtitle = keyline || "";
+    } else if (state.tab === "practices" || state.tab === "concepts") {
+      // Type label: "Медитация" / "Чакра"
+      subtitle = keyline || "";
     }
     return `
       <section class="section aroma-hero ${heroClass}">
