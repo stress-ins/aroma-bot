@@ -5655,7 +5655,7 @@
         "Sandalwood",
         "Neroli"
       ],
-      "recommended_blend_names": [],
+      "recommended_blend_names": ["Смесь от морщин"],
       "applications": "",
       "description": "",
       "recommended_oil_slugs": [
@@ -5674,7 +5674,7 @@
         "sandalwood",
         "neroli"
       ],
-      "recommended_blend_slugs": []
+      "recommended_blend_slugs": ["smesh-ot-morshchin"]
     }
   },
   {
