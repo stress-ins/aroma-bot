@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+import logging
 import os
 import time
 import urllib.parse
@@ -10,6 +11,8 @@ import urllib.parse
 from fastapi import Header, HTTPException, Query
 
 from config import settings
+
+logger = logging.getLogger(__name__)
 
 # Reject initData tokens older than 24 hours to prevent replay attacks.
 _AUTH_DATE_MAX_AGE = 86400
@@ -31,6 +34,7 @@ def _verify_init_data(init_data: str) -> bool:
         expected_hash = hmac.new(secret_key, check_string.encode(), hashlib.sha256).hexdigest()
         return hmac.compare_digest(expected_hash, received_hash)
     except Exception:
+        logger.warning("initData verification failed", exc_info=True)
         return False
 
 
@@ -44,6 +48,7 @@ def _telegram_user_id_from_init_data(init_data: str) -> int | None:
         user_id = payload.get("id")
         return int(user_id) if user_id is not None else None
     except Exception:
+        logger.warning("Failed to parse user_id from initData", exc_info=True)
         return None
 
 

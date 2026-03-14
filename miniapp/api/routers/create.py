@@ -15,17 +15,21 @@ from ..models import CreateCarouselPayload, CreateContentPayload, CreateReelsPay
 router = APIRouter()
 
 
-@router.post("/api/generate/content")
-async def generate_content(payload: CreateContentPayload, _: None = Depends(_require_auth)):
+def _validate_topic(payload) -> str:
     if not settings.anthropic_api_key:
         raise HTTPException(status_code=400, detail="anthropic_not_configured")
-
     topic = payload.topic.strip()
+    if not topic:
+        raise HTTPException(status_code=400, detail="empty_topic")
+    return topic
+
+
+@router.post("/api/generate/content")
+async def generate_content(payload: CreateContentPayload, _: None = Depends(_require_auth)):
+    topic = _validate_topic(payload)
     goal_key = payload.goal_key.strip().lower()
     format_key = payload.format_key.strip().lower()
 
-    if not topic:
-        raise HTTPException(status_code=400, detail="empty_topic")
     if not is_valid_content_goal(goal_key):
         raise HTTPException(status_code=400, detail="invalid_goal")
     if not is_valid_content_format(format_key):
@@ -47,12 +51,7 @@ async def generate_reels(
     background_tasks: BackgroundTasks,
     _: None = Depends(_require_auth),
 ):
-    if not settings.anthropic_api_key:
-        raise HTTPException(status_code=400, detail="anthropic_not_configured")
-
-    topic = payload.topic.strip()
-    if not topic:
-        raise HTTPException(status_code=400, detail="empty_topic")
+    topic = _validate_topic(payload)
 
     saved = await save_draft(
         kind="reels",
@@ -81,12 +80,7 @@ async def generate_carousel(
     background_tasks: BackgroundTasks,
     _: None = Depends(_require_auth),
 ):
-    if not settings.anthropic_api_key:
-        raise HTTPException(status_code=400, detail="anthropic_not_configured")
-
-    topic = payload.topic.strip()
-    if not topic:
-        raise HTTPException(status_code=400, detail="empty_topic")
+    topic = _validate_topic(payload)
 
     saved = await save_draft(
         kind="carousel",

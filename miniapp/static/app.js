@@ -1207,6 +1207,7 @@ const {
   escapeHtml,
   tagMarkup,
   uiIcon,
+  showUiNotice,
 });
 
 const {
