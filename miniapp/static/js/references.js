@@ -157,11 +157,23 @@ export function createReferencesModule(deps) {
     return `<section class="section"><h3>${escapeHtml(title)}</h3><ul class="card-list">${items.map((i) => `<li>${escapeHtml(i)}</li>`).join("")}</ul></section>`;
   }
 
+  // Normalize symptom names that contain mixed-case PDF artifacts.
+  // "Боль ГОЛОВНАЯ ПРИ СИНУСИТЕ" → "Боль головная при синусите"
+  function normalizePdfSymptomName(raw) {
+    const s = String(raw || "").replace(/[.\s]+$/, "").trim();
+    if (!s) return s;
+    // If contains all-caps word (3+ letters) AND has lowercase letters → mixed PDF artifact
+    if (/\b[А-ЯЁA-Z]{3,}\b/.test(s) && /[а-яёa-z]/.test(s)) {
+      return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+    }
+    return toSentenceCase(s);
+  }
+
   function renderCrossRefChips(pairs, targetTab) {
     if (!pairs || !pairs.length) return "";
     const chips = pairs.map(({ slug, name, meta }) => {
       if (!name) return "";
-      const display = targetTab === "symptoms" ? toSentenceCase(name.replace(/[.\s]+$/, "")) : name;
+      const display = targetTab === "symptoms" ? normalizePdfSymptomName(name) : name;
       let icon = "";
       if (meta) {
         if (targetTab === "aromas") {

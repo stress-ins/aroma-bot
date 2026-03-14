@@ -1305,9 +1305,14 @@ class TestMiniAppRussianLocale:
           Dynamic Island / Telegram close button — no useful content or buttons hidden
         - env(safe-area-inset-bottom) applied on bottom tab bar so tab buttons stay
           above the iPhone home indicator bar
+        - In detail view, the back button must be sticky below the safe inset
+        - session.js must apply TG_HEADER_FALLBACK so content doesn't go under
+          Telegram header on older Bot API versions without contentSafeAreaInset
         """
         app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
         html = Path("miniapp/index.html").read_text(encoding="utf-8")
+        session_js = Path("miniapp/static/js/session.js").read_text(encoding="utf-8")
+        shell_js = Path("miniapp/static/js/shell.js").read_text(encoding="utf-8")
 
         # Required for env(safe-area-inset-*) to work inside WKWebView / Telegram
         assert "viewport-fit=cover" in html
@@ -1323,6 +1328,31 @@ class TestMiniAppRussianLocale:
         # The bottom tab bar itself must apply the bottom inset
         tab_bar_css = app_css.split(".bottom-tab-bar", 1)[1] if ".bottom-tab-bar" in app_css else ""
         assert "safe-area-inset-bottom" in tab_bar_css
+
+        # Safe zone: --tg-content-inset-top custom prop must be used in CSS
+        # for BOTH the shell top padding AND the sticky back button position
+        assert "--tg-content-inset-top" in app_css
+
+        # Back button in detail view must stick right at the safe inset, not buried
+        detail_view_section = app_css.split("is-detail-view", 1)[1] if "is-detail-view" in app_css else ""
+        assert "tg-content-inset-top" in detail_view_section, (
+            "Back button in is-detail-view must have top: var(--tg-content-inset-top...) "
+            "so it stays below Telegram chrome"
+        )
+
+        # session.js must include TG_HEADER_FALLBACK so older Telegram versions
+        # without contentSafeAreaInset still reserve space for the Telegram header bar
+        assert "TG_HEADER_FALLBACK" in session_js, (
+            "session.js must define TG_HEADER_FALLBACK (fallback for older Telegram versions "
+            "that don't expose contentSafeAreaInset.top covering the TG header bar)"
+        )
+        assert "contentSafeAreaInset" in session_js, (
+            "session.js must read contentSafeAreaInset.top for Bot API 8.0+ full chrome height"
+        )
+
+        # goBackToList in shell.js must not call BackButton.hide() before checking _fromContext
+        # (cross-tab navigation back must work without hiding the TG back button prematurely)
+        assert "_fromContext" in shell_js
 
     def test_prompt_disclosure_state_uses_isPromptDisclosureOpen_in_carousel_and_reels(self):
         """Prompt disclosure panels must use isPromptDisclosureOpen() so their open/closed

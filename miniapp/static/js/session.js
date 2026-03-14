@@ -51,14 +51,15 @@ export function createSessionModule(deps) {
     document.body.classList.toggle("tg-theme-dark", tg.colorScheme === "dark");
     // contentSafeAreaInset.top covers Telegram chrome bar + iPhone notch (Bot API 8.0+).
     // safeAreaInset.top covers only the iPhone notch (Bot API 7.7+).
-    // We use the larger of the two so content is never hidden under Telegram chrome.
+    // For older Telegram (no contentSafeAreaInset), add ~44px for the Telegram header bar
+    // so content is never hidden under the back button / close bar UI chrome.
+    const TG_HEADER_FALLBACK = 44;
     function applyInset() {
       const contentTop = tg.contentSafeAreaInset?.top ?? 0;
       const safeTop = tg.safeAreaInset?.top ?? 0;
-      const top = Math.max(contentTop, safeTop);
-      if (top > 0) {
-        document.documentElement.style.setProperty("--tg-content-inset-top", `${top}px`);
-      }
+      // contentTop = full chrome (preferred). If unavailable, add TG header on top of notch.
+      const top = contentTop > 0 ? contentTop : safeTop + TG_HEADER_FALLBACK;
+      document.documentElement.style.setProperty("--tg-content-inset-top", `${top}px`);
     }
     applyInset();
     tg.onEvent("safeAreaChanged", applyInset);
