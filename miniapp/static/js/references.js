@@ -34,8 +34,11 @@ export function createReferencesModule(deps) {
     formatCourseSourceLabel,
     tagMarkup,
     stripMarkdown,
+    toSentenceCase,
     SOURCE_TYPE_ICONS,
     SYMPTOM_CATEGORY_ICONS,
+    SYMPTOM_PARENT_GROUP_ICONS,
+    BLEND_CATEGORY_ICONS,
     CONCEPT_TYPE_ICONS,
     PRACTICE_TYPE_ICONS,
     PRACTICE_RU_LABELS,
@@ -242,14 +245,14 @@ export function createReferencesModule(deps) {
     if (state.tab === "concepts") {
       eyebrowLabel = `${handbookCategoryIcon(state.tab)}<span>${escapeHtml(currentHandbookMeta().title)} · учебный модуль</span>`;
     } else if (state.tab === "symptoms") {
-      const eyebrowText = String(reference.parent_group || reference.category_group || currentHandbookMeta().title);
+      const eyebrowText = toSentenceCase(String(reference.parent_group || reference.category_group || currentHandbookMeta().title));
       eyebrowLabel = `${handbookCategoryIcon(state.tab)}<span>${escapeHtml(eyebrowText)}</span>`;
     } else {
       eyebrowLabel = `${handbookCategoryIcon(state.tab)}<span>${escapeHtml(currentHandbookMeta().title)}</span>`;
     }
     // For symptoms: use category_group as keyline, not source_type key
     const keyline = state.tab === "symptoms"
-      ? (reference.category_group || reference.parent_group || "")
+      ? toSentenceCase(reference.category_group || reference.parent_group || "")
       : (reference.key || handbookCardBadge(state.tab, reference) || currentHandbookMeta().title);
     // For blends: show English name as subtitle
     const nameEn = state.tab === "blends" && reference.name_en
@@ -273,7 +276,7 @@ export function createReferencesModule(deps) {
   }
 
   function renderFilterChips(items, tabId) {
-    if (!["aromas", "symptoms", "concepts", "practices"].includes(tabId)) return "";
+    if (!["aromas", "blends", "symptoms", "concepts", "practices"].includes(tabId)) return "";
 
     if (tabId === "symptoms") {
       return renderSymptomFilterChips(items);
@@ -284,6 +287,7 @@ export function createReferencesModule(deps) {
     for (const item of items) {
       let raw = "";
       if (tabId === "aromas") raw = String(item.source_type || "").trim().toLowerCase();
+      else if (tabId === "blends") raw = String(item.blend_category || "").trim();
       else if (tabId === "concepts") raw = String(item.source_type || "").trim().toLowerCase();
       else if (tabId === "practices") raw = String(item.source_type || "").trim().toLowerCase();
       if (raw && !seen.has(raw)) {
@@ -301,6 +305,9 @@ export function createReferencesModule(deps) {
         if (tabId === "aromas") {
           const icon = SOURCE_TYPE_ICONS?.[v] ? SOURCE_TYPE_ICONS[v] + "\u00a0" : "";
           label = icon + (REFERENCE_SOURCE_TYPE_LABELS[v] || v);
+        } else if (tabId === "blends") {
+          const icon = BLEND_CATEGORY_ICONS?.[v] ? BLEND_CATEGORY_ICONS[v] + "\u00a0" : "";
+          label = icon + v;
         } else if (tabId === "concepts") {
           const meta = conceptTypeMeta(v);
           const icon = meta.icon ? meta.icon + "\u00a0" : "";
@@ -349,9 +356,9 @@ export function createReferencesModule(deps) {
     const parentChips = [
       `<button class="filter-chip${allActive ? " active" : ""}" onclick="setReferenceFilter('')">Все</button>`,
       ...parentGroups.map((p) => {
-        const icon = SYMPTOM_CATEGORY_ICONS?.[p.split(" ")[0]] ? SYMPTOM_CATEGORY_ICONS[p.split(" ")[0]] + "\u00a0" : "";
+        const icon = SYMPTOM_PARENT_GROUP_ICONS?.[p] ? SYMPTOM_PARENT_GROUP_ICONS[p] + "\u00a0" : "";
         const isActive = activeParent === p || activeFilter === p;
-        return `<button class="filter-chip${isActive ? " active" : ""}" onclick='setSymptomParentFilter(${JSON.stringify(p)})'>${escapeHtml(icon + p)}</button>`;
+        return `<button class="filter-chip${isActive ? " active" : ""}" onclick='setSymptomParentFilter(${JSON.stringify(p)})'>${escapeHtml(icon + toSentenceCase(p))}</button>`;
       }),
     ];
 
@@ -360,7 +367,7 @@ export function createReferencesModule(deps) {
       const children = [...childrenByParent[activeParent]];
       const childButtons = children.map((c) => {
         const isActive = activeFilter === c;
-        return `<button class="filter-chip filter-chip--child${isActive ? " active" : ""}" onclick='setReferenceFilter(${JSON.stringify(c)})'>${escapeHtml(c)}</button>`;
+        return `<button class="filter-chip filter-chip--child${isActive ? " active" : ""}" onclick='setReferenceFilter(${JSON.stringify(c)})'>${escapeHtml(toSentenceCase(c))}</button>`;
       });
       childChips = `<div class="filter-chips filter-chips--level2">${childButtons.join("")}</div>`;
     }
@@ -404,6 +411,7 @@ export function createReferencesModule(deps) {
     if (activeFilter || activeParent) {
       visible = items.filter((item) => {
         if (tabId === "aromas") return String(item.source_type || "").trim().toLowerCase() === activeFilter;
+        if (tabId === "blends") return String(item.blend_category || "").trim() === activeFilter;
         if (tabId === "symptoms") {
           const itemParent = String(item.parent_group || item.category_group || "").trim();
           const itemChild = String(item.category_group || "").trim();
@@ -463,7 +471,7 @@ export function createReferencesModule(deps) {
           <div class="draft-kind"><span class="kind-glyph handbook-glyph" aria-hidden="true">${aromaCardIcon(item, state.tab)}</span>${handbookCardBadge(state.tab, item) ? `<span>${escapeHtml(handbookCardBadge(state.tab, item))}</span>` : ""}</div>
           <span class="overview-card-date">${escapeHtml(formatCourseSourceLabel(item.course_source) || meta.title)}</span>
         </div>
-        <h3 class="draft-topic">${escapeHtml(item.name)}</h3>
+        <h3 class="draft-topic">${escapeHtml(state.tab === "symptoms" ? toSentenceCase(item.name) : item.name)}</h3>
         ${item.name_en ? `<div class="reference-name-en">${escapeHtml(item.name_en)}</div>` : ""}
         <div class="draft-preview">${escapeHtml(stripMarkdown(item.description || item.course_notes || ""))}</div>
         <div class="draft-meta overview-card-footer">
