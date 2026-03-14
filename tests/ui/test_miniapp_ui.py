@@ -1508,7 +1508,11 @@ def test_handbook_cards_open_in_all_sections(page):
         card = page.locator(".reference-card").filter(has_text=card_name).first
         assert card.is_visible(), f"Card '{card_name}' not found in '{tab_label}' tab"
         card.click()
-        page.wait_for_timeout(400)
+        # Wait for the detail to show the card name (up to 5 s on slow CI).
+        page.wait_for_function(
+            f"() => (document.querySelector('#draftDetail') || {{innerText: ''}}).innerText.includes({json.dumps(card_name)})",
+            timeout=5000,
+        )
 
         # Detail view must be visible and show the card name
         detail = page.locator("#draftDetail")
