@@ -1154,12 +1154,11 @@ body.tg-theme-dark .reference-badge {
   border-color: var(--border);
 }
 
-/* reference-hero-card.is-theory had hardcoded near-white blue gradient */
 body.tg-theme-dark .reference-hero-card.is-theory {
   background:
-    radial-gradient(circle at top right, rgba(86, 129, 173, 0.12), transparent 33%),
+    radial-gradient(circle at top right, rgba(180, 92, 61, 0.1), transparent 33%),
     linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
-  border-color: rgba(86, 129, 173, 0.22);
+  border-color: rgba(180, 92, 61, 0.2);
 }
 
 /* content-review elements had hardcoded white backgrounds */
@@ -1731,10 +1730,10 @@ body.tg-theme-dark .detail-markdown h5 {
 
 .reference-hero-card.is-theory {
   background:
-    radial-gradient(circle at top right, rgba(86, 129, 173, 0.18), transparent 33%),
-    radial-gradient(circle at bottom left, rgba(113, 161, 132, 0.14), transparent 36%),
-    linear-gradient(180deg, rgba(249, 252, 255, 0.96), rgba(239, 246, 250, 0.94));
-  border-color: rgba(86, 129, 173, 0.22);
+    radial-gradient(circle at top right, rgba(180, 92, 61, 0.12), transparent 33%),
+    radial-gradient(circle at bottom left, rgba(93, 110, 58, 0.1), transparent 36%),
+    linear-gradient(180deg, rgba(255, 252, 248, 0.96), rgba(250, 244, 236, 0.94));
+  border-color: rgba(180, 92, 61, 0.18);
 }
 
 .reference-hero-copy {
@@ -1790,7 +1789,7 @@ body.tg-theme-dark .detail-markdown h5 {
 }
 
 .reference-card.is-theory .overview-card-date {
-  color: #416784;
+  color: var(--brand);
 }
 
 .reference-card .overview-card-footer {
@@ -1843,13 +1842,13 @@ body.tg-theme-dark .detail-markdown h5 {
 
 .concept-card {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(244, 249, 252, 0.98));
-  border-color: rgba(86, 129, 173, 0.2);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(250, 245, 238, 0.98));
+  border-color: rgba(180, 92, 61, 0.18);
   color: #1c1510;
 }
 
 .concept-card::before {
-  background: linear-gradient(90deg, rgba(86, 129, 173, 0.8), rgba(113, 161, 132, 0.78));
+  background: linear-gradient(90deg, rgba(180, 92, 61, 0.75), rgba(93, 110, 58, 0.72));
 }
 
 .concept-card .draft-topic {
@@ -1869,8 +1868,8 @@ body.tg-theme-dark .detail-markdown h5 {
   width: 18px;
   height: 18px;
   border-radius: 999px;
-  background: rgba(86, 129, 173, 0.12);
-  color: #416784;
+  background: rgba(180, 92, 61, 0.12);
+  color: var(--brand);
   font-size: 11px;
   line-height: 1;
   font-weight: 700;
@@ -1881,9 +1880,9 @@ body.tg-theme-dark .detail-markdown h5 {
 }
 
 body.tg-theme-dark .concept-card {
-  background: linear-gradient(180deg, rgba(86, 129, 173, 0.12), rgba(113, 161, 132, 0.08));
+  background: linear-gradient(180deg, rgba(180, 92, 61, 0.1), rgba(93, 110, 58, 0.06));
   color: var(--text);
-  border-color: rgba(86, 129, 173, 0.25);
+  border-color: rgba(180, 92, 61, 0.22);
 }
 
 .aroma-image {

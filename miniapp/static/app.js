@@ -166,6 +166,36 @@ const SYMPTOM_CATEGORY_ICONS = {
   "ОТЁКИ":        "💧",
 };
 
+const BLEND_CATEGORY_ICONS = {
+  "ЭМОЦИИ И НАСТРОЕНИЕ":    "💛",
+  "ЭНЕРГИЯ И МОТИВАЦИЯ":    "⚡",
+  "РАССЛАБЛЕНИЕ И СОН":     "🌙",
+  "ЗДОРОВЬЕ И ИММУНИТЕТ":   "🛡️",
+  "БОЛЬ И ВОССТАНОВЛЕНИЕ":  "🦴",
+  "ДЫХАНИЕ И ГОЛОВА":       "🫁",
+  "ЖЕНСКОЕ ЗДОРОВЬЕ":       "🌸",
+  "МУЖСКОЕ ЗДОРОВЬЕ":       "🔱",
+  "ДЕТСКАЯ КОЛЛЕКЦИЯ":      "🧒",
+  "ДУХОВНОСТЬ":             "✨",
+  "КРАСОТА И УХОД":         "🌿",
+};
+
+const SYMPTOM_PARENT_GROUP_ICONS = {
+  "НЕРВНАЯ СИСТЕМА":                            "🧠",
+  "КРОВЕНОСНАЯ И СЕРДЕЧНО-СОСУДИСТАЯ СИСТЕМА":  "❤️",
+  "ДЫХАТЕЛЬНАЯ СИСТЕМА":                        "🫁",
+  "ПИЩЕВАРИТЕЛЬНАЯ СИСТЕМА":                    "🫄",
+  "ОПОРНО-ДВИГАТЕЛЬНАЯ СИСТЕМА":                "🦴",
+  "ЭНДОКРИННАЯ СИСТЕМА":                        "⚗️",
+  "ИММУННАЯ СИСТЕМА":                           "🛡️",
+  "РЕПРОДУКТИВНАЯ СИСТЕМА":                     "🌸",
+  "МОЧЕВЫДЕЛИТЕЛЬНАЯ СИСТЕМА":                  "💧",
+  "КОЖА И ПОКРОВЫ":                             "🫧",
+  "ОРГАНЫ ЗРЕНИЯ И СЛУХА":                      "👁️",
+  "ПСИХИКА И ЭМОЦИИ":                           "💭",
+  "ОБЩЕЕ И РАЗНОЕ":                             "🌿",
+};
+
 const CONCEPT_TYPE_ICONS = {
   chakra:  "✦",
   system:  "◎",
@@ -334,7 +364,12 @@ function handbookCardBadge(tabId, item = {}) {
   if (tabId === "blends") return "Смесь";
   if (tabId === "symptoms") {
     const pg = String(item.parent_group || "").trim();
-    if (pg) return pg.length > 22 ? pg.split(" ").slice(0, 2).join(" ") : pg;
+    if (pg) {
+      const icon = SYMPTOM_PARENT_GROUP_ICONS[pg] || "";
+      const raw = pg.length > 22 ? pg.split(" ").slice(0, 2).join(" ") : pg;
+      const label = toSentenceCase(raw);
+      return icon ? icon + "\u00a0" + label : label;
+    }
     return "Симптом";
   }
   if (tabId === "concepts") {
@@ -386,6 +421,19 @@ function referenceHeroBadges(reference) {
       <strong>${escapeHtml(item.value)}</strong>
     </div>
   `).join("");
+}
+
+/**
+ * Convert ALL_CAPS strings (from PDF) to sentence case for display.
+ * "АЛЛЕРГИЧЕСКИЙ РИНИТ" → "Аллергический ринит"
+ * Mixed-case strings are returned unchanged.
+ */
+function toSentenceCase(str) {
+  if (!str) return str;
+  const s = String(str).trim();
+  const letters = s.replace(/[^а-яёa-zА-ЯЁA-Z]/g, "");
+  if (!letters || letters !== letters.toUpperCase()) return s;
+  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
 }
 
 function escapeHtml(value) {
@@ -1113,8 +1161,11 @@ const {
   formatCourseSourceLabel,
   tagMarkup,
   stripMarkdown,
+  toSentenceCase,
   SOURCE_TYPE_ICONS,
   SYMPTOM_CATEGORY_ICONS,
+  SYMPTOM_PARENT_GROUP_ICONS,
+  BLEND_CATEGORY_ICONS,
   CONCEPT_TYPE_ICONS,
   PRACTICE_TYPE_ICONS,
   PRACTICE_RU_LABELS,
