@@ -313,9 +313,9 @@ export function createReferencesModule(deps) {
   function renderVolatilityScale(v) {
     if (!v) return v;
     const s = String(v).toLowerCase();
-    if (s.includes("высок")) return "▓▓▓ Высокая";
-    if (s.includes("средн")) return "▓▓░ Средняя";
-    if (s.includes("низк"))  return "▓░░ Низкая";
+    if (s.includes("высок")) return "🔺 Высокая";
+    if (s.includes("средн")) return "🔶 Средняя";
+    if (s.includes("низк"))  return "🔹 Низкая";
     return v;
   }
 
@@ -340,16 +340,25 @@ export function createReferencesModule(deps) {
     ).join("")}</div>`;
   }
 
+  function cardCategoryIcon(reference) {
+    const icons = {
+      citrus: "🍊", herb: "🌿", flower: "🌸", tree: "🌲", resin: "🪨",
+      spice: "🌶", grass: "🌾", root: "🌱", wood: "🪵",
+      blend: "🧪", symptom: "🩺", practice: "📿", concept: "💡",
+    };
+    return icons[reference.source_type] || icons[reference.category] || handbookCategoryIcon(state.tab);
+  }
+
   function renderReferenceImage(reference) {
     const heroClass = state.tab === "concepts" ? "reference-hero-card is-theory" : "reference-hero-card";
     let eyebrowLabel;
     if (state.tab === "concepts") {
-      eyebrowLabel = `${handbookCategoryIcon(state.tab)}<span>${escapeHtml(currentHandbookMeta().title)} · учебный модуль</span>`;
+      eyebrowLabel = `${cardCategoryIcon(reference)}<span>${escapeHtml(currentHandbookMeta().title)} · учебный модуль</span>`;
     } else if (state.tab === "symptoms") {
       const eyebrowText = toSentenceCase(String(reference.parent_group || reference.category_group || currentHandbookMeta().title));
-      eyebrowLabel = `${handbookCategoryIcon(state.tab)}<span>${escapeHtml(eyebrowText)}</span>`;
+      eyebrowLabel = `${cardCategoryIcon(reference)}<span>${escapeHtml(eyebrowText)}</span>`;
     } else {
-      eyebrowLabel = `${handbookCategoryIcon(state.tab)}<span>${escapeHtml(currentHandbookMeta().title)}</span>`;
+      eyebrowLabel = `${cardCategoryIcon(reference)}<span>${escapeHtml(currentHandbookMeta().title)}</span>`;
     }
     // Keyline: for aromas always use source_type family label
     let keyline;
@@ -368,9 +377,13 @@ export function createReferencesModule(deps) {
     // Subtitle line below the card title — context for each category type
     let subtitle = "";
     if (state.tab === "aromas") {
-      // RU name + family in parens: "Майоран душистый (Пряные)"
-      const nameRu = reference.name_ru && reference.name_ru !== reference.name ? reference.name_ru : "";
-      const subtitleParts = [nameRu, keyline ? `(${keyline})` : ""].filter(Boolean);
+      // "Апельсин | Orange (Цитрусовые)"
+      const nameRu = reference.name_ru || "";
+      const nameEn = reference.name || "";
+      const namePart = nameRu && nameEn && nameRu !== nameEn
+        ? `${nameRu} | ${nameEn}`
+        : nameRu || nameEn;
+      const subtitleParts = [namePart, keyline ? `(${keyline})` : ""].filter(Boolean);
       subtitle = subtitleParts.join(" ");
     } else if (state.tab === "blends") {
       // EN blend name · category: "Harmony · Эмоции и настроение"
@@ -392,7 +405,6 @@ export function createReferencesModule(deps) {
         </div>
         <div class="reference-hero-media">
           <img class="aroma-image" src="${escapeHtml(reference.image_url)}" alt="${escapeHtml(reference.image_alt)}" />
-          <div class="aroma-image-caption">${escapeHtml(reference.image_alt)}</div>
         </div>
       </section>
     `;
