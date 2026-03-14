@@ -726,7 +726,8 @@ async def _enrich_aroma_cross_refs(serialized: dict[str, object]) -> dict[str, o
             payload = _public_payload(blend.payload or {})
             ingredient_slugs = payload.get("ingredient_slugs") or []
             if isinstance(ingredient_slugs, list) and slug in ingredient_slugs:
-                blends_containing_names.append(blend.name)
+                name_ru = str(payload.get("name_ru", "")).strip()
+                blends_containing_names.append(name_ru or blend.name)
                 blends_containing_slugs.append(blend.slug)
                 blends_containing_categories.append(str(payload.get("blend_category", "") or ""))
 
@@ -755,6 +756,7 @@ async def _enrich_aroma_cross_refs(serialized: dict[str, object]) -> dict[str, o
     # Find symptoms where this oil is recommended (cross-ref back)
     related_symptom_names: list[str] = []
     related_symptom_slugs: list[str] = []
+    related_symptom_parent_groups: list[str] = []
     async with AsyncSessionLocal() as session:
         sym_result = await session.execute(select(AromaCardModel).where(AromaCardModel.category == "symptom"))
         symptom_models = sym_result.scalars().all()
@@ -764,8 +766,10 @@ async def _enrich_aroma_cross_refs(serialized: dict[str, object]) -> dict[str, o
         if isinstance(oil_slugs_in_sym, list) and slug in oil_slugs_in_sym:
             related_symptom_names.append(sym.name)
             related_symptom_slugs.append(sym.slug)
+            related_symptom_parent_groups.append(str(sym_payload.get("parent_group", "") or ""))
     serialized["related_symptom_names"] = related_symptom_names
     serialized["related_symptom_slugs"] = related_symptom_slugs
+    serialized["related_symptom_parent_groups"] = related_symptom_parent_groups
     return serialized
 
 
