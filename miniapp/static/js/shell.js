@@ -65,10 +65,16 @@ export function createShellModule(deps) {
 
   function goBackToList(animated = false) {
     if (state._fromContext) {
-      const ctx = state._fromContext;
-      state._fromContext = null;
-      void window.openReference(ctx.slug, ctx.tab);
-      return;
+      // Guard: stale context from a different tab should not redirect cross-tab
+      if (state._fromContext.tab !== state.tab) {
+        state._fromContext = null;
+        // fall through to normal list navigation below
+      } else {
+        const ctx = state._fromContext;
+        state._fromContext = null;
+        void window.openReference(ctx.slug, ctx.tab);
+        return;
+      }
     }
     window.Telegram?.WebApp?.BackButton?.hide();
     if (animated) {

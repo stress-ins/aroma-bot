@@ -115,9 +115,11 @@ export function createReferencesModule(deps) {
     openReferenceInFlight = true;
     try {
       // Track cross-tab navigation context for back button
+      // Only set _fromContext when explicitly navigating cross-tab from a detail view
       if (tabId !== state.tab && state.selectedReference?.slug) {
         state._fromContext = { tab: state.tab, slug: state.selectedReference.slug };
-      } else if (tabId === state.tab) {
+      } else {
+        // Same-tab navigation or no prior card: always clear stale context
         state._fromContext = null;
       }
       state.selectedReference = await fetchJson(`/api/references/${meta.category}/${encodeURIComponent(slug)}`);
