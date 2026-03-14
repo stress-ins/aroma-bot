@@ -62,7 +62,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -webkit-text-size-adjust: 100%;
   touch-action: manipulation;
-  overflow-x: clip;
+  overflow-x: hidden;
 }
 
 button, input, select, textarea { font: inherit; color: inherit; }
@@ -165,6 +165,9 @@ textarea,
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-x;
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
 }
 .tabs::-webkit-scrollbar { display: none; }
 
@@ -2392,6 +2395,12 @@ body.tg-theme-dark .concept-card {
     grid-template-columns: 1fr;
   }
 
+  /* Prevent grid items from expanding beyond 1fr track due to wide content (min-width: auto default) */
+  .layout > .panel {
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
   .detail-panel.is-empty-mobile {
     display: none;
   }
@@ -2802,6 +2811,9 @@ body.is-mobile-layout[data-mode="handbook"] .tabs::-webkit-scrollbar { display: 
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain;
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
 }
 .filter-chips::-webkit-scrollbar { display: none; }
 .filter-chip {

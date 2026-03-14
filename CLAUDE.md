@@ -36,6 +36,20 @@
 9. `git push origin main` → запускает деплой
 10. Проверить GitHub Actions "Deploy" → сообщить пользователю о результате
 
+**Software Factory checkpoints (обязательно для PRs с изменением карточек):**
+1. **QA Agent:** `pytest tests/ -q` + проверить что все тесты зелёные
+2. **UX Agent:** запустить `bot.agents.ux_reviewer.review_card_ux()` на изменённых карточках — score ≥ 0.7
+3. **Aromatherapy Expert:** `bot.agents.aromatherapy_expert.verify_card_content(card, dry_run=True)` — проверка категоризации и source_type
+4. **Image QA:** `tests/test_image_quality.py` — white stripe detection на все images в `assets/reference_images/`
+
+**VPS скрипты запускать через `screen` (не `nohup`):**
+```bash
+ssh root@46.32.186.192 'screen -S oil-import -d -m bash -c "cd /opt/aroma && .venv/bin/python scripts/import_oil_pdfs.py 2>&1 | tee /tmp/oil_import.log"'
+ssh root@46.32.186.192 'screen -S symptom-reseed -d -m bash -c "cd /opt/aroma && .venv/bin/python scripts/reseed_symptom_hierarchy.py 2>&1 | tee /tmp/reseed.log"'
+# Проверить: ssh root@46.32.186.192 'screen -ls'
+# Логи: ssh root@46.32.186.192 'cat /tmp/oil_import.log'
+```
+
 ---
 
 ### Режим 2 — Обычная разработка (парное программирование)

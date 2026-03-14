@@ -451,6 +451,7 @@ async def list_reference_cards(category: str) -> list[dict[str, str]]:
             # Extra fields used by frontend search / grouping
             "conditions_for_use": str(payload.get("conditions_for_use", "")),
             "category_group": str(payload.get("category_group", "")),
+            "parent_group": str(payload.get("parent_group", "")),
         })
     return items
 
@@ -536,6 +537,7 @@ async def _enrich_aroma_cross_refs(serialized: dict[str, object]) -> dict[str, o
     blends_containing_names: list[str] = []
     blends_containing_slugs: list[str] = []
     complementary_oil_names: list[str] = list(serialized.get("complementary_oil_names") or [])
+    complementary_oil_slugs_from_payload: list[str] = list(serialized.get("complementary_oil_slugs") or [])
     complementary_oil_slugs: list[str] = []
 
     async with AsyncSessionLocal() as session:
@@ -561,6 +563,14 @@ async def _enrich_aroma_cross_refs(serialized: dict[str, object]) -> dict[str, o
     for name in complementary_oil_names:
         resolved = aroma_slug_by_name.get(_normalize(name))
         complementary_oil_slugs.append(resolved or "")
+
+    # If names list is empty but slugs are stored in payload, resolve names from slugs
+    if not complementary_oil_names and complementary_oil_slugs_from_payload:
+        slug_to_name = {m.slug: m.name for m in aroma_models}
+        for s in complementary_oil_slugs_from_payload:
+            if s and s in slug_to_name:
+                complementary_oil_names.append(slug_to_name[s])
+                complementary_oil_slugs.append(s)
 
     serialized["blends_containing_names"] = blends_containing_names
     serialized["blends_containing_slugs"] = blends_containing_slugs

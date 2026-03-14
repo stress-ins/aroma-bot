@@ -223,6 +223,21 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
             "INSERT INTO aroma_cards (slug, name, category, source_type, aliases, payload, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             (slug, name, category, source_type, json.dumps([]), json.dumps({}), now, now),
         )
+    # Seed symptom cards with category_group values so filter chips bar renders
+    for slug, name, cat_group in [
+        ("headache", "Головная боль", "НЕРВНАЯ СИСТЕМА"),
+        ("anxiety", "Тревожность", "НЕРВНАЯ СИСТЕМА"),
+        ("indigestion", "Несварение желудка", "ПИЩЕВАРЕНИЕ"),
+        ("insomnia", "Бессонница", "СОН И ОТДЫХ"),
+        ("fatigue", "Усталость и истощение", "ЭНЕРГИЯ"),
+        ("hypertension", "Гипертония", "СЕРДЕЧНО-СОСУДИСТАЯ"),
+        ("depression", "Депрессия", "ПСИХОЭМОЦИОНАЛЬНОЕ"),
+        ("allergy", "Аллергия", "ИММУНИТЕТ И КОЖА"),
+    ]:
+        cursor.execute(
+            "INSERT INTO aroma_cards (slug, name, category, source_type, aliases, payload, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (slug, name, "symptom", "symptom", json.dumps([]), json.dumps({"category_group": cat_group, "parent_group": cat_group}), now, now),
+        )
     cursor.execute(
         "INSERT INTO plans (plan_id, raw_text, entries, created_at) VALUES (?, ?, ?, ?)",
         (
@@ -1506,3 +1521,30 @@ def test_handbook_cards_open_in_all_sections(page):
         if back_btn.count() > 0:
             back_btn.first.click()
             page.wait_for_timeout(200)
+
+
+def test_filter_chips_no_horizontal_overflow(page):
+    """Filter chips bar in Symptoms tab must not cause horizontal document overflow.
+
+    Regression test for the layout bug where .filter-chips without width:100% would
+    expand the parent container and create an unwanted horizontal scrollbar.
+    """
+    page.locator("#btnTabHandbook").click()
+    page.wait_for_timeout(300)
+
+    page.get_by_role("button", name="Симптомы").click()
+    page.wait_for_timeout(400)
+
+    # Wait for the filter-chips bar to appear (seeded symptom data has category_group)
+    page.wait_for_selector(".filter-chips", timeout=3000)
+
+    # Verify there are actual chips rendered (not just "Все")
+    chip_count = page.locator(".filter-chip").count()
+    assert chip_count >= 2, f"Expected filter chips to render, got {chip_count} chip(s)"
+
+    # Core assertion: document must not be wider than the viewport
+    overflow = page.evaluate("() => document.body.scrollWidth - window.innerWidth")
+    assert overflow <= 0, (
+        f"Horizontal overflow detected in Symptoms filter chips: +{overflow}px beyond viewport.\n"
+        "Fix: add width:100%; box-sizing:border-box; min-width:0 to .filter-chips in app.css"
+    )

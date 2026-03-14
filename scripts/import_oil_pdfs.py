@@ -248,7 +248,23 @@ async def run(dry_run: bool = False, only_file: str | None = None) -> list[str]:
             aliases=spec["aliases"],
             payload=payload,
         )
-        print(action)
+
+        # UX quality check after upsert
+        try:
+            import sys as _sys
+            _sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+            from bot.agents.ux_reviewer import review_card_ux
+            ux_card = {"name": name, "source_type": spec["source_type"], **payload}
+            ux_result = await review_card_ux(ux_card)
+            ux_score = ux_result["score"]
+            ux_status = "✓" if ux_result["passed"] else "⚠"
+            print(f"{action} [{ux_status} UX:{ux_score:.2f}]")
+            if ux_score < 0.5:
+                for issue in ux_result["issues"]:
+                    print(f"    WARNING UX: {issue}")
+        except Exception as _ux_exc:
+            print(f"{action} [UX check failed: {_ux_exc}]")
+
         processed.append(slug)
 
     print(f"\nDone: {len(processed)}/{len(entries)} oils processed.")
