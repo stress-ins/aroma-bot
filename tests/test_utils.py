@@ -880,8 +880,8 @@ class TestHandbookPdfImport:
 
     def test_references_js_aroma_detail_section_order(self):
         refs_js = _miniapp_static_text("js", "references.js")
-        # In the aroma detail view, psychology and resource sections come before questions
-        psychology_index = refs_js.index('aromaSection("Психологические свойства", reference.psychological_properties)')
+        # In the aroma detail view, psychology (now collapsible) and resource sections come before questions
+        psychology_index = refs_js.index('renderCollapsibleSection("Психологические свойства", reference.psychological_properties')
         plus_index = refs_js.index('aromaSection(\'Ресурс "+"\', reference.resource_values?.plus)')
         minus_index = refs_js.index('aromaSection(\'Ресурс "-"\', reference.resource_values?.minus)')
         questions_index = refs_js.index('aromaSection("Какие вопросы поднимает", reference.questions)')
