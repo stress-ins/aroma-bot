@@ -36,7 +36,7 @@ async def drafts(
     query: str = "",
     _: None = Depends(_require_auth),
 ):
-    records = await list_recent_drafts(limit=200)
+    records = await list_recent_drafts(limit=200, newest_first=True)
     filtered = await filter_drafts(records, kind=kind, status=status, feedback=feedback, query=query)
     return {"items": [await serialize_draft_summary(record) for record in filtered[:limit]], "total": len(filtered)}
 

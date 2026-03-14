@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+
 from bot.agents.creative_team import edit_post_sync
 from bot.services.drafts_store import get_draft, update_draft
 
@@ -58,7 +60,7 @@ async def polish_content_review_draft(draft_id: str) -> dict[str, object] | None
     if not raw_text:
         return None
 
-    polished = edit_post_sync(raw_text, draft.topic, platform=draft.kind)
+    polished = await asyncio.to_thread(edit_post_sync, raw_text, draft.topic, platform=draft.kind)
     if str(payload.get("caption", "")).strip():
         payload["caption"] = polished.strip()
     else:
