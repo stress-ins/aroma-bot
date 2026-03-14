@@ -3282,7 +3282,7 @@
     "source_type": "symptom",
     "aliases": [],
     "payload": {
-      "category_group": "РАК ШЕЙКИ МАТКИ",
+      "category_group": "РАК",
       "recommended_oil_names": [
         "Sacred Frankincense",
         "Frankincense",
@@ -3308,7 +3308,7 @@
     "source_type": "symptom",
     "aliases": [],
     "payload": {
-      "category_group": "РАК ШЕЙКИ МАТКИ",
+      "category_group": "АНТИСЕПТИКИ И ДЕЗИНФИЦИРУЮЩИЕ СРЕДСТВА",
       "recommended_oil_names": [
         "wk Ravintsara",
         "wk Thyme",
@@ -3374,7 +3374,7 @@
     "source_type": "symptom",
     "aliases": [],
     "payload": {
-      "category_group": "РАК ШЕЙКИ МАТКИ",
+      "category_group": "ИММУННАЯ СИСТЕМА",
       "recommended_oil_names": [
         "Orange",
         "w- Lemon",
@@ -3410,7 +3410,7 @@
     "source_type": "symptom",
     "aliases": [],
     "payload": {
-      "category_group": "РАК ШЕЙКИ МАТКИ",
+      "category_group": "БОЛЕЗНИ НЕРВНОЙ СИСТЕМЫ",
       "recommended_oil_names": [
         "Melissa",
         "Sandalwood",
@@ -3446,7 +3446,7 @@
     "source_type": "symptom",
     "aliases": [],
     "payload": {
-      "category_group": "РАК ШЕЙКИ МАТКИ",
+      "category_group": "БОЛЕЗНИ НЕРВНОЙ СИСТЕМЫ",
       "recommended_oil_names": [
         "wk Sacred Frankincense",
         "(Священный ладан)",
@@ -3482,7 +3482,7 @@
     "source_type": "symptom",
     "aliases": [],
     "payload": {
-      "category_group": "РАК ШЕЙКИ МАТКИ",
+      "category_group": "РАССЕЯННОСТЬ",
       "recommended_oil_names": [
         "wk Peppermint",
         "РЕКОМЕНДАЦИИ",
@@ -3542,7 +3542,7 @@
     "source_type": "symptom",
     "aliases": [],
     "payload": {
-      "category_group": "РАК ШЕЙКИ МАТКИ",
+      "category_group": "ВЕГЕТАТИВНАЯ НЕРВНАЯ СИСТЕМА",
       "recommended_oil_names": [
         "Idaho Blue Spruce",
         "Melissa",
@@ -3568,7 +3568,7 @@
     "source_type": "symptom",
     "aliases": [],
     "payload": {
-      "category_group": "РАК ШЕЙКИ МАТКИ",
+      "category_group": "РАССЕЯННОСТЬ",
       "recommended_oil_names": [
         "Rosemary",
         "Peppermint",
@@ -4254,6 +4254,62 @@
         "blend-thieves",
         "blend-purification",
         "blend-exodus-ii"
+      ]
+    }
+  },
+  {
+    "slug": "symptom-беременность",
+    "name": "БЕРЕМЕННОСТЬ",
+    "category": "symptom",
+    "source_type": "symptom",
+    "aliases": [],
+    "payload": {
+      "category_group": "БЕРЕМЕННОСТЬ",
+      "recommended_oil_names": [
+        "Lavender",
+        "Myrrh",
+        "Rose",
+        "Geranium",
+        "Helichrysum",
+        "German Chamomile",
+        "Neroli",
+        "Sandalwood"
+      ],
+      "recommended_blend_names": [
+        "Gentle Baby",
+        "Forgiveness",
+        "Valor",
+        "Valor Roll-On",
+        "Grounding",
+        "Peace & Calming",
+        "Highest Potential",
+        "Joy",
+        "Sacred Mountain",
+        "White Angelica"
+      ],
+      "applications": "",
+      "description": "",
+      "recommended_oil_slugs": [
+        "lavender",
+        "myrrh",
+        "rose",
+        "geranium",
+        "helichrysum",
+        "german-chamomile",
+        "",
+        "sandalwood"
+      ],
+      "recommended_blend_slugs": [
+        "blend-gentle-baby",
+        "blend-forgiveness",
+        "blend-valor",
+        "blend-valor-roll-on",
+        "",
+        "blend-peace-calming",
+        "",
+        "blend-joy",
+        "",
+        "blend-white-angelica"
       ]
     }
   },
