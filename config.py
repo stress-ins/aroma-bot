@@ -66,6 +66,10 @@ class Settings(BaseSettings):
     carousel_forbidden_phrases: str = ""
     carousel_forbidden_visual_motifs: str = ""
 
+    # Upload-Post (cross-platform publishing)
+    upload_post_api_key: str = ""
+    upload_post_user: str = ""
+
     # Scheduler
     daily_digest_time: str = "09:00"
     timezone: str = "Europe/Moscow"
