@@ -25,6 +25,7 @@ export function registerWindowBridge(deps) {
     deleteCarouselSlideVersion,
     handleCarouselSlideNoteInput,
     downloadCarouselPptx,
+    importCarouselPptx,
     saveReelsScenario,
     regenerateReelsStoryboard,
     regenerateAllReelsFrames,
@@ -39,6 +40,8 @@ export function registerWindowBridge(deps) {
     openKeywordTopic,
     addKeywordItem,
     removeKeywordItem,
+    publishDraft,
+    cancelPublishSchedule,
     addTodoItem,
     removeTodoItem,
     goBackToList,
@@ -76,6 +79,7 @@ export function registerWindowBridge(deps) {
   window.deleteCarouselSlideVersion = deleteCarouselSlideVersion;
   window.handleCarouselSlideNoteInput = handleCarouselSlideNoteInput;
   window.downloadCarouselPptx = downloadCarouselPptx;
+  window.importCarouselPptx = importCarouselPptx;
 
   window.saveReelsScenario = saveReelsScenario;
   window.regenerateReelsStoryboard = regenerateReelsStoryboard;
@@ -87,6 +91,8 @@ export function registerWindowBridge(deps) {
   window.handleReelsFramePromptInput = handleReelsFramePromptInput;
   window.handleReelsFrameNoteInput = handleReelsFrameNoteInput;
 
+  window.publishDraft = publishDraft;
+  window.cancelPublishSchedule = cancelPublishSchedule;
   window.saveContentReviewDraft = saveContentReviewDraft;
   window.polishContentDraft = polishContentDraft;
   window.openKeywordTopic = openKeywordTopic;
