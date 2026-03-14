@@ -703,6 +703,7 @@ async def _enrich_aroma_cross_refs(serialized: dict[str, object]) -> dict[str, o
         return serialized
     blends_containing_names: list[str] = []
     blends_containing_slugs: list[str] = []
+    blends_containing_categories: list[str] = []
     complementary_oil_names: list[str] = list(serialized.get("complementary_oil_names") or [])
     complementary_oil_slugs_from_payload: list[str] = list(serialized.get("complementary_oil_slugs") or [])
     complementary_oil_slugs: list[str] = []
@@ -712,8 +713,10 @@ async def _enrich_aroma_cross_refs(serialized: dict[str, object]) -> dict[str, o
         aroma_models = result.scalars().all()
         # Build lookup: normalised name/alias → slug
         aroma_slug_by_name: dict[str, str] = {}
+        aroma_slug_to_source_type: dict[str, str] = {}
         for m in aroma_models:
             aroma_slug_by_name[_normalize(m.name)] = m.slug
+            aroma_slug_to_source_type[m.slug] = m.source_type or ""
             for alias in (m.aliases or []):
                 aroma_slug_by_name[_normalize(alias)] = m.slug
 
@@ -725,6 +728,7 @@ async def _enrich_aroma_cross_refs(serialized: dict[str, object]) -> dict[str, o
             if isinstance(ingredient_slugs, list) and slug in ingredient_slugs:
                 blends_containing_names.append(blend.name)
                 blends_containing_slugs.append(blend.slug)
+                blends_containing_categories.append(str(payload.get("blend_category", "") or ""))
 
     # Resolve complementary oil slugs from stored names
     for name in complementary_oil_names:
@@ -739,10 +743,14 @@ async def _enrich_aroma_cross_refs(serialized: dict[str, object]) -> dict[str, o
                 complementary_oil_names.append(slug_to_name[s])
                 complementary_oil_slugs.append(s)
 
+    complementary_oil_source_types = [aroma_slug_to_source_type.get(s, "") for s in complementary_oil_slugs]
+
     serialized["blends_containing_names"] = blends_containing_names
     serialized["blends_containing_slugs"] = blends_containing_slugs
+    serialized["blends_containing_categories"] = blends_containing_categories
     serialized["complementary_oil_names"] = complementary_oil_names
     serialized["complementary_oil_slugs"] = complementary_oil_slugs
+    serialized["complementary_oil_source_types"] = complementary_oil_source_types
 
     # Find symptoms where this oil is recommended (cross-ref back)
     related_symptom_names: list[str] = []
