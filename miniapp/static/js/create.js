@@ -232,6 +232,7 @@ export function createCreateModule(deps) {
         const button = planForm.querySelector("button");
         button.disabled = true;
         button.textContent = "Собираю...";
+        planForm.classList.remove("did-error");
         try {
           const plan = await fetchJson("/api/generate/plan", { method: "POST", body: JSON.stringify({}) });
           state.selectedPlan = plan;
@@ -239,6 +240,9 @@ export function createCreateModule(deps) {
           await loadPlans();
           renderPlanDetail(plan);
           enterDetailView();
+        } catch (err) {
+          planForm.classList.add("did-error");
+          throw err;
         } finally {
           button.disabled = false;
           button.textContent = "Собрать план на неделю";

@@ -119,7 +119,7 @@ export function createContentModule(deps) {
     };
     for (let attempt = 0; attempt < 8; attempt += 1) {
       try {
-        const data = await fetchJson("/api/drafts?kind=reels&limit=20", { timeout: 20000 });
+        const data = await fetchJson("/api/drafts?kind=reels&limit=50", { timeout: 20000 });
         const items = data.items || [];
         const recovered = items.find((item) => {
           const createdAt = new Date(item.created_at || 0).getTime();

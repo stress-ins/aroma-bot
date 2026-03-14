@@ -409,7 +409,7 @@ async def generate_topic_options(
     format_key: str,
     user_brief: str = "",
 ) -> list[str]:
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     return await loop.run_in_executor(
         _executor, _generate_topics_sync, results, goal_key, format_key, user_brief
     )
@@ -419,7 +419,7 @@ async def generate_strategist_step(
     topic: str, goal_key: str, format_key: str
 ) -> tuple[str, str]:
     """Returns (angle, hook) — exposes step 1 for progress display in handler."""
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     return await loop.run_in_executor(
         _executor, _generate_strategist_sync, topic, goal_key, format_key
     )
@@ -429,7 +429,7 @@ async def generate_writer_step(
     topic: str, goal_key: str, format_key: str, angle: str, hook: str
 ) -> ContentDraft:
     """Returns ContentDraft — exposes step 2+3 for progress display in handler."""
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     return await loop.run_in_executor(
         _executor, _generate_writer_sync, topic, goal_key, format_key, angle, hook
     )
@@ -437,7 +437,7 @@ async def generate_writer_step(
 
 async def generate_content_draft(topic: str, goal_key: str, format_key: str) -> ContentDraft:
     """Full 3-agent chain as a single async call."""
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     return await loop.run_in_executor(_executor, _generate_draft_sync, topic, goal_key, format_key)
 
 
