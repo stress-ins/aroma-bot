@@ -265,7 +265,13 @@ def _serialize_model(model: AromaCardModel) -> dict[str, object]:
     payload = _public_payload(model.payload or {})
     payload.setdefault("resource_values", {"plus": "", "minus": ""})
     payload["slug"] = model.slug
-    payload["name"] = model.name
+    # For blend cards: use Russian name as primary, keep English as name_en
+    if model.category == "blend":
+        name_ru = str(payload.get("name_ru", "")).strip()
+        payload["name"] = name_ru or model.name
+        payload["name_en"] = model.name if name_ru else ""
+    else:
+        payload["name"] = model.name
     payload["category"] = model.category
     payload["aliases"] = list(model.aliases or [])
     payload["source_type"] = model.source_type
@@ -369,7 +375,9 @@ async def seed_reference_cards_if_empty() -> None:
         now = datetime.now(timezone.utc)
         for item in items:
             slug = str(item["slug"])
-            category = str(item.get("category", "aroma"))
+            # Prevent symptom source_type items from defaulting to "aroma" category
+            default_cat = "symptom" if str(item.get("source_type", "")).lower() == "symptom" else "aroma"
+            category = str(item.get("category") or default_cat)
             aliases = list(item.get("aliases", []))
             payload = dict(item)
             existing = existing_by_slug.get(slug)
@@ -442,9 +450,11 @@ async def list_reference_cards(category: str) -> list[dict[str, str]]:
     items = []
     for model in models:
         payload = _public_payload(model.payload or {})
+        name_ru = str(payload.get("name_ru", "")).strip() if model.category == "blend" else ""
         items.append({
             "slug": model.slug,
-            "name": model.name,
+            "name": name_ru or model.name,
+            "name_en": model.name if name_ru else "",
             "description": str(payload.get("description", "")),
             "category": model.category,
             "source_type": model.source_type,
