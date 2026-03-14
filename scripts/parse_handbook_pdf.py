@@ -70,6 +70,7 @@ EXISTING_SLUG_BY_EN_NAME: dict[str, str] = {
     "vetiver": "vetiver",
     "ylang ylang": "ylang-ylang",
     "ylang-ylang": "ylang-ylang",
+    "black spruce": "black-spruce",
 }
 
 # Map Russian oil names → English slug for cross-ref resolution
@@ -79,6 +80,7 @@ RU_TO_SLUG: dict[str, str] = {
     "базилик": "basil",
     "бергамот": "bergamot",
     "черный перец": "black-pepper",
+    "черная ель": "black-spruce",
     "голубая ель": "blue-spruce",
     "кассия": "cassia",
     "кедр": "cedarwood",
