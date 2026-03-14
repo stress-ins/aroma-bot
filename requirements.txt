@@ -40,3 +40,4 @@ pytest-asyncio
 playwright==1.58.0
 pdfplumber
 upload-post
+python-multipart
