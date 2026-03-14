@@ -514,6 +514,67 @@ def test_seed_wrinkles_blend_script_exists():
     assert "smesh-ot-morshchin" in content
 
 
+# ---------------------------------------------------------------------------
+# Tests for base blends import
+# ---------------------------------------------------------------------------
+
+def test_parse_base_blends_script_exists():
+    """parse_base_blends.py must exist and support --dry-run."""
+    script = ROOT / "scripts" / "parse_base_blends.py"
+    assert script.exists()
+    content = script.read_text(encoding="utf-8")
+    assert "--dry-run" in content
+    assert "pdfplumber" in content
+
+
+def test_seed_base_blends_script_exists():
+    """seed_base_blends.py must exist and support --dry-run and --limit."""
+    script = ROOT / "scripts" / "seed_base_blends.py"
+    assert script.exists()
+    content = script.read_text(encoding="utf-8")
+    assert "--dry-run" in content
+    assert "--limit" in content
+    assert "AsyncSessionLocal" in content
+
+
+def test_base_blends_json_format():
+    """If base_blends.json exists, validate its structure and content quality."""
+    p = ROOT / "data" / "base_blends.json"
+    if not p.exists():
+        pytest.skip("base_blends.json not generated yet")
+    data = json.loads(p.read_text(encoding="utf-8"))
+    assert len(data) >= 50, f"Expected at least 50 blend recipes, got {len(data)}"
+
+    for b in data:
+        assert b["category"] == "blend"
+        assert b["slug"].startswith("smesh-")
+        payload = b["payload"]
+        assert "ingredient_names" in payload
+        assert len(payload["ingredient_names"]) > 0
+        assert len(payload["ingredient_drops"]) == len(payload["ingredient_names"])
+        assert len(payload["ingredient_slugs"]) == len(payload["ingredient_names"])
+        assert len(payload["ingredient_names_ru"]) == len(payload["ingredient_names"])
+        # Description quality: must be meaningful, not a stub
+        desc = payload.get("description", "")
+        assert len(desc) >= 60, (
+            f"{b['slug']}: description too short ({len(desc)} chars): {desc!r}"
+        )
+        assert payload.get("source_pdf") == "base"
+        assert payload.get("category_group"), f"{b['slug']}: missing category_group"
+
+
+def test_base_blends_no_duplicate_slugs():
+    """All slugs in base_blends.json must be unique."""
+    p = ROOT / "data" / "base_blends.json"
+    if not p.exists():
+        pytest.skip("base_blends.json not generated yet")
+    data = json.loads(p.read_text(encoding="utf-8"))
+    slugs = [b["slug"] for b in data]
+    assert len(slugs) == len(set(slugs)), (
+        f"Duplicate slugs found: {[s for s in slugs if slugs.count(s) > 1]}"
+    )
+
+
 def test_enrich_applications_script_exists():
     """Applications enrichment script must exist and support required flags."""
     script = ROOT / "scripts" / "enrich_applications.py"
