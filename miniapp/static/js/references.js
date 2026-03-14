@@ -262,7 +262,7 @@ export function createReferencesModule(deps) {
       <section class="section aroma-hero ${heroClass}">
         <div class="reference-hero-copy">
           <p class="eyebrow">${eyebrowLabel}</p>
-          <h2 class="detail-title">${escapeHtml(reference.name)}</h2>
+          <h2 class="detail-title">${escapeHtml(state.tab === "symptoms" ? toSentenceCase(reference.name) : reference.name)}</h2>
           ${nameEn}
           <p class="reference-keyline">${escapeHtml(keyline)}</p>
           <p class="reference-summary">${escapeHtml(stripMarkdown(reference.description || reference.course_notes || ""))}</p>

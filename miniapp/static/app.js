@@ -361,7 +361,14 @@ function handbookCardBadge(tabId, item = {}) {
     const key = sourceType.toLowerCase();
     return SOURCE_TYPE_LABELS[key] || sourceType;
   }
-  if (tabId === "blends") return "Смесь";
+  if (tabId === "blends") {
+    const bc = String(item.blend_category || "").trim();
+    if (bc) {
+      const icon = BLEND_CATEGORY_ICONS[bc] || "";
+      return icon ? icon + "\u00a0" + toSentenceCase(bc) : toSentenceCase(bc);
+    }
+    return "Смесь";
+  }
   if (tabId === "symptoms") {
     const pg = String(item.parent_group || "").trim();
     if (pg) {
