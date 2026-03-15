@@ -69,7 +69,12 @@ async def main() -> None:
                 model.name = name
                 model.source_type = source_type
                 model.aliases = aliases
-                model.payload = payload
+                # Merge: JSON updates base fields; AI-enriched fields (not in JSON) are preserved.
+                # Fields like description_short, name_ru, health_effects, conditions_for_use,
+                # complementary_oil_slugs etc. are written by enrichment scripts — not in the JSON.
+                existing = dict(model.payload or {})
+                existing.update(payload)
+                model.payload = existing
                 model.category = category
                 updated += 1
             else:

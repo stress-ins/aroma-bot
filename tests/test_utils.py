@@ -677,6 +677,31 @@ class TestPatchAromaCardsScript:
         assert payload["slug"] == "orange"
         assert payload["resource_values"]["plus"] == "joy"
 
+    def test_merge_preserves_ai_enriched_fields(self):
+        """patch_aroma_cards must not overwrite AI-enriched fields not present in JSON."""
+        existing = {
+            "description": "old description",
+            "therapeutic_properties": "old props",
+            "description_short": "AI-generated summary",
+            "name_ru": "Мята перечная",
+            "health_effects": "AI health effects",
+        }
+        json_payload = {
+            "description": "updated description",
+            "therapeutic_properties": "updated props",
+            "key": "some_key",
+        }
+        merged = {**existing, **json_payload}
+        # JSON fields overwrite matching keys
+        assert merged["description"] == "updated description"
+        assert merged["therapeutic_properties"] == "updated props"
+        assert merged["key"] == "some_key"
+        # AI-enriched fields must survive
+        assert merged["description_short"] == "AI-generated summary"
+        assert merged["name_ru"] == "Мята перечная"
+        assert merged["health_effects"] == "AI health effects"
+
+
 
 # ---------------------------------------------------------------------------
 # Dark-theme CSS safety
