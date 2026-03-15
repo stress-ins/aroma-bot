@@ -335,7 +335,7 @@ export function createReelsModule(deps) {
     const header = readyCount > 0
       ? `Кадры и промпты <span class="meta">${readyCount} / ${frameItems.length} готовы</span>`
       : "Кадры и промпты";
-    const swipeHint = frameItems.length > 1 ? `<span class="storyboard-swipe-hint">← свайп →</span>` : "";
+    const swipeHint = frameItems.length > 1 ? `<span class="storyboard-swipe-hint"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>свайп<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>` : "";
     return `
       <section class="section">
         <h3>${sectionHeadingIcon("Кадры и промпты")}${header}${swipeHint}</h3>

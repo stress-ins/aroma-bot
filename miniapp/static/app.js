@@ -577,6 +577,9 @@ function uiIcon(name) {
     image: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2"></rect><path d="m8 14 2.5-2.5L13 14l2-2 3 3"></path><circle cx="9" cy="9" r="1.2"></circle></svg>`,
     download: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v10M8 12l4 4 4-4"></path><path d="M5 18h14"></path></svg>`,
     upload: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V5M8 8l4-4 4 4"></path><path d="M5 18h14"></path></svg>`,
+    threads: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M15 12a3 3 0 1 1-3-3c2 0 3.5 1 3.5 3s-1.5 3-3.5 3"/></svg>`,
+    instagram: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>`,
+    telegram: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M22 3 11 14M22 3 15 21l-4-7-7-4 18-7Z"/></svg>`,
   };
   return `<span class="ui-icon ui-icon-${escapeHtml(name)}">${icons[name] || icons.prompt}</span>`;
 }
@@ -1333,6 +1336,7 @@ const {
 } = createCreateModule({
   state,
   elements,
+  uiIcon,
   interactiveCardAttrs,
   contentKindIcon,
   renderGuidedState,

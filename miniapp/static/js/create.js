@@ -2,6 +2,7 @@ export function createCreateModule(deps) {
   const {
     state,
     elements,
+    uiIcon,
     interactiveCardAttrs,
     contentKindIcon,
     renderGuidedState,
@@ -84,7 +85,7 @@ export function createCreateModule(deps) {
         <article ${interactiveCardAttrs("Выбрать инструмент Пост для соцсетей")} class="create-card${state.selectedCreateTool === "content" ? " active" : ""} interactive-card" data-tool="content" onclick="renderCreateTool('content')">
           <div class="draft-kind">${contentKindIcon("content")}<span>контент</span></div>
           <h3 class="draft-topic">Пост для соцсетей</h3>
-          <div class="draft-preview">Тредс, Инстаграм или Телеграм.</div>
+          <div class="draft-preview">Threads, Instagram или Telegram.</div>
         </article>
         <article ${interactiveCardAttrs("Выбрать инструмент Сценарий и раскадровка")} class="create-card${state.selectedCreateTool === "reels" ? " active" : ""} interactive-card" data-tool="reels" onclick="renderCreateTool('reels')">
           <div class="draft-kind">${contentKindIcon("reels")}<span>рилсы</span></div>
@@ -134,7 +135,13 @@ export function createCreateModule(deps) {
             <p class="field-help">Сформулируйте тему как готовую мысль. Так черновик сразу получится ближе к нужной подаче.</p>
             <div class="field-grid">
               <label>Цель<select name="goal_key"><option value="trust">Доверие</option><option value="authority">Экспертность</option><option value="engagement">Вовлечённость</option><option value="sales">Продажи</option></select></label>
-              <label>Формат<select name="format_key"><option value="threads">Тредс</option><option value="instagram">Инстаграм</option><option value="telegram">Телеграм</option></select></label>
+              <label>Формат
+                <div class="platform-format-select">
+                  <label class="platform-format-option"><input type="radio" name="format_key" value="threads" checked>${uiIcon("threads")}<span>Threads</span></label>
+                  <label class="platform-format-option"><input type="radio" name="format_key" value="instagram">${uiIcon("instagram")}<span>Instagram</span></label>
+                  <label class="platform-format-option"><input type="radio" name="format_key" value="telegram">${uiIcon("telegram")}<span>Telegram</span></label>
+                </div>
+              </label>
             </div>
             <button class="primary-button" type="submit">Собрать черновик</button>
           </form>
@@ -186,7 +193,7 @@ export function createCreateModule(deps) {
     const contentForm = elements.draftDetail.querySelector("[data-create-content]");
     if (contentForm) bindTopicForm(contentForm, { pendingText: "Создаю...", onSubmit: async (topic) => {
       const goal = contentForm.querySelector("select[name='goal_key']").value;
-      const format = contentForm.querySelector("select[name='format_key']").value;
+      const format = contentForm.querySelector("[name='format_key']:checked")?.value || "threads";
       const pending = openPendingDraftCreation(format, topic);
       try {
         const draft = await fetchJson("/api/generate/content", {
