@@ -1536,6 +1536,7 @@ function setTab(t) {
   elements.filtersContainer.hidden = !["drafts", "inbox"].includes(t);
   
   // Clear panels immediately to prevent showing tools/content from previous tab
+  setEmptyState(true);
   elements.listTitle.textContent = "Загрузка...";
   elements.draftCount.textContent = "";
   elements.draftList.innerHTML = renderPanelLoader("Загружаю раздел");
