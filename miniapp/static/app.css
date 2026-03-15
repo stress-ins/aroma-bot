@@ -941,6 +941,32 @@ body.is-mobile-layout .detail-top {
   text-align: left;
 }
 
+/* Collapsible sections: preview lives inside <summary>, hide it when open */
+.description-collapsible > summary {
+  list-style: none;
+  cursor: pointer;
+}
+.description-collapsible > summary::-webkit-details-marker { display: none; }
+.description-collapsible > summary .preview-text {
+  display: inline;
+  font-size: 14px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--text);
+}
+.description-collapsible > summary .expand-label {
+  display: inline;
+  font-size: 13px;
+  color: var(--brand, #c8773d);
+  white-space: nowrap;
+}
+.description-collapsible[open] > summary .preview-text { display: none; }
+.description-collapsible[open] > summary .expand-label { display: none; }
+.description-collapsible .description-full {
+  margin-top: 8px;
+}
+
 .detail-markdown {
   white-space: normal;
 }
