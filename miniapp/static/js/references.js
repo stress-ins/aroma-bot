@@ -275,13 +275,20 @@ export function createReferencesModule(deps) {
   }
 
   function renderRecipeDrops(ref) {
-    const names = ref.ingredient_names || [];
+    const namesEn = ref.ingredient_names || [];
+    const namesRu = ref.ingredient_names_ru || [];
+    const slugs = ref.ingredient_slugs || [];
     const drops = ref.ingredient_drops || [];
-    if (!drops.length || drops.length !== names.length) return "";
-    const lines = names.map((name, i) => {
+    if (!drops.length || drops.length !== namesEn.length) return "";
+    const lines = namesEn.map((nameEn, i) => {
       const d = drops[i];
       const unit = d === 1 ? "капля" : (d >= 2 && d <= 4) ? "капли" : "капель";
-      return `<div class="recipe-line">${d} ${unit} <strong>${escapeHtml(name)}</strong></div>`;
+      const displayName = (namesRu[i] || nameEn || "").trim();
+      const slug = slugs[i];
+      const nameHtml = slug
+        ? `<a href="#" class="cross-ref-chip" onclick="openReference('${escapeHtml(slug)}', 'aromas'); return false;">${escapeHtml(displayName)}</a>`
+        : `<strong>${escapeHtml(displayName)}</strong>`;
+      return `<div class="recipe-line">${d} ${unit} ${nameHtml}</div>`;
     });
     return `<section class="section"><h3>📋 Рецепт</h3><div class="detail-preview recipe-drops">${lines.join("")}</div></section>`;
   }
@@ -658,6 +665,7 @@ export function createReferencesModule(deps) {
         zipNamesAndSlugs(reference.related_symptom_names, reference.related_symptom_slugs),
         "symptoms"
       );
+      const recipeHtml = renderRecipeDrops(reference);
       detailHtml = `
         <div class="detail-grid">
           ${renderBackButton()}
@@ -666,8 +674,8 @@ export function createReferencesModule(deps) {
           ${renderCollapsibleSection("Описание", reference.description, 280, reference.description_short)}
           ${aromaSection("Терапевтические свойства", reference.therapeutic_properties)}
           ${renderStructuredList("При каких состояниях", reference.conditions_for_use)}
-          ${renderRecipeDrops(reference)}
-          ${ingredientChips ? `<section class="section"><h3>🧪 Состав</h3><div class="detail-preview">${ingredientChips}</div></section>` : ""}
+          ${recipeHtml}
+          ${!recipeHtml && ingredientChips ? `<section class="section"><h3>🧪 Состав</h3><div class="detail-preview">${ingredientChips}</div></section>` : ""}
           ${compChips ? `<section class="section"><h3>🌿 Комплементарные масла</h3><div class="detail-preview">${compChips}</div></section>` : ""}
           ${symptomChips ? `<section class="section"><h3>💊 Помогает при</h3><div class="detail-preview">${symptomChips}</div></section>` : ""}
           ${renderStructuredList("Применение", reference.applications)}
