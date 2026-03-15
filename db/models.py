@@ -21,6 +21,9 @@ class DraftModel(Base):
     scheduled_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, default=None)
     publish_platforms: Mapped[list[str]] = mapped_column(JSON, default=list)
     external_ids: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    revision_notes: Mapped[str] = mapped_column(String(2000), default="")
+    published_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, default=None)
+    error: Mapped[str] = mapped_column(String(2000), default="")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
