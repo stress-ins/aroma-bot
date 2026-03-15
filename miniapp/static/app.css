@@ -1335,6 +1335,7 @@ body.tg-theme-dark .reference-hero-card.is-theory {
 
 /* settings section inputs — dark theme */
 .settings-section input[type="text"],
+.settings-section input[type="password"],
 .settings-section textarea {
   background: var(--card-bg);
   border: 1px solid var(--border);
@@ -1345,9 +1346,20 @@ body.tg-theme-dark .reference-hero-card.is-theory {
   box-sizing: border-box;
 }
 .settings-section input[type="text"]:focus,
+.settings-section input[type="password"]:focus,
 .settings-section textarea:focus {
   border-color: var(--brand-border);
   outline: none;
+}
+
+/* draft-textarea used for inline inputs in settings */
+.draft-textarea {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: inherit;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* content-review elements had hardcoded white backgrounds */
