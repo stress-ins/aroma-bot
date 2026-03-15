@@ -284,7 +284,7 @@ export function createDraftsModule(deps) {
         ${payloadSection("CTA", p.cta)}
         ${generationStateMarkup(d, "draft")}
         ${reviewActions}
-        ${renderPublishPanel(d.draft_id, d.status)}
+        ${renderPublishPanel(d.draft_id, d.status, { kind: d.kind, hasMedia: _hasMedia(d) })}
         ${renderSlides(d.draft_id, p.slides, p.img_prompts, p.slide_images, p.img_prompt_notes, p.slide_image_versions)}
         ${promptSection("Промпт для изображения", p.visual_prompt, "Скопировать промпт", `draft:${d.draft_id}:visual`)}
       </div>
@@ -312,6 +312,13 @@ export function createDraftsModule(deps) {
       </div>
     `;
     syncMobileNavigation();
+  }
+
+  function _hasMedia(d) {
+    const p = d.payload || {};
+    if (d.kind === "carousel") return !!(p.slide_images?.length);
+    if (d.kind === "reels") return true;
+    return !!(p.image?.filename);
   }
 
   return {

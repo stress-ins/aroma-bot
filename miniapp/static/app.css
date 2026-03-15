@@ -1564,7 +1564,8 @@ body.tg-theme-dark .detail-markdown h5 {
     display: none;
   }
   body.is-mobile-layout.is-detail-view .back-button.visible {
-    top: var(--tg-content-inset-top, env(safe-area-inset-top, 0px));
+    top: 0;
+    padding-top: calc(6px + var(--tg-content-inset-top, env(safe-area-inset-top, 0px)));
   }
 
   .bottom-tab-bar {
@@ -1584,7 +1585,7 @@ body.tg-theme-dark .detail-markdown h5 {
   }
 
   body.is-mobile-layout .list-panel .panel-header {
-    padding-top: calc(var(--space-3) + var(--tg-content-inset-top, env(safe-area-inset-top, 0px)));
+    padding-top: var(--space-3);
   }
 
   body.is-mobile-layout .list-panel:has(.guided-state) {
@@ -2905,9 +2906,10 @@ body.tg-theme-dark .concept-card {
 /* On mobile the topbar shows only the title (sticky); mode selector and eyebrow are hidden */
 body.is-mobile-layout .topbar-main {
   position: sticky;
-  top: var(--tg-content-inset-top, env(safe-area-inset-top, 0px));
+  top: 0;
   z-index: 10;
   padding: var(--space-3);
+  padding-top: calc(var(--space-3) + var(--tg-content-inset-top, env(safe-area-inset-top, 0px)));
   padding-left: 88px;
   background: var(--bg);
 }
@@ -3117,6 +3119,9 @@ body.is-mobile-layout[data-mode="handbook"] .tabs::-webkit-scrollbar { display: 
 .publish-platform-toggle { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 14px; }
 .publish-platform-toggle input { accent-color: var(--brand); }
 .publish-platform-icon { width: 18px; height: 18px; flex-shrink: 0; }
+.publish-platform-disabled { opacity: 0.4; cursor: not-allowed; }
+.publish-platform-disabled input { pointer-events: none; }
+.publish-platform-hint { font-size: 11px; color: var(--muted); font-style: italic; }
 .publish-schedule-row { display: flex; align-items: center; gap: var(--space-2); }
 .publish-schedule-label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
 .publish-datetime { font-size: 14px; padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); }

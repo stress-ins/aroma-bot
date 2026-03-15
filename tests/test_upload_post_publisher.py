@@ -106,9 +106,9 @@ async def test_publish_item_with_schedule(in_memory_db):
         patch("config.settings") as mock_settings,
     ):
         mock_settings.timezone = "UTC"
-        results = await upp.publish_item(did, ["instagram"], scheduled_at=sched)
+        results = await upp.publish_item(did, ["threads"], scheduled_at=sched)
 
-    assert results["instagram"]["status"] == "success"
+    assert results["threads"]["status"] == "success"
     # scheduled publish should NOT call mark_published (it stays scheduled)
     mock_mark.assert_not_called()
 
@@ -119,6 +119,88 @@ async def test_publish_item_not_found(in_memory_db):
 
     with pytest.raises(ValueError, match="not found"):
         await upp.publish_item("nonexistent", ["threads"])
+
+
+@pytest.mark.asyncio
+async def test_publish_item_empty_text_raises(in_memory_db):
+    """Draft with no extractable text should raise ValueError."""
+    from bot.services import upload_post_publisher as upp
+
+    rec = await save_draft(kind="threads", topic="empty", source="test", payload={})
+    await update_draft(rec.draft_id, status="approved")
+    mock_client = _mock_upload_client()
+
+    with (
+        patch.object(upp, "_get_upload_credentials", new_callable=AsyncMock, return_value=("key", "testuser")),
+        patch.object(upp, "_get_upload_client", return_value=mock_client),
+        patch.object(upp, "_ensure_user"),
+    ):
+        with pytest.raises(ValueError, match="no publishable text"):
+            await upp.publish_item(rec.draft_id, ["threads"])
+
+
+@pytest.mark.asyncio
+async def test_publish_item_instagram_without_media_stripped(in_memory_db):
+    """Instagram should be stripped from platforms when no media present."""
+    from bot.services import upload_post_publisher as upp
+
+    rec = await save_draft(kind="threads", topic="text only", source="test", payload={"text": "Hello"})
+    await update_draft(rec.draft_id, status="approved")
+    mock_client = _mock_upload_client()
+
+    with (
+        patch.object(upp, "_get_upload_credentials", new_callable=AsyncMock, return_value=("key", "testuser")),
+        patch.object(upp, "_get_upload_client", return_value=mock_client),
+        patch.object(upp, "_ensure_user"),
+        patch.object(upp, "mark_published", new_callable=AsyncMock),
+        patch.object(upp, "mark_failed", new_callable=AsyncMock),
+    ):
+        results = await upp.publish_item(rec.draft_id, ["threads", "instagram"])
+
+    # Instagram should have been silently dropped
+    assert "threads" in results
+    assert "instagram" not in results
+
+
+@pytest.mark.asyncio
+async def test_publish_item_instagram_only_without_media_raises(in_memory_db):
+    """Instagram-only publish without media should raise ValueError."""
+    from bot.services import upload_post_publisher as upp
+
+    rec = await save_draft(kind="threads", topic="text only", source="test", payload={"text": "Hello"})
+    await update_draft(rec.draft_id, status="approved")
+    mock_client = _mock_upload_client()
+
+    with (
+        patch.object(upp, "_get_upload_credentials", new_callable=AsyncMock, return_value=("key", "testuser")),
+        patch.object(upp, "_get_upload_client", return_value=mock_client),
+        patch.object(upp, "_ensure_user"),
+    ):
+        with pytest.raises(ValueError, match="Instagram requires media"):
+            await upp.publish_item(rec.draft_id, ["instagram"])
+
+
+@pytest.mark.asyncio
+async def test_publish_item_caption_fallback(in_memory_db):
+    """Draft with caption field should be published successfully."""
+    from bot.services import upload_post_publisher as upp
+
+    rec = await save_draft(kind="instagram", topic="caption test", source="test", payload={"caption": "My caption text"})
+    await update_draft(rec.draft_id, status="approved")
+    mock_client = _mock_upload_client()
+
+    with (
+        patch.object(upp, "_get_upload_credentials", new_callable=AsyncMock, return_value=("key", "testuser")),
+        patch.object(upp, "_get_upload_client", return_value=mock_client),
+        patch.object(upp, "_ensure_user"),
+        patch.object(upp, "mark_published", new_callable=AsyncMock),
+        patch.object(upp, "mark_failed", new_callable=AsyncMock),
+    ):
+        results = await upp.publish_item(rec.draft_id, ["threads"])
+
+    assert results["threads"]["status"] == "success"
+    call_kwargs = mock_client.upload_text.call_args
+    assert "My caption text" in str(call_kwargs)
 
 
 @pytest.mark.asyncio

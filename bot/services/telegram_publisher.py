@@ -16,7 +16,17 @@ def _draft_text(payload: dict[str, Any], kind: str) -> str:
     if kind == "carousel":
         slides = payload.get("slides") or []
         return "\n\n".join(str(s) for s in slides if s)
-    return str(payload.get("text", "") or payload.get("post", ""))
+    for key in ("text", "post", "caption"):
+        value = str(payload.get(key, "") or "").strip()
+        if value:
+            return value
+    # Build from structured fields if no single text field
+    parts = []
+    for key in ("hook", "angle", "cta"):
+        value = str(payload.get(key, "") or "").strip()
+        if value:
+            parts.append(value)
+    return "\n\n".join(parts)
 
 
 async def publish_item(
