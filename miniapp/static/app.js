@@ -46,6 +46,7 @@ const state = {
   pendingReelsNotes: {},
   pendingReelsPrompts: {},
   openPromptPanels: {},
+  userRole: "assistant", // "expert" | "assistant" | "publisher"
   _fromContext: null,
 };
 
@@ -1237,6 +1238,9 @@ const {
   scheduleFrameOverlaySave,
   saveFrameImagePrompt,
   autoResize,
+  // Phase 4 functions:
+  publishReels,
+  retryPlatform,
 } = createReelsModule({
   state,
   reelsNoteSaveTimers,
@@ -1753,6 +1757,8 @@ registerWindowBridge({
   scheduleFrameOverlaySave,
   saveFrameImagePrompt,
   autoResize,
+  publishReels,
+  retryPlatform,
   approveThreadsSeries,
   regenSlot,
   saveThreadsSlot,

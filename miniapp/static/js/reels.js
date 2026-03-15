@@ -793,6 +793,126 @@ export function createReelsModule(deps) {
     `;
   }
 
+  function renderScreen6Publish(r) {
+    const caption = r.caption || r.payload?.caption || "";
+    const captionLen = caption.length;
+    const captionWarning = captionLen > 2200
+      ? `<div style="color:var(--danger);font-size:12px;margin-top:4px">Описание слишком длинное (${captionLen} симв). Рекомендуем сократить до 2200 для Instagram.</div>`
+      : "";
+
+    const publishStatus = Array.isArray(r.publish_status) ? r.publish_status : [];
+    const statusByPlatform = {};
+    publishStatus.forEach((entry) => {
+      if (entry?.platform) statusByPlatform[entry.platform] = entry.status || "";
+    });
+
+    const platforms = ["instagram", "threads"];
+    const platformLabels = { instagram: "Instagram", threads: "Threads" };
+
+    const publishStatusHtml = publishStatus.length ? `
+      <section class="section">
+        <h3>${sectionHeadingIcon("publish")}Статус публикации</h3>
+        ${publishStatus.map((entry) => {
+          if (!entry?.platform) return "";
+          const isOk = entry.status === "success";
+          const isFail = entry.status === "failed";
+          return `
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+              <span>${escapeHtml(platformLabels[entry.platform] || entry.platform)}</span>
+              <span style="color:${isOk ? "var(--positive)" : isFail ? "var(--danger)" : "var(--hint)"};font-size:13px">
+                ${isOk ? "✅ Опубликовано" : isFail ? "❌ Ошибка" : "⏳ В процессе"}
+              </span>
+              ${isFail ? `
+                <button class="secondary-button compact" onclick="retryPlatform('${escapeHtml(r.draft_id)}', '${escapeHtml(entry.platform)}', this)">Повторить</button>
+              ` : ""}
+            </div>
+          `;
+        }).join("")}
+      </section>
+    ` : "";
+
+    return `
+      <div class="detail-grid">
+        ${renderBackButton()}
+        <div class="detail-top">
+          <p class="eyebrow">🎬 <span>РИЛС · Публикация</span></p>
+          <h2 class="detail-title">${escapeHtml(r.topic)}</h2>
+          <div class="draft-meta">
+            ${tagMarkup(statusLabel(r.status), statusTone(r.status))}
+          </div>
+        </div>
+
+        ${publishStatusHtml}
+
+        <section class="section">
+          <h3>${sectionHeadingIcon("Описание")}Описание</h3>
+          <div class="detail-markdown">${renderMarkdown(caption)}</div>
+          ${captionWarning}
+        </section>
+
+        <section class="section">
+          <h3>${sectionHeadingIcon("publish")}Опубликовать</h3>
+          <div class="field-grid">
+            ${platforms.map((p) => `
+              <label class="platform-format-option">
+                <input type="checkbox" name="publish_platform" value="${p}" ${statusByPlatform[p] === "success" ? "disabled checked" : ""}>
+                <span>${platformLabels[p]}</span>
+              </label>
+            `).join("")}
+          </div>
+          <div class="field-grid" style="margin-top:12px">
+            <label>Дата
+              <input type="date" id="publishDate" style="width:100%" />
+            </label>
+            <label>Время
+              <input type="time" id="publishTime" style="width:100%" />
+            </label>
+          </div>
+          <p class="field-help">Оставьте дату пустой для немедленной публикации.</p>
+          <button class="primary-button" type="button" onclick="publishReels('${escapeHtml(r.draft_id)}', this)">
+            ${actionLabel("publish", "Опубликовать")}
+          </button>
+        </section>
+      </div>
+    `;
+  }
+
+  async function publishReels(draftId, btn) {
+    const checkboxes = document.querySelectorAll("input[name='publish_platform']:checked");
+    const platforms = Array.from(checkboxes).map((cb) => cb.value);
+    if (!platforms.length) {
+      showRequestError("Выберите платформу", { message: "Нужно выбрать хотя бы одну платформу для публикации." });
+      return;
+    }
+    const date = String(document.getElementById("publishDate")?.value || "");
+    const time = String(document.getElementById("publishTime")?.value || "");
+    await withButtonFeedback(btn, "Публикую...", async () => {
+      const result = await fetchJson(`/api/reels/${draftId}/publish`, {
+        method: "POST",
+        body: JSON.stringify({ platforms, date, time }),
+        timeout: 60000,
+      });
+      const draft = await fetchJson(`/api/reels/${draftId}`);
+      mergeReelsIntoState(draft);
+      callbacks.renderReels?.();
+      callbacks.renderReelsDetail?.(draft);
+    }, "Опубликовано");
+  }
+
+  async function retryPlatform(draftId, platform, btn) {
+    await withButtonFeedback(btn, "Повторяю...", async () => {
+      const result = await fetchJson(`/api/reels/${draftId}/retry-platform`, {
+        method: "POST",
+        body: JSON.stringify({ platform }),
+        timeout: 60000,
+      });
+      const draft = await fetchJson(`/api/reels/${draftId}`);
+      mergeReelsIntoState(draft);
+      callbacks.renderReels?.();
+      callbacks.renderReelsDetail?.(draft);
+    }, "Готово");
+  }
+
   function renderScreen7Published(r) {
     return `
       <div class="detail-grid">
@@ -814,6 +934,12 @@ export function createReelsModule(deps) {
       </div>
     `;
   }
+
+  // ── Role gates (Phase 5) ─────────────────────────────────────────────
+
+  function canEditReels() { return ["expert", "assistant"].includes(state.userRole || "assistant"); }
+  function canApproveReels() { return (state.userRole || "assistant") === "expert"; }
+  function canPublishReels() { return ["expert", "publisher"].includes(state.userRole || "assistant"); }
 
   // ── Main render dispatcher ─────────────────────────────────────────────
 
@@ -898,7 +1024,15 @@ export function createReelsModule(deps) {
       return renderScreen5VideoCheck(r);
     }
 
-    if (status === "published") {
+    if (status === "passed") {
+      return renderScreen6Publish(r);
+    }
+
+    if (status === "publishing" || status === "published") {
+      const hasFailures = Array.isArray(r.publish_status) && r.publish_status.some((e) => e?.status === "failed");
+      if (status === "publishing" || hasFailures) {
+        return renderScreen6Publish(r);
+      }
       return renderScreen7Published(r);
     }
 
@@ -927,5 +1061,12 @@ export function createReelsModule(deps) {
     scheduleFrameOverlaySave,
     saveFrameImagePrompt,
     autoResize,
+    // Phase 4 exports
+    publishReels,
+    retryPlatform,
+    // Phase 5 role gates
+    canEditReels,
+    canApproveReels,
+    canPublishReels,
   };
 }

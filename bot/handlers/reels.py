@@ -491,9 +491,64 @@ async def _regen_reels_frame(message, context: ContextTypes.DEFAULT_TYPE, idx: i
     await message.reply_photo(photo=photo, caption=frame_text, reply_markup=keyboard)
 
 
+async def msg_reels_video_upload(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle incoming video/document for reels_v2 video upload flow."""
+    message = update.message
+    if not message:
+        return
+
+    # Accept video or document file
+    file_obj = message.video or message.document
+    if not file_obj:
+        return
+
+    # Check if there's an active reels_v2 draft awaiting video
+    draft_id = context.user_data.get("rl_v2_upload_draft_id", "")
+    if not draft_id:
+        # Try to find the most recent approved reels_v2 draft
+        from bot.services.drafts_store import list_recent_drafts
+        recent = await list_recent_drafts(limit=5, kind="reels_v2")
+        approved = [d for d in recent if d.status == "approved"]
+        if not approved:
+            return  # Silently ignore — no active reels_v2 in approved state
+        draft_id = approved[0].draft_id
+
+    status_msg = await message.reply_text("⏳ Загружаю видео...")
+
+    try:
+        tg_file = await file_obj.get_file()
+        import io
+        buf = io.BytesIO()
+        await tg_file.download_to_memory(buf)
+        video_bytes = buf.getvalue()
+
+        original_name = getattr(file_obj, "file_name", None) or f"video_{draft_id[:8]}.mp4"
+
+        from bot.services.reels_video import save_uploaded_video
+        result = await save_uploaded_video(draft_id, video_bytes, original_name)
+
+        context.user_data.pop("rl_v2_upload_draft_id", None)
+
+        await status_msg.edit_text(
+            f"✅ Видео загружено для рилса.\n"
+            f"🗂 Draft ID: {draft_id}\n\n"
+            f"Теперь открой Mini App для проверки и публикации.",
+            reply_markup=append_mini_app_button(
+                None,
+                label="🎬 Открыть рилс",
+                draft_id=str(draft_id),
+                tab="reels",
+            ),
+        )
+    except Exception as exc:
+        logger.error("Reels video upload failed for draft %s: %s", draft_id, exc)
+        await status_msg.edit_text(f"❌ Не удалось загрузить видео: {exc}")
+
+
 def build_reels_handler():
     return [
         CommandHandler("reels", cmd_reels),
         CallbackQueryHandler(cb_reels, pattern="^rl:"),
         MessageHandler(filters.TEXT & ~filters.COMMAND, msg_reels_manual_edit),
+        MessageHandler(filters.VIDEO | filters.Document.VIDEO, msg_reels_video_upload),
     ]

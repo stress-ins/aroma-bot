@@ -34,7 +34,9 @@ from ..models import (
     ReelsFrameNotePayload,
     ReelsFramePatchPayload,
     ReelsFramePromptPayload,
+    ReelsPublishPayload,
     ReelsRegenFramePayload,
+    ReelsRetryPlatformPayload,
     ReelsScenarioPayload,
 )
 
@@ -190,6 +192,57 @@ async def reels_video_status(
         "generation_pending": draft.get("generation_pending", False),
         "generation_stage": draft.get("generation_stage", ""),
     }
+
+
+@router.post("/api/reels/{draft_id}/check-video")
+async def reels_check_video(
+    draft_id: str,
+    _: None = Depends(_require_auth),
+):
+    from bot.services.reels_video import check_video_tech
+
+    result = await check_video_tech(draft_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="reels_not_found")
+    return result
+
+
+@router.post("/api/reels/{draft_id}/publish")
+async def reels_publish(
+    draft_id: str,
+    payload: ReelsPublishPayload,
+    _: None = Depends(_require_auth),
+):
+    from bot.services.reels_video import publish_reels_video
+
+    result = await publish_reels_video(
+        draft_id,
+        platforms=payload.platforms,
+        date=payload.date,
+        time=payload.time,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="reels_not_found")
+    return result
+
+
+@router.post("/api/reels/{draft_id}/retry-platform")
+async def reels_retry_platform(
+    draft_id: str,
+    payload: ReelsRetryPlatformPayload,
+    _: None = Depends(_require_auth),
+):
+    from bot.services.reels_video import publish_reels_video
+
+    result = await publish_reels_video(
+        draft_id,
+        platforms=[payload.platform],
+        date="",
+        time="",
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="reels_not_found")
+    return result
 
 
 @router.patch("/api/reels/{draft_id}/feedback")
