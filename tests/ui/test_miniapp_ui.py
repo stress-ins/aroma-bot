@@ -189,6 +189,7 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
             base_instructions VARCHAR(4000) DEFAULT '',
             target_platforms JSON DEFAULT '[]',
             upload_post_user VARCHAR(255) DEFAULT '',
+            upload_post_api_key VARCHAR(255) DEFAULT '',
             updated_at DATETIME
         )
         """
