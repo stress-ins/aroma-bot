@@ -579,6 +579,9 @@ function uiIcon(name) {
     image: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2"></rect><path d="m8 14 2.5-2.5L13 14l2-2 3 3"></path><circle cx="9" cy="9" r="1.2"></circle></svg>`,
     download: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v10M8 12l4 4 4-4"></path><path d="M5 18h14"></path></svg>`,
     upload: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V5M8 8l4-4 4 4"></path><path d="M5 18h14"></path></svg>`,
+    sunrise: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v2M4.9 7.9l1.4 1.4M19.1 7.9l-1.4 1.4M2 14h20M5 14a7 7 0 0 1 14 0"/></svg>`,
+    sun: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>`,
+    moon: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.7A8 8 0 0 1 9.3 4a8 8 0 1 0 10.7 10.7Z"/></svg>`,
     threads: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M15 12a3 3 0 1 1-3-3c2 0 3.5 1 3.5 3s-1.5 3-3.5 3"/></svg>`,
     instagram: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>`,
     telegram: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M22 3 11 14M22 3 15 21l-4-7-7-4 18-7Z"/></svg>`,
@@ -751,10 +754,16 @@ async function approveThreadsSeries(draftId, btn) {
 async function regenSlot(draftId, slot, btn) {
   const noteInput = document.getElementById(`regenNote_${slot}_${draftId}`);
   const note = noteInput ? noteInput.value.trim() : "";
+  const textareaEl = document.getElementById(`slotText_${slot}_${draftId}`);
+  if (textareaEl) {
+    textareaEl.disabled = true;
+    textareaEl.classList.add("is-generating");
+  }
   await withButtonFeedback(btn, "Пишу...", async () => {
     const draft = await fetchJson(`/api/threads-series/${draftId}/regen-slot`, {
       method: "POST",
       body: JSON.stringify({ slot, note: note || null }),
+      timeout: 30000,
     });
     mergeDraftIntoState(draft);
     renderDraftList();
