@@ -198,8 +198,12 @@ export function createReferencesModule(deps) {
 
   function renderCrossRefChips(pairs, targetTab) {
     if (!pairs || !pairs.length) return "";
+    const seen = new Set();
     const chips = pairs.map(({ slug, name, meta }) => {
       if (!name) return "";
+      const key = slug || name;
+      if (seen.has(key)) return "";
+      seen.add(key);
       const display = targetTab === "symptoms" ? normalizePdfSymptomName(name) : name;
       let icon = "";
       if (meta) {
@@ -625,7 +629,7 @@ export function createReferencesModule(deps) {
       <article ${interactiveCardAttrs(`Открыть карточку ${item.name}`)} class="draft-card overview-card reference-card${state.tab === "concepts" ? " is-theory concept-card" : ""}${item.slug === reference?.slug ? " active" : ""} interactive-card" onclick='openReference(${JSON.stringify(item.slug)}, ${JSON.stringify(state.tab)})'>
         <div class="overview-card-top">
           <div class="draft-kind">${!["symptoms", "concepts", "blends"].includes(state.tab) ? `<span class="kind-glyph handbook-glyph" aria-hidden="true">${aromaCardIcon(item, state.tab)}</span>` : ""}${handbookCardBadge(state.tab, item) ? `<span>${state.tab === "concepts" ? `<span class="concept-kind-mark" aria-hidden="true">${escapeHtml(aromaCardIcon(item, state.tab))}</span>` : ""}${escapeHtml(handbookCardBadge(state.tab, item))}</span>` : ""}</div>
-          <span class="overview-card-date">${escapeHtml(formatCourseSourceLabel(item.course_source) || meta.title)}</span>
+          ${(() => { const dateLabel = formatCourseSourceLabel(item.course_source) || (state.tab === "aromas" ? REFERENCE_SOURCE_TYPE_LABELS[item.source_type] || "" : meta.title); return dateLabel ? `<span class="overview-card-date">${escapeHtml(dateLabel)}</span>` : ""; })()}
         </div>
         <h3 class="draft-topic">${escapeHtml(state.tab === "symptoms" ? toSentenceCase(item.name) : item.name)}</h3>
         ${item.name_en ? `<div class="reference-name-en">${escapeHtml(item.name_en)}</div>` : ""}
