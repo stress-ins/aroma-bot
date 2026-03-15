@@ -53,8 +53,6 @@
 
 /* ── Reset ──────────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { overflow-x: hidden; } /* iOS WebView: body overflow-x alone doesn't prevent scroll */
-
 body {
   font-family: var(--font-ui);
   font-size: 15px;
