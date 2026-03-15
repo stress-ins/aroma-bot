@@ -524,10 +524,11 @@ body.app-ready .splash {
   height: 18px;
   flex: 0 0 18px;
 }
-.draft-kind .ui-icon svg {
+.draft-kind .ui-icon svg,
+.draft-kind .ui-icon [data-lucide] {
   width: 18px;
   height: 18px;
-  stroke-width: 2;
+  stroke-width: 1.75;
 }
 
 .draft-topic {
@@ -1503,19 +1504,14 @@ body.tg-theme-dark .detail-markdown h5 {
   min-height: 52px;
 }
 
-/* Filled knob circles for the sliders/settings icon */
-.bottom-tab-btn .ui-icon svg circle {
-  fill: currentColor;
-  stroke: none;
-}
-
 .bottom-tab-btn .ui-icon {
   width: 26px;
   height: 26px;
   flex-basis: 26px;
 }
 
-.bottom-tab-btn .ui-icon svg {
+.bottom-tab-btn .ui-icon svg,
+.bottom-tab-btn .ui-icon [data-lucide] {
   width: 26px;
   height: 26px;
 }
@@ -1552,12 +1548,13 @@ body.tg-theme-dark .detail-markdown h5 {
   justify-content: center;
 }
 
-.ui-icon svg {
+.ui-icon svg,
+.ui-icon [data-lucide] {
   width: 16px;
   height: 16px;
   stroke: currentColor;
   fill: none;
-  stroke-width: 1.8;
+  stroke-width: 1.75;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
@@ -3080,7 +3077,8 @@ body.tg-theme-dark .concept-card {
 .platform-format-option input { position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none; }
 .platform-format-option:has(input:checked) { border-color: var(--brand); background: var(--brand-bg); color: var(--text); }
 .platform-format-option .ui-icon { width: 15px; height: 15px; flex-shrink: 0; }
-.platform-format-option .ui-icon svg { width: 15px; height: 15px; }
+.platform-format-option .ui-icon svg,
+.platform-format-option .ui-icon [data-lucide] { width: 15px; height: 15px; }
 
 /* Platform label with icon (settings tone section) */
 .platform-label { display: inline-flex; align-items: center; gap: 6px; }

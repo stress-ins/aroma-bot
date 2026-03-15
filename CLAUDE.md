@@ -108,6 +108,17 @@ ssh root@46.32.186.192 'screen -S symptom-reseed -d -m bash -c "cd /opt/aroma &&
 
 ---
 
+## Icon Policy
+
+- **NEVER use raw inline SVG strings** for icons in miniapp code.
+- **Always use Lucide Icons** via `icon(name, size)` helper → `<i data-lucide="...">`.
+- After any dynamic DOM render that injects icons, call `if (window.lucide) lucide.createIcons()`.
+- The MutationObserver on `#app` (falls back to `document.body`) handles most cases automatically.
+- **Prefer Lucide over emoji** for UI elements (buttons, tabs, badges). Emoji OK only for category/sentiment indicators in text content.
+- Before choosing an icon name, verify it exists at: https://lucide.dev/icons/
+
+---
+
 ## Архитектура и База Данных
 
 **Хранение данных:**

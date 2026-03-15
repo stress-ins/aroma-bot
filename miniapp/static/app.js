@@ -519,7 +519,7 @@ function renderMarkdown(value) {
   for (const key of Object.keys(fenceMap)) {
     const escaped = escapeHtml(fenceMap[key]);
     const raw = fenceMap[key];
-    const block = `<div class="code-block"><pre>${escaped}</pre><button class="copy-btn" onclick="navigator.clipboard.writeText(this.previousElementSibling.textContent).then(()=>{this.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12.5 9 16l10-10"/></svg>';setTimeout(()=>this.textContent='Копировать',1200)})">Копировать</button></div>`;
+    const block = `<div class="code-block"><pre>${escaped}</pre><button class="copy-btn" onclick="navigator.clipboard.writeText(this.previousElementSibling.textContent).then(()=>{this.innerHTML='${icon("check", 13)}';setTimeout(()=>this.textContent='Копировать',1200)})">Копировать</button></div>`;
     result = result.replace(escapeHtml(key), block).replace(key, block);
   }
 
@@ -552,45 +552,49 @@ function detailFactMarkup(label, value) {
   `;
 }
 
+function icon(name, size = 18) {
+  return `<i data-lucide="${name}" width="${size}" height="${size}" stroke-width="1.75" style="display:block;flex-shrink:0"></i>`;
+}
+
 function uiIcon(name) {
-  const icons = {
-    card: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/></svg>`,
-    slides: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 17h20M2 12h20M6 7h12M4 7v10M20 7v10"/></svg>`,
-    prompt: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 10h12M4 14h14M4 18h7"/></svg>`,
-    regenerate: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6v6h-6"></path><path d="M20 12a8 8 0 1 1-2.3-5.7L20 8"></path></svg>`,
-    chat: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14v9H9l-4 3V7Z"></path></svg>`,
-    pptx: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h7l5 5v11H7z"></path><path d="M14 4v5h5"></path></svg>`,
-    note: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 17.5V20h2.5L18 10.5 15.5 8 6 17.5Z"></path><path d="M14.5 9l2.5 2.5"></path></svg>`,
-    reject: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10"></path><path d="M17 7 7 17"></path></svg>`,
-    trash: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"></path><path d="M9 7V5h6v2"></path><path d="M7 7l1 12h8l1-12"></path><path d="M10 11v5M14 11v5"></path></svg>`,
-    back: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>`,
-    gear: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v3"></path><path d="M12 18v3"></path><path d="m4.9 4.9 2.1 2.1"></path><path d="m17 17 2.1 2.1"></path><path d="M3 12h3"></path><path d="M18 12h3"></path><path d="m4.9 19.1 2.1-2.1"></path><path d="m17 7 2.1-2.1"></path><circle cx="12" cy="12" r="3.5"></circle></svg>`,
-    eye: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"></path><circle cx="12" cy="12" r="3"></circle></svg>`,
-    approve: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5 9 16l10-10"></path></svg>`,
-    sparkle: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 1.7 4.3L18 9l-4.3 1.7L12 15l-1.7-4.3L6 9l4.3-1.7L12 3Z"></path><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15Z"></path></svg>`,
-    text: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h12M4 17h8"/></svg>`,
-    nps: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6-4.35-6-10a3.5 3.5 0 0 1 6-2.4A3.5 3.5 0 0 1 18 11c0 5.65-6 10-6 10Z"></path></svg>`,
-    therapy: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v16M4 12h16"></path></svg>`,
-    psyche: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4a6 6 0 0 1 6 6c0 3-2 4-3 5s-1 2-1 3h-4c0-1-1-2-1-3s-3-2-3-5a6 6 0 0 1 6-6Z"></path><path d="M10 21h4"></path></svg>`,
-    plus: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6v12M6 12h12"></path></svg>`,
-    minus: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12"></path></svg>`,
-    history: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.3-5.7L4 9"></path><path d="M12 8v5l3 2"></path></svg>`,
-    passport: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2"/><circle cx="9.5" cy="10" r="2"/><path d="M13 9h4M13 13h4"/></svg>`,
-    reel: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3l14 9-14 9V3z"/></svg>`,
-    image: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2"></rect><path d="m8 14 2.5-2.5L13 14l2-2 3 3"></path><circle cx="9" cy="9" r="1.2"></circle></svg>`,
-    download: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v10M8 12l4 4 4-4"></path><path d="M5 18h14"></path></svg>`,
-    upload: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V5M8 8l4-4 4 4"></path><path d="M5 18h14"></path></svg>`,
-    sunrise: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v2M4.9 7.9l1.4 1.4M19.1 7.9l-1.4 1.4M2 14h20M5 14a7 7 0 0 1 14 0"/></svg>`,
-    sun: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>`,
-    moon: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.7A8 8 0 0 1 9.3 4a8 8 0 1 0 10.7 10.7Z"/></svg>`,
-    threads: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M15 12a3 3 0 1 1-3-3c2 0 3.5 1 3.5 3s-1.5 3-3.5 3"/></svg>`,
-    instagram: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>`,
-    telegram: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M22 3 11 14M22 3 15 21l-4-7-7-4 18-7Z"/></svg>`,
-    plan: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="16" rx="2"></rect><path d="M4 9h16M8 5v4M16 5v4"></path></svg>`,
-    play: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l12 8-12 8V4Z"/></svg>`,
-    layers: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="9" width="14" height="10" rx="1.5"/><path d="M7 6h10a1.5 1.5 0 0 1 1.5 1.5V9"/></svg>`,
+  const LUCIDE_MAP = {
+    card:       "file-text",
+    slides:     "layout-grid",
+    prompt:     "square-terminal",
+    regenerate: "rotate-ccw",
+    chat:       "message-square",
+    pptx:       "presentation",
+    note:       "pencil-line",
+    reject:     "x",
+    trash:      "trash-2",
+    back:       "chevron-left",
+    gear:       "settings-2",
+    eye:        "eye",
+    approve:    "check",
+    sparkle:    "sparkles",
+    text:       "align-left",
+    nps:        "heart",
+    therapy:    "cross",
+    psyche:     "brain",
+    plus:       "plus",
+    minus:      "minus",
+    history:    "clock",
+    passport:   "contact",
+    reel:       "play",
+    image:      "image",
+    download:   "download",
+    upload:     "upload",
+    sunrise:    "sunrise",
+    sun:        "sun",
+    moon:       "moon",
+    threads:    "at-sign",
+    instagram:  "instagram",
+    telegram:   "send",
+    plan:       "calendar-days",
+    play:       "play",
+    layers:     "layers",
   };
-  return `<span class="ui-icon ui-icon-${escapeHtml(name)}">${icons[name] || icons.prompt}</span>`;
+  return `<span class="ui-icon ui-icon-${escapeHtml(name)}">${icon(LUCIDE_MAP[name] || "square-terminal", 16)}</span>`;
 }
 
 function sectionHeadingIcon(title) {
@@ -1830,4 +1834,11 @@ document.addEventListener("click", () => {
     });
   });
 });
-bootstrap();
+bootstrap().then(() => {
+  if (window.lucide) lucide.createIcons();
+});
+
+if (window.lucide) {
+  const _lcObs = new MutationObserver(() => lucide.createIcons());
+  _lcObs.observe(document.getElementById("app") || document.body, { childList: true, subtree: true });
+}
