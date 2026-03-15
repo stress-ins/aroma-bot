@@ -454,7 +454,26 @@ export function createPlansModule(deps) {
     renderPlans();
   }
 
+  function renderPlansSwitcher(active) {
+    return `<div class="plans-sub-switcher">
+      <button class="tab-button${active === "publications" ? " active" : ""}" onclick="setPlansSubMode('publications')">Публикации</button>
+      <button class="tab-button${active === "mentions" ? " active" : ""}" onclick="setPlansSubMode('mentions')">Упоминания</button>
+    </div>`;
+  }
+
   function renderPlans() {
+    const subMode = state.plansSubMode || "publications";
+
+    if (subMode === "mentions") {
+      elements.listTitle.textContent = "Упоминания";
+      elements.draftCount.textContent = "";
+      elements.draftList.innerHTML = renderPlansSwitcher("mentions") + `<div id="plans-container"></div>`;
+      if (window.mentionsModule) {
+        window.mentionsModule.loadMentions();
+      }
+      return;
+    }
+
     const feed = state.plansFeed || [];
     const filters = state.plansFilter || { status: "all", platform: "all", date: null };
 
@@ -473,6 +492,7 @@ export function createPlansModule(deps) {
     const plans = state.plans || [];
     elements.draftList.innerHTML = `
       <div class="plans-sticky-header">
+        ${renderPlansSwitcher("publications")}
         ${renderCalendarStrip(filters.date, state.plansFeedDates || [])}
         ${renderStatusFilters(filters.status)}
         ${renderPlatformFilters(filters.platform)}

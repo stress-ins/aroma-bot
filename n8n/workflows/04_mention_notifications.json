@@ -1,0 +1,49 @@
+{
+  "name": "04 Mention Notifications",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "mention-notify",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [250, 300],
+      "id": "node-webhook-trigger",
+      "webhookId": "mention-notify"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.ADMIN_TELEGRAM_CHAT_ID }}",
+        "text": "=🔔 Новое упоминание · {{ $json.body.platform }}\n@{{ $json.body.author_username }}: «{{ $json.body.content.substring(0, 80) }}{{ $json.body.content.length > 80 ? '…' : '' }}»\n{{ $env.MINI_APP_URL ? $env.MINI_APP_URL + '?tab=plans&sub=mentions&id=' + $json.body.mention_id : '' }}",
+        "additionalFields": {
+          "disable_web_page_preview": true
+        }
+      },
+      "name": "Notify Admin",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [450, 300],
+      "id": "node-notify",
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram-creds",
+          "name": "Telegram Bot"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [[{"node": "Notify Admin", "type": "main", "index": 0}]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": ["aroma", "mentions", "notifications"]
+}

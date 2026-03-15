@@ -26,6 +26,8 @@ miniapp.zip
 data/reels_assets/
 data/carousel_assets/
 data/*.db
+data/*.db-wal
+data/*.db-shm
 data/*.json
 !data/reference_cards_*.json
 !data/aroma_cards_seed.json

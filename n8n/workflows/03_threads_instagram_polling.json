@@ -1,0 +1,139 @@
+{
+  "name": "03 Threads & Instagram Polling",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 3
+            }
+          ]
+        }
+      },
+      "name": "Poll Every 3 Min",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [250, 300],
+      "id": "node-poll-schedule"
+    },
+    {
+      "parameters": {
+        "url": "https://graph.threads.net/me/threads",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {"name": "fields", "value": "id,text,timestamp,username"},
+            {"name": "access_token", "value": "={{ $env.THREADS_ACCESS_TOKEN }}"}
+          ]
+        },
+        "options": {}
+      },
+      "name": "Fetch Threads",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [450, 200],
+      "id": "node-fetch-threads"
+    },
+    {
+      "parameters": {
+        "url": "https://graph.instagram.com/me/media",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {"name": "fields", "value": "id,caption,comments_count,timestamp"},
+            {"name": "access_token", "value": "={{ $env.INSTAGRAM_ACCESS_TOKEN }}"}
+          ]
+        },
+        "options": {}
+      },
+      "name": "Fetch Instagram",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [450, 400],
+      "id": "node-fetch-instagram"
+    },
+    {
+      "parameters": {
+        "jsCode": "const threadsData = $('Fetch Threads').item.json?.data || [];\nconst igData = $('Fetch Instagram').item.json?.data || [];\nconst lastChecked = $vars.last_checked_threads || '1970-01-01T00:00:00Z';\nconst items = [];\nfor (const post of threadsData) {\n  if (post.timestamp > lastChecked) {\n    items.push({\n      json: {\n        platform: 'threads',\n        external_id: post.id,\n        type: 'mention',\n        author_username: post.username || '',\n        author_name: '',\n        content: post.text || '',\n        url: '',\n        context_post: ''\n      }\n    });\n  }\n}\nfor (const post of igData) {\n  if (post.timestamp > lastChecked) {\n    items.push({\n      json: {\n        platform: 'instagram',\n        external_id: post.id,\n        type: 'mention',\n        author_username: '',\n        author_name: '',\n        content: post.caption || '',\n        url: '',\n        context_post: ''\n      }\n    });\n  }\n}\nreturn items.length > 0 ? items : [{json: {__skip: true}}];"
+      },
+      "name": "Filter New Items",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [700, 300],
+      "id": "node-filter-new"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ !$json.__skip }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "Has new items?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [900, 300],
+      "id": "node-if-new"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8091/api/mentions/ingest",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Webhook-Secret",
+              "value": "={{ $env.N8N_WEBHOOK_SECRET }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "name": "Ingest to API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1100, 250],
+      "id": "node-ingest-api"
+    }
+  ],
+  "connections": {
+    "Poll Every 3 Min": {
+      "main": [
+        [
+          {"node": "Fetch Threads", "type": "main", "index": 0},
+          {"node": "Fetch Instagram", "type": "main", "index": 0}
+        ]
+      ]
+    },
+    "Fetch Threads": {
+      "main": [[{"node": "Filter New Items", "type": "main", "index": 0}]]
+    },
+    "Fetch Instagram": {
+      "main": [[{"node": "Filter New Items", "type": "main", "index": 0}]]
+    },
+    "Filter New Items": {
+      "main": [[{"node": "Has new items?", "type": "main", "index": 0}]]
+    },
+    "Has new items?": {
+      "main": [
+        [{"node": "Ingest to API", "type": "main", "index": 0}],
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": ["aroma", "mentions", "threads", "instagram"]
+}

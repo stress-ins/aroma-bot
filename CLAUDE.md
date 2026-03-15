@@ -203,3 +203,25 @@ ssh root@46.32.186.192 'systemctl restart aroma-bot aroma-miniapp'
 ssh root@46.32.186.192 'journalctl -u aroma-bot -n 50 --no-pager'
 ssh root@46.32.186.192 'journalctl -u aroma-miniapp -n 50 --no-pager'
 ```
+
+---
+
+## n8n на VPS
+
+Сервис: `n8n-aroma` (systemd, Docker-wrapper через `deploy/n8n.service`)
+Первичная установка: `bash scripts/vps_n8n_setup.sh`
+Доступ: `./n8n-tunnel.sh` → http://localhost:5678
+Workflow JSON: `n8n/workflows/` — импортируются автоматически через `deploy.yml`
+
+**GitHub Secrets (добавить обязательно):**
+- `N8N_API_KEY` — для импорта workflow через deploy.yml
+- `N8N_WEBHOOK_SECRET` — X-Webhook-Secret для POST /api/trends/trigger и /api/mentions/ingest
+
+**Workflows:**
+- `01_trends_schedule.json` — daily 06:00 UTC → POST /api/trends/trigger
+- `02_telegram_mentions.json` — Telegram webhook → ingest mentions
+- `03_threads_instagram_polling.json` — poll Threads/Instagram every 3 min
+- `04_mention_notifications.json` — notify admin on new mention
+- `05_token_refresh.json` — daily token expiry check + refresh
+
+После установки: активировать все 5 workflow в n8n UI (по умолчанию `active: false`).

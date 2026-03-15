@@ -30,11 +30,24 @@ jobs:
           git remote add vps ssh://root@46.32.186.192/opt/aroma.git
           git push --force vps HEAD:main
 
+      - name: Run Alembic migrations
+        run: ssh root@46.32.186.192 'cd /opt/aroma && .venv/bin/alembic upgrade head'
+
       - name: Verify services
         run: |
           ssh root@46.32.186.192 'systemctl is-active aroma-bot'
           ssh root@46.32.186.192 'systemctl is-active threads-oauth'
           ssh root@46.32.186.192 'systemctl is-active aroma-miniapp && echo "miniapp active" || echo "miniapp not running (skip)"'
+          ssh root@46.32.186.192 'systemctl is-active n8n-aroma && echo "n8n active" || echo "n8n not running (skip)"'
+
+      - name: Import n8n workflows
+        run: |
+          for f in n8n/workflows/*.json; do
+            ssh root@46.32.186.192 "curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost:5678/api/v1/workflows \
+              -H 'Content-Type: application/json' \
+              -H 'X-N8N-API-KEY: ${{ secrets.N8N_API_KEY }}' \
+              --data-binary @-" < "$f" || true
+          done
 
       - name: Smoke test miniapp
         run: |
