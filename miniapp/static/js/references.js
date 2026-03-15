@@ -633,7 +633,7 @@ export function createReferencesModule(deps) {
         </div>
         <h3 class="draft-topic">${escapeHtml(state.tab === "symptoms" ? toSentenceCase(item.name) : item.name)}</h3>
         ${item.name_en ? `<div class="reference-name-en">${escapeHtml(item.name_en)}</div>` : ""}
-        <div class="draft-preview">${escapeHtml(stripMarkdown(item.description || item.course_notes || ""))}</div>
+        <div class="draft-preview">${escapeHtml(stripMarkdown(item.description_short || item.description || item.course_notes || ""))}</div>
         <div class="draft-meta overview-card-footer">
           ${item.chakra_focus ? tagMarkup(item.chakra_focus, "source") : ""}
           ${item.polarity ? tagMarkup(item.polarity, "feedback") : ""}
