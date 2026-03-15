@@ -319,6 +319,20 @@ textarea,
   transition: border-color var(--duration-fast) var(--ease-standard), box-shadow var(--duration-medium) var(--ease-standard), transform var(--duration-medium) var(--ease-standard);
 }
 
+/* Hide all UI until JS bootstrap completes */
+body:not(.app-ready) .topbar,
+body:not(.app-ready) .toolbar,
+body:not(.app-ready) #mainLayout,
+body:not(.app-ready) .bottom-tab-bar {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Smooth reveal after bootstrap */
+.topbar, .toolbar, #mainLayout, .bottom-tab-bar {
+  transition: opacity 0.15s ease;
+}
+
 .boot-fallback {
   display: grid;
   gap: 12px;
@@ -2131,15 +2145,11 @@ body.tg-theme-dark .concept-card {
   display: block;
   width: 100%;
   aspect-ratio: 4 / 3;
-  object-fit: cover;
+  object-fit: contain;
   object-position: center;
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
-  background: var(--surface);
-}
-
-body.tg-theme-dark .aroma-image {
-  mix-blend-mode: multiply;
+  background: #ffffff;
 }
 
 .aroma-image-caption {

@@ -2,13 +2,29 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PIL import Image, ImageOps
+from PIL import Image, ImageChops, ImageOps
 
 
 ROOT = Path(__file__).resolve().parents[1]
 IMAGES_DIR = ROOT / "assets" / "reference_images"
 MAX_DIMENSION = 1200
 JPEG_QUALITY = 76
+
+
+def _trim_whitespace(image: Image.Image, threshold: int = 15) -> Image.Image:
+    """Crop empty white borders from botanical illustrations."""
+    rgb = image.convert("RGB")
+    bg = Image.new("RGB", rgb.size, (255, 255, 255))
+    diff = ImageChops.difference(rgb, bg)
+    bbox = diff.getbbox()
+    if bbox:
+        w, h = image.size
+        x0 = max(0, bbox[0] - 4)
+        y0 = max(0, bbox[1] - 4)
+        x1 = min(w, bbox[2] + 4)
+        y1 = min(h, bbox[3] + 4)
+        return image.crop((x0, y0, x1, y1))
+    return image
 
 
 def optimize_image(path: Path) -> tuple[int, int] | None:
@@ -21,6 +37,10 @@ def optimize_image(path: Path) -> tuple[int, int] | None:
         image = ImageOps.exif_transpose(img)
         if image.mode not in {"RGB", "RGBA"}:
             image = image.convert("RGBA" if "A" in image.getbands() else "RGB")
+
+        # Trim white borders for PNG illustrations
+        if suffix == ".png":
+            image = _trim_whitespace(image)
 
         width, height = image.size
         largest = max(width, height)

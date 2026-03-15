@@ -307,6 +307,7 @@ export function createCoreModule(deps) {
     if (!elements.bootFallback) return;
     elements.bootFallback.hidden = true;
     elements.bootFallback.classList.remove("is-error");
+    document.body.classList.add("app-ready");
   }
 
   function humanizeRequestMessage(message) {
