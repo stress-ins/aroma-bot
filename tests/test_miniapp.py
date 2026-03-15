@@ -411,16 +411,16 @@ class TestMiniAppApi:
     def test_generate_reels_creates_draft_and_detail(self, miniapp_test_client, monkeypatch):
         import miniapp_server
 
-        async def _noop_complete_reels_generation(*_args, **_kwargs):
+        async def _noop_complete_reels_v2_generation(*_args, **_kwargs):
             return None
 
         import miniapp.api.routers.create as _create_router
-        monkeypatch.setattr(_create_router, "complete_reels_generation", _noop_complete_reels_generation)
+        monkeypatch.setattr(_create_router, "complete_reels_v2_generation", _noop_complete_reels_v2_generation)
 
         response = miniapp_test_client.post(
             "/api/generate/reels",
             headers=self.AUTH_HEADERS,
-            json={"topic": "Рилс про паузу"},
+            json={"topic": "Рилс про паузу", "goal": "trust", "emotion": "calm"},
         )
 
         assert response.status_code == 200
@@ -428,7 +428,7 @@ class TestMiniAppApi:
         assert payload["draft_id"]
         assert payload["generation_pending"] is True
         assert payload["frame_count"] == 0
-        assert payload["generation_stage"] == "scenario"
+        assert payload["generation_stage"] == "concept"
 
         detail = miniapp_test_client.get(f"/api/reels/{payload['draft_id']}", headers=self.AUTH_HEADERS)
         assert detail.status_code == 200

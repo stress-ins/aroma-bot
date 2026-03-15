@@ -118,6 +118,7 @@ async def populate_reels_frame_assets(
 
 
 async def regenerate_reels_frame_asset(draft_id: str, frame_index: int) -> dict[str, object] | None:
+    """v1 regenerate by frame index — kept for backward compat."""
     draft = await get_draft(draft_id)
     storyboard = draft.payload.get("storyboard", []) if draft else []
     if not draft or draft.kind != "reels" or not isinstance(storyboard, list) or frame_index < 0 or frame_index >= len(storyboard):
@@ -125,5 +126,120 @@ async def regenerate_reels_frame_asset(draft_id: str, frame_index: int) -> dict[
     return await populate_reels_frame_assets(
         draft_id,
         frame_indexes=[frame_index],
+        overwrite_existing=True,
+    )
+
+
+def save_frame_asset(draft_id: str, frame_id: str, image_bytes: bytes, *, prompt: str) -> dict[str, str]:
+    """Save image bytes for a v2 frame (identified by UUID)."""
+    directory = _ensure_assets_dir(draft_id)
+    generated_at = datetime.now(timezone.utc).isoformat()
+    filename = f"frame_{frame_id[:8]}_{uuid4().hex[:8]}.png"
+    file_path = directory / filename
+    file_path.write_bytes(image_bytes)
+    return {
+        "filename": filename,
+        "generated_at": generated_at,
+        "url": f"/generated/reels_assets/{draft_id}/{filename}",
+        "prompt": prompt,
+    }
+
+
+async def populate_frame_assets(
+    draft_id: str,
+    *,
+    frame_ids: list[str] | None = None,
+    overwrite_existing: bool = False,
+) -> dict[str, object] | None:
+    """Generate images for all (or specified) v2 frames."""
+    draft = await get_draft(draft_id)
+    if not draft or draft.kind != "reels_v2":
+        return None
+    frames_raw = draft.payload.get("frames", [])
+    if not isinstance(frames_raw, list):
+        return None
+
+    allowed_ids = set(frame_ids) if frame_ids is not None else None
+    updated_frames: list[dict[str, object]] = []
+    images_ready = 0
+
+    for item in frames_raw:
+        if not isinstance(item, dict):
+            updated_frames.append({})
+            continue
+
+        frame = dict(item)
+        fid = str(frame.get("id", ""))
+        has_url = bool(str(frame.get("image_url", "")).strip())
+        should_generate = (
+            allowed_ids is None or fid in allowed_ids
+        ) and (overwrite_existing or not has_url)
+
+        if should_generate:
+            current_prompt = str(frame.get("image_prompt", "")).strip()
+            if current_prompt:
+                image = generate_gemini_image_sync(
+                    current_prompt,
+                    aspect_ratio="9:16",
+                    log_context=f"ReelsV2 frame {fid[:8]}",
+                )
+                if image:
+                    asset = save_frame_asset(draft_id, fid, image, prompt=current_prompt)
+                    versions = list(frame.get("image_versions", [])) if isinstance(frame.get("image_versions"), list) else []
+                    if has_url:
+                        versions.append({"url": frame["image_url"], "prompt": frame.get("image_prompt", "")})
+                    frame["image_url"] = asset["url"]
+                    frame["image_status"] = "ready"
+                    frame["image_versions"] = versions[-5:]
+                    images_ready += 1
+                else:
+                    frame["image_status"] = "failed"
+                    logger.warning("ReelsV2 frame %s image generation failed for draft %s", fid, draft_id)
+            else:
+                frame["image_status"] = "pending"
+        else:
+            if has_url:
+                images_ready += 1
+
+        updated_frames.append(frame)
+
+    payload = dict(draft.payload)
+    payload["frames"] = updated_frames
+    payload["images_ready"] = images_ready
+    updated = await update_draft(draft_id, payload=payload, status="draft")
+    if not updated:
+        return None
+    return payload
+
+
+async def regenerate_frame_asset(
+    draft_id: str,
+    frame_id: str,
+    prompt: str | None = None,
+) -> dict[str, object] | None:
+    """Regenerate image for a single v2 frame. Optionally update the prompt first."""
+    draft = await get_draft(draft_id)
+    if not draft or draft.kind != "reels_v2":
+        return None
+
+    if prompt is not None:
+        frames_raw = draft.payload.get("frames", [])
+        if isinstance(frames_raw, list):
+            updated_frames: list[dict[str, object]] = []
+            for item in frames_raw:
+                if not isinstance(item, dict):
+                    updated_frames.append({})
+                    continue
+                frame = dict(item)
+                if str(frame.get("id", "")) == frame_id:
+                    frame["image_prompt"] = prompt.strip()
+                updated_frames.append(frame)
+            payload = dict(draft.payload)
+            payload["frames"] = updated_frames
+            await update_draft(draft_id, payload=payload, status="draft")
+
+    return await populate_frame_assets(
+        draft_id,
+        frame_ids=[frame_id],
         overwrite_existing=True,
     )

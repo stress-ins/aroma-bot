@@ -7,9 +7,16 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from bot.agents.reels_agent import _parse_storyboard, generate_reels_topics_sync, generate_reels_scenario_sync
+from bot.agents.reels_agent import (
+    _parse_draft,
+    _parse_frame_prompts,
+    _parse_storyboard,
+    generate_reels_topics_sync,
+    generate_reels_scenario_sync,
+    ReelsV2Draft,
+    FramePromptV2,
+)
 from bot.services.miniapp_reels import (
-    build_reels_export_payload,
     serialize_reels_draft,
     update_reels_frame_note,
     update_reels_frame_prompt,
@@ -103,12 +110,168 @@ class TestStoryboardParser:
         assert frames[0].scene == "Свеча и шалфей на ткани."
 
 
-class TestMiniAppReels:
-    async def test_serialize_reels_draft_returns_none_for_missing(self):
-        assert await serialize_reels_draft("missing-id") is None
+class TestReelsV2DraftParser:
+    def test_parses_all_fields(self):
+        raw = """\
+CONCEPT: Запах лаванды как способ успокоить нервную систему за 3 минуты.
+HOOK: Крупный план флакона масла на льняной ткани, рука тянется к крышке.
+SCENARIO:
+0-3 сек: макро флакона, голос — «Ты когда-нибудь нюхала что-то и сразу успокаивалась?»
+3-10 сек: руки растирают каплю масла, текст: «Лаванда — нервная система»
+10-20 сек: диффузор, текст: «3 минуты практики»
+20-30 сек: закрытые глаза, голос — «Попробуй сегодня вечером»
+CAPTION: Лаванда помогает переключиться за несколько вдохов. Попробуй сегодня вечером — просто каплю на ладонь. Что ты чувствуешь, когда слышишь запах лаванды? #ароматерапия #лаванда #нервнаясистема
+MUSIC_MOOD: медленный темп, флейта, мягкое пианино, атмосфера покоя
+"""
+        draft = _parse_draft(raw)
 
-    async def test_build_reels_export_payload_returns_none_for_missing(self):
-        assert await build_reels_export_payload("missing-id") is None
+        assert isinstance(draft, ReelsV2Draft)
+        assert "лаванды" in draft.concept
+        assert "флакона" in draft.hook
+        assert "0-3 сек" in draft.scenario
+        assert "#ароматерапия" in draft.caption
+        assert "флейта" in draft.music_mood
+
+    def test_returns_empty_draft_on_blank_input(self):
+        draft = _parse_draft("")
+        assert draft.concept == ""
+        assert draft.scenario == ""
+
+    def test_scenario_is_multiline(self):
+        raw = """\
+CONCEPT: Тест.
+HOOK: Начало.
+SCENARIO:
+Строка 1
+Строка 2
+Строка 3
+CAPTION: Подпись.
+MUSIC_MOOD: Тихо.
+"""
+        draft = _parse_draft(raw)
+        assert "Строка 1" in draft.scenario
+        assert "Строка 3" in draft.scenario
+
+
+class TestFramePromptsParser:
+    def test_parses_four_frames(self):
+        raw = """\
+FRAME1_TIMECODE: 0-3 сек
+FRAME1_OVERLAY: Лаванда и покой
+FRAME1_PROMPT: cinematic close-up lavender bottle on linen, soft natural light, terracotta palette
+
+FRAME2_TIMECODE: 3-10 сек
+FRAME2_OVERLAY: Один вдох
+FRAME2_PROMPT: hands holding essential oil bottle, warm beige background, sage tones
+
+FRAME3_TIMECODE: 10-20 сек
+FRAME3_OVERLAY: Практика сейчас
+FRAME3_PROMPT: diffuser with steam on wooden table, soft ambient light, no people
+
+FRAME4_TIMECODE: 20-30 сек
+FRAME4_OVERLAY: Попробуй сегодня
+FRAME4_PROMPT: calm still life with candle and notebook, cinematic, no text
+"""
+        frames = _parse_frame_prompts(raw, n_frames=4)
+
+        assert len(frames) == 4
+        assert frames[0].timecode == "0-3 сек"
+        assert frames[0].overlay_text == "Лаванда и покой"
+        assert "lavender bottle" in frames[0].image_prompt
+        assert frames[3].overlay_text == "Попробуй сегодня"
+
+    def test_returns_partial_if_missing_frames(self):
+        raw = """\
+FRAME1_TIMECODE: 0-3 сек
+FRAME1_OVERLAY: Первый
+FRAME1_PROMPT: some prompt
+"""
+        frames = _parse_frame_prompts(raw, n_frames=4)
+        non_empty = [f for f in frames if f.timecode or f.overlay_text]
+        assert len(non_empty) == 1
+
+    def test_returns_empty_list_on_blank_input(self):
+        frames = _parse_frame_prompts("", n_frames=4)
+        non_empty = [f for f in frames if f.timecode or f.overlay_text or f.image_prompt]
+        assert non_empty == []
+
+
+class TestMiniAppReelsV2:
+    async def test_serialize_reels_v2_draft_returns_none_for_missing(self):
+        assert await serialize_reels_draft("missing-v2-id") is None
+
+    async def test_serialize_reels_v2_draft_returns_correct_shape(self):
+        draft = await save_draft(
+            kind="reels_v2",
+            topic="Тест v2 рилса",
+            source="/reels",
+            payload={
+                "goal": "trust",
+                "emotion": "calm",
+                "concept": "Лаванда и покой",
+                "hook": "Крупный план флакона",
+                "scenario": "0-3 сек: флакон на ткани",
+                "caption": "Описание для поста #тест",
+                "music_mood": "медленно",
+                "frames": [
+                    {
+                        "id": "abc123",
+                        "n": 0,
+                        "timecode": "0-3 сек",
+                        "overlay_text": "Лаванда",
+                        "image_prompt": "lavender bottle on linen",
+                        "image_url": "",
+                        "image_status": "pending",
+                        "image_versions": [],
+                    }
+                ],
+                "images_ready": 0,
+                "approved": False,
+                "generation_pending": False,
+                "generation_stage": "",
+                "generation_message": "",
+            },
+        )
+
+        data = await serialize_reels_draft(draft.draft_id)
+
+        assert data is not None
+        assert data["frame_count"] == 1
+        assert len(data["frames"]) == 1
+        assert data["frames"][0]["id"] == "abc123"
+        assert data["frames"][0]["overlay_text"] == "Лаванда"
+        assert data["concept"] == "Лаванда и покой"
+        assert data["caption"] == "Описание для поста #тест"
+
+    async def test_serialize_reels_v2_empty_frames_yields_zero_count(self):
+        draft = await save_draft(
+            kind="reels_v2",
+            topic="Пустой v2 рилс",
+            source="/reels",
+            payload={
+                "goal": "trust",
+                "emotion": "calm",
+                "concept": "",
+                "hook": "",
+                "scenario": "",
+                "caption": "",
+                "music_mood": "",
+                "frames": [],
+                "images_ready": 0,
+                "approved": False,
+                "generation_pending": True,
+                "generation_stage": "concept",
+                "generation_message": "Генерирую...",
+            },
+        )
+
+        data = await serialize_reels_draft(draft.draft_id)
+
+        assert data is not None
+        assert data["frame_count"] == 0
+        assert data["frames"] == []
+        assert data["generation_pending"] is True
+        assert data["generation_stage"] == "concept"
 
     async def test_update_reels_frame_note_returns_none_for_missing(self):
         assert await update_reels_frame_note("missing-id", 0, "темнее") is None
@@ -121,15 +284,6 @@ class TestMiniAppReels:
         assert await regenerate_reels_frame_asset("missing-id", 0) is None
 
 
-class TestMiniAppReelsPolling:
-    def test_server_populates_all_initial_reels_frames(self):
-        source = Path("miniapp_server.py").read_text(encoding="utf-8") + "".join(
-            p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/api").rglob("*.py"))
-        )
-        assert "frame_indexes=[0, 1]" not in source
-        assert "background_tasks.add_task(" in source
-
-
 class TestMarkdownRenderingInReelsDetail:
     """Verify that renderMarkdown is wired to the reels scenario field and converts
     **bold** / ## heading to HTML tags on the client side."""
@@ -137,7 +291,6 @@ class TestMarkdownRenderingInReelsDetail:
     def test_renderMarkdown_converts_bold_to_strong(self):
         """The JS source must contain the regex that replaces **text** with <strong>."""
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
-        # The inline markdown formatter maps **...** → <strong>...</strong>
         assert '<strong>$1</strong>' in app_js
         assert r"\*\*(.+?)\*\*" in app_js
 
@@ -150,48 +303,42 @@ class TestMarkdownRenderingInReelsDetail:
     def test_renderMarkdown_is_used_in_reels_scenario_section(self):
         """reels.js must pass the scenario value through renderMarkdown, not raw text."""
         reels_js = Path("miniapp/static/js/reels.js").read_text(encoding="utf-8")
-        # renderMarkdown is imported in reels.js and used for frame section values
         assert "renderMarkdown" in reels_js
 
     def test_reels_api_returns_raw_scenario_for_client_rendering(self):
-        """The /api/reels/{id} endpoint returns the raw scenario string so the
-        browser JS can render it with renderMarkdown."""
         draft = asyncio.run(
             save_draft(
-                kind="reels",
+                kind="reels_v2",
                 topic="Тест markdown в сценарии",
                 source="/reels",
                 payload={
+                    "goal": "trust",
+                    "emotion": "calm",
+                    "concept": "Идея",
+                    "hook": "Хук",
                     "scenario": "## Идея\n\n**Жирный текст** и обычный текст.",
-                    "storyboard": [
-                        {
-                            "timecode": "0-3 сек",
-                            "scene": "Свеча",
-                            "angle": "Макро",
-                            "gemini_prompt": "candle macro",
-                        }
-                    ],
+                    "caption": "",
+                    "music_mood": "",
+                    "frames": [],
                     "images_ready": 0,
+                    "approved": False,
+                    "generation_pending": False,
+                    "generation_stage": "",
+                    "generation_message": "",
                 },
             )
         )
-        from bot.services.miniapp_reels import serialize_reels_draft
-
         data = asyncio.run(serialize_reels_draft(draft.draft_id))
         assert data is not None
-        # The API must return the raw markdown string, not pre-rendered HTML
-        scenario = data.get("payload", {}).get("scenario") or draft.payload.get("scenario", "")
-        assert "**Жирный текст**" in scenario or "## Идея" in scenario or "<strong>" not in str(data)
+        scenario = data.get("scenario", "")
+        assert "**Жирный текст**" in scenario or "## Идея" in scenario
 
     def test_plan_detail_raw_text_is_rendered_via_renderMarkdown_in_js(self):
-        """plans.js must use renderMarkdown to display plan raw_text in the detail view."""
         plans_js = Path("miniapp/static/js/plans.js").read_text(encoding="utf-8")
         assert "renderMarkdown" in plans_js
-        # Specifically the raw_text field should be passed to renderMarkdown
         assert "renderMarkdown(p.raw_text" in plans_js or "renderMarkdown(" in plans_js
 
     def test_plan_api_returns_raw_text_with_markdown(self):
-        """The plan serializer returns raw_text as-is so the JS can render it."""
         from bot.services.plans_store import save_plan
         from bot.services.miniapp_plans import serialize_plan
 
@@ -211,17 +358,15 @@ class TestMarkdownRenderingInReelsDetail:
             )
         )
         data = asyncio.run(serialize_plan(plan))
-        # raw_text must be the original markdown string — no pre-rendering server-side
         assert "## Понедельник" in data["raw_text"]
         assert "**Платформа:**" in data["raw_text"]
-        # Must NOT contain rendered HTML — that is the browser's job
         assert "<strong>" not in data["raw_text"]
         assert "<h" not in data["raw_text"]
 
 
 class TestReelsStoryboardFallback:
     """Verify that serialize_reels_draft populates frames from payload.storyboard
-    even when no pre-computed frames list exists."""
+    even when no pre-computed frames list exists (legacy reels kind)."""
 
     async def test_storyboard_frames_are_populated_from_payload(self):
         draft = await save_draft(
@@ -237,7 +382,6 @@ class TestReelsStoryboardFallback:
                 "images_ready": 0,
             },
         )
-        from bot.services.miniapp_reels import serialize_reels_draft
 
         data = await serialize_reels_draft(draft.draft_id)
 
@@ -259,7 +403,6 @@ class TestReelsStoryboardFallback:
                 "images_ready": 0,
             },
         )
-        from bot.services.miniapp_reels import serialize_reels_draft
 
         data = await serialize_reels_draft(draft.draft_id)
 
@@ -268,8 +411,6 @@ class TestReelsStoryboardFallback:
         assert data["frames"] == []
 
     async def test_storyboard_fallback_via_api(self):
-        """Verify via the miniapp test client that GET /api/reels/{id} returns frames
-        populated from payload.storyboard even when storyboard was set at draft creation."""
         import miniapp_server
 
         draft = await save_draft(
@@ -291,7 +432,6 @@ class TestReelsStoryboardFallback:
         )
 
         with TestClient(miniapp_server.app) as client:
-            # patch auth so test client does not need real init-data
             import miniapp.api.auth as _ms_auth
             original_verify = _ms_auth._verify_init_data
             _ms_auth._verify_init_data = lambda _v: True
@@ -308,3 +448,12 @@ class TestReelsStoryboardFallback:
         assert payload["frame_count"] == 1
         assert payload["frames"][0]["scene"] == "Открывают флакон"
         assert payload["frames"][0]["timecode"] == "0-5 сек"
+
+
+class TestMiniAppReelsPolling:
+    def test_server_populates_all_initial_reels_frames(self):
+        source = Path("miniapp_server.py").read_text(encoding="utf-8") + "".join(
+            p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/api").rglob("*.py"))
+        )
+        assert "frame_indexes=[0, 1]" not in source
+        assert "background_tasks.add_task(" in source
