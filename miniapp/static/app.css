@@ -1593,6 +1593,10 @@ body.tg-theme-dark .detail-markdown h5 {
     padding-top: calc(6px + var(--tg-content-inset-top, env(safe-area-inset-top, 0px)));
   }
 
+  body.is-mobile-layout.is-detail-view .detail-grid .section {
+    scroll-margin-top: calc(52px + var(--tg-content-inset-top, env(safe-area-inset-top, 0px)));
+  }
+
   .bottom-tab-bar {
     position: fixed;
     left: 0;
@@ -2132,6 +2136,10 @@ body.tg-theme-dark .concept-card {
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
   background: var(--surface);
+}
+
+body.tg-theme-dark .aroma-image {
+  mix-blend-mode: multiply;
 }
 
 .aroma-image-caption {
@@ -2807,7 +2815,27 @@ body.tg-theme-dark .concept-card {
   min-width: 24px;
   min-height: 24px;
   padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
+.keyword-chip button svg { display: block; }
+
+/* Platform format radio selector (create form) */
+.platform-format-select { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+.platform-format-option {
+  display: flex; align-items: center; gap: 5px; cursor: pointer;
+  font-size: 13px; padding: 5px 10px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); background: var(--surface);
+  color: var(--muted); transition: border-color var(--duration-fast), background var(--duration-fast), color var(--duration-fast);
+}
+.platform-format-option input { position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none; }
+.platform-format-option:has(input:checked) { border-color: var(--brand); background: var(--brand-bg); color: var(--text); }
+.platform-format-option .ui-icon { width: 15px; height: 15px; flex-shrink: 0; }
+.platform-format-option .ui-icon svg { width: 15px; height: 15px; }
+
+/* Platform label with icon (settings tone section) */
+.platform-label { display: inline-flex; align-items: center; gap: 6px; }
 
 .keyword-form {
   display: flex;

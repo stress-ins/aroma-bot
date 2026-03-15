@@ -304,7 +304,7 @@ export function createReferencesModule(deps) {
     const cutAt = str.lastIndexOf(" ", maxChars) || maxChars;
     const preview = str.slice(0, cutAt);
     // Preview is inside <summary> so it hides when <details> opens — no duplication
-    return `<section class="section"><h3>${escapeHtml(title)}</h3><details class="description-collapsible"><summary class="description-toggle"><span class="preview-text">${escapeHtml(preview)}…</span><span class="expand-label"> ▼ Читать далее</span></summary><div class="detail-preview description-full">${escapeHtml(str)}</div></details></section>`;
+    return `<section class="section"><h3>${escapeHtml(title)}</h3><details class="description-collapsible"><summary class="description-toggle"><span class="preview-text">${escapeHtml(preview)}…</span><span class="expand-label"> Читать далее →</span></summary><div class="detail-preview description-full">${escapeHtml(str)}</div></details></section>`;
   }
 
   const COUNTRY_FLAGS = {
@@ -338,12 +338,26 @@ export function createReferencesModule(deps) {
     return v;
   }
 
+  function shortExtractionMethod(val) {
+    if (!val) return val;
+    const cutMarkers = [". Из ", ". из ", "; из ", ". Получ", ". Сырь", ". Из 1"];
+    for (const m of cutMarkers) {
+      const i = val.indexOf(m);
+      if (i > 0) return val.slice(0, i).trim();
+    }
+    if (val.length > 60) {
+      const i = val.indexOf(",");
+      if (i > 10) return val.slice(0, i).trim();
+    }
+    return val;
+  }
+
   function renderReferencePassport(reference) {
     const rows = [
       reference.article_number && { icon: "🔖", label: "Артикул", value: reference.article_number },
       reference.botanical_family && { icon: "🌿", label: "Семейство", value: reference.botanical_family },
       reference.origin_countries && { icon: "📍", label: "Происхождение", value: addCountryFlags(reference.origin_countries) },
-      reference.extraction_method && { icon: "⚗️", label: "Метод", value: reference.extraction_method },
+      reference.extraction_method && { icon: "⚗️", label: "Метод", value: shortExtractionMethod(reference.extraction_method) },
       reference.volatility && { icon: "💨", label: "Летучесть", value: renderVolatilityScale(reference.volatility) },
       reference.chakra_focus && { icon: "✦", label: "Чакры", value: reference.chakra_focus },
       reference.polarity && { icon: "⚡", label: "Полярность", value: reference.polarity },
