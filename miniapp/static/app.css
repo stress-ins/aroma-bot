@@ -2224,13 +2224,14 @@ body.tg-theme-dark .concept-card {
 .prompt-note-field textarea {
   width: 100%;
   min-height: 84px;
+  max-height: 300px;
   border: 1px solid var(--border);
   background: var(--surface-2);
   border-radius: var(--radius-sm);
   padding: 10px 12px;
   color: var(--text);
-  resize: none;
-  overflow-y: hidden;
+  resize: vertical;
+  overflow-y: auto;
 }
 
 .prompt-note-field input {
