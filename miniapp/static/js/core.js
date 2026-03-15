@@ -308,6 +308,10 @@ export function createCoreModule(deps) {
     elements.bootFallback.hidden = true;
     elements.bootFallback.classList.remove("is-error");
     document.body.classList.add("app-ready");
+    const splash = document.getElementById("splash");
+    if (splash) {
+      splash.addEventListener("transitionend", () => splash.remove(), { once: true });
+    }
   }
 
   function humanizeRequestMessage(message) {
