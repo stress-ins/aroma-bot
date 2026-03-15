@@ -284,20 +284,16 @@ export function createReferencesModule(deps) {
     return `<section class="section"><h3>📋 Рецепт</h3><div class="detail-preview recipe-drops">${lines.join("")}</div></section>`;
   }
 
-  function renderCollapsibleSection(title, text, maxChars = 280, summary = null) {
+  function renderCollapsibleSection(title, text, maxChars = 280) {
     const str = String(text || "").trim();
     if (!str) return "";
-    const summaryStr = String(summary || "").trim();
-    // If an AI summary is available, show it as preview with full text expandable
-    if (summaryStr && summaryStr !== str) {
-      return `<section class="section"><h3>${escapeHtml(title)}</h3><div class="detail-preview">${escapeHtml(summaryStr)}</div><details class="description-collapsible"><summary class="description-toggle">▼ Подробнее</summary><div class="detail-preview description-full">${escapeHtml(str)}</div></details></section>`;
-    }
     if (str.length <= maxChars) {
       return `<section class="section"><h3>${escapeHtml(title)}</h3><div class="detail-preview">${escapeHtml(str)}</div></section>`;
     }
     const cutAt = str.lastIndexOf(" ", maxChars) || maxChars;
     const preview = str.slice(0, cutAt);
-    return `<section class="section"><h3>${escapeHtml(title)}</h3><div class="detail-preview">${escapeHtml(preview)}…</div><details class="description-collapsible"><summary class="description-toggle">▼ Читать далее</summary><div class="detail-preview description-full">${escapeHtml(str)}</div></details></section>`;
+    // Preview is inside <summary> so it hides when <details> opens — no duplication
+    return `<section class="section"><h3>${escapeHtml(title)}</h3><details class="description-collapsible"><summary class="description-toggle"><span class="preview-text">${escapeHtml(preview)}…</span><span class="expand-label"> ▼ Читать далее</span></summary><div class="detail-preview description-full">${escapeHtml(str)}</div></details></section>`;
   }
 
   const COUNTRY_FLAGS = {
