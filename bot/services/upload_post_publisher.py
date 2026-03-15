@@ -86,7 +86,17 @@ def _draft_text(payload: dict[str, Any], kind: str) -> str:
     if kind == "carousel":
         slides = payload.get("slides") or []
         return "\n\n".join(str(s) for s in slides if s)
-    return str(payload.get("text", "") or payload.get("post", ""))
+    for key in ("text", "post", "caption"):
+        value = str(payload.get(key, "") or "").strip()
+        if value:
+            return value
+    # Build from structured fields if no single text field
+    parts = []
+    for key in ("hook", "angle", "cta"):
+        value = str(payload.get(key, "") or "").strip()
+        if value:
+            parts.append(value)
+    return "\n\n".join(parts)
 
 
 async def publish_item(
@@ -115,6 +125,14 @@ async def publish_item(
 
     text = _draft_text(draft.payload, draft.kind)
     media_paths = _resolve_media_paths(draft.kind, draft_id, draft.payload)
+
+    if not text.strip():
+        raise ValueError("Draft has no publishable text content")
+
+    if not media_paths and "instagram" in target_platforms:
+        target_platforms = [p for p in target_platforms if p != "instagram"]
+        if not target_platforms:
+            raise ValueError("Instagram requires media. No media found in draft.")
 
     kwargs: dict[str, Any] = {}
     if scheduled_at:

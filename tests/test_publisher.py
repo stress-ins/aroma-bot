@@ -41,6 +41,27 @@ def test_draft_text_empty():
     assert _draft_text({}, "threads") == ""
 
 
+def test_draft_text_caption_fallback():
+    payload = {"caption": "Caption text here"}
+    assert _draft_text(payload, "instagram") == "Caption text here"
+
+
+def test_draft_text_structured_fields():
+    payload = {"hook": "Открытие", "angle": "Польза масла", "cta": "Попробуйте сегодня"}
+    assert _draft_text(payload, "threads") == "Открытие\n\nПольза масла\n\nПопробуйте сегодня"
+
+
+def test_draft_text_caption_over_structured():
+    """caption should win over hook/angle/cta."""
+    payload = {"caption": "Main text", "hook": "Hook", "angle": "Angle"}
+    assert _draft_text(payload, "threads") == "Main text"
+
+
+def test_draft_text_partial_structured():
+    payload = {"hook": "Start here", "cta": "Do this"}
+    assert _draft_text(payload, "instagram") == "Start here\n\nDo this"
+
+
 # ---------------------------------------------------------------------------
 # _resolve_media_paths
 # ---------------------------------------------------------------------------
