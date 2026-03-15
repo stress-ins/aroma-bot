@@ -74,6 +74,10 @@ class CarouselSlideNotePayload(BaseModel):
     note: str = Field(default="")
 
 
+class CarouselPreviewPayload(BaseModel):
+    slide_index: int | None = Field(default=None, description="Generate preview for specific slide (None = all)")
+
+
 class PlanGeneratePayload(BaseModel):
     entry_index: int
 
