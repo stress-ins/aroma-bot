@@ -53,7 +53,6 @@
 
 /* ── Reset ──────────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
 body {
   font-family: var(--font-ui);
   font-size: 15px;
@@ -721,8 +720,9 @@ body.app-ready .splash {
 .detail-grid { display: flex; flex-direction: column; gap: var(--space-3); }
 
 body.is-mobile-layout .detail-grid {
+  width: 100%;
   max-width: 100%;
-  overflow-x: clip;
+  overflow-x: hidden;
 }
 body.is-mobile-layout .detail-top {
   padding: var(--space-3) var(--space-4);
@@ -730,6 +730,7 @@ body.is-mobile-layout .detail-top {
 
 .detail-panel {
   --swipe-offset: 0px;
+  overflow-x: hidden; /* contain all child overflow regardless of media query */
 }
 
 .detail-top {
@@ -1651,13 +1652,14 @@ body.tg-theme-dark .detail-markdown h5 {
 
 .threads-regen-row {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   margin-top: 8px;
   align-items: center;
 }
-
 .threads-regen-input {
   flex: 1;
+  min-width: 0; /* allow input to shrink below intrinsic size */
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   padding: 6px 10px;
