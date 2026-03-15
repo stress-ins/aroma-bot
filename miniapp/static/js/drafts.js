@@ -295,6 +295,10 @@ export function createDraftsModule(deps) {
   }
 
   function renderEmptyDetail() {
+    // On mobile, go back to list view instead of showing empty detail
+    if (state.mobileView === "detail") {
+      state.mobileView = "list";
+    }
     elements.draftDetail.innerHTML = `
       ${renderBackButton()}
       <div class="detail-empty">
