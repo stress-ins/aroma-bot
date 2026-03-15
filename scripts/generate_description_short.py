@@ -14,6 +14,7 @@ import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any, Optional
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -24,6 +25,31 @@ PROMPT = (
     "Не добавляй информацию, которой нет в оригинале. "
     "Не начинай с названия масла. Ответь только текстом саммари."
 )
+
+
+def generate_short_for_card(card_payload: dict[str, Any], client: Any) -> Optional[str]:
+    """Generate description_short for a single card payload using a sync Anthropic client.
+
+    Args:
+        card_payload: Dict with at least a 'description' key.
+        client: anthropic.Anthropic sync client instance.
+
+    Returns:
+        Generated summary string, or None if description is missing/too short.
+    """
+    description = str(card_payload.get("description", "")).strip()
+    if not description or len(description) < 30:
+        return None
+
+    response = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=200,
+        messages=[{
+            "role": "user",
+            "content": f"{PROMPT}\n\nОписание: {description}",
+        }],
+    )
+    return response.content[0].text.strip()
 
 
 async def run(dry_run: bool = False) -> None:
