@@ -155,11 +155,33 @@ export function createCreateModule(deps) {
     } else if (toolId === "reels") {
       formHtml = `
         <section class="section create-tool-panel">
-          <h3>Создать рилс</h3>
+          <h3>СОЗДАТЬ РИЛС</h3>
           <form class="create-form" data-create-reels>
-            <label>Тема<textarea name="topic" placeholder="Например: вечерний сенсорный ритуал"></textarea></label>
-            <p class="field-help">Описывайте тему через сцену, состояние или ритуал. Так легче получить готовый сценарий и кадры.</p>
-            <button class="primary-button" type="submit">Собрать сценарий и кадры</button>
+            <label>Тема рилса
+              <textarea name="topic" placeholder="Например: момент когда тело само переключается в отдых через запах"></textarea>
+            </label>
+            <p class="field-help">Опишите через сцену, состояние или ощущение — так легче получить рабочий сценарий.</p>
+            <div class="field-grid">
+              <label>Цель публикации
+                <select name="goal">
+                  <option value="trust">Доверие</option>
+                  <option value="sale">Продажа</option>
+                  <option value="engagement">Вовлечение</option>
+                  <option value="expertise">Экспертность</option>
+                </select>
+              </label>
+              <label>Эмоция зрителя
+                <select name="emotion">
+                  <option value="calm">Спокойствие</option>
+                  <option value="joy">Радость</option>
+                  <option value="curiosity">Любопытство</option>
+                  <option value="inspiration">Вдохновение</option>
+                  <option value="trust">Доверие</option>
+                  <option value="mild_anxiety">Лёгкая тревога</option>
+                </select>
+              </label>
+            </div>
+            <button class="primary-button" type="submit" disabled>Создать рилс</button>
           </form>
         </section>
       `;
@@ -249,12 +271,14 @@ export function createCreateModule(deps) {
 
     const reelsForm = elements.draftDetail.querySelector("[data-create-reels]");
     if (reelsForm) bindTopicForm(reelsForm, { pendingText: "Создаю...", onSubmit: async (topic) => {
+      const goal = reelsForm.querySelector("select[name='goal']")?.value || "trust";
+      const emotion = reelsForm.querySelector("select[name='emotion']")?.value || "calm";
       const pending = openPendingReelsCreation(topic);
       try {
         const reel = await fetchJson("/api/generate/reels", {
           method: "POST",
           timeout: 45000,
-          body: JSON.stringify({ topic }),
+          body: JSON.stringify({ topic, goal, emotion }),
         });
         finalizePendingReelsCreation(reel);
         await openReels(reel.draft_id);

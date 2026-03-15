@@ -1474,7 +1474,7 @@ class TestMiniAppRussianLocale:
         app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
 
         assert "Собрать черновик" in app_js
-        assert "Собрать сценарий и кадры" in app_js
+        assert "Создать рилс" in app_js
         assert "Собрать карусель" in app_js
         assert "Тема материала" in app_js
         assert "Опорная мысль" in app_js

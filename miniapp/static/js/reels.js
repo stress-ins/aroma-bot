@@ -29,6 +29,7 @@ export function createReelsModule(deps) {
   } = deps;
 
   const regenInProgressKeys = new Set();
+  const frameOverlaySaveTimers = {};
 
   function bufferedReelsNote(draftId, index, fallback = "") {
     const key = frameDraftKey(draftId, index);
@@ -407,62 +408,502 @@ export function createReelsModule(deps) {
     `;
   }
 
-  function renderReelsDetail(r) {
-    const frames = normalizedReelsFrames(r);
-    const hasFrames = frames.length > 0;
+  // ── V2 utilities ────────────────────────────────────────────────────────
+
+  function autoResize(el) {
+    el.style.height = "auto";
+    el.style.height = el.scrollHeight + "px";
+  }
+
+  function scheduleFrameOverlaySave(draftId, frameId, value) {
+    const key = `${draftId}:${frameId}`;
+    window.clearTimeout(frameOverlaySaveTimers[key]);
+    frameOverlaySaveTimers[key] = window.setTimeout(async () => {
+      try {
+        await fetchJson(`/api/reels/${draftId}/frame`, {
+          method: "PATCH",
+          body: JSON.stringify({ frame_id: frameId, overlay_text: value }),
+        });
+      } catch (_e) {}
+    }, 600);
+  }
+
+  async function saveFrameImagePrompt(draftId, frameId, btn) {
+    const textarea = document.querySelector(`.reels-frame-image-prompt[data-frame-id="${frameId}"]`);
+    const prompt = String(textarea?.value || "").trim();
+    await withButtonFeedback(btn, "Сохраняю...", async () => {
+      await fetchJson(`/api/reels/${draftId}/frame`, {
+        method: "PATCH",
+        body: JSON.stringify({ frame_id: frameId, image_prompt: prompt }),
+      });
+    }, "Сохранено");
+  }
+
+  async function regenConcept(draftId, btn) {
+    await withButtonFeedback(btn, "Генерирую...", async () => {
+      const draft = await fetchJson(`/api/reels/${draftId}/regen-concept`, {
+        method: "POST",
+        body: "{}",
+        timeout: 30000,
+      });
+      mergeReelsIntoState(draft);
+      callbacks.renderReels?.();
+      callbacks.renderReelsDetail?.(draft);
+    }, "Готово");
+  }
+
+  async function regenScenario(draftId, btn) {
+    await withButtonFeedback(btn, "Генерирую...", async () => {
+      const draft = await fetchJson(`/api/reels/${draftId}/regen-scenario`, {
+        method: "POST",
+        body: "{}",
+        timeout: 30000,
+      });
+      mergeReelsIntoState(draft);
+      callbacks.renderReels?.();
+      callbacks.renderReelsDetail?.(draft);
+    }, "Готово");
+  }
+
+  async function regenCaption(draftId, btn) {
+    await withButtonFeedback(btn, "Генерирую...", async () => {
+      const draft = await fetchJson(`/api/reels/${draftId}/regen-caption`, {
+        method: "POST",
+        body: "{}",
+        timeout: 30000,
+      });
+      mergeReelsIntoState(draft);
+      callbacks.renderReels?.();
+      callbacks.renderReelsDetail?.(draft);
+    }, "Готово");
+  }
+
+  async function regenFrameImage(draftId, frameId, btn) {
+    await withButtonFeedback(btn, "Генерирую...", async () => {
+      const draft = await fetchJson(`/api/reels/${draftId}/regen-frame-image`, {
+        method: "POST",
+        body: JSON.stringify({ frame_id: frameId }),
+        timeout: 60000,
+      });
+      mergeReelsIntoState(draft);
+      callbacks.renderReels?.();
+      callbacks.renderReelsDetail?.(draft);
+      scheduleReelsRefresh(draft.draft_id);
+    }, "Запущено");
+  }
+
+  async function regenFrameImageWithPrompt(draftId, frameId, btn) {
+    const textarea = document.querySelector(`.reels-frame-image-prompt[data-frame-id="${frameId}"]`);
+    const prompt = String(textarea?.value || "").trim();
+    await withButtonFeedback(btn, "Генерирую...", async () => {
+      const draft = await fetchJson(`/api/reels/${draftId}/regen-frame-image`, {
+        method: "POST",
+        body: JSON.stringify({ frame_id: frameId, prompt }),
+        timeout: 60000,
+      });
+      mergeReelsIntoState(draft);
+      callbacks.renderReels?.();
+      callbacks.renderReelsDetail?.(draft);
+      scheduleReelsRefresh(draft.draft_id);
+    }, "Запущено");
+  }
+
+  async function approveReels(draftId, btn) {
+    const frames = state.selectedReels?.frames || [];
+    const allReady = frames.length > 0 && frames.every((f) => f.image_status === "ready");
+    if (!allReady) {
+      showRequestError("Согласование невозможно", { message: "Не все кадры готовы. Дождитесь завершения генерации изображений." });
+      return;
+    }
+    await withButtonFeedback(btn, "Согласую...", async () => {
+      const draft = await fetchJson(`/api/reels/${draftId}/approve`, {
+        method: "PATCH",
+        body: JSON.stringify({ shooting_deadline_days: 3 }),
+      });
+      mergeReelsIntoState(draft);
+      callbacks.renderReels?.();
+      callbacks.renderReelsDetail?.(draft);
+    }, "Согласовано");
+  }
+
+  // ── V2 frame card renderer ─────────────────────────────────────────────
+
+  function renderFrameV2(frame, draftId, n) {
+    const frameId = frame.id || frame.frame_id || String(n);
+    const timecode = frame.timecode ? escapeHtml(frame.timecode) : `${(n - 1) * 3}–${n * 3} сек`;
+    const imageStatus = frame.image_status || "pending";
+    const imageUrl = frame.image_url || frame.current_asset?.url || "";
+    const versions = Array.isArray(frame.image_versions) ? frame.image_versions : [];
+
+    let imageAreaHtml = "";
+    if (imageStatus === "generating") {
+      imageAreaHtml = `
+        <div class="reels-frame-v2-image-generating">
+          <div class="brand-loader-ring"></div>
+          <span>Генерирую...</span>
+        </div>
+      `;
+    } else if (imageStatus === "ready" && imageUrl) {
+      imageAreaHtml = `<img src="${escapeHtml(imageUrl)}" style="width:100%;height:100%;object-fit:cover" alt="Кадр ${n}" />`;
+    } else if (imageStatus === "error") {
+      imageAreaHtml = `
+        <div class="reels-frame-v2-image-generating">
+          <span style="color:var(--danger);font-size:13px">Ошибка генерации</span>
+          <button class="secondary-button compact" style="margin-top:8px" onclick="regenFrameImage('${escapeHtml(draftId)}', '${escapeHtml(frameId)}', this)">↺ Повторить</button>
+        </div>
+      `;
+    } else {
+      imageAreaHtml = `
+        <div class="reels-frame-v2-image-generating">
+          <span style="font-size:12px;color:var(--hint)">Изображение ещё не готово</span>
+        </div>
+      `;
+    }
+
+    const versionsHtml = versions.length > 0 ? `
+      <div class="reels-frame-versions">
+        ${versions.map((v, vi) => `
+          <div class="reels-frame-version-thumb${v.is_current ? " is-current" : ""}" title="Версия ${vi + 1}">
+            ${v.url ? `<img src="${escapeHtml(v.url)}" style="width:100%;height:100%;object-fit:cover" />` : ""}
+          </div>
+        `).join("")}
+      </div>
+    ` : "";
+
+    return `
+      <div class="reels-frame-v2" data-frame-id="${escapeHtml(frameId)}">
+        <div class="reels-frame-v2-header">
+          <span class="reels-frame-v2-title">Кадр ${n}</span>
+          <span class="reels-frame-v2-timecode">${timecode}</span>
+        </div>
+        <div class="reels-frame-v2-image-wrap">
+          ${imageAreaHtml}
+        </div>
+        ${versionsHtml}
+        <div style="padding:8px 12px;border-top:1px solid var(--border)">
+          <button class="secondary-button compact" onclick="regenFrameImage('${escapeHtml(draftId)}', '${escapeHtml(frameId)}', this)">↺ Ещё версия</button>
+        </div>
+        <div class="reels-frame-v2-field">
+          <label>
+            <span>Надпись на экране</span>
+            <textarea class="reels-frame-overlay-text" data-frame-id="${escapeHtml(frameId)}"
+              oninput="autoResize(this); scheduleFrameOverlaySave('${escapeHtml(draftId)}', '${escapeHtml(frameId)}', this.value)"
+              placeholder="Текст который будет показан зрителю">${escapeHtml(frame.overlay_text || "")}</textarea>
+          </label>
+        </div>
+        <div class="reels-frame-v2-field">
+          <label>
+            <span>Промпт для изображения</span>
+            <textarea class="reels-frame-image-prompt" data-frame-id="${escapeHtml(frameId)}"
+              oninput="autoResize(this)">${escapeHtml(frame.image_prompt || "")}</textarea>
+          </label>
+          <button class="secondary-button compact" style="margin-top:6px" onclick="regenFrameImageWithPrompt('${escapeHtml(draftId)}', '${escapeHtml(frameId)}', this)">↺ Перегенерировать с этим промптом</button>
+        </div>
+      </div>
+    `;
+  }
+
+  // ── V2 screen renderers ────────────────────────────────────────────────
+
+  function renderScreen2Generating(r) {
     return `
       <div class="detail-grid">
         ${renderBackButton()}
         <div class="detail-top">
-          <p class="eyebrow">${uiIcon("reel")}<span>Рилсы • ${escapeHtml(sourceLabel(r.source || "/miniapp"))}</span></p>
+          <p class="eyebrow">🎬 <span>РИЛС · Генерируется</span></p>
           <h2 class="detail-title">${escapeHtml(r.topic)}</h2>
           <div class="draft-meta">
+            ${tagMarkup("Генерируется", "progress")}
+          </div>
+        </div>
+        <div class="brand-loader">
+          <span class="brand-loader-ring"></span>
+          <span class="brand-loader-letter">A</span>
+        </div>
+        <div class="detail-loader-copy">
+          <strong>${escapeHtml(r.generation_message || "Генерирую концепцию и сценарий")}</strong>
+          <span>Изображения догенерируются в фоне — можно закрыть приложение</span>
+        </div>
+        ${generationStateMarkup(r, "reels_v2")}
+        <div class="reels-skeleton-section">
+          <div class="reels-skeleton-bar" style="width:60%"></div>
+          <div class="reels-skeleton-bar" style="width:90%"></div>
+          <div class="reels-skeleton-bar" style="width:75%"></div>
+        </div>
+        <div class="reels-skeleton-section">
+          <div class="reels-skeleton-bar" style="width:80%"></div>
+          <div class="reels-skeleton-bar" style="width:55%"></div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderScreen3Edit(r) {
+    const frames = Array.isArray(r.frames) ? r.frames : [];
+    const allFramesReady = frames.length > 0 && frames.every((f) => f?.image_status === "ready");
+    const concept = r.concept || r.payload?.concept || "";
+    const scenario = r.scenario || r.payload?.scenario || "";
+    const caption = r.caption || r.payload?.caption || "";
+
+    return `
+      <div class="detail-grid">
+        ${renderBackButton()}
+        <div class="detail-top">
+          <p class="eyebrow">🎬 <span>РИЛС</span></p>
+          <h2 class="detail-title">${escapeHtml(r.topic)}</h2>
+          ${concept ? `<p class="detail-summary">${escapeHtml(concept.slice(0, 120))}${concept.length > 120 ? "…" : ""}</p>` : ""}
+          <div class="draft-meta">
             ${tagMarkup(statusLabel(r.status || "draft"), statusTone(r.status || "draft"))}
-            ${r.generation_pending && draftGenerationLabel({ ...r, kind: "reels" }) ? tagMarkup(draftGenerationLabel({ ...r, kind: "reels" }), "pending") : ""}
-            ${tagMarkup(`${reelsReadyCount(r)}/${reelsFrameCount(r)} кадров`, "progress")}
+            ${tagMarkup(`${frames.filter((f) => f?.image_status === "ready").length}/${frames.length} кадров`, "progress")}
             ${tagMarkup(sourceLabel(r.source || "/miniapp"), sourceTone(r.source || "/miniapp"))}
           </div>
-          <div class="actions-row">
-            <button class="primary-button" type="button" onclick="saveReelsScenario('${r.draft_id}', this)">${actionLabel("text", "Сохранить концепцию и сценарий")}</button>
-            <div class="detail-icon-actions">
-              <button class="secondary-button" title="Пересобрать раскадровку" type="button" onclick="regenerateReelsStoryboard('${r.draft_id}', this)">${uiIcon("regenerate")}</button>
-              <button class="secondary-button" title="Обновить все кадры" type="button" onclick="regenerateAllReelsFrames('${r.draft_id}', this)">${uiIcon("reel")}</button>
-              <button class="secondary-button" title="Вернуть на доработку" type="button" onclick="updateDraft('status', {status:'rejected'}, this)">${uiIcon("reject")}</button>
-              <button class="secondary-button" title="Отправить в чат" type="button" onclick="sendDraftToChat('${r.draft_id}', this)">${uiIcon("chat")}</button>
+        </div>
+
+        <div class="actions-row">
+          <button class="primary-button${allFramesReady ? "" : " is-disabled"}" type="button"
+            ${allFramesReady ? "" : "disabled"}
+            onclick="approveReels('${r.draft_id}', this)">
+            ${actionLabel("approve", "Согласовать")}
+          </button>
+          <button class="danger-button" type="button" onclick="deleteDraft('${r.draft_id}', 'reels', this)">
+            ${actionLabel("trash", "Удалить")}
+          </button>
+          <button class="secondary-button" type="button" onclick="sendDraftToChat('${r.draft_id}', this)">
+            ${actionLabel("chat", "В чат")}
+          </button>
+        </div>
+
+        <section class="section">
+          <h3>${sectionHeadingIcon("Концепция")}Концепция</h3>
+          ${concept ? `<div class="detail-markdown">${renderMarkdown(concept)}</div>` : `<p class="detail-empty">Концепция не задана</p>`}
+          <div class="actions-row" style="margin-top:8px">
+            <button class="secondary-button compact" type="button" onclick="regenConcept('${r.draft_id}', this)">↺ Перегенерировать концепцию</button>
+          </div>
+        </section>
+
+        <section class="section">
+          <h3>${sectionHeadingIcon("Сценарий")}Сценарий</h3>
+          ${scenario ? `<div class="detail-markdown">${renderMarkdown(scenario)}</div>` : `<p class="detail-empty">Сценарий не задан</p>`}
+          <div class="actions-row" style="margin-top:8px">
+            <button class="secondary-button compact" type="button" onclick="regenScenario('${r.draft_id}', this)">↺ Перегенерировать сценарий</button>
+          </div>
+        </section>
+
+        ${frames.length ? `
+          <section class="section">
+            <h3>${sectionHeadingIcon("Кадры")}Кадры</h3>
+            ${frames.map((frame, i) => renderFrameV2(frame, r.draft_id, i + 1)).join("")}
+          </section>
+        ` : ""}
+
+        <section class="section">
+          <h3>${sectionHeadingIcon("Описание")}Описание рилса</h3>
+          ${caption ? `<div class="detail-markdown">${renderMarkdown(caption)}</div>` : `<p class="detail-empty">Описание не задано</p>`}
+          <div class="actions-row" style="margin-top:8px">
+            <button class="secondary-button compact" type="button" onclick="regenCaption('${r.draft_id}', this)">↺ Перегенерировать описание</button>
+          </div>
+        </section>
+      </div>
+    `;
+  }
+
+  function renderScreen4Shooting(r) {
+    const deadlineDays = Number(r.shooting_deadline_days || 3);
+    const deadlineDate = new Date();
+    deadlineDate.setDate(deadlineDate.getDate() + deadlineDays);
+    const dateStr = deadlineDate.toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
+    const concept = r.concept || r.payload?.concept || "";
+    const scenario = r.scenario || r.payload?.scenario || "";
+
+    return `
+      <div class="detail-grid">
+        ${renderBackButton()}
+        <div class="detail-top">
+          <p class="eyebrow">🎬 <span>РИЛС · Согласован</span></p>
+          <h2 class="detail-title">${escapeHtml(r.topic)}</h2>
+          <div class="draft-meta">
+            ${tagMarkup(statusLabel(r.status || "approved"), statusTone(r.status || "approved"))}
+          </div>
+        </div>
+
+        <div class="reels-shooting-deadline">
+          <div class="reels-deadline-header">Дедлайн съёмки</div>
+          <div class="reels-deadline-meta">Снять и загрузить видео до ${dateStr}</div>
+          <div class="reels-deadline-grid">
+            <div class="reels-deadline-stat">
+              <span class="reels-deadline-n">${deadlineDays}</span>
+              <span class="reels-deadline-l">дней осталось</span>
             </div>
-            <button class="danger-button" type="button" onclick="deleteDraft('${r.draft_id}', 'reels', this)">${actionLabel("trash", "Удалить рилс")}</button>
+            <div class="reels-deadline-stat">
+              <span class="reels-deadline-n">${(Array.isArray(r.frames) ? r.frames.length : 0)}</span>
+              <span class="reels-deadline-l">кадров в сценарии</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="reels-upload-zone">
+          <div class="reels-upload-title">Загрузить видео</div>
+          <div class="reels-upload-hint">Запишите рилс по сценарию и загрузите через Telegram-бот командой /upload</div>
+          <button class="secondary-button" type="button" onclick="sendDraftToChat('${r.draft_id}', this)">
+            ${actionLabel("chat", "Открыть в боте")}
+          </button>
+        </div>
+
+        ${concept ? `
+          <section class="section">
+            <h3>${sectionHeadingIcon("Концепция")}Концепция</h3>
+            <div class="detail-markdown">${renderMarkdown(concept)}</div>
+          </section>
+        ` : ""}
+
+        ${scenario ? `
+          <section class="section">
+            <h3>${sectionHeadingIcon("Сценарий")}Сценарий</h3>
+            <div class="detail-markdown">${renderMarkdown(scenario)}</div>
+          </section>
+        ` : ""}
+      </div>
+    `;
+  }
+
+  function renderScreen5VideoCheck(r) {
+    return `
+      <div class="detail-grid">
+        ${renderBackButton()}
+        <div class="detail-top">
+          <p class="eyebrow">🎬 <span>РИЛС · Видео загружено</span></p>
+          <h2 class="detail-title">${escapeHtml(r.topic)}</h2>
+          <div class="draft-meta">
+            ${tagMarkup(statusLabel(r.status), statusTone(r.status))}
+          </div>
+        </div>
+        <div class="reels-video-preview">
+          <div class="reels-video-thumb">🎬</div>
+          <div>
+            <div style="font-weight:600;font-size:14px;margin-bottom:4px">Видео на проверке</div>
+            <div style="font-size:12px;color:var(--hint)">Проверьте видео и опубликуйте его</div>
+          </div>
+        </div>
+        <div class="actions-row">
+          <button class="secondary-button" type="button" onclick="sendDraftToChat('${r.draft_id}', this)">
+            ${actionLabel("chat", "Открыть в боте")}
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderScreen7Published(r) {
+    return `
+      <div class="detail-grid">
+        ${renderBackButton()}
+        <div class="detail-top">
+          <p class="eyebrow">🎬 <span>РИЛС · Опубликован</span></p>
+          <h2 class="detail-title">${escapeHtml(r.topic)}</h2>
+          <div class="draft-meta">
+            ${tagMarkup(statusLabel(r.status), statusTone(r.status))}
           </div>
         </div>
         <section class="section">
-          <h3>${sectionHeadingIcon("Сценарий")}Концепция и сценарий</h3>
-          <label class="prompt-note-field">
-            <span>Концепция</span>
-            <textarea id="reelsConceptField" placeholder="Коротко: идея, настроение, обещание результата">${escapeHtml(r.payload?.concept || "")}</textarea>
-          </label>
-          <label class="prompt-note-field">
-            <span>Сценарий</span>
-            <textarea id="reelsScenarioField" placeholder="Соберите полный сценарий с переходами между кадрами">${escapeHtml(r.payload?.scenario || "")}</textarea>
-          </label>
-          <label class="prompt-note-field">
-            <span>Замечания для переработки</span>
-            <textarea id="reelsRevisionNoteField" placeholder="Опишите что изменить: тон, акценты, структуру…">${escapeHtml(r.payload?.revision_note || "")}</textarea>
-          </label>
-          <button class="secondary-button" type="button" onclick="regenerateReelsStoryboard('${r.draft_id}', this)">${actionLabel("regenerate", "Перегенерировать с учётом замечаний")}</button>
+          <div class="detail-preview" style="text-align:center;padding:24px 0">
+            <div style="font-size:32px;margin-bottom:8px">✅</div>
+            <div style="font-weight:600;margin-bottom:4px">Рилс опубликован</div>
+            <div style="font-size:12px;color:var(--hint)">Рилс успешно опубликован в Instagram</div>
+          </div>
         </section>
-        ${renderReelsProductionOverview(r)}
-        ${generationStateMarkup(r, "reels")}
-        ${r.generation_pending ? `<div class="actions-row" style="padding: 0 var(--space-4)"><button class="secondary-button compact" type="button" onclick="retryCurrentTab()">Обновить вручную</button></div>` : ""}
-        ${hasFrames ? renderReelsFrames(r.draft_id, frames) : `
-          <section class="section section-accent">
-            <div class="section-heading">
-              <h3>${uiIcon("slides")}Кадры и промпты</h3>
-              <p>${escapeHtml(r.generation_message || "Подготавливаю раскадровку и кадры для рилса.")}</p>
-            </div>
-            ${renderDetailLoader("Собираю раскадровку", r.generation_message || "Подождите ещё немного, и здесь появятся кадры.", "detail-loader-card-compact")}
-          </section>
-        `}
       </div>
     `;
+  }
+
+  // ── Main render dispatcher ─────────────────────────────────────────────
+
+  function renderReelsDetail(r) {
+    // Detect v2 reels by kind or v2-specific frame fields
+    const isV2 = r.kind === "reels_v2" || (
+      Array.isArray(r.frames) && r.frames.length > 0 && r.frames[0] &&
+      ("image_status" in r.frames[0] || "overlay_text" in r.frames[0])
+    );
+
+    if (!isV2) {
+      // V1 rendering path (original logic)
+      const frames = normalizedReelsFrames(r);
+      const hasFrames = frames.length > 0;
+      return `
+        <div class="detail-grid">
+          ${renderBackButton()}
+          <div class="detail-top">
+            <p class="eyebrow">${uiIcon("reel")}<span>Рилсы • ${escapeHtml(sourceLabel(r.source || "/miniapp"))}</span></p>
+            <h2 class="detail-title">${escapeHtml(r.topic)}</h2>
+            <div class="draft-meta">
+              ${tagMarkup(statusLabel(r.status || "draft"), statusTone(r.status || "draft"))}
+              ${r.generation_pending && draftGenerationLabel({ ...r, kind: "reels" }) ? tagMarkup(draftGenerationLabel({ ...r, kind: "reels" }), "pending") : ""}
+              ${tagMarkup(`${reelsReadyCount(r)}/${reelsFrameCount(r)} кадров`, "progress")}
+              ${tagMarkup(sourceLabel(r.source || "/miniapp"), sourceTone(r.source || "/miniapp"))}
+            </div>
+            <div class="actions-row">
+              <button class="primary-button" type="button" onclick="saveReelsScenario('${r.draft_id}', this)">${actionLabel("text", "Сохранить концепцию и сценарий")}</button>
+              <div class="detail-icon-actions">
+                <button class="secondary-button" title="Пересобрать раскадровку" type="button" onclick="regenerateReelsStoryboard('${r.draft_id}', this)">${uiIcon("regenerate")}</button>
+                <button class="secondary-button" title="Обновить все кадры" type="button" onclick="regenerateAllReelsFrames('${r.draft_id}', this)">${uiIcon("reel")}</button>
+                <button class="secondary-button" title="Вернуть на доработку" type="button" onclick="updateDraft('status', {status:'rejected'}, this)">${uiIcon("reject")}</button>
+                <button class="secondary-button" title="Отправить в чат" type="button" onclick="sendDraftToChat('${r.draft_id}', this)">${uiIcon("chat")}</button>
+              </div>
+              <button class="danger-button" type="button" onclick="deleteDraft('${r.draft_id}', 'reels', this)">${actionLabel("trash", "Удалить рилс")}</button>
+            </div>
+          </div>
+          <section class="section">
+            <h3>${sectionHeadingIcon("Сценарий")}Концепция и сценарий</h3>
+            <label class="prompt-note-field">
+              <span>Концепция</span>
+              <textarea id="reelsConceptField" placeholder="Коротко: идея, настроение, обещание результата">${escapeHtml(r.payload?.concept || "")}</textarea>
+            </label>
+            <label class="prompt-note-field">
+              <span>Сценарий</span>
+              <textarea id="reelsScenarioField" placeholder="Соберите полный сценарий с переходами между кадрами">${escapeHtml(r.payload?.scenario || "")}</textarea>
+            </label>
+            <label class="prompt-note-field">
+              <span>Замечания для переработки</span>
+              <textarea id="reelsRevisionNoteField" placeholder="Опишите что изменить: тон, акценты, структуру…">${escapeHtml(r.payload?.revision_note || "")}</textarea>
+            </label>
+            <button class="secondary-button" type="button" onclick="regenerateReelsStoryboard('${r.draft_id}', this)">${actionLabel("regenerate", "Перегенерировать с учётом замечаний")}</button>
+          </section>
+          ${renderReelsProductionOverview(r)}
+          ${generationStateMarkup(r, "reels")}
+          ${r.generation_pending ? `<div class="actions-row" style="padding: 0 var(--space-4)"><button class="secondary-button compact" type="button" onclick="retryCurrentTab()">Обновить вручную</button></div>` : ""}
+          ${hasFrames ? renderReelsFrames(r.draft_id, frames) : `
+            <section class="section section-accent">
+              <div class="section-heading">
+                <h3>${uiIcon("slides")}Кадры и промпты</h3>
+                <p>${escapeHtml(r.generation_message || "Подготавливаю раскадровку и кадры для рилса.")}</p>
+              </div>
+              ${renderDetailLoader("Собираю раскадровку", r.generation_message || "Подождите ещё немного, и здесь появятся кадры.", "detail-loader-card-compact")}
+            </section>
+          `}
+        </div>
+      `;
+    }
+
+    // V2 routing by status and generation_pending
+    if (r.generation_pending === true) {
+      return renderScreen2Generating(r);
+    }
+
+    const status = r.status || "draft";
+
+    if (status === "approved") {
+      return renderScreen4Shooting(r);
+    }
+
+    if (status === "video_uploaded" || status === "checking") {
+      return renderScreen5VideoCheck(r);
+    }
+
+    if (status === "published") {
+      return renderScreen7Published(r);
+    }
+
+    // Default: "draft" (Screen 3 — Edit)
+    return renderScreen3Edit(r);
   }
 
   return {
@@ -476,5 +917,15 @@ export function createReelsModule(deps) {
     regenerateReelsFrame,
     handleReelsFramePromptInput,
     handleReelsFrameNoteInput,
+    // V2 new exports
+    regenConcept,
+    regenScenario,
+    regenCaption,
+    regenFrameImage,
+    regenFrameImageWithPrompt,
+    approveReels,
+    scheduleFrameOverlaySave,
+    saveFrameImagePrompt,
+    autoResize,
   };
 }
