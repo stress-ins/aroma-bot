@@ -1,60 +1,41 @@
-"""Unified publisher — routes content to upload-post.com (threads/instagram) and PTB (telegram)."""
+"""Unified publisher facade — delegates to upload_post_publisher and telegram_publisher.
+
+Existing consumers (scheduler, miniapp router) import from here for backward
+compatibility.  New code should import the specific publisher modules directly.
+"""
+
 from __future__ import annotations
 
 import logging
 from datetime import datetime
-from pathlib import Path
 from typing import Any
 
-from upload_post import UploadPostClient
-
-from config import settings
-from bot.services.carousel_assets import CAROUSEL_ASSETS_DIR
+from bot.services.upload_post_publisher import (
+    UPLOAD_POST_PLATFORMS,
+    publish_item as _upload_post_publish,
+    check_status,
+    cancel_scheduled,
+    _draft_text,
+    _resolve_media_paths,
+    _get_upload_client,
+)
+from bot.services.telegram_publisher import (
+    publish_item as _telegram_publish,
+)
 from bot.services.drafts_store import get_draft, update_draft
-from bot.services.publish_log_store import save_log, update_log_status
 
 logger = logging.getLogger(__name__)
 
-UPLOAD_POST_PLATFORMS = {"threads", "instagram"}
-
-
-def _get_upload_client() -> UploadPostClient:
-    if not settings.upload_post_api_key:
-        raise RuntimeError("UPLOAD_POST_API_KEY is not configured")
-    return UploadPostClient(settings.upload_post_api_key)
-
-
-def _resolve_media_paths(draft_kind: str, draft_id: str, payload: dict[str, Any]) -> list[Path]:
-    """Resolve absolute file paths for media in a draft."""
-    paths: list[Path] = []
-    if draft_kind == "carousel":
-        slide_images = payload.get("slide_images") or []
-        for item in slide_images:
-            if not item:
-                continue
-            filename = str(item.get("filename", "")).strip()
-            if filename:
-                path = CAROUSEL_ASSETS_DIR / draft_id / filename
-                if path.exists():
-                    paths.append(path)
-    elif draft_kind in ("threads", "instagram"):
-        # Single image from payload
-        image_info = payload.get("image")
-        if isinstance(image_info, dict):
-            filename = str(image_info.get("filename", "")).strip()
-            if filename:
-                path = CAROUSEL_ASSETS_DIR / draft_id / filename
-                if path.exists():
-                    paths.append(path)
-    return paths
-
-
-def _draft_text(payload: dict[str, Any], kind: str) -> str:
-    """Extract the main text content from draft payload."""
-    if kind == "carousel":
-        slides = payload.get("slides") or []
-        return "\n\n".join(str(s) for s in slides if s)
-    return str(payload.get("text", "") or payload.get("post", ""))
+# Re-export for backward compatibility
+__all__ = [
+    "UPLOAD_POST_PLATFORMS",
+    "publish",
+    "check_status",
+    "cancel_scheduled",
+    "_draft_text",
+    "_resolve_media_paths",
+    "_get_upload_client",
+]
 
 
 async def publish(
@@ -67,160 +48,36 @@ async def publish(
 ) -> dict[str, Any]:
     """Publish or schedule a draft to the given platforms.
 
+    Routes to upload_post_publisher (threads/instagram) and
+    telegram_publisher (telegram).
+
     Returns dict of {platform: {status, external_id/error}}.
     """
-    draft = await get_draft(draft_id)
-    if not draft:
-        raise ValueError(f"Draft {draft_id} not found")
-
     results: dict[str, Any] = {}
 
     upload_platforms = [p for p in platforms if p in UPLOAD_POST_PLATFORMS]
     if upload_platforms:
-        result = await _publish_upload_post(
-            draft.kind, draft_id, draft.payload, upload_platforms, scheduled_at,
-        )
+        result = await _upload_post_publish(draft_id, upload_platforms, scheduled_at)
         results.update(result)
 
-    if "telegram" in platforms:
-        result = await _publish_telegram(draft.kind, draft_id, draft.payload, telegram_bot, telegram_chat_id)
+    if "telegram" in platforms and telegram_bot and telegram_chat_id:
+        result = await _telegram_publish(draft_id, telegram_bot, telegram_chat_id)
         results["telegram"] = result
 
-    # Update draft external_ids
-    external_ids = dict(draft.payload.get("external_ids") or draft.external_ids or {})
-    for platform, info in results.items():
-        if isinstance(info, dict) and info.get("external_id"):
-            external_ids[platform] = info["external_id"]
-
-    new_status = "scheduled" if scheduled_at else "published"
-    await update_draft(
-        draft_id,
-        status=new_status,
-        scheduled_at=scheduled_at,
-        publish_platforms=platforms,
-        external_ids=external_ids,
-    )
-
-    return results
-
-
-async def _publish_upload_post(
-    kind: str,
-    draft_id: str,
-    payload: dict[str, Any],
-    platforms: list[str],
-    scheduled_at: datetime | None,
-) -> dict[str, Any]:
-    """Publish via upload-post.com SDK."""
-    client = _get_upload_client()
-    user = settings.upload_post_user
-    if not user:
-        raise RuntimeError("UPLOAD_POST_USER is not configured")
-
-    text = _draft_text(payload, kind)
-    media_paths = _resolve_media_paths(kind, draft_id, payload)
-
-    kwargs: dict[str, Any] = {}
-    if scheduled_at:
-        kwargs["scheduled_date"] = scheduled_at.isoformat()
-        kwargs["timezone"] = settings.timezone
-
-    results: dict[str, Any] = {}
-    action = "schedule" if scheduled_at else "publish"
-
-    for platform in platforms:
-        log_id = await save_log(draft_id, platform, action, "pending")
-        try:
-            if media_paths:
-                response = client.upload_photos(
-                    photos=[str(p) for p in media_paths],
-                    title=text,
-                    user=user,
-                    platforms=[platform],
-                    **kwargs,
-                )
-            else:
-                response = client.upload_text(
-                    title=text,
-                    user=user,
-                    platforms=[platform],
-                    **kwargs,
-                )
-            external_id = str(response.get("request_id", "") or response.get("id", ""))
-            await update_log_status(log_id, "success", external_id=external_id)
-            results[platform] = {"status": "success", "external_id": external_id, "response": response}
-            logger.info("Published draft %s to %s: %s", draft_id, platform, external_id)
-        except Exception as exc:
-            error_msg = str(exc)[:500]
-            await update_log_status(log_id, "failed", error_message=error_msg)
-            results[platform] = {"status": "failed", "error": error_msg}
-            logger.error("Failed to publish draft %s to %s: %s", draft_id, platform, exc)
-
-    return results
-
-
-async def _publish_telegram(
-    kind: str,
-    draft_id: str,
-    payload: dict[str, Any],
-    bot: Any | None,
-    chat_id: str | None,
-) -> dict[str, Any]:
-    """Publish to Telegram via PTB bot instance."""
-    if not bot or not chat_id:
-        return {"status": "failed", "error": "Telegram bot or chat_id not provided"}
-
-    log_id = await save_log(draft_id, "telegram", "publish", "pending")
-    text = _draft_text(payload, kind)
-    try:
-        msg = await bot.send_message(chat_id=chat_id, text=text)
-        external_id = str(msg.message_id)
-        await update_log_status(log_id, "success", external_id=external_id)
-        return {"status": "success", "external_id": external_id}
-    except Exception as exc:
-        error_msg = str(exc)[:500]
-        await update_log_status(log_id, "failed", error_message=error_msg)
-        return {"status": "failed", "error": error_msg}
-
-
-async def check_status(draft_id: str) -> dict[str, Any]:
-    """Check publishing status via upload-post."""
+    # Update draft metadata (external_ids, status, platforms) for backward compat
     draft = await get_draft(draft_id)
-    if not draft:
-        return {"error": "Draft not found"}
+    if draft:
+        external_ids = dict(draft.external_ids or {})
+        for platform, info in results.items():
+            if isinstance(info, dict) and info.get("external_id"):
+                external_ids[platform] = info["external_id"]
+        new_status = "scheduled" if scheduled_at else "published"
+        await update_draft(
+            draft_id,
+            status=new_status,
+            scheduled_at=scheduled_at,
+            publish_platforms=platforms,
+            external_ids=external_ids,
+        )
 
-    external_ids = draft.external_ids or {}
-    if not external_ids:
-        return {"error": "No external IDs found"}
-
-    client = _get_upload_client()
-    statuses: dict[str, Any] = {}
-    for platform, ext_id in external_ids.items():
-        if platform in UPLOAD_POST_PLATFORMS and ext_id:
-            try:
-                statuses[platform] = client.get_status(request_id=ext_id)
-            except Exception as exc:
-                statuses[platform] = {"error": str(exc)[:200]}
-    return statuses
-
-
-async def cancel_scheduled(draft_id: str) -> dict[str, Any]:
-    """Cancel a scheduled publication."""
-    draft = await get_draft(draft_id)
-    if not draft:
-        return {"error": "Draft not found"}
-
-    external_ids = draft.external_ids or {}
-    client = _get_upload_client()
-    results: dict[str, Any] = {}
-    for platform, ext_id in external_ids.items():
-        if platform in UPLOAD_POST_PLATFORMS and ext_id:
-            try:
-                results[platform] = client.cancel_scheduled(job_id=ext_id)
-                await save_log(draft_id, platform, "cancel", "success", external_id=ext_id)
-            except Exception as exc:
-                results[platform] = {"error": str(exc)[:200]}
-                await save_log(draft_id, platform, "cancel", "failed", error_message=str(exc)[:500])
-
-    await update_draft(draft_id, status="approved", scheduled_at=None)
     return results
