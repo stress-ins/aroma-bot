@@ -77,6 +77,7 @@ async def get_brand_settings() -> BrandSettingsModel:
             base_instructions="",
             target_platforms=list(_DEFAULT_TARGET_PLATFORMS),
             upload_post_user="",
+            upload_post_api_key="",
             updated_at=datetime.now(timezone.utc),
         )
         session.add(row)

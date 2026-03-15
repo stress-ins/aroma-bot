@@ -87,6 +87,7 @@ class BrandSettingsModel(Base):
     base_instructions: Mapped[str] = mapped_column(String(4000), default="")
     target_platforms: Mapped[list[str]] = mapped_column(JSON, default=list)
     upload_post_user: Mapped[str] = mapped_column(String(255), default="")
+    upload_post_api_key: Mapped[str] = mapped_column(String(255), default="")
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
         default=lambda: datetime.now(timezone.utc),

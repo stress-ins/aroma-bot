@@ -20,6 +20,7 @@ from bot.services.policy_engine import (
 )
 from db.models import TodoModel
 from db.session import AsyncSessionLocal
+from bot.services.brand_settings_store import get_brand_settings, update_brand_settings
 from ..auth import _require_auth
 
 router = APIRouter()
@@ -42,6 +43,11 @@ class PolicyUpdatePayload(BaseModel):
     forbidden_phrases: list[str] | None = None
     soft_rewrites: list[list[str]] | None = None
     per_platform_tone: dict[str, str] | None = None
+
+
+class UploadPostPayload(BaseModel):
+    api_key: str | None = None
+    user: str | None = None
 
 
 class TodoAddPayload(BaseModel):
@@ -157,6 +163,31 @@ async def remove_rewrite(payload: RewriteRemovePayload, _: None = Depends(_requi
     cfg.soft_rewrites = [r for r in cfg.soft_rewrites if r[0] != payload.pattern]
     save_policy_config(cfg)
     return cfg.to_dict()
+
+
+@router.get("/api/preferences/upload-post")
+async def get_upload_post_prefs(_: None = Depends(_require_auth)):
+    bs = await get_brand_settings()
+    return {
+        "user": bs.upload_post_user or "",
+        "has_key": bool(bs.upload_post_api_key),
+    }
+
+
+@router.put("/api/preferences/upload-post")
+async def update_upload_post_prefs(payload: UploadPostPayload, _: None = Depends(_require_auth)):
+    updates: dict = {}
+    if payload.user is not None:
+        updates["upload_post_user"] = payload.user.strip()
+    if payload.api_key is not None:
+        updates["upload_post_api_key"] = payload.api_key.strip()
+    if updates:
+        await update_brand_settings(**updates)
+    bs = await get_brand_settings()
+    return {
+        "user": bs.upload_post_user or "",
+        "has_key": bool(bs.upload_post_api_key),
+    }
 
 
 @router.get("/api/todo")

@@ -106,6 +106,36 @@ export function createSettingsModule(deps) {
     }
   }
 
+  async function loadUploadPostPrefs() {
+    try {
+      const data = await fetchJson("/api/preferences/upload-post");
+      const userEl = document.getElementById("uploadPostUser");
+      const statusEl = document.getElementById("uploadPostKeyStatus");
+      if (userEl) userEl.value = data.user || "";
+      if (statusEl) statusEl.textContent = data.has_key ? "✓ Ключ сохранён" : "Ключ не задан";
+    } catch (_err) { /* silently ignore */ }
+  }
+
+  async function saveUploadPostPrefs() {
+    const apiKey = document.getElementById("uploadPostApiKey")?.value || "";
+    const user = document.getElementById("uploadPostUser")?.value || "";
+    const body = { user };
+    if (apiKey) body.api_key = apiKey;
+    try {
+      const data = await fetchJson("/api/preferences/upload-post", {
+        method: "PUT",
+        body: JSON.stringify(body),
+      });
+      const keyEl = document.getElementById("uploadPostApiKey");
+      if (keyEl) keyEl.value = "";
+      const statusEl = document.getElementById("uploadPostKeyStatus");
+      if (statusEl) statusEl.textContent = data.has_key ? "✓ Ключ сохранён" : "Ключ не задан";
+      showUiNotice("Upload-Post настройки сохранены", "success");
+    } catch (_err) {
+      showUiNotice("Не удалось сохранить настройки", "error");
+    }
+  }
+
   async function savePlatformTone(platform) {
     const el = document.getElementById(`tone-${platform}`);
     const value = String(el?.value || "").trim();
@@ -265,6 +295,20 @@ export function createSettingsModule(deps) {
           </div>
         </section>
         <section class="section settings-section">
+          <h3>Публикация (Upload-Post)</h3>
+          <p class="settings-hint">Credentials для публикации через upload-post.com. API-ключ не отображается после сохранения.</p>
+          <div class="keyword-field" style="margin-bottom:12px;">
+            <strong>API Key</strong>
+            <input id="uploadPostApiKey" type="password" placeholder="Введите API-ключ…" class="draft-textarea" style="font-size:14px;padding:8px 10px;min-height:auto;">
+            <span id="uploadPostKeyStatus" class="plan-entry-hint"></span>
+          </div>
+          <div class="keyword-field" style="margin-bottom:12px;">
+            <strong>Username</strong>
+            <input id="uploadPostUser" type="text" placeholder="Имя пользователя upload-post" class="draft-textarea" style="font-size:14px;padding:8px 10px;min-height:auto;">
+          </div>
+          <button class="secondary-button" type="button" onclick="saveUploadPostPrefs()">Сохранить</button>
+        </section>
+        <section class="section settings-section">
           <h3>Тон по платформам</h3>
           <p class="settings-hint">Описание стиля для AI-редактора. Сохраняется при потере фокуса.</p>
           ${["instagram", "telegram", "threads"].map((p) => `
@@ -279,6 +323,7 @@ export function createSettingsModule(deps) {
       </div>
     `;
     void loadPolicy();
+    void loadUploadPostPrefs();
     enterDetailView();
   }
 
@@ -390,5 +435,7 @@ export function createSettingsModule(deps) {
     addRewrite,
     removeRewrite,
     savePlatformTone,
+    loadUploadPostPrefs,
+    saveUploadPostPrefs,
   };
 }

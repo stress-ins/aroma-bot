@@ -54,15 +54,12 @@ async def test_publish_item_text(in_memory_db):
     mock_client = _mock_upload_client()
 
     with (
+        patch.object(upp, "_get_upload_credentials", new_callable=AsyncMock, return_value=("key", "testuser")),
         patch.object(upp, "_get_upload_client", return_value=mock_client),
-        patch("config.settings") as mock_settings,
+        patch.object(upp, "_ensure_user"),
         patch.object(upp, "mark_published", new_callable=AsyncMock) as mock_mark,
         patch.object(upp, "mark_failed", new_callable=AsyncMock),
     ):
-        mock_settings.upload_post_user = "testuser"
-        mock_settings.upload_post_api_key = "key"
-        mock_settings.timezone = "UTC"
-
         results = await upp.publish_item(did, ["threads"])
 
     assert results["threads"]["status"] == "success"
@@ -80,15 +77,12 @@ async def test_publish_item_error_calls_mark_failed(in_memory_db):
     mock_client.upload_text.side_effect = RuntimeError("API down")
 
     with (
+        patch.object(upp, "_get_upload_credentials", new_callable=AsyncMock, return_value=("key", "testuser")),
         patch.object(upp, "_get_upload_client", return_value=mock_client),
-        patch("config.settings") as mock_settings,
+        patch.object(upp, "_ensure_user"),
         patch.object(upp, "mark_published", new_callable=AsyncMock),
         patch.object(upp, "mark_failed", new_callable=AsyncMock) as mock_fail,
     ):
-        mock_settings.upload_post_user = "testuser"
-        mock_settings.upload_post_api_key = "key"
-        mock_settings.timezone = "UTC"
-
         results = await upp.publish_item(did, ["threads"])
 
     assert results["threads"]["status"] == "failed"
@@ -104,15 +98,14 @@ async def test_publish_item_with_schedule(in_memory_db):
     sched = datetime(2026, 4, 1, 12, 0, tzinfo=timezone.utc)
 
     with (
+        patch.object(upp, "_get_upload_credentials", new_callable=AsyncMock, return_value=("key", "testuser")),
         patch.object(upp, "_get_upload_client", return_value=mock_client),
-        patch("config.settings") as mock_settings,
+        patch.object(upp, "_ensure_user"),
         patch.object(upp, "mark_published", new_callable=AsyncMock) as mock_mark,
         patch.object(upp, "mark_failed", new_callable=AsyncMock),
+        patch("config.settings") as mock_settings,
     ):
-        mock_settings.upload_post_user = "testuser"
-        mock_settings.upload_post_api_key = "key"
         mock_settings.timezone = "UTC"
-
         results = await upp.publish_item(did, ["instagram"], scheduled_at=sched)
 
     assert results["instagram"]["status"] == "success"

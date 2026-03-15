@@ -6,6 +6,12 @@
 export function createPublishModule(deps) {
   const { fetchJson, withButtonFeedback, escapeHtml, tagMarkup, uiIcon, showUiNotice } = deps;
 
+  const PLATFORM_SVG = {
+    threads: `<svg class="publish-platform-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15 12a3 3 0 1 1-3-3c2 0 3.5 1 3.5 3s-1.5 3-3.5 3"/></svg>`,
+    instagram: `<svg class="publish-platform-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>`,
+    telegram: `<svg class="publish-platform-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>`,
+  };
+
   let _pollTimer = null;
 
   function renderPublishPanel(draftId, status) {
@@ -20,9 +26,9 @@ export function createPublishModule(deps) {
         </div>
         <div class="publish-panel" id="publishPanel" data-draft-id="${draftId}">
           <div class="publish-platforms">
-            <label class="publish-platform-toggle"><input type="checkbox" id="pubThreads" value="threads" ${isPublished ? "disabled" : ""} checked><span>Threads</span></label>
-            <label class="publish-platform-toggle"><input type="checkbox" id="pubInstagram" value="instagram" ${isPublished ? "disabled" : ""}><span>Instagram</span></label>
-            <label class="publish-platform-toggle"><input type="checkbox" id="pubTelegram" value="telegram" ${isPublished ? "disabled" : ""}><span>Telegram</span></label>
+            <label class="publish-platform-toggle"><input type="checkbox" id="pubThreads" value="threads" ${isPublished ? "disabled" : ""} checked>${PLATFORM_SVG.threads}<span>Threads</span></label>
+            <label class="publish-platform-toggle"><input type="checkbox" id="pubInstagram" value="instagram" ${isPublished ? "disabled" : ""}>${PLATFORM_SVG.instagram}<span>Instagram</span></label>
+            <label class="publish-platform-toggle"><input type="checkbox" id="pubTelegram" value="telegram" ${isPublished ? "disabled" : ""}>${PLATFORM_SVG.telegram}<span>Telegram</span></label>
           </div>
           ${!isPublished ? `
             <div class="publish-schedule-row">
@@ -92,7 +98,7 @@ export function createPublishModule(deps) {
   function _renderStatusLogs(logs) {
     const container = document.getElementById("publishStatusContainer");
     if (!container || !logs.length) return;
-    const PLATFORM_ICONS = { threads: "T", instagram: "IG", telegram: "TG" };
+    const PLATFORM_ICONS = { threads: PLATFORM_SVG.threads, instagram: PLATFORM_SVG.instagram, telegram: PLATFORM_SVG.telegram };
     const STATUS_ICONS = { success: "done", failed: "error", pending: "pending" };
     container.innerHTML = `
       <div class="publish-status-list">
