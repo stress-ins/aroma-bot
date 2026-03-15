@@ -197,6 +197,10 @@ textarea,
   min-width: 0;
 }
 .tabs::-webkit-scrollbar { display: none; }
+.tabs {
+  -webkit-mask-image: linear-gradient(to right, black calc(100% - 24px), transparent);
+  mask-image: linear-gradient(to right, black calc(100% - 24px), transparent);
+}
 
 .tab-button {
   display: inline-flex;
@@ -350,9 +354,9 @@ textarea,
   justify-content: space-between;
   flex-wrap: wrap;
   gap: var(--space-2) var(--space-3);
-  padding-bottom: var(--space-3);
+  padding-bottom: var(--space-2);
   border-bottom: 1px solid var(--border);
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-3);
 }
 
 .panel-header h2 {
@@ -800,16 +804,68 @@ body.is-mobile-layout .detail-top {
 }
 
 .detail-actions {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  display: flex;
+  flex-direction: column;
   gap: var(--space-2);
 }
 .detail-actions > button {
-  min-width: 0;
-  word-break: break-word;
+  width: 100%;
 }
-.detail-actions .primary-button {
-  grid-column: 1 / -1;
+.detail-actions-danger {
+  margin-top: var(--space-3);
+  border-top: 1px solid var(--border);
+  padding-top: var(--space-3);
+}
+
+/* Character counter */
+.char-counter {
+  display: block;
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-align: right;
+  margin-top: 2px;
+}
+.char-counter.warn { color: #d4a017; }
+.char-counter.over { color: var(--danger, #c44); }
+
+/* Timezone label */
+.tz-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-left: 4px;
+}
+
+/* Publish confirm dialog */
+.confirm-dialog {
+  border: none;
+  border-radius: 12px;
+  padding: 0;
+  background: var(--surface);
+  color: var(--text);
+  max-width: 320px;
+  width: 90%;
+}
+.confirm-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.5);
+}
+.confirm-dialog-body {
+  padding: 20px;
+}
+.confirm-dialog-body h3 {
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+.confirm-dialog-body p {
+  margin: 6px 0;
+  font-size: 14px;
+}
+.confirm-dialog-actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: 16px;
+}
+.confirm-dialog-actions button {
+  flex: 1;
 }
 
 .actions-grid-two {
@@ -1457,7 +1513,7 @@ body.tg-theme-dark .detail-markdown h5 {
 /* ── Mobile Layout Fixes ─────────────────────────────────────────────────── */
 @media (max-width: 760px) {
   body.is-mobile-layout {
-    padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
   }
 
   /* When soft keyboard is open: hide the bottom nav so it can't overlap focused fields.

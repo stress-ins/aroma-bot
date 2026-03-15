@@ -270,8 +270,8 @@ export function createDraftsModule(deps) {
             <button class="primary-button" onclick="updateDraft('status', {status:'approved'}, this)">${actionLabel("approve", "Согласовать")}</button>
             <button class="secondary-button" onclick="updateDraft('status', {status:'rejected'}, this)">${actionLabel("reject", "Вернуть на доработку")}</button>
             <button class="secondary-button" onclick="sendDraftToChat('${d.draft_id}', this)">${actionLabel("chat", "Отправить в чат")}</button>
-            ${d.kind === "carousel" ? `<button class="secondary-button" onclick="downloadCarouselPptx('${d.draft_id}', this)">${actionLabel("pptx", "Скачать презентацию")}</button>` : ""}
-            ${d.kind === "carousel" ? `<button class="secondary-button" onclick="importCarouselPptx('${d.draft_id}', this)">${actionLabel("pptx", "Импорт из Canva")}</button>` : ""}
+            ${d.kind === "carousel" ? `<button class="secondary-button" onclick="downloadCarouselPptx('${d.draft_id}', this)">${actionLabel("download", "Скачать презентацию")}</button>` : ""}
+            ${d.kind === "carousel" ? `<button class="secondary-button" onclick="importCarouselPptx('${d.draft_id}', this)">${actionLabel("upload", "Импорт из Canva")}</button>` : ""}
             ${d.kind === "carousel" ? `<button class="secondary-button" onclick="regenerateCarouselAll('${d.draft_id}', this)">${actionLabel("regenerate", "Обновить все слайды")}</button>` : ""}
             <button class="danger-button" onclick="deleteDraft('${d.draft_id}', 'drafts', this)">${actionLabel("trash", "Удалить")}</button>
           </div>

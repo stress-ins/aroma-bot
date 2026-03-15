@@ -142,11 +142,13 @@ export function createCoreModule(deps) {
     if (draft.kind === "carousel") {
       const total = Number(draft.slides_count || 0);
       const ready = Number(draft.images_ready || 0);
+      if (total && ready >= total) return "";
       return total ? `Ещё генерируется ${ready}/${total}` : "Ещё генерируется";
     }
     if (draft.kind === "reels") {
       const total = Number(draft.storyboard_count || 0);
       const ready = Number(draft.images_ready || 0);
+      if (total && ready >= total) return "";
       return total ? `Ещё генерируется ${ready}/${total}` : "Ещё генерируется";
     }
     return "Ещё генерируется";
