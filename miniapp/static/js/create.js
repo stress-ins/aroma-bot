@@ -146,7 +146,7 @@ export function createCreateModule(deps) {
           <h3>Создать рилс</h3>
           <form class="create-form" data-create-reels>
             <label>Тема<textarea name="topic" placeholder="Например: вечерний сенсорный ритуал"></textarea></label>
-            <p class="field-help">Описывайте тему через сцену, состояние или ритуал. Так легче получить usable сценарий и кадры.</p>
+            <p class="field-help">Описывайте тему через сцену, состояние или ритуал. Так легче получить готовый сценарий и кадры.</p>
             <button class="primary-button" type="submit">Собрать сценарий и кадры</button>
           </form>
         </section>
