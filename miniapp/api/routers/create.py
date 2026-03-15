@@ -8,7 +8,7 @@ from bot.services.miniapp_generator import build_content_payload, build_threads_
 from bot.services.miniapp_presenter import serialize_draft
 from bot.services.miniapp_reels import serialize_reels_draft
 from config import settings
-from ..auth import _require_auth
+from ..auth import _check_content_limit, _require_auth, require_tier
 from ..generation import complete_carousel_generation, complete_reels_v2_generation
 from ..models import CreateCarouselPayload, CreateContentPayload, CreateReelsV2Payload, ThreadsSeriesCreateRequest
 
@@ -24,7 +24,7 @@ def _validate_topic(payload) -> str:
     return topic
 
 
-@router.post("/api/generate/content")
+@router.post("/api/generate/content", dependencies=[Depends(require_tier("expert")), Depends(_check_content_limit)])
 async def generate_content(payload: CreateContentPayload, _: None = Depends(_require_auth)):
     topic = _validate_topic(payload)
     goal_key = payload.goal_key.strip().lower()
@@ -45,7 +45,7 @@ async def generate_content(payload: CreateContentPayload, _: None = Depends(_req
     return await serialize_draft(saved)
 
 
-@router.post("/api/generate/threads-series")
+@router.post("/api/generate/threads-series", dependencies=[Depends(require_tier("expert")), Depends(_check_content_limit)])
 async def generate_threads_series(payload: ThreadsSeriesCreateRequest, _: None = Depends(_require_auth)):
     topic = _validate_topic(payload)
     goal_key = payload.goal_key.strip().lower() or "trust"
@@ -64,7 +64,7 @@ async def generate_threads_series(payload: ThreadsSeriesCreateRequest, _: None =
     return await serialize_draft(saved)
 
 
-@router.post("/api/generate/reels")
+@router.post("/api/generate/reels", dependencies=[Depends(require_tier("expert")), Depends(_check_content_limit)])
 async def generate_reels(
     payload: CreateReelsV2Payload,
     background_tasks: BackgroundTasks,
@@ -103,7 +103,7 @@ async def generate_reels(
     return draft
 
 
-@router.post("/api/generate/carousel")
+@router.post("/api/generate/carousel", dependencies=[Depends(require_tier("expert")), Depends(_check_content_limit)])
 async def generate_carousel(
     payload: CreateCarouselPayload,
     background_tasks: BackgroundTasks,

@@ -1,29 +1,24 @@
-"""add_upload_post_api_key_to_brand_settings
+"""add mentions platform tokens
 
-Revision ID: b2efc9c405f9
+Revision ID: 6bc78647c47d
 Revises: 67bb541f5dab
-Create Date: 2026-03-15 15:34:24.399035
+Create Date: 2026-01-01 00:00:00.000000
 
 """
 from typing import Sequence, Union
-
 from alembic import op
 import sqlalchemy as sa
 
-
-# revision identifiers, used by Alembic.
-revision: str = 'b2efc9c405f9'
+revision: str = '6bc78647c47d'
 down_revision: Union[str, Sequence[str], None] = '67bb541f5dab'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    """Upgrade schema."""
-    # Column already added on VPS via 6bc78647c47d — no-op for local merge
+    # Tables created on VPS — stub for local alignment
     pass
 
 
 def downgrade() -> None:
-    """Downgrade schema."""
     pass

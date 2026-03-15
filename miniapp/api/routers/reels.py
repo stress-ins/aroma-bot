@@ -18,7 +18,7 @@ from bot.services.miniapp_reels import (
     update_reels_scenario,
 )
 from bot.services.reels_assets import regenerate_reels_frame_asset
-from ..auth import _require_auth
+from ..auth import _require_auth, require_tier
 from ..deps import require_draft
 from ..generation import (
     complete_reels_regenerate_all,
@@ -78,7 +78,7 @@ async def reels_patch_frame(
     return draft
 
 
-@router.post("/api/reels/{draft_id}/regen-concept")
+@router.post("/api/reels/{draft_id}/regen-concept", dependencies=[Depends(require_tier("expert"))])
 async def reels_regen_concept(
     draft_id: str,
     background_tasks: BackgroundTasks,
@@ -96,7 +96,7 @@ async def reels_regen_concept(
     return await serialize_reels_draft(draft_id)
 
 
-@router.post("/api/reels/{draft_id}/regen-scenario")
+@router.post("/api/reels/{draft_id}/regen-scenario", dependencies=[Depends(require_tier("expert"))])
 async def reels_regen_scenario(
     draft_id: str,
     background_tasks: BackgroundTasks,
@@ -110,7 +110,7 @@ async def reels_regen_scenario(
     return await serialize_reels_draft(draft_id)
 
 
-@router.post("/api/reels/{draft_id}/regen-frame-image")
+@router.post("/api/reels/{draft_id}/regen-frame-image", dependencies=[Depends(require_tier("expert"))])
 async def reels_regen_frame_image(
     draft_id: str,
     payload: ReelsRegenFramePayload,
@@ -144,7 +144,7 @@ async def reels_frame_versions(
     raise HTTPException(status_code=404, detail="frame_not_found")
 
 
-@router.post("/api/reels/{draft_id}/regen-caption")
+@router.post("/api/reels/{draft_id}/regen-caption", dependencies=[Depends(require_tier("expert"))])
 async def reels_regen_caption(
     draft_id: str,
     background_tasks: BackgroundTasks,
@@ -206,7 +206,7 @@ async def reels_check_video(
     return result
 
 
-@router.post("/api/reels/{draft_id}/publish")
+@router.post("/api/reels/{draft_id}/publish", dependencies=[Depends(require_tier("expert"))])
 async def reels_publish(
     draft_id: str,
     payload: ReelsPublishPayload,
@@ -298,7 +298,7 @@ async def reels_frame_prompt(
     return draft
 
 
-@router.post("/api/reels/{draft_id}/frames/{frame_index}/regenerate")
+@router.post("/api/reels/{draft_id}/frames/{frame_index}/regenerate", dependencies=[Depends(require_tier("expert"))])
 async def reels_frame_regenerate(
     draft_id: str,
     frame_index: int,
@@ -325,7 +325,7 @@ async def reels_scenario_update(
     return draft
 
 
-@router.post("/api/reels/{draft_id}/storyboard/regenerate")
+@router.post("/api/reels/{draft_id}/storyboard/regenerate", dependencies=[Depends(require_tier("expert"))])
 async def reels_storyboard_regenerate(
     draft_id: str,
     background_tasks: BackgroundTasks,
@@ -342,7 +342,7 @@ async def reels_storyboard_regenerate(
     return draft
 
 
-@router.post("/api/reels/{draft_id}/frames/regenerate-all")
+@router.post("/api/reels/{draft_id}/frames/regenerate-all", dependencies=[Depends(require_tier("expert"))])
 async def reels_frames_regenerate_all(
     draft_id: str,
     background_tasks: BackgroundTasks,

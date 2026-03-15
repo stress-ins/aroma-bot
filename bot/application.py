@@ -16,6 +16,8 @@ from bot.handlers.drafts import build_drafts_handler
 from bot.handlers.miniapp_bridge import build_miniapp_bridge_handler
 from bot.handlers.threads_manager import build_threads_manager_handler
 from bot.handlers.social_connect import build_social_connect_handlers
+from bot.handlers.subscription import build_subscription_handlers
+from bot.handlers.admin import build_admin_handlers
 
 
 def build_application() -> Application:
@@ -68,6 +70,11 @@ def build_application() -> Application:
             app.add_handler(h, group=3)
         else:
             app.add_handler(h)
+
+    for h in build_subscription_handlers():
+        app.add_handler(h)
+    for h in build_admin_handlers():
+        app.add_handler(h)
 
     app.add_error_handler(error_handler)
 

@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 import uuid
 from typing import Any
-from sqlalchemy import String, JSON, DateTime, Integer
+from sqlalchemy import BigInteger, Boolean, String, JSON, DateTime, Integer, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 class Base(DeclarativeBase):
@@ -120,6 +120,102 @@ class BlendModel(Base):
     compatibility_notes: Mapped[str] = mapped_column(String(2000), default="")
     source_pdf: Mapped[str] = mapped_column(String(255), default="")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+
+class UserProfile(Base):
+    __tablename__ = "user_profiles"
+
+    telegram_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    tier: Mapped[str] = mapped_column(String(32), default="free")  # free/student/expert
+    trial_ends_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, default=None)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+
+class Subscription(Base):
+    __tablename__ = "subscriptions"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    telegram_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    tier: Mapped[str] = mapped_column(String(32))
+    starts_at: Mapped[datetime] = mapped_column(DateTime)
+    ends_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, default=None)
+    promo_code_id: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
+    activated_by: Mapped[str] = mapped_column(String(32), default="manual")  # manual/promo
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class PromoCode(Base):
+    __tablename__ = "promo_codes"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    code: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    tier: Mapped[str] = mapped_column(String(32))  # student/expert
+    duration_days: Mapped[int] = mapped_column(Integer)
+    max_uses: Mapped[int] = mapped_column(Integer, default=1)
+    uses_count: Mapped[int] = mapped_column(Integer, default=0)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, default=None)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class UsageLog(Base):
+    __tablename__ = "usage_logs"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    telegram_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    date: Mapped[str] = mapped_column(String(16))  # "2026-03-15" (UTC date string)
+    cards_created: Mapped[int] = mapped_column(Integer, default=0)
+
+    __table_args__ = (UniqueConstraint("telegram_id", "date"),)
+
+
+class MentionModel(Base):
+    __tablename__ = "mentions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    mention_id: Mapped[str] = mapped_column(String(36), unique=True, index=True)
+    platform: Mapped[str] = mapped_column(String(32), index=True)
+    external_id: Mapped[str] = mapped_column(String(255), index=True, default="")
+    type: Mapped[str] = mapped_column(String(32), default="mention")
+    author_username: Mapped[str] = mapped_column(String(255), default="")
+    author_name: Mapped[str] = mapped_column(String(255), default="")
+    content: Mapped[str] = mapped_column(String(4000), default="")
+    url: Mapped[str] = mapped_column(String(1024), default="")
+    context_post: Mapped[str] = mapped_column(String(4000), default="")
+    received_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    status: Mapped[str] = mapped_column(String(32), default="pending", index=True)
+
+
+class MentionReplyModel(Base):
+    __tablename__ = "mention_replies"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    reply_id: Mapped[str] = mapped_column(String(36), unique=True, index=True)
+    mention_id: Mapped[str] = mapped_column(String(36), index=True)
+    tone: Mapped[str] = mapped_column(String(32), default="warm")
+    content: Mapped[str] = mapped_column(String(2000), default="")
+    generated_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    selected: Mapped[bool] = mapped_column(Boolean, default=False)
+    published_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, default=None)
+    publish_error: Mapped[str] = mapped_column(String(1000), default="")
+
+
+class PlatformTokenModel(Base):
+    __tablename__ = "platform_tokens"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    platform: Mapped[str] = mapped_column(String(32), unique=True, index=True)
+    access_token: Mapped[str] = mapped_column(String(1024), default="")
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, default=None)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
         default=lambda: datetime.now(timezone.utc),

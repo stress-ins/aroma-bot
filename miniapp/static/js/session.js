@@ -128,6 +128,19 @@ export function createSessionModule(deps) {
     }, 5000));
   }
 
+  async function loadUserPlan() {
+    try {
+      const res = await fetch("/api/user/plan", {
+        headers: { "Content-Type": "application/json", ...initDataHeaders() },
+      });
+      if (res.ok) {
+        state.userPlan = await res.json();
+      }
+    } catch (_err) {
+      // Non-critical — paywall will fall back gracefully
+    }
+  }
+
   async function loadDrafts() {
     const data = await fetchJson(`/api/drafts?${filtersToQueryString()}`, { timeout: 20000 });
     state.drafts = data.items || [];
@@ -170,5 +183,6 @@ export function createSessionModule(deps) {
     scheduleReelsRefresh,
     scheduleCarouselRefresh,
     loadDrafts,
+    loadUserPlan,
   };
 }
