@@ -5,6 +5,7 @@ import asyncio
 import json
 import logging
 import os
+import re
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -25,8 +26,9 @@ _DOCTOR_SYSTEM_PROMPT = """Ты — врач и медицинский реда�
 2. Указаны ли противопоказания там, где они нужны (беременность, дети, эпилепсия)?
 3. Нет ли опасных комбинаций или рекомендаций?
 
-Верни JSON: {"passed": bool, "score": 0.0–1.0, "issues": [...], "corrections": {...}}
-Если данных недостаточно — passed: true, score: 0.8, issues: [].
+Верни СТРОГО КОМПАКТНЫЙ JSON в одну строку без переносов строк:
+{"passed": true, "score": 0.9, "issues": ["issue1"], "corrections": {}}
+Если данных недостаточно — {"passed": true, "score": 0.8, "issues": [], "corrections": {}}.
 """
 
 _CATEGORIES_REQUIRING_PRECAUTIONS = {"aroma", "blend", "symptom"}
@@ -62,6 +64,15 @@ def _rule_based_check(card: dict[str, Any]) -> tuple[float, list[str], bool]:
             needs_llm = True  # Ask LLM to evaluate if precautions are needed
 
     return max(0.0, round(score, 2)), issues, needs_llm
+
+
+def _clean_json(raw_json: str) -> str:
+    """Replace literal newlines inside JSON string values to fix Claude formatting."""
+    return re.sub(
+        r'"((?:[^"\\]|\\.)*)"',
+        lambda m: '"' + m.group(1).replace('\n', ' ').replace('\r', '') + '"',
+        raw_json,
+    )
 
 
 def review_card_medical_sync(card: dict[str, Any]) -> dict[str, Any]:
@@ -116,7 +127,7 @@ def review_card_medical_sync(card: dict[str, Any]) -> dict[str, Any]:
             start = raw.find("{")
             end = raw.rfind("}") + 1
             if start >= 0 and end > start:
-                result = json.loads(raw[start:end])
+                result = json.loads(_clean_json(raw[start:end]))
                 llm_score = float(result.get("score", 1.0))
                 final_score = round(min(score, llm_score), 2)
                 all_issues = issues + list(result.get("issues") or [])
