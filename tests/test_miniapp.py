@@ -1518,7 +1518,7 @@ class TestMiniAppRussianLocale:
         assert "function renderGuidedState" in app_js
         assert 'title: "Выберите формат для старта"' in app_js
         assert 'title: "Ничего не найдено"' in app_js
-        assert 'title: "Планов пока нет"' in app_js
+        assert 'title: "Публикаций пока нет"' in app_js
         assert 'title: "Рилсов пока нет"' in app_js
         assert 'title: "Откройте тему для редактирования"' in app_js
         assert 'title: inSettings ? "Откройте источник слева" : "Проверьте состояние источников"' in app_js
@@ -1666,7 +1666,7 @@ class TestMiniAppRussianLocale:
         assert 'return "Контент";' in app_js
         assert 'return "Mini App";' in app_js
         assert 'class="draft-card overview-card' in app_js
-        assert 'class="plan-card overview-card' in app_js
+        assert 'class="plan-card plan-card-' in app_js
         assert 'class="reels-card overview-card' in app_js
         assert 'class="overview-card-top"' in app_js
         assert ".overview-card" in app_css
@@ -1693,7 +1693,7 @@ class TestMiniAppRussianLocale:
 
         assert "function renderGuidedState" in app_js
         assert "Выберите формат для старта" in app_js
-        assert "Планов пока нет" in app_js
+        assert "Публикаций пока нет" in app_js
         assert "Рилсов пока нет" in app_js
         assert "Откройте тему для редактирования" in app_js
         assert "setTab('create')" in app_js

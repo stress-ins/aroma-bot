@@ -21,7 +21,6 @@ venv/
 # Large data / archives
 data/oil_pdfs/
 miniapp.zip
-miniapp/
 
 # Data storage
 data/reels_assets/
