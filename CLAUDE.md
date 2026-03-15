@@ -73,7 +73,8 @@ ssh root@46.32.186.192 'screen -S symptom-reseed -d -m bash -c "cd /opt/aroma &&
 - После создания PR — обязательно проверить перед мержем:
   1. `gh pr view <N> --json mergeable,mergeStateStatus` → `"MERGEABLE"`, не `"CONFLICTING"`
   2. Если конфликт → `git rebase origin/main`, разрешить, тесты, force-push
-  3. `gh pr checks <N>` → все зелёные
+  3. `gh pr checks <N>` → **ВСЕ зелёные** (и pytest, и miniapp-ui)
+- **ЗАПРЕЩЕНО использовать `gh pr merge --admin`** для обхода красных тестов. Deploy зависит от прохождения ВСЕХ checks — если хоть один красный, Deploy не запустится. Если тесты падают — починить тесты, не обходить.
 - **После мержа:** `git push origin main` — запускает автодеплой через GitHub Actions
 - **Проверка деплоя:** Убедиться что GitHub Action "Deploy" прошёл успешно
 
