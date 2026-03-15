@@ -109,6 +109,17 @@ export function registerWindowBridge(deps) {
     renderCreateTool(toolId);
   };
 
+  const CHAR_LIMITS = { threads: 500, instagram: 2200, telegram: 1200 };
+  window.updateCharCounter = (textarea, kind) => {
+    const limit = CHAR_LIMITS[kind] || 2200;
+    const len = textarea.value.length;
+    const counter = textarea.parentElement?.querySelector(".char-counter");
+    if (!counter) return;
+    counter.textContent = `${len}/${limit}`;
+    counter.classList.toggle("warn", len > limit * 0.8 && len <= limit);
+    counter.classList.toggle("over", len > limit);
+  };
+
   window.openSettingsSection = async (section) => {
     state.settingsSection = section === "keywords" ? "keywords" : section === "brand" ? "brand" : "status";
     if (state.tab !== "settings") {
