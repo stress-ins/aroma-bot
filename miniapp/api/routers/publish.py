@@ -70,6 +70,19 @@ async def cancel_publish_schedule(draft_id: str, _: None = Depends(_require_auth
     return {"draft_id": draft_id, "results": results}
 
 
+@router.post("/api/publish/{item_id}")
+async def publish_by_id(item_id: str, _: None = Depends(_require_auth)):
+    """Immediate publish endpoint (used by scheduler internally)."""
+    draft = await get_draft(item_id)
+    if not draft:
+        raise HTTPException(status_code=404, detail="draft_not_found")
+    if draft.status not in ("scheduled", "approved"):
+        raise HTTPException(status_code=400, detail="draft_not_ready")
+    platforms = draft.publish_platforms or ["threads"]
+    results = await publish(item_id, platforms)
+    return {"draft_id": item_id, "results": results}
+
+
 @router.get("/api/publish/scheduled")
 async def scheduled_posts(_: None = Depends(_require_auth)):
     from bot.services.drafts_store import list_recent_drafts

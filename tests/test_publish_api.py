@@ -48,13 +48,13 @@ async def test_list_scheduled_drafts_due_finds_due():
     async with factory() as session:
         session.add(DraftModel(
             draft_id="due01", kind="threads", topic="Due post", source="test",
-            status="approved", feedback="", payload={"text": "hello"},
+            status="scheduled", feedback="", payload={"text": "hello"},
             scheduled_at=now - timedelta(minutes=10),
             publish_platforms=["threads"], external_ids={},
         ))
         session.add(DraftModel(
             draft_id="future01", kind="threads", topic="Future", source="test",
-            status="approved", feedback="", payload={"text": "later"},
+            status="scheduled", feedback="", payload={"text": "later"},
             scheduled_at=now + timedelta(hours=2),
             publish_platforms=["threads"], external_ids={},
         ))
