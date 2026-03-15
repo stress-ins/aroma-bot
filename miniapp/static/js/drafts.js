@@ -273,12 +273,9 @@ export function createDraftsModule(deps) {
 
     const p = d.payload || {};
     const mainText = p.caption || p.scenario || "";
+    // Compact metadata: only show ID + date (kind/source/status already in eyebrow + draft-meta)
     const heroFacts = [
       d.seq_id ? detailFactMarkup("ID", `#${d.seq_id}`) : "",
-      detailFactMarkup("Тип", kindLabel(d.kind)),
-      detailFactMarkup("Источник", sourceLabel(d.source)),
-      detailFactMarkup("Статус", statusLabel(d.status)),
-      isContentReviewKind(d.kind) ? detailFactMarkup("Реакция", feedbackLabel(d.feedback)) : "",
       detailFactMarkup("Создан", formatPlanDate(d.created_at)),
     ].join("");
 
