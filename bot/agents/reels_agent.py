@@ -131,6 +131,88 @@ _DIRECTOR_PROMPT = """\
 
 _REFERENCE_CONTEXT_MAX_CHARS = 1800
 
+GOAL_LABELS: dict[str, str] = {
+    "trust": "доверие и экспертность",
+    "sales": "продажи и конверсия",
+    "reach": "охват и виральность",
+    "community": "сообщество и вовлечение",
+    "education": "обучение и польза",
+}
+
+EMOTION_LABELS: dict[str, str] = {
+    "calm": "спокойствие",
+    "inspiration": "вдохновение",
+    "curiosity": "любопытство",
+    "joy": "радость",
+    "trust": "доверие",
+    "nostalgia": "ностальгия",
+}
+
+_DRAFT_PROMPT = """\
+{brand_context}
+
+Создай черновик Reels (15-30 сек) по теме: «{topic}»
+Цель: {goal_label}
+Желаемая эмоция зрителя: {emotion_label}
+
+Ответь строго в этом формате:
+
+CONCEPT: [одно предложение — главная идея ролика]
+HOOK: [первые 3 секунды — что зритель увидит и услышит]
+SCENARIO:
+[сценарий 4 хронометражных блока — 0-3, 3-10, 10-20, 20-30 сек; для каждого: видеоряд + текст на экране + голос]
+CAPTION: [описание для поста, 2-3 предложения + хэштеги]
+MUSIC_MOOD: [настроение музыки — темп, инструменты, атмосфера]
+
+Правила:
+- НЕ использовать: дымящийся ладан, горящие смолы, капли масла в воде
+- Масло на экране: каплю на ладонь → растереть → вдыхать. Либо диффузор.
+- Голос — разговорный, как голосовое сообщение подруге
+- Текст на экране — законченные мысли, не обрывки
+{forbidden_block}
+"""
+
+_FRAMES_PROMPT = """\
+Ты — арт-директор Reels. Разбей сценарий на {n_frames} кадра для генерации изображений.
+
+ТЕМА: {topic}
+СЦЕНАРИЙ:
+{scenario}
+
+Визуальный стиль бренда: терракота, беж, шалфей; натуральные текстуры, травы, свечи, мягкий свет.
+
+Для каждого кадра укажи:
+- TIMECODE: временной диапазон (напр. 0-3 сек)
+- OVERLAY: текст оверлея (короткая фраза для монтажа, ≤6 слов)
+- PROMPT: English prompt for Gemini image generation (vertical 9:16, cinematic still, no faces, no text in image)
+
+Формат строго:
+FRAME1_TIMECODE: ...
+FRAME1_OVERLAY: ...
+FRAME1_PROMPT: ...
+
+FRAME2_TIMECODE: ...
+FRAME2_OVERLAY: ...
+FRAME2_PROMPT: ...
+"""
+
+_CAPTION_PROMPT = """\
+{brand_context}
+
+Напиши финальный caption для Reels по теме: «{topic}»
+
+Концепция: {concept}
+Сценарий (краткое резюме): {scenario_preview}
+
+Требования:
+- 2-4 предложения
+- Разговорный тон, от первого лица
+- Призыв к действию или вопрос в конце
+- 5-8 хэштегов
+
+{forbidden_block}
+"""
+
 
 @dataclass
 class StoryboardFrame:
@@ -138,6 +220,22 @@ class StoryboardFrame:
     scene: str
     angle: str
     gemini_prompt: str
+
+
+@dataclass
+class ReelsV2Draft:
+    concept: str
+    hook: str
+    scenario: str
+    caption: str
+    music_mood: str
+
+
+@dataclass
+class FramePromptV2:
+    timecode: str
+    overlay_text: str
+    image_prompt: str
 
 
 def _parse_storyboard(raw: str) -> list[StoryboardFrame]:
@@ -225,6 +323,7 @@ def generate_reels_director_sync(topic: str, script: str) -> list[StoryboardFram
     client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
     prompt = _DIRECTOR_PROMPT.format(topic=topic, script=script)
     last_raw = ""
+    frames: list[StoryboardFrame] = []
 
     for attempt in range(2):
         resp = client.messages.create(
@@ -242,3 +341,147 @@ def generate_reels_director_sync(topic: str, script: str) -> list[StoryboardFram
     if last_raw:
         logger.warning("Reels director raw response preview: %s", last_raw[:800])
     return frames[:4]
+
+
+def _parse_draft(raw: str) -> ReelsV2Draft:
+    """Parse structured Claude response into ReelsV2Draft."""
+    concept = hook = caption = music_mood = ""
+    in_scenario = False
+    scenario_buf: list[str] = []
+
+    for line in raw.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("CONCEPT:"):
+            concept = stripped[len("CONCEPT:"):].strip()
+            in_scenario = False
+        elif stripped.startswith("HOOK:"):
+            hook = stripped[len("HOOK:"):].strip()
+            in_scenario = False
+        elif stripped.startswith("SCENARIO:"):
+            in_scenario = True
+            tail = stripped[len("SCENARIO:"):].strip()
+            if tail:
+                scenario_buf.append(tail)
+        elif stripped.startswith("CAPTION:"):
+            in_scenario = False
+            caption = stripped[len("CAPTION:"):].strip()
+        elif stripped.startswith("MUSIC_MOOD:"):
+            in_scenario = False
+            music_mood = stripped[len("MUSIC_MOOD:"):].strip()
+        elif in_scenario:
+            scenario_buf.append(line)
+
+    return ReelsV2Draft(
+        concept=concept,
+        hook=hook,
+        scenario="\n".join(scenario_buf).strip(),
+        caption=caption,
+        music_mood=music_mood,
+    )
+
+
+def _parse_frame_prompts(raw: str, n_frames: int = 4) -> list[FramePromptV2]:
+    """Parse structured FRAME1_TIMECODE / FRAME1_OVERLAY / FRAME1_PROMPT blocks."""
+    frames: list[FramePromptV2] = []
+    for i in range(1, n_frames + 1):
+        timecode = overlay = prompt = ""
+        for line in raw.splitlines():
+            stripped = line.strip()
+            key_tc = f"FRAME{i}_TIMECODE:"
+            key_ov = f"FRAME{i}_OVERLAY:"
+            key_pr = f"FRAME{i}_PROMPT:"
+            if stripped.startswith(key_tc):
+                timecode = stripped[len(key_tc):].strip()
+            elif stripped.startswith(key_ov):
+                overlay = stripped[len(key_ov):].strip()
+            elif stripped.startswith(key_pr):
+                prompt = stripped[len(key_pr):].strip()
+        if timecode or overlay or prompt:
+            frames.append(FramePromptV2(timecode=timecode, overlay_text=overlay, image_prompt=prompt))
+    return frames
+
+
+def generate_reels_v2_draft_sync(
+    topic: str,
+    goal: str = "trust",
+    emotion: str = "calm",
+) -> ReelsV2Draft:
+    """Generate a v2 reels draft: concept, hook, scenario, caption, music mood."""
+    import anthropic
+
+    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+    bs = get_brand_settings_cached()
+    forbidden_block = (
+        "НЕ использовать следующие фразы:\n"
+        + "\n".join(f"- {p}" for p in bs.forbidden_phrases)
+        if bs.forbidden_phrases
+        else ""
+    )
+    goal_label = GOAL_LABELS.get(goal, goal)
+    emotion_label = EMOTION_LABELS.get(emotion, emotion)
+    prompt = _DRAFT_PROMPT.format(
+        brand_context=bs.brand_voice,
+        topic=topic,
+        goal_label=goal_label,
+        emotion_label=emotion_label,
+        forbidden_block=forbidden_block,
+    )
+    resp = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=1800,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    return _parse_draft(resp.content[0].text.strip())
+
+
+def generate_frame_prompts_sync(
+    topic: str,
+    scenario: str,
+    n_frames: int = 4,
+) -> list[FramePromptV2]:
+    """Generate per-frame image prompts and overlay texts."""
+    import anthropic
+
+    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+    prompt = _FRAMES_PROMPT.format(
+        topic=topic,
+        scenario=scenario[:2000],
+        n_frames=n_frames,
+    )
+    resp = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=1200,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    return _parse_frame_prompts(resp.content[0].text.strip(), n_frames=n_frames)
+
+
+def generate_reels_v2_caption_sync(
+    topic: str,
+    concept: str,
+    scenario: str,
+) -> str:
+    """Regenerate caption for a v2 reels draft."""
+    import anthropic
+
+    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+    bs = get_brand_settings_cached()
+    forbidden_block = (
+        "НЕ использовать следующие фразы:\n"
+        + "\n".join(f"- {p}" for p in bs.forbidden_phrases)
+        if bs.forbidden_phrases
+        else ""
+    )
+    prompt = _CAPTION_PROMPT.format(
+        brand_context=bs.brand_voice,
+        topic=topic,
+        concept=concept,
+        scenario_preview=scenario[:800],
+        forbidden_block=forbidden_block,
+    )
+    resp = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=500,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    return resp.content[0].text.strip()

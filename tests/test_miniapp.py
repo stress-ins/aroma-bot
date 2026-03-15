@@ -411,16 +411,16 @@ class TestMiniAppApi:
     def test_generate_reels_creates_draft_and_detail(self, miniapp_test_client, monkeypatch):
         import miniapp_server
 
-        async def _noop_complete_reels_generation(*_args, **_kwargs):
+        async def _noop_complete_reels_v2_generation(*_args, **_kwargs):
             return None
 
         import miniapp.api.routers.create as _create_router
-        monkeypatch.setattr(_create_router, "complete_reels_generation", _noop_complete_reels_generation)
+        monkeypatch.setattr(_create_router, "complete_reels_v2_generation", _noop_complete_reels_v2_generation)
 
         response = miniapp_test_client.post(
             "/api/generate/reels",
             headers=self.AUTH_HEADERS,
-            json={"topic": "Рилс про паузу"},
+            json={"topic": "Рилс про паузу", "goal": "trust", "emotion": "calm"},
         )
 
         assert response.status_code == 200
@@ -428,7 +428,7 @@ class TestMiniAppApi:
         assert payload["draft_id"]
         assert payload["generation_pending"] is True
         assert payload["frame_count"] == 0
-        assert payload["generation_stage"] == "scenario"
+        assert payload["generation_stage"] == "concept"
 
         detail = miniapp_test_client.get(f"/api/reels/{payload['draft_id']}", headers=self.AUTH_HEADERS)
         assert detail.status_code == 200
@@ -1518,7 +1518,7 @@ class TestMiniAppRussianLocale:
         assert "function renderGuidedState" in app_js
         assert 'title: "Выберите формат для старта"' in app_js
         assert 'title: "Ничего не найдено"' in app_js
-        assert 'title: "Планов пока нет"' in app_js
+        assert 'title: "Публикаций пока нет"' in app_js
         assert 'title: "Рилсов пока нет"' in app_js
         assert 'title: "Откройте тему для редактирования"' in app_js
         assert 'title: inSettings ? "Откройте источник слева" : "Проверьте состояние источников"' in app_js
@@ -1666,7 +1666,7 @@ class TestMiniAppRussianLocale:
         assert 'return "Контент";' in app_js
         assert 'return "Mini App";' in app_js
         assert 'class="draft-card overview-card' in app_js
-        assert 'class="plan-card overview-card' in app_js
+        assert 'class="plan-card plan-card-' in app_js
         assert 'class="reels-card overview-card' in app_js
         assert 'class="overview-card-top"' in app_js
         assert ".overview-card" in app_css
@@ -1693,7 +1693,7 @@ class TestMiniAppRussianLocale:
 
         assert "function renderGuidedState" in app_js
         assert "Выберите формат для старта" in app_js
-        assert "Планов пока нет" in app_js
+        assert "Публикаций пока нет" in app_js
         assert "Рилсов пока нет" in app_js
         assert "Откройте тему для редактирования" in app_js
         assert "setTab('create')" in app_js

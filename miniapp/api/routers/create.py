@@ -4,13 +4,13 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 
 from bot.agents import generate_content_draft
 from bot.services.drafts_store import save_draft
-from bot.services.miniapp_generator import build_content_payload, build_reels_payload, build_threads_series_payload, is_valid_content_format, is_valid_content_goal
+from bot.services.miniapp_generator import build_content_payload, build_threads_series_payload, is_valid_content_format, is_valid_content_goal
 from bot.services.miniapp_presenter import serialize_draft
 from bot.services.miniapp_reels import serialize_reels_draft
 from config import settings
 from ..auth import _require_auth
-from ..generation import complete_carousel_generation, complete_reels_generation
-from ..models import CreateCarouselPayload, CreateContentPayload, CreateReelsPayload, ThreadsSeriesCreateRequest
+from ..generation import complete_carousel_generation, complete_reels_v2_generation
+from ..models import CreateCarouselPayload, CreateContentPayload, CreateReelsV2Payload, ThreadsSeriesCreateRequest
 
 router = APIRouter()
 
@@ -66,27 +66,37 @@ async def generate_threads_series(payload: ThreadsSeriesCreateRequest, _: None =
 
 @router.post("/api/generate/reels")
 async def generate_reels(
-    payload: CreateReelsPayload,
+    payload: CreateReelsV2Payload,
     background_tasks: BackgroundTasks,
     _: None = Depends(_require_auth),
 ):
     topic = _validate_topic(payload)
+    goal = payload.goal.strip().lower() or "trust"
+    emotion = payload.emotion.strip().lower() or "calm"
 
     saved = await save_draft(
-        kind="reels",
+        kind="reels_v2",
         topic=topic,
         source="/miniapp",
         payload={
-            "scenario": "",
+            "goal": goal,
+            "emotion": emotion,
             "concept": "",
-            "storyboard": [],
+            "hook": "",
+            "scenario": "",
+            "caption": "",
+            "music_mood": "",
+            "frames": [],
             "images_ready": 0,
+            "approved": False,
+            "shooting_deadline_days": 0,
+            "feedback": {},
             "generation_pending": True,
-            "generation_stage": "scenario",
-            "generation_message": "Собираю сценарий для рилса.",
+            "generation_stage": "concept",
+            "generation_message": "Собираю концепцию рилса.",
         },
     )
-    background_tasks.add_task(complete_reels_generation, saved.draft_id, topic)
+    background_tasks.add_task(complete_reels_v2_generation, saved.draft_id, topic, goal, emotion)
     draft = await serialize_reels_draft(saved.draft_id)
     if not draft:
         raise HTTPException(status_code=500, detail="reels_not_saved")

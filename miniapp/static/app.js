@@ -1155,9 +1155,11 @@ const {
 
 const {
   loadPlans: loadPlansImpl,
-  loadTodo: loadTodoImpl,
-  addTodoItemImpl,
-  removeTodoItemImpl,
+  loadPlansFeed: loadPlansFeedImpl,
+  setPlanStatusFilter,
+  setPlanPlatformFilter,
+  setPlanDateFilter,
+  openPlanDetail,
   planEntryTargetKind,
   planEntryFormatLabel,
   relatedDraftsForEntry,
@@ -1184,6 +1186,7 @@ const {
   renderGuidedState,
   setEmptyState,
   renderDetailLoader,
+  detailFactMarkup,
   fetchJson,
   withButtonFeedback,
   upsertDraftSummary,
@@ -1251,8 +1254,7 @@ async function loadStatus() {
 }
 
 async function loadPlans() {
-  await loadPlansImpl();
-  await loadTodoImpl();
+  await Promise.all([loadPlansImpl(), loadPlansFeedImpl()]);
 }
 
 async function loadReels() { return loadReelsImpl(); }
@@ -1740,8 +1742,10 @@ registerWindowBridge({
   removeRewrite: removeRewriteImpl,
   savePlatformTone: savePlatformToneImpl,
   saveUploadPostPrefs: saveUploadPostPrefsImpl,
-  addTodoItem: addTodoItemImpl,
-  removeTodoItem: removeTodoItemImpl,
+  setPlanStatusFilter,
+  setPlanPlatformFilter,
+  setPlanDateFilter,
+  openPlanDetail,
   publishDraft: publishDraftImpl,
   cancelPublishSchedule: cancelPublishScheduleImpl,
   goBackToList,

@@ -58,6 +58,33 @@ class CreateReelsPayload(BaseModel):
     topic: str = Field(default="")
 
 
+class CreateReelsV2Payload(BaseModel):
+    topic: str = Field(default="")
+    goal: str = Field(default="trust")
+    emotion: str = Field(default="calm")
+
+
+class ReelsFramePatchPayload(BaseModel):
+    frame_id: str = Field(default="")
+    overlay_text: str | None = Field(default=None)
+    image_prompt: str | None = Field(default=None)
+
+
+class ReelsApprovePayload(BaseModel):
+    shooting_deadline_days: int = Field(default=3)
+
+
+class ReelsFeedbackPayload(BaseModel):
+    platform: str = Field(default="")
+    rating: int = Field(default=0)
+    reaction_types: list[str] = Field(default_factory=list)
+
+
+class ReelsRegenFramePayload(BaseModel):
+    frame_id: str = Field(default="")
+    prompt: str | None = Field(default=None)
+
+
 class CreateCarouselPayload(BaseModel):
     topic: str = Field(default="")
 

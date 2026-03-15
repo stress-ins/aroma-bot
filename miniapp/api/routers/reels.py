@@ -2,12 +2,16 @@ from __future__ import annotations
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 
-from bot.services.drafts_store import DraftRecord
 from bot.services.miniapp_reels import (
-    build_reels_export_payload,
+    approve_reels,
     list_reels_drafts,
-    regenerate_reels_storyboard,
+    record_feedback,
     serialize_reels_draft,
+    update_caption,
+    update_concept,
+    update_frame_field,
+    build_reels_export_payload,
+    regenerate_reels_storyboard,
     update_reels_frame_fields,
     update_reels_frame_note,
     update_reels_frame_prompt,
@@ -16,8 +20,23 @@ from bot.services.miniapp_reels import (
 from bot.services.reels_assets import regenerate_reels_frame_asset
 from ..auth import _require_auth
 from ..deps import require_draft
-from ..generation import complete_reels_regenerate_all, set_generation_state
-from ..models import ReelsFrameFieldsPayload, ReelsFrameNotePayload, ReelsFramePromptPayload, ReelsScenarioPayload
+from ..generation import (
+    complete_reels_regenerate_all,
+    complete_reels_v2_regen_caption,
+    complete_reels_v2_regen_concept,
+    complete_reels_v2_regen_frame,
+    set_generation_state,
+)
+from ..models import (
+    ReelsApprovePayload,
+    ReelsFeedbackPayload,
+    ReelsFrameFieldsPayload,
+    ReelsFrameNotePayload,
+    ReelsFramePatchPayload,
+    ReelsFramePromptPayload,
+    ReelsRegenFramePayload,
+    ReelsScenarioPayload,
+)
 
 router = APIRouter()
 
@@ -34,6 +53,160 @@ async def reels_detail(draft_id: str, _: None = Depends(_require_auth)):
     if not draft:
         raise HTTPException(status_code=404, detail="reels_not_found")
     return draft
+
+
+@router.patch("/api/reels/{draft_id}/frame")
+async def reels_patch_frame(
+    draft_id: str,
+    payload: ReelsFramePatchPayload,
+    _: None = Depends(_require_auth),
+):
+    frame_id = payload.frame_id.strip()
+    if not frame_id:
+        raise HTTPException(status_code=400, detail="empty_frame_id")
+    draft = await update_frame_field(
+        draft_id,
+        frame_id,
+        overlay_text=payload.overlay_text,
+        image_prompt=payload.image_prompt,
+    )
+    if not draft:
+        raise HTTPException(status_code=404, detail="reels_frame_not_found")
+    return draft
+
+
+@router.post("/api/reels/{draft_id}/regen-concept")
+async def reels_regen_concept(
+    draft_id: str,
+    background_tasks: BackgroundTasks,
+    _: None = Depends(_require_auth),
+):
+    draft = await serialize_reels_draft(draft_id)
+    if not draft:
+        raise HTTPException(status_code=404, detail="reels_not_found")
+    topic = str(draft.get("topic", ""))
+    payload_data = draft.get("payload", {})
+    goal = str(payload_data.get("goal", "trust")) if isinstance(payload_data, dict) else "trust"
+    emotion = str(payload_data.get("emotion", "calm")) if isinstance(payload_data, dict) else "calm"
+    await set_generation_state(draft_id, pending=True, stage="concept", message="Обновляю концепцию рилса.")
+    background_tasks.add_task(complete_reels_v2_regen_concept, draft_id, topic, goal, emotion)
+    return await serialize_reels_draft(draft_id)
+
+
+@router.post("/api/reels/{draft_id}/regen-scenario")
+async def reels_regen_scenario(
+    draft_id: str,
+    payload: ReelsScenarioPayload,
+    _: None = Depends(_require_auth),
+):
+    updated = await update_concept(
+        draft_id,
+        concept=payload.concept,
+        scenario=payload.scenario,
+    )
+    if not updated:
+        raise HTTPException(status_code=404, detail="reels_not_found")
+    return updated
+
+
+@router.post("/api/reels/{draft_id}/regen-frame-image")
+async def reels_regen_frame_image(
+    draft_id: str,
+    payload: ReelsRegenFramePayload,
+    background_tasks: BackgroundTasks,
+    _: None = Depends(_require_auth),
+):
+    frame_id = payload.frame_id.strip()
+    if not frame_id:
+        raise HTTPException(status_code=400, detail="empty_frame_id")
+    await set_generation_state(draft_id, pending=True, stage="images", message="Перегенерирую кадр.")
+    background_tasks.add_task(complete_reels_v2_regen_frame, draft_id, frame_id, payload.prompt)
+    draft = await serialize_reels_draft(draft_id)
+    if not draft:
+        raise HTTPException(status_code=404, detail="reels_not_found")
+    return draft
+
+
+@router.get("/api/reels/{draft_id}/frame-versions/{frame_id}")
+async def reels_frame_versions(
+    draft_id: str,
+    frame_id: str,
+    _: None = Depends(_require_auth),
+):
+    draft_data = await serialize_reels_draft(draft_id)
+    if not draft_data:
+        raise HTTPException(status_code=404, detail="reels_not_found")
+    frames = draft_data.get("frames", [])
+    for frame in frames:
+        if isinstance(frame, dict) and str(frame.get("id", "")) == frame_id:
+            return {"frame_id": frame_id, "versions": frame.get("image_versions", [])}
+    raise HTTPException(status_code=404, detail="frame_not_found")
+
+
+@router.post("/api/reels/{draft_id}/regen-caption")
+async def reels_regen_caption(
+    draft_id: str,
+    background_tasks: BackgroundTasks,
+    _: None = Depends(_require_auth),
+):
+    draft = await serialize_reels_draft(draft_id)
+    if not draft:
+        raise HTTPException(status_code=404, detail="reels_not_found")
+    await set_generation_state(draft_id, pending=True, stage="caption", message="Обновляю описание.")
+    background_tasks.add_task(complete_reels_v2_regen_caption, draft_id)
+    return draft
+
+
+@router.patch("/api/reels/{draft_id}/approve")
+async def reels_approve(
+    draft_id: str,
+    payload: ReelsApprovePayload,
+    _: None = Depends(_require_auth),
+):
+    updated = await approve_reels(
+        draft_id,
+        shooting_deadline_days=payload.shooting_deadline_days,
+    )
+    if not updated:
+        raise HTTPException(status_code=404, detail="reels_not_found")
+    return updated
+
+
+@router.get("/api/reels/{draft_id}/video-status")
+async def reels_video_status(
+    draft_id: str,
+    _: None = Depends(_require_auth),
+):
+    draft = await serialize_reels_draft(draft_id)
+    if not draft:
+        raise HTTPException(status_code=404, detail="reels_not_found")
+    frames = draft.get("frames", [])
+    ready = sum(1 for f in frames if isinstance(f, dict) and f.get("image_status") == "ready")
+    return {
+        "draft_id": draft_id,
+        "frame_count": draft.get("frame_count", 0),
+        "images_ready": ready,
+        "approved": draft.get("approved", False),
+        "generation_pending": draft.get("generation_pending", False),
+        "generation_stage": draft.get("generation_stage", ""),
+    }
+
+
+@router.patch("/api/reels/{draft_id}/feedback")
+async def reels_feedback(
+    draft_id: str,
+    payload: ReelsFeedbackPayload,
+    _: None = Depends(_require_auth),
+):
+    updated = await record_feedback(
+        draft_id,
+        platform=payload.platform,
+        rating=payload.rating,
+        reaction_types=payload.reaction_types,
+    )
+    if not updated:
+        raise HTTPException(status_code=404, detail="reels_not_found")
+    return updated
 
 
 @router.get("/api/reels/{draft_id}/export")
@@ -119,14 +292,15 @@ async def reels_storyboard_regenerate(
 
 @router.post("/api/reels/{draft_id}/frames/regenerate-all")
 async def reels_frames_regenerate_all(
+    draft_id: str,
     background_tasks: BackgroundTasks,
-    draft: DraftRecord = Depends(require_draft("reels")),
+    _: None = Depends(_require_auth),
 ):
     await set_generation_state(
-        draft.draft_id, pending=True, stage="images", message="Перегенерирую все кадры рилса."
+        draft_id, pending=True, stage="images", message="Перегенерирую все кадры рилса."
     )
-    background_tasks.add_task(complete_reels_regenerate_all, draft.draft_id)
-    serialized = await serialize_reels_draft(draft.draft_id)
+    background_tasks.add_task(complete_reels_regenerate_all, draft_id)
+    serialized = await serialize_reels_draft(draft_id)
     if not serialized:
         raise HTTPException(status_code=404, detail="reels_not_found")
     return serialized
