@@ -706,19 +706,10 @@ export function createReferencesModule(deps) {
       );
       const parentGroup = reference.parent_group || "";
       const categoryGroup = reference.category_group || "";
-      let breadcrumb = "";
-      if (parentGroup && categoryGroup && parentGroup !== categoryGroup) {
-        const parentJs = JSON.stringify(parentGroup);
-        const childJs = JSON.stringify(categoryGroup);
-        breadcrumb = `<section class="section"><p class="eyebrow"><a href="#" class="breadcrumb-link" onclick='event.preventDefault();setSymptomParentFilter(${parentJs})'>${escapeHtml(parentGroup)}</a> › <a href="#" class="breadcrumb-link" onclick='event.preventDefault();setSymptomParentFilter(${parentJs});setReferenceFilter(${childJs})'>${escapeHtml(categoryGroup)}</a></p></section>`;
-      } else if (categoryGroup) {
-        breadcrumb = `<section class="section"><p class="eyebrow"><a href="#" class="breadcrumb-link" onclick='event.preventDefault();setReferenceFilter(${JSON.stringify(categoryGroup)})'>${escapeHtml(categoryGroup)}</a></p></section>`;
-      }
       detailHtml = `
         <div class="detail-grid">
           ${renderBackButton()}
           ${renderReferenceImage(reference)}
-          ${breadcrumb}
           ${aromaSection("Описание", reference.description)}
           ${oilChips ? `<section class="section"><h3>🌿 Рекомендуемые масла</h3><div class="detail-preview">${oilChips}</div></section>` : ""}
           ${blendChips ? `<section class="section"><h3>🌀 Рекомендуемые смеси</h3><div class="detail-preview">${blendChips}</div></section>` : ""}
