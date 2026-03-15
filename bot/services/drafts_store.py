@@ -175,13 +175,13 @@ async def update_draft(
 
 
 async def list_scheduled_drafts_due() -> list[DraftRecord]:
-    """Drafts where scheduled_at <= now() and status == 'approved'."""
+    """Drafts where scheduled_at <= now() and status == 'scheduled'."""
     now = datetime.now(timezone.utc)
     async with AsyncSessionLocal() as session:
         query = (
             select(DraftModel)
             .filter(
-                DraftModel.status == "approved",
+                DraftModel.status == "scheduled",
                 DraftModel.scheduled_at.isnot(None),
                 DraftModel.scheduled_at <= now,
             )
