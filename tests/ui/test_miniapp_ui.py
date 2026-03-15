@@ -1287,7 +1287,7 @@ def test_content_review_detail_highlights_editor_focus_and_summary(page):
     )
 
     assert metrics["hasHero"] is True
-    assert metrics["facts"] >= 4
+    assert metrics["facts"] >= 1  # compact: only ID + date shown (kind/source/status in eyebrow)
     assert metrics["captionLength"] >= 20
     assert metrics["captionHeight"] > metrics["notesHeight"]
 
