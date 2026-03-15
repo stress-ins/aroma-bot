@@ -5,7 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from bot.agents.planner import _PLAN_PROMPT, _BRAND_CONTEXT
+from bot.agents.planner import _PLAN_PROMPT
+from bot.services.brand_settings_store import _DEFAULT_BRAND_VOICE
 from bot.handlers.planner import _parse_plan_entries
 
 
@@ -17,7 +18,7 @@ class TestPlannerConstants:
         assert "Платформа" in _PLAN_PROMPT
 
     def test_brand_context_mentions_ароматерапия(self):
-        assert "ароматерапия" in _BRAND_CONTEXT.lower() or "сенсорн" in _BRAND_CONTEXT.lower()
+        assert "ароматерапия" in _DEFAULT_BRAND_VOICE.lower() or "сенсорн" in _DEFAULT_BRAND_VOICE.lower()
 
 
 class TestPlanParser:

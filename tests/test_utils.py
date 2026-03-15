@@ -611,14 +611,20 @@ class TestCreativeTeamConstants:
 class TestEditPostFallback:
     """edit_post_sync must fall back to the original if result is too short."""
 
+    def _mock_brand_settings(self, monkeypatch):
+        """Populate brand settings cache for tests."""
+        import bot.services.brand_settings_store as bs_mod
+        fake = type("FakeBrandSettings", (), {
+            "brand_voice": "test voice",
+            "forbidden_phrases": ["тазовая волна"],
+        })()
+        monkeypatch.setattr(bs_mod, "_cache", fake)
+
     def test_fallback_on_short_result(self, monkeypatch):
         """If Claude returns a very short string, keep original."""
         import bot.agents.creative_team as ct
 
-        def _fake_call(*args, **kwargs):
-            class _FakeResp:
-                content = [type("c", (), {"text": "ok"})()]
-            return _FakeResp()
+        self._mock_brand_settings(monkeypatch)
 
         class _FakeClient:
             def __init__(self, *a, **kw): pass
@@ -640,6 +646,8 @@ class TestEditPostFallback:
     def test_returns_edited_when_long_enough(self, monkeypatch):
         """If Claude returns a long enough string, use it."""
         import bot.agents.creative_team as ct
+
+        self._mock_brand_settings(monkeypatch)
 
         edited = "А" * 50  # 50 chars, well above threshold
 
