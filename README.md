@@ -3,7 +3,9 @@
 [![Tests](https://github.com/stress-ins/aroma-bot/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/stress-ins/aroma-bot/actions/workflows/test.yml)
 [![Deploy](https://github.com/stress-ins/aroma-bot/actions/workflows/deploy.yml/badge.svg?branch=main)](https://github.com/stress-ins/aroma-bot/actions/workflows/deploy.yml)
 
-Телеграм-бот для мониторинга трендов в ароматерапии, ольфактотерапии, медитации гонг и звуковом целительстве. Собирает данные из 10+ источников, формирует два отчёта (🇷🇺 и 🇬🇧), генерирует темы постов для Threads и карусели с картинками через AI.
+Телеграм-бот для мониторинга трендов в ароматерапии, ольфактотерапии, медитации гонг и звуковом целительстве. Собирает данные из 10+ источников, формирует два отчёта (🇷🇺 и 🇬🇧), генерирует контент для соцсетей через AI.
+
+Включает **Telegram Mini App** — справочник ароматерапевта с 200+ карточками масел, симптомов, смесей и практик, а также workspace для создания и публикации контента.
 
 ## Репозитории и продакшен-роли
 
@@ -42,6 +44,43 @@
 - `main` используем только как merge-ветку после review и зелёных тестов
 - UX-задачи заводим через GitHub issue template `UX Request`
 - для Telegram Mini App первый продуктовый и UX-объём зафиксирован в [docs/telegram-mini-app-ux-brief.md](/Users/p.kutsenko/Library/Mobile%20Documents/com~apple~CloudDocs/python/aroma/docs/telegram-mini-app-ux-brief.md)
+
+---
+
+## Mini App — Справочник ароматерапевта
+
+Telegram Mini App доступен по адресу `https://app.aromara.ru` и через команду `/app` в боте.
+
+### Вкладки справочника
+
+| Вкладка | Содержимое |
+|---------|-----------|
+| Ароматы | 78 эфирных масел с паспортом, описанием, свойствами, применением |
+| Смеси | 207 смесей (81 фирменная + 126 рецептов с каплями из PDF) |
+| Симптомы | 200+ симптомов с иерархией категорий и рекомендациями масел |
+| Практики | Дыхательные и медитативные практики |
+| Теория | Материалы курса ольфактотерапии |
+
+### Создание контента (кнопка +)
+
+Из Mini App можно создавать контент для соцсетей:
+- **Threads** — 3 поста (утро/день/вечер)
+- **Instagram** — пост с хуком, CTA и хэштегами
+- **Telegram** — пост с bold-хуком
+- **Карусель** — 5 слайдов с картинками, экспорт в PPTX для Canva
+- **Рилсы** — сценарий + раскадровка + картинки для кадров
+
+### Публикация
+
+- Публикация через upload-post.com (Threads, Instagram)
+- Планировщик — назначить дату/время публикации
+- Canva workflow: скачать PPTX → редактировать в Canva → импортировать обратно
+
+### Настройки
+
+- Голос бренда — запрещённые фразы, авто-замены, тон по платформам
+- Ключевые слова — редактирование RU/EN ключей и хэштегов
+- Статус источников
 
 ---
 
@@ -278,6 +317,10 @@ THREADS_ACCESS_TOKEN=...
 THREADS_USER_ID=...
 THREADS_USERNAME=aleksandrakutsenko
 
+# Публикация через upload-post.com
+UPLOAD_POST_API_KEY=...
+UPLOAD_POST_USER=...
+
 # Расписание
 DAILY_DIGEST_TIME=09:00
 TIMEZONE=Europe/Moscow
@@ -347,10 +390,21 @@ aroma/
 ├── analytics/
 ...
 ├── bot/
-│   ├── services/
-│   │   ├── drafts_store.py   # Асинхронный интерфейс к БД черновиков
-│   │   ├── plans_store.py    # Асинхронный интерфейс к БД планов
-│   │   └── reels_assets.py   # Управление медиа-файлами для Reels
+│   ├── agents/               # AI-агенты (content, carousel, reels, creative_team)
+│   ├── handlers/             # Telegram-обработчики команд
+│   └── services/
+│       ├── drafts_store.py   # Асинхронный интерфейс к БД черновиков
+│       ├── plans_store.py    # Асинхронный интерфейс к БД планов
+│       ├── publisher.py      # Публикация через upload-post.com / PTB
+│       └── reels_assets.py   # Управление медиа-файлами для Reels
+├── miniapp/
+│   ├── api/routers/          # FastAPI endpoints (drafts, carousel, reels, publish, references)
+│   └── static/
+│       ├── app.js            # Главный модуль Mini App
+│       ├── app.css           # Стили (dark/light theme)
+│       └── js/               # Модули (drafts, references, settings, publish, create...)
+├── miniapp_server.py         # FastAPI сервер Mini App
+├── scripts/                  # Утилиты (импорт PDF, генерация изображений, обогащение данных)
 ```
 
 ### Хранение данных
