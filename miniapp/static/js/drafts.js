@@ -150,7 +150,108 @@ export function createDraftsModule(deps) {
     enterDetailView();
   }
 
+  function renderThreadsSeriesDetail(d) {
+    const p = d.payload || {};
+    const posts = Array.isArray(p.threads_posts) ? p.threads_posts : [];
+    const isApproved = d.status === "approved" || d.status === "scheduled" || d.status === "published";
+    const SLOT_ICONS = { morning: "🌅", day: "☀️", evening: "🌙" };
+    const SLOT_NAMES = { morning: "Утро", day: "День", evening: "Вечер" };
+    const GOAL_LABELS = { trust: "Доверие", authority: "Экспертность", engagement: "Вовлечённость", sales: "Продажи" };
+    const EMOTION_LABELS = { calm: "Спокойная", inspiration: "Вдохновляющая", curiosity: "Любопытство", trust: "Доверие", joy: "Радость" };
+
+    const slotsHtml = posts.map((post) => {
+      const icon = SLOT_ICONS[post.slot] || "";
+      const name = SLOT_NAMES[post.slot] || post.slot;
+      const charCount = (post.text || "").length;
+      const isOver = charCount > 500;
+      return `
+        <div class="threads-slot">
+          <div class="threads-slot-header">
+            <span class="threads-slot-icon">${icon}</span>
+            <span class="threads-slot-label">${escapeHtml(name)}</span>
+            <input class="threads-slot-time" id="slotTime_${post.slot}_${d.draft_id}" type="time" value="${escapeHtml(post.scheduled_time || "")}" ${isApproved ? "readonly" : ""}>
+          </div>
+          <div class="threads-slot-body">
+            <textarea
+              id="slotText_${post.slot}_${d.draft_id}"
+              class="threads-post-textarea"
+              placeholder="Текст поста"
+              ${isApproved ? "readonly" : ""}
+              oninput="document.getElementById('charCount_${post.slot}_${d.draft_id}').textContent=this.value.length"
+            >${escapeHtml(post.text || "")}</textarea>
+            <div class="threads-char-counter${isOver ? " is-over" : ""}" id="charCount_${post.slot}_${d.draft_id}">${charCount}</div>
+          </div>
+          ${!isApproved ? `
+          <div class="threads-regen-row">
+            <input class="threads-regen-input" id="regenNote_${post.slot}_${d.draft_id}" type="text" placeholder="Пожелание (необязательно)">
+            <button class="secondary-button" type="button" onclick="regenSlot('${d.draft_id}','${post.slot}',this)">${actionLabel("regenerate", "Переписать")}</button>
+            <button class="ghost-button" type="button" onclick="showSlotHistory('${d.draft_id}','${post.slot}')">${uiIcon("eye")}</button>
+          </div>
+          <div class="actions-row" style="margin-top:4px">
+            <button class="secondary-button" type="button" onclick="saveThreadsSlot('${d.draft_id}','${post.slot}',this)">${actionLabel("approve", "Сохранить слот")}</button>
+          </div>
+          ` : `
+          <div class="slot-status-row">
+            ${tagMarkup(post.status === "scheduled" ? "Запланировано" : post.status === "published" ? "Опубликовано" : "Согласовано", post.status === "published" ? "status-success" : "status-neutral")}
+          </div>
+          `}
+        </div>
+      `;
+    }).join("");
+
+    const schedulerHtml = isApproved && d.status !== "published" ? `
+      <div id="scheduler_${d.draft_id}" hidden>
+        <div class="date-picker-row" id="schedulerDates_${d.draft_id}"></div>
+        <div class="actions-row" style="margin-top:8px">
+          <button class="primary-button" id="schedulerSubmit_${d.draft_id}" type="button" data-date="" disabled
+            onclick="scheduleThreadsSeries('${d.draft_id}',this.dataset.date,['morning','day','evening'],this)">
+            ${actionLabel("approve", "Запланировать")}
+          </button>
+        </div>
+      </div>
+    ` : "";
+
+    elements.draftDetail.innerHTML = `
+      <div class="detail-grid">
+        ${renderBackButton()}
+        <div class="detail-top detail-hero">
+          <div class="detail-hero-copy">
+            <p class="eyebrow">${contentKindIcon(d.kind)}<span>${escapeHtml(kindLabel(d.kind))} • ${escapeHtml(sourceLabel(d.source))}</span></p>
+            <h2 class="detail-title">${escapeHtml(d.topic)}</h2>
+            <div class="draft-meta">
+              ${tagMarkup(statusLabel(d.status), statusTone(d.status))}
+              ${p.goal ? tagMarkup(GOAL_LABELS[p.goal] || p.goal, "status-neutral") : ""}
+              ${p.emotion ? tagMarkup(EMOTION_LABELS[p.emotion] || p.emotion, "status-neutral") : ""}
+            </div>
+          </div>
+          <div class="actions-row detail-actions">
+            ${!isApproved ? `<button class="primary-button" type="button" onclick="approveThreadsSeries('${d.draft_id}',this)">${actionLabel("approve", "Согласовать")}</button>` : ""}
+            ${isApproved && d.status !== "published" ? `<button class="primary-button" type="button" onclick="openThreadsScheduler('${d.draft_id}')">${actionLabel("approve", "Запланировать")}</button>` : ""}
+            <div class="detail-icon-actions">
+              <button class="secondary-button" title="Отправить в чат" onclick="sendDraftToChat('${d.draft_id}',this)">${uiIcon("chat")}</button>
+            </div>
+            <button class="danger-button" onclick="deleteDraft('${d.draft_id}','drafts',this)">${actionLabel("trash", "Удалить")}</button>
+          </div>
+        </div>
+        ${p.series_summary ? payloadSection("Опорная мысль", p.series_summary) : ""}
+        <section class="section section-primary">
+          <div class="section-heading">
+            <h3>${uiIcon("text")}Посты серии</h3>
+            <p>${isApproved ? "Серия согласована. Запланируйте публикацию." : "Отредактируйте каждый пост, затем согласуйте серию."}</p>
+          </div>
+          ${slotsHtml}
+        </section>
+        ${schedulerHtml}
+      </div>
+    `;
+    syncMobileNavigation();
+  }
+
   function renderDraftDetail(d) {
+    if (d?.kind === "threads_series") {
+      return renderThreadsSeriesDetail(d);
+    }
+
     if (isPendingDraftId(d?.draft_id)) {
       elements.draftDetail.innerHTML = `
         <div class="detail-grid detail-grid-pending">
@@ -327,6 +428,7 @@ export function createDraftsModule(deps) {
     renderDraftList,
     openDraft,
     renderDraftDetail,
+    renderThreadsSeriesDetail,
     renderEmptyDetail,
   };
 }

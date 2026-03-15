@@ -77,7 +77,7 @@ export function createCreateModule(deps) {
 
   function renderCreate() {
     elements.listTitle.textContent = "Инструменты";
-    elements.draftCount.textContent = "4 типа";
+    elements.draftCount.textContent = "5 типов";
     setEmptyState(true);
 
     elements.draftList.innerHTML = `
@@ -101,6 +101,11 @@ export function createCreateModule(deps) {
           <div class="draft-kind">${contentKindIcon("carousel")}<span>карусель</span></div>
           <h3 class="draft-topic">Карусель</h3>
           <div class="draft-preview">5 слайдов с промптами для картинок.</div>
+        </article>
+        <article ${interactiveCardAttrs("Выбрать инструмент Серия Threads")} class="create-card${state.selectedCreateTool === "threads_series" ? " active" : ""} interactive-card" data-tool="threads_series" onclick="renderCreateTool('threads_series')">
+          <div class="draft-kind">${contentKindIcon("threads_series")}<span>серия</span></div>
+          <h3 class="draft-topic">Серия Threads</h3>
+          <div class="draft-preview">Три поста: утро / день / вечер.</div>
         </article>
       </div>
     `;
@@ -176,6 +181,36 @@ export function createCreateModule(deps) {
             <label>Тема<textarea name="topic" placeholder="Например: утренний ритуал с маслами"></textarea></label>
             <p class="field-help">Лучше работает тема с обещанием результата: что человек поймет, почувствует или сможет сделать после карусели.</p>
             <button class="primary-button" type="submit">Собрать карусель</button>
+          </form>
+        </section>
+      `;
+    } else if (toolId === "threads_series") {
+      formHtml = `
+        <section class="section create-tool-panel">
+          <h3>Создать серию Threads</h3>
+          <form class="create-form" data-create-threads-series>
+            <label>Тема<textarea name="topic" placeholder="Например: как восстановиться после перегруженной недели"></textarea></label>
+            <p class="field-help">Тема станет основой для трёх постов: утреннего наблюдения, дневного совета и вечернего вопроса.</p>
+            <div class="field-grid">
+              <label>Цель
+                <select name="goal_key">
+                  <option value="trust">Доверие</option>
+                  <option value="authority">Экспертность</option>
+                  <option value="engagement">Вовлечённость</option>
+                  <option value="sales">Продажи</option>
+                </select>
+              </label>
+              <label>Тональность
+                <select name="emotion">
+                  <option value="calm">Спокойная</option>
+                  <option value="inspiration">Вдохновляющая</option>
+                  <option value="curiosity">Любопытство</option>
+                  <option value="trust">Доверие</option>
+                  <option value="joy">Радость</option>
+                </select>
+              </label>
+            </div>
+            <button class="primary-button" type="submit">Создать серию</button>
           </form>
         </section>
       `;
@@ -271,6 +306,28 @@ export function createCreateModule(deps) {
       } catch (error) {
         if (error?.message === "request_timeout") {
           await recoverPendingDraftCreation("carousel", topic, pending.draft_id);
+          return;
+        }
+        throw error;
+      }
+    } });
+
+    const threadsSeriesForm = elements.draftDetail.querySelector("[data-create-threads-series]");
+    if (threadsSeriesForm) bindTopicForm(threadsSeriesForm, { pendingText: "Создаю...", onSubmit: async (topic) => {
+      const goal_key = threadsSeriesForm.querySelector("select[name='goal_key']")?.value || "trust";
+      const emotion = threadsSeriesForm.querySelector("select[name='emotion']")?.value || "";
+      const pending = openPendingDraftCreation("threads_series", topic);
+      try {
+        const draft = await fetchJson("/api/generate/threads-series", {
+          method: "POST",
+          timeout: 60000,
+          body: JSON.stringify({ topic, goal_key, emotion }),
+        });
+        finalizePendingDraftCreation(draft);
+        await openDraft(draft.draft_id);
+      } catch (error) {
+        if (error?.message === "request_timeout") {
+          await recoverPendingDraftCreation("threads_series", topic, pending.draft_id);
           return;
         }
         throw error;

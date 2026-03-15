@@ -10,6 +10,7 @@ from bot.services.drafts_store import get_draft, list_scheduled_drafts_due, upda
 from bot.services.publish_log_store import list_all_logs, list_logs
 from bot.services.publisher import cancel_scheduled, check_status, publish
 from ..auth import _require_auth
+from ..models import ScheduleSeriesRequest
 
 router = APIRouter()
 
@@ -100,6 +101,56 @@ async def scheduled_posts(_: None = Depends(_require_auth)):
         if r.scheduled_at and r.status in ("approved", "scheduled")
     ]
     return {"items": scheduled}
+
+
+@router.post("/api/publish/schedule-series")
+async def schedule_series(payload: ScheduleSeriesRequest, _: None = Depends(_require_auth)):
+    from datetime import date as date_type
+
+    draft = await get_draft(payload.draft_id)
+    if not draft or draft.kind != "threads_series":
+        raise HTTPException(status_code=404, detail="threads_series_not_found")
+    if draft.status != "approved":
+        raise HTTPException(status_code=400, detail="draft_must_be_approved")
+
+    try:
+        pub_date = date_type.fromisoformat(payload.date)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="invalid_date_format")
+
+    p = dict(draft.payload or {})
+    posts = list(p.get("threads_posts", []))
+    now = datetime.now(timezone.utc)
+
+    scheduled: list[dict] = []
+    for post in posts:
+        if post["slot"] not in payload.slots:
+            continue
+        time_str = post.get("scheduled_time", "09:00")
+        try:
+            h, m = map(int, time_str.split(":"))
+        except ValueError:
+            continue
+        scheduled_at = datetime(pub_date.year, pub_date.month, pub_date.day, h, m, tzinfo=timezone.utc)
+        if scheduled_at <= now:
+            continue  # skip expired slots
+        post["status"] = "scheduled"
+        scheduled.append({"slot": post["slot"], "scheduled_at": scheduled_at.isoformat()})
+
+    p["threads_posts"] = posts
+
+    if scheduled:
+        earliest = min(s["scheduled_at"] for s in scheduled)
+        await update_draft(
+            payload.draft_id,
+            payload=p,
+            status="scheduled",
+            scheduled_at=datetime.fromisoformat(earliest),
+        )
+    else:
+        await update_draft(payload.draft_id, payload=p)
+
+    return {"draft_id": payload.draft_id, "scheduled": scheduled}
 
 
 @router.get("/api/publish/history")
