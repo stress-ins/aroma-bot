@@ -4,16 +4,9 @@ import logging
 from dataclasses import dataclass
 
 from config import settings
+from bot.services.brand_settings_store import get_brand_settings_cached
 
 logger = logging.getLogger(__name__)
-
-_BRAND_CONTEXT = """\
-Ты — сценарист Reels для специалиста по регуляции нервной системы через сенсорные практики \
-(ароматерапия, медитации, гонг).
-
-Голос: спокойный, живой, экспертный. Без инфоцыганства и псевдомедицинских обещаний.
-Визуальный стиль: терракота, беж, шалфей; природные текстуры, травы, свечи, руки, мягкий свет.\
-"""
 
 _TOPICS_PROMPT = """\
 {brand_context}
@@ -76,10 +69,8 @@ _SCENARIO_PROMPT = """\
   - Масло применяется: каплю на ладонь → растереть → вдыхать с ладоней. Или диффузор. Именно так и снимать.
 
 Закадровый голос — разговорный язык, как подруга рассказывает подруге в голосовом сообщении.
-НЕ писать: "не подменяя сексуальностью", "текстуру своего дыхания", "интегрировать", "ресурсное состояние",
-"тазовая волна", "занимать место без извинений", "боимся быть слишком много",
-"на волне контроля", "минуя фильтры", "просто стой", "мы сжимаем живот",
-"запах попадает прямо в мозг", "надо быть острым", "чувствовать без стены".
+НЕ писать следующие фразы и их близкие варианты:
+{forbidden_phrases}
 Вместо "мы сжимаем живот, поясницу, таз" → "у нас часто бывает напряжено тело, особенно в животе и пояснице".
 Вместо "просто стой" → "просто дыши" или "просто наблюдай".
 Конкретный смысл: что именно происходит с телом или состоянием, без поэтических метафор.
@@ -180,7 +171,8 @@ def generate_reels_topics_sync(trends_text: str) -> list[str]:
     import anthropic
 
     client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
-    prompt = _TOPICS_PROMPT.format(brand_context=_BRAND_CONTEXT, trends_text=trends_text)
+    bs = get_brand_settings_cached()
+    prompt = _TOPICS_PROMPT.format(brand_context=bs.brand_voice, trends_text=trends_text)
     resp = client.messages.create(
         model="claude-haiku-4-5-20251001",
         max_tokens=700,
@@ -210,10 +202,13 @@ def generate_reels_scenario_sync(topic: str, reference_context: str = "") -> str
     import anthropic
 
     client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+    bs = get_brand_settings_cached()
+    forbidden_block = "\n".join(f"- {p}" for p in bs.forbidden_phrases) if bs.forbidden_phrases else ""
     prompt = _SCENARIO_PROMPT.format(
-        brand_context=_BRAND_CONTEXT,
+        brand_context=bs.brand_voice,
         reference_context_block=_render_reference_context_block(reference_context),
         topic=topic,
+        forbidden_phrases=forbidden_block,
     )
     resp = client.messages.create(
         model="claude-haiku-4-5-20251001",

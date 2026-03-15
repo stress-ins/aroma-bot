@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 
 from config import settings
+from bot.services.brand_settings_store import get_brand_settings_cached
 from bot.services.policy_engine import enforce_policy, load_policy_config
 
 _EDITOR_PROMPT = """\
@@ -75,9 +76,10 @@ SLIDE6: [текст]
 
 def _forbidden_phrases() -> list[str]:
     cfg = load_policy_config()
+    bs = get_brand_settings_cached()
     seen: set[str] = set()
     result: list[str] = []
-    for phrase in [*cfg.forbidden_phrases, *getattr(settings, "carousel_forbidden_phrases_list", [])]:
+    for phrase in [*cfg.forbidden_phrases, *bs.forbidden_phrases, *getattr(settings, "carousel_forbidden_phrases_list", [])]:
         value = str(phrase).strip()
         lowered = value.lower()
         if not value or lowered in seen:

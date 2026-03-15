@@ -1,15 +1,7 @@
 from __future__ import annotations
 
 from config import settings
-
-_BRAND_CONTEXT = """\
-Ты — контент-стратег специалиста по регуляции нервной системы через сенсорные практики \
-(ароматерапия, медитации, гонг).
-
-Аудитория: люди с перегрузкой и стрессом + компании для wellbeing-программ.
-Голос: спокойный, ясный, экспертный. Без инфоцыганства и псевдомедицинских обещаний.
-Цели контента: доверие, вовлечение, продажи, демонстрация экспертности.\
-"""
+from bot.services.brand_settings_store import get_brand_settings_cached
 
 _PLAN_PROMPT = """\
 {brand_context}
@@ -50,7 +42,8 @@ def generate_plan_sync(trends_text: str) -> str:
     import anthropic
 
     client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
-    prompt = _PLAN_PROMPT.format(brand_context=_BRAND_CONTEXT, trends_text=trends_text)
+    bs = get_brand_settings_cached()
+    prompt = _PLAN_PROMPT.format(brand_context=bs.brand_voice, trends_text=trends_text)
     resp = client.messages.create(
         model="claude-haiku-4-5-20251001",
         max_tokens=1200,

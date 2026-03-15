@@ -75,6 +75,22 @@ class PublishLogModel(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
+class BrandSettingsModel(Base):
+    __tablename__ = "brand_settings"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    brand_voice: Mapped[str] = mapped_column(String(4000), default="")
+    forbidden_phrases: Mapped[list[str]] = mapped_column(JSON, default=list)
+    base_instructions: Mapped[str] = mapped_column(String(4000), default="")
+    target_platforms: Mapped[list[str]] = mapped_column(JSON, default=list)
+    upload_post_user: Mapped[str] = mapped_column(String(255), default="")
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+
 class DraftRevisionModel(Base):
     __tablename__ = "draft_revisions"
 
