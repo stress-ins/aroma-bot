@@ -1926,7 +1926,7 @@
     }
   },
   {
-    "slug": "blend-juva-cleance",
+    "slug": "blend-juvacleanse",
     "name": "Juva Cleance",
     "category": "blend",
     "source_type": "blend",
@@ -4121,6 +4121,92 @@
       "blend_category": "Красота и уход за кожей",
       "category_group": "beauty",
       "source_pdf": "handbook"
+    }
+  },
+  {
+    "slug": "blend-rc",
+    "name": "R.C.",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [
+      "Ар Си",
+      "RC"
+    ],
+    "payload": {
+      "name_ru": "Ар Си",
+      "name_en": "R.C.",
+      "key": "Дыхание. Открытость. Ясность.",
+      "description": "Смесь эфирных масел для поддержки дыхательной системы. Помогает при заложенности носа, простуде, бронхите. Создаёт ощущение свободного дыхания и открытости.",
+      "therapeutic_properties": "Противовирусное, антисептическое, отхаркивающее, противовоспалительное. Поддерживает дыхательную систему, облегчает дыхание при простуде и гриппе.",
+      "applications": "Диффузор: 4-6 капель.\nТопикально: нанести на грудь, шею, спину, подошвы стоп, разбавив в масле-носителе.\nИнгаляция: вдыхать непосредственно из флакона или с ладоней.",
+      "ingredient_names": [
+        "Eucalyptus globulus",
+        "Myrtle",
+        "Eucalyptus radiata",
+        "Eucalyptus citriodora",
+        "Lavender",
+        "Peppermint",
+        "Pine",
+        "Marjoram",
+        "Eucalyptus australiana",
+        "Cypress"
+      ],
+      "ingredient_slugs": [
+        "eucalyptus-globulus",
+        "myrtle",
+        "",
+        "",
+        "lavender",
+        "peppermint",
+        "",
+        "marjoram",
+        "",
+        "cypress"
+      ],
+      "complementary_oil_names": [],
+      "complementary_oil_slugs": [],
+      "precautions": "Не применять вблизи глаз. Разбавлять перед нанесением на кожу. Держать вне досягаемости детей."
+    }
+  },
+  {
+    "slug": "blend-digize",
+    "name": "DiGize",
+    "category": "blend",
+    "source_type": "blend",
+    "aliases": [
+      "Дайджайз",
+      "ДайДжайз"
+    ],
+    "payload": {
+      "name_ru": "Дайджайз",
+      "name_en": "DiGize",
+      "key": "Переваривание. Усвоение. Лёгкость.",
+      "description": "Смесь эфирных масел для поддержки пищеварительной системы. Помогает при вздутии, тошноте, расстройстве желудка и пищевых дискомфортах.",
+      "therapeutic_properties": "Спазмолитическое, ветрогонное, противовоспалительное, антипаразитарное. Поддерживает пищеварительную систему, снимает спазмы и вздутие.",
+      "applications": "Топикально: нанести на область живота по часовой стрелке, разбавив в масле-носителе.\nВнутрь: 1 каплю в капсуле или стакане воды (только при пищевом применении).\nДиффузор: 3-4 капли для создания расслабляющей атмосферы.",
+      "ingredient_names": [
+        "Tarragon",
+        "Ginger",
+        "Peppermint",
+        "Juniper",
+        "Fennel",
+        "Lemongrass",
+        "Anise",
+        "Patchouli"
+      ],
+      "ingredient_slugs": [
+        "",
+        "ginger",
+        "peppermint",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "complementary_oil_names": [],
+      "complementary_oil_slugs": [],
+      "precautions": "Не применять при беременности. Разбавлять перед нанесением на кожу. При внутреннем применении — только пищевое масло."
     }
   }
 ]

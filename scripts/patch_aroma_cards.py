@@ -3,10 +3,17 @@ Patch aroma_cards table on any environment.
 
 Usage:
     python scripts/patch_aroma_cards.py
+    python scripts/patch_aroma_cards.py --slug lavender
+    python scripts/patch_aroma_cards.py --force-overwrite --slug lavender
+    python scripts/patch_aroma_cards.py --force-overwrite --confirm
 
-Applies updated payload/key/questions to all 67 aroma cards
-without touching drafts or any other data.
+Applies updated payload/key/questions to aroma cards using merge-strategy by default
+(AI-enriched fields like description_short, name_ru, etc. are preserved).
+
+--force-overwrite: replace payload entirely from JSON, discarding any enriched fields.
+  Requires either --slug (single card) or --confirm (all cards) to prevent accidents.
 """
+import argparse
 import asyncio
 import json
 import sys
@@ -40,18 +47,25 @@ def _coerce_payload(value: object) -> dict[str, object]:
     return {}
 
 
-async def main() -> None:
+async def main(slug_filter: str | None = None, force_overwrite: bool = False) -> None:
     if not CARDS_JSON.exists():
         print(f"ERROR: data file not found: {CARDS_JSON}")
         sys.exit(1)
 
     cards = json.loads(CARDS_JSON.read_text(encoding="utf-8"))
+    if slug_filter:
+        cards = [c for c in cards if c["slug"] == slug_filter]
+        if not cards:
+            print(f"ERROR: no card with slug '{slug_filter}' found in JSON")
+            sys.exit(1)
     print(f"Loaded {len(cards)} cards from {CARDS_JSON.name}")
+    if force_overwrite:
+        print("WARNING: --force-overwrite mode — AI-enriched fields will be discarded")
 
     async with AsyncSessionLocal() as session:
         updated = 0
         inserted = 0
-        
+
         for card_data in cards:
             slug = card_data["slug"]
             aliases = _coerce_aliases(card_data.get("aliases", []))
@@ -69,12 +83,16 @@ async def main() -> None:
                 model.name = name
                 model.source_type = source_type
                 model.aliases = aliases
-                # Merge: JSON updates base fields; AI-enriched fields (not in JSON) are preserved.
-                # Fields like description_short, name_ru, health_effects, conditions_for_use,
-                # complementary_oil_slugs etc. are written by enrichment scripts — not in the JSON.
-                existing = dict(model.payload or {})
-                existing.update(payload)
-                model.payload = existing
+                if force_overwrite:
+                    # Replace payload entirely — use only when accumulated enrichment is stale
+                    model.payload = payload
+                else:
+                    # Merge: JSON updates base fields; AI-enriched fields (not in JSON) are preserved.
+                    # Fields like description_short, name_ru, health_effects, conditions_for_use,
+                    # complementary_oil_slugs etc. are written by enrichment scripts — not in the JSON.
+                    existing = dict(model.payload or {})
+                    existing.update(payload)
+                    model.payload = existing
                 model.category = category
                 updated += 1
             else:
@@ -95,4 +113,24 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    parser = argparse.ArgumentParser(description="Patch aroma_cards table from JSON")
+    parser.add_argument("--slug", help="Only patch this specific slug")
+    parser.add_argument(
+        "--force-overwrite",
+        action="store_true",
+        help="Replace payload entirely (discards AI-enriched fields). Requires --slug or --confirm.",
+    )
+    parser.add_argument(
+        "--confirm",
+        action="store_true",
+        help="Required when using --force-overwrite on all cards (safety guard).",
+    )
+    args = parser.parse_args()
+
+    if args.force_overwrite and not args.slug and not args.confirm:
+        print("ERROR: --force-overwrite on all cards requires --confirm to prevent accidents")
+        print("  Single card: python scripts/patch_aroma_cards.py --force-overwrite --slug lavender")
+        print("  All cards:   python scripts/patch_aroma_cards.py --force-overwrite --confirm")
+        sys.exit(1)
+
+    asyncio.run(main(slug_filter=args.slug, force_overwrite=args.force_overwrite))
