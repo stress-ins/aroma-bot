@@ -32,7 +32,8 @@ async def run(dry_run: bool = False, slug: str | None = None) -> None:
         slug_to_name_ru: dict[str, str] = {}
         for m in aroma_models:
             payload = m.payload or {}
-            name_ru = str(payload.get("name_ru") or "").strip()
+            # name_ru preferred; fall back to model.name (seed data stores RU name in name field)
+            name_ru = str(payload.get("name_ru") or m.name or "").strip()
             if m.slug and name_ru:
                 slug_to_name_ru[m.slug] = name_ru
 

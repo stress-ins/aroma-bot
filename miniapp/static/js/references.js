@@ -98,7 +98,7 @@ export function createReferencesModule(deps) {
     );
     if (meta.category === "aromas") {
       state.referenceItems.forEach(item => {
-        if (item.slug && item.name_ru) _aromaSlugMap[item.slug] = item.name_ru;
+        if (item.slug && (item.name_ru || item.name)) _aromaSlugMap[item.slug] = item.name_ru || item.name;
       });
     }
 
