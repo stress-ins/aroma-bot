@@ -177,6 +177,46 @@ def parse_content_draft(raw: str) -> ContentDraft:
     return draft
 
 
+_THREADS_SLOTS = [
+    {"slot": "morning", "label": "УТРО", "marker": "УТРО"},
+    {"slot": "day", "label": "ДЕНЬ", "marker": "ДЕНЬ"},
+    {"slot": "evening", "label": "ВЕЧЕР", "marker": "ВЕЧЕР"},
+]
+
+_THREADS_DEFAULT_TIMES = {"morning": "09:00", "day": "13:00", "evening": "19:00"}
+
+
+def split_threads_posts(caption: str) -> list[dict[str, str]]:
+    """Split a threads caption containing УТРО/ДЕНЬ/ВЕЧЕР sections into 3 posts."""
+    import re
+
+    posts: list[dict[str, str]] = []
+    markers = [s["marker"] for s in _THREADS_SLOTS]
+    pattern = "|".join(re.escape(m) for m in markers)
+    parts = re.split(rf"(?:^|\n)\s*(?:\*\*)?({pattern})(?:\*\*)?[:\s]*\n?", caption, flags=re.IGNORECASE)
+
+    slot_texts: dict[str, str] = {}
+    i = 1
+    while i < len(parts) - 1:
+        marker = parts[i].strip().upper()
+        text = parts[i + 1].strip()
+        for s in _THREADS_SLOTS:
+            if s["marker"] == marker:
+                slot_texts[s["slot"]] = text
+                break
+        i += 2
+
+    for slot_info in _THREADS_SLOTS:
+        posts.append({
+            "slot": slot_info["slot"],
+            "label": slot_info["label"],
+            "text": slot_texts.get(slot_info["slot"], ""),
+            "default_time": _THREADS_DEFAULT_TIMES[slot_info["slot"]],
+        })
+
+    return posts
+
+
 def _has_structured_content(draft: ContentDraft) -> bool:
     return any([
         draft.angle, draft.hook, draft.caption,
