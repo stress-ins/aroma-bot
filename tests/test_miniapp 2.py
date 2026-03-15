@@ -1547,7 +1547,7 @@ class TestMiniAppRussianLocale:
         html = Path("miniapp/index.html").read_text(encoding="utf-8")
 
         assert "Вернуть на доработку" in app_js
-        assert 'actionLabel("reject", "Вернуть на доработку")' in app_js
+        assert 'title="Вернуть на доработку"' in app_js
         assert 'actionLabel("trash"' in app_js
         assert "deleteDraft" in app_js
         assert "rejected" in app_js

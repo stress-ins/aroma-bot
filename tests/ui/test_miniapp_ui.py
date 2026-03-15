@@ -1626,3 +1626,38 @@ def test_filter_chips_no_horizontal_overflow(page):
         f"Horizontal overflow detected in Symptoms filter chips: +{overflow}px beyond viewport.\n"
         "Fix: add width:100%; box-sizing:border-box; min-width:0 to .filter-chips in app.css"
     )
+
+
+def test_no_horizontal_overflow_on_mobile(page):
+    """No panel or action row should overflow the viewport width on mobile."""
+    page.set_viewport_size({"width": 375, "height": 812})
+    page.reload()
+    page.wait_for_timeout(400)
+
+    # Check drafts tab
+    page.locator("#btnTabDrafts").click()
+    page.wait_for_timeout(300)
+    page.evaluate("window.goBackToList()")
+    first_card = page.locator(".draft-card").first
+    if first_card.count():
+        first_card.click()
+        page.wait_for_timeout(300)
+
+    overflows = page.evaluate(
+        """
+        () => {
+            const results = [];
+            document.querySelectorAll('.panel, .section, .actions-row, .detail-actions, .detail-icon-actions, .actions-row-pair').forEach(el => {
+                if (el.scrollWidth > el.clientWidth + 2) {
+                    results.push({
+                        cls: el.className.slice(0, 60),
+                        scrollWidth: el.scrollWidth,
+                        clientWidth: el.clientWidth,
+                    });
+                }
+            });
+            return results;
+        }
+        """
+    )
+    assert overflows == [], f"Elements overflow viewport: {overflows}"
