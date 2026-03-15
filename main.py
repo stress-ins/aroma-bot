@@ -3,7 +3,7 @@ import logging
 
 from bot.application import build_application
 from bot.services.brand_settings_store import preload_brand_settings
-from scheduler.jobs import setup_scheduler
+from bot.services.scheduler import run_loop as scheduler_run_loop
 
 logging.basicConfig(
     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
@@ -14,17 +14,17 @@ logger = logging.getLogger(__name__)
 
 async def main() -> None:
     app = build_application()
-    scheduler = setup_scheduler(app)
 
     await preload_brand_settings()
-    scheduler.start()
-    logger.info("Scheduler started")
 
     logger.info("Bot starting...")
     async with app:
         await app.start()
         await app.updater.start_polling(drop_pending_updates=True)
         logger.info("Bot is running. Press Ctrl+C to stop.")
+
+        scheduler_task = asyncio.create_task(scheduler_run_loop(app))
+
         try:
             from bot.handlers.monitor import notify_owner
             notify_owner("✅ <b>aroma-bot запущен</b>")
@@ -35,9 +35,9 @@ async def main() -> None:
         except (KeyboardInterrupt, SystemExit):
             pass
         finally:
+            scheduler_task.cancel()
             await app.updater.stop()
             await app.stop()
-            scheduler.shutdown()
             logger.info("Bot stopped.")
 
 
