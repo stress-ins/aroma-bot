@@ -14,6 +14,7 @@ from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
+from bot.services.brand_settings_store import preload_brand_settings
 from bot.services.carousel_assets import CAROUSEL_ASSETS_DIR, populate_carousel_slide_assets
 from bot.services.drafts_store import list_recent_drafts
 from bot.services.reels_assets import ASSETS_DIR, populate_reels_frame_assets
@@ -52,7 +53,8 @@ def _acquire_startup_recovery_lock():
 
 @asynccontextmanager
 async def _lifespan(app: FastAPI):  # noqa: ARG001
-    """On startup: resume any generations that were interrupted mid-flight."""
+    """On startup: load brand settings and resume any interrupted generations."""
+    await preload_brand_settings()
     recovery_lock = _acquire_startup_recovery_lock()
     try:
         if recovery_lock is not None:
