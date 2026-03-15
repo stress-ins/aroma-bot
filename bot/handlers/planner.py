@@ -440,6 +440,7 @@ async def _generate_reels_from_plan(
             _executor,
             lambda prompt=frame.gemini_prompt: generate_gemini_image_sync(
                 prompt,
+                aspect_ratio="9:16",
                 log_context="Gemini plan reels",
             ),
         )

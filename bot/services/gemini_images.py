@@ -13,7 +13,12 @@ def _is_retryable_error(message: str) -> bool:
     return any(token in normalized for token in ("429", "500", "502", "503", "504", "UNAVAILABLE", "DEADLINE"))
 
 
-def generate_gemini_image_sync(prompt: str, *, log_context: str = "Gemini image") -> bytes | None:
+def generate_gemini_image_sync(
+    prompt: str,
+    *,
+    aspect_ratio: str | None = None,
+    log_context: str = "Gemini image",
+) -> bytes | None:
     try:
         from google import genai
         from google.genai import types
@@ -25,12 +30,15 @@ def generate_gemini_image_sync(prompt: str, *, log_context: str = "Gemini image"
     last_error = ""
     for attempt in range(3):
         try:
+            config_kwargs: dict = {"response_modalities": ["IMAGE", "TEXT"]}
+            if aspect_ratio:
+                config_kwargs["image_generation_config"] = types.ImageGenerationConfig(
+                    aspect_ratio=aspect_ratio,
+                )
             response = client.models.generate_content(
                 model="gemini-3.1-flash-image-preview",
                 contents=prompt,
-                config=types.GenerateContentConfig(
-                    response_modalities=["IMAGE", "TEXT"]
-                ),
+                config=types.GenerateContentConfig(**config_kwargs),
             )
             candidates = getattr(response, "candidates", []) or []
             for candidate in candidates:

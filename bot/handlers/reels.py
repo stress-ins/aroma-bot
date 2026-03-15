@@ -79,7 +79,7 @@ def _reels_result_text(topic: str, scenario: str, frames: list[StoryboardFrame],
 
 
 def _gemini_reels_frame(prompt: str) -> bytes | None:
-    return generate_gemini_image_sync(prompt, log_context="Gemini reels image")
+    return generate_gemini_image_sync(prompt, aspect_ratio="9:16", log_context="Gemini reels image")
 
 
 def _apply_note_to_prompt(prompt: str, note: str) -> str:
