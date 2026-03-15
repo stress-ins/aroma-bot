@@ -121,7 +121,7 @@ export function createDraftsModule(deps) {
         <div class="draft-preview">${escapeHtml(stripMarkdown(d.preview || "Без превью"))}</div>
         <div class="draft-meta overview-card-footer">
           ${tagMarkup(statusLabel(d.status), statusTone(d.status))}
-          ${d.generation_pending ? tagMarkup(draftGenerationLabel(d), "pending") : ""}
+          ${d.generation_pending && draftGenerationLabel(d) ? tagMarkup(draftGenerationLabel(d), "pending") : ""}
           ${tagMarkup(sourceLabel(d.source), sourceTone(d.source))}
         </div>
       </article>
@@ -258,7 +258,7 @@ export function createDraftsModule(deps) {
             <p class="detail-summary">${escapeHtml(draftHeroSummary(d, p, mainText))}</p>
             <div class="draft-meta">
               ${tagMarkup(statusLabel(d.status), statusTone(d.status))}
-              ${d.generation_pending ? tagMarkup(draftGenerationLabel(d), "pending") : ""}
+              ${d.generation_pending && draftGenerationLabel(d) ? tagMarkup(draftGenerationLabel(d), "pending") : ""}
               ${isContentReviewKind(d.kind) ? tagMarkup(feedbackLabel(d.feedback), feedbackTone(d.feedback)) : ""}
               ${tagMarkup(sourceLabel(d.source), sourceTone(d.source))}
             </div>
@@ -268,11 +268,13 @@ export function createDraftsModule(deps) {
           </div>
           <div class="actions-row detail-actions">
             <button class="primary-button" onclick="updateDraft('status', {status:'approved'}, this)">${actionLabel("approve", "Согласовать")}</button>
-            <button class="secondary-button" onclick="updateDraft('status', {status:'rejected'}, this)">${actionLabel("reject", "Вернуть на доработку")}</button>
-            <button class="secondary-button" onclick="sendDraftToChat('${d.draft_id}', this)">${actionLabel("chat", "Отправить в чат")}</button>
-            ${d.kind === "carousel" ? `<button class="secondary-button" onclick="downloadCarouselPptx('${d.draft_id}', this)">${actionLabel("download", "Скачать презентацию")}</button>` : ""}
-            ${d.kind === "carousel" ? `<button class="secondary-button" onclick="importCarouselPptx('${d.draft_id}', this)">${actionLabel("upload", "Импорт из Canva")}</button>` : ""}
-            ${d.kind === "carousel" ? `<button class="secondary-button" onclick="regenerateCarouselAll('${d.draft_id}', this)">${actionLabel("regenerate", "Обновить все слайды")}</button>` : ""}
+            <div class="detail-icon-actions">
+              <button class="secondary-button" title="Вернуть на доработку" onclick="updateDraft('status', {status:'rejected'}, this)">${uiIcon("reject")}</button>
+              <button class="secondary-button" title="Отправить в чат" onclick="sendDraftToChat('${d.draft_id}', this)">${uiIcon("chat")}</button>
+              ${d.kind === "carousel" ? `<button class="secondary-button" title="Скачать презентацию" onclick="downloadCarouselPptx('${d.draft_id}', this)">${uiIcon("download")}</button>` : ""}
+              ${d.kind === "carousel" ? `<button class="secondary-button" title="Импорт из Canva" onclick="importCarouselPptx('${d.draft_id}', this)">${uiIcon("upload")}</button>` : ""}
+              ${d.kind === "carousel" ? `<button class="secondary-button" title="Обновить все слайды" onclick="regenerateCarouselAll('${d.draft_id}', this)">${uiIcon("regenerate")}</button>` : ""}
+            </div>
             <button class="danger-button" onclick="deleteDraft('${d.draft_id}', 'drafts', this)">${actionLabel("trash", "Удалить")}</button>
           </div>
         </div>
