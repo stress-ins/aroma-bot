@@ -1231,22 +1231,20 @@ body.tg-webapp .back-button { display: none !important; }
   padding: 8px;
   border: 1px solid rgba(60, 40, 20, 0.08);
   border-radius: 22px;
-  background: rgba(255, 255, 255, 0.92);
+  background: var(--surface);
   box-shadow: 0 12px 30px rgba(28, 21, 16, 0.12);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
 }
 
 @media (prefers-color-scheme: dark) {
   .bottom-tab-bar-inner {
-    background: rgba(37, 30, 24, 0.94);
+    background: var(--surface);
     border-color: rgba(255, 230, 200, 0.12);
     box-shadow: 0 12px 30px rgba(0, 0, 0, 0.40);
   }
 }
 
 body.tg-theme-dark .bottom-tab-bar-inner {
-  background: rgba(37, 30, 24, 0.94);
+  background: var(--surface);
   border-color: rgba(255, 230, 200, 0.12);
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.40);
 }
@@ -1566,6 +1564,7 @@ body.tg-theme-dark .detail-markdown h5 {
     padding: 10px 10px calc(10px + env(safe-area-inset-bottom, 0px));
     z-index: 30;
     pointer-events: none;
+    background: var(--bg);
   }
 
   .bottom-tab-bar .bottom-tab-bar-inner {
@@ -2898,6 +2897,7 @@ body.is-mobile-layout .topbar-main {
   z-index: 10;
   padding: var(--space-3);
   padding-left: 88px;
+  background: var(--bg);
 }
 
 body.is-mobile-layout .topbar-main .mode-selector,
@@ -2978,7 +2978,33 @@ body.is-mobile-layout[data-mode="handbook"] .tabs::-webkit-scrollbar { display: 
 }
 
 .actions-row-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+@media (max-width: 760px) {
+  .actions-row-pair { grid-template-columns: 1fr; }
+}
 .secondary-button.compact { font-size: 14px; min-height: 40px; }
+
+/* ── Icon-only action buttons ───────────────────────────────────────────── */
+.detail-icon-actions {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.detail-icon-actions button {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+}
+.detail-icon-actions .ui-icon {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+}
 
 .code-block {
   position: relative;
@@ -3078,6 +3104,7 @@ body.is-mobile-layout[data-mode="handbook"] .tabs::-webkit-scrollbar { display: 
 .publish-platforms { display: flex; gap: var(--space-3); flex-wrap: wrap; }
 .publish-platform-toggle { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 14px; }
 .publish-platform-toggle input { accent-color: var(--brand); }
+.publish-platform-icon { width: 18px; height: 18px; flex-shrink: 0; }
 .publish-schedule-row { display: flex; align-items: center; gap: var(--space-2); }
 .publish-schedule-label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
 .publish-datetime { font-size: 14px; padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); }

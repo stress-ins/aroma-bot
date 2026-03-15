@@ -1308,6 +1308,7 @@ const {
   addRewrite: addRewriteImpl,
   removeRewrite: removeRewriteImpl,
   savePlatformTone: savePlatformToneImpl,
+  saveUploadPostPrefs: saveUploadPostPrefsImpl,
 } = createSettingsModule({
   state,
   elements,
@@ -1610,6 +1611,7 @@ registerWindowBridge({
   addRewrite: addRewriteImpl,
   removeRewrite: removeRewriteImpl,
   savePlatformTone: savePlatformToneImpl,
+  saveUploadPostPrefs: saveUploadPostPrefsImpl,
   addTodoItem: addTodoItemImpl,
   removeTodoItem: removeTodoItemImpl,
   publishDraft: publishDraftImpl,
@@ -1627,6 +1629,7 @@ function renderStatus() {
 function addRewrite() { return addRewriteImpl(); }
 function removeRewrite(pattern) { return removeRewriteImpl(pattern); }
 function savePlatformTone(platform) { return savePlatformToneImpl(platform); }
+function saveUploadPostPrefs() { return saveUploadPostPrefsImpl(); }
 
 function renderPlans() {
   return renderPlansImpl();

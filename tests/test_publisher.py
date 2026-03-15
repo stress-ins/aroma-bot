@@ -116,8 +116,9 @@ async def test_publish_routes_to_upload_post(mock_upload_client, mock_draft):
     """Threads/instagram platforms should call upload-post SDK."""
     with (
         patch("bot.services.upload_post_publisher.get_draft", return_value=mock_draft),
+        patch("bot.services.upload_post_publisher._get_upload_credentials", new_callable=AsyncMock, return_value=("test_key", "test_user")),
         patch("bot.services.upload_post_publisher._get_upload_client", return_value=mock_upload_client),
-        patch("bot.services.upload_post_publisher.settings") as mock_settings,
+        patch("bot.services.upload_post_publisher._ensure_user"),
         patch("bot.services.upload_post_publisher.save_log", return_value=1),
         patch("bot.services.upload_post_publisher.update_log_status"),
         patch("bot.services.upload_post_publisher.mark_published", new_callable=AsyncMock),
@@ -125,10 +126,6 @@ async def test_publish_routes_to_upload_post(mock_upload_client, mock_draft):
         patch("bot.services.publisher.get_draft", return_value=mock_draft),
         patch("bot.services.publisher.update_draft", return_value=mock_draft),
     ):
-        mock_settings.upload_post_api_key = "test_key"
-        mock_settings.upload_post_user = "test_user"
-        mock_settings.timezone = "Europe/Moscow"
-
         results = await publish("d001", ["threads"])
 
     assert "threads" in results
@@ -167,8 +164,9 @@ async def test_publish_routes_mixed(mock_upload_client, mock_draft):
 
     with (
         patch("bot.services.upload_post_publisher.get_draft", return_value=mock_draft),
+        patch("bot.services.upload_post_publisher._get_upload_credentials", new_callable=AsyncMock, return_value=("test_key", "test_user")),
         patch("bot.services.upload_post_publisher._get_upload_client", return_value=mock_upload_client),
-        patch("bot.services.upload_post_publisher.settings") as mock_settings,
+        patch("bot.services.upload_post_publisher._ensure_user"),
         patch("bot.services.upload_post_publisher.save_log", return_value=1),
         patch("bot.services.upload_post_publisher.update_log_status"),
         patch("bot.services.upload_post_publisher.mark_published", new_callable=AsyncMock),
@@ -181,10 +179,6 @@ async def test_publish_routes_mixed(mock_upload_client, mock_draft):
         patch("bot.services.publisher.get_draft", return_value=mock_draft),
         patch("bot.services.publisher.update_draft", return_value=mock_draft),
     ):
-        mock_settings.upload_post_api_key = "test_key"
-        mock_settings.upload_post_user = "test_user"
-        mock_settings.timezone = "Europe/Moscow"
-
         results = await publish(
             "d001", ["threads", "telegram"],
             telegram_bot=mock_bot, telegram_chat_id="123",
@@ -221,9 +215,10 @@ async def test_publish_with_photos(mock_upload_client, tmp_path):
 
     with (
         patch("bot.services.upload_post_publisher.get_draft", return_value=draft),
+        patch("bot.services.upload_post_publisher._get_upload_credentials", new_callable=AsyncMock, return_value=("key", "user")),
         patch("bot.services.upload_post_publisher._get_upload_client", return_value=mock_upload_client),
+        patch("bot.services.upload_post_publisher._ensure_user"),
         patch("bot.services.upload_post_publisher.CAROUSEL_ASSETS_DIR", tmp_path),
-        patch("bot.services.upload_post_publisher.settings") as mock_settings,
         patch("bot.services.upload_post_publisher.save_log", return_value=1),
         patch("bot.services.upload_post_publisher.update_log_status"),
         patch("bot.services.upload_post_publisher.mark_published", new_callable=AsyncMock),
@@ -231,10 +226,6 @@ async def test_publish_with_photos(mock_upload_client, tmp_path):
         patch("bot.services.publisher.get_draft", return_value=draft),
         patch("bot.services.publisher.update_draft", return_value=draft),
     ):
-        mock_settings.upload_post_api_key = "key"
-        mock_settings.upload_post_user = "user"
-        mock_settings.timezone = "Europe/Moscow"
-
         results = await publish(draft_id, ["instagram"])
 
     assert results["instagram"]["status"] == "success"
@@ -247,19 +238,18 @@ async def test_publish_with_schedule(mock_upload_client, mock_draft):
 
     with (
         patch("bot.services.upload_post_publisher.get_draft", return_value=mock_draft),
+        patch("bot.services.upload_post_publisher._get_upload_credentials", new_callable=AsyncMock, return_value=("key", "user")),
         patch("bot.services.upload_post_publisher._get_upload_client", return_value=mock_upload_client),
-        patch("bot.services.upload_post_publisher.settings") as mock_settings,
+        patch("bot.services.upload_post_publisher._ensure_user"),
         patch("bot.services.upload_post_publisher.save_log", return_value=1),
         patch("bot.services.upload_post_publisher.update_log_status"),
         patch("bot.services.upload_post_publisher.mark_published", new_callable=AsyncMock),
         patch("bot.services.upload_post_publisher.mark_failed", new_callable=AsyncMock),
         patch("bot.services.publisher.get_draft", return_value=mock_draft),
         patch("bot.services.publisher.update_draft", return_value=mock_draft),
+        patch("config.settings") as mock_settings,
     ):
-        mock_settings.upload_post_api_key = "key"
-        mock_settings.upload_post_user = "user"
         mock_settings.timezone = "Europe/Moscow"
-
         results = await publish("d001", ["threads"], scheduled_at=scheduled)
 
     call_kwargs = mock_upload_client.upload_text.call_args

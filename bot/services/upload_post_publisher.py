@@ -19,11 +19,42 @@ logger = logging.getLogger(__name__)
 
 UPLOAD_POST_PLATFORMS = {"threads", "instagram"}
 
+# Module-level flag — once user profile is ensured we skip further create_user calls.
+_user_ensured: set[str] = set()
 
-def _get_upload_client() -> UploadPostClient:
-    if not settings.upload_post_api_key:
+
+async def _get_upload_credentials() -> tuple[str, str]:
+    """(api_key, user) from BrandSettings DB, fallback to .env."""
+    from bot.services.brand_settings_store import get_brand_settings
+
+    bs = await get_brand_settings()
+    api_key = (getattr(bs, "upload_post_api_key", "") or "").strip() or settings.upload_post_api_key
+    user = (getattr(bs, "upload_post_user", "") or "").strip() or settings.upload_post_user
+    return api_key, user
+
+
+def _get_upload_client(api_key: str | None = None) -> UploadPostClient:
+    key = api_key or settings.upload_post_api_key
+    if not key:
         raise RuntimeError("UPLOAD_POST_API_KEY is not configured")
-    return UploadPostClient(settings.upload_post_api_key)
+    return UploadPostClient(key)
+
+
+def _ensure_user(client: UploadPostClient, user: str) -> None:
+    """Create upload-post user profile if not yet ensured this session."""
+    if user in _user_ensured:
+        return
+    try:
+        client.create_user(user)
+        logger.info("upload-post: ensured user profile '%s'", user)
+    except Exception as exc:
+        # create_user may fail if user already exists — that's OK
+        msg = str(exc).lower()
+        if "already" in msg or "exists" in msg or "duplicate" in msg:
+            logger.debug("upload-post: user '%s' already exists", user)
+        else:
+            logger.warning("upload-post: create_user('%s') failed: %s", user, exc)
+    _user_ensured.add(user)
 
 
 def _resolve_media_paths(draft_kind: str, draft_id: str, payload: dict[str, Any]) -> list[Path]:
@@ -76,10 +107,11 @@ async def publish_item(
     if not target_platforms:
         return {}
 
-    client = _get_upload_client()
-    user = settings.upload_post_user
+    api_key, user = await _get_upload_credentials()
     if not user:
         raise RuntimeError("UPLOAD_POST_USER is not configured")
+    client = _get_upload_client(api_key)
+    _ensure_user(client, user)
 
     text = _draft_text(draft.payload, draft.kind)
     media_paths = _resolve_media_paths(draft.kind, draft_id, draft.payload)
