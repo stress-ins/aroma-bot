@@ -222,6 +222,7 @@ const PRACTICE_RU_LABELS = {
 
 const RU_KIND_LABELS = {
   threads: "Тредс",
+  threads_series: "Серия Тредс",
   instagram: "Инстаграм",
   telegram: "Телеграм",
   reels: "Рилсы",
@@ -581,6 +582,8 @@ function uiIcon(name) {
     instagram: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>`,
     telegram: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M22 3 11 14M22 3 15 21l-4-7-7-4 18-7Z"/></svg>`,
     plan: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="16" rx="2"></rect><path d="M4 9h16M8 5v4M16 5v4"></path></svg>`,
+    play: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l12 8-12 8V4Z"/></svg>`,
+    layers: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="9" width="14" height="10" rx="1.5"/><path d="M7 6h10a1.5 1.5 0 0 1 1.5 1.5V9"/></svg>`,
   };
   return `<span class="ui-icon ui-icon-${escapeHtml(name)}">${icons[name] || icons.prompt}</span>`;
 }
@@ -624,13 +627,14 @@ function tagMarkup(label, tone = "neutral") {
 
 function contentKindIcon(kind) {
   const iconMap = {
-    content:   "note",
-    threads:   "note",
-    plan:      "plan",
-    reels:     "reel",
-    carousel:  "slides",
-    instagram: "instagram",
-    telegram:  "telegram",
+    content:        "note",
+    threads:        "note",
+    threads_series: "note",
+    plan:           "plan",
+    reels:          "play",
+    carousel:       "layers",
+    instagram:      "instagram",
+    telegram:       "telegram",
   };
   const normalized = String(kind || "").toLowerCase();
   return uiIcon(iconMap[normalized] || "note");
@@ -732,6 +736,120 @@ async function sendDraftToChat(draftId, button) {
   const tg = window.Telegram?.WebApp;
   if (tg?.showAlert) tg.showAlert("Черновик отправлен в чат");
   else showUiNotice("Черновик отправлен в чат", "success");
+}
+
+async function approveThreadsSeries(draftId, btn) {
+  await withButtonFeedback(btn, "Согласовываю...", async () => {
+    const draft = await fetchJson(`/api/threads-series/${draftId}/approve`, { method: "POST", body: "{}" });
+    mergeDraftIntoState(draft);
+    renderDraftList();
+    renderDraftDetail(draft);
+  }, "Согласовано");
+}
+
+async function regenSlot(draftId, slot, btn) {
+  const noteInput = document.getElementById(`regenNote_${slot}_${draftId}`);
+  const note = noteInput ? noteInput.value.trim() : "";
+  await withButtonFeedback(btn, "Пишу...", async () => {
+    const draft = await fetchJson(`/api/threads-series/${draftId}/regen-slot`, {
+      method: "POST",
+      body: JSON.stringify({ slot, note: note || null }),
+    });
+    mergeDraftIntoState(draft);
+    renderDraftList();
+    renderDraftDetail(draft);
+  }, "Готово");
+}
+
+async function saveThreadsSlot(draftId, slot, btn) {
+  const textEl = document.getElementById(`slotText_${slot}_${draftId}`);
+  const timeEl = document.getElementById(`slotTime_${slot}_${draftId}`);
+  const text = textEl ? textEl.value : null;
+  const scheduled_time = timeEl ? timeEl.value : null;
+  await withButtonFeedback(btn, "Сохраняю...", async () => {
+    const draft = await fetchJson(`/api/threads-series/${draftId}/slot`, {
+      method: "PATCH",
+      body: JSON.stringify({ slot, text, scheduled_time }),
+    });
+    mergeDraftIntoState(draft);
+    renderDraftList();
+    renderDraftDetail(draft);
+  }, "Сохранено");
+}
+
+async function showSlotHistory(draftId, slot) {
+  const data = await fetchJson(`/api/threads-series/${draftId}/slot-history/${slot}`);
+  const versions = data.versions || [];
+  const slotLabels = { morning: "УТРО", day: "ДЕНЬ", evening: "ВЕЧЕР" };
+  const label = slotLabels[slot] || slot;
+  if (!versions.length) {
+    showUiNotice(`История ${label}: нет сохранённых версий`, "info");
+    return;
+  }
+  const listHtml = versions.slice().reverse().map((v, i) => `
+    <div class="slot-history-item">
+      <span class="slot-history-date">${escapeHtml(v.created_at ? new Date(v.created_at).toLocaleString("ru") : "")}</span>
+      <p class="slot-history-text">${escapeHtml(v.text || "")}</p>
+    </div>
+  `).join("");
+  const tg = window.Telegram?.WebApp;
+  if (tg?.showAlert) {
+    tg.showAlert(versions.slice().reverse().map((v, i) => `${i + 1}. ${v.text || ""}`).join("\n\n---\n\n"));
+  } else {
+    const notice = document.createElement("div");
+    notice.className = "slot-history-overlay";
+    notice.innerHTML = `<div class="slot-history-modal"><h3>История ${escapeHtml(label)}</h3>${listHtml}<button class="primary-button" onclick="this.closest('.slot-history-overlay').remove()">Закрыть</button></div>`;
+    document.body.appendChild(notice);
+  }
+}
+
+async function scheduleThreadsSeries(draftId, date, slots, btn) {
+  await withButtonFeedback(btn, "Планирую...", async () => {
+    const result = await fetchJson("/api/publish/schedule-series", {
+      method: "POST",
+      body: JSON.stringify({ draft_id: draftId, date, slots }),
+    });
+    const count = (result.scheduled || []).length;
+    showUiNotice(count > 0 ? `Запланировано ${count} поста` : "Нет доступных слотов (просрочены?)", count > 0 ? "success" : "warning");
+    if (count > 0) {
+      const draft = await fetchJson(`/api/drafts/${draftId}`);
+      mergeDraftIntoState(draft);
+      renderDraftList();
+      renderDraftDetail(draft);
+    }
+  }, "Запланировано");
+}
+
+function openThreadsScheduler(draftId) {
+  const container = document.getElementById(`scheduler_${draftId}`);
+  if (!container) return;
+  container.hidden = !container.hidden;
+  if (!container.hidden) _renderThreadsSchedulerDates(draftId);
+}
+
+function _renderThreadsSchedulerDates(draftId) {
+  const container = document.getElementById(`schedulerDates_${draftId}`);
+  if (!container) return;
+  const today = new Date();
+  const buttons = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    const iso = d.toISOString().slice(0, 10);
+    const label = i === 0 ? "Сегодня" : d.toLocaleDateString("ru", { weekday: "short", day: "numeric", month: "short" });
+    return `<button class="date-picker-btn" type="button" data-date="${iso}" onclick="_selectSchedulerDate('${draftId}', '${iso}', this)">${escapeHtml(label)}</button>`;
+  }).join("");
+  container.innerHTML = buttons;
+}
+
+function _selectSchedulerDate(draftId, date, btn) {
+  const container = document.getElementById(`schedulerDates_${draftId}`);
+  container?.querySelectorAll(".date-picker-btn").forEach((b) => b.classList.remove("active"));
+  btn.classList.add("active");
+  const scheduleBtn = document.getElementById(`schedulerSubmit_${draftId}`);
+  if (scheduleBtn) {
+    scheduleBtn.dataset.date = date;
+    scheduleBtn.disabled = false;
+  }
 }
 
 async function saveContentReviewDraft(draftId, button) {
@@ -1604,6 +1722,12 @@ registerWindowBridge({
   regenerateReelsFrame,
   handleReelsFramePromptInput,
   handleReelsFrameNoteInput,
+  approveThreadsSeries,
+  regenSlot,
+  saveThreadsSlot,
+  showSlotHistory,
+  scheduleThreadsSeries,
+  openThreadsScheduler,
   saveContentReviewDraft,
   saveThreadsReviewDraft,
   polishContentDraft,

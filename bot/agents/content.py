@@ -26,6 +26,7 @@ GOAL_GUIDANCE = {
 
 FORMAT_LABELS = {
     "threads": "Threads",
+    "threads_series": "Серия Threads",
     "instagram": "Instagram",
     "telegram": "Telegram",
     "carousel": "Карусель",
@@ -70,6 +71,21 @@ Structure:
 - Include one specific observation, example, or scenario
 - One understated CTA at the end
 NO hashtags in Telegram. Can use **bold** for 1-2 key phrases maximum.""",
+
+    "threads_series": """\
+Platform: Threads — серия из 3 постов (утро / день / вечер).
+Deliver a pack of 3 posts for one day: morning, afternoon, evening.
+Structure:
+- Use exactly three sections in this order: УТРО, ДЕНЬ, ВЕЧЕР
+- Each section is one standalone post with one idea only
+- Each post must be 5-12 short lines
+- Each post must be 40-120 words
+- Morning: observation, thought, or first insight of the day
+- Day: practical micro-tip with one concrete takeaway
+- Evening: open question or gentle reflection for the audience
+- Conversational, mobile-readable, human tone
+- Short lines, no hashtags, no walls of text
+Forbidden: lectures, complex terms, corporate tone, generic intros, multiple ideas in one post""",
 }
 
 BRAND_CONTEXT = """\

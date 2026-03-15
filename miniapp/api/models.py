@@ -82,6 +82,29 @@ class PlanGeneratePayload(BaseModel):
     entry_index: int
 
 
+class ThreadsSeriesCreateRequest(BaseModel):
+    topic: str = Field(default="")
+    goal_key: str = Field(default="trust")
+    emotion: str = Field(default="")
+
+
+class ThreadsSlotPatchRequest(BaseModel):
+    slot: str = Field(default="")
+    text: str | None = Field(default=None)
+    scheduled_time: str | None = Field(default=None)
+
+
+class ThreadsSlotRegenRequest(BaseModel):
+    slot: str = Field(default="")
+    note: str | None = Field(default=None)
+
+
+class ScheduleSeriesRequest(BaseModel):
+    draft_id: str = Field(default="")
+    date: str = Field(default="")
+    slots: list[str] = Field(default_factory=lambda: ["morning", "day", "evening"])
+
+
 class AromaCardPayload(BaseModel):
     description: str = Field(default="")
     questions: str = Field(default="")

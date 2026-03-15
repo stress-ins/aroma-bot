@@ -4,13 +4,13 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 
 from bot.agents import generate_content_draft
 from bot.services.drafts_store import save_draft
-from bot.services.miniapp_generator import build_content_payload, build_reels_payload, is_valid_content_format, is_valid_content_goal
+from bot.services.miniapp_generator import build_content_payload, build_reels_payload, build_threads_series_payload, is_valid_content_format, is_valid_content_goal
 from bot.services.miniapp_presenter import serialize_draft
 from bot.services.miniapp_reels import serialize_reels_draft
 from config import settings
 from ..auth import _require_auth
 from ..generation import complete_carousel_generation, complete_reels_generation
-from ..models import CreateCarouselPayload, CreateContentPayload, CreateReelsPayload
+from ..models import CreateCarouselPayload, CreateContentPayload, CreateReelsPayload, ThreadsSeriesCreateRequest
 
 router = APIRouter()
 
@@ -41,6 +41,25 @@ async def generate_content(payload: CreateContentPayload, _: None = Depends(_req
         topic=topic,
         source="/miniapp",
         payload=build_content_payload(draft, goal_key=goal_key, format_key=format_key),
+    )
+    return await serialize_draft(saved)
+
+
+@router.post("/api/generate/threads-series")
+async def generate_threads_series(payload: ThreadsSeriesCreateRequest, _: None = Depends(_require_auth)):
+    topic = _validate_topic(payload)
+    goal_key = payload.goal_key.strip().lower() or "trust"
+    emotion = payload.emotion.strip().lower()
+
+    if not is_valid_content_goal(goal_key):
+        raise HTTPException(status_code=400, detail="invalid_goal")
+
+    draft = await generate_content_draft(topic, goal_key, "threads_series")
+    saved = await save_draft(
+        kind="threads_series",
+        topic=topic,
+        source="/miniapp",
+        payload=build_threads_series_payload(draft, goal_key=goal_key, emotion=emotion),
     )
     return await serialize_draft(saved)
 

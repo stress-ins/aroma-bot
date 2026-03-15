@@ -6,7 +6,7 @@ from bot.agents.reels_agent import StoryboardFrame
 
 
 CONTENT_GOAL_OPTIONS = {"trust", "authority", "engagement", "sales"}
-CONTENT_FORMAT_OPTIONS = {"threads", "instagram", "telegram"}
+CONTENT_FORMAT_OPTIONS = {"threads", "instagram", "telegram", "threads_series"}
 
 
 def is_valid_content_goal(goal_key: str) -> bool:
@@ -37,6 +37,35 @@ def build_content_payload(draft: ContentDraft, *, goal_key: str, format_key: str
             payload["threads_posts"] = posts
 
     return payload
+
+
+def build_threads_series_payload(
+    draft: ContentDraft,
+    *,
+    goal_key: str,
+    emotion: str = "",
+) -> dict[str, object]:
+    """Build rich payload for threads_series kind with per-slot status and version history."""
+    default_times = {"morning": "08:54", "day": "13:12", "evening": "20:30"}
+    posts = split_threads_posts(draft.caption) if draft.caption else []
+    threads_posts: list[dict[str, object]] = []
+    for post in posts:
+        threads_posts.append({
+            "slot": post["slot"],
+            "label": post["label"],
+            "text": post["text"],
+            "scheduled_time": default_times.get(post["slot"], "09:00"),
+            "status": "draft",
+            "error_message": None,
+            "versions": [],
+        })
+    return {
+        "goal": goal_key,
+        "emotion": emotion,
+        "series_summary": draft.angle or "",
+        "threads_posts": threads_posts,
+        "generation_pending": False,
+    }
 
 
 def build_reels_payload(topic: str, scenario: str, frames: list[StoryboardFrame]) -> dict[str, object]:
