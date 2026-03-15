@@ -246,9 +246,16 @@ textarea,
 /* Tabs row stays full width */
 .tabs { grid-column: 1 / -1; }
 
+/* Mobile: 2-column filter grid */
+.toolbar-inner-filters {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
 /* All labels after tabs become a flex-wrap row */
 .toolbar > label {
-  min-width: 120px;
+  min-width: 0;
 }
 
 /* Override: toolbar is flex column by default, switch to wrap on wider screens */
@@ -334,9 +341,10 @@ textarea,
 
 .panel-header {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
-  gap: var(--space-3);
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
   padding-bottom: var(--space-3);
   border-bottom: 1px solid var(--border);
   margin-bottom: var(--space-4);
