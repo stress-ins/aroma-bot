@@ -29,6 +29,9 @@ class DraftRecord:
         scheduled_at: str | None = None,
         publish_platforms: list[str] | None = None,
         external_ids: dict[str, Any] | None = None,
+        revision_notes: str = "",
+        published_at: str | None = None,
+        error: str = "",
     ):
         self.draft_id = draft_id
         self.kind = kind
@@ -42,12 +45,18 @@ class DraftRecord:
         self.scheduled_at = scheduled_at
         self.publish_platforms = publish_platforms or []
         self.external_ids = external_ids or {}
+        self.revision_notes = revision_notes
+        self.published_at = published_at
+        self.error = error
 
     @classmethod
     def from_model(cls, model: DraftModel) -> DraftRecord:
         scheduled_at = None
         if model.scheduled_at:
             scheduled_at = model.scheduled_at.isoformat() if isinstance(model.scheduled_at, datetime) else str(model.scheduled_at)
+        published_at = None
+        if model.published_at:
+            published_at = model.published_at.isoformat() if isinstance(model.published_at, datetime) else str(model.published_at)
         return cls(
             draft_id=model.draft_id,
             kind=model.kind,
@@ -61,6 +70,9 @@ class DraftRecord:
             scheduled_at=scheduled_at,
             publish_platforms=model.publish_platforms or [],
             external_ids=model.external_ids or {},
+            revision_notes=model.revision_notes or "",
+            published_at=published_at,
+            error=model.error or "",
         )
 
 
@@ -124,6 +136,9 @@ async def update_draft(
     scheduled_at: Any = _SENTINEL,
     publish_platforms: list[str] | None = None,
     external_ids: dict[str, Any] | None = None,
+    revision_notes: str | None = None,
+    published_at: Any = _SENTINEL,
+    error: str | None = None,
 ) -> DraftRecord | None:
     async with AsyncSessionLocal() as session:
         query = select(DraftModel).filter(DraftModel.draft_id == draft_id)
@@ -147,6 +162,12 @@ async def update_draft(
             model.publish_platforms = list(publish_platforms)
         if external_ids is not None:
             model.external_ids = dict(external_ids)
+        if revision_notes is not None:
+            model.revision_notes = revision_notes
+        if published_at is not _SENTINEL:
+            model.published_at = published_at
+        if error is not None:
+            model.error = error
 
         await session.commit()
         await session.refresh(model)
