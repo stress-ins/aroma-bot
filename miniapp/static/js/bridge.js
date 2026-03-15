@@ -102,6 +102,13 @@ export function registerWindowBridge(deps) {
   window.removeTodoItem = (id) => removeTodoItem(id);
   window.renderCreateTool = renderCreateTool;
 
+  window.expandSection = function(btn) {
+    const wrap = btn.closest(".exp-section-wrap");
+    if (!wrap) return;
+    wrap.querySelector(".exp-collapsed").hidden = true;
+    wrap.querySelector(".exp-expanded").hidden = false;
+  };
+
   window.openCreateTool = (toolId = "content") => {
     setMode("content");
     setTab("create");
