@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from bot.agents import ContentDraft
+from bot.agents.content import split_threads_posts
 from bot.agents.reels_agent import StoryboardFrame
 
 
@@ -17,7 +18,7 @@ def is_valid_content_format(format_key: str) -> bool:
 
 
 def build_content_payload(draft: ContentDraft, *, goal_key: str, format_key: str) -> dict[str, object]:
-    return {
+    payload: dict[str, object] = {
         "goal_key": goal_key,
         "format_key": format_key,
         "angle": draft.angle,
@@ -28,6 +29,14 @@ def build_content_payload(draft: ContentDraft, *, goal_key: str, format_key: str
         "visual_prompt": draft.visual_prompt,
         "slides": list(draft.slides),
     }
+
+    # For threads: split combined caption into 3 separate posts
+    if format_key == "threads" and draft.caption:
+        posts = split_threads_posts(draft.caption)
+        if any(p["text"] for p in posts):
+            payload["threads_posts"] = posts
+
+    return payload
 
 
 def build_reels_payload(topic: str, scenario: str, frames: list[StoryboardFrame]) -> dict[str, object]:

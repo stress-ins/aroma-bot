@@ -63,6 +63,32 @@ export function createDraftsModule(deps) {
     }, "Сохранено");
   }
 
+  async function saveThreadsReviewDraft(draftId, button) {
+    const posts = [];
+    for (let i = 0; i < 3; i++) {
+      posts.push({
+        slot: ["morning", "day", "evening"][i],
+        label: ["УТРО", "ДЕНЬ", "ВЕЧЕР"][i],
+        text: String(document.getElementById(`threadsPostText${i}`)?.value || "").trim(),
+        scheduled_time: String(document.getElementById(`threadsPostTime${i}`)?.value || "").trim(),
+      });
+    }
+    const payload = {
+      threads_posts: posts,
+      angle: String(document.getElementById("contentAngleField")?.value || "").trim(),
+      visual_prompt: String(document.getElementById("contentVisualPromptField")?.value || "").trim(),
+    };
+    await withButtonFeedback(button, "Сохраняю...", async () => {
+      const draft = await fetchJson(`/api/drafts/${draftId}/content`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+      mergeDraftIntoState(draft);
+      callbacks.renderDraftList?.();
+      callbacks.renderDraftDetail?.(draft);
+    }, "Сохранено");
+  }
+
   async function polishContentDraft(draftId, button) {
     await withButtonFeedback(button, "Полирую...", async () => {
       const draft = await fetchJson(`/api/drafts/${draftId}/content/polish`, {
@@ -155,31 +181,54 @@ export function createDraftsModule(deps) {
       detailFactMarkup("Создан", formatPlanDate(d.created_at)),
     ].join("");
 
+    const threadsPosts = Array.isArray(p.threads_posts) && p.threads_posts.length ? p.threads_posts : null;
+    const SLOT_ICONS = { morning: "🌅", day: "☀️", evening: "🌙" };
+
     const reviewActions = isContentReviewKind(d.kind)
       ? `
         <section class="section section-primary">
           <div class="section-heading">
-            <h3>${uiIcon("text")}Редакторский review</h3>
-            <p>Сначала соберите сильную мысль и основной текст, затем уточните подачу, визуал и комментарии для следующего прохода.</p>
+            <h3>${uiIcon("text")}Редактор</h3>
+            <p>${threadsPosts ? "Три поста на день: утро, день, вечер. Редактируйте каждый отдельно." : "Соберите сильную мысль и основной текст, затем уточните подачу и визуал."}</p>
           </div>
           <div class="content-review-form">
-            <div class="content-review-highlight">
-              <label><span>Тема материала</span><textarea id="contentTopicField" placeholder="О чем этот материал и зачем он читателю">${escapeHtml(d.topic || "")}</textarea></label>
-              <label><span>Опорная мысль</span><textarea id="contentAngleField" placeholder="Какой угол подачи или тезис держит весь текст">${escapeHtml(p.angle || "")}</textarea></label>
-              <label><span>Первая фраза</span><textarea id="contentHookField" placeholder="С чего лучше начать, чтобы зацепить внимание">${escapeHtml(p.hook || "")}</textarea></label>
-            </div>
-            <label class="content-review-lead"><span>Основной текст</span><textarea id="contentCaptionField" placeholder="Соберите здесь основную версию текста, которую будете отправлять на согласование">${escapeHtml(p.caption || "")}</textarea></label>
-            <p class="field-help">Сохраняйте версию после смыслового прохода. Если нужен быстрый черновой рефайн, используйте AI как промежуточный шаг.</p>
-            <div class="content-review-support-grid">
-              <label><span>Призыв к действию</span><textarea id="contentCtaField" placeholder="Что читателю стоит сделать после текста">${escapeHtml(p.cta || "")}</textarea></label>
-              <label><span>Теги</span><textarea id="contentHashtagsField" placeholder="#ритуал #аромапрактика">${escapeHtml(p.hashtags || "")}</textarea></label>
-              <label><span>Промпт для визуала</span><textarea id="contentVisualPromptField" placeholder="Какой образ или сцену должен поддержать визуал">${escapeHtml(p.visual_prompt || "")}</textarea></label>
-              <label><span>Комментарий редактора</span><textarea id="contentEditorNotesField" placeholder="Что стоит усилить, сократить или перепроверить в следующем проходе">${escapeHtml(p.editor_notes || "")}</textarea></label>
-            </div>
-            <div class="actions-row review-actions">
-              <button class="primary-button" type="button" onclick="saveContentReviewDraft('${d.draft_id}', this)">${actionLabel("approve", "Сохранить версию")}</button>
-              <button class="secondary-button" type="button" onclick="polishContentDraft('${d.draft_id}', this)">${actionLabel("sparkle", "Уточнить через AI")}</button>
-            </div>
+            ${threadsPosts ? `
+              ${threadsPosts.map((post, idx) => `
+                <div class="threads-post-section" data-slot="${post.slot}">
+                  <h4 class="threads-post-label">${SLOT_ICONS[post.slot] || ""} ${escapeHtml(post.label)}</h4>
+                  <textarea id="threadsPostText${idx}" class="threads-post-textarea" placeholder="Текст поста">${escapeHtml(post.text || "")}</textarea>
+                  <div class="threads-post-schedule">
+                    <label><span>Время</span><input type="time" id="threadsPostTime${idx}" value="${escapeHtml(post.scheduled_time || post.default_time || "")}"></label>
+                  </div>
+                </div>
+              `).join("")}
+              <div class="content-review-support-grid">
+                <label><span>Опорная мысль</span><textarea id="contentAngleField" placeholder="Угол подачи">${escapeHtml(p.angle || "")}</textarea></label>
+                <label><span>Промпт для визуала</span><textarea id="contentVisualPromptField" placeholder="Образ или сцена для визуала">${escapeHtml(p.visual_prompt || "")}</textarea></label>
+              </div>
+              <div class="actions-row review-actions">
+                <button class="primary-button" type="button" onclick="saveThreadsReviewDraft('${d.draft_id}', this)">${actionLabel("approve", "Сохранить 3 поста")}</button>
+                <button class="secondary-button" type="button" onclick="polishContentDraft('${d.draft_id}', this)">${actionLabel("sparkle", "Уточнить через AI")}</button>
+              </div>
+            ` : `
+              <div class="content-review-highlight">
+                <label><span>Тема материала</span><textarea id="contentTopicField" placeholder="О чем этот материал и зачем он читателю">${escapeHtml(d.topic || "")}</textarea></label>
+                <label><span>Опорная мысль</span><textarea id="contentAngleField" placeholder="Какой угол подачи или тезис держит весь текст">${escapeHtml(p.angle || "")}</textarea></label>
+                <label><span>Первая фраза</span><textarea id="contentHookField" placeholder="С чего лучше начать, чтобы зацепить внимание">${escapeHtml(p.hook || "")}</textarea></label>
+              </div>
+              <label class="content-review-lead"><span>Основной текст</span><textarea id="contentCaptionField" placeholder="Соберите здесь основную версию текста">${escapeHtml(p.caption || "")}</textarea></label>
+              <p class="field-help">Сохраняйте версию после смыслового прохода.</p>
+              <div class="content-review-support-grid">
+                <label><span>Призыв к действию</span><textarea id="contentCtaField" placeholder="Что читателю стоит сделать после текста">${escapeHtml(p.cta || "")}</textarea></label>
+                <label><span>Теги</span><textarea id="contentHashtagsField" placeholder="#ритуал #аромапрактика">${escapeHtml(p.hashtags || "")}</textarea></label>
+                <label><span>Промпт для визуала</span><textarea id="contentVisualPromptField" placeholder="Какой образ или сцену должен поддержать визуал">${escapeHtml(p.visual_prompt || "")}</textarea></label>
+                <label><span>Комментарий редактора</span><textarea id="contentEditorNotesField" placeholder="Что усилить или перепроверить">${escapeHtml(p.editor_notes || "")}</textarea></label>
+              </div>
+              <div class="actions-row review-actions">
+                <button class="primary-button" type="button" onclick="saveContentReviewDraft('${d.draft_id}', this)">${actionLabel("approve", "Сохранить версию")}</button>
+                <button class="secondary-button" type="button" onclick="polishContentDraft('${d.draft_id}', this)">${actionLabel("sparkle", "Уточнить через AI")}</button>
+              </div>
+            `}
           </div>
         </section>
         <section class="section section-accent">
@@ -261,6 +310,7 @@ export function createDraftsModule(deps) {
 
   return {
     saveContentReviewDraft,
+    saveThreadsReviewDraft,
     polishContentDraft,
     renderDraftList,
     openDraft,

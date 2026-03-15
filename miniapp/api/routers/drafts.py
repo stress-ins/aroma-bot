@@ -91,6 +91,7 @@ async def update_content(draft_id: str, payload: DraftContentPayload, _: None = 
         hashtags=payload.hashtags,
         visual_prompt=payload.visual_prompt,
         editor_notes=payload.editor_notes,
+        threads_posts=payload.threads_posts,
     )
     if not updated:
         raise HTTPException(status_code=404, detail="content_draft_not_found")

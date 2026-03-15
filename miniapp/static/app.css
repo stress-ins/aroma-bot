@@ -1008,6 +1008,49 @@ body.is-mobile-layout .detail-top {
   line-height: 1.5;
 }
 
+/* ── Threads posts УТРО/ДЕНЬ/ВЕЧЕР ──────────────────────────────────── */
+.threads-post-section {
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+}
+.threads-post-section + .threads-post-section { margin-top: var(--space-3); }
+.threads-post-label {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: var(--space-2);
+  color: var(--brand);
+}
+.threads-post-textarea {
+  width: 100%;
+  min-height: 120px;
+  resize: vertical;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  padding: 9px 12px;
+  font-size: 14px;
+  color: var(--text);
+  font-family: var(--font-ui);
+}
+.threads-post-textarea:focus { border-color: var(--brand-border); outline: none; }
+.threads-post-schedule {
+  margin-top: var(--space-2);
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+}
+.threads-post-schedule label { display: flex; align-items: center; gap: var(--space-2); font-size: 13px; color: var(--muted); }
+.threads-post-schedule input[type="time"] {
+  background: var(--card-bg, var(--surface));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  color: inherit;
+  font-size: 13px;
+}
+
 .review-actions {
   margin-top: 0;
 }
