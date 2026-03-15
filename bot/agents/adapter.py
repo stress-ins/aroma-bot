@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from config import settings
+from bot.services.brand_settings_store import get_brand_settings_cached
 
 ADAPT_PLATFORM_SPECS = {
     "threads": "Threads: 3 поста на сегодня в порядке Утро / День / Вечер. Каждый пост с одной идеей, 5-12 коротких строк, 40-120 слов, разговорный стиль, без хэштегов.",
@@ -15,12 +16,6 @@ ADAPT_PLATFORM_LABELS = {
     "telegram": "Telegram",
     "reels": "Reels",
 }
-
-_BRAND_VOICE = """\
-Голос бренда: спокойный, ясный, глубокий, человеческий. Эксперт по регуляции нервной системы через \
-сенсорные практики (ароматерапия, медитации, гонг). Без инфоцыганства, без псевдомедицинских обещаний, \
-без клише вроде «просто позволь себе».\
-"""
 
 _ADAPT_PROMPT = """\
 {brand_voice}
@@ -45,8 +40,9 @@ def adapt_text_sync(original_text: str, target_platform: str) -> str:
     import anthropic
 
     client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+    bs = get_brand_settings_cached()
     prompt = _ADAPT_PROMPT.format(
-        brand_voice=_BRAND_VOICE,
+        brand_voice=bs.brand_voice,
         platform_label=ADAPT_PLATFORM_LABELS.get(target_platform, target_platform),
         platform_spec=ADAPT_PLATFORM_SPECS.get(target_platform, ""),
         original_text=original_text,

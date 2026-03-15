@@ -2,6 +2,7 @@ import asyncio
 import logging
 
 from bot.application import build_application
+from bot.services.brand_settings_store import preload_brand_settings
 from scheduler.jobs import setup_scheduler
 
 logging.basicConfig(
@@ -15,6 +16,7 @@ async def main() -> None:
     app = build_application()
     scheduler = setup_scheduler(app)
 
+    await preload_brand_settings()
     scheduler.start()
     logger.info("Scheduler started")
 

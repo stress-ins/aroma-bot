@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from config import settings
+from bot.services.brand_settings_store import get_brand_settings_cached
 from bot.services.policy_engine import enforce_policy
 
 _PLATFORM_RULES = {
@@ -49,10 +50,8 @@ _EDITOR_SYSTEM = """\
    Плохо: "Минует логику. Говорит телу." \
    Хорошо: "Запах срабатывает быстрее, чем длинные объяснения, и тело это замечает почти сразу."
 8. Если фраза звучит как копирайтерский слоган или красивая заготовка, перепиши её в живую разговорную речь.
-9. Запрещённые слова и обороты: "тазовая волна", "занимать место без извинений", \
-   "боимся быть слишком много", "на волне контроля", "минуя фильтры", \
-   "мы сжимаем живот", "запах попадает прямо в мозг", "чувствовать без стены", \
-   "надо быть острым", "просто стой". \
+9. Запрещённые слова и обороты:
+{forbidden_phrases}
    Вместо "мы сжимаем живот" → "у нас часто напряжено тело, особенно в животе". \
    Вместо "просто стой" → "просто дыши" или "просто наблюдай".
 10. Каждая фраза должна быть логически завершена. Никаких оборванных мыслей. \
@@ -85,11 +84,15 @@ def edit_post_sync(raw: str, topic: str, platform: str = "default", user_forbidd
         extra = "\n".join(f"- {p}" for p in user_forbidden)
         user_msg += f"\n\nДополнительные запрещённые фразы (указаны пользователем):\n{extra}"
 
+    bs = get_brand_settings_cached()
+    forbidden_block = "\n".join(f'   "{p}",' for p in bs.forbidden_phrases) if bs.forbidden_phrases else ""
+    system_prompt = _EDITOR_SYSTEM.format(forbidden_phrases=forbidden_block)
+
     client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
     resp = client.messages.create(
         model="claude-haiku-4-5-20251001",
         max_tokens=700,
-        system=_EDITOR_SYSTEM,
+        system=system_prompt,
         messages=[{"role": "user", "content": user_msg}],
     )
     result = resp.content[0].text.strip()
