@@ -12,6 +12,12 @@ const REFERENCE_SOURCE_TYPE_LABELS = {
 
 export function createReferencesModule(deps) {
   let openReferenceInFlight = false;
+  const _aromaSlugMap = {};
+
+  function lookupNameRu(slug) {
+    return slug ? (_aromaSlugMap[slug] || "") : "";
+  }
+
   const {
     state,
     elements,
@@ -90,6 +96,11 @@ export function createReferencesModule(deps) {
     state.referenceItems = (data.items || []).filter(
       (i) => !i.category || i.category === meta.category
     );
+    if (meta.category === "aromas") {
+      state.referenceItems.forEach(item => {
+        if (item.slug && item.name_ru) _aromaSlugMap[item.slug] = item.name_ru;
+      });
+    }
 
     // Skip rendering if openReference is currently in flight — it will call
     // renderReferences itself when the detail fetch completes, preventing a
@@ -274,11 +285,11 @@ export function createReferencesModule(deps) {
     const lines = namesEn.map((nameEn, i) => {
       const d = drops[i];
       const unit = d === 1 ? "капля" : (d >= 2 && d <= 4) ? "капли" : "капель";
-      const displayName = (namesRu[i] || nameEn || "").trim();
+      const displayName = (namesRu[i] || lookupNameRu(slugs[i]) || nameEn || "").trim();
       const slug = slugs[i];
       const nameHtml = slug
-        ? `<a href="#" class="cross-ref-chip" onclick="openReference('${escapeHtml(slug)}', 'aromas'); return false;">${escapeHtml(displayName)}</a>`
-        : `<strong>${escapeHtml(displayName)}</strong>`;
+        ? `<button class="crossref-chip" onclick='openReference(${JSON.stringify(slug)}, "aromas")'>${escapeHtml(displayName)}</button>`
+        : `<span class="crossref-chip crossref-chip--plain">${escapeHtml(displayName)}</span>`;
       return `<div class="recipe-line">${d} ${unit} ${nameHtml}</div>`;
     });
     return `<section class="section"><h3>📋 Рецепт</h3><div class="detail-preview recipe-drops">${lines.join("")}</div></section>`;
