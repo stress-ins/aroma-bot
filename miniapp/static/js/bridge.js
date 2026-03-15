@@ -35,6 +35,19 @@ export function registerWindowBridge(deps) {
     regenerateReelsFrame,
     handleReelsFramePromptInput,
     handleReelsFrameNoteInput,
+    // V2 reels functions
+    regenConcept,
+    regenScenario,
+    regenCaption,
+    regenFrameImage,
+    regenFrameImageWithPrompt,
+    approveReels,
+    scheduleFrameOverlaySave,
+    saveFrameImagePrompt,
+    autoResize,
+    // Phase 4
+    publishReels,
+    retryPlatform,
     saveContentReviewDraft,
     polishContentDraft,
     openKeywordTopic,
@@ -90,6 +103,19 @@ export function registerWindowBridge(deps) {
   window.regenerateReelsFrame = regenerateReelsFrame;
   window.handleReelsFramePromptInput = handleReelsFramePromptInput;
   window.handleReelsFrameNoteInput = handleReelsFrameNoteInput;
+
+  // V2 reels window bridge
+  window.regenConcept = regenConcept;
+  window.regenScenario = regenScenario;
+  window.regenCaption = regenCaption;
+  window.regenFrameImage = regenFrameImage;
+  window.regenFrameImageWithPrompt = regenFrameImageWithPrompt;
+  window.approveReels = approveReels;
+  window.scheduleFrameOverlaySave = scheduleFrameOverlaySave;
+  window.saveFrameImagePrompt = saveFrameImagePrompt;
+  window.autoResize = autoResize;
+  window.publishReels = publishReels;
+  window.retryPlatform = retryPlatform;
 
   window.publishDraft = publishDraft;
   window.cancelPublishSchedule = cancelPublishSchedule;

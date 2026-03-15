@@ -132,6 +132,16 @@ class ScheduleSeriesRequest(BaseModel):
     slots: list[str] = Field(default_factory=lambda: ["morning", "day", "evening"])
 
 
+class ReelsPublishPayload(BaseModel):
+    platforms: list[str] = Field(default_factory=list)
+    date: str = Field(default="")
+    time: str = Field(default="")
+
+
+class ReelsRetryPlatformPayload(BaseModel):
+    platform: str = Field(default="")
+
+
 class AromaCardPayload(BaseModel):
     description: str = Field(default="")
     questions: str = Field(default="")
