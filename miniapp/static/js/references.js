@@ -229,24 +229,11 @@ export function createReferencesModule(deps) {
   }
 
   function renderCollapsibleDescription(reference) {
-    const short = String(reference.description_short || "").trim();
-    const full = String(reference.description || "").trim();
-    if (!short && !full) return "";
-    // If short exists and is different from full, render collapsible
-    if (short && full && short !== full) {
-      return `
-        <section class="section">
-          <h3>Описание</h3>
-          <div class="detail-preview">${escapeHtml(short)}</div>
-          <details class="description-collapsible">
-            <summary class="description-toggle">▼ Полный текст</summary>
-            <div class="detail-preview description-full">${escapeHtml(full)}</div>
-          </details>
-        </section>
-      `;
-    }
-    // Fallback to whichever is present
-    return `<section class="section"><h3>Описание</h3><div class="detail-preview">${escapeHtml(short || full)}</div></section>`;
+    // description_short = comprehensive AI synthesis of all card fields (shown in full, no collapse)
+    // description = original raw text (not shown separately to avoid duplication)
+    const text = String(reference.description_short || reference.description || "").trim();
+    if (!text) return "";
+    return `<section class="section"><h3>Описание</h3><div class="detail-preview">${escapeHtml(text)}</div></section>`;
   }
 
   const APPLICATION_METHOD_ICONS = [
@@ -732,8 +719,8 @@ export function createReferencesModule(deps) {
           ${renderReferenceImage(reference)}
           ${aromaHtmlSection("Паспорт аромата", renderReferencePassport(reference))}
           ${renderCollapsibleDescription(reference)}
-          ${renderCollapsibleSection("Психологические свойства", reference.psychological_properties, 280, reference.psychological_properties_summary)}
-          ${aromaSection("Терапевтические свойства", reference.therapeutic_properties)}
+          ${renderCollapsibleSection("Психологические свойства", reference.psychological_properties, 280)}
+          ${renderCollapsibleSection("Терапевтические свойства", reference.therapeutic_properties, 280)}
           ${compOilChips ? `<section class="section"><h3>🌿 Масла для практики</h3><div class="detail-preview">${compOilChips}</div></section>` : ""}
           ${blendPracticeChips ? `<section class="section"><h3>🌀 Рекомендуемые смеси</h3><div class="detail-preview">${blendPracticeChips}</div></section>` : ""}
           ${renderStructuredList("📋 Применение", reference.applications)}
@@ -760,7 +747,7 @@ export function createReferencesModule(deps) {
           ${renderReferenceImage(reference)}
           ${aromaHtmlSection("Паспорт аромата", renderReferencePassport(reference))}
           ${renderCollapsibleDescription(reference)}
-          ${renderCollapsibleSection("Психологические свойства", reference.psychological_properties, 280, reference.psychological_properties_summary)}
+          ${renderCollapsibleSection("Психологические свойства", reference.psychological_properties, 280)}
           ${aromaSection('Ресурс "+"', reference.resource_values?.plus)}
           ${aromaSection('Ресурс "-"', reference.resource_values?.minus)}
           ${aromaSection("Какие вопросы поднимает", reference.questions)}
@@ -790,12 +777,12 @@ export function createReferencesModule(deps) {
           ${renderReferenceImage(reference)}
           ${aromaHtmlSection("Паспорт аромата", renderReferencePassport(reference))}
           ${renderCollapsibleDescription(reference)}
-          ${renderCollapsibleSection("Психологические свойства", reference.psychological_properties, 280, reference.psychological_properties_summary)}
+          ${renderCollapsibleSection("Психологические свойства", reference.psychological_properties, 280)}
           ${aromaSection('Ресурс "+"', reference.resource_values?.plus)}
           ${aromaSection('Ресурс "-"', reference.resource_values?.minus)}
           ${aromaSection("Какие вопросы поднимает", reference.questions)}
           ${aromaSection("Действие на НПС", reference.nps_effect)}
-          ${renderCollapsibleSection("Терапевтические свойства", reference.therapeutic_properties, 280, reference.therapeutic_properties_summary)}
+          ${renderCollapsibleSection("Терапевтические свойства", reference.therapeutic_properties, 280)}
           ${renderCollapsibleSection("Влияние на здоровье", reference.health_effects)}
           ${renderCollapsibleSection("Влияние на ум", reference.mind_effect)}
           ${renderCollapsibleSection("Духовное и эмоциональное воздействие", reference.spiritual_emotional)}
@@ -806,7 +793,7 @@ export function createReferencesModule(deps) {
           ${renderApplicationsWithIcons(reference.applications)}
           ${renderStructuredList("Меры предосторожности", reference.precautions)}
           ${aromaSection("Материалы курса", reference.course_notes)}
-          ${renderCollapsibleSection("Исторические сведения", reference.history, 280, reference.history_summary)}
+          ${renderCollapsibleSection("Исторические сведения", reference.history, 280)}
         </div>
       `;
     }
