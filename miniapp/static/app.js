@@ -552,9 +552,9 @@ function detailFactMarkup(label, value) {
 
 function uiIcon(name) {
   const icons = {
-    card: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2"></rect><path d="M8 9h8M8 13h5"></path></svg>`,
-    slides: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2"></rect><path d="M8 9h8M8 13h6"></path></svg>`,
-    prompt: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8h10M7 12h8M7 16h6"></path><path d="M5 5h14v14H5z"></path></svg>`,
+    card: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/></svg>`,
+    slides: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 17h20M2 12h20M6 7h12M4 7v10M20 7v10"/></svg>`,
+    prompt: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 10h12M4 14h14M4 18h7"/></svg>`,
     regenerate: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6v6h-6"></path><path d="M20 12a8 8 0 1 1-2.3-5.7L20 8"></path></svg>`,
     chat: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14v9H9l-4 3V7Z"></path></svg>`,
     pptx: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h7l5 5v11H7z"></path><path d="M14 4v5h5"></path></svg>`,
@@ -566,15 +566,15 @@ function uiIcon(name) {
     eye: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"></path><circle cx="12" cy="12" r="3"></circle></svg>`,
     approve: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5 9 16l10-10"></path></svg>`,
     sparkle: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 1.7 4.3L18 9l-4.3 1.7L12 15l-1.7-4.3L6 9l4.3-1.7L12 3Z"></path><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15Z"></path></svg>`,
-    text: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M12 7v10M8 17h8"></path></svg>`,
+    text: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h12M4 17h8"/></svg>`,
     nps: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6-4.35-6-10a3.5 3.5 0 0 1 6-2.4A3.5 3.5 0 0 1 18 11c0 5.65-6 10-6 10Z"></path></svg>`,
     therapy: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v16M4 12h16"></path></svg>`,
     psyche: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4a6 6 0 0 1 6 6c0 3-2 4-3 5s-1 2-1 3h-4c0-1-1-2-1-3s-3-2-3-5a6 6 0 0 1 6-6Z"></path><path d="M10 21h4"></path></svg>`,
     plus: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6v12M6 12h12"></path></svg>`,
     minus: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12"></path></svg>`,
     history: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.3-5.7L4 9"></path><path d="M12 8v5l3 2"></path></svg>`,
-    passport: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="4" width="12" height="16" rx="2"></rect><path d="M9 8h6M9 12h6M9 16h4"></path></svg>`,
-    reel: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="6" width="16" height="12" rx="2"></rect><path d="M8 6v12M16 6v12"></path></svg>`,
+    passport: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2"/><circle cx="9.5" cy="10" r="2"/><path d="M13 9h4M13 13h4"/></svg>`,
+    reel: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3l14 9-14 9V3z"/></svg>`,
     image: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2"></rect><path d="m8 14 2.5-2.5L13 14l2-2 3 3"></path><circle cx="9" cy="9" r="1.2"></circle></svg>`,
     download: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v10M8 12l4 4 4-4"></path><path d="M5 18h14"></path></svg>`,
     upload: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V5M8 8l4-4 4 4"></path><path d="M5 18h14"></path></svg>`,
@@ -605,8 +605,8 @@ function sectionHeadingIcon(title) {
     'Ресурс "-"': "minus",
     "Исторические сведения": "history",
     "Промпт для изображения": "prompt",
-    "Сценарий": "reel",
-    "Кадры и промпты": "slides",
+    "Сценарий": "play",
+    "Кадры и промпты": "layers",
   };
   return uiIcon(iconMap[title] || "card");
 }
