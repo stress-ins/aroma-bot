@@ -478,6 +478,7 @@ async def list_reference_cards(category: str) -> list[dict[str, str]]:
             "name": name_ru or model.name,
             "name_en": model.name if (name_ru and model.name != name_ru) else "",
             "description": str(payload.get("description", "")),
+            "description_short": str(payload.get("description_short", "")),
             "category": model.category,
             "source_type": model.source_type,
             # Extra fields used by frontend search / grouping
