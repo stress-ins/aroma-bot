@@ -248,7 +248,7 @@ export function createReferencesModule(deps) {
   }
 
   const APPLICATION_METHOD_ICONS = [
-    { keywords: ["диффузи", "аромалампа", "аромадиффузор", "аромат"], icon: "💨" },
+    { keywords: ["диффуз", "аромалампа", "аромадиффузор"], icon: "💨" },
     { keywords: ["массаж", "втирать", "наносить на кожу"], icon: "💆" },
     { keywords: ["топикально", "локально", "нанесение на кожу"], icon: "🩹" },
     { keywords: ["ванн", "ванна", "купание"], icon: "🛁" },
@@ -712,7 +712,7 @@ export function createReferencesModule(deps) {
           ${aromaSection("Описание", reference.description)}
           ${oilChips ? `<section class="section"><h3>🌿 Рекомендуемые масла</h3><div class="detail-preview">${oilChips}</div></section>` : ""}
           ${blendChips ? `<section class="section"><h3>🌀 Рекомендуемые смеси</h3><div class="detail-preview">${blendChips}</div></section>` : ""}
-          ${renderStructuredList("Применение", reference.applications)}
+          ${renderApplicationsWithIcons(reference.applications)}
         </div>
       `;
     } else if (state.tab === "practices") {
