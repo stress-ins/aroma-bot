@@ -575,6 +575,8 @@ function uiIcon(name) {
     passport: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="4" width="12" height="16" rx="2"></rect><path d="M9 8h6M9 12h6M9 16h4"></path></svg>`,
     reel: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="6" width="16" height="12" rx="2"></rect><path d="M8 6v12M16 6v12"></path></svg>`,
     image: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2"></rect><path d="m8 14 2.5-2.5L13 14l2-2 3 3"></path><circle cx="9" cy="9" r="1.2"></circle></svg>`,
+    download: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v10M8 12l4 4 4-4"></path><path d="M5 18h14"></path></svg>`,
+    upload: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V5M8 8l4-4 4 4"></path><path d="M5 18h14"></path></svg>`,
   };
   return `<span class="ui-icon ui-icon-${escapeHtml(name)}">${icons[name] || icons.prompt}</span>`;
 }
