@@ -1839,6 +1839,8 @@ bootstrap().then(() => {
 });
 
 if (window.lucide) {
-  const _lcObs = new MutationObserver(() => lucide.createIcons());
+  const _lcObs = new MutationObserver(() => {
+    if (document.querySelector("i[data-lucide]")) lucide.createIcons();
+  });
   _lcObs.observe(document.getElementById("app") || document.body, { childList: true, subtree: true });
 }
