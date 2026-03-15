@@ -154,7 +154,7 @@ export function createDraftsModule(deps) {
     const p = d.payload || {};
     const posts = Array.isArray(p.threads_posts) ? p.threads_posts : [];
     const isApproved = d.status === "approved" || d.status === "scheduled" || d.status === "published";
-    const SLOT_ICONS = { morning: "🌅", day: "☀️", evening: "🌙" };
+    const SLOT_ICONS = { morning: uiIcon("sunrise"), day: uiIcon("sun"), evening: uiIcon("moon") };
     const SLOT_NAMES = { morning: "Утро", day: "День", evening: "Вечер" };
     const GOAL_LABELS = { trust: "Доверие", authority: "Экспертность", engagement: "Вовлечённость", sales: "Продажи" };
     const EMOTION_LABELS = { calm: "Спокойная", inspiration: "Вдохновляющая", curiosity: "Любопытство", trust: "Доверие", joy: "Радость" };
@@ -283,7 +283,7 @@ export function createDraftsModule(deps) {
     ].join("");
 
     const threadsPosts = Array.isArray(p.threads_posts) && p.threads_posts.length ? p.threads_posts : null;
-    const SLOT_ICONS = { morning: "🌅", day: "☀️", evening: "🌙" };
+    const SLOT_ICONS = { morning: uiIcon("sunrise"), day: uiIcon("sun"), evening: uiIcon("moon") };
 
     const reviewActions = isContentReviewKind(d.kind)
       ? `
