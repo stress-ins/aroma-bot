@@ -109,6 +109,9 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
             scheduled_at DATETIME,
             publish_platforms JSON DEFAULT '[]',
             external_ids JSON DEFAULT '{}',
+            revision_notes VARCHAR(2000) DEFAULT '',
+            published_at DATETIME,
+            error VARCHAR(2000) DEFAULT '',
             created_at DATETIME
         )
         """
@@ -174,6 +177,36 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
             raw_text TEXT,
             entries JSON,
             created_at DATETIME
+        )
+        """
+    )
+    cursor.execute(
+        """
+        CREATE TABLE brand_settings (
+            id INTEGER PRIMARY KEY,
+            brand_voice VARCHAR(4000) DEFAULT '',
+            forbidden_phrases JSON DEFAULT '[]',
+            base_instructions VARCHAR(4000) DEFAULT '',
+            target_platforms JSON DEFAULT '[]',
+            upload_post_user VARCHAR(255) DEFAULT '',
+            updated_at DATETIME
+        )
+        """
+    )
+    cursor.execute(
+        """
+        CREATE TABLE blends (
+            id INTEGER PRIMARY KEY,
+            slug VARCHAR(128) UNIQUE,
+            name VARCHAR(255),
+            goal VARCHAR(512) DEFAULT '',
+            ingredients JSON DEFAULT '[]',
+            indications VARCHAR(2000) DEFAULT '',
+            contraindications VARCHAR(2000) DEFAULT '',
+            compatibility_notes VARCHAR(2000) DEFAULT '',
+            source_pdf VARCHAR(255) DEFAULT '',
+            created_at DATETIME,
+            updated_at DATETIME
         )
         """
     )
