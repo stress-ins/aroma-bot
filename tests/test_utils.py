@@ -533,7 +533,7 @@ class TestDraftStore:
         monkeypatch.setattr(
             reels_assets_module,
             "generate_gemini_image_sync",
-            lambda prompt, log_context="": b"fake-image-bytes",
+            lambda prompt, **kwargs: b"fake-image-bytes",
         )
         draft = await save_draft(
             kind="reels",

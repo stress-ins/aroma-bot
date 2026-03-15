@@ -283,20 +283,21 @@ def _serialize_model(model: AromaCardModel) -> dict[str, object]:
     payload["category"] = model.category
     payload["aliases"] = list(model.aliases or [])
     payload["source_type"] = model.source_type
-    # For blend cards: extract Russian ingredient names from "English (Russian)" patterns
+    # For blend cards: use existing ingredient_names_ru or extract from "English (Russian)" patterns
     if model.category == "blend":
-        raw_ingredient_names = list(payload.get("ingredient_names") or [])
-        ingredient_names_ru = []
-        for n in raw_ingredient_names:
-            s = str(n).strip()
-            if not s or len(s) > 60:
-                continue
-            if re.search(r"\.\s+[A-ZА-Я]", s):
-                continue
-            # Only keep items that look like oil names (have parentheses or are short single-word names)
-            if "(" in s and ")" in s:
-                ingredient_names_ru.append(_extract_ru_name(s))
-        payload["ingredient_names_ru"] = ingredient_names_ru
+        existing_ru = list(payload.get("ingredient_names_ru") or [])
+        if not existing_ru:
+            raw_ingredient_names = list(payload.get("ingredient_names") or [])
+            ingredient_names_ru = []
+            for n in raw_ingredient_names:
+                s = str(n).strip()
+                if not s or len(s) > 60:
+                    continue
+                if re.search(r"\.\s+[A-ZА-Я]", s):
+                    continue
+                if "(" in s and ")" in s:
+                    ingredient_names_ru.append(_extract_ru_name(s))
+            payload["ingredient_names_ru"] = ingredient_names_ru
     payload["image_url"] = (
         _payload_image_url(payload)
         or _local_reference_image_url(model.category, model.slug)

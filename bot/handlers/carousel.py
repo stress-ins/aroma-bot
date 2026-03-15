@@ -229,7 +229,7 @@ _PROMPT_CAROUSEL = """\
 - Живой язык, от первого лица, без клише и длинных тире
 - Базовый промпт для фото (английский, 15-25 слов) в стиле Nana Banana: \
 палитра терракота + беж + шалфей, природные элементы, мягкий свет, атмосферно, \
-large empty area for text overlay, square 1:1 composition. Заканчивай: --ar 1:1 --style atmospheric
+large empty area for text overlay, vertical 4:5 composition. Заканчивай: --ar 4:5 --style atmospheric
 
 Формат — строго:
 SLIDE1: [текст]
@@ -374,7 +374,7 @@ def _generate_slide_image_prompts_sync(slides: list[str], topic: str, arc: str |
         "- Be 25-40 words in English\n"
         "- Strictly follow that slide's Show/Forbidden rules\n"
         "- Be visually distinct from other slides\n"
-        "- End with: --ar 1:1 --style atmospheric\n\n"
+        "- End with: --ar 4:5 --style atmospheric\n\n"
         f"{slides_desc}\n\n"
         "Return strictly in this format, nothing else:\n"
         + "\n".join(f"IMG{i + 1}: [prompt]" for i in range(len(slides)))
@@ -404,7 +404,7 @@ def _generate_slide_image_prompts_sync(slides: list[str], topic: str, arc: str |
             result.append(
                 f"terracotta and sage minimal lifestyle, {slide[:35]}, "
                 f"soft natural light, {role_hint}, dried herbs, "
-                "--ar 1:1 --style atmospheric"
+                "--ar 4:5 --style atmospheric"
             )
     return result
 
@@ -483,7 +483,7 @@ def _find_text_zone(img_bytes: bytes) -> tuple[float, float]:
 
 def _apply_note_to_prompt(prompt: str, note: str) -> str:
     """Inject user note into image prompt before the style flags."""
-    flags = "--ar 1:1 --style atmospheric"
+    flags = "--ar 4:5 --style atmospheric"
     base = prompt.replace(flags, "").strip().rstrip(",")
     return f"{base}, {note.strip()} {flags}"
 
@@ -704,8 +704,8 @@ def _make_slide_prompts_with_text(img_prompts: list[str], slides: list[str]) -> 
     """HTML-formatted — send with parse_mode=HTML.
     Each slide gets its own unique image prompt with text overlay injected.
     """
-    lines = ["<b>🍌 Nana Banana — с текстом (1080×1080, --ar 1:1):</b>\n"]
-    flags = "--ar 1:1 --style atmospheric"
+    lines = ["<b>🍌 Nana Banana — с текстом (1080×1350, --ar 4:5):</b>\n"]
+    flags = "--ar 4:5 --style atmospheric"
     for i, (prompt, slide) in enumerate(zip(img_prompts, slides), 1):
         # Strip trailing flags, inject text overlay, re-add flags
         clean = prompt.replace(flags, "").strip().rstrip(",").rstrip()
@@ -721,7 +721,7 @@ def _make_slide_prompts_no_text(img_prompts: list[str], slides: list[str]) -> st
     """HTML-formatted — send with parse_mode=HTML.
     Each slide gets its own unique image prompt (backgrounds, no text).
     """
-    lines = ["<b>🍌 Nana Banana — фон без текста (1080×1080, --ar 1:1):</b>\n"]
+    lines = ["<b>🍌 Nana Banana — фон без текста (1080×1350, --ar 4:5):</b>\n"]
     for i, (prompt, slide) in enumerate(zip(img_prompts, slides), 1):
         lines.append(
             f"<b>Слайд {i}</b> — {_html.escape(slide[:45])}\n"
@@ -922,7 +922,7 @@ async def _show_slide_for_edit(
 
 _FALLBACK_IMG_PROMPT = (
     "terracotta minimal lifestyle, incense smoke, soft natural light, "
-    "--ar 1:1 --style atmospheric"
+    "--ar 4:5 --style atmospheric"
 )
 
 

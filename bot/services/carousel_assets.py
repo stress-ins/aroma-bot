@@ -137,6 +137,7 @@ async def populate_carousel_slide_assets(draft_id: str) -> None:
         try:
             image_bytes = generate_gemini_image_sync(
                 prompt or _FALLBACK_PROMPT,
+                aspect_ratio="4:5",
                 log_context=f"carousel slide {i + 1}/{len(img_prompts)}",
             )
             if image_bytes:
@@ -182,6 +183,7 @@ async def regenerate_carousel_slide_asset(
     try:
         image_bytes = generate_gemini_image_sync(
             final_prompt,
+            aspect_ratio="4:5",
             log_context=f"carousel slide regenerate {slide_index + 1}/{len(img_prompts)}",
         )
     except Exception:
@@ -220,6 +222,7 @@ async def regenerate_all_carousel_slide_assets(draft_id: str) -> dict[str, objec
         try:
             image_bytes = generate_gemini_image_sync(
                 final_prompt,
+                aspect_ratio="4:5",
                 log_context=f"carousel slide regenerate all {index + 1}/{len(img_prompts)}",
             )
         except Exception:
