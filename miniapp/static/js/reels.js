@@ -418,19 +418,17 @@ export function createReelsModule(deps) {
           <h2 class="detail-title">${escapeHtml(r.topic)}</h2>
           <div class="draft-meta">
             ${tagMarkup(statusLabel(r.status || "draft"), statusTone(r.status || "draft"))}
-            ${r.generation_pending ? tagMarkup(draftGenerationLabel({ ...r, kind: "reels" }), "pending") : ""}
+            ${r.generation_pending && draftGenerationLabel({ ...r, kind: "reels" }) ? tagMarkup(draftGenerationLabel({ ...r, kind: "reels" }), "pending") : ""}
             ${tagMarkup(`${reelsReadyCount(r)}/${reelsFrameCount(r)} кадров`, "progress")}
             ${tagMarkup(sourceLabel(r.source || "/miniapp"), sourceTone(r.source || "/miniapp"))}
           </div>
           <div class="actions-row">
             <button class="primary-button" type="button" onclick="saveReelsScenario('${r.draft_id}', this)">${actionLabel("text", "Сохранить концепцию и сценарий")}</button>
-            <div class="actions-row-pair">
-              <button class="secondary-button compact" type="button" onclick="regenerateReelsStoryboard('${r.draft_id}', this)">${actionLabel("regenerate", "Пересобрать раскадровку")}</button>
-              <button class="secondary-button compact" type="button" onclick="regenerateAllReelsFrames('${r.draft_id}', this)">${actionLabel("reel", "Обновить все кадры")}</button>
-            </div>
-            <div class="actions-row-pair">
-              <button class="secondary-button compact" type="button" onclick="updateDraft('status', {status:'rejected'}, this)">${actionLabel("reject", "Вернуть на доработку")}</button>
-              <button class="secondary-button compact" type="button" onclick="sendDraftToChat('${r.draft_id}', this)">${actionLabel("chat", "Отправить в чат")}</button>
+            <div class="detail-icon-actions">
+              <button class="secondary-button" title="Пересобрать раскадровку" type="button" onclick="regenerateReelsStoryboard('${r.draft_id}', this)">${uiIcon("regenerate")}</button>
+              <button class="secondary-button" title="Обновить все кадры" type="button" onclick="regenerateAllReelsFrames('${r.draft_id}', this)">${uiIcon("reel")}</button>
+              <button class="secondary-button" title="Вернуть на доработку" type="button" onclick="updateDraft('status', {status:'rejected'}, this)">${uiIcon("reject")}</button>
+              <button class="secondary-button" title="Отправить в чат" type="button" onclick="sendDraftToChat('${r.draft_id}', this)">${uiIcon("chat")}</button>
             </div>
             <button class="danger-button" type="button" onclick="deleteDraft('${r.draft_id}', 'reels', this)">${actionLabel("trash", "Удалить рилс")}</button>
           </div>
