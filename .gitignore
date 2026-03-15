@@ -8,6 +8,21 @@ venv/
 *.session-journal
 .instagrapi_session.json
 
+# Session files
+.instagram_session
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+**/.DS_Store
+
+# Large data / archives
+data/oil_pdfs/
+miniapp.zip
+miniapp/
+
 # Data storage
 data/reels_assets/
 data/carousel_assets/
