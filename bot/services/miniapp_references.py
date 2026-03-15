@@ -637,7 +637,17 @@ async def _enrich_symptom_cross_refs(serialized: dict[str, object]) -> dict[str,
         blend_result = await session.execute(select(AromaCardModel).where(AromaCardModel.category == "blend"))
         blend_models = blend_result.scalars().all()
 
-    aroma_slug_to_name: dict[str, str] = {m.slug: m.name for m in aroma_models}
+    aroma_slug_to_name: dict[str, str] = {}
+    aroma_name_to_slug: dict[str, str] = {}
+    for m in aroma_models:
+        payload = _public_payload(m.payload or {})
+        name_ru = str(payload.get("name_ru", "")).strip()
+        display_name = name_ru or m.name
+        aroma_slug_to_name[m.slug] = display_name
+        # Build reverse lookup: normalized English + Russian + aliases → slug
+        for alias in [m.name, name_ru] + list(m.aliases or []):
+            if alias:
+                aroma_name_to_slug[_normalize(alias)] = m.slug
     blend_slug_to_name: dict[str, str] = {}
     for m in blend_models:
         payload = _public_payload(m.payload or {})
@@ -656,6 +666,9 @@ async def _enrich_symptom_cross_refs(serialized: dict[str, object]) -> dict[str,
         if name.startswith(("•", ".", "-", "·")):
             continue
         slug = stored_oil_slugs[i] if i < len(stored_oil_slugs) else ""
+        # If no slug stored, resolve via name lookup (handles English-named imports)
+        if not slug:
+            slug = aroma_name_to_slug.get(_normalize(name), "")
         if slug and slug in seen:
             continue
         if slug:
