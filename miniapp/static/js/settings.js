@@ -57,11 +57,13 @@ export function createSettingsModule(deps) {
   function renderRewrites(rewrites) {
     const container = document.getElementById("rewritesList");
     if (!container) return;
+    const ARROW_SVG = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>`;
+    const CLOSE_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>`;
     container.innerHTML = (rewrites || []).map((r) => {
       const [pattern, replacement] = r;
       return `<span class="keyword-chip rewrite-chip">
-        <span>${escapeHtml(pattern)} → ${escapeHtml(replacement)}</span>
-        <button type="button" aria-label="Удалить замену" onclick='removeRewrite(${JSON.stringify(String(pattern))})'>×</button>
+        <span>${escapeHtml(pattern)} ${ARROW_SVG} ${escapeHtml(replacement)}</span>
+        <button type="button" aria-label="Удалить замену" onclick='removeRewrite(${JSON.stringify(String(pattern))})'>${CLOSE_SVG}</button>
       </span>`;
     }).join("") || `<span class="plan-entry-hint">Нет авто-замен.</span>`;
   }
@@ -112,7 +114,7 @@ export function createSettingsModule(deps) {
       const userEl = document.getElementById("uploadPostUser");
       const statusEl = document.getElementById("uploadPostKeyStatus");
       if (userEl) userEl.value = data.user || "";
-      if (statusEl) statusEl.textContent = data.has_key ? "✓ Ключ сохранён" : "Ключ не задан";
+      if (statusEl) statusEl.innerHTML = data.has_key ? `${uiIcon("approve")} Ключ сохранён` : "Ключ не задан";
     } catch (_err) { /* silently ignore */ }
   }
 
@@ -129,7 +131,7 @@ export function createSettingsModule(deps) {
       const keyEl = document.getElementById("uploadPostApiKey");
       if (keyEl) keyEl.value = "";
       const statusEl = document.getElementById("uploadPostKeyStatus");
-      if (statusEl) statusEl.textContent = data.has_key ? "✓ Ключ сохранён" : "Ключ не задан";
+      if (statusEl) statusEl.innerHTML = data.has_key ? `${uiIcon("approve")} Ключ сохранён` : "Ключ не задан";
       showUiNotice("Upload-Post настройки сохранены", "success");
     } catch (_err) {
       showUiNotice("Не удалось сохранить настройки", "error");
@@ -164,10 +166,11 @@ export function createSettingsModule(deps) {
   function renderForbiddenPhrases(phrases) {
     const container = document.getElementById("forbiddenPhrasesList");
     if (!container) return;
+    const closeSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>`;
     container.innerHTML = (phrases || []).map((phrase) => `
       <span class="keyword-chip">
         <span>${escapeHtml(phrase)}</span>
-        <button type="button" aria-label="Удалить ${escapeHtml(phrase)}" onclick='removeForbiddenPhrase(${JSON.stringify(String(phrase))})'>×</button>
+        <button type="button" aria-label="Удалить ${escapeHtml(phrase)}" onclick='removeForbiddenPhrase(${JSON.stringify(String(phrase))})'>${closeSvg}</button>
       </span>
     `).join("") || `<span class="plan-entry-hint">Нет запрещённых фраз.</span>`;
   }
@@ -311,12 +314,16 @@ export function createSettingsModule(deps) {
         <section class="section settings-section">
           <h3>Тон по платформам</h3>
           <p class="settings-hint">Описание стиля для AI-редактора. Сохраняется при потере фокуса.</p>
-          ${["instagram", "telegram", "threads"].map((p) => `
+          ${[
+            { key: "instagram", label: "Instagram" },
+            { key: "telegram",  label: "Telegram"  },
+            { key: "threads",   label: "Threads"   },
+          ].map(({ key, label }) => `
             <div class="keyword-field" style="margin-bottom:12px;">
-              <strong>${p}</strong>
-              <textarea id="tone-${p}" class="draft-textarea" rows="2"
+              <strong class="platform-label">${uiIcon(key)}<span>${label}</span></strong>
+              <textarea id="tone-${key}" class="draft-textarea" rows="2"
                 placeholder="Например: personal, visual, emotional"
-                onblur='savePlatformTone("${p}")'></textarea>
+                onblur='savePlatformTone("${key}")'></textarea>
             </div>
           `).join("")}
         </section>
@@ -401,7 +408,7 @@ export function createSettingsModule(deps) {
                   ${items.map((item) => `
                     <span class="keyword-chip">
                       <span>${escapeHtml(item)}</span>
-                      <button type="button" aria-label="Удалить ${escapeHtml(item)}" onclick='removeKeywordItem(${selectedTopic.topic_idx}, ${JSON.stringify(String(field))}, ${JSON.stringify(String(item))}, this)'>×</button>
+                      <button type="button" aria-label="Удалить ${escapeHtml(item)}" onclick='removeKeywordItem(${selectedTopic.topic_idx}, ${JSON.stringify(String(field))}, ${JSON.stringify(String(item))}, this)'><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
                     </span>
                   `).join("") || `<span class="plan-entry-hint">Пока пусто.</span>`}
                 </div>

@@ -851,7 +851,7 @@ class TestMiniAppBridge:
 
 
 class TestMiniAppRussianLocale:
-    def test_index_selects_and_tabs_use_russian_labels(self):
+    def test_index_selects_and_tabs_use_correct_labels(self):
         index_html = Path("miniapp/index.html").read_text(encoding="utf-8")
         app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
 
@@ -859,14 +859,18 @@ class TestMiniAppRussianLocale:
         assert 'id="modeContent"' in index_html
         assert 'id="modeHandbook"' in index_html
 
-        # Labels should be in JS for dynamic tab generation
+        # Platform kinds use brand names in JS (RU_KIND_LABELS)
         assert '"Тредс"' in app_js
         assert '"Инстаграм"' in app_js
         assert '"Телеграм"' in app_js
         assert '"Рилсы"' in app_js
         assert '"reels"' in app_js
 
-        assert ">Reels<" not in index_html
+        # Filter dropdown in index.html uses English brand names
+        assert '>Threads<' in index_html
+        assert '>Instagram<' in index_html
+        assert '>Telegram<' in index_html
+        assert '>Reels<' in index_html
 
     def test_index_does_not_render_legacy_hero_block(self):
         index_html = Path("miniapp/index.html").read_text(encoding="utf-8")
@@ -882,15 +886,17 @@ class TestMiniAppRussianLocale:
         assert 'id="bootFallbackReload"' in index_html
         assert "Загружаю интерфейс" in index_html
 
-    def test_create_workspace_dropdowns_use_russian_labels(self):
+    def test_create_workspace_format_uses_brand_names(self):
         app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
 
-        assert '<option value="threads">Тредс</option>' in app_js
-        assert '<option value="instagram">Инстаграм</option>' in app_js
-        assert '<option value="telegram">Телеграм</option>' in app_js
-        assert '<option value="threads">Threads</option>' not in app_js
-        assert '<option value="instagram">Instagram</option>' not in app_js
-        assert '<option value="telegram">Telegram</option>' not in app_js
+        # Format selector uses brand names (not Russian transliterations)
+        assert "Threads" in app_js
+        assert "Instagram" in app_js
+        assert "Telegram" in app_js
+        # Old Russian transliterations must not appear as option labels
+        assert '<option value="threads">Тредс</option>' not in app_js
+        assert '<option value="instagram">Инстаграм</option>' not in app_js
+        assert '<option value="telegram">Телеграм</option>' not in app_js
 
     async def test_aroma_service_sorts_cards_in_russian_alphabet(self):
         items = await list_aromas()
