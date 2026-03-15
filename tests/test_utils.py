@@ -736,11 +736,21 @@ class TestForbiddenPhrasesAPI:
         _ms_auth._verify_init_data = lambda _v: True
         return original
 
+    def _patch_preload(self, monkeypatch):
+        """Prevent lifespan from querying brand_settings table (not available in CI)."""
+        import miniapp_server
+
+        async def _noop():
+            pass
+
+        monkeypatch.setattr(miniapp_server, "preload_brand_settings", _noop)
+
     def test_get_forbidden_phrases_returns_defaults(self, tmp_path, monkeypatch):
         """When no custom config file exists, defaults are returned (not empty list)."""
         import miniapp_server
         import miniapp.api.auth as _ms_auth
         monkeypatch.chdir(tmp_path)
+        self._patch_preload(monkeypatch)
         original = self._patch_auth(_ms_auth)
         try:
             with TestClient(miniapp_server.app) as client:
@@ -760,6 +770,7 @@ class TestForbiddenPhrasesAPI:
         import miniapp_server
         import miniapp.api.auth as _ms_auth
         monkeypatch.chdir(tmp_path)
+        self._patch_preload(monkeypatch)
         original = self._patch_auth(_ms_auth)
         try:
             with TestClient(miniapp_server.app) as client:
@@ -778,6 +789,7 @@ class TestForbiddenPhrasesAPI:
         import miniapp.api.auth as _ms_auth
         from bot.services.forbidden_phrases import save_forbidden_phrases
         monkeypatch.chdir(tmp_path)
+        self._patch_preload(monkeypatch)
         (tmp_path / "data").mkdir()
         save_forbidden_phrases(["фраза для удаления", "другая фраза"])
         original = self._patch_auth(_ms_auth)
