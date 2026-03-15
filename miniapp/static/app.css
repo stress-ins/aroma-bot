@@ -170,7 +170,7 @@ textarea,
   flex-direction: column;
   gap: 10px;
   position: sticky;
-  top: env(safe-area-inset-top, 0px);
+  top: var(--tg-content-inset-top, env(safe-area-inset-top, 0px));
   z-index: 40;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -515,7 +515,7 @@ textarea,
 .tag-source-miniapp { background: rgba(var(--brand-rgb), 0.08); color: var(--brand); border-color: rgba(var(--brand-rgb), 0.16); }
 .tag-source-neutral { background: rgba(107, 90, 78, 0.1); color: var(--muted); border-color: rgba(107, 90, 78, 0.16); }
 .tag-progress,
-.tag-pending { color: var(--hint); background: rgba(155, 134, 120, 0.12); border-color: rgba(155, 134, 120, 0.18); }
+.tag-pending { color: #b8860b; background: rgba(184, 134, 11, 0.12); border-color: rgba(184, 134, 11, 0.20); }
 
 /* ── Detail panel ────────────────────────────────────────────────────────── */
 .detail-empty {
@@ -792,6 +792,15 @@ body.is-mobile-layout .detail-top {
   flex: 0 1 auto;
 }
 
+.detail-actions {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-2);
+}
+.detail-actions .primary-button {
+  grid-column: 1 / -1;
+}
+
 .actions-grid-two {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1014,6 +1023,7 @@ body.is-mobile-layout .detail-top {
   color: var(--hint);
   font-size: 12px;
   line-height: 1.5;
+  text-align: left;
 }
 
 /* ── Threads posts УТРО/ДЕНЬ/ВЕЧЕР ──────────────────────────────────── */
@@ -1495,6 +1505,14 @@ body.tg-theme-dark .detail-markdown h5 {
     pointer-events: auto;
   }
 
+  body.is-mobile-layout .list-panel .panel-header {
+    padding-top: calc(var(--space-3) + var(--tg-content-inset-top, env(safe-area-inset-top, 0px)));
+  }
+
+  body.is-mobile-layout .list-panel:has(.guided-state) {
+    flex: 0 1 auto;
+  }
+
   .list-panel.hidden-mobile {
     display: none !important;
   }
@@ -1709,6 +1727,7 @@ body.tg-theme-dark .detail-markdown h5 {
 /* ── Status list ─────────────────────────────────────────────────────────── */
 .status-list, .keywords-list, .plans-list { display: flex; flex-direction: column; gap: 8px; }
 .aroma-search {
+  margin-top: 0;
   margin-bottom: 10px;
 }
 
@@ -2659,6 +2678,13 @@ body.tg-theme-dark .concept-card {
   padding: 5px 10px;
   background: var(--sage-bg);
   font-size: 13px;
+  max-width: 100%;
+}
+.keyword-chip > span:first-child {
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .keyword-chip button,
