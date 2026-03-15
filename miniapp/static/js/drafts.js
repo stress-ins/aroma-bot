@@ -195,7 +195,7 @@ export function createDraftsModule(deps) {
             ${threadsPosts ? `
               ${threadsPosts.map((post, idx) => `
                 <div class="threads-post-section" data-slot="${post.slot}">
-                  <h4 class="threads-post-label">${SLOT_ICONS[post.slot] || ""} ${escapeHtml(post.label)}</h4>
+                  <span class="threads-post-label">${SLOT_ICONS[post.slot] || ""} ${escapeHtml(post.label)}</span>
                   <textarea id="threadsPostText${idx}" class="threads-post-textarea" placeholder="Текст поста">${escapeHtml(post.text || "")}</textarea>
                   <div class="threads-post-schedule">
                     <label><span>Время</span><input type="time" id="threadsPostTime${idx}" value="${escapeHtml(post.scheduled_time || post.default_time || "")}"></label>
