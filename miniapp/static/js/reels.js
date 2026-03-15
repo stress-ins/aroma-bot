@@ -449,7 +449,8 @@ export function createReelsModule(deps) {
       mergeReelsIntoState(draft);
       callbacks.renderReels?.();
       callbacks.renderReelsDetail?.(draft);
-    }, "Готово");
+      scheduleReelsRefresh(draft.draft_id);
+    }, "Запущено");
   }
 
   async function regenScenario(draftId, btn) {
@@ -462,7 +463,8 @@ export function createReelsModule(deps) {
       mergeReelsIntoState(draft);
       callbacks.renderReels?.();
       callbacks.renderReelsDetail?.(draft);
-    }, "Готово");
+      scheduleReelsRefresh(draft.draft_id);
+    }, "Запущено");
   }
 
   async function regenCaption(draftId, btn) {
@@ -475,7 +477,8 @@ export function createReelsModule(deps) {
       mergeReelsIntoState(draft);
       callbacks.renderReels?.();
       callbacks.renderReelsDetail?.(draft);
-    }, "Готово");
+      scheduleReelsRefresh(draft.draft_id);
+    }, "Запущено");
   }
 
   async function regenFrameImage(draftId, frameId, btn) {
@@ -539,12 +542,15 @@ export function createReelsModule(deps) {
     if (imageStatus === "generating") {
       imageAreaHtml = `
         <div class="reels-frame-v2-image-generating">
-          <div class="brand-loader-ring"></div>
-          <span>Генерирую...</span>
+          <div class="brand-loader">
+            <span class="brand-loader-ring"></span>
+            <span class="brand-loader-letter">A</span>
+          </div>
+          <span style="font-size:12px;color:var(--hint);margin-top:8px">Генерирую...</span>
         </div>
       `;
     } else if (imageStatus === "ready" && imageUrl) {
-      imageAreaHtml = `<img src="${escapeHtml(imageUrl)}" style="width:100%;height:100%;object-fit:cover" alt="Кадр ${n}" />`;
+      imageAreaHtml = `<img src="${escapeHtml(imageUrl)}" style="width:100%;height:100%;object-fit:cover;cursor:pointer" alt="Кадр ${n}" onclick="openReelsImageFullscreen(this.src, ${n})" />`;
     } else if (imageStatus === "error") {
       imageAreaHtml = `
         <div class="reels-frame-v2-image-generating">
@@ -624,7 +630,6 @@ export function createReelsModule(deps) {
           <strong>${escapeHtml(r.generation_message || "Генерирую концепцию и сценарий")}</strong>
           <span>Изображения догенерируются в фоне — можно закрыть приложение</span>
         </div>
-        ${generationStateMarkup(r, "reels_v2")}
         <div class="reels-skeleton-section">
           <div class="reels-skeleton-bar" style="width:60%"></div>
           <div class="reels-skeleton-bar" style="width:90%"></div>
@@ -697,7 +702,10 @@ export function createReelsModule(deps) {
         ` : ""}
 
         <section class="section">
-          <h3>${sectionHeadingIcon("Описание")}Описание рилса</h3>
+          <h3 style="display:flex;align-items:center">
+            ${sectionHeadingIcon("Описание")}Описание рилса
+            ${caption ? `<button class="icon-btn" style="margin-left:auto" onclick="copyReelsCaption('${r.draft_id}', this)" title="Скопировать">${uiIcon("copy")}</button>` : ""}
+          </h3>
           ${caption ? `<div class="detail-markdown">${renderMarkdown(caption)}</div>` : `<p class="detail-empty">Описание не задано</p>`}
           <div class="actions-row" style="margin-top:8px">
             <button class="secondary-button compact" type="button" onclick="regenCaption('${r.draft_id}', this)">↺ Перегенерировать описание</button>
@@ -1040,6 +1048,36 @@ export function createReelsModule(deps) {
     return renderScreen3Edit(r);
   }
 
+  async function copyReelsCaption(draftId, btn) {
+    const draft = state.selectedReels;
+    const caption = draft?.caption || draft?.payload?.caption || "";
+    if (!caption) return;
+    try {
+      await navigator.clipboard.writeText(caption);
+      const icon = btn.querySelector("[data-lucide]");
+      if (icon) {
+        const orig = icon.getAttribute("data-lucide");
+        icon.setAttribute("data-lucide", "check");
+        if (window.lucide) lucide.createIcons();
+        setTimeout(() => {
+          icon.setAttribute("data-lucide", orig);
+          if (window.lucide) lucide.createIcons();
+        }, 1500);
+      }
+    } catch (_e) {}
+  }
+
+  function openReelsImageFullscreen(url, n) {
+    const existing = document.getElementById("reels-img-modal");
+    if (existing) existing.remove();
+    const modal = document.createElement("div");
+    modal.id = "reels-img-modal";
+    modal.style.cssText = "position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;cursor:zoom-out;-webkit-tap-highlight-color:transparent";
+    modal.innerHTML = `<img src="${url}" style="max-width:100vw;max-height:100vh;object-fit:contain" alt="Кадр ${n}">`;
+    modal.addEventListener("click", () => modal.remove());
+    document.body.appendChild(modal);
+  }
+
   return {
     renderReelsDetail,
     saveReelsScenario,
@@ -1068,5 +1106,8 @@ export function createReelsModule(deps) {
     canEditReels,
     canApproveReels,
     canPublishReels,
+    // Feature: copy caption + fullscreen image
+    copyReelsCaption,
+    openReelsImageFullscreen,
   };
 }
