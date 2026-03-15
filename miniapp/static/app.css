@@ -170,7 +170,7 @@ textarea,
   flex-direction: column;
   gap: 10px;
   position: sticky;
-  top: 0;
+  top: env(safe-area-inset-top, 0px);
   z-index: 40;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -702,8 +702,8 @@ body.is-mobile-layout .detail-top {
 
 .detail-facts {
   display: grid;
-  gap: 10px;
-  padding: var(--space-3);
+  gap: 6px;
+  padding: var(--space-2) var(--space-3);
   border: 1px solid rgba(var(--brand-rgb), 0.16);
   border-radius: var(--radius-md);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0%, rgba(236, 224, 212, 0.58) 100%);
@@ -724,7 +724,7 @@ body.is-mobile-layout .detail-top {
 }
 
 .detail-fact-value {
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1.45;
   color: var(--text);
 }
@@ -1025,10 +1025,13 @@ body.is-mobile-layout .detail-top {
 }
 .threads-post-section + .threads-post-section { margin-top: var(--space-3); }
 .threads-post-label {
-  font-size: 14px;
+  display: inline-block;
+  font-size: 12px;
   font-weight: 700;
-  margin-bottom: var(--space-2);
+  margin-bottom: var(--space-1);
   color: var(--brand);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 .threads-post-textarea {
   width: 100%;
@@ -2501,6 +2504,11 @@ body.tg-theme-dark .concept-card {
 
   .reference-form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .detail-facts {
+    background: none;
+    box-shadow: none;
   }
 
   .shell {
