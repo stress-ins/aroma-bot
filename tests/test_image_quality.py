@@ -172,3 +172,42 @@ def test_no_white_stripes_in_reference_images():
     assert not failures, (
         f"White stripe artifacts found in {len(failures)} image(s):\n" + "\n".join(failures)
     )
+
+
+# ---------------------------------------------------------------------------
+# Test 3: no composite (wide) images — w/h ratio must be ≤ 1.6
+# ---------------------------------------------------------------------------
+
+def test_no_composite_images_in_aromas():
+    """All aroma reference images must have aspect ratio w/h ≤ 1.6 (no bottle+plant composites)."""
+    try:
+        from PIL import Image
+    except ImportError:
+        pytest.skip("PIL not available")
+
+    images_dir = ROOT / "assets" / "reference_images" / "aromas"
+    if not images_dir.exists():
+        pytest.skip("No aromas reference_images directory found")
+
+    image_files = [
+        p for p in images_dir.iterdir()
+        if p.suffix.lower() in (".jpg", ".jpeg", ".png", ".webp")
+    ]
+    if not image_files:
+        pytest.skip("No image files found")
+
+    wide_images = []
+    for img_path in image_files:
+        try:
+            img = Image.open(img_path)
+            w, h = img.size
+            ratio = w / h
+            if ratio > 1.6:
+                wide_images.append(f"{img_path.name}: {w}x{h} (ratio={ratio:.2f})")
+        except Exception as e:
+            wide_images.append(f"{img_path.name}: error reading image: {e}")
+
+    assert not wide_images, (
+        f"Composite/wide images found (run scripts/fix_oil_images.py to fix):\n"
+        + "\n".join(wide_images)
+    )
