@@ -14,10 +14,12 @@ export function createPublishModule(deps) {
 
   let _pollTimer = null;
 
-  function renderPublishPanel(draftId, status) {
+  function renderPublishPanel(draftId, status, opts) {
     if (status !== "approved" && status !== "published" && status !== "scheduled") return "";
     const isPublished = status === "published";
     const isScheduled = status === "scheduled";
+    const hasMedia = opts?.hasMedia ?? true;
+    const igDisabled = isPublished || !hasMedia;
     return `
       <section class="section section-primary">
         <div class="section-heading">
@@ -27,7 +29,7 @@ export function createPublishModule(deps) {
         <div class="publish-panel" id="publishPanel" data-draft-id="${draftId}">
           <div class="publish-platforms">
             <label class="publish-platform-toggle"><input type="checkbox" id="pubThreads" value="threads" ${isPublished ? "disabled" : ""} checked>${PLATFORM_SVG.threads}<span>Threads</span></label>
-            <label class="publish-platform-toggle"><input type="checkbox" id="pubInstagram" value="instagram" ${isPublished ? "disabled" : ""}>${PLATFORM_SVG.instagram}<span>Instagram</span></label>
+            <label class="publish-platform-toggle ${!hasMedia ? "publish-platform-disabled" : ""}"><input type="checkbox" id="pubInstagram" value="instagram" ${igDisabled ? "disabled" : ""}>${PLATFORM_SVG.instagram}<span>Instagram</span>${!hasMedia ? '<span class="publish-platform-hint">нужна картинка</span>' : ""}</label>
             <label class="publish-platform-toggle"><input type="checkbox" id="pubTelegram" value="telegram" ${isPublished ? "disabled" : ""}>${PLATFORM_SVG.telegram}<span>Telegram</span></label>
           </div>
           ${!isPublished ? `
