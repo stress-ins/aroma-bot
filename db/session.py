@@ -1,4 +1,5 @@
 import os
+from sqlalchemy import event
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from pathlib import Path
 from typing import AsyncGenerator
@@ -15,6 +16,10 @@ DATABASE_URL = get_database_url()
 
 def create_session_factory(url: str | None = None):
     engine = create_async_engine(url or DATABASE_URL, echo=False)
+    if (url or DATABASE_URL).startswith("sqlite"):
+        @event.listens_for(engine.sync_engine, "connect")
+        def set_sqlite_pragma(dbapi_connection, _):
+            dbapi_connection.execute("PRAGMA journal_mode=WAL")
     return async_sessionmaker(engine, expire_on_commit=False)
 
 # Global session factory that can be used directly or replaced in tests

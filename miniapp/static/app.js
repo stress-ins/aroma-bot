@@ -7,6 +7,7 @@ import { createDraftsModule } from "./js/drafts.js";
 import { createPublishModule } from "./js/publish.js";
 import { createScheduleModule } from "./js/schedule.js";
 import { createPlansModule } from "./js/plans.js";
+import { createMentionsModule } from "./js/mentions.js";
 import { createReferencesModule } from "./js/references.js";
 import { createReelsModule } from "./js/reels.js";
 import { createRuntimeModule } from "./js/runtime.js";
@@ -48,6 +49,9 @@ const state = {
   openPromptPanels: {},
   userRole: "assistant", // "expert" | "assistant" | "publisher"
   _fromContext: null,
+  plansSubMode: "publications",
+  mentions: [],
+  mentionsFilter: { platform: "all", status: "pending" },
 };
 
 const MODE_TABS = {
@@ -1216,6 +1220,31 @@ const {
   openReels,
 });
 
+// ── Mentions module ──────────────────────────────────────────────────────────
+
+const mentionsModule = createMentionsModule({
+  state,
+  elements: { plansContainer: null },
+  fetchJson,
+  escapeHtml,
+  withButtonFeedback,
+});
+
+window.mentionsModule = mentionsModule;
+
+function setPlansSubMode(mode) {
+  state.plansSubMode = mode;
+  if (mode === "mentions") state.selectedMention = null;
+  renderPlansImpl();
+}
+
+function openMentionDetail(mentionId) { mentionsModule.openMentionDetail(mentionId); }
+function closeMentionDetail() { mentionsModule.closeMentionDetail(); }
+function generateReplies(mentionId, btn) { return mentionsModule.generateReplies(mentionId, btn); }
+function publishReply(mentionId, replyId, btn) { return mentionsModule.publishReply(mentionId, replyId, btn); }
+function ignoreMentionAction(mentionId, btn) { return mentionsModule.ignoreMentionAction(mentionId, btn); }
+function setMentionsFilter(key, value) { mentionsModule.setMentionsFilter(key, value); }
+
 const reelsCallbacks = {
   renderReels: null,
   renderReelsDetail: null,
@@ -1789,6 +1818,13 @@ registerWindowBridge({
   cancelPublishSchedule: cancelPublishScheduleImpl,
   goBackToList,
   renderReferences,
+  setPlansSubMode,
+  openMentionDetail,
+  closeMentionDetail,
+  generateReplies,
+  publishReply,
+  ignoreMentionAction,
+  setMentionsFilter,
 });
 
 function renderInbox() { return renderInboxImpl(); }

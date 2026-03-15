@@ -1,0 +1,188 @@
+{
+  "name": "05 Token Refresh",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 10 * * *"
+            }
+          ]
+        }
+      },
+      "name": "Daily at 10:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [250, 300],
+      "id": "node-daily-10"
+    },
+    {
+      "parameters": {
+        "url": "http://127.0.0.1:8091/api/tokens/expiring",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {"name": "days", "value": "7"}
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Webhook-Secret",
+              "value": "={{ $env.N8N_WEBHOOK_SECRET }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Check Expiring Tokens",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [450, 300],
+      "id": "node-check-tokens"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.tokens?.length || 0 }}",
+              "operation": "larger",
+              "value2": 0
+            }
+          ]
+        }
+      },
+      "name": "Has expiring tokens?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [650, 300],
+      "id": "node-if-expiring"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "tokens",
+        "options": {}
+      },
+      "name": "Loop over tokens",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [850, 250],
+      "id": "node-loop-tokens"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://127.0.0.1:8091/api/tokens/{{ $json.platform }}/refresh",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Webhook-Secret",
+              "value": "={{ $env.N8N_WEBHOOK_SECRET }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "name": "Refresh Token",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1050, 250],
+      "id": "node-refresh-token"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.statusCode }}",
+              "value2": 200
+            }
+          ]
+        }
+      },
+      "name": "Refresh OK?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1250, 250],
+      "id": "node-if-refresh-ok"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.ADMIN_TELEGRAM_CHAT_ID }}",
+        "text": "=✅ Токен {{ $('Loop over tokens').item.json.platform }} обновлён",
+        "additionalFields": {}
+      },
+      "name": "Notify Success",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [1450, 200],
+      "id": "node-notify-success",
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram-creds",
+          "name": "Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.ADMIN_TELEGRAM_CHAT_ID }}",
+        "text": "=❌ Токен {{ $('Loop over tokens').item.json.platform }} истекает и не обновился! Обнови вручную.",
+        "additionalFields": {}
+      },
+      "name": "Notify Error",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [1450, 300],
+      "id": "node-notify-error",
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram-creds",
+          "name": "Telegram Bot"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Daily at 10:00": {
+      "main": [[{"node": "Check Expiring Tokens", "type": "main", "index": 0}]]
+    },
+    "Check Expiring Tokens": {
+      "main": [[{"node": "Has expiring tokens?", "type": "main", "index": 0}]]
+    },
+    "Has expiring tokens?": {
+      "main": [
+        [{"node": "Loop over tokens", "type": "main", "index": 0}],
+        []
+      ]
+    },
+    "Loop over tokens": {
+      "main": [[{"node": "Refresh Token", "type": "main", "index": 0}]]
+    },
+    "Refresh Token": {
+      "main": [[{"node": "Refresh OK?", "type": "main", "index": 0}]]
+    },
+    "Refresh OK?": {
+      "main": [
+        [{"node": "Notify Success", "type": "main", "index": 0}],
+        [{"node": "Notify Error", "type": "main", "index": 0}]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": ["aroma", "tokens", "maintenance"]
+}

@@ -155,3 +155,65 @@ class AromaCardPayload(BaseModel):
     extraction_method: str = Field(default="")
     key: str = Field(default="")
     resource_values: dict[str, str] = Field(default_factory=dict)
+
+
+# ── Mentions ────────────────────────────────────────────────────────────────
+
+class MentionIngestPayload(BaseModel):
+    platform: str = Field(default="telegram")
+    external_id: str = Field(default="")
+    type: str = Field(default="mention")
+    author_username: str = Field(default="")
+    author_name: str = Field(default="")
+    content: str = Field(default="")
+    url: str = Field(default="")
+    context_post: str = Field(default="")
+
+
+class MentionReplySelectPayload(BaseModel):
+    reply_id: str
+
+
+class MentionReplyResponse(BaseModel):
+    reply_id: str
+    mention_id: str
+    tone: str
+    content: str
+    generated_at: str
+    selected: bool
+    published_at: str | None
+    publish_error: str
+
+
+class MentionDetailResponse(BaseModel):
+    mention_id: str
+    platform: str
+    external_id: str
+    type: str
+    author_username: str
+    author_name: str
+    content: str
+    url: str
+    context_post: str
+    received_at: str
+    status: str
+    replies: list[MentionReplyResponse] = Field(default_factory=list)
+
+
+class MentionListResponse(BaseModel):
+    items: list[MentionDetailResponse]
+    total: int
+
+
+# ── Platform tokens ──────────────────────────────────────────────────────────
+
+class TokenUpdatePayload(BaseModel):
+    access_token: str
+    expires_at: str | None = Field(default=None)
+
+
+class TokenStatusResponse(BaseModel):
+    platform: str
+    has_token: bool
+    expires_at: str | None
+    updated_at: str | None

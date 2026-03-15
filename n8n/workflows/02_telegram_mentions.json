@@ -1,0 +1,96 @@
+{
+  "name": "02 Telegram Mentions",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": ["message"],
+        "additionalFields": {}
+      },
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [250, 300],
+      "id": "node-tg-trigger",
+      "webhookId": "tg-mentions",
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram-creds",
+          "name": "Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.message?.text?.includes('@') || $json.message?.reply_to_message != null }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "Is mention or reply?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [450, 300],
+      "id": "node-if-mention"
+    },
+    {
+      "parameters": {
+        "jsCode": "const msg = $input.item.json.message;\nreturn [{\n  json: {\n    platform: 'telegram',\n    external_id: String(msg.message_id),\n    type: msg.reply_to_message ? 'reply' : 'mention',\n    author_username: msg.from?.username || '',\n    author_name: [msg.from?.first_name, msg.from?.last_name].filter(Boolean).join(' '),\n    content: msg.text || '',\n    url: '',\n    context_post: msg.reply_to_message?.text || ''\n  }\n}];"
+      },
+      "name": "Map to Ingest Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 250],
+      "id": "node-map-payload"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8091/api/mentions/ingest",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Webhook-Secret",
+              "value": "={{ $env.N8N_WEBHOOK_SECRET }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": []
+        },
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "name": "Ingest Mention",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [850, 250],
+      "id": "node-ingest-mention"
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [[{"node": "Is mention or reply?", "type": "main", "index": 0}]]
+    },
+    "Is mention or reply?": {
+      "main": [
+        [{"node": "Map to Ingest Payload", "type": "main", "index": 0}],
+        []
+      ]
+    },
+    "Map to Ingest Payload": {
+      "main": [[{"node": "Ingest Mention", "type": "main", "index": 0}]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": ["aroma", "mentions", "telegram"]
+}

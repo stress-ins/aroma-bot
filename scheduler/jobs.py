@@ -71,18 +71,8 @@ async def _check_scheduled_posts(app: Application) -> None:
 
 def setup_scheduler(app: Application) -> AsyncIOScheduler:
     scheduler = AsyncIOScheduler(timezone=settings.timezone)
-    scheduler.add_job(
-        _send_daily_digest,
-        trigger=CronTrigger(
-            hour=settings.digest_hour,
-            minute=settings.digest_minute,
-            timezone=settings.timezone,
-        ),
-        args=[app],
-        id="daily_digest",
-        name="Daily Aroma Trends Digest",
-        replace_existing=True,
-    )
+    # NOTE: daily_digest is now triggered by n8n (workflow 01_trends_schedule.json).
+    # APScheduler job removed — n8n POSTs to /api/trends/trigger at 06:00 UTC.
     scheduler.add_job(
         _check_scheduled_posts,
         trigger="interval",
@@ -92,10 +82,6 @@ def setup_scheduler(app: Application) -> AsyncIOScheduler:
         name="Check & publish scheduled posts",
         replace_existing=True,
     )
-    logger.info(
-        "Scheduled daily digest at %s (%s)",
-        settings.daily_digest_time,
-        settings.timezone,
-    )
     logger.info("Scheduled post checker running every 5 minutes")
+    logger.info("Daily digest scheduling delegated to n8n (POST /api/trends/trigger)")
     return scheduler

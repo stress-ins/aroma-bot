@@ -211,6 +211,50 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
         )
         """
     )
+    cursor.execute(
+        """
+        CREATE TABLE mentions (
+            id INTEGER PRIMARY KEY,
+            mention_id VARCHAR(36) UNIQUE,
+            platform VARCHAR(32),
+            external_id VARCHAR(255),
+            type VARCHAR(32),
+            author_username VARCHAR(255),
+            author_name VARCHAR(255),
+            content VARCHAR(4000),
+            url VARCHAR(1024),
+            context_post VARCHAR(4000),
+            received_at DATETIME,
+            status VARCHAR(32) DEFAULT 'pending'
+        )
+        """
+    )
+    cursor.execute(
+        """
+        CREATE TABLE mention_replies (
+            id INTEGER PRIMARY KEY,
+            reply_id VARCHAR(36) UNIQUE,
+            mention_id VARCHAR(36),
+            tone VARCHAR(32),
+            content VARCHAR(2000),
+            generated_at DATETIME,
+            selected BOOLEAN DEFAULT 0,
+            published_at DATETIME,
+            publish_error VARCHAR(1000)
+        )
+        """
+    )
+    cursor.execute(
+        """
+        CREATE TABLE platform_tokens (
+            id INTEGER PRIMARY KEY,
+            platform VARCHAR(32) UNIQUE,
+            access_token VARCHAR(1024),
+            expires_at DATETIME,
+            updated_at DATETIME
+        )
+        """
+    )
 
     draft_id = "reels001"
     asset_file = assets_dir / draft_id / "frame_1.png"
