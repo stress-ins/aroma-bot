@@ -104,3 +104,23 @@ class DraftRevisionModel(Base):
     author: Mapped[str] = mapped_column(String(64), default="user")
     note: Mapped[str] = mapped_column(String(512), default="")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class BlendModel(Base):
+    __tablename__ = "blends"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    slug: Mapped[str] = mapped_column(String(128), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(255), index=True)
+    goal: Mapped[str] = mapped_column(String(512), default="")
+    ingredients: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list)
+    indications: Mapped[str] = mapped_column(String(2000), default="")
+    contraindications: Mapped[str] = mapped_column(String(2000), default="")
+    compatibility_notes: Mapped[str] = mapped_column(String(2000), default="")
+    source_pdf: Mapped[str] = mapped_column(String(255), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
