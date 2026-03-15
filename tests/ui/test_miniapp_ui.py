@@ -1270,13 +1270,13 @@ def test_content_review_detail_highlights_editor_focus_and_summary(page):
         () => {
           const hero = document.querySelector('.detail-hero');
           const facts = document.querySelectorAll('.detail-fact').length;
-          const summary = (document.querySelector('.detail-summary')?.textContent || '').trim();
+          const caption = (document.querySelector('#contentCaptionField')?.value || '').trim();
           const captionRect = document.querySelector('#contentCaptionField')?.getBoundingClientRect();
           const notesRect = document.querySelector('#contentEditorNotesField')?.getBoundingClientRect();
           return {
             hasHero: Boolean(hero),
             facts,
-            summaryLength: summary.length,
+            captionLength: caption.length,
             captionHeight: captionRect ? Math.round(captionRect.height) : 0,
             notesHeight: notesRect ? Math.round(notesRect.height) : 0,
           };
@@ -1286,7 +1286,7 @@ def test_content_review_detail_highlights_editor_focus_and_summary(page):
 
     assert metrics["hasHero"] is True
     assert metrics["facts"] >= 4
-    assert metrics["summaryLength"] >= 20
+    assert metrics["captionLength"] >= 20
     assert metrics["captionHeight"] > metrics["notesHeight"]
 
 
