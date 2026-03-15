@@ -361,6 +361,36 @@ body:not(.app-ready) .bottom-tab-bar {
   margin-top: 8px;
 }
 
+/* ── Splash screen ──────────────────────────────────────────────────────── */
+.splash {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  transition: opacity 0.35s ease;
+}
+
+.splash-loader {
+  width: 120px;
+  height: 120px;
+}
+
+.splash-loader .brand-loader-ring {
+  border-width: 2.5px;
+}
+
+.splash-loader .brand-loader-letter {
+  font-size: 54px;
+}
+
+body.app-ready .splash {
+  opacity: 0;
+  pointer-events: none;
+}
+
 .panel-header {
   display: flex;
   align-items: baseline;
