@@ -83,7 +83,7 @@ async def populate_reels_frame_assets(
         if should_generate:
             current_prompt = str(frame.get("gemini_prompt", "")).strip()
             if current_prompt:
-                image = generate_gemini_image_sync(current_prompt, log_context=f"MiniApp reels frame {idx + 1}")
+                image = generate_gemini_image_sync(current_prompt, aspect_ratio="9:16", log_context=f"MiniApp reels frame {idx + 1}")
                 if image:
                     asset = save_reels_frame_asset(draft_id, idx, image, prompt=current_prompt)
                     revisions = list(frame.get("asset_revisions", [])) if isinstance(frame.get("asset_revisions"), list) else []

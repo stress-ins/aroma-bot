@@ -130,6 +130,11 @@ textarea,
   padding: 4px 0;
   font-size: 14px;
 }
+.recipe-line .cross-ref-chip {
+  color: var(--brand);
+  text-decoration: none;
+  font-weight: 600;
+}
 
 /* ── Toolbar ─────────────────────────────────────────────────────────────── */
 .topbar {
@@ -653,12 +658,11 @@ textarea,
   padding: 12px 0;
 }
 
-.detail-grid { display: flex; flex-direction: column; gap: var(--space-4); }
+.detail-grid { display: flex; flex-direction: column; gap: var(--space-3); }
 
 body.is-mobile-layout .detail-grid {
   max-width: 100%;
   overflow-x: clip;
-  padding-top: var(--tg-content-inset-top, env(safe-area-inset-top, 0px));
 }
 body.is-mobile-layout .detail-top {
   padding: var(--space-3) var(--space-4);
@@ -712,7 +716,9 @@ body.is-mobile-layout .detail-top {
 
 .detail-fact {
   display: grid;
-  gap: 2px;
+  grid-template-columns: auto 1fr;
+  gap: 0 8px;
+  align-items: baseline;
 }
 
 .detail-fact-label {
@@ -733,7 +739,7 @@ body.is-mobile-layout .detail-top {
 .passport-grid { display: grid; gap: 6px; }
 .passport-row {
   display: grid;
-  grid-template-columns: 20px 1fr 2fr;
+  grid-template-columns: 20px auto 1fr;
   align-items: baseline;
   gap: 6px 8px;
   padding: 5px 0;
@@ -747,6 +753,7 @@ body.is-mobile-layout .detail-top {
   letter-spacing: .07em;
   text-transform: uppercase;
   color: var(--hint);
+  white-space: nowrap;
 }
 .passport-value { font-size: 13px; line-height: 1.45; color: var(--text); overflow-wrap: anywhere; }
 
@@ -796,6 +803,10 @@ body.is-mobile-layout .detail-top {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: var(--space-2);
+}
+.detail-actions > button {
+  min-width: 0;
+  word-break: break-word;
 }
 .detail-actions .primary-button {
   grid-column: 1 / -1;
@@ -1905,6 +1916,7 @@ body.tg-theme-dark .detail-markdown h5 {
   font-size: 14px;
   line-height: 1.6;
   color: var(--text);
+  text-align: left;
 }
 .card-list li {
   margin-bottom: 2px;
@@ -2333,6 +2345,10 @@ body.tg-theme-dark .concept-card {
   padding-left: 18px;
   display: grid;
   gap: 6px;
+}
+.reels-production-column ul li {
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .reels-frame-narrative,
