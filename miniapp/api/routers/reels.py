@@ -23,8 +23,9 @@ from ..deps import require_draft
 from ..generation import (
     complete_reels_regenerate_all,
     complete_reels_v2_regen_caption,
-    complete_reels_v2_regen_concept,
+    complete_reels_v2_regen_concept_only,
     complete_reels_v2_regen_frame,
+    complete_reels_v2_regen_scenario_only,
     set_generation_state,
 )
 from ..models import (
@@ -91,24 +92,22 @@ async def reels_regen_concept(
     goal = str(payload_data.get("goal", "trust")) if isinstance(payload_data, dict) else "trust"
     emotion = str(payload_data.get("emotion", "calm")) if isinstance(payload_data, dict) else "calm"
     await set_generation_state(draft_id, pending=True, stage="concept", message="Обновляю концепцию рилса.")
-    background_tasks.add_task(complete_reels_v2_regen_concept, draft_id, topic, goal, emotion)
+    background_tasks.add_task(complete_reels_v2_regen_concept_only, draft_id, topic, goal, emotion)
     return await serialize_reels_draft(draft_id)
 
 
 @router.post("/api/reels/{draft_id}/regen-scenario")
 async def reels_regen_scenario(
     draft_id: str,
-    payload: ReelsScenarioPayload,
+    background_tasks: BackgroundTasks,
     _: None = Depends(_require_auth),
 ):
-    updated = await update_concept(
-        draft_id,
-        concept=payload.concept,
-        scenario=payload.scenario,
-    )
-    if not updated:
+    draft = await serialize_reels_draft(draft_id)
+    if not draft:
         raise HTTPException(status_code=404, detail="reels_not_found")
-    return updated
+    await set_generation_state(draft_id, pending=True, stage="scenario", message="Перегенерирую сценарий рилса.")
+    background_tasks.add_task(complete_reels_v2_regen_scenario_only, draft_id)
+    return await serialize_reels_draft(draft_id)
 
 
 @router.post("/api/reels/{draft_id}/regen-frame-image")

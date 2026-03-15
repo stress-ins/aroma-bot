@@ -270,6 +270,94 @@ async def complete_reels_v2_regen_frame(
     )
 
 
+async def complete_reels_v2_regen_concept_only(
+    draft_id: str,
+    topic: str,
+    goal: str = "trust",
+    emotion: str = "calm",
+) -> None:
+    """Regenerate only the concept text — leaves scenario and frames untouched."""
+    try:
+        loop = asyncio.get_running_loop()
+        draft_obj = await loop.run_in_executor(
+            None, generate_reels_v2_draft_sync, topic, goal, emotion
+        )
+        draft = await get_draft(draft_id)
+        if not draft:
+            return
+        payload = dict(draft.payload or {})
+        payload["concept"] = draft_obj.concept
+        payload["hook"] = getattr(draft_obj, "hook", "")
+        await update_draft(draft_id, payload=payload)
+        await set_generation_state(draft_id, pending=False)
+    except Exception as exc:
+        await set_generation_state(
+            draft_id,
+            pending=False,
+            stage="error",
+            message="Ошибка обновления концепции.",
+            error=str(exc),
+        )
+
+
+async def complete_reels_v2_regen_scenario_only(draft_id: str) -> None:
+    """Regenerate scenario + frame prompts from current concept. Keep existing frame images."""
+    try:
+        draft = await get_draft(draft_id)
+        if not draft:
+            return
+        topic = draft.topic
+        goal = str(draft.payload.get("goal", "trust")) if isinstance(draft.payload, dict) else "trust"
+        emotion = str(draft.payload.get("emotion", "calm")) if isinstance(draft.payload, dict) else "calm"
+        loop = asyncio.get_running_loop()
+
+        draft_obj = await loop.run_in_executor(
+            None, generate_reels_v2_draft_sync, topic, goal, emotion
+        )
+        scenario = draft_obj.scenario
+
+        await set_generation_state(
+            draft_id,
+            pending=True,
+            stage="frames",
+            message="Генерирую кадры для нового сценария.",
+        )
+
+        current_frames = draft.payload.get("frames", []) if isinstance(draft.payload, dict) else []
+        n_frames = len(current_frames) or 4
+        frame_prompts = await loop.run_in_executor(
+            None, generate_frame_prompts_sync, topic, scenario, n_frames
+        )
+
+        new_frames = []
+        for idx, fp in enumerate(frame_prompts):
+            old = current_frames[idx] if idx < len(current_frames) else {}
+            new_frames.append({
+                "id": old.get("id") or uuid4().hex,
+                "n": idx,
+                "timecode": fp.timecode,
+                "overlay_text": fp.overlay_text,
+                "image_prompt": fp.image_prompt,
+                "image_url": old.get("image_url", ""),
+                "image_status": old.get("image_status", "pending"),
+                "image_versions": old.get("image_versions", []),
+            })
+
+        payload = dict(draft.payload or {})
+        payload["scenario"] = scenario
+        payload["frames"] = new_frames
+        await update_draft(draft_id, payload=payload)
+        await set_generation_state(draft_id, pending=False)
+    except Exception as exc:
+        await set_generation_state(
+            draft_id,
+            pending=False,
+            stage="error",
+            message="Ошибка обновления сценария.",
+            error=str(exc),
+        )
+
+
 async def complete_reels_v2_regen_concept(
     draft_id: str,
     topic: str,

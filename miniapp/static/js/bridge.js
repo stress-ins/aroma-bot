@@ -45,6 +45,8 @@ export function registerWindowBridge(deps) {
     scheduleFrameOverlaySave,
     saveFrameImagePrompt,
     autoResize,
+    copyReelsCaption,
+    openReelsImageFullscreen,
     // Phase 4
     publishReels,
     retryPlatform,
@@ -114,6 +116,8 @@ export function registerWindowBridge(deps) {
   window.scheduleFrameOverlaySave = scheduleFrameOverlaySave;
   window.saveFrameImagePrompt = saveFrameImagePrompt;
   window.autoResize = autoResize;
+  window.copyReelsCaption = copyReelsCaption;
+  window.openReelsImageFullscreen = openReelsImageFullscreen;
   window.publishReels = publishReels;
   window.retryPlatform = retryPlatform;
 
