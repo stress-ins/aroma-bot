@@ -470,6 +470,7 @@ export function createPlansModule(deps) {
     elements.listTitle.textContent = "Планы";
     elements.draftCount.textContent = `${filtered.length} публикаций`;
 
+    const plans = state.plans || [];
     elements.draftList.innerHTML = `
       <div class="plans-sticky-header">
         ${renderCalendarStrip(filters.date, state.plansFeedDates || [])}
@@ -479,6 +480,25 @@ export function createPlansModule(deps) {
       <div class="plans-feed-body">
         ${renderPlansFeed(feed, filters)}
       </div>
+      ${plans.length > 0 ? `
+        <div class="plans-feed-body plans-content-plans">
+          <div class="plans-day-label">Контент-планы</div>
+          ${plans.map((plan) => `
+            <article ${interactiveCardAttrs(`Открыть план ${plan.plan_id}`)} class="plan-card overview-card${plan.plan_id === state.selectedPlan?.plan_id ? " active" : ""} interactive-card" onclick="openPlan('${plan.plan_id}')">
+              <div class="overview-card-top">
+                <div class="draft-kind">${contentKindIcon("plan")}<span>План</span></div>
+                <span class="overview-card-date">${escapeHtml(formatPlanDate(plan.created_at) || plan.plan_id)}</span>
+              </div>
+              <h3 class="draft-topic">${escapeHtml(formatPlanDate(plan.created_at) ? `План от ${formatPlanDate(plan.created_at)}` : plan.plan_id)}</h3>
+              <div class="draft-preview">${escapeHtml(String(plan.raw_text || "").trim())}</div>
+              <div class="draft-meta overview-card-footer">
+                ${tagMarkup(`${(plan.entries || []).length} карточек`, "source-plan")}
+                ${tagMarkup(`${(plan.related_drafts || []).length} черновиков`, "status-review")}
+              </div>
+            </article>
+          `).join("")}
+        </div>
+      ` : ""}
     `;
 
     if (!state.selectedPlan) {

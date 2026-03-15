@@ -703,7 +703,7 @@ def test_mobile_bottom_tab_bar_switches_primary_sections(page):
     page.locator("#btnTabPlans").click()
     page.wait_for_timeout(300)
     assert page.locator("#btnTabPlans").get_attribute("aria-pressed") == "true"
-    assert page.locator(".plan-card").count() >= 1
+    assert page.locator(".plans-calendar-strip").is_visible()
 
     page.locator("#btnTabHandbook").click()
     page.wait_for_timeout(300)
