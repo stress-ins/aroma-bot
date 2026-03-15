@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from config import settings
+from bot.agents.content import _HUMAN_WRITING_RULES
 from bot.services.brand_settings_store import get_brand_settings_cached
+from bot.services.humanizer import humanize
 from bot.services.policy_engine import enforce_policy
 
 _PLATFORM_RULES = {
@@ -72,6 +74,8 @@ _EDITOR_SYSTEM = """\
    Хорошо: "Иногда запах срабатывает быстрее, чем ты успеваешь всё объяснить себе словами."
 17. Если мысль можно сказать проще и теплее — скажи проще и теплее. Текст должен читаться так, будто человек написал его сам, а не выжал из себя формулировку.
 18. Верни только отредактированный текст поста — ничего больше.
+
+{human_writing_rules}
 """
 
 
@@ -91,7 +95,7 @@ def edit_post_sync(raw: str, topic: str, platform: str = "default", user_forbidd
 
     bs = get_brand_settings_cached()
     forbidden_block = "\n".join(f'   "{p}",' for p in bs.forbidden_phrases) if bs.forbidden_phrases else ""
-    system_prompt = _EDITOR_SYSTEM.format(forbidden_phrases=forbidden_block)
+    system_prompt = _EDITOR_SYSTEM.format(forbidden_phrases=forbidden_block, human_writing_rules=_HUMAN_WRITING_RULES)
 
     client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
     resp = client.messages.create(
@@ -105,4 +109,4 @@ def edit_post_sync(raw: str, topic: str, platform: str = "default", user_forbidd
     result = result if len(result) > 30 else raw
     # Apply policy enforcement (soft rewrites + forbidden phrase detection)
     policy_result = enforce_policy(result, platform)
-    return policy_result.text
+    return humanize(policy_result.text, platform)

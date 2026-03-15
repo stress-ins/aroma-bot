@@ -6,9 +6,34 @@ from dataclasses import dataclass, field
 
 from analytics.base import SourceResult
 from bot.services.gemini_images import generate_gemini_image_sync
+from bot.services.humanizer import humanize
 from config import settings
 
 _executor = ThreadPoolExecutor(max_workers=2)
+
+_HUMAN_WRITING_RULES = """\
+ПРАВИЛА ЧЕЛОВЕЧЕСКОГО ПИСЬМА:
+
+Пунктуация:
+- Длинное тире (—) → запятая или перенос строки (НИКОГДА не тире в постах)
+- Среднее тире (–) → дефис или запятая
+
+Запрещённые AI-штампы (не использовать и близкие варианты):
+- "погружаясь в", "исследуя", "позволь себе", "это то, что"
+- "мощный инструмент", "невероятный результат", "поистине", "безусловно"
+- "важно отметить", "следует сказать", "хотелось бы отметить", "необходимо подчеркнуть"
+- "данный", "осуществляется", "в рамках", "таким образом,", "в заключение"
+- "активация парасимпатической нервной системы", "интегрировать опыт", "ресурсное состояние"
+
+Запрещённые стилевые ошибки:
+- Литературные метафоры из художественной прозы: "плечи в камне", "мысли вязнут", "тело как свинец"
+- Рубленые слоганы и псевдопоэтические фразы: "Минует логику. Говорит телу."
+- Жёсткие, неестественные конструкции: "Нервная система не спорит. Она отвечает."
+- Markdown-форматирование в текстах для соцсетей: **bold**, ## заголовки, `код`
+- Нумерованные списки внутри тела поста
+
+Правило: если фраза звучит красиво, но неестественно в разговоре — переписать проще.
+"""
 
 GOAL_LABELS = {
     "sales": "Продажа",
@@ -120,10 +145,6 @@ def format_label(format_key: str) -> str:
     return FORMAT_LABELS.get(format_key, format_key)
 
 
-def _fix_dashes(text: str) -> str:
-    return text.replace("\u2014", "-").replace("\u2013", "-")
-
-
 def _format_trends(results: list[SourceResult]) -> str:
     parts: list[str] = []
     for result in results:
@@ -139,7 +160,7 @@ def parse_numbered_list(raw: str, limit: int = 10) -> list[str]:
     for line in raw.strip().splitlines():
         line = line.strip()
         if line and line[0].isdigit() and ". " in line:
-            items.append(_fix_dashes(line.split(". ", 1)[1].strip()))
+            items.append(humanize(line.split(". ", 1)[1].strip()))
     return items[:limit]
 
 
@@ -151,45 +172,45 @@ def parse_content_draft(raw: str) -> ContentDraft:
         probe = line.removeprefix("- ").strip()
         probe = probe.replace("**", "").replace("__", "").strip()
         if probe.upper().startswith("ANGLE:"):
-            draft.angle = _fix_dashes(probe.split(":", 1)[1].strip())
+            draft.angle = humanize(probe.split(":", 1)[1].strip())
             current_field = "angle"
         elif probe.upper().startswith("HOOK:"):
-            draft.hook = _fix_dashes(probe.split(":", 1)[1].strip())
+            draft.hook = humanize(probe.split(":", 1)[1].strip())
             current_field = "hook"
         elif probe.upper().startswith("CAPTION:"):
-            draft.caption = _fix_dashes(probe.split(":", 1)[1].strip())
+            draft.caption = humanize(probe.split(":", 1)[1].strip())
             current_field = "caption"
         elif probe.upper().startswith("CTA:"):
-            draft.cta = _fix_dashes(probe.split(":", 1)[1].strip())
+            draft.cta = humanize(probe.split(":", 1)[1].strip())
             current_field = "cta"
         elif probe.upper().startswith("HASHTAGS:"):
-            draft.hashtags = _fix_dashes(probe.split(":", 1)[1].strip())
+            draft.hashtags = humanize(probe.split(":", 1)[1].strip())
             current_field = "hashtags"
         elif probe.upper().startswith("VISUAL_PROMPT:"):
-            draft.visual_prompt = _fix_dashes(probe.split(":", 1)[1].strip())
+            draft.visual_prompt = humanize(probe.split(":", 1)[1].strip())
             current_field = "visual_prompt"
         else:
             matched_slide = False
             for idx in range(1, 6):
                 if probe.upper().startswith(f"SLIDE{idx}:"):
-                    draft.slides.append(_fix_dashes(probe.split(":", 1)[1].strip()))
+                    draft.slides.append(humanize(probe.split(":", 1)[1].strip()))
                     current_field = ""
                     matched_slide = True
                     break
             if matched_slide or not line:
                 continue
             if current_field == "caption":
-                draft.caption = "\n".join(filter(None, [draft.caption, _fix_dashes(line)]))
+                draft.caption = "\n".join(filter(None, [draft.caption, humanize(line)]))
             elif current_field == "angle":
-                draft.angle = "\n".join(filter(None, [draft.angle, _fix_dashes(line)]))
+                draft.angle = "\n".join(filter(None, [draft.angle, humanize(line)]))
             elif current_field == "hook":
-                draft.hook = "\n".join(filter(None, [draft.hook, _fix_dashes(line)]))
+                draft.hook = "\n".join(filter(None, [draft.hook, humanize(line)]))
             elif current_field == "cta":
-                draft.cta = "\n".join(filter(None, [draft.cta, _fix_dashes(line)]))
+                draft.cta = "\n".join(filter(None, [draft.cta, humanize(line)]))
             elif current_field == "hashtags":
-                draft.hashtags = "\n".join(filter(None, [draft.hashtags, _fix_dashes(line)]))
+                draft.hashtags = "\n".join(filter(None, [draft.hashtags, humanize(line)]))
             elif current_field == "visual_prompt":
-                draft.visual_prompt = "\n".join(filter(None, [draft.visual_prompt, _fix_dashes(line)]))
+                draft.visual_prompt = "\n".join(filter(None, [draft.visual_prompt, humanize(line)]))
     return draft
 
 
@@ -348,6 +369,8 @@ def _strategist_prompt(topic: str, goal_key: str, format_key: str) -> str:
 Ответь строго в формате (два поля, на русском):
 ANGLE: [1-2 предложения — почему эта тема резонирует СЕЙЧАС с этой аудиторией и под эту цель]
 HOOK: [точная первая строка поста — останавливает скролл, без приветствий, без "Сегодня хочу поделиться"]
+
+Пунктуация: тире (— –) → запятая. Запрещено: "важно отметить", "данный", "осуществляется", "в рамках", markdown-форматирование.
 """
 
 
@@ -371,6 +394,8 @@ def _writer_prompt(topic: str, goal_key: str, format_key: str, angle: str, hook:
 - Никаких литературных метафор. Используй слова из обычной речи, не из художественной прозы. Плохо: "плечи в камне", "тело как свинец", "душа не отпускает". Хорошо: "плечи не расслабляются", "не можешь уснуть", "голова не отключается".
 - Дай один конкретный жизненный момент или наблюдение, чтобы текст стоял на земле.
 - Предпочитай простые слова и нормальный человеческий ритм. Не пиши так, будто текст старается впечатлить.
+
+{_HUMAN_WRITING_RULES}
 
 Верни строго в формате:
 CAPTION: [полный текст поста, начиная с хука, с хэштегами согласно правилам платформы]
@@ -420,9 +445,9 @@ def _generate_strategist_sync(topic: str, goal_key: str, format_key: str) -> tup
         line = line.strip()
         cleaned = line.replace("**", "").replace("__", "").strip()
         if cleaned.upper().startswith("ANGLE:"):
-            angle = _fix_dashes(cleaned.split(":", 1)[1].strip())
+            angle = humanize(cleaned.split(":", 1)[1].strip())
         elif cleaned.upper().startswith("HOOK:"):
-            hook = _fix_dashes(cleaned.split(":", 1)[1].strip())
+            hook = humanize(cleaned.split(":", 1)[1].strip())
     # Fallback: use raw output as angle if parsing failed
     return angle or raw[:200], hook
 
@@ -442,7 +467,7 @@ def _generate_writer_sync(
         draft.hook = hook
 
     if not _has_structured_content(draft) and raw.strip():
-        draft.caption = _fix_dashes(raw.strip())
+        draft.caption = humanize(raw.strip())
 
     # Step 3: Editor pass
     if draft.caption:
