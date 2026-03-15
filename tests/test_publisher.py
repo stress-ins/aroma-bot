@@ -60,7 +60,7 @@ def test_resolve_media_paths_carousel(tmp_path):
         ]
     }
 
-    with patch("bot.services.publisher.CAROUSEL_ASSETS_DIR", tmp_path):
+    with patch("bot.services.upload_post_publisher.CAROUSEL_ASSETS_DIR", tmp_path):
         paths = _resolve_media_paths("carousel", draft_id, payload)
 
     assert len(paths) == 2
@@ -79,7 +79,7 @@ def test_resolve_media_paths_single_image(tmp_path):
     (asset_dir / "cover.png").write_bytes(b"cover")
 
     payload = {"image": {"filename": "cover.png"}}
-    with patch("bot.services.publisher.CAROUSEL_ASSETS_DIR", tmp_path):
+    with patch("bot.services.upload_post_publisher.CAROUSEL_ASSETS_DIR", tmp_path):
         paths = _resolve_media_paths("threads", draft_id, payload)
     assert len(paths) == 1
 
@@ -115,12 +115,15 @@ def mock_draft():
 async def test_publish_routes_to_upload_post(mock_upload_client, mock_draft):
     """Threads/instagram platforms should call upload-post SDK."""
     with (
+        patch("bot.services.upload_post_publisher.get_draft", return_value=mock_draft),
+        patch("bot.services.upload_post_publisher._get_upload_client", return_value=mock_upload_client),
+        patch("bot.services.upload_post_publisher.settings") as mock_settings,
+        patch("bot.services.upload_post_publisher.save_log", return_value=1),
+        patch("bot.services.upload_post_publisher.update_log_status"),
+        patch("bot.services.upload_post_publisher.mark_published", new_callable=AsyncMock),
+        patch("bot.services.upload_post_publisher.mark_failed", new_callable=AsyncMock),
         patch("bot.services.publisher.get_draft", return_value=mock_draft),
         patch("bot.services.publisher.update_draft", return_value=mock_draft),
-        patch("bot.services.publisher._get_upload_client", return_value=mock_upload_client),
-        patch("bot.services.publisher.settings") as mock_settings,
-        patch("bot.services.publisher.save_log", return_value=1),
-        patch("bot.services.publisher.update_log_status"),
     ):
         mock_settings.upload_post_api_key = "test_key"
         mock_settings.upload_post_user = "test_user"
@@ -141,10 +144,13 @@ async def test_publish_routes_to_telegram(mock_draft):
     mock_bot.send_message.return_value = MagicMock(message_id=42)
 
     with (
+        patch("bot.services.telegram_publisher.get_draft", return_value=mock_draft),
+        patch("bot.services.telegram_publisher.save_log", return_value=1),
+        patch("bot.services.telegram_publisher.update_log_status"),
+        patch("bot.services.telegram_publisher.mark_published", new_callable=AsyncMock),
+        patch("bot.services.telegram_publisher.mark_failed", new_callable=AsyncMock),
         patch("bot.services.publisher.get_draft", return_value=mock_draft),
         patch("bot.services.publisher.update_draft", return_value=mock_draft),
-        patch("bot.services.publisher.save_log", return_value=1),
-        patch("bot.services.publisher.update_log_status"),
     ):
         results = await publish("d001", ["telegram"], telegram_bot=mock_bot, telegram_chat_id="123")
 
@@ -160,12 +166,20 @@ async def test_publish_routes_mixed(mock_upload_client, mock_draft):
     mock_bot.send_message.return_value = MagicMock(message_id=99)
 
     with (
+        patch("bot.services.upload_post_publisher.get_draft", return_value=mock_draft),
+        patch("bot.services.upload_post_publisher._get_upload_client", return_value=mock_upload_client),
+        patch("bot.services.upload_post_publisher.settings") as mock_settings,
+        patch("bot.services.upload_post_publisher.save_log", return_value=1),
+        patch("bot.services.upload_post_publisher.update_log_status"),
+        patch("bot.services.upload_post_publisher.mark_published", new_callable=AsyncMock),
+        patch("bot.services.upload_post_publisher.mark_failed", new_callable=AsyncMock),
+        patch("bot.services.telegram_publisher.get_draft", return_value=mock_draft),
+        patch("bot.services.telegram_publisher.save_log", return_value=1),
+        patch("bot.services.telegram_publisher.update_log_status"),
+        patch("bot.services.telegram_publisher.mark_published", new_callable=AsyncMock),
+        patch("bot.services.telegram_publisher.mark_failed", new_callable=AsyncMock),
         patch("bot.services.publisher.get_draft", return_value=mock_draft),
         patch("bot.services.publisher.update_draft", return_value=mock_draft),
-        patch("bot.services.publisher._get_upload_client", return_value=mock_upload_client),
-        patch("bot.services.publisher.settings") as mock_settings,
-        patch("bot.services.publisher.save_log", return_value=1),
-        patch("bot.services.publisher.update_log_status"),
     ):
         mock_settings.upload_post_api_key = "test_key"
         mock_settings.upload_post_user = "test_user"
@@ -206,13 +220,16 @@ async def test_publish_with_photos(mock_upload_client, tmp_path):
     )
 
     with (
+        patch("bot.services.upload_post_publisher.get_draft", return_value=draft),
+        patch("bot.services.upload_post_publisher._get_upload_client", return_value=mock_upload_client),
+        patch("bot.services.upload_post_publisher.CAROUSEL_ASSETS_DIR", tmp_path),
+        patch("bot.services.upload_post_publisher.settings") as mock_settings,
+        patch("bot.services.upload_post_publisher.save_log", return_value=1),
+        patch("bot.services.upload_post_publisher.update_log_status"),
+        patch("bot.services.upload_post_publisher.mark_published", new_callable=AsyncMock),
+        patch("bot.services.upload_post_publisher.mark_failed", new_callable=AsyncMock),
         patch("bot.services.publisher.get_draft", return_value=draft),
         patch("bot.services.publisher.update_draft", return_value=draft),
-        patch("bot.services.publisher._get_upload_client", return_value=mock_upload_client),
-        patch("bot.services.publisher.CAROUSEL_ASSETS_DIR", tmp_path),
-        patch("bot.services.publisher.settings") as mock_settings,
-        patch("bot.services.publisher.save_log", return_value=1),
-        patch("bot.services.publisher.update_log_status"),
     ):
         mock_settings.upload_post_api_key = "key"
         mock_settings.upload_post_user = "user"
@@ -229,12 +246,15 @@ async def test_publish_with_schedule(mock_upload_client, mock_draft):
     scheduled = datetime(2026, 3, 15, 10, 0, tzinfo=timezone.utc)
 
     with (
+        patch("bot.services.upload_post_publisher.get_draft", return_value=mock_draft),
+        patch("bot.services.upload_post_publisher._get_upload_client", return_value=mock_upload_client),
+        patch("bot.services.upload_post_publisher.settings") as mock_settings,
+        patch("bot.services.upload_post_publisher.save_log", return_value=1),
+        patch("bot.services.upload_post_publisher.update_log_status"),
+        patch("bot.services.upload_post_publisher.mark_published", new_callable=AsyncMock),
+        patch("bot.services.upload_post_publisher.mark_failed", new_callable=AsyncMock),
         patch("bot.services.publisher.get_draft", return_value=mock_draft),
         patch("bot.services.publisher.update_draft", return_value=mock_draft),
-        patch("bot.services.publisher._get_upload_client", return_value=mock_upload_client),
-        patch("bot.services.publisher.settings") as mock_settings,
-        patch("bot.services.publisher.save_log", return_value=1),
-        patch("bot.services.publisher.update_log_status"),
     ):
         mock_settings.upload_post_api_key = "key"
         mock_settings.upload_post_user = "user"
@@ -248,7 +268,7 @@ async def test_publish_with_schedule(mock_upload_client, mock_draft):
 
 async def test_publish_draft_not_found():
     """Should raise ValueError for non-existent draft."""
-    with patch("bot.services.publisher.get_draft", return_value=None):
+    with patch("bot.services.upload_post_publisher.get_draft", return_value=None):
         with pytest.raises(ValueError, match="not found"):
             await publish("nonexistent", ["threads"])
 
