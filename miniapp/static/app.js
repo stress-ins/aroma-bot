@@ -733,6 +733,10 @@ async function saveContentReviewDraft(draftId, button) {
   return saveContentReviewDraftImpl(draftId, button);
 }
 
+async function saveThreadsReviewDraft(draftId, button) {
+  return saveThreadsReviewDraftImpl(draftId, button);
+}
+
 async function polishContentDraft(draftId, button) {
   return polishContentDraftImpl(draftId, button);
 }
@@ -1234,6 +1238,7 @@ const {
 
 const {
   saveContentReviewDraft: saveContentReviewDraftImpl,
+  saveThreadsReviewDraft: saveThreadsReviewDraftImpl,
   polishContentDraft: polishContentDraftImpl,
   renderDraftList: renderDraftListImpl,
   openDraft: openDraftImpl,
@@ -1592,6 +1597,7 @@ registerWindowBridge({
   handleReelsFramePromptInput,
   handleReelsFrameNoteInput,
   saveContentReviewDraft,
+  saveThreadsReviewDraft,
   polishContentDraft,
   openKeywordTopic,
   addKeywordItem,

@@ -25,6 +25,7 @@ async def update_content_review_draft(
     hashtags: str,
     visual_prompt: str,
     editor_notes: str,
+    threads_posts: list[dict] | None = None,
 ) -> dict[str, object] | None:
     draft = await get_draft(draft_id)
     if not draft or not is_content_review_draft(draft.kind):
@@ -38,6 +39,9 @@ async def update_content_review_draft(
     payload["hashtags"] = hashtags.strip()
     payload["visual_prompt"] = visual_prompt.strip()
     payload["editor_notes"] = editor_notes.strip()
+
+    if threads_posts is not None:
+        payload["threads_posts"] = threads_posts
 
     updated = await update_draft(
         draft_id,

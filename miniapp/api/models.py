@@ -20,6 +20,7 @@ class DraftContentPayload(BaseModel):
     hashtags: str = Field(default="")
     visual_prompt: str = Field(default="")
     editor_notes: str = Field(default="")
+    threads_posts: list[dict] | None = Field(default=None)
 
 
 class KeywordPayload(BaseModel):
