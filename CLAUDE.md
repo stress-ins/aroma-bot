@@ -177,6 +177,11 @@ curl -s -X PUT http://localhost:5678/api/v1/workflows/uVGs2O7RguKjLWSW \
 2. Выполнить `git push origin main`
 3. Следить за статусом в [GitHub Actions](https://github.com/stress-ins/aroma-bot/actions)
 
+**One-time data scripts (VPS):**
+Deploy workflow автоматически запускает скрипты обогащения данных на VPS (cleanup, name_ru, descriptions).
+Скрипты идемпотентные — запускаются один раз (маркер `.enrichment_done`).
+Для повторного запуска: `ssh root@46.32.186.192 'rm /opt/aroma/.enrichment_done'` и передеплоить.
+
 **Перезапуск вручную:**
 ```bash
 ssh root@46.32.186.192 'systemctl restart aroma-bot aroma-miniapp'

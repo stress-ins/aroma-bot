@@ -39,3 +39,17 @@ jobs:
       - name: Smoke test miniapp
         run: |
           ssh root@46.32.186.192 'curl -sf http://127.0.0.1:8091/healthz' || echo "miniapp healthz failed (non-blocking)"
+
+      - name: Run one-time data enrichment scripts (idempotent)
+        run: |
+          ssh root@46.32.186.192 'cd /opt/aroma && \
+            MARKER=/opt/aroma/.enrichment_done && \
+            if [ -f "$MARKER" ]; then echo "Enrichment already done, skipping"; exit 0; fi && \
+            echo "Running data enrichment scripts..." && \
+            .venv/bin/python scripts/cleanup_duplicates.py 2>&1 | tail -3 && \
+            .venv/bin/python scripts/cleanup_blend_ingredients.py 2>&1 | tail -3 && \
+            .venv/bin/python scripts/generate_name_ru.py 2>&1 | tail -3 && \
+            .venv/bin/python scripts/generate_description_short.py 2>&1 | tail -3 && \
+            .venv/bin/python scripts/generate_symptom_descriptions.py 2>&1 | tail -3 && \
+            touch "$MARKER" && \
+            echo "Enrichment complete."' || echo "Enrichment step failed (non-blocking)"
