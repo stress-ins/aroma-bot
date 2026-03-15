@@ -250,13 +250,32 @@ export function createReferencesModule(deps) {
   const APPLICATION_METHOD_ICONS = [
     { keywords: ["диффуз", "аромалампа", "аромадиффузор"], icon: "💨" },
     { keywords: ["массаж", "втирать", "наносить на кожу"], icon: "💆" },
-    { keywords: ["топикально", "локально", "нанесение на кожу"], icon: "🩹" },
+    { keywords: ["топикально", "локально", "нанесение на кожу", "нанести", "нанес"], icon: "🩹" },
     { keywords: ["ванн", "ванна", "купание"], icon: "🛁" },
     { keywords: ["внутрь", "перорально", "капсул"], icon: "💊" },
     { keywords: ["ингаляц", "вдыхать", "пары"], icon: "🌬️" },
     { keywords: ["компресс"], icon: "🩼" },
     { keywords: ["спрей", "распылить"], icon: "🌫️" },
+    { keywords: ["полоскани", "полость рта"], icon: "🪥" },
+    { keywords: ["vita flex", "виталекс", "точки vita"], icon: "⚡" },
+    { keywords: ["в мёд", "в напиток", "добавить в"], icon: "🍯" },
   ];
+
+  function renderVerificationBadge(reference) {
+    const byExpert = !!reference.verified_by_expert;
+    const byDoctor = !!reference.verified_by_doctor;
+    if (byExpert && byDoctor) {
+      return `<div class="verification-badge is-verified">✓ Проверено ароматерапевтом и врачом</div>`;
+    }
+    const pending = [];
+    if (!byExpert) pending.push("ароматерапевт");
+    if (!byDoctor) pending.push("врач");
+    return `<div class="verification-badge is-pending">⏳ Ожидает проверки: ${pending.join(", ")}</div>`;
+  }
+
+  function renderMedicalDisclaimer() {
+    return `<div class="medical-disclaimer">Информация носит ознакомительный характер и не является медицинской рекомендацией. Перед применением проконсультируйтесь с врачом.</div>`;
+  }
 
   function renderApplicationsWithIcons(text) {
     if (!text) return "";
@@ -709,10 +728,12 @@ export function createReferencesModule(deps) {
         <div class="detail-grid">
           ${renderBackButton()}
           ${renderReferenceImage(reference)}
+          ${renderVerificationBadge(reference)}
           ${aromaSection("Описание", reference.description)}
           ${oilChips ? `<section class="section"><h3>🌿 Рекомендуемые масла</h3><div class="detail-preview">${oilChips}</div></section>` : ""}
           ${blendChips ? `<section class="section"><h3>🌀 Рекомендуемые смеси</h3><div class="detail-preview">${blendChips}</div></section>` : ""}
           ${renderApplicationsWithIcons(reference.applications)}
+          ${renderMedicalDisclaimer()}
         </div>
       `;
     } else if (state.tab === "practices") {

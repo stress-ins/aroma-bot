@@ -3330,6 +3330,7 @@ body.is-mobile-layout[data-mode="handbook"] .tabs::-webkit-scrollbar { display: 
 .crossref-chip--plain {
   cursor: default;
   opacity: 0.7;
+  border-style: dashed !important;
 }
 
 /* ── Filter chips (handbook) ─────────────────────────────────────────────── */
@@ -3424,3 +3425,21 @@ body.is-mobile-layout[data-mode="handbook"] .tabs::-webkit-scrollbar { display: 
 .plan-card-error { font-size: 11px; color: var(--bad); line-height: 1.4; margin-top: 5px; }
 .plan-card-time { font-size: 13px; font-weight: 600; color: var(--text); }
 .plan-card-platforms { display: flex; gap: 2px; justify-content: flex-end; font-size: 14px; }
+
+/* ── Verification badge & medical disclaimer (symptoms tab) ─────────────── */
+.verification-badge {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 12px; border-radius: var(--radius-sm);
+  font-size: 12px; margin-bottom: 8px;
+}
+.verification-badge.is-verified {
+  background: rgba(46,125,79,0.08); border: 1px solid rgba(46,125,79,0.2); color: var(--good);
+}
+.verification-badge.is-pending {
+  background: rgba(180,92,61,0.08); border: 1px solid rgba(180,92,61,0.2); color: var(--brand);
+}
+.medical-disclaimer {
+  font-size: 11px; color: var(--hint); line-height: 1.55;
+  padding: 10px 12px; background: var(--surface-2);
+  border-radius: var(--radius-sm); border: 1px solid var(--border); margin-top: 12px;
+}
