@@ -31,8 +31,8 @@ STARTUP_RECOVERY_LOCK_PATH = Path(
 
 def _asset_version() -> str:
     parts: list[str] = []
-    for path in (STATIC_DIR / "app.css", STATIC_DIR / "app.js"):
-        if path.exists():
+    for path in sorted(STATIC_DIR.rglob("*")):
+        if path.is_file() and path.suffix in (".css", ".js"):
             stat = path.stat()
             parts.append(f"{path.name}:{stat.st_mtime_ns}:{stat.st_size}")
     digest = hashlib.sha256("|".join(parts).encode("utf-8")).hexdigest()
@@ -91,8 +91,8 @@ async def _no_cache_js_modules(request, call_next):
     """Force revalidation of ES module files that lack their own version hash."""
     response = await call_next(request)
     path = request.url.path
-    if path.startswith("/static/js/") and path.endswith(".js"):
-        response.headers["Cache-Control"] = "no-cache"
+    if path.startswith("/static/") and (path.endswith(".js") or path.endswith(".css")):
+        response.headers["Cache-Control"] = "no-store, max-age=0"
     return response
 app.mount("/generated/reels_assets", StaticFiles(directory=ASSETS_DIR), name="reels-generated-assets")
 app.mount("/generated/carousel_assets", StaticFiles(directory=CAROUSEL_ASSETS_DIR), name="carousel-generated-assets")
