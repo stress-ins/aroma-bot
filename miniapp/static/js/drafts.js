@@ -255,7 +255,6 @@ export function createDraftsModule(deps) {
           <div class="detail-hero-copy">
             <p class="eyebrow">${contentKindIcon(d.kind)}<span>${escapeHtml(kindLabel(d.kind))} • ${escapeHtml(sourceLabel(d.source))}</span></p>
             <h2 class="detail-title">${escapeHtml(d.topic)}</h2>
-            <p class="detail-summary">${escapeHtml(draftHeroSummary(d, p, mainText))}</p>
             <div class="draft-meta">
               ${tagMarkup(statusLabel(d.status), statusTone(d.status))}
               ${d.generation_pending && draftGenerationLabel(d) ? tagMarkup(draftGenerationLabel(d), "pending") : ""}
