@@ -2827,6 +2827,38 @@ body.tg-theme-dark .concept-card {
   font-size: 14px;
 }
 
+/* ── Reels V2 ────────────────────────────────────────── */
+
+.reels-frame-v2 { border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; margin-bottom: 12px; }
+.reels-frame-v2-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--surface-2); border-bottom: 1px solid var(--border); }
+.reels-frame-v2-title { font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text); }
+.reels-frame-v2-timecode { font-size: 12px; color: var(--hint); background: var(--bg); padding: 3px 10px; border-radius: 8px; border: 1px solid var(--border); }
+.reels-frame-v2-image-wrap { aspect-ratio: 9 / 16; background: var(--bg); position: relative; overflow: hidden; max-height: 280px; }
+.reels-frame-v2-image-wrap img { width: 100%; height: 100%; object-fit: cover; }
+.reels-frame-v2-image-generating { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; background: var(--bg); }
+.reels-frame-versions { display: flex; gap: 8px; align-items: center; padding: 8px 12px; background: var(--surface-2); border-bottom: 1px solid var(--border); }
+.reels-frame-version-thumb { width: 40px; height: 60px; border-radius: 6px; overflow: hidden; border: 2px solid transparent; cursor: pointer; flex-shrink: 0; }
+.reels-frame-version-thumb.is-current { border-color: var(--brand-border); }
+.reels-frame-v2-field { padding: 10px 12px; border-top: 1px solid var(--border); }
+.reels-frame-v2-field label { display: flex; flex-direction: column; gap: 5px; }
+.reels-frame-v2-field label > span { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--hint); }
+.reels-frame-overlay-text, .reels-frame-image-prompt { width: 100%; border: 1px solid var(--border); background: var(--bg); border-radius: var(--radius-sm); padding: 8px 10px; font-size: 14px; color: var(--text); resize: none; overflow: hidden; min-height: 48px; }
+.reels-shooting-deadline { border: 1px solid rgba(46, 125, 79, 0.25); border-radius: var(--radius-md); padding: 14px; background: rgba(46, 125, 79, 0.06); margin-bottom: 10px; }
+.reels-deadline-header { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+.reels-deadline-meta { font-size: 12px; color: var(--hint); margin-bottom: 10px; }
+.reels-deadline-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.reels-deadline-stat { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 8px; text-align: center; }
+.reels-deadline-n { display: block; font-size: 22px; font-weight: 700; color: var(--brand); }
+.reels-deadline-l { font-size: 10px; color: var(--hint); }
+.reels-upload-zone { border: 2px dashed rgba(46, 125, 79, 0.4); border-radius: var(--radius-md); padding: 16px; background: rgba(46, 125, 79, 0.05); text-align: center; margin-bottom: 10px; }
+.reels-upload-title { font-size: 14px; font-weight: 600; color: var(--good); margin-bottom: 6px; }
+.reels-upload-hint { font-size: 12px; color: var(--hint); margin-bottom: 12px; line-height: 1.5; }
+.reels-video-preview { display: flex; align-items: center; gap: 12px; padding: 12px; background: rgba(46, 125, 79, 0.08); border: 1px solid rgba(46, 125, 79, 0.2); border-radius: var(--radius-md); margin-bottom: 10px; }
+.reels-video-thumb { width: 48px; height: 72px; background: var(--surface-2); border-radius: 8px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+.reels-skeleton-section { border: 1px solid rgba(255, 230, 200, 0.06); border-radius: var(--radius-md); padding: 12px; margin-bottom: 8px; }
+.reels-skeleton-bar { height: 12px; background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3,#3a3a3a) 50%, var(--surface-2) 75%); background-size: 200% 100%; border-radius: 4px; animation: skeleton-shimmer 1.5s infinite; margin-bottom: 8px; }
+@keyframes skeleton-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
 @media (max-width: 760px) {
   .detail-hero,
   .content-review-highlight,

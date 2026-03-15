@@ -203,7 +203,8 @@ export function createContentModule(deps) {
 
   function renderReelsDetail(reel) {
     elements.draftDetail.innerHTML = callbacks.renderReelsDetailMarkup(reel);
-    if (reel.generation_pending || (reel.images_ready || 0) < (reel.frame_count || 0)) {
+    const hasGenerating = Array.isArray(reel.frames) && reel.frames.some((f) => f?.image_status === "generating");
+    if (reel.generation_pending || hasGenerating || (reel.images_ready || 0) < (reel.frame_count || 0)) {
       scheduleReelsRefresh(reel.draft_id);
     }
     syncMobileNavigation();
@@ -211,7 +212,10 @@ export function createContentModule(deps) {
 
   async function refreshReelsDetail(draftId) {
     const reel = await fetchJson(`/api/reels/${draftId}`);
-    const readyFrames = Array.isArray(reel.frames) ? reel.frames.filter((item) => item.current_asset?.url).length : 0;
+    const readyFrames = Array.isArray(reel.frames)
+      ? reel.frames.filter((f) => f?.current_asset?.url || f?.image_status === "ready").length
+      : 0;
+    const hasGeneratingFrames = Array.isArray(reel.frames) && reel.frames.some((f) => f?.image_status === "generating");
     state.reels = state.reels.map((item) => item.draft_id === reel.draft_id ? { ...item, ...reel } : item);
     if (isCurrentReelsDetail(reel.draft_id)) {
       state.selectedReels = reel;
@@ -220,7 +224,7 @@ export function createContentModule(deps) {
     }
     return {
       reel,
-      shouldContinue: reel.generation_pending || readyFrames < (reel.frame_count || 0),
+      shouldContinue: reel.generation_pending || hasGeneratingFrames || readyFrames < (reel.frame_count || 0),
     };
   }
 
