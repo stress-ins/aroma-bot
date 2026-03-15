@@ -162,7 +162,8 @@ class TestAgentParseNumberedList:
     def test_fixes_long_dash(self):
         raw = "1. Тема — про регуляцию"
         topics = parse_numbered_list(raw)
-        assert topics == ["Тема - про регуляцию"]
+        # humanize() replaces " — " (with spaces) with ", "
+        assert topics == ["Тема, про регуляцию"]
 
 
 class TestParseContentDraft:

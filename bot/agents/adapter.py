@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from config import settings
+from bot.agents.content import _HUMAN_WRITING_RULES
 from bot.services.brand_settings_store import get_brand_settings_cached
+from bot.services.humanizer import humanize
 
 ADAPT_PLATFORM_SPECS = {
     "threads": "Threads: 3 поста на сегодня в порядке Утро / День / Вечер. Каждый пост с одной идеей, 5-12 коротких строк, 40-120 слов, разговорный стиль, без хэштегов.",
@@ -22,6 +24,8 @@ _ADAPT_PROMPT = """\
 
 Адаптируй текст ниже под платформу {platform_label}.
 Требования платформы: {platform_spec}
+
+{human_writing_rules}
 
 Общие правила:
 - Сохраняй суть и ключевой месседж оригинала.
@@ -45,6 +49,7 @@ def adapt_text_sync(original_text: str, target_platform: str) -> str:
         brand_voice=bs.brand_voice,
         platform_label=ADAPT_PLATFORM_LABELS.get(target_platform, target_platform),
         platform_spec=ADAPT_PLATFORM_SPECS.get(target_platform, ""),
+        human_writing_rules=_HUMAN_WRITING_RULES,
         original_text=original_text,
     )
     resp = client.messages.create(
@@ -52,4 +57,4 @@ def adapt_text_sync(original_text: str, target_platform: str) -> str:
         max_tokens=900,
         messages=[{"role": "user", "content": prompt}],
     )
-    return resp.content[0].text.strip()
+    return humanize(resp.content[0].text.strip(), target_platform)

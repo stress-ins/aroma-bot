@@ -3,7 +3,9 @@ from __future__ import annotations
 import re
 
 from config import settings
+from bot.agents.content import _HUMAN_WRITING_RULES
 from bot.services.brand_settings_store import get_brand_settings_cached
+from bot.services.humanizer import humanize
 from bot.services.policy_engine import enforce_policy, load_policy_config
 
 _EDITOR_PROMPT = """\
@@ -51,13 +53,14 @@ SLIDE6 — CTA: человеческое приглашение, не рекла
 - Если пишешь про тело, избегай туманных слов вроде «сигнал», если не объясняешь, какой именно. Лучше сразу назвать ощущение или реакцию тела.
 - Фразы вроде «у каждого свой аромат» или «земляная база» звучат незаконченно или искусственно. Пиши яснее: что именно дает аромат и в каком состоянии.
 - В CTA не используй «ДМ». Пиши по-русски и естественно для автора: «напиши», «в личные сообщения», «расскажу подробнее».
-- Убери длинные тире — замени на запятую, точку или перенос строки
 - Не увеличивай текст — лучше сократи
 - Тон: спокойный, тёплый, живой. Без эзотерики, пафоса, инфоцыганства
 - Слайды должны быть приятными на слух. Не руби фразы ради эффекта, не делай текст нарочито "инстаграмным".
 - Ориентир по тону: понятно, мягко, логично, как в хорошем объяснении от живого человека.
 - Не используй эти фразы и их близкие варианты:
 {forbidden_phrases}
+
+{human_writing_rules}
 
 Тема карусели: {topic}
 
@@ -98,6 +101,7 @@ def _build_editor_prompt(topic: str, raw_slides: str) -> str:
         topic=topic,
         raw_slides=raw_slides,
         forbidden_phrases=_render_forbidden_phrases_block(),
+        human_writing_rules=_HUMAN_WRITING_RULES,
     )
 
 
@@ -123,7 +127,7 @@ def edit_carousel_sync(raw_slides: list[str], topic: str, user_forbidden: list[s
     )
     text = resp.content[0].text.strip()
 
-    slides = [_sanitize_slide_text(item) for item in _parse_slides(text, count=6)]
+    slides = [humanize(_sanitize_slide_text(item), "instagram") for item in _parse_slides(text, count=6)]
 
     # Fallback: return originals if parsing failed
     return slides[:6] if len(slides) >= 4 else raw_slides

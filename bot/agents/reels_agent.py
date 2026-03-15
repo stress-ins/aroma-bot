@@ -4,7 +4,9 @@ import logging
 from dataclasses import dataclass
 
 from config import settings
+from bot.agents.content import _HUMAN_WRITING_RULES
 from bot.services.brand_settings_store import get_brand_settings_cached
+from bot.services.humanizer import humanize
 
 logger = logging.getLogger(__name__)
 
@@ -71,6 +73,7 @@ _SCENARIO_PROMPT = """\
 Закадровый голос — разговорный язык, как подруга рассказывает подруге в голосовом сообщении.
 НЕ писать следующие фразы и их близкие варианты:
 {forbidden_phrases}
+{human_writing_rules}
 Вместо "мы сжимаем живот, поясницу, таз" → "у нас часто бывает напряжено тело, особенно в животе и пояснице".
 Вместо "просто стой" → "просто дыши" или "просто наблюдай".
 Конкретный смысл: что именно происходит с телом или состоянием, без поэтических метафор.
@@ -307,13 +310,14 @@ def generate_reels_scenario_sync(topic: str, reference_context: str = "") -> str
         reference_context_block=_render_reference_context_block(reference_context),
         topic=topic,
         forbidden_phrases=forbidden_block,
+        human_writing_rules=_HUMAN_WRITING_RULES,
     )
     resp = client.messages.create(
         model="claude-haiku-4-5-20251001",
         max_tokens=1600,
         messages=[{"role": "user", "content": prompt}],
     )
-    return resp.content[0].text.strip()
+    return humanize(resp.content[0].text.strip())
 
 
 def generate_reels_director_sync(topic: str, script: str) -> list[StoryboardFrame]:
