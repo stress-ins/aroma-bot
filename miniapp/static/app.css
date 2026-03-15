@@ -518,6 +518,17 @@ body.app-ready .splash {
   font-size: 14px;
 }
 
+.draft-kind .ui-icon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+}
+.draft-kind .ui-icon svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2;
+}
+
 .draft-topic {
   font-size: 17px;
   font-weight: 600;

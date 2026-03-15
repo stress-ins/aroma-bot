@@ -582,6 +582,8 @@ function uiIcon(name) {
     instagram: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>`,
     telegram: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M22 3 11 14M22 3 15 21l-4-7-7-4 18-7Z"/></svg>`,
     plan: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="16" rx="2"></rect><path d="M4 9h16M8 5v4M16 5v4"></path></svg>`,
+    play: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l12 8-12 8V4Z"/></svg>`,
+    layers: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="9" width="14" height="10" rx="1.5"/><path d="M7 6h10a1.5 1.5 0 0 1 1.5 1.5V9"/></svg>`,
   };
   return `<span class="ui-icon ui-icon-${escapeHtml(name)}">${icons[name] || icons.prompt}</span>`;
 }
@@ -629,8 +631,8 @@ function contentKindIcon(kind) {
     threads:        "note",
     threads_series: "note",
     plan:           "plan",
-    reels:          "reel",
-    carousel:       "slides",
+    reels:          "play",
+    carousel:       "layers",
     instagram:      "instagram",
     telegram:       "telegram",
   };
