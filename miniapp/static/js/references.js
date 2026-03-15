@@ -303,8 +303,7 @@ export function createReferencesModule(deps) {
     }
     const cutAt = str.lastIndexOf(" ", maxChars) || maxChars;
     const preview = str.slice(0, cutAt);
-    // Preview is inside <summary> so it hides when <details> opens — no duplication
-    return `<section class="section"><h3>${escapeHtml(title)}</h3><details class="description-collapsible"><summary class="description-toggle"><span class="preview-text">${escapeHtml(preview)}…</span><span class="expand-label"> Читать далее →</span></summary><div class="detail-preview description-full">${escapeHtml(str)}</div></details></section>`;
+    return `<section class="section"><h3>${escapeHtml(title)}</h3><div class="detail-preview exp-section-wrap"><div class="exp-collapsed">${escapeHtml(preview)}… <button class="exp-btn" onclick="expandSection(this)">Читать далее <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button></div><div class="exp-expanded" hidden>${escapeHtml(str)}</div></div></section>`;
   }
 
   const COUNTRY_FLAGS = {

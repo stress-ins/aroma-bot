@@ -516,7 +516,7 @@ function renderMarkdown(value) {
   for (const key of Object.keys(fenceMap)) {
     const escaped = escapeHtml(fenceMap[key]);
     const raw = fenceMap[key];
-    const block = `<div class="code-block"><pre>${escaped}</pre><button class="copy-btn" onclick="navigator.clipboard.writeText(this.previousElementSibling.textContent).then(()=>{this.textContent='✓';setTimeout(()=>this.textContent='Копировать',1200)})">Копировать</button></div>`;
+    const block = `<div class="code-block"><pre>${escaped}</pre><button class="copy-btn" onclick="navigator.clipboard.writeText(this.previousElementSibling.textContent).then(()=>{this.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12.5 9 16l10-10"/></svg>';setTimeout(()=>this.textContent='Копировать',1200)})">Копировать</button></div>`;
     result = result.replace(escapeHtml(key), block).replace(key, block);
   }
 
@@ -580,6 +580,7 @@ function uiIcon(name) {
     threads: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M15 12a3 3 0 1 1-3-3c2 0 3.5 1 3.5 3s-1.5 3-3.5 3"/></svg>`,
     instagram: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>`,
     telegram: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M22 3 11 14M22 3 15 21l-4-7-7-4 18-7Z"/></svg>`,
+    plan: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="16" rx="2"></rect><path d="M4 9h16M8 5v4M16 5v4"></path></svg>`,
   };
   return `<span class="ui-icon ui-icon-${escapeHtml(name)}">${icons[name] || icons.prompt}</span>`;
 }
@@ -622,18 +623,17 @@ function tagMarkup(label, tone = "neutral") {
 }
 
 function contentKindIcon(kind) {
-  const glyphMap = {
-    content: "✍️",
-    plan: "🗓️",
-    reels: "🎬",
-    carousel: "🖼️",
-    threads: "✍️",
-    instagram: "📸",
-    telegram: "✈️",
+  const iconMap = {
+    content:   "note",
+    threads:   "note",
+    plan:      "plan",
+    reels:     "reel",
+    carousel:  "slides",
+    instagram: "instagram",
+    telegram:  "telegram",
   };
   const normalized = String(kind || "").toLowerCase();
-  const glyph = glyphMap[normalized] || "•";
-  return `<span class="kind-glyph kind-glyph-${escapeHtml(normalized)}" aria-hidden="true">${glyph}</span>`;
+  return uiIcon(iconMap[normalized] || "note");
 }
 
 function promptDisclosureKey(rawKey = "", fallbackSeed = "") {
