@@ -1,8 +1,8 @@
-"""add_upload_post_api_key_to_brand_settings
+"""merge vps and local heads
 
-Revision ID: b2efc9c405f9
-Revises: 67bb541f5dab
-Create Date: 2026-03-15 15:34:24.399035
+Revision ID: 92e35378794b
+Revises: 6bc78647c47d, b2efc9c405f9
+Create Date: 2026-03-15 23:37:10.230228
 
 """
 from typing import Sequence, Union
@@ -12,15 +12,14 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'b2efc9c405f9'
-down_revision: Union[str, Sequence[str], None] = '67bb541f5dab'
+revision: str = '92e35378794b'
+down_revision: Union[str, Sequence[str], None] = ('6bc78647c47d', 'b2efc9c405f9')
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
     """Upgrade schema."""
-    # Column already added on VPS via 6bc78647c47d — no-op for local merge
     pass
 
 

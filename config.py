@@ -75,6 +75,13 @@ class Settings(BaseSettings):
     timezone: str = "Europe/Moscow"
     miniapp_aroma_allowed_user_ids: str = ""
 
+    # n8n integration
+    n8n_webhook_secret: str = ""
+    admin_telegram_chat_id: str = ""
+
+    # Admin
+    admin_telegram_id: int = 247982221
+
     # Cache
     cache_ttl: int = 3600
 

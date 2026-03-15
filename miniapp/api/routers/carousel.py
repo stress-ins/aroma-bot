@@ -19,7 +19,7 @@ from bot.handlers.carousel import _build_pptx
 from bot.services.drafts_store import DraftRecord, get_draft, update_draft
 from bot.services.draft_revisions_store import create_revision
 from bot.services.miniapp_presenter import serialize_draft
-from ..auth import _require_auth, _resolve_init_data
+from ..auth import _require_auth, _resolve_init_data, require_tier
 from ..deps import require_draft
 from ..generation import complete_carousel_regenerate_all, set_generation_state
 from ..models import (
@@ -36,20 +36,37 @@ async def get_carousel(draft: DraftRecord = Depends(require_draft("carousel"))):
     return await serialize_draft(draft)
 
 
-@router.post("/api/carousel/{draft_id}/slides/{slide_index}/regenerate")
+REGEN_LIMIT_PER_CARD = 5
+
+
+@router.post("/api/carousel/{draft_id}/slides/{slide_index}/regenerate", dependencies=[Depends(require_tier("expert"))])
 async def regenerate_carousel_slide(
     draft_id: str,
     slide_index: int,
     payload: CarouselSlideRegeneratePayload,
     _: None = Depends(_require_auth),
 ):
-    updated_payload = await regenerate_carousel_slide_asset(draft_id, slide_index, note=payload.note)
-    if updated_payload is None:
-        raise HTTPException(status_code=404, detail="carousel_slide_not_found")
     draft = await get_draft(draft_id)
     if not draft:
         raise HTTPException(status_code=404, detail="carousel_not_found")
-    return await serialize_draft(draft)
+    regen_count = draft.payload.get("regen_count", 0)
+    if regen_count >= REGEN_LIMIT_PER_CARD:
+        raise HTTPException(
+            status_code=429,
+            detail={"error": "regen_limit", "used": regen_count, "max": REGEN_LIMIT_PER_CARD},
+        )
+    updated_payload = await regenerate_carousel_slide_asset(draft_id, slide_index, note=payload.note)
+    if updated_payload is None:
+        raise HTTPException(status_code=404, detail="carousel_slide_not_found")
+    # Increment regen counter
+    new_count = regen_count + 1
+    payload_dict = dict(draft.payload)
+    payload_dict["regen_count"] = new_count
+    await update_draft(draft_id, payload=payload_dict)
+    refreshed = await get_draft(draft_id)
+    if not refreshed:
+        raise HTTPException(status_code=404, detail="carousel_not_found")
+    return await serialize_draft(refreshed)
 
 
 @router.post("/api/carousel/{draft_id}/slides/{slide_index}/text")

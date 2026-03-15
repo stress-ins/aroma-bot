@@ -372,6 +372,83 @@ export function createCoreModule(deps) {
     else showUiNotice("Промпт скопирован", "success");
   }
 
+  function showPaywall(tierRequired) {
+    const tierLabel = tierRequired === "expert" ? "Эксперт" : "Студент";
+    const existing = document.getElementById("paywallModal");
+    if (existing) existing.remove();
+    const modal = document.createElement("div");
+    modal.id = "paywallModal";
+    modal.className = "paywall-modal-backdrop";
+    modal.innerHTML = `
+      <div class="paywall-modal" role="dialog" aria-modal="true" aria-label="Нужен тариф ${escapeHtml(tierLabel)}">
+        <div class="paywall-modal-header">
+          <span class="paywall-lock">${uiIcon("lock")}</span>
+          <h3>Функция доступна с тарифом <strong>${escapeHtml(tierLabel)}</strong></h3>
+        </div>
+        <div class="paywall-modal-body">
+          <p>Введите промокод для активации:</p>
+          <div class="paywall-input-row">
+            <input id="paywallCodeInput" class="paywall-code-input" type="text" placeholder="AROMA-XXXXX" autocomplete="off" />
+            <button id="paywallActivateBtn" class="primary-button" type="button">Активировать</button>
+          </div>
+          <div id="paywallError" class="paywall-error" hidden></div>
+        </div>
+        <div class="paywall-modal-footer">
+          <button class="secondary-button" type="button" id="paywallCloseBtn">Закрыть</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    const input = modal.querySelector("#paywallCodeInput");
+    const activateBtn = modal.querySelector("#paywallActivateBtn");
+    const closeBtn = modal.querySelector("#paywallCloseBtn");
+    const errorEl = modal.querySelector("#paywallError");
+
+    closeBtn.addEventListener("click", () => modal.remove());
+    modal.addEventListener("click", (e) => { if (e.target === modal) modal.remove(); });
+
+    activateBtn.addEventListener("click", async () => {
+      const code = input.value.trim().toUpperCase();
+      if (!code) return;
+      activateBtn.disabled = true;
+      activateBtn.textContent = "Активирую...";
+      errorEl.hidden = true;
+      try {
+        const res = await fetch("/api/promo/activate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...getInitDataHeaders() },
+          body: JSON.stringify({ code }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          state.userPlan = { ...state.userPlan, effective_tier: data.tier, trial_ends_at: data.ends_at };
+          modal.remove();
+          showUiNotice(`Тариф активирован: ${data.tier}`, "success");
+        } else {
+          const body = await res.json().catch(() => ({}));
+          errorEl.textContent = body?.detail === "promo_not_found_or_expired"
+            ? "Промокод не найден или уже использован."
+            : "Не удалось активировать промокод.";
+          errorEl.hidden = false;
+          activateBtn.disabled = false;
+          activateBtn.textContent = "Активировать";
+        }
+      } catch (_err) {
+        errorEl.textContent = "Ошибка соединения. Попробуйте ещё раз.";
+        errorEl.hidden = false;
+        activateBtn.disabled = false;
+        activateBtn.textContent = "Активировать";
+      }
+    });
+
+    setTimeout(() => input.focus(), 100);
+  }
+
+  function showDailyLimitBanner(used, max) {
+    showUiNotice(`Дневной лимит: ${used}/${max} карточек. Попробуйте завтра или активируйте промокод.`, "error");
+  }
+
   async function fetchJson(url, options = {}) {
     const { timeout = 12000, ...fetchOptions } = options;
     const extraHeaders = url.startsWith("/api/") ? getInitDataHeaders() : {};
@@ -391,13 +468,19 @@ export function createCoreModule(deps) {
     }
     clearTimeout(timer);
     if (!response.ok) {
-      let detail = "";
-      try {
-        const payload = await response.json();
-        detail = payload?.detail ? ` (${payload.detail})` : "";
-      } catch (_error) {
-        // Keep default HTTP error text when JSON payload is unavailable.
+      let body = null;
+      try { body = await response.json(); } catch (_e) { /* ignore */ }
+      if (response.status === 402) {
+        const tierRequired = (typeof body?.detail === "object" ? body.detail?.tier_required : null) || "expert";
+        showPaywall(tierRequired);
+        throw new Error("paywall");
       }
+      if (response.status === 429) {
+        const detail = typeof body?.detail === "object" ? body.detail : {};
+        showDailyLimitBanner(detail?.used ?? 0, detail?.max ?? 10);
+        throw new Error("daily_limit");
+      }
+      const detail = body?.detail ? (typeof body.detail === "string" ? ` (${body.detail})` : "") : "";
       throw new Error(`${response.status} ${response.statusText}${detail}`);
     }
     return response.json();
@@ -480,6 +563,8 @@ export function createCoreModule(deps) {
     renderPanelError,
     renderGuidedState,
     showUiNotice,
+    showPaywall,
+    showDailyLimitBanner,
     renderDetailError,
     draftSummaryFromDraft,
     upsertDraftSummary,

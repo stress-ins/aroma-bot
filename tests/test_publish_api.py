@@ -117,12 +117,23 @@ def publish_app():
     """Minimal FastAPI app with publish router, auth bypassed."""
     from fastapi import FastAPI
     from miniapp.api.routers.publish import router
-    from miniapp.api.auth import _require_auth
+    from miniapp.api.auth import _require_auth, _resolve_telegram_id
 
     app = FastAPI()
     app.include_router(router)
     app.dependency_overrides[_require_auth] = lambda: None
-    return app
+    # Bypass tier check: return a fixed telegram_id and mock subscription store
+    app.dependency_overrides[_resolve_telegram_id] = lambda: 247982221
+    with (
+        patch("miniapp.api.auth.get_or_create_user", new_callable=AsyncMock) as mock_get_user,
+        patch("miniapp.api.auth.effective_tier", new_callable=AsyncMock, return_value="expert"),
+    ):
+        from db.models import UserProfile
+        mock_user = MagicMock(spec=UserProfile)
+        mock_user.tier = "expert"
+        mock_user.trial_ends_at = None
+        mock_get_user.return_value = mock_user
+        yield app
 
 
 def test_publish_requires_platforms(publish_app):

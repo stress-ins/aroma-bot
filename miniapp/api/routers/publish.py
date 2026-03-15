@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 from bot.services.drafts_store import get_draft, list_scheduled_drafts_due, update_draft
 from bot.services.publish_log_store import list_all_logs, list_logs
 from bot.services.publisher import cancel_scheduled, check_status, publish
-from ..auth import _require_auth
+from ..auth import _require_auth, require_tier
 from ..models import ScheduleSeriesRequest
 
 router = APIRouter()
@@ -20,7 +20,7 @@ class PublishPayload(BaseModel):
     scheduled_at: str | None = Field(default=None)
 
 
-@router.post("/api/drafts/{draft_id}/publish")
+@router.post("/api/drafts/{draft_id}/publish", dependencies=[Depends(require_tier("expert"))])
 async def publish_draft(draft_id: str, payload: PublishPayload, _: None = Depends(_require_auth)):
     draft = await get_draft(draft_id)
     if not draft:
