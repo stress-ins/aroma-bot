@@ -1247,7 +1247,7 @@ class TestMiniAppRussianLocale:
         assert "padding: 4px 10px;" in app_css
         assert "font-size: 17px;" in app_css
         assert "font-size: 18px;" in app_css
-        assert "🎬" in app_js
+        assert "contentKindIcon" in app_js
 
     def test_telegram_dark_theme_uses_body_class_for_bottom_nav(self):
         source = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
@@ -1257,8 +1257,8 @@ class TestMiniAppRussianLocale:
         assert "body.tg-theme-dark .bottom-tab-bar-inner" in app_css
         assert ".concept-card .draft-preview" in app_css
         assert "color: inherit;" in app_css
-        assert "🖼️" in source
-        assert "✍️" in source
+        assert "contentKindIcon" in source
+        assert 'iconMap[normalized] || "note"' in source
 
     def test_create_tool_panel_is_scaled_up_for_mobile(self):
         app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")

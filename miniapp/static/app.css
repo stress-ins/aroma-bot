@@ -384,6 +384,8 @@ body:not(.app-ready) .bottom-tab-bar {
 
 .splash-loader .brand-loader-letter {
   font-size: 54px;
+  letter-spacing: 0;
+  line-height: 1;
 }
 
 body.app-ready .splash {
@@ -984,30 +986,16 @@ body.is-mobile-layout .detail-top {
   text-align: left;
 }
 
-/* Collapsible sections: preview lives inside <summary>, hide it when open */
-.description-collapsible > summary {
-  list-style: none;
-  cursor: pointer;
-}
-.description-collapsible > summary::-webkit-details-marker { display: none; }
-.description-collapsible > summary .preview-text {
+/* Expandable sections */
+.exp-btn {
   display: inline;
-  font-size: 14px;
-  line-height: 1.65;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  color: var(--text);
-}
-.description-collapsible > summary .expand-label {
-  display: inline;
+  background: none;
+  border: none;
+  padding: 0;
   font-size: 13px;
-  color: var(--brand, #c8773d);
+  color: var(--brand, #b45c3d);
+  cursor: pointer;
   white-space: nowrap;
-}
-.description-collapsible[open] > summary .preview-text { display: none; }
-.description-collapsible[open] > summary .expand-label { display: none; }
-.description-collapsible .description-full {
-  margin-top: 8px;
 }
 
 .detail-markdown {
