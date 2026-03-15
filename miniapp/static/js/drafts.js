@@ -273,7 +273,7 @@ export function createDraftsModule(deps) {
 
     const p = d.payload || {};
     const mainText = p.caption || p.scenario || "";
-    // Compact metadata: only show ID + date (kind/source/status already in eyebrow + draft-meta)
+    // Compact: only ID + date; kind/source/status already shown in eyebrow and draft-meta tags
     const heroFacts = [
       d.seq_id ? detailFactMarkup("ID", `#${d.seq_id}`) : "",
       detailFactMarkup("Создан", formatPlanDate(d.created_at)),
