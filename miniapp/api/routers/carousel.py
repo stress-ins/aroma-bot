@@ -131,6 +131,55 @@ async def regenerate_carousel_all(
     return await serialize_draft(refreshed)
 
 
+# ── Preview endpoints ──────────────────────────────────────────────────────────
+
+@router.get("/api/carousel/{draft_id}/slides/{slide_index}/preview")
+async def carousel_slide_preview(
+    draft_id: str,
+    slide_index: int,
+    _: str = Depends(_resolve_init_data),
+):
+    """Generate a PNG preview with text overlaid on the slide image."""
+    from bot.agents.carousel_preview_agent import generate_slide_preview
+
+    draft = await get_draft(draft_id)
+    if not draft or draft.kind != "carousel":
+        raise HTTPException(status_code=404, detail="carousel_not_found")
+
+    try:
+        png_bytes = await generate_slide_preview(draft_id, slide_index)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    return StreamingResponse(
+        iter([png_bytes]),
+        media_type="image/png",
+        headers={"Content-Disposition": f'inline; filename="preview_{draft_id}_{slide_index}.png"'},
+    )
+
+
+@router.post("/api/carousel/{draft_id}/preview")
+async def carousel_preview_all(
+    draft_id: str,
+    _: None = Depends(_require_auth),
+):
+    """Generate previews for all slides, save placement data, return draft JSON."""
+    from bot.agents.carousel_preview_agent import generate_all_previews
+
+    draft = await get_draft(draft_id)
+    if not draft or draft.kind != "carousel":
+        raise HTTPException(status_code=404, detail="carousel_not_found")
+
+    await generate_all_previews(draft_id)
+
+    refreshed = await get_draft(draft_id)
+    if not refreshed:
+        raise HTTPException(status_code=404, detail="carousel_not_found")
+    return await serialize_draft(refreshed)
+
+
+# ── PPTX export/import ─────────────────────────────────────────────────────────
+
 @router.get("/api/carousel/{draft_id}/pptx")
 async def carousel_pptx_export(draft_id: str, _: str = Depends(_resolve_init_data)):
     draft = await get_draft(draft_id)
@@ -138,7 +187,16 @@ async def carousel_pptx_export(draft_id: str, _: str = Depends(_resolve_init_dat
         raise HTTPException(status_code=404, detail="carousel_not_found")
     slides = list(draft.payload.get("slides", []))
     images = load_carousel_slide_images(draft_id, list(draft.payload.get("slide_images", [])))
-    pptx_bytes = await asyncio.get_running_loop().run_in_executor(None, _build_pptx, slides, images or None)
+    placement_data = draft.payload.get("placement_data")
+
+    if placement_data:
+        from bot.agents.carousel_export_agent import build_pptx_from_placement
+        pptx_bytes = await asyncio.get_running_loop().run_in_executor(
+            None, build_pptx_from_placement, slides, images or [], placement_data,
+        )
+    else:
+        pptx_bytes = await asyncio.get_running_loop().run_in_executor(None, _build_pptx, slides, images or None)
+
     return StreamingResponse(
         iter([pptx_bytes]),
         media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation",
@@ -152,7 +210,7 @@ async def carousel_pptx_import(
     file: UploadFile = File(...),
     _: None = Depends(_require_auth),
 ):
-    """Import edited PPTX from Canva — extract slide images and update draft."""
+    """Import edited PPTX from Canva — extract images, learn text placement corrections."""
     draft = await get_draft(draft_id)
     if not draft or draft.kind != "carousel":
         raise HTTPException(status_code=404, detail="carousel_not_found")
@@ -188,6 +246,21 @@ async def carousel_pptx_import(
     payload["slide_images"] = slide_images
     payload["slide_image_versions"] = slide_versions
     payload["images_ready"] = sum(1 for img in slide_images if img)
+
+    # Learn from Canva corrections if we had placement_data
+    placement_data = payload.get("placement_data")
+    if placement_data:
+        from bot.agents.carousel_export_agent import (
+            extract_text_positions,
+            compute_corrections,
+            save_corrections,
+        )
+        proposed = [placement_data.get(str(i)) for i in range(len(images))]
+        actual = await loop.run_in_executor(None, extract_text_positions, pptx_bytes)
+        corrections = compute_corrections(proposed, actual)
+        if corrections:
+            await save_corrections(draft_id, corrections)
+
     await update_draft(draft_id, payload=payload)
     await create_revision(draft_id, payload, author="canva_import", note="PPTX import from Canva")
 
