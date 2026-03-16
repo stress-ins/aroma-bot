@@ -3192,6 +3192,27 @@ body.tg-theme-dark .concept-card {
   background: var(--surface);
 }
 
+.frame-loading-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.brand-loader-mini {
+  width: 32px;
+  height: 32px;
+}
+
+.brand-loader-mini .brand-loader-letter {
+  font-size: 13px;
+}
+
+.brand-loader-mini .brand-loader-ring {
+  border-width: 1.5px;
+  box-shadow: none;
+}
+
 /* ── Mobile ──────────────────────────────────────────────────────────────── */
 @media (max-width: 680px) {
   .shell { padding: 8px; gap: 8px; }

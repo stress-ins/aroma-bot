@@ -157,6 +157,7 @@ export function createCoreModule(deps) {
   function generationStateMarkup(item, kind = "draft") {
     if (!item?.generation_pending) return "";
     const stage = String(item.generation_stage || "").trim();
+    if (kind === "draft" && stage === "images") return "";
     const message = String(item.generation_message || "").trim();
     const title = kind === "reels"
       ? (stage === "scenario" ? "Собираю сценарий и раскадровку" : stage === "images" ? "Генерирую кадры" : "Собираю рилс")
