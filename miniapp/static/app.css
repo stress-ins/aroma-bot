@@ -730,7 +730,7 @@ body.is-mobile-layout .detail-grid {
   overflow-x: hidden;
 }
 body.is-mobile-layout .detail-top {
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-3) var(--space-3);
 }
 
 .detail-panel {
@@ -1489,6 +1489,18 @@ body.tg-theme-dark .detail-markdown h5 {
   color: inherit;
 }
 
+/* Dark-mode contrast fixes for tinted buttons */
+body.tg-theme-dark .filter-chip.active {
+  background: rgba(var(--brand-rgb), 0.28);
+  color: #e8a88a;
+  border-color: rgba(var(--brand-rgb), 0.50);
+}
+body.tg-theme-dark .danger-button {
+  background: rgba(176, 58, 46, 0.15);
+  color: #e27266;
+  border-color: rgba(176, 58, 46, 0.40);
+}
+
 .bottom-tab-btn {
   display: grid;
   justify-items: center;
@@ -1826,6 +1838,43 @@ body.tg-theme-dark .detail-markdown h5 {
 
   body.is-mobile-layout.is-detail-view .detail-grid .section {
     scroll-margin-top: calc(52px + var(--tg-content-inset-top, env(safe-area-inset-top, 0px)));
+  }
+
+  /* ── Detail-view: edge-to-edge on mobile ──────────────────────────────── */
+  body.is-mobile-layout .detail-grid {
+    padding-left: 0;
+    padding-right: 0;
+    max-width: 100%;
+    width: 100%;
+  }
+
+  /* Inner sections — small horizontal padding for content readability */
+  body.is-mobile-layout .detail-grid > .section,
+  body.is-mobile-layout .detail-grid > .detail-facts,
+  body.is-mobile-layout .detail-grid > .detail-top,
+  body.is-mobile-layout .detail-grid > .detail-hero,
+  body.is-mobile-layout .detail-grid > .actions-row,
+  body.is-mobile-layout .detail-grid > .actions-grid-two,
+  body.is-mobile-layout .detail-grid > div {
+    padding-left: var(--space-3);
+    padding-right: var(--space-3);
+  }
+
+  /* Sections stretch edge-to-edge, separated by bottom border */
+  body.is-mobile-layout .detail-grid .section {
+    border-radius: 0;
+    margin-left: 0;
+    margin-right: 0;
+    border-left: none;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* Exception: card-style sections keep inset + rounded corners */
+  body.is-mobile-layout .detail-grid .section.is-card {
+    border-radius: var(--radius-md);
+    margin: 0 var(--space-3) 10px;
+    border: 1px solid var(--border);
   }
 
   .bottom-tab-bar {
