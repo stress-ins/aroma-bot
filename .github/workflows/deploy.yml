@@ -66,3 +66,13 @@ jobs:
             .venv/bin/python scripts/generate_symptom_descriptions.py 2>&1 | tail -3 && \
             touch "$MARKER" && \
             echo "Enrichment complete."' || echo "Enrichment step failed (non-blocking)"
+
+      - name: Fill complementary oils from PDF data (one-time)
+        run: |
+          ssh root@46.32.186.192 'cd /opt/aroma && \
+            MARKER=/opt/aroma/.complementary_oils_done && \
+            if [ -f "$MARKER" ]; then echo "Complementary oils already filled, skipping"; exit 0; fi && \
+            echo "Filling complementary oils from PDF..." && \
+            .venv/bin/python scripts/fill_complementary_oils_from_pdf.py --force 2>&1 | tail -5 && \
+            touch "$MARKER" && \
+            echo "Complementary oils fill complete."' || echo "Complementary oils step failed (non-blocking)"
