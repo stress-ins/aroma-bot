@@ -1,9 +1,9 @@
 const STORAGE_KEY = "aroma_onboarded";
 
 const SLIDES = [
-  { icon: "book-open", title: "Справочник", body: "200+ масел, смесей и симптомов с дозировками и рецептами" },
-  { icon: "pen-tool", title: "Контент-студия", body: "Создавайте посты для Threads, Instagram и Telegram за секунды" },
-  { icon: "sparkles", title: "AI-помощник", body: "Генерация, редактирование и планирование публикаций" },
+  { icon: "book-open", title: "Справочник", body: "Найдите масло по симптому или свойству. Дозировки, рецепты, противопоказания." },
+  { icon: "pen-tool", title: "Контент-студия", body: "AI подготовит текст для Threads, Instagram или Telegram за минуту." },
+  { icon: "sparkles", title: "AI-помощник", body: "Планируйте публикации и управляйте контент-стратегией." },
 ];
 
 const HELP_MAP = {

@@ -140,9 +140,11 @@ export function createCoreModule(deps) {
   function draftGenerationLabel(draft) {
     if (!draft?.generation_pending) return "";
     if (draft.kind === "carousel") {
+      const stage = String(draft.generation_stage || "").trim();
       const total = Number(draft.slides_count || 0);
       const ready = Number(draft.images_ready || 0);
       if (total && ready >= total) return "";
+      if (stage === "images" && total) return "Генерируем картинки";
       return total ? `Ещё генерируется ${ready}/${total}` : "Ещё генерируется";
     }
     if (draft.kind === "reels") {
@@ -158,6 +160,10 @@ export function createCoreModule(deps) {
     if (!item?.generation_pending) return "";
     const stage = String(item.generation_stage || "").trim();
     if (kind === "draft" && stage === "images") return "";
+    if (kind === "draft" && item.kind === "carousel") {
+      const payload = item.payload || {};
+      if (Array.isArray(payload.slides) && payload.slides.length > 0) return "";
+    }
     const message = String(item.generation_message || "").trim();
     const title = kind === "reels"
       ? (stage === "scenario" ? "Собираю сценарий и раскадровку" : stage === "images" ? "Генерирую кадры" : "Собираю рилс")

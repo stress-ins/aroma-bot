@@ -125,7 +125,7 @@ export function createCarouselModule(deps) {
             const versions = Array.isArray(versionItems[index]) ? versionItems[index] : [];
             const imgHtml = img?.url
               ? `<img class="frame-image" src="${escapeHtml(img.url)}" alt="Слайд ${index + 1}" />`
-              : `<div class="frame-loading"><div class="frame-loading-inner"><div class="brand-loader brand-loader-mini" aria-hidden="true"><span class="brand-loader-ring"></span><span class="brand-loader-letter">A</span></div><span>Генерируем картинку</span></div></div>`;
+              : `<div class="frame-loading"><div class="frame-loading-inner"><span class="button-spinner" aria-hidden="true"></span><span>Изображение ещё готовится</span></div></div>`;
             return `
               <article class="slide">
                 <strong>Слайд ${index + 1}</strong>

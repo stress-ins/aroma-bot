@@ -686,7 +686,8 @@ body.app-ready .splash {
   font-size: 28px;
   font-weight: 800;
   color: var(--brand);
-  letter-spacing: 0.04em;
+  letter-spacing: 0;
+  line-height: 1;
   animation: brand-loader-pulse 1.4s ease-in-out infinite;
 }
 
@@ -1812,6 +1813,10 @@ body.tg-theme-dark .detail-markdown h5 {
     padding-top: calc(6px + var(--tg-content-inset-top, env(safe-area-inset-top, 0px)));
   }
 
+  body.is-mobile-layout.is-detail-view .detail-panel {
+    padding-top: var(--tg-content-inset-top, env(safe-area-inset-top, 0px));
+  }
+
   body.is-mobile-layout.is-detail-view .detail-grid .section {
     scroll-margin-top: calc(52px + var(--tg-content-inset-top, env(safe-area-inset-top, 0px)));
   }
@@ -1917,6 +1922,22 @@ body.tg-theme-dark .detail-markdown h5 {
   border: 1px solid var(--border);
   background: var(--surface-2);
   color: var(--text);
+  border-radius: 999px;
+  min-height: 36px;
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), transform var(--duration-medium) var(--ease-standard), opacity var(--duration-fast) var(--ease-standard), box-shadow var(--duration-medium) var(--ease-standard);
+  white-space: nowrap;
+}
+.ghost-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
   border-radius: 999px;
   min-height: 36px;
   padding: 6px 12px;
@@ -3290,6 +3311,7 @@ body.is-mobile-layout[data-mode="handbook"] .tabs::-webkit-scrollbar { display: 
 
   body.is-mobile-layout .topbar-main {
     padding: 8px 12px;
+    padding-top: calc(8px + var(--tg-content-inset-top, env(safe-area-inset-top, 0px)));
     gap: 0;
   }
 
@@ -3606,6 +3628,7 @@ body.is-mobile-layout[data-mode="handbook"] .tabs::-webkit-scrollbar { display: 
 .onboarding-slide {
   display: flex; flex-direction: column; align-items: center; text-align: center;
   max-width: 320px; padding: var(--space-5); gap: var(--space-3);
+  max-height: 70vh; justify-content: center;
 }
 .onboarding-icon { color: var(--brand); margin-bottom: var(--space-2); }
 .onboarding-title { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; color: var(--text); }
@@ -3613,7 +3636,7 @@ body.is-mobile-layout[data-mode="handbook"] .tabs::-webkit-scrollbar { display: 
 .onboarding-dots { display: flex; gap: 8px; margin: var(--space-3) 0; }
 .onboarding-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); transition: background 0.2s; }
 .onboarding-dot.active { background: var(--brand); }
-.onboarding-actions { display: flex; flex-direction: column; gap: var(--space-2); width: 100%; }
+.onboarding-actions { display: flex; flex-direction: column; gap: var(--space-2); width: 100%; margin-top: auto; }
 .onboarding-actions .primary-button { width: 100%; justify-content: center; }
 
 /* ── Help FAB ───────────────────────────────────────────────────────────── */
@@ -3636,4 +3659,16 @@ body.is-mobile-layout[data-mode="handbook"] .tabs::-webkit-scrollbar { display: 
 }
 @keyframes popoverIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 .help-popover p { font-size: 14px; line-height: 1.5; color: var(--text); margin-bottom: var(--space-3); }
+.help-popover::after {
+  content: "";
+  position: absolute;
+  bottom: -7px;
+  right: 20px;
+  width: 14px;
+  height: 14px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  transform: rotate(45deg);
+}
 .help-popover-close { font-size: 13px; }
