@@ -484,7 +484,7 @@ async def list_reference_cards(category: str) -> list[dict[str, str]]:
         items.append({
             "slug": model.slug,
             "name": name_ru or model.name,
-            "name_en": model.name if (name_ru and model.name != name_ru) else "",
+            "name_en": model.name if (name_ru and model.name != name_ru) else str(payload.get("name_en", "")),
             "description": str(payload.get("description", "")),
             "description_short": str(payload.get("description_short", "")),
             "category": model.category,

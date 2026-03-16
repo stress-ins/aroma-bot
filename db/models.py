@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 import uuid
 from typing import Any
 from sqlalchemy import BigInteger, Boolean, String, JSON, DateTime, Integer, UniqueConstraint
+from sqlalchemy.ext.mutable import MutableDict, MutableList
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 class Base(DeclarativeBase):
@@ -17,10 +18,10 @@ class DraftModel(Base):
     source: Mapped[str] = mapped_column(String(64))
     status: Mapped[str] = mapped_column(String(32), default="draft")
     feedback: Mapped[str] = mapped_column(String(255), default="")
-    payload: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    payload: Mapped[dict[str, Any]] = mapped_column(MutableDict.as_mutable(JSON), default=dict)
     scheduled_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, default=None)
-    publish_platforms: Mapped[list[str]] = mapped_column(JSON, default=list)
-    external_ids: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    publish_platforms: Mapped[list[str]] = mapped_column(MutableList.as_mutable(JSON), default=list)
+    external_ids: Mapped[dict[str, Any]] = mapped_column(MutableDict.as_mutable(JSON), default=dict)
     revision_notes: Mapped[str] = mapped_column(String(2000), default="")
     published_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, default=None)
     error: Mapped[str] = mapped_column(String(2000), default="")
@@ -33,7 +34,7 @@ class PlanModel(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     plan_id: Mapped[str] = mapped_column(String(32), unique=True, index=True)
     raw_text: Mapped[str] = mapped_column(String)
-    entries: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list)
+    entries: Mapped[list[dict[str, Any]]] = mapped_column(MutableList.as_mutable(JSON), default=list)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
@@ -45,8 +46,8 @@ class AromaCardModel(Base):
     slug: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     name: Mapped[str] = mapped_column(String(255), index=True)
     source_type: Mapped[str] = mapped_column(String(32), default="herb")
-    aliases: Mapped[list[str]] = mapped_column(JSON, default=list)
-    payload: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    aliases: Mapped[list[str]] = mapped_column(MutableList.as_mutable(JSON), default=list)
+    payload: Mapped[dict[str, Any]] = mapped_column(MutableDict.as_mutable(JSON), default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
@@ -83,9 +84,9 @@ class BrandSettingsModel(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     brand_voice: Mapped[str] = mapped_column(String(4000), default="")
-    forbidden_phrases: Mapped[list[str]] = mapped_column(JSON, default=list)
+    forbidden_phrases: Mapped[list[str]] = mapped_column(MutableList.as_mutable(JSON), default=list)
     base_instructions: Mapped[str] = mapped_column(String(4000), default="")
-    target_platforms: Mapped[list[str]] = mapped_column(JSON, default=list)
+    target_platforms: Mapped[list[str]] = mapped_column(MutableList.as_mutable(JSON), default=list)
     upload_post_user: Mapped[str] = mapped_column(String(255), default="")
     upload_post_api_key: Mapped[str] = mapped_column(String(255), default="")
     updated_at: Mapped[datetime] = mapped_column(
@@ -101,7 +102,7 @@ class DraftRevisionModel(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     draft_id: Mapped[str] = mapped_column(String(32), index=True)
     rev_num: Mapped[int] = mapped_column(Integer)
-    payload: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    payload: Mapped[dict[str, Any]] = mapped_column(MutableDict.as_mutable(JSON), default=dict)
     author: Mapped[str] = mapped_column(String(64), default="user")
     note: Mapped[str] = mapped_column(String(512), default="")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
@@ -114,7 +115,7 @@ class BlendModel(Base):
     slug: Mapped[str] = mapped_column(String(128), unique=True, index=True)
     name: Mapped[str] = mapped_column(String(255), index=True)
     goal: Mapped[str] = mapped_column(String(512), default="")
-    ingredients: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list)
+    ingredients: Mapped[list[dict[str, Any]]] = mapped_column(MutableList.as_mutable(JSON), default=list)
     indications: Mapped[str] = mapped_column(String(2000), default="")
     contraindications: Mapped[str] = mapped_column(String(2000), default="")
     compatibility_notes: Mapped[str] = mapped_column(String(2000), default="")
