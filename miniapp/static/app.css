@@ -3430,24 +3430,26 @@ body.tg-theme-dark .concept-card {
   padding: 16px;
 }
 .preview-modal {
-  background: var(--surface);
+  background: #000;
   border-radius: var(--radius-lg);
-  max-width: 500px;
+  max-width: 480px;
   width: 100%;
   overflow: hidden;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
 }
 .preview-modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--border);
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  background: rgba(0,0,0,0.6);
 }
 .preview-modal-header h3 {
   margin: 0;
   font-size: 15px;
   font-weight: 600;
+  color: rgba(255,255,255,0.9);
 }
 .preview-modal-close {
   min-width: 0 !important;
@@ -3455,10 +3457,25 @@ body.tg-theme-dark .concept-card {
 }
 .preview-modal-body {
   padding: 0;
+  background: #000;
+  line-height: 0;
 }
 .preview-modal-body img {
   width: 100%;
   display: block;
+  object-fit: cover;
+}
+@media (max-width: 760px) {
+  .preview-modal-backdrop {
+    align-items: flex-end;
+    padding: 0;
+  }
+  .preview-modal {
+    max-width: 100%;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    max-height: 92vh;
+    overflow-y: auto;
+  }
 }
 
 .frame-loading {

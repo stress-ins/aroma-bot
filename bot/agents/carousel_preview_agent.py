@@ -124,13 +124,32 @@ def render_preview_png(
     img_bytes: bytes,
     text: str,
     placement: dict,
-    size: tuple[int, int] = (1080, 1080),
+    size: tuple[int, int] = (1080, 1350),
 ) -> bytes:
     """Render a preview PNG with text overlaid on the image."""
     from PIL import Image, ImageDraw, ImageFont
 
     img = Image.open(io.BytesIO(img_bytes)).convert("RGBA")
-    img = img.resize(size, Image.LANCZOS)
+    target_w, target_h = size
+
+    # Crop-to-fill: scale to cover, then center-crop
+    src_w, src_h = img.size
+    src_ratio = src_w / src_h
+    tgt_ratio = target_w / target_h
+
+    if src_ratio > tgt_ratio:
+        new_h = target_h
+        new_w = int(src_w * target_h / src_h)
+    else:
+        new_w = target_w
+        new_h = int(src_h * target_w / src_w)
+
+    img = img.resize((new_w, new_h), Image.LANCZOS)
+
+    left = (new_w - target_w) // 2
+    top = (new_h - target_h) // 2
+    img = img.crop((left, top, left + target_w, top + target_h))
+
     w, h = size
 
     box_left = int(w * placement.get("left", 0.08))
@@ -146,23 +165,23 @@ def render_preview_png(
 
     # Load font
     try:
-        font = ImageFont.truetype(str(_FONT_PATH), 28)
+        font = ImageFont.truetype(str(_FONT_PATH), 32)
     except Exception:
         font = ImageFont.load_default()
 
     text_color = (255, 255, 255) if placement.get("text_color", "light") == "light" else (61, 43, 31)
 
     # Word-wrap text
-    margin = 20
+    margin = 24
     max_text_w = box_w - margin * 2
     lines = _wrap_text(draw, text, font, max_text_w)
 
     y = box_top + margin
     for line in lines:
-        if y + 32 > box_top + box_h:
+        if y + 36 > box_top + box_h:
             break
         draw.text((box_left + margin, y), line, fill=text_color, font=font)
-        y += 36
+        y += 40
 
     # Convert to RGB for PNG output
     result = img.convert("RGB")
