@@ -217,3 +217,9 @@ class TokenStatusResponse(BaseModel):
     has_token: bool
     expires_at: str | None
     updated_at: str | None
+
+
+# ── Thread Monitor ──────────────────────────────────────────────────────────
+
+class ThreadActionRequest(BaseModel):
+    action: str = Field(default="")

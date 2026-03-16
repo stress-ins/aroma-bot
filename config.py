@@ -56,6 +56,9 @@ class Settings(BaseSettings):
     threads_user_id: str = ""
     threads_username: str = ""
 
+    # Thread monitor
+    threads_keyword_search_enabled: bool = False
+
     # Instagram Platform API
     instagram_app_id: str = ""
     instagram_app_secret: str = ""

@@ -135,6 +135,7 @@ class UserProfile(Base):
     telegram_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     tier: Mapped[str] = mapped_column(String(32), default="free")  # free/student/expert
     trial_ends_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, default=None)
+    daily_oil_subscribed: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
@@ -279,3 +280,41 @@ class PostMetricsModel(Base):
     fetched_at: Mapped[datetime] = mapped_column(
         DateTime, default=lambda: datetime.now(timezone.utc)
     )
+
+
+class DailyOilModel(Base):
+    __tablename__ = "daily_oils"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    date: Mapped[str] = mapped_column(String(16), unique=True, index=True)  # "2026-03-17"
+    slug: Mapped[str] = mapped_column(String(64))
+    name: Mapped[str] = mapped_column(String(255))
+    fact: Mapped[str] = mapped_column(String(1000), default="")
+    daily_practice: Mapped[str] = mapped_column(String(1000), default="")
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class TrackedThreadModel(Base):
+    """A brand-relevant Threads conversation found via monitoring."""
+    __tablename__ = "tracked_threads"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    thread_id: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    platform: Mapped[str] = mapped_column(String(16), default="threads", index=True)
+    source: Mapped[str] = mapped_column(String(32), default="mention")
+    author_username: Mapped[str] = mapped_column(String(128), default="")
+    text: Mapped[str] = mapped_column(String(4000), default="")
+    permalink: Mapped[str] = mapped_column(String(512), default="")
+    root_text: Mapped[str] = mapped_column(String(4000), default="")
+    keyword_matched: Mapped[str] = mapped_column(String(128), default="")
+    like_count: Mapped[int] = mapped_column(Integer, default=0)
+    reply_count: Mapped[int] = mapped_column(Integer, default=0)
+    relevance_score: Mapped[float] = mapped_column(default=0.0)
+    relevance_reason: Mapped[str] = mapped_column(String(500), default="")
+    suggested_action: Mapped[str] = mapped_column(String(32), default="")
+    ai_summary: Mapped[str] = mapped_column(String(1000), default="")
+    content_angle: Mapped[str] = mapped_column(String(500), default="")
+    topic_tags: Mapped[list] = mapped_column(MutableList.as_mutable(JSON), default=list)
+    status: Mapped[str] = mapped_column(String(32), default="new", index=True)
+    found_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
+    acted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, default=None)
