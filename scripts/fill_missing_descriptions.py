@@ -30,9 +30,9 @@ logger = logging.getLogger(__name__)
 
 DESCRIPTION_PROMPT = """\
 Ты — эксперт по ароматерапии и сенсорным практикам.
-Напиши краткое описание (2-3 предложения, до 200 символов) для следующей карточки.
-Пиши на русском языке, профессионально, без лишних слов.
-Упомяни ключевые свойства и применение.
+Напиши развёрнутое описание (4-5 предложений, 300-500 символов) для следующей карточки.
+Пиши на русском языке, профессионально, связным текстом.
+Подробно опиши ключевые свойства, терапевтическое и эмоциональное воздействие, применение.
 
 Категория: {category}
 Название: {name}
@@ -50,7 +50,7 @@ def _call_claude(prompt: str) -> str:
     client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
     response = client.messages.create(
         model="claude-haiku-4-5-20251001",
-        max_tokens=300,
+        max_tokens=800,
         messages=[{"role": "user", "content": prompt}],
     )
     return response.content[0].text.strip()
@@ -64,7 +64,7 @@ def _needs_description(card: AromaCardModel) -> bool:
 def _build_extra(card: AromaCardModel) -> str:
     payload = card.payload or {}
     parts = []
-    for field in ("therapeutic_properties", "psychological_properties", "botanical_family", "key"):
+    for field in ("therapeutic_properties", "psychological_properties", "botanical_family", "key", "health_effects", "mind_effect", "spiritual_emotional", "history"):
         val = payload.get(field)
         if val:
             parts.append(f"{field}: {str(val)[:100]}")
