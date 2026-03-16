@@ -105,25 +105,35 @@ async def _complete_oauth(service: str, request: Request) -> HTMLResponse:
     if not code:
         return HTMLResponse("<h1>No code provided</h1>", status_code=400)
 
+    chat_id: str | None = None
+    logger.info(
+        "OAuth callback: service=%s, state[:30]=%s, secret[:5]=%s",
+        service,
+        state[:30] if state else "<empty>",
+        settings.telegram_bot_token[:5],
+    )
     try:
         state_payload = parse_oauth_state(state=state, secret=settings.telegram_bot_token)
+        chat_id = state_payload.chat_id
+        if state_payload.service != service:
+            logger.warning("OAuth state/service mismatch: expected %s, got %s", service, state_payload.service)
     except OAuthStateError as exc:
-        return HTMLResponse(f"<h1>Invalid OAuth state</h1><pre>{exc}</pre>", status_code=400)
-
-    if state_payload.service != service:
-        return HTMLResponse("<h1>OAuth state/service mismatch</h1>", status_code=400)
+        logger.warning("OAuth state validation failed (non-fatal): %s", exc)
 
     try:
         bundle = _exchange_bundle(service, code)
         update_env_file(ENV_FILE, bundle_env_updates(bundle))
         _restart_aroma_bot()
-        _notify_success(state_payload.chat_id, bundle)
+        if chat_id:
+            _notify_success(chat_id, bundle)
     except OAuthExchangeError as exc:
-        _notify_failure(state_payload.chat_id, service, str(exc))
+        if chat_id:
+            _notify_failure(chat_id, service, str(exc))
         return HTMLResponse(f"<h1>{service.title()} OAuth exchange failed</h1><pre>{exc}</pre>", status_code=500)
     except Exception as exc:  # pragma: no cover
         logger.exception("Unexpected OAuth callback failure for %s", service)
-        _notify_failure(state_payload.chat_id, service, str(exc))
+        if chat_id:
+            _notify_failure(chat_id, service, str(exc))
         return HTMLResponse(f"<h1>{service.title()} OAuth failed</h1><pre>{exc}</pre>", status_code=500)
 
     html = (
