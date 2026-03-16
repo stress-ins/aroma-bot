@@ -716,6 +716,7 @@ export function createReferencesModule(deps) {
     if (!listContainer) {
       elements.draftList.innerHTML = `
         ${renderSmartSearchHero()}
+        <div id="dailyOilBanner"></div>
         <div id="referenceFilterChips"></div>
         <div id="referenceListContainer" class="plans-list"></div>
       `;
@@ -723,6 +724,7 @@ export function createReferencesModule(deps) {
       document.getElementById("smartSearchInput")?.addEventListener("input", (e) => {
         state.referenceSearch = e.target.value;
       });
+      if (tabId === "aromas") _loadDailyOilBanner();
     } else {
       const searchInput = document.getElementById("smartSearchInput");
       if (searchInput) {
@@ -1477,6 +1479,28 @@ export function createReferencesModule(deps) {
       if (window.lucide) lucide.createIcons();
     } catch {
       elements.draftDetail.innerHTML = `<div class="detail-grid">${renderBackButton()}<p class="field-help">\u0421\u043c\u0435\u0441\u044c \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d\u0430 \u0438\u043b\u0438 \u0431\u044b\u043b\u0430 \u0443\u0434\u0430\u043b\u0435\u043d\u0430</p></div>`;
+    }
+  }
+
+  /* ── Daily Oil Banner ── */
+  async function _loadDailyOilBanner() {
+    const el = document.getElementById("dailyOilBanner");
+    if (!el) return;
+    try {
+      const oil = await fetchJson("/api/references/daily-oil");
+      el.innerHTML = `
+        <div class="daily-oil-banner" onclick='openReference(${JSON.stringify(oil.slug)}, "aromas")'>
+          <div class="daily-oil-header">
+            <i data-lucide="sun" class="daily-oil-icon"></i>
+            <span class="daily-oil-label">Масло дня</span>
+          </div>
+          <h3 class="daily-oil-name">${escapeHtml(oil.name)}</h3>
+          ${oil.fact ? `<p class="daily-oil-fact">${escapeHtml(oil.fact)}</p>` : ""}
+          ${oil.daily_practice ? `<p class="daily-oil-practice"><strong>Практика:</strong> ${escapeHtml(oil.daily_practice)}</p>` : ""}
+        </div>`;
+      if (window.lucide) lucide.createIcons();
+    } catch {
+      el.innerHTML = "";
     }
   }
 
