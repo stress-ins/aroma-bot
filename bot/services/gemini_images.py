@@ -70,7 +70,15 @@ def generate_gemini_image_sync(
                 continue
             resp.raise_for_status()
             data = resp.json()
-            task_id = data.get("taskId") or data.get("data", {}).get("taskId")
+            # Check for API-level errors (e.g. insufficient balance)
+            api_code = data.get("code")
+            if api_code and api_code != 200:
+                msg = data.get("msg", "unknown API error")
+                logger.warning("%s: API error code=%s: %s", log_context, api_code, msg)
+                _notify_image_failure(log_context, f"API error {api_code}: {msg}")
+                return None
+            inner = data.get("data")
+            task_id = data.get("taskId") or (inner.get("taskId") if isinstance(inner, dict) else None)
             if not task_id:
                 logger.warning("%s: no taskId in response: %s", log_context, str(data)[:200])
                 _notify_image_failure(log_context, f"no taskId: {str(data)[:120]}")
