@@ -4320,3 +4320,18 @@ body.tg-theme-dark .blend-constructor-cta { color: #d4845e; }
   width: 12px;
   height: 12px;
 }
+
+/* -- Metrics dashboard -- */
+.metrics-section { padding: var(--space-4); }
+.metrics-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-3); margin-bottom: var(--space-3); }
+@media (min-width: 600px) { .metrics-grid { grid-template-columns: repeat(3, 1fr); } }
+.metric-card { display: flex; flex-direction: column; align-items: center; gap: var(--space-1); background: var(--surface-2); border-radius: var(--radius-sm); padding: var(--space-3) var(--space-2); text-align: center; }
+.metric-card i, .metric-card svg { width: 18px; height: 18px; color: var(--brand); }
+.metric-value { font-size: 20px; font-weight: 700; line-height: 1.2; color: var(--text); }
+.metric-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.02em; }
+.metrics-empty { display: flex; align-items: center; gap: var(--space-2); color: var(--hint); font-size: 13px; padding: var(--space-3) 0; }
+.metrics-empty i, .metrics-empty svg { width: 16px; height: 16px; opacity: 0.6; }
+.metrics-updated { font-size: 11px; color: var(--hint); margin: var(--space-2) 0; }
+.metrics-platform-label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: capitalize; margin: var(--space-2) 0 var(--space-1); }
+.plan-card-metrics-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; color: var(--muted); margin-top: var(--space-1); }
+.plan-card-metrics-badge i, .plan-card-metrics-badge svg { width: 12px; height: 12px; }
