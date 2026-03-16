@@ -44,6 +44,8 @@ export function createSessionModule(deps) {
     if (!tg) return;
     tg.ready();
     tg.expand();
+    // Request fullscreen (Bot API 8.0+); expand() is the fallback
+    try { if (tg.requestFullscreen) tg.requestFullscreen(); } catch (_e) {}
     const bgColor = tg.themeParams.secondary_bg_color;
     const textColor = tg.themeParams.text_color;
     if (bgColor) document.documentElement.style.setProperty("--panel", bgColor);
@@ -64,6 +66,15 @@ export function createSessionModule(deps) {
     applyInset();
     tg.onEvent("safeAreaChanged", applyInset);
     tg.onEvent("contentSafeAreaChanged", applyInset);
+    function syncViewportVars() {
+      const h = tg.viewportHeight;
+      const sh = tg.viewportStableHeight;
+      if (h) document.documentElement.style.setProperty("--tg-viewport-height", h + "px");
+      if (sh) document.documentElement.style.setProperty("--tg-viewport-stable-height", sh + "px");
+      if (syncMobileNavigation) syncMobileNavigation();
+    }
+    syncViewportVars();
+    tg.onEvent("viewportChanged", syncViewportVars);
     if (tg.enableClosingConfirmation) tg.enableClosingConfirmation();
     if (tg.disableVerticalSwipes) tg.disableVerticalSwipes();
     if (tg.BackButton && tg.isVersionAtLeast?.("6.9")) {
