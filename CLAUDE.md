@@ -105,6 +105,15 @@ ssh root@46.32.186.192 'screen -S symptom-reseed -d -m bash -c "cd /opt/aroma &&
 | 7 | ✅/❌ PR смержен (SF: авто; Regular: после апрува) | всегда |
 | 8 | ✅/❌ `git push origin main` выполнен | после мержа |
 | 9 | ✅/❌ Деплой проверен на VPS | после пуша в main |
+| 10 | ✅/❌ Данные проверены на VPS после обогащения | после скриптов enrich/summarize/generate |
+
+---
+
+## Верификация данных на VPS
+
+**После запуска любого скрипта обогащения** (`enrich_name_en.py`, `summarize_aroma_fields.py`, `generate_description_short.py` и др.) — **ОБЯЗАТЕЛЬНО проверить что данные реально сохранились** в БД. Запустить на VPS простой SELECT на обновлённое поле и убедиться что значение не `None`.
+
+**Правило для JSON-столбцов:** Все JSON-столбцы в `db/models.py` используют `MutableDict.as_mutable(JSON)` / `MutableList.as_mutable(JSON)` для корректного отслеживания мутаций. **При добавлении новых моделей с JSON-столбцами — всегда использовать `MutableDict`/`MutableList`.** Без этого `model.payload = new_dict` не помечает объект как dirty и `session.commit()` молча ничего не сохраняет.
 
 ---
 
