@@ -223,7 +223,8 @@ export function registerWindowBridge(deps) {
   };
 
   window.openSettingsSection = async (section) => {
-    state.settingsSection = section === "keywords" ? "keywords" : section === "brand" ? "brand" : "status";
+    const valid = ["keywords", "brand", "accounts", "status"];
+    state.settingsSection = valid.includes(section) ? section : "status";
     if (state.tab !== "settings") {
       setMode("content");
       setTab("settings");

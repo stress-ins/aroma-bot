@@ -19,7 +19,7 @@ from bot.services.carousel_assets import CAROUSEL_ASSETS_DIR, populate_carousel_
 from bot.services.drafts_store import list_recent_drafts
 from bot.services.reels_assets import ASSETS_DIR, populate_reels_frame_assets
 from miniapp.api.generation import complete_carousel_generation, complete_reels_generation
-from miniapp.api.routers import blend_constructor, carousel, create, drafts, keywords, mentions, misc, plans, publish, references, reels, threads_series, tokens, trends, user
+from miniapp.api.routers import blend_constructor, carousel, create, drafts, keywords, mentions, misc, plans, publish, references, reels, social, threads_series, tokens, trends, user
 
 BASE_DIR = Path(__file__).parent
 MINIAPP_DIR = BASE_DIR / "miniapp"
@@ -106,7 +106,7 @@ SOUNDS_DIR = BASE_DIR / "assets" / "sounds"
 SOUNDS_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/sounds", StaticFiles(directory=SOUNDS_DIR), name="sounds")
 
-for _router in (blend_constructor.router, drafts.router, carousel.router, reels.router, plans.router, references.router, create.router, keywords.router, misc.router, publish.router, threads_series.router, trends.router, mentions.router, tokens.router, user.router):
+for _router in (blend_constructor.router, drafts.router, carousel.router, reels.router, plans.router, references.router, create.router, keywords.router, misc.router, publish.router, social.router, threads_series.router, trends.router, mentions.router, tokens.router, user.router):
     app.include_router(_router)
 
 
