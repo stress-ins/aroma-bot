@@ -460,7 +460,7 @@ export function createReferencesModule(deps) {
       subtitle = keyline || "";
     } else if (state.tab === "practices" || state.tab === "concepts") {
       // Type label: "Медитация" / "Чакра"
-      subtitle = keyline || "";
+      subtitle = conceptTypeMeta(reference.source_type).label;
     }
     return `
       <section class="section aroma-hero ${heroClass}">
@@ -672,7 +672,7 @@ export function createReferencesModule(deps) {
       <article ${interactiveCardAttrs(`Открыть карточку ${item.name}`)} class="draft-card overview-card reference-card${state.tab === "concepts" ? " is-theory concept-card" : ""}${item.slug === reference?.slug ? " active" : ""} interactive-card" onclick='openReference(${JSON.stringify(item.slug)}, ${JSON.stringify(state.tab)})'>
         <div class="overview-card-top">
           <div class="draft-kind">${!["symptoms", "concepts", "blends"].includes(state.tab) ? `<span class="kind-glyph handbook-glyph" aria-hidden="true">${aromaCardIcon(item, state.tab)}</span>` : ""}${handbookCardBadge(state.tab, item) ? `<span>${state.tab === "concepts" ? `<span class="concept-kind-mark" aria-hidden="true">${escapeHtml(aromaCardIcon(item, state.tab))}</span>` : ""}${escapeHtml(handbookCardBadge(state.tab, item))}</span>` : ""}</div>
-          ${(() => { const dateLabel = formatCourseSourceLabel(item.course_source) || (state.tab === "aromas" ? REFERENCE_SOURCE_TYPE_LABELS[item.source_type] || "" : ""); return dateLabel ? `<span class="overview-card-date">${escapeHtml(dateLabel)}</span>` : ""; })()}
+          ${(() => { const courseLabel = formatCourseSourceLabel(item.course_source); const dateLabel = courseLabel || (state.tab !== "aromas" ? REFERENCE_SOURCE_TYPE_LABELS[item.source_type] || "" : ""); return dateLabel ? `<span class="overview-card-date">${escapeHtml(dateLabel)}</span>` : ""; })()}
         </div>
         <h3 class="draft-topic">${escapeHtml(state.tab === "symptoms" ? normalizePdfSymptomName(item.name) : item.name)}</h3>
         ${item.name_en ? `<div class="reference-name-en">${escapeHtml(item.name_en)}</div>` : ""}
@@ -768,7 +768,7 @@ export function createReferencesModule(deps) {
         <div class="detail-grid">
           ${renderBackButton()}
           ${renderReferenceImage(reference)}
-          ${aromaHtmlSection("Паспорт аромата", renderReferencePassport(reference))}
+          ${aromaHtmlSection("О практике", renderReferencePassport(reference))}
           ${renderCollapsibleDescription(reference)}
           ${renderCollapsibleSection("Психологические свойства", reference.psychological_properties, 280)}
           ${renderCollapsibleSection("Терапевтические свойства", reference.therapeutic_properties, 280)}
@@ -796,7 +796,7 @@ export function createReferencesModule(deps) {
         <div class="detail-grid">
           ${renderBackButton()}
           ${renderReferenceImage(reference)}
-          ${aromaHtmlSection("Паспорт аромата", renderReferencePassport(reference))}
+          ${aromaHtmlSection("О концепции", renderReferencePassport(reference))}
           ${renderCollapsibleDescription(reference)}
           ${renderCollapsibleSection("Психологические свойства", reference.psychological_properties, 280)}
           ${aromaSection('Ресурс "+"', reference.resource_values?.plus)}

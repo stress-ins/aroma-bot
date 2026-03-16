@@ -122,7 +122,12 @@ export function createSessionModule(deps) {
         if (draft.generation_pending || readyCount < slideCount) {
           scheduleCarouselRefresh(draftId, attempts - 1);
         }
-      } catch (_error) {
+      } catch (error) {
+        const msg = String(error?.message || "");
+        if (msg.includes("401") || msg.includes("403")) {
+          console.error("Carousel refresh auth error:", msg);
+          return;
+        }
         scheduleCarouselRefresh(draftId, attempts - 1);
       }
     }, 5000));
