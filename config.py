@@ -83,7 +83,7 @@ class Settings(BaseSettings):
     admin_telegram_chat_id: str = ""
 
     # Admin
-    admin_telegram_id: int = 247982221
+    admin_telegram_id: int = 62912125
 
     # Cache
     cache_ttl: int = 3600
