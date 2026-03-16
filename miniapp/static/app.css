@@ -3418,6 +3418,10 @@ body.is-mobile-layout[data-mode="handbook"] .tabs::-webkit-scrollbar { display: 
   background: rgba(86, 129, 173, 0.18);
   border-color: rgba(86, 129, 173, 0.4);
 }
+.crossref-chip .chip-icon {
+  margin-right: 4px;
+  line-height: 1;
+}
 .crossref-chip--plain {
   cursor: default;
   opacity: 0.7;

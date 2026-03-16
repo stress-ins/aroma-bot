@@ -237,20 +237,20 @@ export function createReferencesModule(deps) {
       if (meta) {
         if (targetTab === "aromas") {
           const ic = SOURCE_TYPE_ICONS[String(meta)];
-          if (ic) icon = ic + "\u00a0";
+          if (ic) icon = ic;
         } else if (targetTab === "blends") {
-          const ic = BLEND_CATEGORY_ICONS[String(meta).toUpperCase()];
-          if (ic) icon = ic + "\u00a0";
+          const ic = meta ? BLEND_CATEGORY_ICONS[String(meta).toUpperCase()] : null;
+          icon = (ic || "🧪");
         } else if (targetTab === "symptoms") {
           const ic = SYMPTOM_PARENT_GROUP_ICONS[String(meta).toUpperCase()];
-          if (ic) icon = ic + "\u00a0";
+          if (ic) icon = ic;
         }
       }
       // Filter out empty/placeholder slugs that would open nothing
       if (slug && String(slug).trim() !== "") {
-        return `<button class="crossref-chip" onclick='openReference(${JSON.stringify(slug)}, ${JSON.stringify(targetTab)})'>${icon}${escapeHtml(display)}</button>`;
+        return `<button class="crossref-chip" onclick='openReference(${JSON.stringify(slug)}, ${JSON.stringify(targetTab)})'>${icon ? `<span class="chip-icon">${icon}</span>` : ''}${escapeHtml(display)}</button>`;
       }
-      return `<span class="crossref-chip crossref-chip--plain">${icon}${escapeHtml(display)}</span>`;
+      return `<span class="crossref-chip crossref-chip--plain">${icon ? `<span class="chip-icon">${icon}</span>` : ''}${escapeHtml(display)}</span>`;
     }).filter(Boolean).join("");
     if (!chips) return "";
     return `<div class="crossref-chips">${chips}</div>`;
