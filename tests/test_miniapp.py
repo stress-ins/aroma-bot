@@ -1198,8 +1198,8 @@ class TestMiniAppRussianLocale:
         assert 'searchLabel: "Поиск темы"' in app_js
         assert 'return `PDF ${match[1].replaceAll("_", ".")}`;' in app_js
         assert 'function conceptTypeMeta(sourceType)' in app_js
-        assert 'founder: { label: "Автор", icon: "◍" }' in app_js
-        assert 'chakra: { label: "Чакра", icon: "✦" }' in app_js
+        assert 'founder: { label: "Автор",   icon: "👤" }' in app_js
+        assert 'chakra:  { label: "Чакра",   icon: "🔮" }' in app_js
         assert 'class="draft-card overview-card' in app_js
         assert 'class="kind-glyph handbook-glyph" aria-hidden="true"' in app_js
         assert 'tone-${escapeHtml(item.tone)}' in app_js

@@ -404,11 +404,11 @@ function handbookCardBadge(tabId, item = {}) {
 
 function conceptTypeMeta(sourceType) {
   const metaMap = {
-    method: { label: "Метод", icon: "◌" },
-    founder: { label: "Автор", icon: "◍" },
-    system: { label: "Система", icon: "◎" },
-    chakra: { label: "Чакра", icon: "✦" },
-    energy: { label: "Энергия", icon: "≈" },
+    method:  { label: "Метод",   icon: "🛠️" },
+    founder: { label: "Автор",   icon: "👤" },
+    system:  { label: "Система", icon: "🧬" },
+    chakra:  { label: "Чакра",   icon: "🔮" },
+    energy:  { label: "Энергия", icon: "✨" },
   };
   return metaMap[String(sourceType || "").trim()] || { label: "Теория", icon: "•" };
 }

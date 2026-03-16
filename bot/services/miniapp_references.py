@@ -278,6 +278,13 @@ def _serialize_model(model: AromaCardModel) -> dict[str, object]:
         name_ru = str(payload.get("name_ru", "")).strip()
         payload["name"] = name_ru or model.name
         payload["name_en"] = model.name if (name_ru and model.name != name_ru) else ""
+    elif model.category == "aroma":
+        name_ru = str(payload.get("name_ru", "")).strip()
+        if name_ru and name_ru != model.name:
+            payload["name"] = name_ru
+            payload["name_en"] = model.name
+        else:
+            payload["name"] = model.name
     else:
         payload["name"] = model.name
     payload["category"] = model.category
@@ -482,6 +489,7 @@ async def list_reference_cards(category: str) -> list[dict[str, str]]:
             "description_short": str(payload.get("description_short", "")),
             "category": model.category,
             "source_type": model.source_type,
+            "key": str(payload.get("key", "")),
             # Extra fields used by frontend search / grouping
             "conditions_for_use": str(payload.get("conditions_for_use", "")),
             "category_group": str(payload.get("category_group", "")),

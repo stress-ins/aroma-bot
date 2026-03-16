@@ -428,6 +428,7 @@ def page(miniapp_server: str):
         page = context.new_page()
         page.on("console", lambda msg: print(f"\nBROWSER [{msg.type}]: {msg.text}"))
         page.on("pageerror", lambda err: print(f"\nBROWSER ERROR: {err}"))
+        context.add_init_script("localStorage.setItem('aroma_onboarded', '1')")
         page.goto(miniapp_server, wait_until="load")
         page.wait_for_selector("body.app-ready", timeout=15000)
         yield page
@@ -450,6 +451,7 @@ def desktop_page(miniapp_server: str):
         page = context.new_page()
         page.on("console", lambda msg: print(f"\nBROWSER [{msg.type}]: {msg.text}"))
         page.on("pageerror", lambda err: print(f"\nBROWSER ERROR: {err}"))
+        context.add_init_script("localStorage.setItem('aroma_onboarded', '1')")
         page.goto(miniapp_server, wait_until="load")
         page.wait_for_selector("body.app-ready", timeout=15000)
         yield page
