@@ -47,7 +47,7 @@ class TestAnalyzeTextPlacement:
         placement = {"top": 0.6, "left": 0.1, "width": 0.8, "height": 0.25, "text_color": "light"}
 
         import json as _json
-        with patch("bot.services.claude_client.call_claude", return_value=_json.dumps(placement)):
+        with patch("bot.agents.carousel_preview_agent.call_claude", return_value=_json.dumps(placement)):
             result = analyze_text_placement(img, 0)
 
         assert isinstance(result, dict)
@@ -61,7 +61,7 @@ class TestAnalyzeTextPlacement:
         placement = {"top": 1.5, "left": -0.2, "width": 0.8, "height": 0.3, "text_color": "dark"}
 
         import json as _json
-        with patch("bot.services.claude_client.call_claude", return_value=_json.dumps(placement)):
+        with patch("bot.agents.carousel_preview_agent.call_claude", return_value=_json.dumps(placement)):
             result = analyze_text_placement(img, 1)
 
         assert result["top"] == 1.0
@@ -73,7 +73,7 @@ class TestAnalyzeTextPlacement:
         bias = {"top": -0.1, "left": 0.05}
 
         import json as _json
-        with patch("bot.services.claude_client.call_claude", return_value=_json.dumps(placement)):
+        with patch("bot.agents.carousel_preview_agent.call_claude", return_value=_json.dumps(placement)):
             result = analyze_text_placement(img, 0, bias=bias)
 
         assert abs(result["top"] - 0.4) < 0.001
@@ -82,7 +82,7 @@ class TestAnalyzeTextPlacement:
     def test_fallback_on_error(self):
         img = _make_test_image()
 
-        with patch("bot.services.claude_client.call_claude", side_effect=Exception("API error")):
+        with patch("bot.agents.carousel_preview_agent.call_claude", side_effect=Exception("API error")):
             result = analyze_text_placement(img, 0)
 
         assert result["source"] == "heuristic"
@@ -93,7 +93,7 @@ class TestAnalyzeTextPlacement:
     def test_fallback_on_invalid_json(self):
         img = _make_test_image()
 
-        with patch("bot.services.claude_client.call_claude", return_value="not json at all"):
+        with patch("bot.agents.carousel_preview_agent.call_claude", return_value="not json at all"):
             result = analyze_text_placement(img, 2)
 
         assert result["source"] == "heuristic"
@@ -101,7 +101,7 @@ class TestAnalyzeTextPlacement:
     def test_role_assignment(self):
         img = _make_test_image()
         for i, role in enumerate(SLIDE_ROLES):
-            with patch("bot.services.claude_client.call_claude", side_effect=Exception("skip")):
+            with patch("bot.agents.carousel_preview_agent.call_claude", side_effect=Exception("skip")):
                 result = analyze_text_placement(img, i)
             assert result["role"] == role
 
