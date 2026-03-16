@@ -4,7 +4,7 @@
  * Supports immediate publish and scheduling.
  */
 export function createPublishModule(deps) {
-  const { fetchJson, withButtonFeedback, escapeHtml, tagMarkup, uiIcon, showUiNotice } = deps;
+  const { fetchJson, withButtonFeedback, escapeHtml, tagMarkup, uiIcon, showUiNotice, mergeDraftIntoState, renderDraftList, renderDraftDetail } = deps;
 
   const PLATFORM_SVG = {
     threads: `<svg class="publish-platform-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15 12a3 3 0 1 1-3-3c2 0 3.5 1 3.5 3s-1.5 3-3.5 3"/></svg>`,
@@ -82,6 +82,12 @@ export function createPublishModule(deps) {
         method: "POST",
         body: JSON.stringify(body),
       });
+      const draft = await fetchJson(`/api/drafts/${draftId}`);
+      if (draft && mergeDraftIntoState) {
+        mergeDraftIntoState(draft);
+        if (renderDraftList) renderDraftList();
+        if (renderDraftDetail) renderDraftDetail(draft);
+      }
       _startStatusPoll(draftId);
     }, withSchedule ? "Запланировано" : "Отправлено");
   }
