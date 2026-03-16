@@ -124,8 +124,8 @@ export function createCarouselModule(deps) {
             const note = bufferedCarouselNote(draftId, index, String(noteItems[index] || ""));
             const versions = Array.isArray(versionItems[index]) ? versionItems[index] : [];
             const imgHtml = img?.url
-              ? `<img class="frame-image" src="${escapeHtml(img.url)}" alt="Слайд ${index + 1}" />`
-              : `<div class="frame-loading"><div class="frame-loading-inner"><span class="button-spinner" aria-hidden="true"></span><span>Изображение ещё готовится</span></div></div>`;
+              ? `<div class="carousel-slide-image-wrap"><img src="${escapeHtml(img.url)}" alt="Слайд ${index + 1}" /></div>`
+              : `<div class="carousel-slide-image-wrap"><div class="frame-loading"><div class="frame-loading-inner"><span class="button-spinner" aria-hidden="true"></span><span>Изображение ещё готовится</span></div></div></div>`;
             return `
               <article class="slide">
                 <strong>Слайд ${index + 1}</strong>
@@ -138,6 +138,7 @@ export function createCarouselModule(deps) {
                 <p class="field-help">После правки нажмите «Сохранить подпись», чтобы обновить этот слайд в черновике.</p>
                 <div class="actions-row prompt-actions actions-grid-two">
                   <button class="primary-button" type="button" aria-label="Сохранить текст слайда" onclick="saveCarouselSlideText(${JSON.stringify(draftId)}, ${index}, this)">${actionLabel("text", "Сохранить подпись")}</button>
+                  <button class="secondary-button" type="button" ${!img?.url ? "disabled" : ""} onclick="previewCarouselSlide(${JSON.stringify(draftId)}, ${index}, this)">${actionLabel("eye", "Предпросмотр с текстом")}</button>
                 </div>
                 ${prompt ? (() => {
                     const discOpen = isPromptDisclosureOpen(`carousel:${draftId}:${index}`, !img?.url);
@@ -303,6 +304,47 @@ export function createCarouselModule(deps) {
     }
   }
 
+  function showPreviewModal(imageUrl, title) {
+    const existing = document.getElementById("previewModal");
+    if (existing) existing.remove();
+    const modal = document.createElement("div");
+    modal.id = "previewModal";
+    modal.className = "preview-modal-backdrop";
+    modal.innerHTML = `
+      <div class="preview-modal" role="dialog" aria-modal="true" aria-label="${escapeHtml(title)}">
+        <div class="preview-modal-header">
+          <h3>${escapeHtml(title)}</h3>
+          <button class="secondary-button preview-modal-close" type="button">${uiIcon("x")}</button>
+        </div>
+        <div class="preview-modal-body">
+          <img src="${imageUrl}" alt="${escapeHtml(title)}" />
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    if (window.lucide) lucide.createIcons();
+    const cleanup = () => { URL.revokeObjectURL(imageUrl); modal.remove(); };
+    modal.querySelector(".preview-modal-close").addEventListener("click", cleanup);
+    modal.addEventListener("click", (e) => { if (e.target === modal) cleanup(); });
+  }
+
+  async function previewCarouselSlide(draftId, slideIndex, button) {
+    try {
+      await withButtonFeedback(button, "Генерирую...", async () => {
+        const previewUrl = `/api/carousel/${draftId}/slides/${slideIndex}/preview${authQueryString()}`;
+        const resp = await fetch(previewUrl, {
+          headers: deps.initDataHeaders ? deps.initDataHeaders() : {},
+        });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const blob = await resp.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        showPreviewModal(objectUrl, `Слайд ${slideIndex + 1} — предпросмотр`);
+      }, "Готово");
+    } catch (error) {
+      showRequestError("Не удалось сгенерировать предпросмотр", error);
+    }
+  }
+
   async function importCarouselPptx(draftId, button) {
     const input = document.createElement("input");
     input.type = "file";
@@ -363,6 +405,7 @@ export function createCarouselModule(deps) {
     regenerateCarouselAll,
     selectCarouselSlideVersion,
     deleteCarouselSlideVersion,
+    previewCarouselSlide,
     downloadCarouselPptx,
     importCarouselPptx,
   };

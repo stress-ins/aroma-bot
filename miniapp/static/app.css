@@ -3209,6 +3209,74 @@ body.tg-theme-dark .concept-card {
   display: block;
 }
 
+/* ── Carousel slide image container (4:5 aspect ratio) ───────────────────── */
+.carousel-slide-image-wrap {
+  aspect-ratio: 4 / 5;
+  background: var(--bg);
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  margin-top: 10px;
+}
+.carousel-slide-image-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.carousel-slide-image-wrap .frame-loading {
+  margin-top: 0;
+  height: 100%;
+  border: none;
+  border-radius: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Preview modal ───────────────────────────────────────────────────────── */
+.preview-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.preview-modal {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  max-width: 500px;
+  width: 100%;
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+}
+.preview-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.preview-modal-header h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+.preview-modal-close {
+  min-width: 0 !important;
+  padding: 6px 8px !important;
+}
+.preview-modal-body {
+  padding: 0;
+}
+.preview-modal-body img {
+  width: 100%;
+  display: block;
+}
+
 .frame-loading {
   margin-top: 10px;
   padding: 24px;

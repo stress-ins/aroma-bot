@@ -363,8 +363,15 @@ def _generate_slide_image_prompts_sync(slides: list[str], topic: str, arc: str |
     prompt = (
         f'You are an art director for an Instagram carousel on the topic: "{topic}"\n\n'
         f"{arc_description}\n\n"
+        "Step 1: Based on the topic above, determine the ideal color palette, mood, and lighting.\n"
+        "The palette must match the emotional tone of the topic. Examples:\n"
+        "- 'кайф от кабриолета' → bright sun, azure sky, warm golden light, vivid saturated colors\n"
+        "- 'заземление через аромат' → earth tones, terracotta, sage, warm wood\n"
+        "- 'зимний уют' → deep amber, warm burgundy, soft candlelight glow\n"
+        "Step 2: Generate image prompts using YOUR chosen palette consistently across all slides.\n\n"
         "Universal rules:\n"
-        "- Palette: terracotta, beige, sage green, warm wood tones\n"
+        "- Color intensity: images MUST have rich, saturated tones matching the topic mood. "
+        "NEVER produce grey, muted, washed-out, or desaturated images regardless of topic.\n"
         "- Forbidden everywhere: stock photo look, plastic, harsh shadows, "
         "white/grey plain backgrounds, human faces, any text or typography\n"
         f"- Also forbidden everywhere: {_forbidden_visual_motifs_text()}\n"
@@ -373,6 +380,7 @@ def _generate_slide_image_prompts_sync(slides: list[str], topic: str, arc: str |
         "Generate one image prompt per slide. Each must:\n"
         "- Be 25-40 words in English\n"
         "- Strictly follow that slide's Show/Forbidden rules\n"
+        "- Use the palette you chose in Step 1\n"
         "- Be visually distinct from other slides\n"
         "- End with: --ar 4:5 --style atmospheric\n\n"
         f"{slides_desc}\n\n"
@@ -402,8 +410,8 @@ def _generate_slide_image_prompts_sync(slides: list[str], topic: str, arc: str |
         else:
             role_hint = (rules[i][0].split(" — ")[0] if i < len(rules) else "supporting")
             result.append(
-                f"terracotta and sage minimal lifestyle, {slide[:35]}, "
-                f"soft natural light, {role_hint}, dried herbs, "
+                f"vibrant lifestyle scene matching '{topic}', {slide[:35]}, "
+                f"rich saturated colors, natural light, {role_hint}, "
                 "--ar 4:5 --style atmospheric"
             )
     return result
