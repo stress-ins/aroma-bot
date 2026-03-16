@@ -261,3 +261,20 @@ class ApiCostLog(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=lambda: datetime.now(timezone.utc)
     )
+
+
+class PostMetricsModel(Base):
+    """Stores engagement metric snapshots for published posts."""
+
+    __tablename__ = "post_metrics"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    draft_id: Mapped[str] = mapped_column(String(32), index=True)
+    platform: Mapped[str] = mapped_column(String(32))  # threads | instagram
+    external_id: Mapped[str] = mapped_column(String(255), default="")
+    metrics: Mapped[dict[str, Any]] = mapped_column(
+        MutableDict.as_mutable(JSON), default=dict
+    )
+    fetched_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )

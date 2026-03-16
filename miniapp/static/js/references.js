@@ -1218,11 +1218,20 @@ export function createReferencesModule(deps) {
           <input type="text" id="blendCustomOilInput" class="field-input" placeholder="\u041d\u0430\u043f\u0440\u0438\u043c\u0435\u0440: \u041b\u0430\u0432\u0430\u043d\u0434\u0430">
           <button class="secondary-button" id="blendAdjustBtn" type="button" onclick="blendAdjustWithOil(this)">\u041f\u0435\u0440\u0435\u0441\u0442\u0440\u043e\u0438\u0442\u044c</button>
         </div>
+        <button class="secondary-button" id="blendRegenBtn" type="button" style="margin-top:8px;width:100%" onclick="blendRegenerate(this)">\u041f\u0435\u0440\u0435\u0433\u0435\u043d\u0435\u0440\u0438\u0440\u043e\u0432\u0430\u0442\u044c \u0441\u043c\u0435\u0441\u044c</button>
       </section>
       <div class="blend-actions-stack">
         <div class="actions-grid-two">
           <button class="primary-button" id="blendSaveBtn" type="button" onclick="blendSaveCurrentBlend(this)">\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c \u0441\u043c\u0435\u0441\u044c</button>
           <button class="secondary-button" type="button" onclick="blendCreateContent()">\u0421\u043e\u0437\u0434\u0430\u0442\u044c \u043a\u043e\u043d\u0442\u0435\u043d\u0442</button>
+        </div>
+        <div id="blendContentPicker" hidden style="margin-top:6px">
+          <p class="field-help" style="margin-bottom:6px">\u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u0444\u043e\u0440\u043c\u0430\u0442:</p>
+          <div class="chip-list">
+            <button class="chip chip-selectable" onclick="blendLaunchContent('content')">\u041f\u043e\u0441\u0442</button>
+            <button class="chip chip-selectable" onclick="blendLaunchContent('threads_series')">\u0421\u0435\u0440\u0438\u044f Threads</button>
+            <button class="chip chip-selectable" onclick="blendLaunchContent('carousel')">\u041a\u0430\u0440\u0443\u0441\u0435\u043b\u044c</button>
+          </div>
         </div>
         <div class="actions-grid-two">
           <button class="secondary-button" onclick="openBlendConstructor()">\u041d\u043e\u0432\u0430\u044f \u0441\u043c\u0435\u0441\u044c</button>
@@ -1303,17 +1312,43 @@ export function createReferencesModule(deps) {
   }
 
   function blendCreateContent() {
+    const picker = document.getElementById("blendContentPicker");
+    if (picker) picker.hidden = !picker.hidden;
+  }
+
+  function blendLaunchContent(toolId) {
     if (!_blendState?.result) return;
     const r = _blendState.result;
     const req = _blendState.origRequest || {};
-    const oils = (_blendState.oils || r.oils).filter(o => o.active !== false).map(o => o.name_ru).join(", ");
-    const topic = `${r.title}: \u0441\u043c\u0435\u0441\u044c \u0434\u043b\u044f ${req.brief || (r.tags || []).join(", ")}. \u0421\u043e\u0441\u0442\u0430\u0432: ${oils}.`;
-    if (typeof setTab === "function") setTab("create");
-    setTimeout(() => {
-      if (typeof renderCreateTool === "function") renderCreateTool("content");
-      const textarea = document.getElementById("createTopic") || document.querySelector("#createForm textarea");
-      if (textarea) { textarea.value = topic; textarea.dispatchEvent(new Event("input")); }
-    }, 150);
+    const oilsList = (_blendState.oils || r.oils).filter(o => o.active !== false).map(o => `${o.name_ru} ${o.displayDrops || o.drops} \u043a\u0430\u043f.`).join(", ");
+    const topic = `${r.title}${req.brief ? ": " + req.brief : ""}. \u0421\u043e\u0441\u0442\u0430\u0432: ${oilsList}.`;
+    if (typeof window.openCreateTool === "function") window.openCreateTool(toolId);
+    let attempts = 0;
+    const tryFill = () => {
+      attempts++;
+      const selectors = ["[data-create-content] [name=topic]", "[data-create-threads-series] [name=topic]", "[data-create-carousel] [name=topic]", "#createForm textarea"];
+      for (const sel of selectors) {
+        const ta = document.querySelector(sel);
+        if (ta && !ta.value) { ta.value = topic; ta.dispatchEvent(new Event("input")); return; }
+      }
+      if (attempts < 15) setTimeout(tryFill, 80);
+    };
+    setTimeout(tryFill, 80);
+  }
+
+  function blendRegenerate(btn) {
+    if (!_blendState?.origRequest) return;
+    const req = _blendState.origRequest;
+    if (btn) { btn.disabled = true; btn.textContent = "\u0413\u0435\u043d\u0435\u0440\u0438\u0440\u0443\u044e..."; }
+    fetchJson("/api/blend-constructor/construct", {
+      method: "POST",
+      body: JSON.stringify(req),
+    }).then(result => {
+      renderBlendResult(result);
+    }).catch(() => {
+      showUiNotice("\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043f\u0435\u0440\u0435\u0433\u0435\u043d\u0435\u0440\u0438\u0440\u043e\u0432\u0430\u0442\u044c", "error");
+      if (btn) { btn.disabled = false; btn.textContent = "\u041f\u0435\u0440\u0435\u0433\u0435\u043d\u0435\u0440\u0438\u0440\u043e\u0432\u0430\u0442\u044c \u0441\u043c\u0435\u0441\u044c"; }
+    });
   }
 
   function blendAdjustWithOil(btn) {
@@ -1410,6 +1445,8 @@ export function createReferencesModule(deps) {
     submitBlendConstructor,
     blendSaveCurrentBlend,
     blendCreateContent,
+    blendLaunchContent,
+    blendRegenerate,
     blendAdjustWithOil,
     openSavedBlends,
     deleteSavedBlend,

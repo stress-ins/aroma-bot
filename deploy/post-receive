@@ -1,0 +1,26 @@
+#!/bin/bash
+echo '=== Deploy started ==='
+GIT_WORK_TREE=/opt/aroma GIT_DIR=/opt/aroma.git git checkout -f main
+cd /opt/aroma
+
+# Update dependencies
+if [ -f requirements.txt ]; then
+    /opt/aroma/.venv/bin/pip install -q -r requirements.txt
+fi
+
+# Run migrations
+/opt/aroma/.venv/bin/alembic upgrade head
+
+# Sync aroma cards (upsert)
+/opt/aroma/.venv/bin/python scripts/patch_aroma_cards.py
+
+# Restart services
+systemctl restart aroma-bot
+systemctl restart threads-oauth
+echo '=== threads-oauth restarted ==='
+if systemctl is-enabled aroma-miniapp &>/dev/null; then
+    systemctl restart aroma-miniapp
+    echo '=== aroma-miniapp restarted ==='
+fi
+
+echo '=== Deploy done ==='
