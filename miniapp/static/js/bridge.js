@@ -80,6 +80,11 @@ export function registerWindowBridge(deps) {
     selectApp,
     updateConstructBtn,
     submitBlendConstructor,
+    openSavedBlends,
+    blendSaveCurrentBlend,
+    blendCreateContent,
+    blendAdjustWithOil,
+    deleteSavedBlend,
   } = deps;
 
   window.retryCurrentTab = retryCurrentTab;
@@ -171,6 +176,11 @@ export function registerWindowBridge(deps) {
   window.selectApp = selectApp;
   window.updateConstructBtn = updateConstructBtn;
   window.submitBlendConstructor = submitBlendConstructor;
+  window.openSavedBlends = openSavedBlends;
+  window.blendSaveCurrentBlend = blendSaveCurrentBlend;
+  window.blendCreateContent = blendCreateContent;
+  window.blendAdjustWithOil = blendAdjustWithOil;
+  window.deleteSavedBlend = deleteSavedBlend;
 
   window.openImageFullscreen = function(src, title) {
     const existing = document.getElementById("img-fullscreen-modal");

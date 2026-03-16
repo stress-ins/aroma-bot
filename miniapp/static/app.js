@@ -1370,6 +1370,11 @@ const {
   selectApp,
   updateConstructBtn,
   submitBlendConstructor,
+  blendSaveCurrentBlend,
+  blendCreateContent,
+  blendAdjustWithOil,
+  openSavedBlends,
+  deleteSavedBlend,
 } = createReferencesModule({
   state,
   elements,
@@ -1867,6 +1872,11 @@ registerWindowBridge({
   selectApp,
   updateConstructBtn,
   submitBlendConstructor,
+  blendSaveCurrentBlend,
+  blendCreateContent,
+  blendAdjustWithOil,
+  openSavedBlends,
+  deleteSavedBlend,
 });
 
 function renderInbox() { return renderInboxImpl(); }

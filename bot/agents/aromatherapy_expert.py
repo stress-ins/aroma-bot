@@ -74,7 +74,7 @@ _CONSTRUCT_BLEND_PROMPT = """\
 Желаемые эффекты: {effects}
 Скорость действия: {speed}
 Способ применения: {application}
-Дополнительные ограничения: {contraindications}
+Дополнительные ограничения: {contraindications}{custom_oils_block}
 
 Справочник масел для подбора:
 {reference_context}
@@ -106,12 +106,12 @@ _CONSTRUCT_BLEND_PROMPT = """\
 - 3-5 масел, не больше
 - Каждое масло имеет роль: основа / усилитель / модификатор / активатор
 - Объяснение — живым языком без научных терминов
-- Только те масла которые есть в справочнике
+- Только те масла которые есть в справочнике{custom_oils_require}
 """
 
 
 _SPEED_LABELS = {"fast": "быстрое", "medium": "среднее", "extended": "пролонгированное"}
-_APP_LABELS = {"diffuser": "диффузор", "topical": "нанесение на кожу", "internal": "приём внутрь"}
+_APP_LABELS = {"diffuser": "диффузор", "topical": "нанесение на кожу", "internal": "приём внутрь", "any": "любой (диффузор, нанесение или приём внутрь)"}
 
 
 def construct_blend_sync(
@@ -121,9 +121,20 @@ def construct_blend_sync(
     application: str,
     contraindications: str,
     reference_context: str,
+    custom_oils: list[str] | None = None,
 ) -> dict:
     """Synchronous blend construction via aromatherapy expert agent."""
-    from bot.services.claude_client import call_claude
+    from bot.services.claude_client import SONNET, call_claude
+
+    custom_oils_block = ""
+    custom_oils_require = ""
+    if custom_oils:
+        oils_str = ", ".join(custom_oils)
+        custom_oils_block = f"\nМасла которые ОБЯЗАТЕЛЬНО включить в смесь: {oils_str}"
+        custom_oils_require = (
+            f"\n- ОБЯЗАТЕЛЬНО включи в состав: {oils_str} "
+            f"— подбери им подходящую роль и дозировку"
+        )
 
     prompt = _CONSTRUCT_BLEND_PROMPT.format(
         brief=brief,
@@ -132,11 +143,14 @@ def construct_blend_sync(
         application=_APP_LABELS.get(application, application),
         contraindications=contraindications or "нет",
         reference_context=reference_context[:2000],
+        custom_oils_block=custom_oils_block,
+        custom_oils_require=custom_oils_require,
     )
 
     raw = call_claude(
         messages=[{"role": "user", "content": prompt}],
         max_tokens=800,
+        model=SONNET,
         context="blend_constructor/expert",
     )
 
