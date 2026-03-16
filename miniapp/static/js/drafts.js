@@ -44,8 +44,7 @@ export function createDraftsModule(deps) {
   function fullPreview(d) {
     const p = d.payload || {};
     if (d.kind === "carousel" && Array.isArray(p.slides) && p.slides.length) {
-      const preview = p.slides.slice(0, 2).join(" / ");
-      return p.slides.length > 2 ? preview + " …" : preview;
+      return p.hook || p.angle || p.caption || p.slides[0] || "";
     }
     return p.caption || p.hook || p.angle || d.preview || "";
   }

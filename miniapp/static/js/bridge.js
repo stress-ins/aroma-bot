@@ -134,6 +134,17 @@ export function registerWindowBridge(deps) {
   window.removeTodoItem = (id) => removeTodoItem(id);
   window.renderCreateTool = renderCreateTool;
 
+  window.openImageFullscreen = function(src, title) {
+    const existing = document.getElementById("img-fullscreen-modal");
+    if (existing) existing.remove();
+    const modal = document.createElement("div");
+    modal.id = "img-fullscreen-modal";
+    modal.style.cssText = "position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;cursor:zoom-out;-webkit-tap-highlight-color:transparent";
+    modal.innerHTML = `<img src="${src}" style="max-width:100vw;max-height:100vh;object-fit:contain" alt="${title || ""}">`;
+    modal.addEventListener("click", () => modal.remove());
+    document.body.appendChild(modal);
+  };
+
   window.expandSection = function(btn) {
     const wrap = btn.closest(".exp-section-wrap");
     if (!wrap) return;

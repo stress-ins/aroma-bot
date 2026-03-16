@@ -4,6 +4,7 @@ import asyncio
 import logging
 
 from sqlalchemy import select
+from sqlalchemy.orm.attributes import flag_modified
 
 from db.models import AromaCardModel
 from db.session import AsyncSessionLocal
@@ -87,6 +88,7 @@ async def main() -> None:
                 continue
             payload["name_en"] = en
             model.payload = payload
+            flag_modified(model, "payload")
             updated += 1
             log.info("  %s → %s", model.slug, en)
         await session.commit()
