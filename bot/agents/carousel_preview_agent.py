@@ -7,11 +7,9 @@ import json
 import logging
 from pathlib import Path
 
-import anthropic
-
 from bot.services.drafts_store import get_draft, update_draft
 from bot.services.carousel_assets import load_carousel_slide_images
-from config import settings
+from bot.services.claude_client import call_claude
 
 logger = logging.getLogger(__name__)
 
@@ -60,10 +58,7 @@ def analyze_text_placement(
             f"- \"text_color\": \"light\" or \"dark\" (what text color works best)\n"
         )
 
-        client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
-        resp = client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=200,
+        raw = call_claude(
             messages=[{
                 "role": "user",
                 "content": [
@@ -78,8 +73,9 @@ def analyze_text_placement(
                     {"type": "text", "text": prompt},
                 ],
             }],
+            max_tokens=200,
+            context="carousel_preview",
         )
-        raw = resp.content[0].text.strip()
         # Strip markdown fences if present
         if raw.startswith("```"):
             raw = raw.split("\n", 1)[1] if "\n" in raw else raw[3:]

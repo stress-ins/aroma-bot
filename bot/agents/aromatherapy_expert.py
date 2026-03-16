@@ -98,7 +98,7 @@ async def verify_card_content(card: dict[str, Any], *, dry_run: bool = False) ->
         }
 
     try:
-        import anthropic
+        from bot.services.claude_client import call_claude
 
         card_summary = {
             "name": card.get("name"),

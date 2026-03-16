@@ -258,32 +258,32 @@ _PROMPT_TOPICS = """\
 # ── Claude helpers ──────────────────────────────────────────────────────────
 
 def _claude_topics_carousel(trends_text: str) -> list[str]:
-    import anthropic
-    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
-    resp = client.messages.create(
-        model="claude-haiku-4-5-20251001",
+    from bot.services.claude_client import call_claude
+    text = call_claude(
+        messages=[{"role": "user", "content": f"Тренды:\n{trends_text}"}],
         max_tokens=800,
         system=_PROMPT_TOPICS,
-        messages=[{"role": "user", "content": f"Тренды:\n{trends_text}"}],
+        context="carousel topics",
     )
     topics: list[str] = []
-    for line in resp.content[0].text.strip().splitlines():
+    for line in text.splitlines():
         line = line.strip()
         if line and line[0].isdigit() and ". " in line:
             topics.append(line.split(". ", 1)[1].strip())
     return topics[:10]
 
 
-def _claude_carousel_draft(topic: str) -> tuple[list[str], str]:
+def _claude_carousel_draft(topic: str, angle: str = "", hook: str = "") -> tuple[list[str], str]:
     from bot.agents.carousel_editor import _parse_slides
-    import anthropic
-    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
-    resp = client.messages.create(
-        model="claude-haiku-4-5-20251001",
+    from bot.services.claude_client import call_claude
+    user_content = _PROMPT_CAROUSEL.format(topic=topic)
+    if angle or hook:
+        user_content += f"\n\nСтратег предложил:\nУгол: {angle}\nХук: {hook}\nИспользуй этот угол и хук как основу."
+    text = call_claude(
+        messages=[{"role": "user", "content": user_content}],
         max_tokens=900,
-        messages=[{"role": "user", "content": _PROMPT_CAROUSEL.format(topic=topic)}],
+        context="carousel draft",
     )
-    text = resp.content[0].text.strip()
     slides = [_fix_dashes(s) for s in _parse_slides(text, count=5)]
     img_prompt = ""
     for line in text.splitlines():
@@ -296,17 +296,16 @@ def _claude_carousel_draft(topic: str) -> tuple[list[str], str]:
 
 def _detect_topic_arc_sync(topic: str, slides: list[str]) -> str:
     """Ask Claude to classify the carousel's emotional arc. Falls back to problem_solution."""
-    import anthropic
+    from bot.services.claude_client import call_claude
     slides_text = "\n".join(f"{i + 1}. {s}" for i, s in enumerate(slides[:3]))
     prompt_text = _ARC_DETECT_PROMPT.format(topic=topic, slides_text=slides_text)
     try:
-        client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
-        resp = client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=10,
+        raw = call_claude(
             messages=[{"role": "user", "content": prompt_text}],
+            max_tokens=10,
+            context="carousel arc detect",
         )
-        arc = resp.content[0].text.strip().lower().replace("-", "_").split()[0]
+        arc = raw.lower().replace("-", "_").split()[0]
         if arc in _ARC_VISUAL_RULES:
             logger.info("carousel: detected arc=%s for topic=%r", arc, topic)
             return arc
@@ -338,7 +337,7 @@ def _generate_slide_image_prompts_sync(slides: list[str], topic: str, arc: str |
     The visual rules and system description adapt to the detected arc so that
     a pleasure-focused topic never gets the dark 'problem' world in its first slides.
     """
-    import anthropic
+    from bot.services.claude_client import call_claude
 
     if arc is None:
         arc = _detect_topic_arc_sync(topic, slides)
@@ -389,15 +388,14 @@ def _generate_slide_image_prompts_sync(slides: list[str], topic: str, arc: str |
         + "\n".join(f"IMG{i + 1}: [prompt]" for i in range(len(slides)))
     )
 
-    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
-    resp = client.messages.create(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=900,
+    raw_text = call_claude(
         messages=[{"role": "user", "content": prompt}],
+        max_tokens=900,
+        context="carousel image prompts",
     )
 
     parsed: dict[int, str] = {}
-    for line in resp.content[0].text.strip().splitlines():
+    for line in raw_text.splitlines():
         line = line.strip()
         for i in range(1, len(slides) + 1):
             if line.startswith(f"IMG{i}:"):
@@ -427,9 +425,12 @@ def _generate_carousel_sync(topic: str, user_forbidden: list[str] | None = None)
     from bot.agents.carousel_editor import edit_carousel_sync
     import time
 
+    from bot.agents.content import _generate_strategist_sync
+    angle, hook = _generate_strategist_sync(topic, goal_key="trust", format_key="carousel")
+
     for attempt in range(2):
         try:
-            raw_slides, _ = _claude_carousel_draft(topic)
+            raw_slides, _ = _claude_carousel_draft(topic, angle, hook)
             if not raw_slides:
                 logger.warning("_claude_carousel_draft empty on attempt %d, topic: %s", attempt + 1, topic)
                 if attempt == 0:
@@ -501,7 +502,7 @@ def _qa_image_sync(
     img_bytes: bytes, prompt: str, note: str = "", slide_idx: int = -1
 ) -> tuple[bool, str]:
     """Vision QA: check for hallucinations, forbidden elements, slide rules, note compliance."""
-    import anthropic
+    from bot.services.claude_client import call_claude
     import base64
 
     # Per-slide visual rules check
@@ -533,10 +534,7 @@ def _qa_image_sync(
         f"REASON: [one short sentence. If PASS write: OK]"
     )
     try:
-        client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
-        resp = client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=80,
+        text = call_claude(
             messages=[{
                 "role": "user",
                 "content": [
@@ -551,8 +549,9 @@ def _qa_image_sync(
                     {"type": "text", "text": qa_prompt},
                 ],
             }],
+            max_tokens=80,
+            context="carousel qa image",
         )
-        text = resp.content[0].text.strip()
         passed = text.upper().startswith("PASS")
         reason = ""
         for line in text.splitlines():
@@ -876,7 +875,7 @@ def _slide_actions_keyboard(idx: int) -> InlineKeyboardMarkup:
 
 def _regen_slide_text_sync(topic: str, slides: list[str], idx: int) -> str:
     """Ask Claude to rewrite a single slide, aware of its role and neighbours."""
-    import anthropic
+    from bot.services.claude_client import call_claude
     role = _SLIDE_VISUAL_ROLES[idx] if idx < len(_SLIDE_VISUAL_ROLES) else "supporting slide"
     label = _SLIDE_LABELS[idx] if idx < len(_SLIDE_LABELS) else f"Слайд {idx + 1}"
     others = "\n".join(
@@ -891,13 +890,12 @@ def _regen_slide_text_sync(topic: str, slides: list[str], idx: int) -> str:
         f"Требования: максимум 5-6 строк, до 10 слов в строке, живой язык, без клише, без длинных тире.\n"
         f"Верни только текст слайда — ничего больше."
     )
-    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
-    resp = client.messages.create(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=300,
+    text = call_claude(
         messages=[{"role": "user", "content": prompt}],
+        max_tokens=300,
+        context="carousel regen slide",
     )
-    return _fix_dashes(resp.content[0].text.strip())
+    return _fix_dashes(text)
 
 
 async def _show_slide_for_edit(

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from config import settings
 from bot.services.brand_settings_store import get_brand_settings_cached
+from bot.services.claude_client import call_claude
 
 _PLAN_PROMPT = """\
 {brand_context}
@@ -41,14 +41,10 @@ _PLAN_PROMPT = """\
 
 
 def generate_plan_sync(trends_text: str) -> str:
-    import anthropic
-
-    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
     bs = get_brand_settings_cached()
     prompt = _PLAN_PROMPT.format(brand_context=bs.brand_voice, trends_text=trends_text)
-    resp = client.messages.create(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=1200,
+    return call_claude(
         messages=[{"role": "user", "content": prompt}],
+        max_tokens=1200,
+        context="planner",
     )
-    return resp.content[0].text.strip()

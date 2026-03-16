@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from config import settings
 from bot.agents.content import _HUMAN_WRITING_RULES
+from bot.services.claude_client import call_claude
 from bot.services.brand_settings_store import get_brand_settings_cached
 from bot.services.humanizer import humanize
 
@@ -41,9 +41,6 @@ _ADAPT_PROMPT = """\
 
 
 def adapt_text_sync(original_text: str, target_platform: str) -> str:
-    import anthropic
-
-    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
     bs = get_brand_settings_cached()
     prompt = _ADAPT_PROMPT.format(
         brand_voice=bs.brand_voice,
@@ -52,9 +49,9 @@ def adapt_text_sync(original_text: str, target_platform: str) -> str:
         human_writing_rules=_HUMAN_WRITING_RULES,
         original_text=original_text,
     )
-    resp = client.messages.create(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=900,
+    text = call_claude(
         messages=[{"role": "user", "content": prompt}],
+        max_tokens=900,
+        context="adapter",
     )
-    return humanize(resp.content[0].text.strip(), target_platform)
+    return humanize(text, target_platform)

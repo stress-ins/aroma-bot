@@ -3,8 +3,8 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 
-from config import settings
 from bot.agents.content import _HUMAN_WRITING_RULES
+from bot.services.claude_client import call_claude
 from bot.services.brand_settings_store import get_brand_settings_cached
 from bot.services.humanizer import humanize
 
@@ -269,18 +269,15 @@ def _parse_storyboard(raw: str) -> list[StoryboardFrame]:
 
 
 def generate_reels_topics_sync(trends_text: str) -> list[str]:
-    import anthropic
-
-    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
     bs = get_brand_settings_cached()
     prompt = _TOPICS_PROMPT.format(brand_context=bs.brand_voice, trends_text=trends_text)
-    resp = client.messages.create(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=700,
+    text = call_claude(
         messages=[{"role": "user", "content": prompt}],
+        max_tokens=700,
+        context="reels topics",
     )
     topics: list[str] = []
-    for line in resp.content[0].text.strip().splitlines():
+    for line in text.splitlines():
         line = line.strip()
         if line and line[0].isdigit() and ". " in line:
             topics.append(line.split(". ", 1)[1].strip())
@@ -300,9 +297,6 @@ def _render_reference_context_block(reference_context: str) -> str:
 
 
 def generate_reels_scenario_sync(topic: str, reference_context: str = "") -> str:
-    import anthropic
-
-    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
     bs = get_brand_settings_cached()
     forbidden_block = "\n".join(f"- {p}" for p in bs.forbidden_phrases) if bs.forbidden_phrases else ""
     prompt = _SCENARIO_PROMPT.format(
@@ -312,30 +306,26 @@ def generate_reels_scenario_sync(topic: str, reference_context: str = "") -> str
         forbidden_phrases=forbidden_block,
         human_writing_rules=_HUMAN_WRITING_RULES,
     )
-    resp = client.messages.create(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=1600,
+    text = call_claude(
         messages=[{"role": "user", "content": prompt}],
+        max_tokens=1600,
+        context="reels scenario",
     )
-    return humanize(resp.content[0].text.strip())
+    return humanize(text)
 
 
 def generate_reels_director_sync(topic: str, script: str) -> list[StoryboardFrame]:
     """Director agent: breaks the script into 4 storyboard frames with Gemini prompts."""
-    import anthropic
-
-    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
     prompt = _DIRECTOR_PROMPT.format(topic=topic, script=script)
     last_raw = ""
     frames: list[StoryboardFrame] = []
 
     for attempt in range(2):
-        resp = client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=1400,
+        last_raw = call_claude(
             messages=[{"role": "user", "content": prompt}],
+            max_tokens=1400,
+            context="reels director",
         )
-        last_raw = resp.content[0].text.strip()
         frames = _parse_storyboard(last_raw)
         if len(frames) >= 4:
             return frames[:4]
@@ -411,9 +401,6 @@ def generate_reels_v2_draft_sync(
     emotion: str = "calm",
 ) -> ReelsV2Draft:
     """Generate a v2 reels draft: concept, hook, scenario, caption, music mood."""
-    import anthropic
-
-    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
     bs = get_brand_settings_cached()
     forbidden_block = (
         "НЕ использовать следующие фразы:\n"
@@ -430,12 +417,12 @@ def generate_reels_v2_draft_sync(
         emotion_label=emotion_label,
         forbidden_block=forbidden_block,
     )
-    resp = client.messages.create(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=1800,
+    text = call_claude(
         messages=[{"role": "user", "content": prompt}],
+        max_tokens=1800,
+        context="reels draft",
     )
-    return _parse_draft(resp.content[0].text.strip())
+    return _parse_draft(text)
 
 
 def generate_frame_prompts_sync(
@@ -444,20 +431,17 @@ def generate_frame_prompts_sync(
     n_frames: int = 4,
 ) -> list[FramePromptV2]:
     """Generate per-frame image prompts and overlay texts."""
-    import anthropic
-
-    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
     prompt = _FRAMES_PROMPT.format(
         topic=topic,
         scenario=scenario[:2000],
         n_frames=n_frames,
     )
-    resp = client.messages.create(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=1200,
+    text = call_claude(
         messages=[{"role": "user", "content": prompt}],
+        max_tokens=1200,
+        context="reels frame_prompts",
     )
-    return _parse_frame_prompts(resp.content[0].text.strip(), n_frames=n_frames)
+    return _parse_frame_prompts(text, n_frames=n_frames)
 
 
 def generate_reels_v2_caption_sync(
@@ -466,9 +450,6 @@ def generate_reels_v2_caption_sync(
     scenario: str,
 ) -> str:
     """Regenerate caption for a v2 reels draft."""
-    import anthropic
-
-    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
     bs = get_brand_settings_cached()
     forbidden_block = (
         "НЕ использовать следующие фразы:\n"
@@ -483,9 +464,8 @@ def generate_reels_v2_caption_sync(
         scenario_preview=scenario[:800],
         forbidden_block=forbidden_block,
     )
-    resp = client.messages.create(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=500,
+    return call_claude(
         messages=[{"role": "user", "content": prompt}],
+        max_tokens=500,
+        context="reels caption",
     )
-    return resp.content[0].text.strip()

@@ -5,8 +5,8 @@ from __future__ import annotations
 import json
 import logging
 
-from config import settings
 from bot.services.brand_settings_store import get_brand_settings_cached
+from bot.services.claude_client import call_claude
 from bot.services.blends_store import search_by_ingredient
 
 logger = logging.getLogger(__name__)
@@ -40,8 +40,6 @@ async def check_compatibility(oils: list[str]) -> dict:
 
     Returns: {"compatible", "warnings", "contraindications", "synergies"}
     """
-    import anthropic
-
     bs = get_brand_settings_cached()
 
     # Find known blends containing these oils
@@ -58,13 +56,11 @@ async def check_compatibility(oils: list[str]) -> dict:
         known_combos=known_text,
     )
 
-    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
-    resp = client.messages.create(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=600,
+    raw = call_claude(
         messages=[{"role": "user", "content": prompt}],
+        max_tokens=600,
+        context="compatibility_checker",
     )
-    raw = resp.content[0].text.strip()
 
     try:
         return json.loads(raw)

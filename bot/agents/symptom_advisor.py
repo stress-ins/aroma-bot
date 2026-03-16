@@ -5,8 +5,8 @@ from __future__ import annotations
 import json
 import logging
 
-from config import settings
 from bot.services.brand_settings_store import get_brand_settings_cached
+from bot.services.claude_client import call_claude
 from bot.services.blends_store import list_blends
 
 logger = logging.getLogger(__name__)
@@ -37,8 +37,6 @@ async def advise_by_symptom(symptom: str) -> list[dict]:
 
     Returns: [{"oil_or_blend", "type", "reason", "contraindications"}]
     """
-    import anthropic
-
     bs = get_brand_settings_cached()
     known = await list_blends(limit=20)
     known_text = "\n".join(
@@ -53,13 +51,11 @@ async def advise_by_symptom(symptom: str) -> list[dict]:
         known_blends=known_text,
     )
 
-    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
-    resp = client.messages.create(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=800,
+    raw = call_claude(
         messages=[{"role": "user", "content": prompt}],
+        max_tokens=800,
+        context="symptom_advisor",
     )
-    raw = resp.content[0].text.strip()
 
     try:
         result = json.loads(raw)

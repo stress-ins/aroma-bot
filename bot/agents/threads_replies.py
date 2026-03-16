@@ -3,11 +3,9 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 
-import anthropic
-
 from bot.agents.content import BRAND_CONTEXT
+from bot.services.claude_client import call_claude
 from bot.services.threads_api import ThreadsCandidate
-from config import settings
 
 
 @dataclass
@@ -66,13 +64,11 @@ def suggest_replies_sync(candidates: list[ThreadsCandidate]) -> list[ReplySugges
 ]
 """
 
-    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
-    response = client.messages.create(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=1200,
+    raw = call_claude(
         messages=[{"role": "user", "content": prompt}],
+        max_tokens=1200,
+        context="threads_replies",
     )
-    raw = response.content[0].text.strip()
     payload = _extract_json(raw)
 
     suggestions: list[ReplySuggestion] = []

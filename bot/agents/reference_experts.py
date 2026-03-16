@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 
 from config import settings
+from bot.services.claude_client import call_claude
 
 
 _SYSTEM_BY_CATEGORY = {
@@ -24,8 +25,6 @@ _SYSTEM_BY_CATEGORY = {
 
 
 def enrich_reference_card_sync(category: str, card: dict[str, object]) -> dict[str, object]:
-    import anthropic
-
     if not settings.anthropic_api_key:
         return card
 
@@ -44,14 +43,12 @@ def enrich_reference_card_sync(category: str, card: dict[str, object]) -> dict[s
         "- в questions дай 3-5 рефлексивных вопросов\n"
     )
 
-    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
-    resp = client.messages.create(
-        model="claude-haiku-4-5-20251001",
+    text = call_claude(
+        messages=[{"role": "user", "content": user_prompt}],
         max_tokens=1800,
         system=system_prompt,
-        messages=[{"role": "user", "content": user_prompt}],
+        context="reference_experts",
     )
-    text = resp.content[0].text.strip()
     try:
         enriched = json.loads(text)
     except json.JSONDecodeError:
