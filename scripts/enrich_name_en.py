@@ -15,6 +15,8 @@ log = logging.getLogger(__name__)
 SLUG_TO_EN: dict[str, str] = {
     "balsam-fir": "Balsam Fir",
     "basil": "Basil",
+    "bay-laurel": "Bay Laurel",
+    "benzoin": "Benzoin",
     "bergamot": "Bergamot",
     "black-pepper": "Black Pepper",
     "black-spruce": "Black Spruce",
@@ -46,6 +48,7 @@ SLUG_TO_EN: dict[str, str] = {
     "lemon": "Lemon",
     "lemongrass": "Lemongrass",
     "lime": "Lime",
+    "mandarin": "Mandarin",
     "marjoram": "Marjoram",
     "myrrh": "Myrrh",
     "neroli": "Neroli",
