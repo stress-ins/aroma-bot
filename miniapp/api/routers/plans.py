@@ -10,14 +10,15 @@ from bot.agents.planner import generate_plan_sync
 from bot.agents.reels_agent import generate_reels_director_sync, generate_reels_scenario_sync
 from bot.handlers.planner import _parse_plan_entries
 from bot.handlers.threads import _format_trends
-from bot.services.drafts_store import save_draft
+from bot.services.drafts_store import save_draft, get_draft
 from bot.services.miniapp_plan_actions import normalize_plan_format, normalize_plan_goal
 from bot.services.miniapp_plans import serialize_plan
+from bot.services.plan_activation import activate_plan
 from bot.services.miniapp_presenter import serialize_draft
 from bot.services.miniapp_inbox import list_inbox_items
 from bot.services.miniapp_references import build_reference_context
 from bot.agents import generate_content_draft
-from bot.services.plans_store import get_plan, list_recent_plans, save_plan
+from bot.services.plans_store import get_plan, list_recent_plans, save_plan, update_plan_status
 from config import settings
 from db.models import DraftModel
 from db.session import AsyncSessionLocal
@@ -286,3 +287,49 @@ async def plan_generate(plan_id: str, payload: PlanGeneratePayload, _: None = De
     )
     draft = await serialize_draft(saved)
     return {"kind": "draft", "draft": draft}
+
+
+@router.post("/api/plans/{plan_id}/activate", status_code=202)
+async def plan_activate(plan_id: str, _: None = Depends(_require_auth)):
+    record = await get_plan(plan_id)
+    if not record:
+        raise HTTPException(status_code=404, detail="plan_not_found")
+    if record.status in ("activating", "active"):
+        raise HTTPException(status_code=409, detail="plan_already_activated")
+
+    async def _run() -> None:
+        try:
+            await activate_plan(plan_id)
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception("Background plan activation failed")
+
+    asyncio.ensure_future(_run())
+    return {"plan_id": plan_id, "status": "activating"}
+
+
+@router.get("/api/plans/{plan_id}/activation-status")
+async def plan_activation_status(plan_id: str, _: None = Depends(_require_auth)):
+    record = await get_plan(plan_id)
+    if not record:
+        raise HTTPException(status_code=404, detail="plan_not_found")
+
+    draft_ids: list[dict] = []
+    async with AsyncSessionLocal() as session:
+        query = (
+            select(DraftModel)
+            .filter(DraftModel.source == "/plan-activate")
+            .filter(DraftModel.payload["plan_id"].as_string() == plan_id)
+            .order_by(DraftModel.scheduled_at.asc())
+        )
+        result = await session.execute(query)
+        drafts = result.scalars().all()
+        for d in drafts:
+            draft_ids.append({
+                "draft_id": d.draft_id,
+                "topic": d.topic,
+                "status": d.status,
+                "scheduled_at": d.scheduled_at.isoformat() if d.scheduled_at else None,
+            })
+
+    return {"plan_id": plan_id, "status": record.status, "drafts": draft_ids}

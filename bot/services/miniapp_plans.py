@@ -21,5 +21,6 @@ async def serialize_plan(record: PlanRecord) -> dict[str, object]:
         "created_at": record.created_at,
         "raw_text": record.raw_text,
         "entries": record.entries,
+        "status": record.status,
         "related_drafts": related_drafts,
     }

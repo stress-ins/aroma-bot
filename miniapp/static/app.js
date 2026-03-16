@@ -1203,6 +1203,7 @@ const {
   openPlanRelatedDraft,
   renderPlans: renderPlansImpl,
   renderPlanDetail,
+  activatePlan,
 } = createPlansModule({
   state,
   elements,
@@ -1806,6 +1807,7 @@ registerWindowBridge({
   openPlan,
   generateDraftFromPlan,
   openPlanRelatedDraft,
+  activatePlan,
   updateDraft: updateCurrentDraft,
   sendDraftToChat,
   deleteDraft,

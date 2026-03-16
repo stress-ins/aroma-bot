@@ -699,9 +699,62 @@ export function createPlansModule(deps) {
             }).join("")}
           </div>
         </section>
+        ${(!p.status || p.status === "draft") ? `
+          <div class="actions-row">
+            <button class="primary-button" type="button" id="activatePlanBtn"
+              onclick="activatePlan('${escapeHtml(p.plan_id)}', this)">
+              ${actionLabel("zap", "Активировать план")}
+            </button>
+          </div>
+        ` : ""}
+        ${p.status === "activating" ? `
+          <div class="actions-row">
+            <p style="color:var(--warn);font-size:13px">${uiIcon("loader")} Активация в процессе...</p>
+          </div>
+        ` : ""}
+        ${p.status === "active" ? `
+          <div class="actions-row">
+            <p style="color:var(--good);font-size:13px">${uiIcon("check")} План активирован</p>
+          </div>
+        ` : ""}
+        ${p.status === "failed" ? `
+          <div class="actions-row">
+            <p style="color:var(--bad);font-size:13px">${uiIcon("alert-circle")} Ошибка активации</p>
+            <button class="primary-button" type="button"
+              onclick="activatePlan('${escapeHtml(p.plan_id)}', this)">
+              ${actionLabel("zap", "Повторить")}
+            </button>
+          </div>
+        ` : ""}
       </div>
     `;
     syncMobileNavigation();
+    if (window.lucide) lucide.createIcons();
+  }
+
+  async function activatePlan(planId, button) {
+    const apply = async () => {
+      await fetchJson(`/api/plans/${planId}/activate`, { method: "POST" });
+      let attempts = 0;
+      const maxAttempts = 24;
+      while (attempts < maxAttempts) {
+        await new Promise((r) => setTimeout(r, 5000));
+        attempts++;
+        const status = await fetchJson(`/api/plans/${planId}/activation-status`);
+        if (status.status === "active") return status;
+        if (status.status === "failed") throw new Error("Activation failed");
+      }
+      throw new Error("Activation timed out");
+    };
+    try {
+      const result = button instanceof HTMLElement
+        ? await withButtonFeedback(button, "Активирую...", apply, "Активировано")
+        : await apply();
+      await openPlan(planId);
+      await loadPlansFeed();
+    } catch (_e) {
+      await openPlan(planId);
+    }
   }
 
   return {
@@ -719,5 +772,6 @@ export function createPlansModule(deps) {
     openPlanRelatedDraft,
     renderPlans,
     renderPlanDetail,
+    activatePlan,
   };
 }
