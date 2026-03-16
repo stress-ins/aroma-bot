@@ -82,7 +82,7 @@ export function createCarouselModule(deps) {
                 <button
                   class="slide-version-thumb"
                   type="button"
-                  onclick="selectCarouselSlideVersion(${JSON.stringify(draftId)}, ${slideIndex}, ${versionIndex}, this)"
+                  onclick='selectCarouselSlideVersion(${JSON.stringify(draftId)}, ${slideIndex}, ${versionIndex}, this)'
                   aria-label="${isCurrent ? "Текущая версия" : "Сделать текущей"}"
                 >
                   <img src="${escapeHtml(version.url || "")}" alt="Версия ${versionIndex + 1} для слайда ${slideIndex + 1}" />
@@ -92,8 +92,8 @@ export function createCarouselModule(deps) {
                   <span class="meta">${escapeHtml(formatPlanDate(version.generated_at) || "сейчас")}</span>
                 </div>
                 <div class="actions-row slide-version-actions actions-grid-two">
-                  ${isCurrent ? "" : `<button class="secondary-button" type="button" onclick="selectCarouselSlideVersion(${JSON.stringify(draftId)}, ${slideIndex}, ${versionIndex}, this)">${actionLabel("approve", "Сделать текущей")}</button>`}
-                  ${items.length > 1 ? `<button class="secondary-button" type="button" onclick="deleteCarouselSlideVersion(${JSON.stringify(draftId)}, ${slideIndex}, ${versionIndex}, this)">${actionLabel("trash", "Удалить")}</button>` : ""}
+                  ${isCurrent ? "" : `<button class="secondary-button" type="button" onclick='selectCarouselSlideVersion(${JSON.stringify(draftId)}, ${slideIndex}, ${versionIndex}, this)'>${actionLabel("approve", "Сделать текущей")}</button>`}
+                  ${items.length > 1 ? `<button class="secondary-button" type="button" onclick='deleteCarouselSlideVersion(${JSON.stringify(draftId)}, ${slideIndex}, ${versionIndex}, this)'>${actionLabel("trash", "Удалить")}</button>` : ""}
                 </div>
               </article>
             `;
@@ -216,8 +216,8 @@ export function createCarouselModule(deps) {
           </label>
           <p class="field-help">После правки нажмите «Сохранить подпись», чтобы обновить этот слайд в черновике.</p>
           <div class="actions-row prompt-actions actions-grid-two">
-            <button class="primary-button" type="button" aria-label="Сохранить текст слайда" onclick="saveCarouselSlideText(${JSON.stringify(draftId)}, ${index}, this)">${actionLabel("text", "Сохранить подпись")}</button>
-            <button class="secondary-button" type="button" ${!img?.url ? "disabled" : ""} onclick="previewCarouselSlide(${JSON.stringify(draftId)}, ${index}, this)">${actionLabel("eye", "Предпросмотр")}</button>
+            <button class="primary-button" type="button" aria-label="Сохранить текст слайда" onclick='saveCarouselSlideText(${JSON.stringify(draftId)}, ${index}, this)'>${actionLabel("text", "Сохранить подпись")}</button>
+            <button class="secondary-button" type="button" ${!img?.url ? "disabled" : ""} onclick='previewCarouselSlide(${JSON.stringify(draftId)}, ${index}, this)'>${actionLabel("eye", "Предпросмотр")}</button>
           </div>
           ${prompt ? (() => {
               const discOpen = isPromptDisclosureOpen(`carousel:${draftId}:${index}`, !img?.url);
@@ -228,12 +228,12 @@ export function createCarouselModule(deps) {
                 <div class="detail-preview prompt-preview">${escapeHtml(prompt)}</div>
                 <label class="prompt-note-field">
                   <span>Замечание к картинке</span>
-                  <textarea id="${slideNoteId(index)}" placeholder="Например: теплее свет, крупнее объект, меньше деталей на фоне" oninput="handleCarouselSlideNoteInput(${JSON.stringify(draftId)}, ${index}, this.value)">${escapeHtml(note)}</textarea>
+                  <textarea id="${slideNoteId(index)}" placeholder="Например: теплее свет, крупнее объект, меньше деталей на фоне" oninput='handleCarouselSlideNoteInput(${JSON.stringify(draftId)}, ${index}, this.value)'>${escapeHtml(note)}</textarea>
                 </label>
                 <div class="actions-row prompt-actions actions-grid-two">
                   <button class="secondary-button" type="button" onclick='copyText(${JSON.stringify(prompt)})'>${actionLabel("prompt", "Скопировать промпт слайда")}</button>
-                  <button class="secondary-button" type="button" onclick="regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, this)">${actionLabel("regenerate", "Обновить изображение")}</button>
-                  <button class="primary-button" type="button" onclick="regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, this)">${actionLabel("note", "Обновить по замечанию")}</button>
+                  <button class="secondary-button" type="button" onclick='regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, this)'>${actionLabel("regenerate", "Обновить изображение")}</button>
+                  <button class="primary-button" type="button" onclick='regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, this)'>${actionLabel("note", "Обновить по замечанию")}</button>
                 </div>
               </div>
             </div>

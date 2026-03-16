@@ -1618,9 +1618,9 @@ class TestMiniAppRussianLocale:
         assert "onclick=\"updateDraft('status', {status:'approved'}, this)\"" in app_js
         assert "onclick=\"sendDraftToChat('${d.draft_id}', this)\"" in app_js
         assert "onclick=\"deleteDraft('${d.draft_id}', 'drafts', this)\"" in app_js
-        assert 'onclick="saveCarouselSlideText(${JSON.stringify(draftId)}, ${index}, this)"' in app_js
+        assert "onclick='saveCarouselSlideText(${JSON.stringify(draftId)}, ${index}, this)'" in app_js
         assert 'regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, this)' in app_js
-        assert 'onclick="regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, this)"' in app_js
+        assert "onclick='regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, this)'" in app_js
         assert ".secondary-button.is-busy" in app_css
         assert ".secondary-button.did-complete" in app_css
         assert ".secondary-button.did-error" in app_css
