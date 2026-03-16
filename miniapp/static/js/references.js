@@ -449,9 +449,6 @@ export function createReferencesModule(deps) {
       const effectiveKeyline = keyline !== currentHandbookMeta().title ? keyline : "";
       const parts = [reference.name_en, effectiveKeyline].filter(Boolean);
       subtitle = parts.join(" · ");
-      if (reference.article_number) {
-        subtitle += (subtitle ? "\n" : "") + `🔖 ${reference.article_number}`;
-      }
     } else if (state.tab === "symptoms") {
       // Category group: "Нарушения сна"
       subtitle = keyline || "";
@@ -465,6 +462,7 @@ export function createReferencesModule(deps) {
           <p class="eyebrow">${eyebrowLabel}</p>
           <h2 class="detail-title">${escapeHtml(state.tab === "symptoms" ? normalizePdfSymptomName(reference.name) : reference.name)}</h2>
           ${subtitle ? `<p class="reference-keyline">${escapeHtml(subtitle)}</p>` : ""}
+          ${state.tab === "blends" && reference.article_number ? `<span class="reference-meta-article">🔖 ${escapeHtml(reference.article_number)}</span>` : ""}
         </div>
         <div class="reference-hero-media">
           <img class="aroma-image" src="${escapeHtml(reference.image_url)}" alt="${escapeHtml(reference.image_alt)}" />
@@ -717,7 +715,6 @@ export function createReferencesModule(deps) {
         <div class="detail-grid">
           ${renderBackButton()}
           ${renderReferenceImage(reference)}
-          ${aromaHtmlSection("Паспорт аромата", renderReferencePassport(reference))}
           ${renderCollapsibleDescription(reference)}
           ${aromaSection("Терапевтические свойства", reference.therapeutic_properties)}
           ${renderStructuredList("При каких состояниях", reference.conditions_for_use)}
