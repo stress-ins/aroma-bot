@@ -1,10 +1,32 @@
 from __future__ import annotations
 
+import asyncio
+import contextvars
+import logging
+import threading
 import time
+from datetime import datetime, timezone
 
 import anthropic
 
 from config import settings
+
+logger = logging.getLogger(__name__)
+
+HAIKU = "claude-haiku-4-5-20251001"
+SONNET = "claude-sonnet-4-6"
+
+# Pricing per 1M tokens (USD)
+_PRICING: dict[str, dict[str, float]] = {
+    "claude-haiku-4-5-20251001": {"input": 0.80, "output": 4.00},
+    "claude-sonnet-4-6":         {"input": 3.00, "output": 15.00},
+}
+_DEFAULT_PRICING: dict[str, float] = {"input": 1.00, "output": 5.00}
+
+# Context variable — set per-request by FastAPI auth dep or bot handlers
+current_telegram_id: contextvars.ContextVar[int | None] = contextvars.ContextVar(
+    "current_telegram_id", default=None
+)
 
 _client: anthropic.Anthropic | None = None
 
@@ -14,6 +36,47 @@ def _get_client() -> anthropic.Anthropic:
     if _client is None:
         _client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
     return _client
+
+
+def _calc_cost(model: str, input_tokens: int, output_tokens: int) -> float:
+    pricing = _PRICING.get(model, _DEFAULT_PRICING)
+    return (input_tokens * pricing["input"] + output_tokens * pricing["output"]) / 1_000_000
+
+
+def _log_cost_sync(
+    date: str,
+    telegram_id: int | None,
+    context: str,
+    model: str,
+    input_tokens: int,
+    output_tokens: int,
+    cost_usd: float,
+) -> None:
+    """Write cost log entry synchronously (called from daemon thread)."""
+    from db.models import ApiCostLog
+    from db.session import AsyncSessionLocal
+
+    async def _write() -> None:
+        async with AsyncSessionLocal() as session:
+            entry = ApiCostLog(
+                date=date,
+                telegram_id=telegram_id,
+                context=context,
+                model=model,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+                cost_usd=cost_usd,
+                created_at=datetime.now(timezone.utc),
+            )
+            session.add(entry)
+            await session.commit()
+
+    try:
+        loop = asyncio.new_event_loop()
+        loop.run_until_complete(_write())
+        loop.close()
+    except Exception as exc:
+        logger.debug("Cost log write failed: %s", exc)
 
 
 def call_claude(
@@ -37,7 +100,25 @@ def call_claude(
     for attempt in range(retries):
         try:
             response = client.messages.create(**kwargs)
-            return response.content[0].text.strip()
+            text = response.content[0].text.strip()
+
+            # Fire-and-forget cost logging
+            try:
+                usage = response.usage
+                in_tok = getattr(usage, "input_tokens", 0)
+                out_tok = getattr(usage, "output_tokens", 0)
+                cost = _calc_cost(model, in_tok, out_tok)
+                tid = current_telegram_id.get()
+                today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+                threading.Thread(
+                    target=_log_cost_sync,
+                    args=(today, tid, context, model, in_tok, out_tok, cost),
+                    daemon=True,
+                ).start()
+            except Exception:
+                pass  # Never let logging break the LLM call
+
+            return text
 
         except anthropic.RateLimitError as exc:
             last_exc = exc

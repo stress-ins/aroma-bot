@@ -5,7 +5,7 @@ from pydantic import Field
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore", populate_by_name=True)
 
     # Required
     telegram_bot_token: str
@@ -43,7 +43,7 @@ class Settings(BaseSettings):
     instagram_password: str = ""
 
     # Monitoring
-    monitor_bot_token: str = ""   # second bot token for crash/error notifications
+    monitor_bot_token: str = Field(default="", alias="MONITOR_TG_BOT_TOKEN")  # second bot token
     monitor_chat_id: str = ""     # owner's chat_id
 
     # AI
@@ -74,6 +74,9 @@ class Settings(BaseSettings):
     daily_digest_time: str = "09:00"
     timezone: str = "Europe/Moscow"
     miniapp_aroma_allowed_user_ids: str = ""
+
+    # Public assets
+    public_assets_base_url: str = ""
 
     # n8n integration
     n8n_webhook_secret: str = ""
@@ -122,6 +125,12 @@ class Settings(BaseSettings):
     @property
     def digest_minute(self) -> int:
         return int(self.daily_digest_time.split(":")[1])
+
+    @property
+    def assets_base_url(self) -> str:
+        """Public base URL for generated assets. Falls back to mini_app_url."""
+        base = (self.public_assets_base_url or self.mini_app_url or "").strip().rstrip("/")
+        return base
 
     @property
     def miniapp_aroma_allowed_user_id_set(self) -> set[int]:
