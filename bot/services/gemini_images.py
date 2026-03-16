@@ -119,6 +119,8 @@ def generate_gemini_image_sync(
                 data = inner if inner else data
 
             if success_flag == 1:
+                # Also check nested data.data for URL fields
+                inner_data = data.get("data", {}) if isinstance(data.get("data"), dict) else {}
                 image_url = (
                     data.get("resultImageUrl")
                     or data.get("resultImage")
@@ -126,18 +128,32 @@ def generate_gemini_image_sync(
                     or data.get("image_url")
                     or data.get("url")
                     or (data.get("result", {}).get("url") if isinstance(data.get("result"), dict) else None)
+                    or inner_data.get("resultImageUrl")
+                    or inner_data.get("resultImage")
+                    or inner_data.get("imageUrl")
+                    or inner_data.get("image_url")
+                    or inner_data.get("url")
                 )
-                # Fallback: scan all string values for image URL
+                # Fallback: scan all string values (top-level + nested) for image URL
                 if not image_url:
-                    for v in data.values():
-                        if isinstance(v, str) and ("http" in v) and any(
-                            ext in v.lower() for ext in (".jpg", ".jpeg", ".png", ".webp")
-                        ):
-                            image_url = v
+                    _IMAGE_EXTS = (".jpg", ".jpeg", ".png", ".webp")
+                    for src in (data, inner_data):
+                        for v in src.values():
+                            if isinstance(v, str) and ("http" in v) and any(ext in v.lower() for ext in _IMAGE_EXTS):
+                                image_url = v
+                                break
+                            if isinstance(v, dict):
+                                for vv in v.values():
+                                    if isinstance(vv, str) and ("http" in vv) and any(ext in vv.lower() for ext in _IMAGE_EXTS):
+                                        image_url = vv
+                                        break
+                            if image_url:
+                                break
+                        if image_url:
                             break
                 if not image_url:
-                    logger.warning("%s: successFlag=1 but no image URL: %s", log_context, str(data)[:300])
-                    _notify_image_failure(log_context, f"successFlag=1 but no image URL\n{str(data)[:200]}")
+                    logger.warning("%s: successFlag=1 but no image URL. Full response: %s", log_context, str(resp.json())[:500])
+                    _notify_image_failure(log_context, f"successFlag=1 but no image URL\n{str(resp.json())[:300]}")
                     return None
                 logger.info("%s: ready, downloading from %s", log_context, image_url[:80])
                 return _download_image(image_url, log_context)
