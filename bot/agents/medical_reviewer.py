@@ -33,6 +33,63 @@ _DOCTOR_SYSTEM_PROMPT = """Ты — врач и медицинский реда�
 
 _CATEGORIES_REQUIRING_PRECAUTIONS = {"aroma", "blend", "symptom"}
 
+_BLEND_REVIEW_PROMPT = """\
+Ты — врач-консультант. Оцени безопасность смеси эфирных масел.
+
+Задача смеси: {brief}
+Желаемые эффекты: {effects}
+Способ применения: {application}
+Ограничения пользователя: {contraindications}
+
+Верни строго в формате JSON:
+{{
+  "status": "safe",
+  "summary": "Краткая оценка безопасности. 1-2 предложения.",
+  "restrictions": [
+    {{
+      "condition": "эпилепсия",
+      "oils_to_exclude": ["Розмарин", "Мята"]
+    }}
+  ]
+}}
+
+status может быть: "safe" | "caution" | "warning"
+Ограничения только для реальных медицинских противопоказаний.
+Язык: краткий и понятный, без медицинского жаргона.
+"""
+
+_APP_LABELS_MEDICAL = {"diffuser": "диффузор", "topical": "нанесение на кожу", "internal": "приём внутрь"}
+
+
+def review_blend_sync(
+    brief: str,
+    effects: list[str],
+    contraindications: str,
+    reference_context: str,
+) -> dict:
+    """Synchronous medical review of a blend request."""
+    from bot.services.claude_client import call_claude
+
+    prompt = _BLEND_REVIEW_PROMPT.format(
+        brief=brief,
+        effects=", ".join(effects) if effects else "общее применение",
+        application="диффузор",
+        contraindications=contraindications or "не указаны",
+    )
+
+    raw = call_claude(
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=400,
+        context="blend_constructor/doctor",
+    )
+
+    start = raw.find("{")
+    end = raw.rfind("}") + 1
+    if start >= 0 and end > start:
+        cleaned = _clean_json(raw[start:end])
+        return json.loads(cleaned)
+    return {"status": "safe", "summary": "Оценка недоступна.", "restrictions": []}
+
 
 def _rule_based_check(card: dict[str, Any]) -> tuple[float, list[str], bool]:
     """Returns (score, issues, needs_llm)."""
