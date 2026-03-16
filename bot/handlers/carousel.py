@@ -37,175 +37,15 @@ _DEFAULT_FORBIDDEN_VISUAL_MOTIFS = [
     "two cupped hands around one object",
 ]
 
-# Per-slide visual rules: (narrative role, what to show, what NOT to show)
-# ── Per-arc visual rules ─────────────────────────────────────────────────────
-# Each arc defines per-slide (narrative_role, what_to_show, what_to_forbid).
-# Arc is auto-detected from topic + slide text by _detect_topic_arc_sync().
-
-_SLIDE_VISUAL_RULES: list[tuple[str, str, str]] = [
-    (
-        "hook — powerful first image that stops scrolling",
-        "tension, motion blur, strong contrast, shadow play, abstract dark atmosphere, "
-        "moody urban or natural scene that feels urgent or unresolved",
-        "NO herbs, NO candles, NO oils, NO aromatherapy objects. "
-        "This is the problem world, not the remedy.",
-    ),
-    (
-        "problem — a relatable moment of stress, overload, or disconnection",
-        "cluttered surfaces, scattered objects, overloaded desk, blurred background "
-        "suggesting noise or chaos, muted cold tones, closed or tense composition",
-        "NO herbs, NO wellness elements, NO warm cosy tones. "
-        "The problem must be visible — not the solution.",
-    ),
-    (
-        "mechanism — body process shown metaphorically, a transitional mood",
-        "abstract close-up, light filtering through texture, liminal space, "
-        "subtle natural material just beginning to appear — wood grain, stone, water surface",
-        "No obvious wellness products yet. Keep it abstract and transitional.",
-    ),
-    (
-        "insight — moment of clarity, first hint of the brand world",
-        "soft warm light breaking through, open negative space, first natural textures "
-        "entering the frame — a single dried stem, a smooth stone, warm terracotta tones",
-        "Not a full brand scene yet. One quiet element emerging.",
-    ),
-    (
-        "solution — the sensory practice, the remedy in action",
-        "dried herbs, essential oil bottle, incense smoke, terracotta bowl on linen, "
-        "candles, dried flowers, sage bundle — full brand palette, tactile and grounding",
-        "Full brand aesthetic. This is the moment of healing. "
-        "NO prayer pose, NO clasped hands, NO two hands joined around one object.",
-    ),
-    (
-        "call to action — warm human invitation",
-        "warm terracotta and beige, soft natural light, intimate and inviting composition, "
-        "single human presence, a table scene, doorway light or one relaxed hand near a botanical object",
-        "Full brand aesthetic. Warm, human, not salesy. "
-        "NO prayer pose, NO joined hands, NO sect-like ritual gesture.",
-    ),
+# Slide narrative roles — used for regen-slide context
+_SLIDE_VISUAL_ROLES = [
+    "hook — powerful first image that stops scrolling",
+    "problem — a relatable moment of stress, overload, or disconnection",
+    "mechanism — body process shown metaphorically, a transitional mood",
+    "insight — moment of clarity, first hint of the brand world",
+    "solution — the sensory practice, the remedy in action",
+    "call to action — warm human invitation",
 ]
-
-_PLEASURE_VISUAL_RULES: list[tuple[str, str, str]] = [
-    (
-        "hook — irresistible invitation into joy",
-        "golden hour light, sense of motion and freedom, wide open space or landscape, "
-        "warm euphoric atmosphere, light flares, energy and delight",
-        "NO tension, NO dark tones, NO stress imagery, NO urban chaos.",
-    ),
-    (
-        "immersion — diving deeper into the experience",
-        "close sensory detail, warm texture, soft motion blur, organic warmth, "
-        "tactile richness — skin, fabric, natural surface — golden tones",
-        "NO problems, NO clutter, NO cold or muted palette.",
-    ),
-    (
-        "sensation — the peak feeling",
-        "abstract light and motion, golden or amber tones, open negative space, "
-        "euphoric softness, airy and luminous composition",
-        "NO harsh elements. Keep it soft, warm, expansive.",
-    ),
-    (
-        "connection — the intimate personal dimension",
-        "warm terracotta and beige, natural botanicals as sensory anchor, "
-        "gentle close-up, grounding yet joyful, tactile warmth",
-        "Warm brand aesthetic. Intimate but radiant.",
-    ),
-    (
-        "resonance — the feeling lingers",
-        "dried flowers, incense, essential oils, candles — full brand palette, "
-        "soft diffused light, celebratory warmth, open and inviting",
-        "Full brand aesthetic. Joyful, not clinical.",
-    ),
-    (
-        "call to action — share the pleasure",
-        "warm terracotta, sunlit or candlelit, intimate and celebratory, soft natural light, "
-        "single human presence or still life invitation scene",
-        "Full brand aesthetic. Human, warm, joyful. NO prayer pose, NO joined hands.",
-    ),
-]
-
-_EDUCATIONAL_VISUAL_RULES: list[tuple[str, str, str]] = [
-    (
-        "introduction — establishing the concept",
-        "clean minimal composition, single botanical element on neutral warm surface, "
-        "soft directional light, calm and inviting, uncluttered",
-        "NO dark tones, NO tension imagery. Stay informational and calm.",
-    ),
-    (
-        "context — the first layer of understanding",
-        "natural material close-up, texture detail in soft focus, "
-        "warm neutrals with terracotta accent, informational calm",
-        "Keep it calm and factual. No brand clutter yet.",
-    ),
-    (
-        "mechanism — how it works",
-        "abstract natural texture, light refraction through botanicals, "
-        "material transformation or layering, warm and minimal",
-        "Transitional mood. Abstract, not decorative.",
-    ),
-    (
-        "example — the concept in practice",
-        "dried herbs, essential oil bottle, terracotta bowl, natural objects on a table, "
-        "soft natural light, brand palette emerging",
-        "Brand aesthetic beginning to show. Calm and demonstrative. NO prayer pose, NO joined hands.",
-    ),
-    (
-        "benefit — the outcome",
-        "open, airy composition, single hero botanical, generous negative space, "
-        "warm terracotta tones, peaceful and resolved",
-        "Full brand aesthetic. Positive, calm, conclusive.",
-    ),
-    (
-        "call to action — apply the knowledge",
-        "warm terracotta and sage tones, intimate and calm, soft natural light, grounded, "
-        "single botanical object or relaxed one-hand presence",
-        "Full brand aesthetic. Grounded and inviting. NO prayer pose, NO joined hands.",
-    ),
-]
-
-_ARC_VISUAL_RULES: dict[str, list[tuple[str, str, str]]] = {
-    "problem_solution": _SLIDE_VISUAL_RULES,
-    "pleasure_journey": _PLEASURE_VISUAL_RULES,
-    "educational": _EDUCATIONAL_VISUAL_RULES,
-}
-
-_ARC_DESCRIPTIONS: dict[str, str] = {
-    "problem_solution": (
-        "The carousel follows a problem → solution arc. "
-        "Early slides live in the tension/stress world (dark, urban, unresolved). "
-        "Later slides transition into the brand's sensory remedy (warm, botanical, grounding). "
-        "DO NOT apply the brand aesthetic to early slides."
-    ),
-    "pleasure_journey": (
-        "The carousel celebrates pleasure and joy. "
-        "ALL slides share warm, euphoric, sensory-rich energy — no tension, no dark moments. "
-        "The arc is: invitation → immersion → peak sensation → intimacy → invitation to share. "
-        "Apply warm brand palette throughout, with energy increasing then softening."
-    ),
-    "educational": (
-        "The carousel explains a concept or benefit. "
-        "The visual arc moves from clean and minimal → progressively richer brand aesthetic. "
-        "Tone is calm, informational, and grounding throughout. No drama or tension."
-    ),
-}
-
-_ARC_DETECT_PROMPT = """\
-You are a content strategist. Read the topic and the first 3 slides of an Instagram carousel.
-Determine which emotional arc best fits this content. Choose exactly one:
-
-- problem_solution: content addresses a pain, challenge, stress, or obstacle — starts with tension, ends with relief
-- pleasure_journey: content is about joy, pleasure, excitement, sensory delight, or positive experience — all slides share warm positive energy
-- educational: neutral informational content — explaining concepts, mechanisms, or benefits without strong emotional charge
-
-Topic: {topic}
-
-Slides:
-{slides_text}
-
-Reply with exactly one word: problem_solution, pleasure_journey, or educational"""
-
-# Backward-compat shorthand used elsewhere
-_SLIDE_VISUAL_ROLES = [r[0] for r in _SLIDE_VISUAL_RULES]
 
 _SLIDE_LABELS = [
     "Слайд 1 — Hook",
@@ -228,9 +68,7 @@ _PROMPT_CAROUSEL = """\
 - Слайды 2-4: один тезис + 1-2 предложения, до 120 символов на слайд
 - Слайд 5: призыв к действию, до 80 символов
 - Живой язык, от первого лица, без клише и длинных тире
-- Базовый промпт для фото (английский, 15-25 слов) в стиле Nana Banana: \
-палитра терракота + беж + шалфей, природные элементы, мягкий свет, атмосферно, \
-large empty area for text overlay, vertical 4:5 composition. Заканчивай: --ar 4:5 --style atmospheric
+- Базовый промпт для фото (английский, 15-25 слов): сцена, палитра из темы, освещение, композиция. Без параметров Midjourney.
 
 Формат — строго:
 SLIDE1: [текст]
@@ -294,25 +132,6 @@ def _claude_carousel_draft(topic: str, angle: str = "", hook: str = "") -> tuple
     return slides, img_prompt
 
 
-def _detect_topic_arc_sync(topic: str, slides: list[str]) -> str:
-    """Ask Claude to classify the carousel's emotional arc. Falls back to problem_solution."""
-    from bot.services.claude_client import call_claude
-    slides_text = "\n".join(f"{i + 1}. {s}" for i, s in enumerate(slides[:3]))
-    prompt_text = _ARC_DETECT_PROMPT.format(topic=topic, slides_text=slides_text)
-    try:
-        raw = call_claude(
-            messages=[{"role": "user", "content": prompt_text}],
-            max_tokens=10,
-            context="carousel arc detect",
-        )
-        arc = raw.lower().replace("-", "_").split()[0]
-        if arc in _ARC_VISUAL_RULES:
-            logger.info("carousel: detected arc=%s for topic=%r", arc, topic)
-            return arc
-    except Exception:
-        logger.exception("carousel: arc detection failed, defaulting to problem_solution")
-    return "problem_solution"
-
 
 def _forbidden_visual_motifs() -> list[str]:
     seen: set[str] = set()
@@ -331,58 +150,38 @@ def _forbidden_visual_motifs_text() -> str:
     return ", ".join(_forbidden_visual_motifs())
 
 
-def _generate_slide_image_prompts_sync(slides: list[str], topic: str, arc: str | None = None) -> list[str]:
-    """Generate one unique, detailed English image prompt per slide.
+def _generate_slide_image_prompts_sync(slides: list[str], topic: str) -> list[str]:
+    """Generate one unique, detailed image prompt per slide via art-director + NanoBanana expert.
 
-    The visual rules and system description adapt to the detected arc so that
-    a pleasure-focused topic never gets the dark 'problem' world in its first slides.
+    Step 1: Claude as art director produces short 30-50 word prompts per slide.
+    Step 2: Each prompt is expanded by the NanoBanana prompt expert (150-400 words).
     """
+    from bot.agents.nanobanana_prompt_expert import optimize_prompt_for_nanobanana
     from bot.services.claude_client import call_claude
 
-    if arc is None:
-        arc = _detect_topic_arc_sync(topic, slides)
-
-    rules = _ARC_VISUAL_RULES.get(arc, _SLIDE_VISUAL_RULES)
-    arc_description = _ARC_DESCRIPTIONS.get(arc, _ARC_DESCRIPTIONS["problem_solution"])
-
-    slides_desc_parts = []
-    for i, text in enumerate(slides):
-        if i < len(rules):
-            role, show, forbid = rules[i]
-        else:
-            role, show, forbid = "closing visual", "full brand palette, warm tones", ""
-        part = (
-            f"Slide {i + 1} [{role}]\n"
-            f"  Text: {text}\n"
-            f"  Show: {show}\n"
-            f"  Forbidden: {forbid}"
-        )
-        slides_desc_parts.append(part)
-    slides_desc = "\n\n".join(slides_desc_parts)
+    slides_desc = "\n".join(
+        f"Slide {i + 1}: {text}" for i, text in enumerate(slides)
+    )
 
     prompt = (
         f'You are an art director for an Instagram carousel on the topic: "{topic}"\n\n'
-        f"{arc_description}\n\n"
-        "Step 1: Based on the topic above, determine the ideal color palette, mood, and lighting.\n"
+        "Step 1: Determine the ideal color palette, mood, and lighting from the topic.\n"
         "The palette must match the emotional tone of the topic. Examples:\n"
         "- 'кайф от кабриолета' → bright sun, azure sky, warm golden light, vivid saturated colors\n"
         "- 'заземление через аромат' → earth tones, terracotta, sage, warm wood\n"
-        "- 'зимний уют' → deep amber, warm burgundy, soft candlelight glow\n"
-        "Step 2: Generate image prompts using YOUR chosen palette consistently across all slides.\n\n"
-        "Universal rules:\n"
-        "- Color intensity: images MUST have rich, saturated tones matching the topic mood. "
-        "NEVER produce grey, muted, washed-out, or desaturated images regardless of topic.\n"
+        "- 'зимний уют' → deep amber, warm burgundy, soft candlelight glow\n\n"
+        "Step 2: Determine each slide's narrative role (hook, problem, mechanism, insight, solution, CTA).\n\n"
+        "Step 3: Generate one image prompt per slide. Each must:\n"
+        "- Be 30-50 words in English\n"
+        "- Describe the scene, palette (from your Step 1 analysis), lighting, and composition\n"
+        "- Be visually distinct from other slides\n"
+        "- NOT use any Midjourney parameters (no --ar, --style, --v, --no)\n\n"
+        "Universal constraints:\n"
+        "- Color intensity: rich, saturated tones matching topic mood. Never grey/washed-out.\n"
         "- Forbidden everywhere: stock photo look, plastic, harsh shadows, "
         "white/grey plain backgrounds, human faces, any text or typography\n"
         f"- Also forbidden everywhere: {_forbidden_visual_motifs_text()}\n"
-        "- Required: leave a large clear area (at least 1/3 of frame) — blurred bg, "
-        "flat surface, or negative space — so text overlay is readable\n\n"
-        "Generate one image prompt per slide. Each must:\n"
-        "- Be 25-40 words in English\n"
-        "- Strictly follow that slide's Show/Forbidden rules\n"
-        "- Use the palette you chose in Step 1\n"
-        "- Be visually distinct from other slides\n"
-        "- End with: --ar 4:5 --style atmospheric\n\n"
+        "- Required: leave a large clear area (at least 1/3 of frame) for text overlay\n\n"
         f"{slides_desc}\n\n"
         "Return strictly in this format, nothing else:\n"
         + "\n".join(f"IMG{i + 1}: [prompt]" for i in range(len(slides)))
@@ -402,25 +201,34 @@ def _generate_slide_image_prompts_sync(slides: list[str], topic: str, arc: str |
                 parsed[i - 1] = line.split(":", 1)[1].strip()
                 break
 
-    result: list[str] = []
+    raw_prompts: list[str] = []
     for i, slide in enumerate(slides):
         if i in parsed:
-            result.append(parsed[i])
+            raw_prompts.append(parsed[i])
         else:
-            role_hint = (rules[i][0].split(" — ")[0] if i < len(rules) else "supporting")
-            result.append(
+            raw_prompts.append(
                 f"vibrant lifestyle scene matching '{topic}', {slide[:35]}, "
-                f"rich saturated colors, natural light, {role_hint}, "
-                "--ar 4:5 --style atmospheric"
+                f"rich saturated colors, natural light"
             )
-    return result
+
+    # Expand each raw prompt through the NanoBanana expert
+    optimized: list[str] = []
+    for i, raw in enumerate(raw_prompts):
+        try:
+            expanded = optimize_prompt_for_nanobanana(
+                raw, topic=topic, slide_number=i, total_slides=len(slides)
+            )
+            optimized.append(expanded)
+        except Exception:
+            logger.exception("NanoBanana prompt expert failed for slide %d", i + 1)
+            optimized.append(raw)
+    return optimized
 
 
-def _generate_carousel_sync(topic: str, user_forbidden: list[str] | None = None) -> tuple[list[str], list[str], str, str, str]:
-    """Draft → editor → 6 refined slides + per-slide image prompts + detected arc.
+def _generate_carousel_sync(topic: str, user_forbidden: list[str] | None = None) -> tuple[list[str], list[str], str, str]:
+    """Draft → editor → 6 refined slides + per-slide image prompts.
 
-    Returns (slides, img_prompts, arc, angle, hook) where arc is one of:
-    'problem_solution', 'pleasure_journey', 'educational'.
+    Returns (slides, img_prompts, angle, hook).
     """
     from bot.agents.carousel_editor import edit_carousel_sync
     import time
@@ -436,23 +244,22 @@ def _generate_carousel_sync(topic: str, user_forbidden: list[str] | None = None)
                 if attempt == 0:
                     time.sleep(3)
                     continue
-                return [], [], "problem_solution", angle, hook
+                return [], [], angle, hook
             refined = edit_carousel_sync(raw_slides, topic, user_forbidden=user_forbidden or [])
             if not refined:
                 logger.warning("edit_carousel_sync empty on attempt %d, topic: %s", attempt + 1, topic)
                 if attempt == 0:
                     time.sleep(3)
                     continue
-                return [], [], "problem_solution", angle, hook
-            arc = _detect_topic_arc_sync(topic, refined)
-            img_prompts = _generate_slide_image_prompts_sync(refined, topic, arc=arc)
-            return refined, img_prompts, arc, angle, hook
+                return [], [], angle, hook
+            img_prompts = _generate_slide_image_prompts_sync(refined, topic)
+            return refined, img_prompts, angle, hook
         except Exception:
             logger.exception("_generate_carousel_sync attempt %d failed for topic: %s", attempt + 1, topic)
             if attempt == 0:
                 time.sleep(3)
                 continue
-    return [], [], "problem_solution", angle, hook
+    return [], [], angle, hook
 
 
 # ── Image analysis ──────────────────────────────────────────────────────────
@@ -492,29 +299,17 @@ def _find_text_zone(img_bytes: bytes) -> tuple[float, float]:
 
 
 def _apply_note_to_prompt(prompt: str, note: str) -> str:
-    """Inject user note into image prompt before the style flags."""
-    flags = "--ar 4:5 --style atmospheric"
-    base = prompt.replace(flags, "").strip().rstrip(",")
-    return f"{base}, {note.strip()} {flags}"
+    """Combine prompt and user note."""
+    base = prompt.strip().rstrip(",")
+    return f"{base}, {note.strip()}" if note.strip() else base
 
 
 def _qa_image_sync(
     img_bytes: bytes, prompt: str, note: str = "", slide_idx: int = -1
 ) -> tuple[bool, str]:
-    """Vision QA: check for hallucinations, forbidden elements, slide rules, note compliance."""
+    """Vision QA: check for hallucinations, forbidden elements, note compliance."""
     from bot.services.claude_client import call_claude
     import base64
-
-    # Per-slide visual rules check
-    slide_rules = ""
-    if 0 <= slide_idx < len(_SLIDE_VISUAL_RULES):
-        role, show, forbid = _SLIDE_VISUAL_RULES[slide_idx]
-        slide_rules = (
-            f"\n3. Slide-specific rules for slide {slide_idx + 1} ({role}):\n"
-            f"   - Must show: {show}\n"
-            f"   - Must NOT contain: {forbid}\n"
-            f"   Fail if the image clearly violates the forbidden elements for this slide position."
-        )
 
     note_check = (
         f"\n4. The user requested: \"{note}\" — verify this is clearly reflected."
@@ -528,7 +323,7 @@ def _qa_image_sync(
         f"(e.g. lavender on fire, smoke from cold objects, impossible anatomy of objects)\n"
         f"2. Any visible text, watermarks, logos, or typography"
         f"\n2b. Any forbidden visual motifs such as: {_forbidden_visual_motifs_text()}"
-        f"{slide_rules}{note_check}\n\n"
+        f"{note_check}\n\n"
         f"Reply in this exact format (2 lines only):\n"
         f"PASS or FAIL\n"
         f"REASON: [one short sentence. If PASS write: OK]"
