@@ -1427,6 +1427,58 @@ export function createReferencesModule(deps) {
     renderReferencesLocked();
   }
 
+  async function shareBlend(savedId, title) {
+    const shareUrl = `https://t.me/aromara_bot?start=blend_${savedId}`;
+    const shareText = `${title || "\u0421\u043c\u0435\u0441\u044c"} \u2014 \u0441\u043e\u0437\u0434\u0430\u043d\u043e \u0432 Aroma Trends`;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: shareText, url: shareUrl });
+        return;
+      } catch { /* user cancelled — fall through to clipboard */ }
+    }
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      showUiNotice("\u0421\u0441\u044b\u043b\u043a\u0430 \u0441\u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u043d\u0430", "success");
+    } catch {
+      showUiNotice("\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0441\u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u0442\u044c \u0441\u0441\u044b\u043b\u043a\u0443", "error");
+    }
+  }
+
+  async function openSharedBlend(savedId) {
+    enterDetailView();
+    elements.draftDetail.innerHTML = `<div class="detail-grid">${renderDetailLoader()}</div>`;
+    try {
+      const blend = await fetchJson(`/api/blend-constructor/shared/${savedId}`);
+      const safetyColors = { safe: "#22c55e", caution: "#f59e0b", warning: "#ef4444" };
+      const safetyLabels = { safe: "\u0411\u0435\u0437\u043e\u043f\u0430\u0441\u043d\u043e", caution: "\u041e\u0441\u0442\u043e\u0440\u043e\u0436\u043d\u043e", warning: "\u041e\u043f\u0430\u0441\u043d\u043e" };
+      const safetyColor = safetyColors[blend.safety_status] || safetyColors.safe;
+      const safetyLabel = safetyLabels[blend.safety_status] || blend.safety_status;
+      function renderProfileBars(profile) {
+        if (!profile || !Object.keys(profile).length) return "";
+        const labels = { focus: "\u0424\u043e\u043a\u0443\u0441", energy: "\u042d\u043d\u0435\u0440\u0433\u0438\u044f", creativity: "\u0422\u0432\u043e\u0440\u0447\u0435\u0441\u0442\u0432\u043e", calm: "\u0421\u043f\u043e\u043a\u043e\u0439\u0441\u0442\u0432\u0438\u0435" };
+        return Object.entries(profile).map(([k, v]) => `<div class="profile-bar-row"><span class="profile-bar-label">${escapeHtml(labels[k] || k)}</span><div class="profile-bar-track"><div class="profile-bar-fill" style="width:${v}%"></div></div><span class="profile-bar-value">${v}</span></div>`).join("");
+      }
+      elements.draftDetail.innerHTML = `<div class="detail-grid">
+        ${renderBackButton()}
+        <p class="eyebrow">\u0421\u041c\u0415\u0421\u042c</p>
+        <h2>${escapeHtml(blend.title)}</h2>
+        ${blend.brief ? `<p class="field-help">${escapeHtml(blend.brief)}</p>` : ""}
+        ${(blend.tags || []).length ? `<div class="draft-meta">${blend.tags.map(t => tagMarkup(t, "brand")).join("")}</div>` : ""}
+        <section class="section">
+          <h3>\ud83d\udccb \u0420\u0435\u0446\u0435\u043f\u0442 \u00b7 ${blend.total_drops} \u043a\u0430\u043f.</h3>
+          <div class="saved-blend-oils-detail">${(blend.oils || []).map(o => `<div class="oil-row"><span class="oil-name">${escapeHtml(o.name_ru)}${o.name_en ? ` <span class="oil-name-en">${escapeHtml(o.name_en)}</span>` : ""}</span><span class="oil-drops">${o.drops} \u043a\u0430\u043f.</span>${o.role ? `<span class="oil-role">${escapeHtml(o.role)}</span>` : ""}</div>`).join("")}</div>
+          <div class="blend-total-row"><span>\u0418\u0442\u043e\u0433\u043e:</span><span>${blend.total_drops} \u043a\u0430\u043f. \u00b7 10 \u043c\u043b \u0431\u0430\u0437\u044b</span></div>
+        </section>
+        ${Object.keys(blend.profile || {}).length ? `<section class="section"><h3>\u041f\u0440\u043e\u0444\u0438\u043b\u044c \u0441\u043c\u0435\u0441\u0438</h3>${renderProfileBars(blend.profile)}</section>` : ""}
+        ${blend.expert_note ? `<div class="blend-expert-card blend-expert-aroma"><div class="blend-expert-header"><span class="blend-expert-icon">\ud83c\udf3f</span><div><div class="blend-expert-name">\u042d\u043a\u0441\u043f\u0435\u0440\u0442-\u0430\u0440\u043e\u043c\u0430\u0442\u0435\u0440\u0430\u043f\u0435\u0432\u0442</div></div></div><p class="blend-expert-text">${escapeHtml(blend.expert_note)}</p>${blend.application_guide ? `<div class="blend-application"><span class="blend-application-label">\u041a\u0430\u043a \u043f\u0440\u0438\u043c\u0435\u043d\u044f\u0442\u044c:</span> ${escapeHtml(blend.application_guide)}</div>` : ""}</div>` : ""}
+        <div class="blend-expert-card blend-expert-doctor"><div class="blend-expert-header"><span class="blend-expert-icon">\u2695\ufe0f</span><div><div class="blend-expert-name">\u041c\u0435\u0434\u0438\u0446\u0438\u043d\u0441\u043a\u0430\u044f \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0430</div></div><span class="blend-safety-badge" style="color:${safetyColor}">${safetyLabel}</span></div></div>
+      </div>`;
+      if (window.lucide) lucide.createIcons();
+    } catch {
+      elements.draftDetail.innerHTML = `<div class="detail-grid">${renderBackButton()}<p class="field-help">\u0421\u043c\u0435\u0441\u044c \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d\u0430 \u0438\u043b\u0438 \u0431\u044b\u043b\u0430 \u0443\u0434\u0430\u043b\u0435\u043d\u0430</p></div>`;
+    }
+  }
+
   return {
     currentHandbookMeta,
     loadReferenceAccess,
@@ -1454,5 +1506,7 @@ export function createReferencesModule(deps) {
     blendAdjustWithOil,
     openSavedBlends,
     deleteSavedBlend,
+    shareBlend,
+    openSharedBlend,
   };
 }

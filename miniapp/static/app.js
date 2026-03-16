@@ -14,6 +14,7 @@ import { createOnboardingModule } from "./js/onboarding.js";
 import { createRuntimeModule } from "./js/runtime.js";
 import { createSessionModule } from "./js/session.js";
 import { createSettingsModule } from "./js/settings.js";
+import { createRecommendationsModule } from "./js/recommendations.js";
 import { createShellModule } from "./js/shell.js";
 
 const state = {
@@ -1381,6 +1382,8 @@ const {
   blendAdjustWithOil,
   openSavedBlends,
   deleteSavedBlend,
+  shareBlend,
+  openSharedBlend,
 } = createReferencesModule({
   state,
   elements,
@@ -1783,6 +1786,12 @@ function finalizePendingReelsCreation(draft) { return finalizePendingReelsCreati
 async function recoverPendingReelsCreation(topic, pendingDraftId) { return recoverPendingReelsCreationImpl(topic, pendingDraftId); }
 
 async function bootstrap() {
+  const sharedBlendId = new URLSearchParams(window.location.search).get("shared");
+  if (sharedBlendId) {
+    await bootstrapImpl();
+    openSharedBlend(sharedBlendId);
+    return;
+  }
   onboarding.maybeShow();
   onboarding.initHelpFab();
   return bootstrapImpl();
