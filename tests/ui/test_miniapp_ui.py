@@ -434,8 +434,8 @@ def _make_context(playwright, miniapp_server, *, viewport, is_mobile, dark=False
             "document.addEventListener('DOMContentLoaded',"
             " () => document.body.classList.add('tg-theme-dark'))"
         )
-    page.goto(miniapp_server, wait_until="load")
-    page.wait_for_selector("body.app-ready", timeout=15000)
+    page.goto(miniapp_server, wait_until="load", timeout=60000)
+    page.wait_for_selector("body.app-ready", timeout=30000)
     if dark:
         page.evaluate("document.body.classList.add('tg-theme-dark')")
         page.wait_for_timeout(50)

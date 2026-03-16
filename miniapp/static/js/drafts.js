@@ -220,7 +220,7 @@ export function createDraftsModule(deps) {
         <div class="actions-row" style="margin-top:8px">
           <button class="primary-button" id="schedulerSubmit_${d.draft_id}" type="button" data-date="" disabled
             onclick="scheduleThreadsSeries('${d.draft_id}',this.dataset.date,['morning','day','evening'],this)">
-            ${actionLabel("approve", "Запланировать")}
+            ${actionLabel("approve", "Запланировать публикацию")}
           </button>
         </div>
       </div>
@@ -241,7 +241,7 @@ export function createDraftsModule(deps) {
           </div>
           <div class="actions-row detail-actions">
             ${!isApproved ? `<button class="primary-button" type="button" onclick="approveThreadsSeries('${d.draft_id}',this)">${actionLabel("approve", "Согласовать")}</button>` : ""}
-            ${isApproved && d.status !== "published" ? `<button class="primary-button" type="button" onclick="openThreadsScheduler('${d.draft_id}')">${actionLabel("approve", "Запланировать")}</button>` : ""}
+            ${isApproved && d.status !== "published" ? `<button class="secondary-button" type="button" onclick="openThreadsScheduler('${d.draft_id}')">${actionLabel("calendar", "Выбрать дату публикации")}</button>` : ""}
             <div class="detail-icon-actions">
               <button class="secondary-button" title="Отправить в чат" onclick="sendDraftToChat('${d.draft_id}',this)">${uiIcon("chat")}</button>
             </div>

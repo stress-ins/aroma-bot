@@ -1339,15 +1339,19 @@ export function createReferencesModule(deps) {
   function blendRegenerate(btn) {
     if (!_blendState?.origRequest) return;
     const req = _blendState.origRequest;
-    if (btn) { btn.disabled = true; btn.textContent = "\u0413\u0435\u043d\u0435\u0440\u0438\u0440\u0443\u044e..."; }
+    const prevResult = _blendState.result;
+    elements.draftDetail.innerHTML = `<div class="detail-grid">
+      ${renderBackButton()}
+      ${renderDetailLoader("\u041f\u0435\u0440\u0435\u0433\u0435\u043d\u0435\u0440\u0438\u0440\u0443\u044e \u0441\u043c\u0435\u0441\u044c", "\u0421\u043e\u0441\u0442\u0430\u0432\u043b\u044f\u044e \u043d\u043e\u0432\u044b\u0439 \u0432\u0430\u0440\u0438\u0430\u043d\u0442 \u0440\u0435\u0446\u0435\u043f\u0442\u0430 \u0441 \u0442\u0435\u043c\u0438 \u0436\u0435 \u043f\u0430\u0440\u0430\u043c\u0435\u0442\u0440\u0430\u043c\u0438.")}
+    </div>`;
     fetchJson("/api/blend-constructor/construct", {
       method: "POST",
       body: JSON.stringify(req),
     }).then(result => {
       renderBlendResult(result);
     }).catch(() => {
-      showUiNotice("\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043f\u0435\u0440\u0435\u0433\u0435\u043d\u0435\u0440\u0438\u0440\u043e\u0432\u0430\u0442\u044c", "error");
-      if (btn) { btn.disabled = false; btn.textContent = "\u041f\u0435\u0440\u0435\u0433\u0435\u043d\u0435\u0440\u0438\u0440\u043e\u0432\u0430\u0442\u044c \u0441\u043c\u0435\u0441\u044c"; }
+      if (prevResult) renderBlendResult(prevResult);
+      showUiNotice("\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043f\u0435\u0440\u0435\u0433\u0435\u043d\u0435\u0440\u0438\u0440\u043e\u0432\u0430\u0442\u044c. \u041f\u043e\u043f\u0440\u043e\u0431\u0443\u0439\u0442\u0435 \u0435\u0449\u0451 \u0440\u0430\u0437.", "error");
     });
   }
 
