@@ -953,6 +953,7 @@ export function createReferencesModule(deps) {
           <button class="smart-search-clear" id="smartSearchClear" onclick="clearSmartSearch()" hidden>\u2715</button>
         </div>
         <button class="blend-constructor-cta" onclick="openBlendConstructor()">\u0421\u043e\u0437\u0434\u0430\u0442\u044c \u0441\u043c\u0435\u0441\u044c \u043f\u043e\u0434 \u0437\u0430\u0434\u0430\u0447\u0443</button>
+        <button class="reco-cta-btn" onclick="openRecommendationsWizard()">Подобрать масло</button>
         <button class="my-blends-btn" onclick="openSavedBlends()">\u2665 \u0421\u043e\u0445\u0440\u0430\u043d\u0451\u043d\u043d\u043e\u0435</button>
       </div>`;
   }
