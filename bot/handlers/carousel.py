@@ -416,10 +416,10 @@ def _generate_slide_image_prompts_sync(slides: list[str], topic: str, arc: str |
     return result
 
 
-def _generate_carousel_sync(topic: str, user_forbidden: list[str] | None = None) -> tuple[list[str], list[str], str]:
+def _generate_carousel_sync(topic: str, user_forbidden: list[str] | None = None) -> tuple[list[str], list[str], str, str, str]:
     """Draft → editor → 6 refined slides + per-slide image prompts + detected arc.
 
-    Returns (slides, img_prompts, arc) where arc is one of:
+    Returns (slides, img_prompts, arc, angle, hook) where arc is one of:
     'problem_solution', 'pleasure_journey', 'educational'.
     """
     from bot.agents.carousel_editor import edit_carousel_sync
@@ -436,23 +436,23 @@ def _generate_carousel_sync(topic: str, user_forbidden: list[str] | None = None)
                 if attempt == 0:
                     time.sleep(3)
                     continue
-                return [], [], "problem_solution"
+                return [], [], "problem_solution", angle, hook
             refined = edit_carousel_sync(raw_slides, topic, user_forbidden=user_forbidden or [])
             if not refined:
                 logger.warning("edit_carousel_sync empty on attempt %d, topic: %s", attempt + 1, topic)
                 if attempt == 0:
                     time.sleep(3)
                     continue
-                return [], [], "problem_solution"
+                return [], [], "problem_solution", angle, hook
             arc = _detect_topic_arc_sync(topic, refined)
             img_prompts = _generate_slide_image_prompts_sync(refined, topic, arc=arc)
-            return refined, img_prompts, arc
+            return refined, img_prompts, arc, angle, hook
         except Exception:
             logger.exception("_generate_carousel_sync attempt %d failed for topic: %s", attempt + 1, topic)
             if attempt == 0:
                 time.sleep(3)
                 continue
-    return [], [], "problem_solution"
+    return [], [], "problem_solution", angle, hook
 
 
 # ── Image analysis ──────────────────────────────────────────────────────────
@@ -815,10 +815,16 @@ def _persist_carousel_draft(
     topic: str,
     slides: list[str],
     img_prompts: list[str],
+    angle: str = "",
+    hook: str = "",
 ) -> str | None:
     from bot.services.drafts_store import save_draft as _save_draft, update_draft as _update_draft
 
     payload = {"slides": slides, "img_prompts": img_prompts}
+    if hook:
+        payload["hook"] = hook
+    if angle:
+        payload["angle"] = angle
     existing_draft_id = str(context.user_data.get("ca_draft_id", "")).strip()
     if existing_draft_id:
         updated = _update_draft(existing_draft_id, topic=topic, status="draft", payload=payload)
@@ -1141,7 +1147,7 @@ async def _run_carousel(query_or_message, context: ContextTypes.DEFAULT_TYPE,
         f"🎠 Тема: {topic}\n\n⏳ Генерирую черновик → прогоняю через редактора..."
     )
 
-    slides, img_prompts, arc = await loop.run_in_executor(
+    slides, img_prompts, arc, angle, hook = await loop.run_in_executor(
         _executor, _generate_carousel_sync, topic
     )
 
@@ -1162,7 +1168,7 @@ async def _run_carousel(query_or_message, context: ContextTypes.DEFAULT_TYPE,
     context.user_data["ca_user_image_ids"]   = []
 
     try:
-        _persist_carousel_draft(context, topic, slides, img_prompts)
+        _persist_carousel_draft(context, topic, slides, img_prompts, angle=angle, hook=hook)
     except Exception:
         logger.exception("carousel: failed to save draft for topic: %s", topic)
 
