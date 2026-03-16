@@ -282,7 +282,7 @@ def _serialize_model(model: AromaCardModel) -> dict[str, object]:
         name_ru = str(payload.get("name_ru", "")).strip()
         if name_ru and name_ru != model.name:
             payload["name"] = name_ru
-            payload["name_en"] = model.name
+            payload.setdefault("name_en", model.name)
         else:
             payload["name"] = model.name
     else:
