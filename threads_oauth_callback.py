@@ -11,8 +11,6 @@ from fastapi.responses import HTMLResponse, JSONResponse
 
 from bot.services.mentions_store import upsert_token
 from bot.services.social_oauth import (
-    INSTAGRAM_REDIRECT_URI,
-    THREADS_REDIRECT_URI,
     OAuthExchangeError,
     OAuthTokenBundle,
     OAuthStateError,
@@ -27,6 +25,8 @@ from config import settings
 
 
 app = FastAPI()
+THREADS_REDIRECT_URI = "https://oauth.aromara.ru/threads/callback"
+INSTAGRAM_REDIRECT_URI = "https://oauth.aromara.ru/instagram/callback"
 logger = logging.getLogger(__name__)
 ENV_FILE = Path(os.getenv("AROMA_ENV_FILE", Path(__file__).resolve().parent / ".env"))
 
