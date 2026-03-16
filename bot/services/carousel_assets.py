@@ -26,8 +26,7 @@ CAROUSEL_ASSETS_DIR.mkdir(parents=True, exist_ok=True)
 
 _FALLBACK_PROMPT = (
     "terracotta minimal lifestyle, dried herbs on warm surface, "
-    "soft natural light, large negative space for text, "
-    "--ar 1:1 --style atmospheric"
+    "soft natural light, large negative space for text"
 )
 
 
@@ -179,7 +178,14 @@ async def regenerate_carousel_slide_asset(
     if note is not None:
         notes[slide_index] = note.strip()
 
-    final_prompt = _prompt_with_note(img_prompts[slide_index], notes[slide_index])
+    from bot.agents.nanobanana_prompt_expert import optimize_prompt_for_nanobanana
+    final_prompt = optimize_prompt_for_nanobanana(
+        img_prompts[slide_index],
+        topic=draft.topic,
+        slide_number=slide_index,
+        total_slides=len(img_prompts),
+        user_note=notes[slide_index],
+    )
     try:
         image_bytes = generate_gemini_image_sync(
             final_prompt,

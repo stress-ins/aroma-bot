@@ -11,7 +11,7 @@ import pytest
 from bot.handlers.carousel import (
     _make_slide_prompts_with_text, _make_slide_prompts_no_text,
     _format_for_canva, _build_pptx,
-    _SLIDE_VISUAL_ROLES, _generate_slide_image_prompts_sync,
+    _generate_slide_image_prompts_sync,
     _embed_font_in_pptx, _FONT_NAME,
 )
 from bot.agents.carousel_editor import (
@@ -324,20 +324,6 @@ class TestSlidePromptsNoText:
             assert fragment in result
 
 
-class TestSlideVisualRoles:
-    def test_has_six_roles(self):
-        assert len(_SLIDE_VISUAL_ROLES) == 6
-
-    def test_roles_are_distinct(self):
-        assert len(set(_SLIDE_VISUAL_ROLES)) == 6
-
-    def test_hook_is_first(self):
-        assert "hook" in _SLIDE_VISUAL_ROLES[0].lower()
-
-    def test_cta_is_last(self):
-        last = _SLIDE_VISUAL_ROLES[-1].lower()
-        assert "call" in last or "action" in last or "invitation" in last
-
 
 class TestGenerateSlideImagePrompts:
     """Tests for _generate_slide_image_prompts_sync — mocks Claude API."""
@@ -355,15 +341,25 @@ class TestGenerateSlideImagePrompts:
                     return _R()
         return _FakeClient
 
+    def _make_nanobanana_passthrough(self):
+        """Return a mock that passes through raw prompts with a prefix."""
+        def _fake_optimize(raw_prompt, *, topic, slide_number, total_slides, user_note=""):
+            return f"OPTIMIZED_{slide_number}: {raw_prompt}"
+        return _fake_optimize
+
     def test_returns_same_count_as_slides(self, monkeypatch):
         import bot.handlers.carousel as c
         import anthropic as _anthropic
         response = "\n".join(
-            f"IMG{i + 1}: unique visual {i + 1}, terracotta, --ar 1:1 --style atmospheric"
+            f"IMG{i + 1}: unique visual {i + 1}, terracotta, warm light"
             for i in range(len(self._SLIDES_6))
         )
         monkeypatch.setattr(c, "settings", type("s", (), {"anthropic_api_key": "x"})())
         monkeypatch.setattr(_anthropic, "Anthropic", lambda **kw: self._make_fake_client(response)())
+        monkeypatch.setattr(
+            "bot.agents.nanobanana_prompt_expert.optimize_prompt_for_nanobanana",
+            self._make_nanobanana_passthrough(),
+        )
         result = c._generate_slide_image_prompts_sync(self._SLIDES_6, "тема")
         assert len(result) == len(self._SLIDES_6)
 
@@ -371,11 +367,15 @@ class TestGenerateSlideImagePrompts:
         import bot.handlers.carousel as c
         import anthropic as _anthropic
         response = "\n".join(
-            f"IMG{i + 1}: scene_{i + 1} with object_{i + 1}, beige, --ar 1:1 --style atmospheric"
+            f"IMG{i + 1}: scene_{i + 1} with object_{i + 1}, beige"
             for i in range(len(self._SLIDES_6))
         )
         monkeypatch.setattr(c, "settings", type("s", (), {"anthropic_api_key": "x"})())
         monkeypatch.setattr(_anthropic, "Anthropic", lambda **kw: self._make_fake_client(response)())
+        monkeypatch.setattr(
+            "bot.agents.nanobanana_prompt_expert.optimize_prompt_for_nanobanana",
+            self._make_nanobanana_passthrough(),
+        )
         result = c._generate_slide_image_prompts_sync(self._SLIDES_6, "тема")
         assert len(set(result)) == len(result)
 
@@ -385,24 +385,39 @@ class TestGenerateSlideImagePrompts:
         import anthropic as _anthropic
         monkeypatch.setattr(c, "settings", type("s", (), {"anthropic_api_key": "x"})())
         monkeypatch.setattr(_anthropic, "Anthropic", lambda **kw: self._make_fake_client("ничего")())
+        monkeypatch.setattr(
+            "bot.agents.nanobanana_prompt_expert.optimize_prompt_for_nanobanana",
+            self._make_nanobanana_passthrough(),
+        )
         slides = ["А", "Б"]
         result = c._generate_slide_image_prompts_sync(slides, "тема")
         assert len(result) == 2
         assert all(isinstance(p, str) and len(p) > 10 for p in result)
 
-    def test_each_result_contains_style_flag(self, monkeypatch):
-        """Every returned prompt must end with the standard style flag."""
+    def test_nanobanana_expert_called_for_each_slide(self, monkeypatch):
+        """Every slide prompt passes through the NanoBanana expert."""
         import bot.handlers.carousel as c
         import anthropic as _anthropic
         response = "\n".join(
-            f"IMG{i + 1}: visual {i + 1}, terracotta, --ar 1:1 --style atmospheric"
+            f"IMG{i + 1}: visual {i + 1}, terracotta"
             for i in range(len(self._SLIDES_6))
         )
         monkeypatch.setattr(c, "settings", type("s", (), {"anthropic_api_key": "x"})())
         monkeypatch.setattr(_anthropic, "Anthropic", lambda **kw: self._make_fake_client(response)())
+        calls: list[int] = []
+
+        def _tracking_optimize(raw_prompt, *, topic, slide_number, total_slides, user_note=""):
+            calls.append(slide_number)
+            return f"OPTIMIZED: {raw_prompt}"
+
+        monkeypatch.setattr(
+            "bot.agents.nanobanana_prompt_expert.optimize_prompt_for_nanobanana",
+            _tracking_optimize,
+        )
         result = c._generate_slide_image_prompts_sync(self._SLIDES_6, "тема")
+        assert len(calls) == len(self._SLIDES_6)
         for p in result:
-            assert "--style atmospheric" in p
+            assert p.startswith("OPTIMIZED:")
 
     def test_prompt_includes_forbidden_visual_motifs(self, monkeypatch):
         import bot.handlers.carousel as c
@@ -414,7 +429,11 @@ class TestGenerateSlideImagePrompts:
             captured["prompt"] = messages[0]["content"]
             return "IMG1: one\nIMG2: two\nIMG3: three\nIMG4: four\nIMG5: five\nIMG6: six"
 
-        with _patch("bot.services.claude_client.call_claude", side_effect=_fake_call_claude):
+        def _noop_optimize(raw_prompt, **kw):
+            return raw_prompt
+
+        with _patch("bot.services.claude_client.call_claude", side_effect=_fake_call_claude), \
+             _patch("bot.agents.nanobanana_prompt_expert.optimize_prompt_for_nanobanana", side_effect=_noop_optimize):
             c._generate_slide_image_prompts_sync(self._SLIDES_6, "тема")
         lowered = captured["prompt"].lower()
         assert "also forbidden everywhere" in lowered

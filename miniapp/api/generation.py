@@ -64,7 +64,7 @@ async def complete_carousel_generation(draft_id: str, topic: str) -> None:
     try:
         loop = asyncio.get_running_loop()
         forbidden = load_forbidden_phrases()
-        slides, img_prompts, arc = await loop.run_in_executor(
+        slides, img_prompts, _angle, _hook = await loop.run_in_executor(
             None, _generate_carousel_sync, topic, forbidden
         )
         if not slides:
@@ -77,7 +77,7 @@ async def complete_carousel_generation(draft_id: str, topic: str) -> None:
             {
                 "slides": slides,
                 "img_prompts": img_prompts,
-                "arc": arc,
+                "arc": "",
                 "slide_images": [],
                 "slide_image_versions": [],
                 "img_prompt_notes": [],
