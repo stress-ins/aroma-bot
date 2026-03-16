@@ -32,8 +32,44 @@ router = APIRouter()
 
 
 @router.get("/api/carousel/{draft_id}")
-async def get_carousel(draft: DraftRecord = Depends(require_draft("carousel"))):
+async def get_carousel(
+    background_tasks: BackgroundTasks,
+    draft: DraftRecord = Depends(require_draft("carousel")),
+):
+    payload = draft.payload or {}
+    # Auto-trigger image generation for drafts created via Telegram bot
+    # that have prompts but no images and no pending generation
+    if (
+        payload.get("img_prompts")
+        and not payload.get("slide_images")
+        and not payload.get("generation_pending")
+    ):
+        await set_generation_state(
+            draft.draft_id, pending=True, stage="images",
+            message="Генерирую картинки для карусели…",
+        )
+        background_tasks.add_task(
+            _auto_populate_carousel, draft.draft_id,
+        )
+        draft = await get_draft(draft.draft_id) or draft
     return await serialize_draft(draft)
+
+
+async def _auto_populate_carousel(draft_id: str) -> None:
+    """Wrapper for auto-triggered carousel image generation."""
+    from bot.services.carousel_assets import populate_carousel_slide_assets
+
+    try:
+        await populate_carousel_slide_assets(draft_id)
+        await set_generation_state(draft_id, pending=False)
+    except Exception as exc:
+        await set_generation_state(
+            draft_id,
+            pending=False,
+            stage="error",
+            message="Не удалось сгенерировать картинки. Попробуйте ещё раз.",
+            error=str(exc),
+        )
 
 
 REGEN_LIMIT_PER_CARD = 5

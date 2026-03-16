@@ -32,8 +32,8 @@ def generate_gemini_image_sync(
         try:
             config_kwargs: dict = {"response_modalities": ["IMAGE", "TEXT"]}
             if aspect_ratio:
-                config_kwargs["image_generation_config"] = types.ImageGenerationConfig(
-                    aspect_ratio=aspect_ratio,
+                config_kwargs["imageConfig"] = types.ImageConfig(
+                    aspectRatio=aspect_ratio,
                 )
             response = client.models.generate_content(
                 model="gemini-3.1-flash-image-preview",
