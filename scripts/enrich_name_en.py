@@ -4,7 +4,6 @@ import asyncio
 import logging
 
 from sqlalchemy import select
-from sqlalchemy.orm.attributes import flag_modified
 
 from db.models import AromaCardModel
 from db.session import AsyncSessionLocal
@@ -68,31 +67,49 @@ SLUG_TO_EN: dict[str, str] = {
     "ylang-ylang": "Ylang-Ylang",
 }
 
+# Cards where model.name is in English — need Russian name in payload
+SLUG_TO_RU: dict[str, str] = {
+    "blue-tansy": "Голубая пижма",
+}
+
 
 async def main() -> None:
-    updated = 0
+    updated_en = 0
+    updated_ru = 0
     async with AsyncSessionLocal() as session:
         result = await session.execute(
             select(AromaCardModel).where(AromaCardModel.category == "aroma")
         )
         for model in result.scalars():
             payload = dict(model.payload or {})
-            existing = str(payload.get("name_en") or "").strip()
+            changed = False
+
+            # Fill name_en from SLUG_TO_EN
+            existing_en = str(payload.get("name_en") or "").strip()
             name_ru = str(payload.get("name_ru") or "").strip()
-            # Skip if already has a distinct English name
-            if existing and existing != name_ru and existing != model.name:
-                continue
-            en = SLUG_TO_EN.get(model.slug)
-            if not en:
-                log.warning("No mapping for slug=%s", model.slug)
-                continue
-            payload["name_en"] = en
-            model.payload = payload
-            flag_modified(model, "payload")
-            updated += 1
-            log.info("  %s → %s", model.slug, en)
+            if not (existing_en and existing_en != name_ru and existing_en != model.name):
+                en = SLUG_TO_EN.get(model.slug)
+                if en:
+                    payload["name_en"] = en
+                    changed = True
+                    updated_en += 1
+                    log.info("  name_en: %s → %s", model.slug, en)
+                else:
+                    log.warning("No EN mapping for slug=%s", model.slug)
+
+            # Fill name_ru from SLUG_TO_RU (for cards with English model.name)
+            ru = SLUG_TO_RU.get(model.slug)
+            if ru and name_ru != ru:
+                payload["name_ru"] = ru
+                changed = True
+                updated_ru += 1
+                log.info("  name_ru: %s → %s", model.slug, ru)
+
+            if changed:
+                model.payload = payload
+
         await session.commit()
-    log.info("Updated %d aroma cards with name_en", updated)
+    log.info("Updated %d name_en, %d name_ru", updated_en, updated_ru)
 
 
 if __name__ == "__main__":
