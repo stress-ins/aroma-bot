@@ -892,6 +892,10 @@ async function polishContentDraft(draftId, button) {
   return polishContentDraftImpl(draftId, button);
 }
 
+async function refreshDraftMetrics(draftId, button) {
+  return refreshDraftMetricsImpl(draftId, button);
+}
+
 function confirmAction(message) {
   const tg = window.Telegram?.WebApp;
   if (tg?.showConfirm) {
@@ -1372,6 +1376,8 @@ const {
   submitBlendConstructor,
   blendSaveCurrentBlend,
   blendCreateContent,
+  blendLaunchContent,
+  blendRegenerate,
   blendAdjustWithOil,
   openSavedBlends,
   deleteSavedBlend,
@@ -1456,6 +1462,7 @@ const {
   openDraft: openDraftImpl,
   renderDraftDetail: renderDraftDetailImpl,
   renderEmptyDetail: renderEmptyDetailImpl,
+  refreshDraftMetrics: refreshDraftMetricsImpl,
 } = createDraftsModule({
   state,
   elements,
@@ -1874,6 +1881,8 @@ registerWindowBridge({
   submitBlendConstructor,
   blendSaveCurrentBlend,
   blendCreateContent,
+  blendLaunchContent,
+  blendRegenerate,
   blendAdjustWithOil,
   openSavedBlends,
   deleteSavedBlend,
