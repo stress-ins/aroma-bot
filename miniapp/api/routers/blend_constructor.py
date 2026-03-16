@@ -112,3 +112,16 @@ async def remove_saved_blend(
     if not deleted:
         raise HTTPException(status_code=404, detail="saved_blend_not_found")
     return {"deleted": saved_id}
+
+
+@router.get("/api/blend-constructor/shared/{saved_id}")
+async def get_shared_blend(saved_id: str):
+    """Public endpoint — returns blend data without auth."""
+    from bot.services.saved_blends_store import get_blend_by_id
+
+    blend = await get_blend_by_id(saved_id)
+    if not blend:
+        raise HTTPException(status_code=404, detail="blend_not_found")
+    # Strip owner info for public sharing
+    blend.pop("telegram_id", None)
+    return blend

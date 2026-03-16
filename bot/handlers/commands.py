@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import re
 
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto, WebAppInfo
 from telegram.constants import ParseMode
 from telegram.ext import ContextTypes, CallbackQueryHandler
 
@@ -70,6 +70,33 @@ SOURCE_LABELS = {
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    # Deep link: /start blend_<saved_id> -> open shared blend in Mini App
+    if context.args and context.args[0].startswith("blend_"):
+        saved_id = context.args[0][len("blend_"):]
+        from bot.services.mini_app import mini_app_base_url
+
+        base = mini_app_base_url()
+        if base:
+            url = f"{base}?shared={saved_id}"
+            markup = InlineKeyboardMarkup(
+                [
+                    [
+                        InlineKeyboardButton(
+                            "🧪 Открыть смесь",
+                            web_app=WebAppInfo(url=url),
+                        ),
+                    ]
+                ]
+            )
+            await update.message.reply_text(
+                "🌿 Вам поделились смесью\\! "
+                "Нажмите кнопку ниже, "
+                "чтобы посмотреть\\.",
+                parse_mode=ParseMode.MARKDOWN_V2,
+                reply_markup=markup,
+            )
+            return
+
     await update.message.reply_text(
         WELCOME_TEXT,
         parse_mode=ParseMode.MARKDOWN_V2,
