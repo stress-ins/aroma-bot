@@ -67,6 +67,86 @@ def _basic_verify(card: dict[str, Any]) -> tuple[float, list[str], dict[str, str
     return max(0.0, round(score, 2)), issues, corrections
 
 
+_CONSTRUCT_BLEND_PROMPT = """\
+Ты — эксперт-ароматерапевт. Подбери смесь эфирных масел под задачу.
+
+Задача пользователя: {brief}
+Желаемые эффекты: {effects}
+Скорость действия: {speed}
+Способ применения: {application}
+Дополнительные ограничения: {contraindications}
+
+Справочник масел для подбора:
+{reference_context}
+
+Верни строго в формате JSON:
+{{
+  "title": "Название смеси (2-3 слова)",
+  "oils": [
+    {{
+      "name_ru": "Розмарин",
+      "name_en": "Rosemary",
+      "drops": 3,
+      "role": "основа"
+    }}
+  ],
+  "profile": {{
+    "focus": 85,
+    "energy": 65,
+    "creativity": 70,
+    "calm": 30
+  }},
+  "explanation": "Почему именно эти масла и почему связка работает. 2-3 предложения.",
+  "application": "Как применять, режим, дозировка. 1-2 предложения.",
+  "tags": ["концентрация", "офис"]
+}}
+
+Требования к рецепту:
+- Итого 6-10 капель
+- 3-5 масел, не больше
+- Каждое масло имеет роль: основа / усилитель / модификатор / активатор
+- Объяснение — живым языком без научных терминов
+- Только те масла которые есть в справочнике
+"""
+
+
+_SPEED_LABELS = {"fast": "быстрое", "medium": "среднее", "extended": "пролонгированное"}
+_APP_LABELS = {"diffuser": "диффузор", "topical": "нанесение на кожу", "internal": "приём внутрь"}
+
+
+def construct_blend_sync(
+    brief: str,
+    effects: list[str],
+    speed: str,
+    application: str,
+    contraindications: str,
+    reference_context: str,
+) -> dict:
+    """Synchronous blend construction via aromatherapy expert agent."""
+    from bot.services.claude_client import call_claude
+
+    prompt = _CONSTRUCT_BLEND_PROMPT.format(
+        brief=brief,
+        effects=", ".join(effects) if effects else "не указаны",
+        speed=_SPEED_LABELS.get(speed, speed),
+        application=_APP_LABELS.get(application, application),
+        contraindications=contraindications or "нет",
+        reference_context=reference_context[:2000],
+    )
+
+    raw = call_claude(
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=800,
+        context="blend_constructor/expert",
+    )
+
+    start = raw.find("{")
+    end = raw.rfind("}") + 1
+    if start >= 0 and end > start:
+        return json.loads(raw[start:end])
+    raise ValueError("Failed to parse blend expert response")
+
+
 async def verify_card_content(card: dict[str, Any], *, dry_run: bool = False) -> dict[str, Any]:
     """Verify aromatherapy KB card content.
 

@@ -125,14 +125,8 @@ class TestMedicalReviewerAsync:
             "corrections": {},
         })
 
-        mock_message = MagicMock()
-        mock_message.content = [MagicMock(text=llm_response)]
-
-        mock_client = MagicMock()
-        mock_client.messages.create.return_value = mock_message
-
-        with patch("os.getenv", return_value="fake-key"), \
-             patch("anthropic.Anthropic", return_value=mock_client):
+        with patch("bot.agents.medical_reviewer.os.getenv", return_value="fake-key"), \
+             patch("bot.services.claude_client.call_claude", return_value=llm_response) as mock_call:
             result = await review_card_medical(card)
 
         assert result["passed"] is True

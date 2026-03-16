@@ -34,6 +34,47 @@ _CHECK_PROMPT = """\
 "contraindications": ["противопоказание"], "synergies": ["синергия"]}}
 """
 
+_INCOMPAT_PROMPT = """\
+Задача смеси: {brief}
+Эффекты: {effects}
+
+Перечисли масла которые НЕЛЬЗЯ добавить в эту смесь и почему.
+Только реальные несовместимости — противоположные эффекты, химические конфликты.
+
+Верни строго в формате JSON:
+[
+  {{"name_ru": "Лаванда", "reason": "расслабляет, противоречит цели концентрации"}},
+  {{"name_ru": "Иланг-иланг", "reason": "седативный, снижает фокус"}}
+]
+
+Максимум 5 масел. Только конкретные причины.
+"""
+
+
+def get_incompatible_oils_sync(effects: list[str], brief: str) -> list[dict]:
+    """Synchronous check for oils incompatible with the blend goal."""
+    prompt = _INCOMPAT_PROMPT.format(
+        brief=brief,
+        effects=", ".join(effects) if effects else "общее применение",
+    )
+
+    raw = call_claude(
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=300,
+        model="claude-haiku-4-5-20251001",
+        context="blend_constructor/compatibility",
+    )
+
+    try:
+        start = raw.find("[")
+        end = raw.rfind("]") + 1
+        if start >= 0 and end > start:
+            return json.loads(raw[start:end])
+        return json.loads(raw.strip())
+    except Exception:
+        logger.warning("get_incompatible_oils_sync: failed to parse response")
+        return []
+
 
 async def check_compatibility(oils: list[str]) -> dict:
     """Check compatibility of a list of oils.

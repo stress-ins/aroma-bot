@@ -23,6 +23,9 @@ RULES: list[tuple[str, str]] = [
     (r'\.{4,}', '…'),               # .... → …
     (r'!{2,}', '!'),                 # !!! → !
     (r'\?{2,}', '?'),               # ??? → ?
+    (r'^-{3,}\s*$', ''),             # --- separator → remove
+    (r'^\*{3,}\s*$', ''),            # *** separator → remove
+    (r'^_{3,}\s*$', ''),             # ___ separator → remove
 ]
 
 # AI marker patterns for detection and logging

@@ -41,6 +41,8 @@ export function createDraftsModule(deps) {
     callbacks,
   } = deps;
 
+  const cleanSlotText = (t) => t ? t.replace(/^[-*_]{3,}\s*$/gm, '').replace(/\n{3,}/g, '\n\n').trim() : '';
+
   function fullPreview(d) {
     const p = d.payload || {};
     if (d.kind === "carousel" && Array.isArray(p.slides) && p.slides.length) {
@@ -186,7 +188,7 @@ export function createDraftsModule(deps) {
               placeholder="Текст поста"
               ${isApproved ? "readonly" : ""}
               oninput="document.getElementById('charCount_${post.slot}_${d.draft_id}').textContent=this.value.length"
-            >${escapeHtml(post.text || "")}</textarea>
+            >${escapeHtml(cleanSlotText(post.text || ""))}</textarea>
             <div class="threads-char-counter${isOver ? " is-over" : ""}" id="charCount_${post.slot}_${d.draft_id}">${charCount}</div>
           </div>
           ${!isApproved ? `
@@ -299,7 +301,7 @@ export function createDraftsModule(deps) {
               ${threadsPosts.map((post, idx) => `
                 <div class="threads-post-section" data-slot="${post.slot}">
                   <span class="threads-post-label">${SLOT_ICONS[post.slot] || ""} ${escapeHtml(post.label)}</span>
-                  <textarea id="threadsPostText${idx}" class="threads-post-textarea" placeholder="Текст поста">${escapeHtml(post.text || "")}</textarea>
+                  <textarea id="threadsPostText${idx}" class="threads-post-textarea" placeholder="Текст поста">${escapeHtml(cleanSlotText(post.text || ""))}</textarea>
                   <div class="threads-post-schedule">
                     <label><span>Время</span><input type="time" id="threadsPostTime${idx}" value="${escapeHtml(post.scheduled_time || post.default_time || "")}"></label>
                   </div>

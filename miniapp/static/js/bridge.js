@@ -71,6 +71,15 @@ export function registerWindowBridge(deps) {
     scheduleThreadsSeries,
     openThreadsScheduler,
     saveThreadsReviewDraft,
+    handleSmartSearch,
+    runSmartSearch,
+    clearSmartSearch,
+    openBlendConstructor,
+    toggleEffect,
+    selectSpeed,
+    selectApp,
+    updateConstructBtn,
+    submitBlendConstructor,
   } = deps;
 
   window.retryCurrentTab = retryCurrentTab;
@@ -152,6 +161,16 @@ export function registerWindowBridge(deps) {
   window.addTodoItem = () => addTodoItem();
   window.removeTodoItem = (id) => removeTodoItem(id);
   window.renderCreateTool = renderCreateTool;
+
+  window.handleSmartSearch = handleSmartSearch;
+  window.runSmartSearch = runSmartSearch;
+  window.clearSmartSearch = clearSmartSearch;
+  window.openBlendConstructor = openBlendConstructor;
+  window.toggleEffect = toggleEffect;
+  window.selectSpeed = selectSpeed;
+  window.selectApp = selectApp;
+  window.updateConstructBtn = updateConstructBtn;
+  window.submitBlendConstructor = submitBlendConstructor;
 
   window.openImageFullscreen = function(src, title) {
     const existing = document.getElementById("img-fullscreen-modal");
