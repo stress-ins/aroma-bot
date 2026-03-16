@@ -88,7 +88,7 @@ async def test_image_saved_to_correct_path(tmp_path):
 
     with (
         patch.object(generator, "_audit_cards", new=fake_audit),
-        patch.object(generator, "_generate_image_gemini", return_value=fake_bytes),
+        patch.object(generator, "_generate_image", return_value=fake_bytes),
         patch.object(generator, "_upsert_image_url", new=AsyncMock()),
         patch.object(generator, "IMAGES_DIR", tmp_path / "reference_images"),
     ):
@@ -116,19 +116,19 @@ async def test_generation_failure_skips_card(tmp_path):
     async def fake_audit(category):
         return cards
 
-    def fake_generate(name, desc, api_key, category="aroma"):
+    def fake_generate(name, desc, category="aroma"):
         if name == "Проблемная":
             return None  # simulate failure
         return fake_bytes
 
     with (
         patch.object(generator, "_audit_cards", new=fake_audit),
-        patch.object(generator, "_generate_image_gemini", side_effect=fake_generate),
+        patch.object(generator, "_generate_image", side_effect=fake_generate),
         patch.object(generator, "_upsert_image_url", new=AsyncMock()),
         patch.object(generator, "IMAGES_DIR", tmp_path / "reference_images"),
         patch("config.settings") as mock_settings,
     ):
-        mock_settings.gemini_api_key = "fake-key"
+        mock_settings.image_api_key = "fake-key"
         result = await generator.run(dry_run=False, category="aroma")
 
     # Only the successful card is in result
