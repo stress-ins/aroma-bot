@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import base64
 import sys
 import time
 from pathlib import Path
@@ -97,29 +96,13 @@ _CATEGORY_PROMPTS = {
 }
 
 
-def _generate_image_gemini(name: str, description: str, api_key: str, category: str = "aroma") -> bytes | None:
-    """Call Gemini to generate an image. Returns raw JPEG bytes or None."""
-    try:
-        from google import genai
-        from google.genai import types
+def _generate_image(name: str, description: str, category: str = "aroma") -> bytes | None:
+    """Generate an image via NanoBanana API. Returns raw bytes or None."""
+    from bot.services.gemini_images import generate_gemini_image_sync
 
-        client = genai.Client(api_key=api_key)
-        template = _CATEGORY_PROMPTS.get(category, _CATEGORY_PROMPTS["aroma"])
-        prompt = template.format(name=name, description=description) + "No text overlays. Square format."
-        response = client.models.generate_content(
-            model="gemini-3.1-flash-image-preview",
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                response_modalities=["TEXT", "IMAGE"],
-            ),
-        )
-        for part in response.candidates[0].content.parts:
-            if part.inline_data is not None:
-                return part.inline_data.data
-        return None
-    except Exception as exc:
-        print(f"    Gemini error: {exc}")
-        return None
+    template = _CATEGORY_PROMPTS.get(category, _CATEGORY_PROMPTS["aroma"])
+    prompt = template.format(name=name, description=description) + "No text overlays. Square format."
+    return generate_gemini_image_sync(prompt, log_context=f"missing-img:{name}")
 
 
 async def _upsert_image_url(slug: str, image_url: str) -> None:
@@ -164,9 +147,8 @@ async def run(
             print(f"  DRY-RUN: {card['slug']} ({card['category']}) — {card['name']}")
         return [c["slug"] for c in cards]
 
-    api_key = getattr(settings, "gemini_api_key", None) or ""
-    if not api_key:
-        print("ERROR: GEMINI_API_KEY not configured. Use --dry-run to audit only.")
+    if not settings.image_api_key:
+        print("ERROR: NANA_BANANA_API_KEY not configured. Use --dry-run to audit only.")
         return []
 
     processed = []
@@ -177,7 +159,7 @@ async def run(
         desc = card["description"]
         print(f"  [{i+1}/{len(cards)}] Generating image for {slug_val} ({name})...", end=" ", flush=True)
 
-        img_bytes = _generate_image_gemini(name, desc, api_key, category=cat)
+        img_bytes = _generate_image(name, desc, category=cat)
         if not img_bytes:
             print("SKIP (generation failed)")
             time.sleep(15)  # back off before next attempt
