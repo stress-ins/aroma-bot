@@ -132,6 +132,45 @@ export function createPlansModule(deps) {
     }) || null;
   }
 
+  // -- Metrics cache for published items --
+  const _metricsCache = new Map();
+
+  async function _fetchMetricsBadge(draftId) {
+    if (_metricsCache.has(draftId)) return _metricsCache.get(draftId);
+    try {
+      const data = await fetchJson(`/api/drafts/${draftId}/metrics`);
+      const items = data.metrics || [];
+      if (!items.length) { _metricsCache.set(draftId, ""); return ""; }
+      const m = items[0].metrics || {};
+      const views = m.views ?? m.impressions ?? null;
+      const likes = m.likes ?? null;
+      let badge = "";
+      if (views !== null) badge += `<i data-lucide="eye" style="width:12px;height:12px"></i> ${Number(views).toLocaleString("ru-RU")}`;
+      if (likes !== null) badge += `${badge ? " \u00b7 " : ""}<i data-lucide="heart" style="width:12px;height:12px"></i> ${Number(likes).toLocaleString("ru-RU")}`;
+      _metricsCache.set(draftId, badge);
+      return badge;
+    } catch (_e) {
+      _metricsCache.set(draftId, "");
+      return "";
+    }
+  }
+
+  function _injectMetricsBadges() {
+    const badges = document.querySelectorAll("[data-metrics-draft]");
+    for (const el of badges) {
+      const draftId = el.dataset.metricsDraft;
+      if (!draftId || el.dataset.loaded) continue;
+      el.dataset.loaded = "1";
+      _fetchMetricsBadge(draftId).then((html) => {
+        if (html) {
+          el.innerHTML = html;
+          el.hidden = false;
+          if (window.lucide) lucide.createIcons();
+        }
+      });
+    }
+  }
+
   // ── Feed loading ───────────────────────────────────────────────────────────
 
   async function loadPlansFeed() {
@@ -271,6 +310,7 @@ export function createPlansModule(deps) {
             ${item.status === "error" && item.error_message ? `
               <div class="plan-card-error">${escapeHtml(item.error_message)}</div>
             ` : ""}
+            ${item.status === "published" ? `<span class="plan-card-metrics-badge" data-metrics-draft="${escapeHtml(item.draft_id)}" hidden></span>` : ""}
           </div>
           <div class="plan-card-right">
             <div class="plan-card-time">${escapeHtml(formatTime(item.scheduled_at))}</div>
@@ -529,6 +569,7 @@ export function createPlansModule(deps) {
       })}</div>`;
     }
     syncMobileNavigation();
+    requestAnimationFrame(() => _injectMetricsBadges());
   }
 
   // ── Existing plan functions (kept as-is) ───────────────────────────────────

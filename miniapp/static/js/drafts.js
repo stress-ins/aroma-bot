@@ -263,11 +263,8 @@ export function createDraftsModule(deps) {
   }
 
   function renderDraftDetail(d) {
-    if (d?.kind === "threads_series") {
-      return renderThreadsSeriesDetail(d);
-    }
-
     if (isPendingDraftId(d?.draft_id)) {
+      const isSeries = d?.kind === "threads_series";
       elements.draftDetail.innerHTML = `
         <div class="detail-grid detail-grid-pending">
           ${renderBackButton()}
@@ -279,11 +276,15 @@ export function createDraftsModule(deps) {
               ${tagMarkup("Ещё генерируется", "pending")}
             </div>
           </div>
-          ${renderDetailLoader("Генерирую карточку", "Сохраняю черновик и подгружаю содержимое.", "detail-loader-card-compact")}
+          ${renderDetailLoader(isSeries ? "Генерирую серию" : "Генерирую карточку", isSeries ? "Создаю три поста: утро, день, вечер. Займёт 15–30 секунд." : "Сохраняю черновик и подгружаю содержимое.", "detail-loader-card-compact")}
         </div>
       `;
       syncMobileNavigation();
       return;
+    }
+
+    if (d?.kind === "threads_series") {
+      return renderThreadsSeriesDetail(d);
     }
 
     const p = d.payload || {};
@@ -391,15 +392,85 @@ export function createDraftsModule(deps) {
         ${generationStateMarkup(d, "draft")}
         ${reviewActions}
         ${renderPublishPanel(d.draft_id, d.status, { kind: d.kind, hasMedia: _hasMedia(d) })}
+        ${d.status === "published" ? `<section class="section metrics-section" id="metricsSection_${d.draft_id}"><div class="metrics-empty"><i data-lucide="bar-chart-3"></i><span>Загружаю метрики...</span></div></section>` : ""}
         ${renderSlides(d.draft_id, p.slides, p.img_prompts, p.slide_images, p.img_prompt_notes, p.slide_image_versions)}
         ${promptSection("Промпт для изображения", p.visual_prompt, "Скопировать промпт", `draft:${d.draft_id}:visual`)}
       </div>
     `;
+    if (d.status === "published") _loadMetricsSection(d.draft_id);
     if (d.kind === "carousel") {
       const readyCount = (p.slide_images || []).filter(Boolean).length;
       const slideCount = (p.slides || []).length;
       if (d.generation_pending || readyCount < slideCount) scheduleCarouselRefresh(d.draft_id);
     }
+  }
+
+
+  // -- Metrics helpers --
+
+  const PLATFORM_METRICS = {
+    threads: [
+      { key: "views", icon: "eye", label: "Просмотры" },
+      { key: "likes", icon: "heart", label: "Лайки" },
+      { key: "replies", icon: "message-circle", label: "Ответы" },
+      { key: "reposts", icon: "repeat", label: "Репосты" },
+      { key: "quotes", icon: "quote", label: "Цитаты" },
+    ],
+    instagram: [
+      { key: "impressions", icon: "eye", label: "Показы" },
+      { key: "reach", icon: "users", label: "Охват" },
+      { key: "likes", icon: "heart", label: "Лайки" },
+      { key: "comments", icon: "message-circle", label: "Комментарии" },
+    ],
+  };
+
+  function _renderMetricsHTML(draftId, data) {
+    const items = data.metrics || [];
+    if (!items.length) {
+      return `<div class="metrics-empty"><i data-lucide="bar-chart-3"></i><span>Метрики ещё не собраны</span></div>
+        <div class="actions-row"><button class="secondary-button" type="button" onclick="refreshDraftMetrics('${draftId}', this)"><i data-lucide="refresh-cw"></i> Обновить</button></div>`;
+    }
+    let html = `<div class="section-heading"><h3><i data-lucide="bar-chart-3"></i> Эффективность</h3></div>`;
+    for (const entry of items) {
+      const defs = PLATFORM_METRICS[entry.platform] || [];
+      if (!defs.length) continue;
+      const m = entry.metrics || {};
+      html += `<p class="metrics-platform-label">${escapeHtml(entry.platform)}</p><div class="metrics-grid">`;
+      for (const def of defs) {
+        const val = m[def.key];
+        if (val === undefined || val === null) continue;
+        html += `<div class="metric-card"><i data-lucide="${def.icon}"></i><span class="metric-value">${Number(val).toLocaleString("ru-RU")}</span><span class="metric-label">${escapeHtml(def.label)}</span></div>`;
+      }
+      html += `</div>`;
+    }
+    const latestFetch = items.reduce((acc, i) => (!acc || i.fetched_at > acc) ? i.fetched_at : acc, null);
+    if (latestFetch) {
+      const dt = new Date(latestFetch);
+      const ts = dt.toLocaleDateString("ru-RU") + " " + dt.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+      html += `<p class="metrics-updated">Последнее обновление: ${ts}</p>`;
+    }
+    html += `<div class="actions-row"><button class="secondary-button" type="button" onclick="refreshDraftMetrics('${draftId}', this)"><i data-lucide="refresh-cw"></i> Обновить</button></div>`;
+    return html;
+  }
+
+  async function _loadMetricsSection(draftId) {
+    const container = document.getElementById(`metricsSection_${draftId}`);
+    if (!container) return;
+    try {
+      const data = await fetchJson(`/api/drafts/${draftId}/metrics`);
+      container.innerHTML = _renderMetricsHTML(draftId, data);
+    } catch (_e) {
+      container.innerHTML = `<div class="metrics-empty"><i data-lucide="bar-chart-3"></i><span>Метрики ещё не собраны</span></div>
+        <div class="actions-row"><button class="secondary-button" type="button" onclick="refreshDraftMetrics('${draftId}', this)"><i data-lucide="refresh-cw"></i> Обновить</button></div>`;
+    }
+    if (window.lucide) lucide.createIcons();
+  }
+
+  async function refreshDraftMetrics(draftId, button) {
+    await withButtonFeedback(button, "Обновляю...", async () => {
+      await fetchJson(`/api/drafts/${draftId}/metrics/refresh`, { method: "POST", body: "{}" });
+      await _loadMetricsSection(draftId);
+    }, "Готово");
   }
 
   function renderEmptyDetail() {
@@ -436,5 +507,6 @@ export function createDraftsModule(deps) {
     renderDraftDetail,
     renderThreadsSeriesDetail,
     renderEmptyDetail,
+    refreshDraftMetrics,
   };
 }
