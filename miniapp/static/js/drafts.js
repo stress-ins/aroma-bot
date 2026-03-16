@@ -107,7 +107,7 @@ export function createDraftsModule(deps) {
     setEmptyState(state.drafts.length > 0, {
       eyebrow: "Черновики",
       title: "Ничего не найдено",
-      body: "Попробуйте сбросить фильтры или собрать новый материал через вкладку «Создать».",
+      body: "Создайте первый материал через вкладку «Создать». Выберите формат, укажите тему — AI сделает остальное.",
       actionLabel: "Открыть создание",
       action: "setTab('create')",
     });
@@ -273,11 +273,6 @@ export function createDraftsModule(deps) {
 
     const p = d.payload || {};
     const mainText = p.caption || p.scenario || "";
-    // Compact: only ID + date; kind/source/status already shown in eyebrow and draft-meta tags
-    const heroFacts = [
-      d.seq_id ? detailFactMarkup("ID", `#${d.seq_id}`) : "",
-      detailFactMarkup("Создан", formatPlanDate(d.created_at)),
-    ].join("");
 
     const threadsPosts = Array.isArray(p.threads_posts) && p.threads_posts.length ? p.threads_posts : null;
     const SLOT_ICONS = { morning: uiIcon("sunrise"), day: uiIcon("sun"), evening: uiIcon("moon") };
@@ -354,14 +349,13 @@ export function createDraftsModule(deps) {
             <p class="eyebrow">${contentKindIcon(d.kind)}<span>${escapeHtml(kindLabel(d.kind))} • ${escapeHtml(sourceLabel(d.source))}</span></p>
             <h2 class="detail-title">${escapeHtml(d.topic)}</h2>
             <div class="draft-meta">
+              ${d.seq_id ? `<span class="meta-chip meta-chip--muted">#${d.seq_id}</span>` : ""}
+              ${formatPlanDate(d.created_at) ? `<span class="meta-chip meta-chip--muted">${escapeHtml(formatPlanDate(d.created_at))}</span>` : ""}
               ${tagMarkup(statusLabel(d.status), statusTone(d.status))}
               ${d.generation_pending && draftGenerationLabel(d) ? tagMarkup(draftGenerationLabel(d), "pending") : ""}
               ${isContentReviewKind(d.kind) ? tagMarkup(feedbackLabel(d.feedback), feedbackTone(d.feedback)) : ""}
               ${tagMarkup(sourceLabel(d.source), sourceTone(d.source))}
             </div>
-          </div>
-          <div class="detail-hero-side">
-            <div class="detail-facts">${heroFacts}</div>
           </div>
           <div class="actions-row detail-actions">
             <button class="primary-button" onclick="updateDraft('status', {status:'approved'}, this)">${actionLabel("approve", "Согласовать")}</button>

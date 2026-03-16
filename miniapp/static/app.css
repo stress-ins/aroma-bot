@@ -1166,6 +1166,7 @@ body.is-mobile-layout .detail-top {
 
 /* ── Threads posts УТРО/ДЕНЬ/ВЕЧЕР ──────────────────────────────────── */
 .threads-post-section {
+  position: relative;
   padding: var(--space-4);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
@@ -1173,10 +1174,13 @@ body.is-mobile-layout .detail-top {
 }
 .threads-post-section + .threads-post-section { margin-top: var(--space-3); }
 .threads-post-label {
-  display: inline-block;
+  position: absolute;
+  top: calc(var(--space-4) + 8px);
+  left: calc(var(--space-4) + 10px);
+  z-index: 2;
+  pointer-events: none;
   font-size: 12px;
   font-weight: 700;
-  margin-bottom: var(--space-1);
   color: var(--brand);
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -1188,7 +1192,7 @@ body.is-mobile-layout .detail-top {
   border: 1px solid var(--border);
   background: var(--surface);
   border-radius: var(--radius-sm);
-  padding: 9px 12px;
+  padding: 28px 12px 9px;
   font-size: 14px;
   color: var(--text);
   font-family: var(--font-ui);
@@ -3564,3 +3568,7 @@ body.is-mobile-layout[data-mode="handbook"] .tabs::-webkit-scrollbar { display: 
 }
 .token-platform { font-weight: 600; font-size: 13px; color: var(--text); flex: 1; }
 .token-expiry { font-size: 12px; color: var(--hint); }
+
+/* ── Compact meta chips ─────────────────────────────────────────────────── */
+.meta-chip { display: inline-block; font-size: 12px; line-height: 1.4; }
+.meta-chip--muted { color: var(--hint); }

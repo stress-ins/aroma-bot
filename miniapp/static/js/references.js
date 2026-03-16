@@ -18,6 +18,15 @@ export function createReferencesModule(deps) {
     return slug ? (_aromaSlugMap[slug] || "") : "";
   }
 
+  function findSlugByName(name) {
+    if (!name) return null;
+    const lower = name.trim().toLowerCase();
+    for (const [slug, nameRu] of Object.entries(_aromaSlugMap)) {
+      if (String(nameRu).toLowerCase() === lower) return slug;
+    }
+    return null;
+  }
+
   const {
     state,
     elements,
@@ -100,6 +109,14 @@ export function createReferencesModule(deps) {
       state.referenceItems.forEach(item => {
         if (item.slug && (item.name_ru || item.name)) _aromaSlugMap[item.slug] = item.name_ru || item.name;
       });
+    }
+    // Pre-fill aroma slug map for cross-reference lookups (e.g. blend ingredients)
+    if (meta.category !== "aromas" && Object.keys(_aromaSlugMap).length === 0) {
+      fetchJson("/api/references/aroma").then((aromaData) => {
+        (aromaData.items || []).forEach(item => {
+          if (item.slug && (item.name_ru || item.name)) _aromaSlugMap[item.slug] = item.name_ru || item.name;
+        });
+      }).catch(() => {});
     }
 
     // Skip rendering if openReference is currently in flight — it will call
@@ -305,7 +322,7 @@ export function createReferencesModule(deps) {
       const d = drops[i];
       const unit = d === 1 ? "капля" : (d >= 2 && d <= 4) ? "капли" : "капель";
       const displayName = (namesRu[i] || lookupNameRu(slugs[i]) || nameEn || "").trim();
-      const slug = slugs[i];
+      const slug = slugs[i] || findSlugByName(displayName);
       const nameHtml = slug
         ? `<button class="crossref-chip" onclick='openReference(${JSON.stringify(slug)}, "aromas")'>${escapeHtml(displayName)}</button>`
         : `<span class="crossref-chip crossref-chip--plain">${escapeHtml(displayName)}</span>`;
@@ -622,7 +639,9 @@ export function createReferencesModule(deps) {
       ? `Найдено ${filtered.length} из ${items.length}`
       : meta.count(items);
 
-    setEmptyState(filtered.length > 0, meta.empty);
+    setEmptyState(filtered.length > 0, query
+      ? { eyebrow: meta.title, title: "Ничего не найдено", body: "Попробуйте другой запрос или сбросьте фильтр." }
+      : meta.empty);
 
     let listContainer = document.getElementById("referenceListContainer");
     if (!listContainer) {

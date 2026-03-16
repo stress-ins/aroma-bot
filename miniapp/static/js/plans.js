@@ -317,7 +317,7 @@ export function createPlansModule(deps) {
     return renderGuidedState({
       eyebrow: "Лента публикаций",
       title: "Публикаций пока нет",
-      body: "Запланированные и опубликованные материалы появятся здесь.",
+      body: "Контент-план помогает планировать публикации на неделю вперёд. Создайте план и начните заполнять.",
       actionLabel: "+ Создать контент",
       action: "setTab('create')",
     });
