@@ -55,7 +55,6 @@ def generate_gemini_image_sync(
         "callBackUrl": "https://example.com/noop",
         "aspectRatio": aspect_ratio or "1:1",
         "resolution": "1K",
-        "outputFormat": "PNG",
     }
 
     # Step 1: Submit task (retry on 429/5xx)
