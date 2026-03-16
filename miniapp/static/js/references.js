@@ -730,7 +730,13 @@ export function createReferencesModule(deps) {
       }
     }
     const filterChipsEl = document.getElementById("referenceFilterChips");
-    if (filterChipsEl) filterChipsEl.innerHTML = renderFilterChips(items, tabId);
+    if (filterChipsEl) {
+      filterChipsEl.innerHTML = renderFilterChips(items, tabId);
+      if (state.tab === "aromas" || state.tab === "blends") {
+        filterChipsEl.insertAdjacentHTML("beforeend",
+          `<button class="blend-constructor-inline-cta" onclick="openBlendConstructor()">\ud83e\uddea \u0421\u043e\u0437\u0434\u0430\u0442\u044c \u0441\u043c\u0435\u0441\u044c \u043f\u043e\u0434 \u0437\u0430\u0434\u0430\u0447\u0443</button>`);
+      }
+    }
 
     listContainer.innerHTML = filtered.map((item) => `
       <article ${interactiveCardAttrs(`Открыть карточку ${item.name}`)} class="draft-card overview-card reference-card${state.tab === "concepts" ? " is-theory concept-card" : ""}${item.slug === reference?.slug ? " active" : ""} interactive-card" onclick='openReference(${JSON.stringify(item.slug)}, ${JSON.stringify(state.tab)})'>
@@ -957,6 +963,7 @@ export function createReferencesModule(deps) {
           <button class="search-tag" onclick="runSmartSearch('\u0441\u0442\u0440\u0435\u0441\u0441')">\ud83d\ude24 \u0441\u0442\u0440\u0435\u0441\u0441</button>
           <button class="search-tag" onclick="runSmartSearch('\u043a\u043e\u043d\u0446\u0435\u043d\u0442\u0440\u0430\u0446\u0438\u044f')">\ud83e\udde0 \u0444\u043e\u043a\u0443\u0441</button>
         </div>
+        <button class="blend-constructor-cta" onclick="openBlendConstructor()">\ud83e\uddea \u0421\u043e\u0437\u0434\u0430\u0442\u044c \u0441\u043c\u0435\u0441\u044c \u043f\u043e\u0434 \u0437\u0430\u0434\u0430\u0447\u0443</button>
         <button class="my-blends-btn" onclick="openSavedBlends()">\u2665 \u0421\u043e\u0445\u0440\u0430\u043d\u0451\u043d\u043d\u043e\u0435</button>
       </div>`;
   }
