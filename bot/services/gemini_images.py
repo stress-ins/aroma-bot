@@ -74,6 +74,7 @@ def generate_gemini_image_sync(
             task_id = data.get("taskId") or data.get("data", {}).get("taskId")
             if not task_id:
                 logger.warning("%s: no taskId in response: %s", log_context, str(data)[:200])
+                _notify_image_failure(log_context, f"no taskId: {str(data)[:120]}")
                 return None
             break
         except Exception as exc:
@@ -114,6 +115,7 @@ def generate_gemini_image_sync(
                 image_url = data.get("resultImageUrl") or data.get("resultImage")
                 if not image_url:
                     logger.warning("%s: successFlag=1 but no image URL: %s", log_context, str(data)[:200])
+                    _notify_image_failure(log_context, "successFlag=1 but no image URL")
                     return None
                 logger.info("%s: ready, downloading from %s", log_context, image_url[:80])
                 return _download_image(image_url, log_context)
@@ -142,6 +144,7 @@ def _download_image(url: str, log_context: str) -> bytes | None:
         data = resp.content
         if len(data) < 100:
             logger.warning("%s: downloaded image too small (%d bytes)", log_context, len(data))
+            _notify_image_failure(log_context, f"downloaded image too small ({len(data)} bytes)")
             return None
         return data
     except Exception as exc:
