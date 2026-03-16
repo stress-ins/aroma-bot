@@ -61,7 +61,7 @@ export function createCarouselModule(deps) {
     if (hasImage) {
       return `<div class="slide-status is-ready">${uiIcon("approve")}<span>Картинка готова</span></div>`;
     }
-    return `<div class="slide-status is-empty">${uiIcon("image")}<span>Изображение еще готовится</span></div>`;
+    return `<div class="slide-status is-empty">${uiIcon("loader")}<span>Изображение еще готовится</span></div>`;
   }
 
   function renderSlideVersions(draftId, slideIndex, currentImage, versions = []) {
@@ -125,7 +125,7 @@ export function createCarouselModule(deps) {
             const versions = Array.isArray(versionItems[index]) ? versionItems[index] : [];
             const imgHtml = img?.url
               ? `<img class="frame-image" src="${escapeHtml(img.url)}" alt="Слайд ${index + 1}" />`
-              : `<div class="frame-loading">Картинка недоступна или еще генерируется. Откройте промпт ниже для ручной генерации.</div>`;
+              : `<div class="frame-loading"><div class="frame-loading-inner"><div class="brand-loader brand-loader-mini" aria-hidden="true"><span class="brand-loader-ring"></span><span class="brand-loader-letter">A</span></div><span>Генерируем картинку</span></div></div>`;
             return `
               <article class="slide">
                 <strong>Слайд ${index + 1}</strong>

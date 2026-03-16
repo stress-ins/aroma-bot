@@ -41,6 +41,14 @@ export function createDraftsModule(deps) {
     callbacks,
   } = deps;
 
+  function fullPreview(d) {
+    const p = d.payload || {};
+    if (d.kind === "carousel" && Array.isArray(p.slides) && p.slides.length) {
+      return p.slides.join(" / ");
+    }
+    return p.caption || p.hook || p.angle || d.preview || "";
+  }
+
   async function saveContentReviewDraft(draftId, button) {
     const payload = {
       topic: String(document.getElementById("contentTopicField")?.value || "").trim(),
@@ -369,7 +377,7 @@ export function createDraftsModule(deps) {
             <button class="danger-button" onclick="deleteDraft('${d.draft_id}', 'drafts', this)">${actionLabel("trash", "Удалить")}</button>
           </div>
         </div>
-        ${payloadSection("Превью", d.preview)}
+        ${payloadSection("Превью", fullPreview(d))}
         ${payloadSection("Угол", p.angle)}
         ${payloadSection("Текст", mainText)}
         ${payloadSection("CTA", p.cta)}

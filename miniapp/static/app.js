@@ -597,6 +597,7 @@ function uiIcon(name) {
     plan:       "calendar-days",
     play:       "play",
     layers:     "layers",
+    loader:     "loader-circle",
   };
   return `<span class="ui-icon ui-icon-${escapeHtml(name)}">${icon(LUCIDE_MAP[name] || "square-terminal", 16)}</span>`;
 }
@@ -973,8 +974,9 @@ function draftHeroSummary(draft, payload, mainText) {
 }
 
 function formatPlanDate(value) {
-  const text = String(value || "").trim();
+  let text = String(value || "").trim();
   if (!text) return "";
+  if (/T/.test(text) && !/[Z+\-]\d{0,4}$/.test(text)) text += "Z";
   const date = new Date(text);
   if (Number.isNaN(date.getTime())) return text;
   return date.toLocaleDateString("ru-RU") + " " + date.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
