@@ -403,8 +403,8 @@ export function createReferencesModule(deps) {
         <h3><i data-lucide="volume-2" style="width:16px;height:16px"></i> Прослушать</h3>
         <div class="sound-player" data-audio-url="${escapeHtml(audioUrl)}">
           <button class="sound-player-btn" type="button" aria-label="Воспроизвести">
-            <i data-lucide="play" class="sound-player-icon-play"></i>
-            <i data-lucide="pause" class="sound-player-icon-pause" hidden></i>
+            <span class="sound-player-icon-play"><i data-lucide="play"></i></span>
+            <span class="sound-player-icon-pause" hidden><i data-lucide="pause"></i></span>
           </button>
           <div class="sound-player-progress">
             <div class="sound-player-bar">
@@ -717,25 +717,16 @@ export function createReferencesModule(deps) {
       elements.draftList.innerHTML = `
         ${renderSmartSearchHero()}
         <div id="referenceFilterChips"></div>
-        <div class="aroma-search">
-          <label>${escapeHtml(meta.searchLabel)}<input id="referenceSearchInput" type="search" placeholder="${escapeHtml(meta.searchPlaceholder)}" value="${escapeHtml(state.referenceSearch)}" /></label>
-        </div>
         <div id="referenceListContainer" class="plans-list"></div>
       `;
       listContainer = document.getElementById("referenceListContainer");
-      document.getElementById("referenceSearchInput")?.addEventListener("input", (e) => {
+      document.getElementById("smartSearchInput")?.addEventListener("input", (e) => {
         state.referenceSearch = e.target.value;
-        renderReferences();
       });
     } else {
-      const searchInput = document.getElementById("referenceSearchInput");
+      const searchInput = document.getElementById("smartSearchInput");
       if (searchInput) {
-        searchInput.placeholder = meta.searchPlaceholder;
         searchInput.value = state.referenceSearch;
-        const label = searchInput.closest("label");
-        if (label) {
-          label.firstChild.textContent = meta.searchLabel;
-        }
       }
     }
     const filterChipsEl = document.getElementById("referenceFilterChips");
@@ -889,11 +880,11 @@ export function createReferencesModule(deps) {
         <div class="detail-grid">
           ${renderBackButton()}
           ${renderReferenceImage(reference)}
+          ${renderAudioPlayer(reference)}
           ${aromaHtmlSection("О звуке", renderReferencePassport(reference))}
           ${renderCollapsibleDescription(reference)}
           ${renderCollapsibleSection("Психологические свойства", reference.psychological_properties, 280)}
           ${renderCollapsibleSection("Терапевтические свойства", reference.therapeutic_properties, 280)}
-          ${renderAudioPlayer(reference)}
           ${compOilChips ? `<section class="section"><h3>🌿 Комплементарные масла</h3><div class="detail-preview">${compOilChips}</div></section>` : ""}
           ${renderStructuredList("📋 Применение", reference.applications)}
           ${renderStructuredList("Меры предосторожности", reference.precautions)}
@@ -963,12 +954,10 @@ export function createReferencesModule(deps) {
         </div>
         <div class="smart-search-tags" id="smartSearchTags">
           <button class="search-tag" onclick="runSmartSearch('\u0440\u0430\u0441\u0441\u043b\u0430\u0431\u043b\u0435\u043d\u0438\u0435')">\ud83d\udca4 \u0441\u043e\u043d</button>
-          <button class="search-tag" onclick="runSmartSearch('\u0442\u0432\u043e\u0440\u0447\u0435\u0441\u0442\u0432\u043e')">\u2726 \u0442\u0432\u043e\u0440\u0447\u0435\u0441\u0442\u0432\u043e</button>
           <button class="search-tag" onclick="runSmartSearch('\u0441\u0442\u0440\u0435\u0441\u0441')">\ud83d\ude24 \u0441\u0442\u0440\u0435\u0441\u0441</button>
-          <button class="search-tag" onclick="runSmartSearch('\u0432\u043e\u0441\u043f\u0430\u043b\u0435\u043d\u0438\u0435')">\ud83d\udd25 \u0432\u043e\u0441\u043f\u0430\u043b\u0435\u043d\u0438\u0435</button>
           <button class="search-tag" onclick="runSmartSearch('\u043a\u043e\u043d\u0446\u0435\u043d\u0442\u0440\u0430\u0446\u0438\u044f')">\ud83e\udde0 \u0444\u043e\u043a\u0443\u0441</button>
         </div>
-        <button class="blend-constructor-cta" onclick="openBlendConstructor()">\ud83e\uddea \u0421\u043e\u0437\u0434\u0430\u0442\u044c \u0441\u043c\u0435\u0441\u044c \u043f\u043e\u0434 \u0437\u0430\u0434\u0430\u0447\u0443</button>
+        <button class="blend-constructor-cta secondary-button" onclick="openBlendConstructor()">\ud83e\uddea \u0421\u043e\u0437\u0434\u0430\u0442\u044c \u0441\u043c\u0435\u0441\u044c \u043f\u043e\u0434 \u0437\u0430\u0434\u0430\u0447\u0443</button>
       </div>`;
   }
 
@@ -1024,7 +1013,14 @@ export function createReferencesModule(deps) {
         else if (f.includes(q)) score += 3;
       });
       return {...item, _score: score};
-    }).filter(i => i._score > 0).sort((a, b) => b._score - a._score);
+    }).filter(i => i._score > 0);
+    const currentType = state.tab.replace(/s$/, "");
+    scored.sort((a, b) => {
+      const aMatch = a._type === currentType ? 1 : 0;
+      const bMatch = b._type === currentType ? 1 : 0;
+      if (aMatch !== bMatch) return bMatch - aMatch;
+      return b._score - a._score;
+    });
     renderSearchResults(scored, query);
   }
 
@@ -1039,7 +1035,17 @@ export function createReferencesModule(deps) {
         <button class="blend-constructor-cta" onclick="openBlendConstructor('${escapeHtml(query)}')">\ud83e\uddea \u0421\u043e\u0437\u0434\u0430\u0442\u044c \u0441\u043c\u0435\u0441\u044c \u043f\u043e\u0434 \u044d\u0442\u0443 \u0437\u0430\u0434\u0430\u0447\u0443 \u2197</button></div>`;
       return;
     }
-    listContainer.innerHTML = `<div class="search-results-header">${items.length} \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442\u043e\u0432</div>${items.slice(0, 50).map(item => renderSearchResultCard(item)).join("")}`;
+    const groupLabels = {aroma: "\u0410\u0440\u043e\u043c\u0430\u0442\u044b", blend: "\u0421\u043c\u0435\u0441\u0438", symptom: "\u0421\u0438\u043c\u043f\u0442\u043e\u043c\u044b"};
+    let lastType = null;
+    const cardsHtml = items.slice(0, 50).map(item => {
+      let header = "";
+      if (item._type !== lastType) {
+        header = `<div class="search-group-header">${groupLabels[item._type] || item._type}</div>`;
+        lastType = item._type;
+      }
+      return header + renderSearchResultCard(item);
+    }).join("");
+    listContainer.innerHTML = `<div class="search-results-header">${items.length} \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442\u043e\u0432</div>${cardsHtml}`;
   }
 
   function renderSearchResultCard(item) {
