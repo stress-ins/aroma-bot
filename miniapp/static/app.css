@@ -1671,16 +1671,17 @@ body.tg-theme-dark .danger-button {
   font-weight: 600;
 }
 
+.threads-regen-note {
+  margin-top: 8px;
+}
 .threads-regen-row {
   display: flex;
-  flex-wrap: wrap;
   gap: 6px;
-  margin-top: 8px;
+  margin-top: 6px;
   align-items: center;
 }
 .threads-regen-input {
-  flex: 1;
-  min-width: 0; /* allow input to shrink below intrinsic size */
+  width: 100%;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   padding: 6px 10px;
