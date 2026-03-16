@@ -3593,3 +3593,47 @@ body.is-mobile-layout[data-mode="handbook"] .tabs::-webkit-scrollbar { display: 
 /* ── Compact meta chips ─────────────────────────────────────────────────── */
 .meta-chip { display: inline-block; font-size: 12px; line-height: 1.4; }
 .meta-chip--muted { color: var(--hint); }
+
+/* ── Onboarding overlay ─────────────────────────────────────────────────── */
+.onboarding-overlay {
+  position: fixed; inset: 0; z-index: 9500;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg); animation: onboardingFadeIn 0.3s ease;
+}
+.onboarding-overlay.is-leaving { animation: onboardingFadeOut 0.3s ease forwards; }
+@keyframes onboardingFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes onboardingFadeOut { from { opacity: 1; } to { opacity: 0; } }
+.onboarding-slide {
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  max-width: 320px; padding: var(--space-5); gap: var(--space-3);
+}
+.onboarding-icon { color: var(--brand); margin-bottom: var(--space-2); }
+.onboarding-title { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; color: var(--text); }
+.onboarding-body { font-size: 15px; line-height: 1.5; color: var(--muted); }
+.onboarding-dots { display: flex; gap: 8px; margin: var(--space-3) 0; }
+.onboarding-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); transition: background 0.2s; }
+.onboarding-dot.active { background: var(--brand); }
+.onboarding-actions { display: flex; flex-direction: column; gap: var(--space-2); width: 100%; }
+.onboarding-actions .primary-button { width: 100%; justify-content: center; }
+
+/* ── Help FAB ───────────────────────────────────────────────────────────── */
+.help-fab {
+  position: fixed; right: 16px; bottom: calc(90px + env(safe-area-inset-bottom, 0px));
+  z-index: 100; width: 44px; height: 44px; border-radius: 50%;
+  border: 1px solid var(--border); background: var(--surface);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--hint);
+  -webkit-tap-highlight-color: transparent;
+}
+.help-fab:active { box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.help-popover {
+  position: fixed; right: 16px; bottom: calc(144px + env(safe-area-inset-bottom, 0px));
+  z-index: 101; max-width: 280px; padding: var(--space-4);
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-md); box-shadow: 0 4px 16px rgba(0,0,0,0.14);
+  animation: popoverIn 0.15s ease;
+}
+@keyframes popoverIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.help-popover p { font-size: 14px; line-height: 1.5; color: var(--text); margin-bottom: var(--space-3); }
+.help-popover-close { font-size: 13px; }
