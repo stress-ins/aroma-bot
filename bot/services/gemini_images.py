@@ -111,10 +111,25 @@ def generate_gemini_image_sync(
                 data = inner if inner else data
 
             if success_flag == 1:
-                image_url = data.get("resultImageUrl") or data.get("resultImage")
+                image_url = (
+                    data.get("resultImageUrl")
+                    or data.get("resultImage")
+                    or data.get("imageUrl")
+                    or data.get("image_url")
+                    or data.get("url")
+                    or (data.get("result", {}).get("url") if isinstance(data.get("result"), dict) else None)
+                )
+                # Fallback: scan all string values for image URL
                 if not image_url:
-                    logger.warning("%s: successFlag=1 but no image URL: %s", log_context, str(data)[:200])
-                    _notify_image_failure(log_context, "successFlag=1 but no image URL")
+                    for v in data.values():
+                        if isinstance(v, str) and ("http" in v) and any(
+                            ext in v.lower() for ext in (".jpg", ".jpeg", ".png", ".webp")
+                        ):
+                            image_url = v
+                            break
+                if not image_url:
+                    logger.warning("%s: successFlag=1 but no image URL: %s", log_context, str(data)[:300])
+                    _notify_image_failure(log_context, f"successFlag=1 but no image URL\n{str(data)[:200]}")
                     return None
                 logger.info("%s: ready, downloading from %s", log_context, image_url[:80])
                 return _download_image(image_url, log_context)
