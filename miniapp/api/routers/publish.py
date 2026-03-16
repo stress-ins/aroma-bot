@@ -157,3 +157,45 @@ async def schedule_series(payload: ScheduleSeriesRequest, _: None = Depends(_req
 async def publish_history(limit: int = 50, _: None = Depends(_require_auth)):
     logs = await list_all_logs(limit=limit)
     return {"items": logs}
+
+
+# ── Metrics ───────────────────────────────────────────────────────────────
+
+
+@router.get("/api/drafts/{draft_id}/metrics")
+async def draft_metrics(draft_id: str, _: None = Depends(_require_auth)):
+    """Return latest engagement metrics for a published draft."""
+    from bot.services.post_metrics_store import get_latest_metrics
+
+    draft = await get_draft(draft_id)
+    if not draft:
+        raise HTTPException(status_code=404, detail="draft_not_found")
+    metrics = await get_latest_metrics(draft_id)
+    return {"draft_id": draft_id, "metrics": metrics}
+
+
+@router.get("/api/drafts/{draft_id}/metrics/history")
+async def draft_metrics_history(
+    draft_id: str,
+    platform: str = "threads",
+    _: None = Depends(_require_auth),
+):
+    """Return metrics history (all snapshots) for engagement trend."""
+    from bot.services.post_metrics_store import get_metrics_history
+
+    history = await get_metrics_history(draft_id, platform)
+    return {"draft_id": draft_id, "platform": platform, "history": history}
+
+
+@router.post("/api/drafts/{draft_id}/metrics/refresh")
+async def refresh_draft_metrics(draft_id: str, _: None = Depends(_require_auth)):
+    """Manually trigger a fresh metrics fetch for a draft."""
+    from bot.services.metrics_fetcher import fetch_metrics_for_draft
+
+    draft = await get_draft(draft_id)
+    if not draft:
+        raise HTTPException(status_code=404, detail="draft_not_found")
+    if draft.status != "published":
+        raise HTTPException(status_code=400, detail="draft_not_published")
+    result = await fetch_metrics_for_draft(draft_id)
+    return {"draft_id": draft_id, "metrics": result}

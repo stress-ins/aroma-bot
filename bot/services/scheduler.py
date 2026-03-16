@@ -112,6 +112,18 @@ async def _send_weekly_cost_report(app: Application) -> None:
     logger.info("Weekly cost report sent.")
 
 
+# Post metrics polling: every 6 hours (at :00 of 0, 6, 12, 18 UTC)
+_METRICS_POLL_HOURS = {0, 6, 12, 18}
+
+
+async def _fetch_post_metrics() -> None:
+    from bot.services.metrics_fetcher import fetch_all_pending_metrics
+
+    count = await fetch_all_pending_metrics()
+    if count:
+        logger.info("Fetched metrics for %d published drafts", count)
+
+
 async def run_loop(app: Application) -> None:
     """Main scheduler loop — runs forever.
 
@@ -119,9 +131,11 @@ async def run_loop(app: Application) -> None:
     - Checks if daily digest should fire
     - Checks if daily/weekly cost report should fire
     - Publishes any scheduled posts that are due
+    - Fetches post engagement metrics every 6 hours
     """
     last_digest_date: date | None = None
     last_cost_report_date: date | None = None
+    last_metrics_fetch_hour: int | None = None
     logger.info(
         "Scheduler loop started (digest at %s %s, post check every %ds)",
         settings.daily_digest_time,
@@ -152,6 +166,18 @@ async def run_loop(app: Application) -> None:
                         await _send_weekly_cost_report(app)
                 except Exception as exc:
                     logger.error("Cost report failed: %s", exc)
+
+            # Post metrics polling every 6 hours
+            if (
+                now.hour in _METRICS_POLL_HOURS
+                and now.minute == 0
+                and last_metrics_fetch_hour != now.hour
+            ):
+                last_metrics_fetch_hour = now.hour
+                try:
+                    await _fetch_post_metrics()
+                except Exception as exc:
+                    logger.error("Metrics fetch failed: %s", exc)
 
             # Scheduled posts
             try:

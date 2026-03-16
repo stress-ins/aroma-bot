@@ -83,6 +83,8 @@ export function registerWindowBridge(deps) {
     openSavedBlends,
     blendSaveCurrentBlend,
     blendCreateContent,
+    blendLaunchContent,
+    blendRegenerate,
     blendAdjustWithOil,
     deleteSavedBlend,
   } = deps;
@@ -179,6 +181,8 @@ export function registerWindowBridge(deps) {
   window.openSavedBlends = openSavedBlends;
   window.blendSaveCurrentBlend = blendSaveCurrentBlend;
   window.blendCreateContent = blendCreateContent;
+  window.blendLaunchContent = blendLaunchContent;
+  window.blendRegenerate = blendRegenerate;
   window.blendAdjustWithOil = blendAdjustWithOil;
   window.deleteSavedBlend = deleteSavedBlend;
 
