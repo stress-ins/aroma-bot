@@ -1196,7 +1196,7 @@ class TestMiniAppRussianLocale:
 
         assert 'category: "concept"' in app_js
         assert 'searchLabel: "Поиск темы"' in app_js
-        assert 'return `PDF ${match[1].replaceAll("_", ".")}`;' in app_js
+        assert "COURSE_NAMES" in app_js  # human-readable course source labels
         assert 'function conceptTypeMeta(sourceType)' in app_js
         assert 'founder: { label: "Автор",   icon: "👤" }' in app_js
         assert 'chakra:  { label: "Чакра",   icon: "🔮" }' in app_js
