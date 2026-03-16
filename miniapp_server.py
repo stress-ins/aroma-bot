@@ -102,6 +102,10 @@ app.mount("/generated/carousel_assets", StaticFiles(directory=CAROUSEL_ASSETS_DI
 REFERENCE_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/reference-images", StaticFiles(directory=REFERENCE_IMAGES_DIR), name="reference-images")
 
+SOUNDS_DIR = BASE_DIR / "assets" / "sounds"
+SOUNDS_DIR.mkdir(parents=True, exist_ok=True)
+app.mount("/sounds", StaticFiles(directory=SOUNDS_DIR), name="sounds")
+
 for _router in (blend_constructor.router, drafts.router, carousel.router, reels.router, plans.router, references.router, create.router, keywords.router, misc.router, publish.router, threads_series.router, trends.router, mentions.router, tokens.router, user.router):
     app.include_router(_router)
 

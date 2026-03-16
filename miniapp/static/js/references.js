@@ -373,9 +373,9 @@ export function createReferencesModule(deps) {
   function renderVolatilityScale(v) {
     if (!v) return v;
     const s = String(v).toLowerCase();
-    if (s.includes("высок")) return "🔺 Высокая";
-    if (s.includes("средн")) return "🔶 Средняя";
-    if (s.includes("низк"))  return "🔹 Низкая";
+    if (s.includes("высок")) return '<span class="vol-dot vol-high"></span> Высокая';
+    if (s.includes("средн")) return '<span class="vol-dot vol-mid"></span> Средняя';
+    if (s.includes("низк"))  return '<span class="vol-dot vol-low"></span> Низкая';
     return v;
   }
 
@@ -393,23 +393,98 @@ export function createReferencesModule(deps) {
     return val;
   }
 
+  /* ── Sound Audio Player ── */
+
+  function renderAudioPlayer(reference) {
+    if (reference.category !== "sound" || !reference.slug) return "";
+    const audioUrl = `/sounds/${encodeURIComponent(reference.slug)}.mp3`;
+    return `
+      <section class="section sound-player-section">
+        <h3><i data-lucide="volume-2" style="width:16px;height:16px"></i> Прослушать</h3>
+        <div class="sound-player" data-audio-url="${escapeHtml(audioUrl)}">
+          <button class="sound-player-btn" type="button" aria-label="Воспроизвести">
+            <i data-lucide="play" class="sound-player-icon-play"></i>
+            <i data-lucide="pause" class="sound-player-icon-pause" hidden></i>
+          </button>
+          <div class="sound-player-progress">
+            <div class="sound-player-bar">
+              <div class="sound-player-fill"></div>
+            </div>
+            <span class="sound-player-time">0:00</span>
+          </div>
+        </div>
+      </section>
+    `;
+  }
+
+  function initSoundPlayer(container) {
+    const url = container.dataset.audioUrl;
+    const audio = new Audio(url);
+    const btn = container.querySelector(".sound-player-btn");
+    const playIcon = container.querySelector(".sound-player-icon-play");
+    const pauseIcon = container.querySelector(".sound-player-icon-pause");
+    const fill = container.querySelector(".sound-player-fill");
+    const timeEl = container.querySelector(".sound-player-time");
+    const bar = container.querySelector(".sound-player-bar");
+
+    function fmt(sec) {
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60);
+      return `${m}:${String(s).padStart(2, "0")}`;
+    }
+
+    btn.addEventListener("click", () => {
+      if (audio.paused) audio.play().catch(() => {});
+      else audio.pause();
+    });
+
+    bar.addEventListener("click", (e) => {
+      if (!audio.duration) return;
+      const rect = bar.getBoundingClientRect();
+      audio.currentTime = ((e.clientX - rect.left) / rect.width) * audio.duration;
+    });
+
+    audio.addEventListener("play", () => { playIcon.hidden = true; pauseIcon.hidden = false; });
+    audio.addEventListener("pause", () => { playIcon.hidden = false; pauseIcon.hidden = true; });
+    audio.addEventListener("ended", () => {
+      playIcon.hidden = false; pauseIcon.hidden = true;
+      fill.style.width = "0%"; timeEl.textContent = "0:00";
+    });
+    audio.addEventListener("timeupdate", () => {
+      if (!audio.duration) return;
+      fill.style.width = `${(audio.currentTime / audio.duration) * 100}%`;
+      timeEl.textContent = fmt(audio.currentTime);
+    });
+    audio.addEventListener("error", () => {
+      container.innerHTML = '<span class="sound-player-unavailable">Аудио недоступно</span>';
+    });
+  }
+
   function renderReferencePassport(reference) {
     const rows = [
       reference.article_number && { icon: "🔖", label: "Артикул", value: reference.article_number },
       reference.botanical_family && { icon: "🌿", label: "Семейство", value: reference.botanical_family },
       reference.origin_countries && { icon: "📍", label: "Происхождение", value: addCountryFlags(reference.origin_countries) },
       reference.extraction_method && { icon: "⚗️", label: "Метод", value: shortExtractionMethod(reference.extraction_method) },
-      reference.volatility && { icon: "💨", label: "Летучесть", value: renderVolatilityScale(reference.volatility) },
+      reference.volatility && (() => {
+        const isDuration = reference.category === "practice" || reference.category === "sound";
+        return {
+          icon: isDuration ? "⏱" : "💨",
+          label: isDuration ? "Длительность" : "Летучесть",
+          value: isDuration ? reference.volatility : renderVolatilityScale(reference.volatility),
+          raw: !isDuration, // volatility scale returns HTML (vol-dot spans)
+        };
+      })(),
       reference.chakra_focus && { icon: "✦", label: "Чакры", value: reference.chakra_focus },
       reference.polarity && { icon: "⚡", label: "Полярность", value: reference.polarity },
       reference.course_source && { icon: "📚", label: "Курс", value: formatCourseSourceLabel(reference.course_source) },
     ].filter(Boolean);
     if (!rows.length) return "";
-    return `<div class="passport-grid">${rows.map(({ icon, label, value }) =>
+    return `<div class="passport-grid">${rows.map((row) =>
       `<div class="passport-row">
-        <span class="passport-icon">${icon}</span>
-        <span class="passport-label">${escapeHtml(label)}</span>
-        <span class="passport-value">${escapeHtml(value)}</span>
+        <span class="passport-icon">${row.icon}</span>
+        <span class="passport-label">${escapeHtml(row.label)}</span>
+        <span class="passport-value">${row.raw ? row.value : escapeHtml(row.value)}</span>
       </div>`
     ).join("")}</div>`;
   }
@@ -449,29 +524,21 @@ export function createReferencesModule(deps) {
         ? rawKeyline
         : (REFERENCE_SOURCE_TYPE_LABELS[reference.source_type] || currentHandbookMeta().title);
     }
-    // Subtitle line below the card title — context for each category type
+    // Subtitle line below the card title — only for aromas (EN name + family)
     let subtitle = "";
     if (state.tab === "aromas") {
       const parts = [reference.name_en, keyline ? `(${keyline})` : ""].filter(Boolean);
       subtitle = parts.join(" ");
-    } else if (state.tab === "blends") {
-      // EN blend name · category: "Harmony · Эмоции и настроение"
-      const effectiveKeyline = keyline !== currentHandbookMeta().title ? keyline : "";
-      const parts = [reference.name_en, effectiveKeyline].filter(Boolean);
-      subtitle = parts.join(" · ");
-    } else if (state.tab === "symptoms") {
-      // Eyebrow already shows parent_group — skip duplicate keyline
-      subtitle = "";
-    } else if (state.tab === "practices" || state.tab === "concepts") {
-      // Type label: "Медитация" / "Чакра"
-      subtitle = conceptTypeMeta(reference.source_type).label;
     }
+    // Compact EN name for blends (mirrors card list style)
+    const blendNameEn = state.tab === "blends" && reference.name_en ? reference.name_en : "";
     return `
       <section class="section aroma-hero ${heroClass}">
         <div class="reference-hero-copy">
           <p class="eyebrow">${eyebrowLabel}</p>
           <h2 class="detail-title">${escapeHtml(state.tab === "symptoms" ? normalizePdfSymptomName(reference.name) : reference.name)}</h2>
           ${subtitle ? `<p class="reference-keyline">${escapeHtml(subtitle)}</p>` : ""}
+          ${blendNameEn ? `<div class="reference-name-en">${escapeHtml(blendNameEn)}</div>` : ""}
           ${state.tab === "blends" && reference.article_number ? `<span class="reference-meta-article">🔖 ${escapeHtml(reference.article_number)}</span>` : ""}
         </div>
         <div class="reference-hero-media">
@@ -813,6 +880,26 @@ export function createReferencesModule(deps) {
           ${aromaSection("Материалы курса", reference.course_notes)}
         </div>
       `;
+    } else if (state.tab === "sounds") {
+      const compOilChips = renderCrossRefChips(
+        zipNamesAndSlugs(reference.complementary_oil_names, reference.complementary_oil_slugs),
+        "aromas"
+      );
+      detailHtml = `
+        <div class="detail-grid">
+          ${renderBackButton()}
+          ${renderReferenceImage(reference)}
+          ${aromaHtmlSection("О звуке", renderReferencePassport(reference))}
+          ${renderCollapsibleDescription(reference)}
+          ${renderCollapsibleSection("Психологические свойства", reference.psychological_properties, 280)}
+          ${renderCollapsibleSection("Терапевтические свойства", reference.therapeutic_properties, 280)}
+          ${renderAudioPlayer(reference)}
+          ${compOilChips ? `<section class="section"><h3>🌿 Комплементарные масла</h3><div class="detail-preview">${compOilChips}</div></section>` : ""}
+          ${renderStructuredList("📋 Применение", reference.applications)}
+          ${renderStructuredList("Меры предосторожности", reference.precautions)}
+          ${aromaSection("Материалы курса", reference.course_notes)}
+        </div>
+      `;
     } else {
       // Aroma detail view
       const compChips = renderCrossRefChips(
@@ -854,6 +941,10 @@ export function createReferencesModule(deps) {
       `;
     }
     elements.draftDetail.innerHTML = detailHtml;
+    // Init audio player for sound cards
+    const playerEl = elements.draftDetail.querySelector(".sound-player");
+    if (playerEl) initSoundPlayer(playerEl);
+    if (window.lucide) lucide.createIcons();
     syncMobileNavigation();
   }
 

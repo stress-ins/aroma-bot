@@ -415,17 +415,22 @@ function conceptTypeMeta(sourceType) {
 }
 
 function formatCourseSourceLabel(value) {
+  const COURSE_NAMES = {
+    rudn_olfactotherapy_1l:   "Ольфактотерапия, модуль 1",
+    rudn_olfactotherapy_2l:   "Ольфактотерапия, модуль 2",
+    rudn_olfactotherapy_3l:   "Ольфактотерапия, модуль 3",
+    rudn_olfactotherapy_4l:   "Ольфактотерапия, модуль 4",
+    rudn_olfactotherapy_5_1l: "Ольфактотерапия, модуль 5.1",
+    rudn_olfactotherapy_5_2l: "Ольфактотерапия, модуль 5.2",
+    rudn_olfactotherapy_6l:   "Ольфактотерапия, модуль 6",
+  };
   const raw = String(value || "").trim();
   if (!raw) return "";
   return raw
     .split(",")
     .map((part) => part.trim())
     .filter(Boolean)
-    .map((part) => {
-      const match = part.match(/^rudn_olfactotherapy_(.+)$/);
-      if (!match) return part;
-      return `PDF ${match[1].replaceAll("_", ".")}`;
-    })
+    .map((part) => COURSE_NAMES[part] || part)
     .join(" · ");
 }
 

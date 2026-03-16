@@ -421,13 +421,13 @@ def test_references_js_no_caption_div():
     assert "aroma-image-caption" not in src
 
 
-def test_references_js_volatility_uses_emoji():
-    """Volatility scale must use emoji, not block characters."""
+def test_references_js_volatility_uses_css_dots():
+    """Volatility scale must use CSS dots in terracotta palette, not block characters."""
     src = (ROOT / "miniapp" / "static" / "js" / "references.js").read_text(encoding="utf-8")
     assert "▓▓▓" not in src
-    assert "🔺 Высокая" in src
-    assert "🔶 Средняя" in src
-    assert "🔹 Низкая" in src
+    assert "vol-dot vol-high" in src
+    assert "vol-dot vol-mid" in src
+    assert "vol-dot vol-low" in src
 
 
 def test_references_js_card_category_icon_function():
