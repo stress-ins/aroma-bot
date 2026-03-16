@@ -442,14 +442,8 @@ export function createReferencesModule(deps) {
     // Subtitle line below the card title — context for each category type
     let subtitle = "";
     if (state.tab === "aromas") {
-      // "Апельсин | Orange (Цитрусовые)"
-      const nameRu = reference.name_ru || "";
-      const nameEn = reference.name || "";
-      const namePart = nameRu && nameEn && nameRu !== nameEn
-        ? `${nameRu} | ${nameEn}`
-        : nameRu || nameEn;
-      const subtitleParts = [namePart, keyline ? `(${keyline})` : ""].filter(Boolean);
-      subtitle = subtitleParts.join(" ");
+      const parts = [reference.name_en, keyline ? `(${keyline})` : ""].filter(Boolean);
+      subtitle = parts.join(" ");
     } else if (state.tab === "blends") {
       // EN blend name · category: "Harmony · Эмоции и настроение"
       const effectiveKeyline = keyline !== currentHandbookMeta().title ? keyline : "";
