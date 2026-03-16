@@ -1,7 +1,7 @@
 """add api_cost_logs table
 
 Revision ID: f78119590d91
-Revises: 78af5cd44ddf
+Revises: d0c5055b5d71
 Create Date: 2026-03-16 22:12:04.658462
 
 """
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = 'f78119590d91'
-down_revision: Union[str, Sequence[str], None] = '78af5cd44ddf'
+down_revision: Union[str, Sequence[str], None] = 'd0c5055b5d71'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
