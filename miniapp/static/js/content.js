@@ -154,7 +154,7 @@ export function createContentModule(deps) {
     setEmptyState(state.inbox.length > 0, {
       eyebrow: "Согласование",
       title: "Очередь пока пуста",
-      body: "Когда появятся материалы на ревью, они сразу окажутся здесь.",
+      body: "Здесь появятся материалы, ожидающие согласования.",
     });
     elements.draftList.innerHTML = state.inbox.map((item) => `
       <article ${interactiveCardAttrs(`Открыть материал на согласовании ${item.topic}`)} class="draft-card overview-card${item.draft_id === state.draftId ? " active" : ""} interactive-card" onclick="openDraft('${item.draft_id}')">
