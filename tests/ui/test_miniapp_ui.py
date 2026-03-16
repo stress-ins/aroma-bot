@@ -413,25 +413,70 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
             process.kill()
 
 
+def _make_context(playwright, miniapp_server, *, viewport, is_mobile, dark=False):
+    """Create a browser context with optional dark theme."""
+    try:
+        browser = playwright.chromium.launch()
+    except Error as exc:
+        pytest.skip(f"Playwright browser is not available: {exc}")
+    context = browser.new_context(
+        viewport=viewport,
+        is_mobile=is_mobile,
+        color_scheme="dark" if dark else "light",
+        extra_http_headers={"X-Telegram-Init-Data": "user=%7B%22id%22%3A12345%2C%22username%22%3A%22test%22%7D"},
+    )
+    page = context.new_page()
+    page.on("console", lambda msg: print(f"\nBROWSER [{msg.type}]: {msg.text}"))
+    page.on("pageerror", lambda err: print(f"\nBROWSER ERROR: {err}"))
+    context.add_init_script("localStorage.setItem('aroma_onboarded', '1')")
+    if dark:
+        context.add_init_script(
+            "document.addEventListener('DOMContentLoaded',"
+            " () => document.body.classList.add('tg-theme-dark'))"
+        )
+    page.goto(miniapp_server, wait_until="load")
+    page.wait_for_selector("body.app-ready", timeout=15000)
+    if dark:
+        page.evaluate("document.body.classList.add('tg-theme-dark')")
+        page.wait_for_timeout(50)
+    return browser, context, page
+
+
 @pytest.fixture()
 def page(miniapp_server: str):
     with sync_playwright() as playwright:
-        try:
-            browser = playwright.chromium.launch()
-        except Error as exc:
-            pytest.skip(f"Playwright browser is not available: {exc}")
-        context = browser.new_context(
-            viewport={"width": 430, "height": 932},
-            is_mobile=True,
-            extra_http_headers={"X-Telegram-Init-Data": "user=%7B%22id%22%3A12345%2C%22username%22%3A%22test%22%7D"},
+        browser, context, pg = _make_context(
+            playwright, miniapp_server,
+            viewport={"width": 430, "height": 932}, is_mobile=True,
         )
-        page = context.new_page()
-        page.on("console", lambda msg: print(f"\nBROWSER [{msg.type}]: {msg.text}"))
-        page.on("pageerror", lambda err: print(f"\nBROWSER ERROR: {err}"))
-        context.add_init_script("localStorage.setItem('aroma_onboarded', '1')")
-        page.goto(miniapp_server, wait_until="load")
-        page.wait_for_selector("body.app-ready", timeout=15000)
-        yield page
+        yield pg
+        context.close()
+        browser.close()
+
+
+@pytest.fixture()
+def dark_page(miniapp_server: str):
+    """Mobile page with dark theme (tg-theme-dark) applied from the start."""
+    with sync_playwright() as playwright:
+        browser, context, pg = _make_context(
+            playwright, miniapp_server,
+            viewport={"width": 430, "height": 932}, is_mobile=True, dark=True,
+        )
+        yield pg
+        context.close()
+        browser.close()
+
+
+@pytest.fixture(params=["light", "dark"], ids=["light", "dark"])
+def themed_page(request, miniapp_server: str):
+    """Mobile page parametrized over light and dark themes."""
+    dark = request.param == "dark"
+    with sync_playwright() as playwright:
+        browser, context, pg = _make_context(
+            playwright, miniapp_server,
+            viewport={"width": 430, "height": 932}, is_mobile=True, dark=dark,
+        )
+        yield pg
         context.close()
         browser.close()
 
@@ -439,22 +484,11 @@ def page(miniapp_server: str):
 @pytest.fixture()
 def desktop_page(miniapp_server: str):
     with sync_playwright() as playwright:
-        try:
-            browser = playwright.chromium.launch()
-        except Error as exc:
-            pytest.skip(f"Playwright browser is not available: {exc}")
-        context = browser.new_context(
-            viewport={"width": 1280, "height": 900},
-            is_mobile=False,
-            extra_http_headers={"X-Telegram-Init-Data": "user=%7B%22id%22%3A12345%2C%22username%22%3A%22test%22%7D"},
+        browser, context, pg = _make_context(
+            playwright, miniapp_server,
+            viewport={"width": 1280, "height": 900}, is_mobile=False,
         )
-        page = context.new_page()
-        page.on("console", lambda msg: print(f"\nBROWSER [{msg.type}]: {msg.text}"))
-        page.on("pageerror", lambda err: print(f"\nBROWSER ERROR: {err}"))
-        context.add_init_script("localStorage.setItem('aroma_onboarded', '1')")
-        page.goto(miniapp_server, wait_until="load")
-        page.wait_for_selector("body.app-ready", timeout=15000)
-        yield page
+        yield pg
         context.close()
         browser.close()
 
@@ -985,6 +1019,43 @@ def test_carousel_detail_shows_prompt_copy_buttons(page):
     # «Версии» показываются только если версий >= 2; в тестовых данных одна версия — раздел скрыт
     assert page.locator(".slide").count() >= 2
     assert page.locator(".prompt-actions.actions-grid-two").count() >= 1
+
+
+def test_carousel_preview_button_opens_modal(page):
+    """Preview button should fetch PNG and show preview modal."""
+    page.locator("#btnTabDrafts").click()
+    page.wait_for_timeout(300)
+    page.evaluate("window.goBackToList()")
+    page.get_by_text("Сенсорная карусель для вечернего ритуала").first.wait_for(state="visible")
+    page.get_by_text("Сенсорная карусель для вечернего ритуала").first.click()
+    page.wait_for_timeout(300)
+
+    # Mock the preview API endpoint to return a test PNG
+    from PIL import Image as _PIL
+    from io import BytesIO as _BytesIO
+    _img = _PIL.new("RGB", (100, 100), "red")
+    _buf = _BytesIO()
+    _img.save(_buf, format="PNG")
+    _test_png = _buf.getvalue()
+
+    page.route("**/api/carousel/*/slides/*/preview*",
+               lambda route: route.fulfill(status=200, content_type="image/png", body=_test_png))
+
+    preview_btn = page.get_by_role("button", name="Предпросмотр").first
+    assert preview_btn.is_visible()
+    assert not preview_btn.is_disabled(), "Button should be enabled for slide with image"
+
+    preview_btn.click()
+    page.wait_for_timeout(1500)
+
+    modal = page.locator("#previewModal")
+    assert modal.is_visible(), "Preview modal should appear after clicking Предпросмотр"
+    assert modal.locator("img").is_visible(), "Preview modal should contain an image"
+
+    # Close modal
+    modal.locator(".preview-modal-close").click()
+    page.wait_for_timeout(300)
+    assert not page.locator("#previewModal").is_visible(), "Modal should close"
 
 
 def test_mobile_carousel_actions_use_two_columns(page):
@@ -1710,3 +1781,443 @@ def test_no_horizontal_overflow_on_mobile(page):
         """
     )
     assert overflows == [], f"Elements overflow viewport: {overflows}"
+
+
+# ---------------------------------------------------------------------------
+# Contrast helper — catches "white button on white background" bugs
+# ---------------------------------------------------------------------------
+
+_WCAG_AA_MIN = 3.0  # minimum contrast ratio for large text / UI components
+
+
+def _relative_luminance(r: float, g: float, b: float) -> float:
+    """Compute relative luminance per WCAG 2.1 (sRGB values 0-255)."""
+    def linearize(c: float) -> float:
+        c /= 255.0
+        return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+    return 0.2126 * linearize(r) + 0.7152 * linearize(g) + 0.0722 * linearize(b)
+
+
+def _contrast_ratio(rgb1: tuple, rgb2: tuple) -> float:
+    l1 = _relative_luminance(*rgb1)
+    l2 = _relative_luminance(*rgb2)
+    lighter = max(l1, l2)
+    darker = min(l1, l2)
+    return (lighter + 0.05) / (darker + 0.05)
+
+
+_JS_COLLECT_BUTTON_COLORS = """
+() => {
+    function findOpaqueAncestorBg(el) {
+        let node = el;
+        while (node && node !== document.documentElement) {
+            const bg = getComputedStyle(node).backgroundColor;
+            const m = bg.match(/rgba?\\(\\s*([\\d.]+),\\s*([\\d.]+),\\s*([\\d.]+)(?:,\\s*([\\d.]+))?/);
+            if (m) {
+                const a = m[4] !== undefined ? parseFloat(m[4]) : 1.0;
+                if (a >= 0.95) return bg;
+            }
+            node = node.parentElement;
+        }
+        return getComputedStyle(document.body).backgroundColor;
+    }
+    const results = [];
+    document.querySelectorAll(
+        'button, .secondary-button, .primary-button, .bottom-tab-btn, .tab-button, .back-button'
+    ).forEach(el => {
+        const style = getComputedStyle(el);
+        const rect = el.getBoundingClientRect();
+        if (style.display === 'none' || style.visibility === 'hidden' || rect.width === 0) return;
+        results.push({
+            text: (el.textContent || '').trim().slice(0, 40),
+            color: style.color,
+            bg: style.backgroundColor,
+            parentBg: findOpaqueAncestorBg(el.parentElement),
+            cls: el.className.slice(0, 60),
+        });
+    });
+    return results;
+}
+"""
+
+
+def _parse_rgba(css_color: str) -> tuple | None:
+    """Parse 'rgb(r, g, b)' or 'rgba(r, g, b, a)' into (r, g, b, a) tuple."""
+    import re
+    m = re.match(r"rgba?\(\s*([\d.]+),\s*([\d.]+),\s*([\d.]+)(?:,\s*([\d.]+))?\s*\)", css_color)
+    if not m:
+        return None
+    a = float(m.group(4)) if m.group(4) is not None else 1.0
+    return (float(m.group(1)), float(m.group(2)), float(m.group(3)), a)
+
+
+def _parse_rgb(css_color: str) -> tuple | None:
+    """Parse into (r, g, b) tuple, discarding alpha."""
+    rgba = _parse_rgba(css_color)
+    return (rgba[0], rgba[1], rgba[2]) if rgba else None
+
+
+def _composite_over(fg_rgba: tuple, bg_rgb: tuple) -> tuple:
+    """Composite a semi-transparent foreground over an opaque background."""
+    r, g, b, a = fg_rgba
+    return (
+        r * a + bg_rgb[0] * (1 - a),
+        g * a + bg_rgb[1] * (1 - a),
+        b * a + bg_rgb[2] * (1 - a),
+    )
+
+
+def _check_button_contrast(page, *, theme_label: str = "") -> list:
+    """Return list of buttons with contrast ratio below WCAG AA threshold."""
+    buttons = page.evaluate(_JS_COLLECT_BUTTON_COLORS)
+
+    failures = []
+    for btn in buttons:
+        fg_rgba = _parse_rgba(btn["color"])
+        bg_rgba = _parse_rgba(btn["bg"])
+        if fg_rgba is None or bg_rgba is None:
+            continue
+        # Skip fully transparent backgrounds
+        if bg_rgba[3] < 0.01:
+            continue
+        # Use the nearest opaque ancestor bg for compositing
+        ancestor_bg = _parse_rgb(btn.get("parentBg", "")) or (255, 255, 255)
+        # Composite semi-transparent bg over ancestor, then fg over that
+        effective_bg = _composite_over(bg_rgba, ancestor_bg) if bg_rgba[3] < 1.0 else (bg_rgba[0], bg_rgba[1], bg_rgba[2])
+        effective_fg = _composite_over(fg_rgba, effective_bg) if fg_rgba[3] < 1.0 else (fg_rgba[0], fg_rgba[1], fg_rgba[2])
+        ratio = _contrast_ratio(effective_fg, effective_bg)
+        if ratio < _WCAG_AA_MIN:
+            failures.append({
+                "text": btn["text"],
+                "cls": btn["cls"],
+                "color": btn["color"],
+                "bg": btn["bg"],
+                "ratio": round(ratio, 2),
+                "theme": theme_label,
+            })
+    return failures
+
+
+# ---------------------------------------------------------------------------
+# Parametrized light/dark tests (themed_page fixture)
+# ---------------------------------------------------------------------------
+
+def test_themed_tabs_and_drafts_render(themed_page):
+    """Tab labels and draft cards render correctly in both themes."""
+    tabs = themed_page.locator(".tab-button").evaluate_all(
+        "(nodes) => nodes.map((node) => node.textContent.trim())"
+    )
+    assert "Создать" in tabs
+    assert "Черновики" in tabs
+
+    themed_page.locator("#btnTabDrafts").click()
+    themed_page.wait_for_timeout(250)
+    assert themed_page.locator(".draft-card").count() >= 2
+
+
+def test_themed_bottom_tab_bar_switches_sections(themed_page):
+    """Bottom tab navigation works in both themes."""
+    themed_page.locator("#btnTabPlans").click()
+    themed_page.wait_for_timeout(300)
+    assert themed_page.locator("#btnTabPlans").get_attribute("aria-pressed") == "true"
+
+    themed_page.locator("#btnTabHandbook").click()
+    themed_page.wait_for_timeout(300)
+    assert themed_page.locator("#btnTabHandbook").get_attribute("aria-pressed") == "true"
+
+    themed_page.locator("#btnTabDrafts").click()
+    themed_page.wait_for_timeout(300)
+    assert themed_page.locator("#btnTabDrafts").get_attribute("aria-pressed") == "true"
+
+
+def test_themed_draft_detail_renders(themed_page):
+    """Draft detail view renders with readable text in both themes."""
+    themed_page.locator("#btnTabDrafts").click()
+    themed_page.wait_for_timeout(250)
+    themed_page.get_by_text("Как мягко выйти из рабочего напряжения").first.click()
+    themed_page.wait_for_timeout(300)
+
+    title = themed_page.locator(".detail-title").inner_text().strip()
+    assert "Как мягко выйти" in title
+
+    # Verify text is readable (not invisible)
+    text_color = themed_page.evaluate(
+        "() => getComputedStyle(document.querySelector('.detail-title')).color"
+    )
+    bg_color = themed_page.evaluate(
+        "() => getComputedStyle(document.querySelector('#detailPanel')).backgroundColor"
+    )
+    fg = _parse_rgb(text_color)
+    bg = _parse_rgb(bg_color)
+    if fg and bg:
+        ratio = _contrast_ratio(fg, bg)
+        assert ratio >= _WCAG_AA_MIN, (
+            f"Detail title unreadable: contrast {ratio:.2f} < {_WCAG_AA_MIN} "
+            f"(color={text_color}, bg={bg_color})"
+        )
+
+
+def test_themed_reels_detail_renders(themed_page):
+    """Reels storyboard renders in both themes."""
+    _open_reels_detail_from_drafts(themed_page)
+    assert themed_page.locator(".detail-title").inner_text().strip() == "Вечерний ароматический ритуал"
+    assert themed_page.locator(".storyboard-frame").count() >= 1
+
+
+def test_themed_create_tab_renders(themed_page):
+    """Create tab tool selection renders in both themes."""
+    themed_page.locator("#btnTabCreate").click()
+    themed_page.wait_for_timeout(300)
+    assert themed_page.get_by_role("heading", name="Карусель").is_visible()
+    assert themed_page.get_by_role("heading", name="Пост для соцсетей").is_visible()
+
+
+def test_themed_handbook_sections_render(themed_page):
+    """Handbook sections render in both themes."""
+    themed_page.locator("#btnTabHandbook").click()
+    themed_page.wait_for_timeout(400)
+
+    themed_page.get_by_role("button", name="Смеси").click()
+    themed_page.wait_for_timeout(500)
+    assert themed_page.locator(".reference-card").count() >= 1
+
+    themed_page.get_by_role("button", name="Симптомы").click()
+    themed_page.wait_for_timeout(500)
+    assert themed_page.locator(".reference-card").count() >= 1
+
+
+def test_themed_controls_have_no_overlaps(themed_page):
+    """No controls overlap in either theme."""
+    for tab_id in ["#btnTabDrafts", "#btnTabPlans", "#btnTabCreate"]:
+        themed_page.locator(tab_id).click()
+        themed_page.wait_for_timeout(300)
+
+        overlaps = themed_page.evaluate(
+            """
+            () => {
+              const controls = [...document.querySelectorAll('button, select, input, textarea')]
+                .filter(n => {
+                  const s = getComputedStyle(n), r = n.getBoundingClientRect();
+                  return !n.hidden && s.display !== 'none' && s.visibility !== 'hidden' && r.width > 0;
+                })
+                .map(n => {
+                  const r = n.getBoundingClientRect();
+                  return { text: (n.innerText||'').trim().slice(0,40), x: r.x, y: r.y, w: r.width, h: r.height };
+                });
+              const bad = [];
+              for (let i = 0; i < controls.length; i++)
+                for (let j = i+1; j < controls.length; j++) {
+                  const a = controls[i], b = controls[j];
+                  const ix = Math.max(0, Math.min(a.x+a.w, b.x+b.w) - Math.max(a.x, b.x));
+                  const iy = Math.max(0, Math.min(a.y+a.h, b.y+b.h) - Math.max(a.y, b.y));
+                  if (ix*iy > 150) bad.push({a: a.text, b: b.text, area: ix*iy});
+                }
+              return bad;
+            }
+            """
+        )
+        assert overlaps == [], f"Overlapping controls on {tab_id}: {overlaps}"
+
+
+# ---------------------------------------------------------------------------
+# Dark theme — scroll + click + contrast tests (dark_page fixture)
+# ---------------------------------------------------------------------------
+
+def test_dark_button_contrast_on_all_tabs(dark_page):
+    """Every visible button must have sufficient contrast in dark theme."""
+    all_failures = []
+    for tab_id, label in [
+        ("#btnTabDrafts", "Drafts"),
+        ("#btnTabPlans", "Plans"),
+        ("#btnTabCreate", "Create"),
+        ("#btnTabHandbook", "Handbook"),
+    ]:
+        dark_page.locator(tab_id).click()
+        dark_page.wait_for_timeout(300)
+        all_failures.extend(_check_button_contrast(dark_page, theme_label=label))
+
+    assert all_failures == [], (
+        f"Buttons with insufficient contrast in dark theme:\n"
+        + "\n".join(f"  [{f['theme']}] '{f['text']}' ratio={f['ratio']} "
+                    f"(color={f['color']}, bg={f['bg']})" for f in all_failures)
+    )
+
+
+def test_dark_draft_detail_scroll_and_actions(dark_page):
+    """Open a draft detail in dark theme, scroll to bottom, verify action buttons."""
+    dark_page.locator("#btnTabDrafts").click()
+    dark_page.wait_for_timeout(250)
+    dark_page.get_by_text("Как мягко выйти из рабочего напряжения").first.click()
+    dark_page.wait_for_timeout(300)
+
+    # Scroll to bottom of the detail panel
+    dark_page.evaluate(
+        "document.querySelector('#detailPanel').scrollTo(0, "
+        "document.querySelector('#detailPanel').scrollHeight)"
+    )
+    dark_page.wait_for_timeout(300)
+
+    # Check action buttons are visible after scroll
+    actions = dark_page.locator("#draftDetail button").evaluate_all(
+        """(nodes) => nodes
+            .filter(n => getComputedStyle(n).display !== 'none' && n.getBoundingClientRect().width > 0)
+            .map(n => ({ text: n.textContent.trim().slice(0, 40), visible: true }))
+        """
+    )
+    assert len(actions) >= 1, "Expected at least one action button in draft detail"
+
+    # Contrast check on buttons visible after scroll
+    failures = _check_button_contrast(dark_page, theme_label="draft-detail-scrolled")
+    assert failures == [], f"Low contrast buttons after scroll: {failures}"
+
+
+def test_dark_reels_scroll_through_frames(dark_page):
+    """Scroll through reels storyboard frames in dark theme, verify readability."""
+    _open_reels_detail_from_drafts(dark_page)
+
+    frame_count = dark_page.locator(".storyboard-frame").count()
+    assert frame_count >= 1
+
+    # Scroll each frame into view and check text readability
+    for i in range(frame_count):
+        frame = dark_page.locator(".storyboard-frame").nth(i)
+        frame.scroll_into_view_if_needed()
+        dark_page.wait_for_timeout(150)
+
+        text_el = frame.locator(".reels-frame-section-value").first
+        if text_el.count():
+            color = text_el.evaluate("(el) => getComputedStyle(el).color")
+            fg = _parse_rgb(color)
+            if fg:
+                # Dark theme text should be light (luminance > 0.3)
+                lum = _relative_luminance(*fg)
+                assert lum > 0.25, (
+                    f"Frame {i} text too dark for dark theme: {color} (luminance={lum:.2f})"
+                )
+
+
+def test_dark_handbook_scroll_and_open_cards(dark_page):
+    """In dark theme: scroll handbook list, click cards, verify detail renders."""
+    dark_page.locator("#btnTabHandbook").click()
+    dark_page.wait_for_timeout(500)
+
+    # Scroll through handbook cards
+    card_count = dark_page.locator(".reference-card").count()
+    assert card_count >= 1, "No reference cards found in handbook default tab"
+
+    # Scroll to the last card
+    dark_page.locator(".reference-card").last.scroll_into_view_if_needed()
+    dark_page.wait_for_timeout(200)
+
+    # Click first card and verify detail opens
+    dark_page.locator(".reference-card").first.scroll_into_view_if_needed()
+    dark_page.wait_for_timeout(100)
+    dark_page.locator(".reference-card").first.click()
+    dark_page.wait_for_timeout(300)
+
+    # Verify detail panel has content
+    detail = dark_page.locator("#detailPanel")
+    assert detail.is_visible()
+
+    # Scroll detail to bottom
+    dark_page.evaluate(
+        "document.querySelector('#detailPanel')?.scrollTo(0, "
+        "document.querySelector('#detailPanel')?.scrollHeight || 0)"
+    )
+    dark_page.wait_for_timeout(200)
+
+    # Check contrast of any buttons in detail
+    failures = _check_button_contrast(dark_page, theme_label="handbook-detail")
+    assert failures == [], f"Low contrast in handbook detail: {failures}"
+
+
+def test_dark_create_form_fields_readable(dark_page):
+    """Create tab form fields are readable in dark theme."""
+    dark_page.locator("#btnTabCreate").click()
+    dark_page.wait_for_timeout(300)
+
+    dark_page.get_by_role("heading", name="Пост для соцсетей").click()
+    dark_page.wait_for_timeout(300)
+
+    # Check textarea styling
+    textarea = dark_page.locator("textarea[name='topic']")
+    if textarea.count():
+        styles = textarea.evaluate(
+            """(el) => {
+                const s = getComputedStyle(el);
+                return { color: s.color, bg: s.backgroundColor, border: s.borderColor };
+            }"""
+        )
+        fg = _parse_rgb(styles["color"])
+        bg = _parse_rgb(styles["bg"])
+        if fg and bg:
+            ratio = _contrast_ratio(fg, bg)
+            assert ratio >= _WCAG_AA_MIN, (
+                f"Textarea unreadable in dark theme: contrast {ratio:.2f} "
+                f"(color={styles['color']}, bg={styles['bg']})"
+            )
+
+
+def test_dark_plans_scroll_and_click(dark_page):
+    """Plans tab: scroll list, open detail, scroll detail in dark theme."""
+    dark_page.locator("#btnTabPlans").click()
+    dark_page.wait_for_timeout(300)
+
+    plan_cards = dark_page.locator(".plan-card")
+    if plan_cards.count() == 0:
+        pytest.skip("No plan cards in test data")
+
+    # Scroll to last plan card
+    plan_cards.last.scroll_into_view_if_needed()
+    dark_page.wait_for_timeout(200)
+
+    # Open first plan
+    plan_cards.first.scroll_into_view_if_needed()
+    dark_page.wait_for_timeout(100)
+    plan_cards.first.click()
+    dark_page.wait_for_timeout(300)
+
+    # Scroll plan detail to bottom
+    dark_page.evaluate(
+        "document.querySelector('#detailPanel')?.scrollTo(0, "
+        "document.querySelector('#detailPanel')?.scrollHeight || 0)"
+    )
+    dark_page.wait_for_timeout(200)
+
+    # Title should be readable
+    title_el = dark_page.locator(".detail-title").first
+    if title_el.count():
+        color = title_el.evaluate("(el) => getComputedStyle(el).color")
+        fg = _parse_rgb(color)
+        if fg:
+            lum = _relative_luminance(*fg)
+            assert lum > 0.25, f"Plan title too dark: {color} (luminance={lum:.2f})"
+
+
+def test_dark_swipe_scroll_draft_list(dark_page):
+    """Simulate finger-swipe scroll on draft list in dark mode."""
+    dark_page.locator("#btnTabDrafts").click()
+    dark_page.wait_for_timeout(300)
+
+    # Record initial scroll position
+    initial_scroll = dark_page.evaluate(
+        "() => document.querySelector('#listPanel')?.scrollTop || window.scrollY"
+    )
+
+    # Simulate swipe-scroll (finger drag from bottom to top)
+    dark_page.mouse.move(215, 700)
+    dark_page.mouse.down()
+    dark_page.mouse.move(215, 300, steps=10)
+    dark_page.mouse.up()
+    dark_page.wait_for_timeout(300)
+
+    after_scroll = dark_page.evaluate(
+        "() => document.querySelector('#listPanel')?.scrollTop || window.scrollY"
+    )
+
+    # Scroll position should have changed (or list is short enough to fit)
+    card_count = dark_page.locator(".draft-card").count()
+    if card_count > 3:
+        assert after_scroll > initial_scroll, (
+            f"Swipe scroll did not move: before={initial_scroll}, after={after_scroll}"
+        )
