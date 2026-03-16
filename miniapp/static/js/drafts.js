@@ -117,7 +117,7 @@ export function createDraftsModule(deps) {
       title: "Ничего не найдено",
       body: "Создайте первый материал через вкладку «Создать». Выберите формат, укажите тему — AI сделает остальное.",
       actionLabel: "Открыть создание",
-      action: "setTab('create')",
+      action: "openCreateTool()",
     });
     elements.draftList.innerHTML = state.drafts.map((d, idx) => `
       <article ${interactiveCardAttrs(`Открыть черновик ${d.topic}`)} class="draft-card overview-card${d.draft_id === state.draftId ? " active" : ""}${d.generation_pending ? " is-pending" : ""} interactive-card" onclick="openDraft('${d.draft_id}')">

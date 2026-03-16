@@ -181,7 +181,7 @@ export function createContentModule(deps) {
       title: "Рилсов пока нет",
       body: "Создайте сценарий и раскадровку, чтобы здесь появился готовый рабочий список.",
       actionLabel: "Открыть создание",
-      action: "setTab('create')",
+      action: "openCreateTool()",
     });
     elements.draftList.innerHTML = state.reels.map((reel, idx) => `
       <article ${interactiveCardAttrs(`Открыть рилс ${reel.topic}`)} class="reels-card overview-card${reel.draft_id === state.selectedReels?.draft_id ? " active" : ""} interactive-card" onclick="openReels('${reel.draft_id}')">

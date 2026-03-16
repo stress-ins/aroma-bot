@@ -2546,6 +2546,48 @@ body.tg-theme-dark .concept-card {
 .status-bad  { color: var(--bad);  font-weight: 600; }
 
 /* ── Slides / storyboard ─────────────────────────────────────────────────── */
+.slides-swiper {
+  position: relative;
+  overflow: hidden;
+  touch-action: pan-x;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.slides-swiper-track {
+  display: flex;
+  will-change: transform;
+  transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.slides-swiper-track.is-dragging {
+  transition: none;
+}
+.slides-swiper-track > .slide {
+  flex: 0 0 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.slides-dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 0 4px;
+}
+.slides-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+  opacity: 0.4;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: opacity 0.2s, background 0.2s, transform 0.2s;
+}
+.slides-dot.is-active {
+  opacity: 1;
+  background: var(--brand);
+  transform: scale(1.25);
+}
 .slides { display: flex; flex-direction: column; gap: 10px; }
 .slides .slide {
   min-height: 100px;
@@ -3245,7 +3287,7 @@ body.tg-theme-dark .concept-card {
 .preview-modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 100;
+  z-index: 9999;
   background: rgba(0, 0, 0, 0.75);
   display: flex;
   align-items: center;
