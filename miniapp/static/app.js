@@ -14,6 +14,7 @@ import { createOnboardingModule } from "./js/onboarding.js";
 import { createRuntimeModule } from "./js/runtime.js";
 import { createSessionModule } from "./js/session.js";
 import { createSettingsModule } from "./js/settings.js";
+import { createRecommendationsModule } from "./js/recommendations.js";
 import { createShellModule } from "./js/shell.js";
 
 const state = {
@@ -1416,6 +1417,31 @@ const {
 });
 
 const {
+  openRecommendationsWizard,
+  closeRecommendationsWizard,
+  isWizardOpen: isRecoWizardOpen,
+  renderWizard: renderRecoWizard,
+  recoWizardNext,
+  recoWizardBack,
+  recoSelectMood,
+  recoSelectGoal,
+  recoUpdateSymptoms,
+  recoToggleAroma,
+  recoUpdateContra,
+  submitRecommendations,
+} = createRecommendationsModule({
+  state,
+  elements,
+  fetchJson,
+  escapeHtml,
+  renderBackButton,
+  enterDetailView,
+  syncMobileNavigation,
+  openReference,
+  showUiNotice,
+});
+
+const {
   renderPublishPanel,
   publishDraft: publishDraftImpl,
   cancelPublishSchedule: cancelPublishScheduleImpl,
@@ -1889,6 +1915,16 @@ registerWindowBridge({
   blendAdjustWithOil,
   openSavedBlends,
   deleteSavedBlend,
+  openRecommendationsWizard,
+  closeRecommendationsWizard,
+  recoWizardNext,
+  recoWizardBack,
+  recoSelectMood,
+  recoSelectGoal,
+  recoUpdateSymptoms,
+  recoToggleAroma,
+  recoUpdateContra,
+  submitRecommendations,
 });
 
 function renderInbox() { return renderInboxImpl(); }
