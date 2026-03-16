@@ -892,6 +892,10 @@ async function polishContentDraft(draftId, button) {
   return polishContentDraftImpl(draftId, button);
 }
 
+async function refreshDraftMetrics(draftId, button) {
+  return refreshDraftMetricsImpl(draftId, button);
+}
+
 function confirmAction(message) {
   const tg = window.Telegram?.WebApp;
   if (tg?.showConfirm) {
@@ -1458,6 +1462,7 @@ const {
   openDraft: openDraftImpl,
   renderDraftDetail: renderDraftDetailImpl,
   renderEmptyDetail: renderEmptyDetailImpl,
+  refreshDraftMetrics: refreshDraftMetricsImpl,
 } = createDraftsModule({
   state,
   elements,
@@ -1521,6 +1526,8 @@ const {
   removeRewrite: removeRewriteImpl,
   savePlatformTone: savePlatformToneImpl,
   saveUploadPostPrefs: saveUploadPostPrefsImpl,
+  renderAccounts: renderAccountsImpl,
+  connectPlatform: connectPlatformImpl,
 } = createSettingsModule({
   state,
   elements,
@@ -1850,6 +1857,7 @@ registerWindowBridge({
   removeRewrite: removeRewriteImpl,
   savePlatformTone: savePlatformToneImpl,
   saveUploadPostPrefs: saveUploadPostPrefsImpl,
+  connectPlatform: connectPlatformImpl,
   setPlanStatusFilter,
   setPlanPlatformFilter,
   setPlanDateFilter,
@@ -1893,6 +1901,7 @@ function addRewrite() { return addRewriteImpl(); }
 function removeRewrite(pattern) { return removeRewriteImpl(pattern); }
 function savePlatformTone(platform) { return savePlatformToneImpl(platform); }
 function saveUploadPostPrefs() { return saveUploadPostPrefsImpl(); }
+function connectPlatform(platform) { return connectPlatformImpl(platform); }
 
 function renderPlans() {
   return renderPlansImpl();

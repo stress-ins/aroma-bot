@@ -33,6 +33,7 @@ export function createSettingsModule(deps) {
         <button class="tab-button${activeSection === "status" ? " active" : ""}" type="button" onclick="openSettingsSection('status')">${uiIcon("gear")}<span>Статус</span></button>
         <button class="tab-button${activeSection === "keywords" ? " active" : ""}" type="button" onclick="openSettingsSection('keywords')">${uiIcon("text")}<span>Ключи</span></button>
         <button class="tab-button${activeSection === "brand" ? " active" : ""}" type="button" onclick="openSettingsSection('brand')">${uiIcon("card")}<span>Бренд</span></button>
+        <button class="tab-button${activeSection === "accounts" ? " active" : ""}" type="button" onclick="openSettingsSection('accounts')">${uiIcon("link")}<span>Аккаунты</span></button>
       </section>
     `;
   }
@@ -260,6 +261,10 @@ export function createSettingsModule(deps) {
       renderBrand();
       return;
     }
+    if (state.settingsSection === "accounts") {
+      renderAccounts();
+      return;
+    }
     if (!state.status) {
       state.status = await fetchJson("/api/status");
     }
@@ -425,6 +430,83 @@ export function createSettingsModule(deps) {
     syncMobileNavigation();
   }
 
+
+  function formatExpiry(isoDate) {
+    if (!isoDate) return null;
+    try {
+      const d = new Date(isoDate);
+      return d.toLocaleDateString("ru-RU", { day: "numeric", month: "short", year: "numeric" });
+    } catch (_) { return null; }
+  }
+
+  function accountCardHtml(acc) {
+    const icon = uiIcon(acc.platform === "threads" ? "message-circle" : "camera");
+    const label = acc.platform === "threads" ? "Threads" : "Instagram";
+    const connected = acc.connected;
+    const expiry = formatExpiry(acc.expires_at);
+    const subtitle = connected
+      ? (acc.username ? `ID: ${escapeHtml(acc.username)}` : "Аккаунт подключён") + (expiry ? ` · до ${expiry}` : "")
+      : "Не подключено";
+    const btn = connected
+      ? `<span class="account-badge connected">${uiIcon("check-circle")}<span>Подключено</span></span>`
+      : `<button class="primary-button compact connect-btn" type="button" onclick="connectPlatform('${acc.platform}')">${uiIcon("external-link")}<span>Подключить</span></button>`;
+    return `
+      <article class="account-card">
+        <div class="account-card-header">
+          <span class="account-platform-icon">${icon}</span>
+          <div class="account-card-info">
+            <strong>${label}</strong>
+            <span class="account-subtitle">${subtitle}</span>
+          </div>
+        </div>
+        <div class="account-card-action">${btn}</div>
+      </article>
+    `;
+  }
+
+  async function renderAccounts() {
+    elements.listTitle.textContent = "Настройки";
+    elements.draftCount.textContent = "Аккаунты";
+    elements.draftList.innerHTML = renderSettingsSwitcher("accounts");
+    elements.draftDetail.innerHTML = renderBackButton() + `
+      <div class="detail-grid">
+        <div class="detail-top">
+          <p class="eyebrow">${uiIcon("link")}<span>Настройки</span></p>
+          <h2 class="detail-title">Подключённые аккаунты</h2>
+        </div>
+        <div id="accountsList" class="accounts-list">
+          <div class="account-card skeleton"><div class="skeleton-line"></div></div>
+        </div>
+        <p class="settings-hint" style="color:var(--hint);font-size:13px;margin-top:4px;">
+          Подключите аккаунты для автоматической публикации контента.
+        </p>
+      </div>
+    `;
+    enterDetailView();
+    try {
+      const data = await fetchJson("/api/social/status");
+      const container = document.getElementById("accountsList");
+      if (container) {
+        container.innerHTML = (data.accounts || []).map(accountCardHtml).join("");
+        if (window.lucide) lucide.createIcons();
+      }
+    } catch (_err) {
+      const container = document.getElementById("accountsList");
+      if (container) container.innerHTML = `<p class="plan-entry-hint">Не удалось загрузить статус аккаунтов.</p>`;
+    }
+  }
+
+  async function connectPlatform(platform) {
+    try {
+      const data = await fetchJson(`/api/social/connect-url?platform=${platform}`);
+      if (data.url) {
+        window.open(data.url, "_blank");
+      }
+    } catch (err) {
+      showUiNotice(`Не удалось получить ссылку для ${platform}`, "error");
+    }
+  }
+
   return {
     addKeywordItem,
     removeKeywordItem,
@@ -444,5 +526,7 @@ export function createSettingsModule(deps) {
     savePlatformTone,
     loadUploadPostPrefs,
     saveUploadPostPrefs,
+    renderAccounts,
+    connectPlatform,
   };
 }
