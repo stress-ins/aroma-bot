@@ -842,8 +842,8 @@ async function scheduleThreadsSeries(draftId, date, slots, btn) {
     if (count > 0) {
       const draft = await fetchJson(`/api/drafts/${draftId}`);
       mergeDraftIntoState(draft);
-      renderDraftList();
-      renderDraftDetail(draft);
+      setTab("plans");
+      await safeLoadCurrentTab();
     }
   }, "Запланировано");
 }
@@ -863,7 +863,7 @@ function _renderThreadsSchedulerDates(draftId) {
     const d = new Date(today);
     d.setDate(today.getDate() + i);
     const iso = d.toISOString().slice(0, 10);
-    const label = i === 0 ? "Сегодня" : d.toLocaleDateString("ru", { weekday: "short", day: "numeric", month: "short" });
+    const label = i === 0 ? "Сегодня" : i === 1 ? "Завтра" : d.toLocaleDateString("ru", { weekday: "short", day: "numeric", month: "short" });
     return `<button class="date-picker-btn" type="button" data-date="${iso}" onclick="_selectSchedulerDate('${draftId}', '${iso}', this)">${escapeHtml(label)}</button>`;
   }).join("");
   container.innerHTML = buttons;
@@ -1416,6 +1416,9 @@ const {
   tagMarkup,
   uiIcon,
   showUiNotice,
+  mergeDraftIntoState,
+  renderDraftList: () => renderDraftList(),
+  renderDraftDetail: (d) => renderDraftDetail(d),
 });
 
 const {

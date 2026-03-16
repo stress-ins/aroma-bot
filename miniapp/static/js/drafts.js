@@ -48,6 +48,9 @@ export function createDraftsModule(deps) {
     if (d.kind === "carousel" && Array.isArray(p.slides) && p.slides.length) {
       return p.hook || p.angle || p.caption || p.slides[0] || "";
     }
+    if (d.kind === "threads_series") {
+      return p.series_summary || p.angle || d.preview || "";
+    }
     return p.caption || p.hook || p.angle || d.preview || "";
   }
 
@@ -244,6 +247,7 @@ export function createDraftsModule(deps) {
             </div>
             <button class="danger-button" onclick="deleteDraft('${d.draft_id}','drafts',this)">${actionLabel("trash", "Удалить")}</button>
           </div>
+          ${schedulerHtml}
         </div>
         ${p.series_summary ? payloadSection("Опорная мысль", p.series_summary) : ""}
         <section class="section section-primary">
@@ -253,7 +257,6 @@ export function createDraftsModule(deps) {
           </div>
           ${slotsHtml}
         </section>
-        ${schedulerHtml}
       </div>
     `;
     syncMobileNavigation();

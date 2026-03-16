@@ -3996,6 +3996,7 @@ body.is-mobile-layout .detail-icon-actions button {
 body.tg-theme-dark .blend-constructor-cta { color: #d4845e; }
 .search-type-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 99px; background: var(--surface-2); font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--hint); margin-bottom: 4px; }
 .search-results-header { font-size: 12px; color: var(--hint); margin-bottom: 8px; padding: 0 2px; }
+.search-group-header { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 16px 0 6px; padding: 0 2px; }
 .search-empty { text-align: center; padding: 24px 12px; color: var(--muted); font-size: 13px; }
 .search-empty .blend-constructor-cta { margin-top: 12px; }
 
@@ -4049,3 +4050,136 @@ body.tg-theme-dark .blend-constructor-cta { color: #d4845e; }
 .incompat-row:last-child { border: none; }
 .blend-warn { padding: 8px 10px; border-radius: var(--radius-sm); background: rgba(180,92,61,.06); border: 1px solid rgba(180,92,61,.15); font-size: 12px; color: var(--muted); line-height: 1.5; margin-bottom: 8px; }
 .section-hint { font-size: 11px; font-weight: 400; color: var(--hint); margin-left: 4px; }
+
+/* Blend Constructor: Inline CTA */
+.blend-constructor-inline-cta {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--brand);
+  background: none;
+  border: none;
+  padding: 2px 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Blend Constructor: Custom Oil Adjust */
+.section-adjust {
+  border: 1px dashed var(--brand-border, rgba(180,92,61,.25));
+  background: rgba(180,92,61,.03);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  margin-bottom: 8px;
+}
+.section-adjust h3 {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--brand);
+  margin: 0 0 4px;
+}
+.blend-adjust-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+  margin-top: 8px;
+}
+.blend-adjust-row .field-input { flex: 1; min-width: 0; }
+.blend-adjust-row .secondary-button {
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-size: 12px;
+  padding: 0 12px;
+}
+
+/* Blend Save */
+.blend-save-row { margin-bottom: 8px; }
+.blend-save-btn { width: 100%; }
+.blend-save-btn.is-saved {
+  background: var(--good-bg, rgba(46,125,79,.08));
+  color: var(--good);
+  border-color: var(--good);
+  pointer-events: none;
+}
+
+/* My Blends button */
+.my-blends-btn {
+  width: 100%;
+  margin-top: 6px;
+  padding: 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  text-align: center;
+}
+.my-blends-btn:active { opacity: 0.7; }
+
+/* Saved Blends List */
+.saved-blends-list { display: flex; flex-direction: column; gap: 10px; }
+.saved-blend-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  background: var(--surface);
+}
+.saved-blend-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.saved-blend-title { font-size: 14px; font-weight: 700; color: var(--text); }
+.saved-blend-brief { font-size: 11px; color: var(--hint); margin-top: 2px; }
+.saved-blend-delete {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: var(--hint);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+.saved-blend-oils {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 8px;
+}
+.saved-blend-oil {
+  font-size: 12px;
+  color: var(--muted);
+  background: var(--surface-alt, rgba(0,0,0,.04));
+  border-radius: 99px;
+  padding: 2px 8px;
+}
+.saved-blend-oil strong { color: var(--brand); font-weight: 700; }
+.saved-blend-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 7px;
+  border-top: 1px solid var(--border);
+  margin-bottom: 6px;
+}
+.saved-blend-drops { font-size: 11px; color: var(--hint); }
+.saved-blend-note {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin: 6px 0 0;
+}
+.saved-blend-application {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin: 4px 0 0;
+}
