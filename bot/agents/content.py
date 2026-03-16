@@ -407,18 +407,14 @@ VISUAL_PROMPT: [на английском, до 25 слов, terracotta/beige/sa
 # ── Agent functions ──────────────────────────────────────────────────────────
 
 def _call_claude(prompt: str, max_tokens: int, system: str = "") -> str:
-    import anthropic
+    from bot.services.claude_client import call_claude
 
-    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
-    kwargs: dict = dict(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=max_tokens,
+    return call_claude(
         messages=[{"role": "user", "content": prompt}],
+        max_tokens=max_tokens,
+        system=system,
+        context="content agent",
     )
-    if system:
-        kwargs["system"] = system
-    response = client.messages.create(**kwargs)
-    return response.content[0].text.strip()
 
 
 def _generate_topics_sync(

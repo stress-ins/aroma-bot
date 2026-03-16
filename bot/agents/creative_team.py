@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from config import settings
 from bot.agents.content import _HUMAN_WRITING_RULES
 from bot.services.brand_settings_store import get_brand_settings_cached
 from bot.services.humanizer import humanize
@@ -81,32 +80,31 @@ _EDITOR_SYSTEM = """\
 
 def edit_post_sync(raw: str, topic: str, platform: str = "default", user_forbidden: list[str] | None = None) -> str:
     """Run an editor pass over a raw post. Returns the polished post text."""
-    import anthropic
+    from bot.services.claude_client import call_claude
 
     platform_rule = _PLATFORM_RULES.get(platform, _PLATFORM_RULES["default"])
     user_msg = (
-        f"Тема поста: {topic}\n"
+        f"\u0422\u0435\u043c\u0430 \u043f\u043e\u0441\u0442\u0430: {topic}\n"
         f"{platform_rule}\n\n"
-        f"Черновик:\n{raw}"
+        f"\u0427\u0435\u0440\u043d\u043e\u0432\u0438\u043a:\n{raw}"
     )
     if user_forbidden:
         extra = "\n".join(f"- {p}" for p in user_forbidden)
-        user_msg += f"\n\nДополнительные запрещённые фразы (указаны пользователем):\n{extra}"
+        user_msg += f"\n\n\u0414\u043e\u043f\u043e\u043b\u043d\u0438\u0442\u0435\u043b\u044c\u043d\u044b\u0435 \u0437\u0430\u043f\u0440\u0435\u0449\u0451\u043d\u043d\u044b\u0435 \u0444\u0440\u0430\u0437\u044b (\u0443\u043a\u0430\u0437\u0430\u043d\u044b \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0435\u043c):\n{extra}"
 
     bs = get_brand_settings_cached()
     forbidden_block = "\n".join(f'   "{p}",' for p in bs.forbidden_phrases) if bs.forbidden_phrases else ""
     system_prompt = _EDITOR_SYSTEM.format(forbidden_phrases=forbidden_block, human_writing_rules=_HUMAN_WRITING_RULES)
 
-    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
-    resp = client.messages.create(
-        model="claude-haiku-4-5-20251001",
+    result = call_claude(
+        messages=[{"role": "user", "content": user_msg}],
         max_tokens=700,
         system=system_prompt,
-        messages=[{"role": "user", "content": user_msg}],
+        context=f"editor ({platform})",
     )
-    result = resp.content[0].text.strip()
     # Fallback: if editor returns something too short, keep original
     result = result if len(result) > 30 else raw
     # Apply policy enforcement (soft rewrites + forbidden phrase detection)
     policy_result = enforce_policy(result, platform)
     return humanize(policy_result.text, platform)
+

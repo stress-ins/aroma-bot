@@ -1,10 +1,22 @@
 from __future__ import annotations
 
 import logging
+import time
 
 import httpx
 
 logger = logging.getLogger(__name__)
+
+_recent_alerts: dict[str, float] = {}
+
+
+def notify_owner_throttled(text: str, dedup_key: str, cooldown: int = 300) -> None:
+    """Send a throttled notification — suppresses duplicates within cooldown seconds."""
+    now = time.time()
+    if now - _recent_alerts.get(dedup_key, 0) < cooldown:
+        return
+    _recent_alerts[dedup_key] = now
+    notify_owner(text)
 
 
 def notify_owner(text: str) -> None:
