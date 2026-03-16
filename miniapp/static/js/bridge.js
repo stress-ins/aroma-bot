@@ -24,6 +24,7 @@ export function registerWindowBridge(deps) {
     selectCarouselSlideVersion,
     deleteCarouselSlideVersion,
     handleCarouselSlideNoteInput,
+    previewCarouselSlide,
     downloadCarouselPptx,
     importCarouselPptx,
     saveReelsScenario,
@@ -93,6 +94,7 @@ export function registerWindowBridge(deps) {
   window.selectCarouselSlideVersion = selectCarouselSlideVersion;
   window.deleteCarouselSlideVersion = deleteCarouselSlideVersion;
   window.handleCarouselSlideNoteInput = handleCarouselSlideNoteInput;
+  window.previewCarouselSlide = previewCarouselSlide;
   window.downloadCarouselPptx = downloadCarouselPptx;
   window.importCarouselPptx = importCarouselPptx;
 
