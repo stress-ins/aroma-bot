@@ -103,6 +103,81 @@ export function createCarouselModule(deps) {
     `;
   }
 
+  // ── Swiper state ──────────────────────────────────────────────────────────
+  let _swiperIndex = 0;
+  let _swiperDraftId = "";
+  let _swiperCaptionTimer = 0;
+
+  function _swiperSaveCaption(draftId, fromIndex) {
+    const textField = document.getElementById(slideTextId(fromIndex));
+    if (!textField) return;
+    const text = String(textField.value || "").trim();
+    const original = textField.dataset.original || "";
+    if (text === original) return;
+    void saveCarouselSlideText(draftId, fromIndex);
+  }
+
+  function _swiperGoTo(index, total, draftId) {
+    if (index < 0 || index >= total) return;
+    const prevIndex = _swiperIndex;
+    // debounced save of previous slide caption
+    if (prevIndex !== index && draftId) {
+      window.clearTimeout(_swiperCaptionTimer);
+      const saveIdx = prevIndex;
+      _swiperCaptionTimer = window.setTimeout(() => _swiperSaveCaption(draftId, saveIdx), 800);
+    }
+    _swiperIndex = index;
+    const track = document.querySelector(".slides-swiper-track");
+    if (track) track.style.transform = `translateX(-${index * 100}%)`;
+    document.querySelectorAll(".slides-dot").forEach((dot, i) => {
+      dot.classList.toggle("is-active", i === index);
+    });
+  }
+
+  function initSwiper(container, total, draftId) {
+    const track = container.querySelector(".slides-swiper-track");
+    if (!track) return;
+    let startX = 0, startY = 0, currentX = 0, dragging = false, locked = false;
+    const threshold = 40;
+
+    track.addEventListener("touchstart", (e) => {
+      if (e.touches.length > 1) return;
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      currentX = 0;
+      dragging = true;
+      locked = false;
+      track.classList.add("is-dragging");
+    }, { passive: true });
+
+    track.addEventListener("touchmove", (e) => {
+      if (!dragging) return;
+      const dx = e.touches[0].clientX - startX;
+      const dy = e.touches[0].clientY - startY;
+      if (!locked) {
+        if (Math.abs(dy) > Math.abs(dx)) { dragging = false; track.classList.remove("is-dragging"); return; }
+        locked = true;
+      }
+      currentX = dx;
+      const base = -_swiperIndex * 100;
+      const pct = (dx / container.offsetWidth) * 100;
+      track.style.transform = `translateX(${base + pct}%)`;
+    }, { passive: true });
+
+    track.addEventListener("touchend", () => {
+      if (!dragging) return;
+      dragging = false;
+      track.classList.remove("is-dragging");
+      if (currentX < -threshold && _swiperIndex < total - 1) {
+        _swiperGoTo(_swiperIndex + 1, total, draftId);
+      } else if (currentX > threshold && _swiperIndex > 0) {
+        _swiperGoTo(_swiperIndex - 1, total, draftId);
+      } else {
+        track.style.transform = `translateX(-${_swiperIndex * 100}%)`;
+      }
+    }, { passive: true });
+  }
+
   function renderSlides(draftId, slides = [], prompts = [], slideImages = [], promptNotes = [], slideVersions = []) {
     const slideItems = Array.isArray(slides) ? slides : [];
     const promptItems = Array.isArray(prompts) ? prompts : [];
@@ -114,59 +189,88 @@ export function createCarouselModule(deps) {
     const header = readyCount > 0
       ? `Слайды карусели <span class="meta">${readyCount} / ${slideItems.length} с картинкой</span>`
       : "Слайды карусели";
+
+    if (draftId !== _swiperDraftId) { _swiperIndex = 0; _swiperDraftId = draftId; }
+    const idx = Math.min(_swiperIndex, slideItems.length - 1);
+
+    const dotsHtml = slideItems.map((_, i) =>
+      `<button class="slides-dot${i === idx ? " is-active" : ""}" type="button" onclick="carouselSwiperGoTo(${i})" aria-label="Слайд ${i + 1}"></button>`
+    ).join("");
+
+    const slidesHtml = slideItems.map((slide, index) => {
+      const img = imageItems[index];
+      const prompt = String(promptItems[index] || "");
+      const note = bufferedCarouselNote(draftId, index, String(noteItems[index] || ""));
+      const versions = Array.isArray(versionItems[index]) ? versionItems[index] : [];
+      const imgHtml = img?.url
+        ? `<div class="carousel-slide-image-wrap"><img src="${escapeHtml(img.url)}" alt="Слайд ${index + 1}" style="cursor:pointer" onclick="openImageFullscreen(this.src, 'Слайд ${index + 1}')" /></div>`
+        : `<div class="carousel-slide-image-wrap"><div class="frame-loading"><div class="frame-loading-inner"><span class="button-spinner" aria-hidden="true"></span><span>Изображение ещё готовится</span></div></div></div>`;
+      return `
+        <article class="slide">
+          <strong>Слайд ${index + 1}</strong>
+          ${carouselSlideStatusMarkup(draftId, index, Boolean(img?.url))}
+          ${imgHtml}
+          <label class="prompt-note-field">
+            <span>Подпись слайда</span>
+            <textarea id="${slideTextId(index)}" data-original="${escapeHtml(slide)}" placeholder="Текст для этого слайда">${escapeHtml(slide)}</textarea>
+          </label>
+          <p class="field-help">После правки нажмите «Сохранить подпись», чтобы обновить этот слайд в черновике.</p>
+          <div class="actions-row prompt-actions actions-grid-two">
+            <button class="primary-button" type="button" aria-label="Сохранить текст слайда" onclick="saveCarouselSlideText(${JSON.stringify(draftId)}, ${index}, this)">${actionLabel("text", "Сохранить подпись")}</button>
+            <button class="secondary-button" type="button" ${!img?.url ? "disabled" : ""} onclick="previewCarouselSlide(${JSON.stringify(draftId)}, ${index}, this)">${actionLabel("eye", "Предпросмотр")}</button>
+          </div>
+          ${prompt ? (() => {
+              const discOpen = isPromptDisclosureOpen(`carousel:${draftId}:${index}`, !img?.url);
+              return `
+            <div class="prompt-disclosure${discOpen ? " is-open" : ""}" data-prompt-key="${escapeHtml(`carousel:${draftId}:${index}`)}">
+              <button class="secondary-button prompt-toggle" type="button" aria-expanded="${discOpen ? "true" : "false"}" data-default-open="${!img?.url ? "true" : "false"}" data-open-label="Показать промпт" data-close-label="Скрыть промпт" onclick='togglePromptDisclosure(${JSON.stringify(`carousel:${draftId}:${index}`)}, this)'>${actionLabel("eye", discOpen ? "Скрыть промпт" : "Показать промпт")}</button>
+              <div class="prompt-card"${discOpen ? "" : " hidden"}>
+                <div class="detail-preview prompt-preview">${escapeHtml(prompt)}</div>
+                <label class="prompt-note-field">
+                  <span>Замечание к картинке</span>
+                  <textarea id="${slideNoteId(index)}" placeholder="Например: теплее свет, крупнее объект, меньше деталей на фоне" oninput="handleCarouselSlideNoteInput(${JSON.stringify(draftId)}, ${index}, this.value)">${escapeHtml(note)}</textarea>
+                </label>
+                <div class="actions-row prompt-actions actions-grid-two">
+                  <button class="secondary-button" type="button" onclick='copyText(${JSON.stringify(prompt)})'>${actionLabel("prompt", "Скопировать промпт слайда")}</button>
+                  <button class="secondary-button" type="button" onclick="regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, this)">${actionLabel("regenerate", "Обновить изображение")}</button>
+                  <button class="primary-button" type="button" onclick="regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, this)">${actionLabel("note", "Обновить по замечанию")}</button>
+                </div>
+              </div>
+            </div>
+          `;
+            })() : ""}
+          ${renderSlideVersions(draftId, index, img, versions)}
+        </article>
+      `;
+    }).join("");
+
+    // Schedule swiper init after DOM render
+    const total = slideItems.length;
+    const dId = draftId;
+    requestAnimationFrame(() => {
+      const el = document.querySelector(".slides-swiper");
+      if (el) initSwiper(el, total, dId);
+      if (window.lucide) lucide.createIcons();
+    });
+
     return `
       <section class="section">
         <h3>${uiIcon("slides")}${header}</h3>
-        <div class="slides">
-          ${slideItems.map((slide, index) => {
-            const img = imageItems[index];
-            const prompt = String(promptItems[index] || "");
-            const note = bufferedCarouselNote(draftId, index, String(noteItems[index] || ""));
-            const versions = Array.isArray(versionItems[index]) ? versionItems[index] : [];
-            const imgHtml = img?.url
-              ? `<div class="carousel-slide-image-wrap"><img src="${escapeHtml(img.url)}" alt="Слайд ${index + 1}" style="cursor:pointer" onclick="openImageFullscreen(this.src, 'Слайд ${index + 1}')" /></div>`
-              : `<div class="carousel-slide-image-wrap"><div class="frame-loading"><div class="frame-loading-inner"><span class="button-spinner" aria-hidden="true"></span><span>Изображение ещё готовится</span></div></div></div>`;
-            return `
-              <article class="slide">
-                <strong>Слайд ${index + 1}</strong>
-                ${carouselSlideStatusMarkup(draftId, index, Boolean(img?.url))}
-                ${imgHtml}
-                <label class="prompt-note-field">
-                  <span>Подпись слайда</span>
-                  <textarea id="${slideTextId(index)}" placeholder="Текст для этого слайда">${escapeHtml(slide)}</textarea>
-                </label>
-                <p class="field-help">После правки нажмите «Сохранить подпись», чтобы обновить этот слайд в черновике.</p>
-                <div class="actions-row prompt-actions actions-grid-two">
-                  <button class="primary-button" type="button" aria-label="Сохранить текст слайда" onclick="saveCarouselSlideText(${JSON.stringify(draftId)}, ${index}, this)">${actionLabel("text", "Сохранить подпись")}</button>
-                  <button class="secondary-button" type="button" ${!img?.url ? "disabled" : ""} onclick="previewCarouselSlide(${JSON.stringify(draftId)}, ${index}, this)">${actionLabel("eye", "Предпросмотр с текстом")}</button>
-                </div>
-                ${prompt ? (() => {
-                    const discOpen = isPromptDisclosureOpen(`carousel:${draftId}:${index}`, !img?.url);
-                    return `
-                  <div class="prompt-disclosure${discOpen ? " is-open" : ""}" data-prompt-key="${escapeHtml(`carousel:${draftId}:${index}`)}">
-                    <button class="secondary-button prompt-toggle" type="button" aria-expanded="${discOpen ? "true" : "false"}" data-default-open="${!img?.url ? "true" : "false"}" data-open-label="Показать промпт" data-close-label="Скрыть промпт" onclick='togglePromptDisclosure(${JSON.stringify(`carousel:${draftId}:${index}`)}, this)'>${actionLabel("eye", discOpen ? "Скрыть промпт" : "Показать промпт")}</button>
-                    <div class="prompt-card"${discOpen ? "" : " hidden"}>
-                      <div class="detail-preview prompt-preview">${escapeHtml(prompt)}</div>
-                      <label class="prompt-note-field">
-                        <span>Замечание к картинке</span>
-                        <textarea id="${slideNoteId(index)}" placeholder="Например: теплее свет, крупнее объект, меньше деталей на фоне" oninput="handleCarouselSlideNoteInput(${JSON.stringify(draftId)}, ${index}, this.value)">${escapeHtml(note)}</textarea>
-                      </label>
-                      <div class="actions-row prompt-actions actions-grid-two">
-                        <button class="secondary-button" type="button" onclick='copyText(${JSON.stringify(prompt)})'>${actionLabel("prompt", "Скопировать промпт слайда")}</button>
-                        <button class="secondary-button" type="button" onclick="regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, this)">${actionLabel("regenerate", "Обновить изображение")}</button>
-                        <button class="primary-button" type="button" onclick="regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, this)">${actionLabel("note", "Обновить по замечанию")}</button>
-                      </div>
-                    </div>
-                  </div>
-                `;
-                  })() : ""}
-                ${renderSlideVersions(draftId, index, img, versions)}
-              </article>
-            `;
-          }).join("")}
+        <div class="slides-swiper">
+          <div class="slides-swiper-track" style="transform:translateX(-${idx * 100}%)">
+            ${slidesHtml}
+          </div>
         </div>
+        <div class="slides-dots">${dotsHtml}</div>
       </section>
     `;
+  }
+
+  function carouselSwiperGoTo(index) {
+    const track = document.querySelector(".slides-swiper-track");
+    if (!track) return;
+    const total = track.children.length;
+    _swiperGoTo(index, total, _swiperDraftId);
   }
 
   async function saveCarouselSlideText(draftId, slideIndex, button) {
@@ -406,6 +510,7 @@ export function createCarouselModule(deps) {
     selectCarouselSlideVersion,
     deleteCarouselSlideVersion,
     previewCarouselSlide,
+    carouselSwiperGoTo,
     downloadCarouselPptx,
     importCarouselPptx,
   };

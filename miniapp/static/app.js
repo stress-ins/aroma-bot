@@ -1153,6 +1153,8 @@ const {
   regenerateCarouselAll,
   selectCarouselSlideVersion,
   deleteCarouselSlideVersion,
+  previewCarouselSlide,
+  carouselSwiperGoTo,
   downloadCarouselPptx,
   importCarouselPptx,
 } = createCarouselModule({
@@ -1781,6 +1783,8 @@ registerWindowBridge({
   selectCarouselSlideVersion,
   deleteCarouselSlideVersion,
   handleCarouselSlideNoteInput,
+  previewCarouselSlide,
+  carouselSwiperGoTo,
   downloadCarouselPptx,
   importCarouselPptx,
   saveReelsScenario,
