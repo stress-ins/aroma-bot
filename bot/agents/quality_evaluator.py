@@ -72,18 +72,14 @@ _EVAL_PROMPT_TEMPLATE = """\
 
 
 def _call_claude(prompt: str, system: str = "") -> str:
-    import anthropic
+    from bot.services.claude_client import call_claude
 
-    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
-    kwargs: dict = dict(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=400,
+    return call_claude(
         messages=[{"role": "user", "content": prompt}],
+        max_tokens=400,
+        system=system,
+        context="quality_evaluator",
     )
-    if system:
-        kwargs["system"] = system
-    response = client.messages.create(**kwargs)
-    return response.content[0].text.strip()
 
 
 def _evaluate_sync(text: str, platform: str, topic: str) -> ContentScore:

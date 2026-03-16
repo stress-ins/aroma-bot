@@ -564,7 +564,8 @@ class TestDraftStore:
 # creative_team — edit_post_sync (unit: prompt structure + fallback logic)
 # ---------------------------------------------------------------------------
 
-from bot.agents.creative_team import _PLATFORM_RULES, _EDITOR_SYSTEM, edit_post_sync
+from bot.agents.creative_team import _EDITOR_SYSTEM, edit_post_sync
+from bot.agents.platform_rules import EDITOR_PLATFORM_RULES as _PLATFORM_RULES
 
 
 class TestCreativeTeamConstants:

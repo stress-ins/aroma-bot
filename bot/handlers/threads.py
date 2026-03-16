@@ -95,12 +95,23 @@ def _claude_topics(trends_text: str) -> list[str]:
 
 
 def _claude_post_and_prompt(topic: str) -> tuple[str, str]:
+    from bot.agents.content import _generate_strategist_sync
     from bot.agents.creative_team import edit_post_sync
     from bot.services.claude_client import call_claude
 
+    # Strategist step: find angle and hook before writing
+    angle, hook = _generate_strategist_sync(topic, goal_key="engagement", format_key="threads")
+    strategist_context = ""
+    if angle:
+        strategist_context = (
+            f"\n\nСтратегический угол: {angle}"
+            f"\nПервая строка (хук): {hook}"
+            f"\nИспользуй этот угол и хук в посте.\n"
+        )
+
     raw_post = call_claude(
-        messages=[{"role": "user", "content": _PROMPT_POST.format(topic=topic)}],
-        max_tokens=600,
+        messages=[{"role": "user", "content": _PROMPT_POST.format(topic=topic) + strategist_context}],
+        max_tokens=900,
         context="threads post",
     )
     post_text = edit_post_sync(raw_post, topic, platform="threads")
