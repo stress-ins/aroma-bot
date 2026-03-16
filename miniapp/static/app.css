@@ -4337,8 +4337,8 @@ body.tg-theme-dark .blend-constructor-cta { color: #d4845e; }
 .plan-card-metrics-badge i, .plan-card-metrics-badge svg { width: 12px; height: 12px; }
 
 /* -- Recommendations Wizard -- */
-.reco-cta-btn { display: block; width: 100%; padding: 10px var(--space-4); margin-top: var(--space-2); background: var(--sage-bg); color: var(--sage); border: 1px solid rgba(93, 110, 58, 0.25); border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; cursor: pointer; }
-.reco-cta-btn:hover { background: rgba(93, 110, 58, 0.18); }
+.reco-cta-btn { display: block; width: 100%; padding: 10px var(--space-4); margin-top: var(--space-2); background: var(--brand-bg); color: var(--brand); border: 1px solid var(--brand-border); border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; cursor: pointer; }
+.reco-cta-btn:hover { background: rgba(var(--brand-rgb), 0.18); }
 .reco-wizard { padding: var(--space-4); }
 .reco-progress { display: flex; gap: 6px; justify-content: center; margin-bottom: var(--space-4); }
 .reco-progress-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); }
