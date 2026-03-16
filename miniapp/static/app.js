@@ -10,6 +10,7 @@ import { createPlansModule } from "./js/plans.js";
 import { createMentionsModule } from "./js/mentions.js";
 import { createReferencesModule } from "./js/references.js";
 import { createReelsModule } from "./js/reels.js";
+import { createOnboardingModule } from "./js/onboarding.js";
 import { createRuntimeModule } from "./js/runtime.js";
 import { createSessionModule } from "./js/session.js";
 import { createSettingsModule } from "./js/settings.js";
@@ -1589,6 +1590,8 @@ const {
   renderPanelLoader,
 });
 
+const onboarding = createOnboardingModule({ state, icon });
+
 const {
   loadInbox: loadInboxImpl,
   loadReels: loadReelsImpl,
@@ -1743,7 +1746,11 @@ function finalizePendingReelsCreation(draft) { return finalizePendingReelsCreati
 
 async function recoverPendingReelsCreation(topic, pendingDraftId) { return recoverPendingReelsCreationImpl(topic, pendingDraftId); }
 
-async function bootstrap() { return bootstrapImpl(); }
+async function bootstrap() {
+  onboarding.maybeShow();
+  onboarding.initHelpFab();
+  return bootstrapImpl();
+}
 
 bindBootFallbackReload();
 bindStartupErrorFallbacks();
