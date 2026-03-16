@@ -15,6 +15,7 @@ class PlanRecord:
     created_at: str
     raw_text: str
     entries: list[dict[str, str]]
+    status: str = "draft"
 
     @classmethod
     def from_model(cls, model: PlanModel) -> "PlanRecord":
@@ -24,6 +25,7 @@ class PlanRecord:
             created_at=model.created_at.isoformat() if isinstance(model.created_at, datetime) else str(model.created_at),
             raw_text=model.raw_text,
             entries=[dict(entry) for entry in entries if isinstance(entry, dict)],
+            status=model.status or "draft",
         )
 
 
@@ -58,3 +60,14 @@ async def get_plan(plan_id: str) -> PlanRecord | None:
         result = await session.execute(query)
         model = result.scalar_one_or_none()
         return PlanRecord.from_model(model) if model else None
+
+
+async def update_plan_status(plan_id: str, status: str) -> None:
+    """Update the status field of a plan (draft / activating / active / failed)."""
+    async with AsyncSessionLocal() as session:
+        query = select(PlanModel).filter(PlanModel.plan_id == plan_id)
+        result = await session.execute(query)
+        model = result.scalar_one_or_none()
+        if model:
+            model.status = status
+            await session.commit()

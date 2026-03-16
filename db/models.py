@@ -35,6 +35,7 @@ class PlanModel(Base):
     plan_id: Mapped[str] = mapped_column(String(32), unique=True, index=True)
     raw_text: Mapped[str] = mapped_column(String)
     entries: Mapped[list[dict[str, Any]]] = mapped_column(MutableList.as_mutable(JSON), default=list)
+    status: Mapped[str] = mapped_column(String(32), default="draft")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 

@@ -176,6 +176,7 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
             plan_id VARCHAR(32) UNIQUE,
             raw_text TEXT,
             entries JSON,
+            status VARCHAR(32) DEFAULT 'draft',
             created_at DATETIME
         )
         """
