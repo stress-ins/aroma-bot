@@ -9,6 +9,17 @@ from config import settings
 
 logger = logging.getLogger(__name__)
 
+
+def _notify_image_failure(log_context: str, error: str) -> None:
+    from bot.handlers.monitor import notify_owner_throttled
+
+    notify_owner_throttled(
+        f"\U0001f5bc <b>Image gen failed</b>\nContext: {log_context}\n"
+        f"Error: <code>{error}</code>",
+        dedup_key=f"img:{log_context}",
+    )
+
+
 _BASE_URL = "https://api.nanobananaapi.ai/api/v1/nanobanana"
 _SUBMIT_TIMEOUT = 15
 _POLL_TIMEOUT = 15
@@ -71,10 +82,12 @@ def generate_gemini_image_sync(
                 time.sleep(2 * (attempt + 1))
                 continue
             logger.warning("%s submit error: %s", log_context, last_error)
+            _notify_image_failure(log_context, last_error)
             return None
 
     if not task_id:
         logger.warning("%s: submit failed after retries: %s", log_context, last_error)
+        _notify_image_failure(log_context, last_error)
         return None
 
     logger.info("%s: submitted taskId=%s", log_context, task_id)
@@ -107,6 +120,7 @@ def generate_gemini_image_sync(
 
             if success_flag in (2, 3):
                 logger.warning("%s: generation failed (flag=%s): %s", log_context, success_flag, str(data)[:200])
+                _notify_image_failure(log_context, f"generation failed (flag={success_flag})")
                 return None
 
             # successFlag == 0 or unknown → keep polling
@@ -116,6 +130,7 @@ def generate_gemini_image_sync(
         time.sleep(_POLL_INTERVAL)
 
     logger.warning("%s: poll timeout after %d attempts for taskId=%s", log_context, _POLL_MAX_ATTEMPTS, task_id)
+    _notify_image_failure(log_context, f"poll timeout after {_POLL_MAX_ATTEMPTS} attempts")
     return None
 
 
@@ -131,4 +146,5 @@ def _download_image(url: str, log_context: str) -> bytes | None:
         return data
     except Exception as exc:
         logger.warning("%s: download error: %s", log_context, str(exc)[:200])
+        _notify_image_failure(log_context, str(exc)[:200])
         return None

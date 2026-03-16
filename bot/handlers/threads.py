@@ -9,7 +9,6 @@ from telegram.constants import ParseMode
 from telegram.ext import ContextTypes, CommandHandler, CallbackQueryHandler
 
 from bot.services.gemini_images import generate_gemini_image_sync
-from config import settings
 from bot.handlers.threads_manager import publish_threads_keyboard, threads_api_enabled
 
 logger = logging.getLogger(__name__)
@@ -79,16 +78,16 @@ def _format_trends(results: list) -> str:
 
 
 def _claude_topics(trends_text: str) -> list[str]:
-    import anthropic
-    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
-    resp = client.messages.create(
-        model="claude-haiku-4-5-20251001",
+    from bot.services.claude_client import call_claude
+
+    raw = call_claude(
+        messages=[{"role": "user", "content": f"Тренды:\n{trends_text}"}],
         max_tokens=800,
         system=_PROMPT_TOPICS,
-        messages=[{"role": "user", "content": f"Тренды:\n{trends_text}"}],
+        context="threads topics",
     )
     topics: list[str] = []
-    for line in resp.content[0].text.strip().splitlines():
+    for line in raw.splitlines():
         line = line.strip()
         if line and line[0].isdigit() and ". " in line:
             topics.append(line.split(". ", 1)[1].strip())
@@ -96,25 +95,21 @@ def _claude_topics(trends_text: str) -> list[str]:
 
 
 def _claude_post_and_prompt(topic: str) -> tuple[str, str]:
-    import anthropic
     from bot.agents.creative_team import edit_post_sync
+    from bot.services.claude_client import call_claude
 
-    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
-
-    post_resp = client.messages.create(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=600,
+    raw_post = call_claude(
         messages=[{"role": "user", "content": _PROMPT_POST.format(topic=topic)}],
+        max_tokens=600,
+        context="threads post",
     )
-    raw_post = post_resp.content[0].text.strip()
     post_text = edit_post_sync(raw_post, topic, platform="threads")
 
-    img_resp = client.messages.create(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=60,
+    image_prompt = call_claude(
         messages=[{"role": "user", "content": _PROMPT_IMAGE.format(topic=topic)}],
+        max_tokens=60,
+        context="threads img prompt",
     )
-    image_prompt = img_resp.content[0].text.strip()
 
     return post_text, image_prompt
 

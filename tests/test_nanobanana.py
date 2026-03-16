@@ -78,7 +78,8 @@ class TestSubmitFailure:
         ]
         with patch(_SETTINGS_PATH, _make_settings()), \
              patch(_CLIENT_PATH, side_effect=_mock_client(responses)), \
-             patch(_SLEEP_PATH):
+             patch(_SLEEP_PATH), \
+             patch("bot.services.gemini_images._notify_image_failure"):
             result = generate_gemini_image_sync("test prompt")
         assert result is None
 
@@ -91,7 +92,8 @@ class TestPollTimeout:
         with patch(_SETTINGS_PATH, _make_settings()), \
              patch(_CLIENT_PATH, side_effect=_mock_client(responses)), \
              patch(_SLEEP_PATH), \
-             patch("bot.services.gemini_images._POLL_MAX_ATTEMPTS", 3):
+             patch("bot.services.gemini_images._POLL_MAX_ATTEMPTS", 3), \
+             patch("bot.services.gemini_images._notify_image_failure"):
             result = generate_gemini_image_sync("test prompt")
         assert result is None
 
@@ -104,7 +106,8 @@ class TestPollFailureFlag:
         ]
         with patch(_SETTINGS_PATH, _make_settings()), \
              patch(_CLIENT_PATH, side_effect=_mock_client(responses)), \
-             patch(_SLEEP_PATH):
+             patch(_SLEEP_PATH), \
+             patch("bot.services.gemini_images._notify_image_failure"):
             result = generate_gemini_image_sync("test prompt")
         assert result is None
 
