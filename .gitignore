@@ -22,6 +22,12 @@ venv/
 data/oil_pdfs/
 miniapp.zip
 
+# Playwright (Node.js)
+miniapp/node_modules/
+miniapp/playwright-report/
+miniapp/test-results/
+miniapp/tests/report/
+
 # Data storage
 data/reels_assets/
 data/carousel_assets/
