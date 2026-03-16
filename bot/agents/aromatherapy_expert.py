@@ -112,19 +112,18 @@ async def verify_card_content(card: dict[str, Any], *, dry_run: bool = False) ->
             "complementary_oil_names": (card.get("complementary_oil_names") or [])[:5],
         }
 
-        client = anthropic.Anthropic(api_key=api_key)
-        message = client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=512,
-            system=_EXPERT_SYSTEM_PROMPT,
+        from bot.services.claude_client import call_claude
+        raw = call_claude(
             messages=[
                 {
                     "role": "user",
                     "content": f"Верифицируй карточку:\n{json.dumps(card_summary, ensure_ascii=False, indent=2)}",
                 }
             ],
+            max_tokens=512,
+            system=_EXPERT_SYSTEM_PROMPT,
+            context="aromatherapy_expert",
         )
-        raw = message.content[0].text.strip()
         # Extract JSON from response
         start = raw.find("{")
         end = raw.rfind("}") + 1

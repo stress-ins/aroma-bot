@@ -101,20 +101,16 @@ async def test_compose_blend_does_not_crash(in_memory_db):
     """CLAUDE.md checkpoint: compose_blend(goal="сон", oils_available=[]) не падает."""
     from bot.agents.blend_composer import compose_blend
 
-    mock_resp = MagicMock()
-    mock_resp.content = [MagicMock(text=json.dumps({
+    fake_response = json.dumps({
         "name": "Сон",
         "ingredients": [{"oil": "лаванда", "ratio": 3.0, "unit": "капли"}],
         "instructions": "нанести на запястья",
         "contraindications": "нет",
-    }))]
-
-    mock_client = MagicMock()
-    mock_client.messages.create.return_value = mock_resp
+    })
 
     with (
         patch("bot.agents.blend_composer.get_brand_settings_cached") as mock_bs,
-        patch("anthropic.Anthropic", return_value=mock_client),
+        patch("bot.services.claude_client.call_claude", return_value=fake_response),
     ):
         mock_bs.return_value = MagicMock(brand_voice="test voice", forbidden_phrases=[])
         result = await compose_blend(goal="сон", oils_available=[])
@@ -132,17 +128,13 @@ async def test_compose_blend_does_not_crash(in_memory_db):
 async def test_advise_by_symptom_returns_list(in_memory_db):
     from bot.agents.symptom_advisor import advise_by_symptom
 
-    mock_resp = MagicMock()
-    mock_resp.content = [MagicMock(text=json.dumps([
+    fake_response = json.dumps([
         {"oil_or_blend": "лаванда", "type": "oil", "reason": "успокаивает", "contraindications": "нет"},
-    ]))]
-
-    mock_client = MagicMock()
-    mock_client.messages.create.return_value = mock_resp
+    ])
 
     with (
         patch("bot.agents.symptom_advisor.get_brand_settings_cached") as mock_bs,
-        patch("anthropic.Anthropic", return_value=mock_client),
+        patch("bot.services.claude_client.call_claude", return_value=fake_response),
     ):
         mock_bs.return_value = MagicMock(brand_voice="test voice", forbidden_phrases=[])
         result = await advise_by_symptom("бессонница")
@@ -161,20 +153,16 @@ async def test_advise_by_symptom_returns_list(in_memory_db):
 async def test_check_compatibility_returns_expected_keys(in_memory_db):
     from bot.agents.compatibility_checker import check_compatibility
 
-    mock_resp = MagicMock()
-    mock_resp.content = [MagicMock(text=json.dumps({
+    fake_response = json.dumps({
         "compatible": True,
         "warnings": [],
         "contraindications": [],
         "synergies": ["лаванда + кедр — усиливают седативный эффект"],
-    }))]
-
-    mock_client = MagicMock()
-    mock_client.messages.create.return_value = mock_resp
+    })
 
     with (
         patch("bot.agents.compatibility_checker.get_brand_settings_cached") as mock_bs,
-        patch("anthropic.Anthropic", return_value=mock_client),
+        patch("bot.services.claude_client.call_claude", return_value=fake_response),
     ):
         mock_bs.return_value = MagicMock(brand_voice="test voice", forbidden_phrases=[])
         result = await check_compatibility(["лаванда", "кедр"])

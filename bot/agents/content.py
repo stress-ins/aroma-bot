@@ -5,35 +5,16 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 
 from analytics.base import SourceResult
+from bot.agents.platform_rules import (
+    HUMAN_WRITING_RULES as _HUMAN_WRITING_RULES,
+    WRITER_PLATFORM_RULES as _PLATFORM_RULES_WRITER,
+    get_brand_context,
+)
 from bot.services.gemini_images import generate_gemini_image_sync
 from bot.services.humanizer import humanize
 from config import settings
 
 _executor = ThreadPoolExecutor(max_workers=2)
-
-_HUMAN_WRITING_RULES = """\
-ПРАВИЛА ЧЕЛОВЕЧЕСКОГО ПИСЬМА:
-
-Пунктуация:
-- Длинное тире (—) → запятая или перенос строки (НИКОГДА не тире в постах)
-- Среднее тире (–) → дефис или запятая
-
-Запрещённые AI-штампы (не использовать и близкие варианты):
-- "погружаясь в", "исследуя", "позволь себе", "это то, что"
-- "мощный инструмент", "невероятный результат", "поистине", "безусловно"
-- "важно отметить", "следует сказать", "хотелось бы отметить", "необходимо подчеркнуть"
-- "данный", "осуществляется", "в рамках", "таким образом,", "в заключение"
-- "активация парасимпатической нервной системы", "интегрировать опыт", "ресурсное состояние"
-
-Запрещённые стилевые ошибки:
-- Литературные метафоры из художественной прозы: "плечи в камне", "мысли вязнут", "тело как свинец"
-- Рубленые слоганы и псевдопоэтические фразы: "Минует логику. Говорит телу."
-- Жёсткие, неестественные конструкции: "Нервная система не спорит. Она отвечает."
-- Markdown-форматирование в текстах для соцсетей: **bold**, ## заголовки, `код`
-- Нумерованные списки внутри тела поста
-
-Правило: если фраза звучит красиво, но неестественно в разговоре — переписать проще.
-"""
 
 GOAL_LABELS = {
     "sales": "Продажа",
@@ -57,73 +38,8 @@ FORMAT_LABELS = {
     "carousel": "Карусель",
 }
 
-# Detailed per-platform writing rules for the Writer agent
-_PLATFORM_RULES_WRITER = {
-    "threads": """\
-Platform: Threads.
-Deliver a pack of 3 posts for today: morning, day, evening.
-Structure:
-- Use exactly three sections in this order: УТРО, ДЕНЬ, ВЕЧЕР
-- Each section is one standalone post with one idea only
-- Each post must be 5-12 short lines
-- Each post must be 40-120 words
-- Morning: observation, thought, or insight
-- Day: micro-expert post with one practical takeaway
-- Evening: question to the audience, can end with an open question
-- Conversational, mobile-readable, written like an in-the-moment thought
-- Short lines, no walls of text, no hashtags
-Forbidden: lectures, long explanations, complex terms, corporate tone, generic intros, multiple ideas in one post""",
-
-    "instagram": """\
-Platform: Instagram caption.
-STRICT LIMIT: 900 characters (hashtags go on a separate line after a blank line, not counted in limit).
-Structure:
-- Line 1: hook (standalone line, max 15 words)
-- Blank line
-- Body: 2-4 short paragraphs, blank line between each
-- Use ✦ or one relevant emoji per section as a visual anchor — not decorative noise
-- One human CTA sentence before hashtags ("Если резонирует — напиши в ДМ" style)
-- Blank line, then 5-10 hashtags
-Forbidden: wall of text, hashtags in body, corporate tone, "подписывайся на нас", generic opener""",
-
-    "telegram": """\
-Platform: Telegram post.
-STRICT LIMIT: 1200 characters.
-Structure:
-- First line: **bold hook** (use markdown ** ** for bold)
-- Blank line
-- Body: 2-3 paragraphs, blank line between each — deeper and more personal than Instagram
-- Include one specific observation, example, or scenario
-- One understated CTA at the end
-NO hashtags in Telegram. Can use **bold** for 1-2 key phrases maximum.""",
-
-    "threads_series": """\
-Platform: Threads — серия из 3 постов (утро / день / вечер).
-Deliver a pack of 3 posts for one day: morning, afternoon, evening.
-Structure:
-- Use exactly three sections in this order: УТРО, ДЕНЬ, ВЕЧЕР
-- Each section is one standalone post with one idea only
-- Each post must be 5-12 short lines
-- Each post must be 40-120 words
-- Morning: observation, thought, or first insight of the day
-- Day: practical micro-tip with one concrete takeaway
-- Evening: open question or gentle reflection for the audience
-- Conversational, mobile-readable, human tone
-- Short lines, no hashtags, no walls of text
-Forbidden: lectures, complex terms, corporate tone, generic intros, multiple ideas in one post""",
-}
-
-BRAND_CONTEXT = """\
-Ты работаешь с брендом специалиста по регуляции нервной системы через сенсорные практики.
-
-Контекст бренда:
-- Основные инструменты: ароматерапия, медитации, гонг, звук, сенсорная настройка.
-- Позиционирование: современный, бережный, телесный подход; без инфоцыганства и без псевдомедицинских обещаний.
-- Аудитория: люди с перегрузкой, стрессом, трудностью расслабиться, а также компании, которым нужен мягкий wellbeing-формат для команд.
-- Язык: спокойный, ясный, глубокий, человеческий. Не эзотерический туман и не сухая академичность.
-- Запрещено: обещать лечение, ставить диагнозы, писать в стиле "одна практика изменит всю жизнь".
-- Допустимо: говорить о состоянии, внимании к телу, переключении нервной системы, ритуалах восстановления, опоре через сенсорный опыт.
-"""
+# Backward compat re-export
+BRAND_CONTEXT = get_brand_context
 
 
 @dataclass
@@ -135,6 +51,7 @@ class ContentDraft:
     hashtags: str = ""
     visual_prompt: str = ""
     slides: list[str] = field(default_factory=list)
+    quality_score: dict | None = None
 
 
 def goal_label(goal_key: str) -> str:
@@ -313,7 +230,7 @@ def make_single_image_prompt(base: str, text: str, with_text: bool) -> str:
 
 def _topics_prompt(trends_text: str, goal_key: str, format_key: str) -> str:
     return f"""\
-{BRAND_CONTEXT}
+{get_brand_context()}
 Роль: ты Content Strategist.
 Цель контента: {GOAL_GUIDANCE[goal_key]}
 Формат: {FORMAT_LABELS[format_key]}.
@@ -336,7 +253,7 @@ def _topics_prompt(trends_text: str, goal_key: str, format_key: str) -> str:
 
 def _custom_topics_prompt(user_brief: str, goal_key: str, format_key: str) -> str:
     return f"""\
-{BRAND_CONTEXT}
+{get_brand_context()}
 Роль: ты Content Strategist.
 Цель контента: {GOAL_GUIDANCE[goal_key]}
 Формат: {FORMAT_LABELS[format_key]}.
@@ -359,7 +276,7 @@ def _custom_topics_prompt(user_brief: str, goal_key: str, format_key: str) -> st
 
 def _strategist_prompt(topic: str, goal_key: str, format_key: str) -> str:
     return f"""\
-{BRAND_CONTEXT}
+{get_brand_context()}
 Роль: ты Content Strategist. Твоя задача — найти угол и первую строку.
 
 Тема: {topic}
@@ -377,7 +294,7 @@ HOOK: [точная первая строка поста — останавли�
 def _writer_prompt(topic: str, goal_key: str, format_key: str, angle: str, hook: str) -> str:
     rules = _PLATFORM_RULES_WRITER.get(format_key, _PLATFORM_RULES_WRITER["telegram"])
     return f"""\
-{BRAND_CONTEXT}
+{get_brand_context()}
 Роль: ты Platform Writer. Ты получил угол и хук от стратега. Напиши готовый пост.
 
 Тема: {topic}
@@ -448,14 +365,18 @@ def _generate_strategist_sync(topic: str, goal_key: str, format_key: str) -> tup
     return angle or raw[:200], hook
 
 
+_MAX_QUALITY_RETRIES = 2
+
+
 def _generate_writer_sync(
     topic: str, goal_key: str, format_key: str, angle: str, hook: str
 ) -> ContentDraft:
     """Step 2: Writer produces platform-native draft. Step 3: Editor polishes."""
     from bot.agents.creative_team import edit_post_sync
 
+    token_limit = 1200 if format_key in ("threads", "threads_series") else 900
     raw = _call_claude(
-        _writer_prompt(topic, goal_key, format_key, angle, hook), max_tokens=900
+        _writer_prompt(topic, goal_key, format_key, angle, hook), max_tokens=token_limit
     )
     draft = parse_content_draft(raw)
     draft.angle = angle
@@ -468,6 +389,34 @@ def _generate_writer_sync(
     # Step 3: Editor pass
     if draft.caption:
         draft.caption = edit_post_sync(draft.caption, topic, platform=format_key)
+
+    # Step 4: Quality evaluation with retry
+    from bot.agents.quality_evaluator import _evaluate_sync
+    score = None
+    for attempt in range(_MAX_QUALITY_RETRIES):
+        if not draft.caption:
+            break
+        score = _evaluate_sync(draft.caption, format_key, topic)
+        if score["passed"]:
+            break
+        if attempt < _MAX_QUALITY_RETRIES - 1:
+            critique_prompt = (
+                f"{_writer_prompt(topic, goal_key, format_key, angle, hook)}\n\n"
+                f"Предыдущая версия получила низкую оценку. Критика редактора:\n"
+                f"{score['critique']}\n\n"
+                f"Перепиши текст учитывая это замечание. "
+                f"Сохрани угол и хук, но улучши то, что указано в критике."
+            )
+            raw2 = _call_claude(critique_prompt, max_tokens=token_limit)
+            draft2 = parse_content_draft(raw2)
+            if draft2.caption:
+                draft2.caption = edit_post_sync(draft2.caption, topic, platform=format_key)
+                draft2.angle = angle
+                draft2.hook = hook
+                draft = draft2
+
+    if score is not None:
+        draft.quality_score = dict(score)
 
     return draft
 

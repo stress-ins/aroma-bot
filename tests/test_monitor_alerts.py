@@ -44,26 +44,31 @@ class TestNotifyOwnerThrottled:
 class TestClaudeClientNotifies:
     def test_claude_wrapper_notifies_and_reraises(self):
         """Claude wrapper sends notification and re-raises on API error."""
+        import bot.services.claude_client as cc_mod
+
         mock_client = MagicMock()
         mock_client.messages.create.side_effect = RuntimeError("test API error")
 
-        with (
-            patch("bot.handlers.monitor.notify_owner") as mock_owner,
-            patch("bot.handlers.monitor._recent_alerts", {}),
-            patch("anthropic.Anthropic", return_value=mock_client),
-        ):
-            from bot.services.claude_client import call_claude
+        old_client = cc_mod._client
+        try:
+            cc_mod._client = mock_client
 
-            with pytest.raises(RuntimeError, match="test API error"):
-                call_claude(
-                    messages=[{"role": "user", "content": "hi"}],
-                    max_tokens=100,
-                    context="test context",
-                )
-            mock_owner.assert_called_once()
-            call_text = mock_owner.call_args[0][0]
-            assert "Claude API error" in call_text
-            assert "test context" in call_text
+            with (
+                patch("bot.handlers.monitor.notify_owner") as mock_owner,
+                patch("bot.handlers.monitor._recent_alerts", {}),
+            ):
+                with pytest.raises(RuntimeError, match="test API error"):
+                    cc_mod.call_claude(
+                        messages=[{"role": "user", "content": "hi"}],
+                        max_tokens=100,
+                        context="test context",
+                    )
+                mock_owner.assert_called_once()
+                call_text = mock_owner.call_args[0][0]
+                assert "Claude API error" in call_text
+                assert "test context" in call_text
+        finally:
+            cc_mod._client = old_client
 
 
 class TestImageGenNotifies:

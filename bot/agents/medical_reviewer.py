@@ -111,19 +111,18 @@ def review_card_medical_sync(card: dict[str, Any]) -> dict[str, Any]:
                 "indications": (str(card.get("indications") or ""))[:200],
             }
 
-            client = anthropic.Anthropic(api_key=api_key)
-            message = client.messages.create(
-                model="claude-haiku-4-5-20251001",
-                max_tokens=512,
-                system=_DOCTOR_SYSTEM_PROMPT,
+            from bot.services.claude_client import call_claude
+            raw = call_claude(
                 messages=[
                     {
                         "role": "user",
                         "content": f"Проверь карточку на медицинскую безопасность:\n{json.dumps(card_summary, ensure_ascii=False, indent=2)}",
                     }
                 ],
+                max_tokens=512,
+                system=_DOCTOR_SYSTEM_PROMPT,
+                context="medical_reviewer",
             )
-            raw = message.content[0].text.strip()
             start = raw.find("{")
             end = raw.rfind("}") + 1
             if start >= 0 and end > start:

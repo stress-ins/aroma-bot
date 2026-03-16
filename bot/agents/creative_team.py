@@ -1,35 +1,18 @@
 from __future__ import annotations
 
-from bot.agents.content import _HUMAN_WRITING_RULES
+from bot.agents.platform_rules import (
+    EDITOR_PLATFORM_RULES,
+    HUMAN_WRITING_RULES,
+    get_brand_context,
+)
 from bot.services.brand_settings_store import get_brand_settings_cached
 from bot.services.humanizer import humanize
 from bot.services.policy_engine import enforce_policy
 
-_PLATFORM_RULES = {
-    "threads": (
-        "Платформа: Threads. Верни 3 поста на сегодня в порядке: УТРО, ДЕНЬ, ВЕЧЕР. "
-        "Каждый пост — одна идея, 5-12 коротких строк, 40-120 слов, разговорный стиль, без хэштегов. "
-        "Утро — наблюдение или инсайт, день — микро-экспертный пост, вечер — вопрос аудитории."
-    ),
-    "threads_series": (
-        "Платформа: Threads, серия из 3 постов. Верни 3 поста в порядке: УТРО, ДЕНЬ, ВЕЧЕР. "
-        "Каждый пост — одна идея, 5-12 коротких строк, 40-120 слов, разговорный стиль, без хэштегов. "
-        "Утро — наблюдение или инсайт, день — практический совет, вечер — вопрос или размышление."
-    ),
-    "instagram": (
-        "Платформа: Instagram. Максимум 900 символов. "
-        "Хук + история / наблюдение + мягкий CTA. "
-        "3-7 хэштегов в конце."
-    ),
-    "telegram": (
-        "Платформа: Telegram. Максимум 1200 символов. "
-        "Чуть глубже, чем в соцсетях, но компактно. "
-        "Без хэштегов."
-    ),
-    "default": "Короткий пост для соцсетей. Сохрани длину оригинала.",
-}
 
 _EDITOR_SYSTEM = """\
+{brand_context}
+
 Ты — главред с 10-летним опытом редактуры контента для Instagram и Threads \
 в нишах wellbeing, психология, образ жизни.
 
@@ -82,7 +65,7 @@ def edit_post_sync(raw: str, topic: str, platform: str = "default", user_forbidd
     """Run an editor pass over a raw post. Returns the polished post text."""
     from bot.services.claude_client import call_claude
 
-    platform_rule = _PLATFORM_RULES.get(platform, _PLATFORM_RULES["default"])
+    platform_rule = EDITOR_PLATFORM_RULES.get(platform, EDITOR_PLATFORM_RULES["default"])
     user_msg = (
         f"\u0422\u0435\u043c\u0430 \u043f\u043e\u0441\u0442\u0430: {topic}\n"
         f"{platform_rule}\n\n"
@@ -94,7 +77,11 @@ def edit_post_sync(raw: str, topic: str, platform: str = "default", user_forbidd
 
     bs = get_brand_settings_cached()
     forbidden_block = "\n".join(f'   "{p}",' for p in bs.forbidden_phrases) if bs.forbidden_phrases else ""
-    system_prompt = _EDITOR_SYSTEM.format(forbidden_phrases=forbidden_block, human_writing_rules=_HUMAN_WRITING_RULES)
+    system_prompt = _EDITOR_SYSTEM.format(
+        brand_context=get_brand_context(),
+        forbidden_phrases=forbidden_block,
+        human_writing_rules=HUMAN_WRITING_RULES,
+    )
 
     result = call_claude(
         messages=[{"role": "user", "content": user_msg}],

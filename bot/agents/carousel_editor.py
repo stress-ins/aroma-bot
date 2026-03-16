@@ -3,16 +3,15 @@ from __future__ import annotations
 import re
 
 from config import settings
-from bot.agents.content import _HUMAN_WRITING_RULES
+from bot.agents.platform_rules import HUMAN_WRITING_RULES, get_brand_context
 from bot.services.brand_settings_store import get_brand_settings_cached
 from bot.services.humanizer import humanize
 from bot.services.policy_engine import enforce_policy, load_policy_config
 
 _EDITOR_PROMPT = """\
-Ты — главред контента для Instagram с 10-летним опытом в нише wellbeing и психологии.
+{brand_context}
 
-Автор: эксперт по регуляции нервной системы через сенсорные практики (ароматерапия, \
-медитации, гонг). Форматы: личные сессии, групповые практики, корпоративный wellbeing.
+Ты — главред контента для Instagram с 10-летним опытом в нише wellbeing и психологии.
 Цель карусели: человек дочитывает и думает «хочу попробовать» — пишет в ДМ или сохраняет.
 
 Структура 6 слайдов:
@@ -104,10 +103,11 @@ def _render_forbidden_phrases_block() -> str:
 
 def _build_editor_prompt(topic: str, raw_slides: str) -> str:
     return _EDITOR_PROMPT.format(
+        brand_context=get_brand_context(),
         topic=topic,
         raw_slides=raw_slides,
         forbidden_phrases=_render_forbidden_phrases_block(),
-        human_writing_rules=_HUMAN_WRITING_RULES,
+        human_writing_rules=HUMAN_WRITING_RULES,
     )
 
 
@@ -117,7 +117,7 @@ def _sanitize_slide_text(text: str) -> str:
 
 
 def edit_carousel_sync(raw_slides: list[str], topic: str, user_forbidden: list[str] | None = None) -> list[str]:
-    import anthropic
+    from bot.services.claude_client import call_claude
 
     raw_text = "\n".join(f"Слайд {i + 1}: {s}" for i, s in enumerate(raw_slides))
     prompt = _build_editor_prompt(topic=topic, raw_slides=raw_text)
@@ -125,13 +125,11 @@ def edit_carousel_sync(raw_slides: list[str], topic: str, user_forbidden: list[s
         extra = "\n".join(f"- {p}" for p in user_forbidden)
         prompt += f"\n\nДополнительные запрещённые фразы (указаны пользователем):\n{extra}"
 
-    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
-    resp = client.messages.create(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=1400,
+    text = call_claude(
         messages=[{"role": "user", "content": prompt}],
+        max_tokens=1400,
+        context="carousel editor",
     )
-    text = resp.content[0].text.strip()
 
     slides = [humanize(_sanitize_slide_text(item), "instagram") for item in _parse_slides(text, count=6)]
 
