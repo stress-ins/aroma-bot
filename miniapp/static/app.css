@@ -94,7 +94,7 @@ textarea,
 .shell {
   display: flex;
   flex-direction: column;
-  min-height: 100dvh;
+  min-height: var(--tg-viewport-stable-height, 100dvh);
   padding: var(--space-3);
   gap: var(--space-3);
   scroll-behavior: smooth;
@@ -1848,16 +1848,17 @@ body.tg-theme-dark .danger-button {
     width: 100%;
   }
 
-  /* Inner sections — small horizontal padding for content readability */
-  body.is-mobile-layout .detail-grid > .section,
-  body.is-mobile-layout .detail-grid > .detail-facts,
-  body.is-mobile-layout .detail-grid > .detail-top,
-  body.is-mobile-layout .detail-grid > .detail-hero,
-  body.is-mobile-layout .detail-grid > .actions-row,
-  body.is-mobile-layout .detail-grid > .actions-grid-two,
-  body.is-mobile-layout .detail-grid > div {
+  /* All direct children get horizontal padding for content readability */
+  body.is-mobile-layout .detail-grid > * {
     padding-left: var(--space-3);
     padding-right: var(--space-3);
+  }
+
+  /* Edge-to-edge sections — no padding */
+  body.is-mobile-layout .detail-grid > .detail-hero,
+  body.is-mobile-layout .detail-grid > .aroma-image {
+    padding-left: 0;
+    padding-right: 0;
   }
 
   /* Sections stretch edge-to-edge, separated by bottom border */
@@ -2331,8 +2332,15 @@ body.tg-theme-dark .danger-button {
 }
 
 .reference-card .overview-card-footer {
-  margin-top: 4px;
+  margin-top: 2px;
 }
+
+/* ── Compact reference cards ──────────────────────────────────────────── */
+.reference-card.draft-card    { padding: 10px 12px; }
+.reference-card.overview-card { gap: 4px; }
+.reference-card .draft-kind   { margin-bottom: 4px; min-height: 28px; padding: 4px 10px; }
+.reference-card .draft-topic  { margin-bottom: 2px; }
+.reference-card .draft-preview { line-height: 1.35; }
 
 .reference-badge {
   min-width: 132px;
@@ -3496,6 +3504,7 @@ body.is-mobile-layout[data-mode="handbook"] .tabs::-webkit-scrollbar { display: 
     font-size: 15px;
     line-height: 1.7;
   }
+  .reference-card .draft-preview { line-height: 1.4; }
 
   .prompt-actions {
     grid-template-columns: 1fr;
@@ -3535,6 +3544,20 @@ body.is-mobile-layout[data-mode="handbook"] .tabs::-webkit-scrollbar { display: 
   width: 20px;
   height: 20px;
   flex: 0 0 20px;
+}
+
+/* Mobile: icon buttons inside actions-row must stay square */
+body.is-mobile-layout .detail-icon-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, 44px);
+  gap: 8px;
+  justify-content: center;
+}
+body.is-mobile-layout .detail-icon-actions button {
+  aspect-ratio: 1;
+  width: 44px;
+  max-width: 44px;
+  flex: none;
 }
 
 .code-block {
