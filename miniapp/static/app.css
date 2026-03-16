@@ -106,6 +106,9 @@ textarea,
 .eyebrow {
   position: relative;
   z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -864,12 +867,16 @@ body.is-mobile-layout .detail-top {
 
 .detail-actions {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
+  align-items: center;
   gap: var(--space-2);
   min-width: 0;
 }
 .detail-actions > button {
-  width: 100%;
+  flex: 0 0 auto;
+}
+.detail-actions > .danger-button {
+  margin-left: auto;
 }
 .detail-actions-danger {
   margin-top: var(--space-3);
@@ -3694,6 +3701,9 @@ body.is-mobile-layout[data-mode="handbook"] .tabs::-webkit-scrollbar { display: 
 /* ── Compact meta chips ─────────────────────────────────────────────────── */
 .meta-chip { display: inline-block; font-size: 12px; line-height: 1.4; }
 .meta-chip--muted { color: var(--hint); }
+.draft-meta .meta-chip--muted + .tag,
+.draft-meta .tag + .meta-chip--muted { margin-left: 2px; }
+.draft-meta .meta-chip--muted + .meta-chip--muted::before { content: "·"; margin-right: 6px; opacity: 0.5; }
 
 /* ── Onboarding overlay ─────────────────────────────────────────────────── */
 .onboarding-overlay {

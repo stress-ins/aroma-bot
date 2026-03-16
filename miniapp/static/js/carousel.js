@@ -61,7 +61,7 @@ export function createCarouselModule(deps) {
     if (hasImage) {
       return `<div class="slide-status is-ready">${uiIcon("approve")}<span>Картинка готова</span></div>`;
     }
-    return `<div class="slide-status is-empty">${uiIcon("loader")}<span>Изображение еще готовится</span></div>`;
+    return "";
   }
 
   function renderSlideVersions(draftId, slideIndex, currentImage, versions = []) {
@@ -124,7 +124,7 @@ export function createCarouselModule(deps) {
             const note = bufferedCarouselNote(draftId, index, String(noteItems[index] || ""));
             const versions = Array.isArray(versionItems[index]) ? versionItems[index] : [];
             const imgHtml = img?.url
-              ? `<div class="carousel-slide-image-wrap"><img src="${escapeHtml(img.url)}" alt="Слайд ${index + 1}" /></div>`
+              ? `<div class="carousel-slide-image-wrap"><img src="${escapeHtml(img.url)}" alt="Слайд ${index + 1}" style="cursor:pointer" onclick="openImageFullscreen(this.src, 'Слайд ${index + 1}')" /></div>`
               : `<div class="carousel-slide-image-wrap"><div class="frame-loading"><div class="frame-loading-inner"><span class="button-spinner" aria-hidden="true"></span><span>Изображение ещё готовится</span></div></div></div>`;
             return `
               <article class="slide">
