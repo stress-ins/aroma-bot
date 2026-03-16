@@ -98,7 +98,7 @@ def review_card_medical_sync(card: dict[str, Any]) -> dict[str, Any]:
 
     if needs_llm or not has_critical:
         try:
-            import anthropic
+            from bot.services.claude_client import call_claude
 
             card_summary = {
                 "name": card.get("name"),

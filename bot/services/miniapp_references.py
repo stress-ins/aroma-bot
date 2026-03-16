@@ -42,6 +42,12 @@ EDITABLE_FIELDS = (
     "applications",
 )
 RESOURCE_FIELDS = ("plus", "minus")
+# Fields populated by enrichment scripts — must survive seed merges
+_ENRICHMENT_FIELDS = (
+    "name_en", "name_ru", "description_short",
+    "health_effects", "mind_effect", "spiritual_emotional",
+    "conditions_for_use", "chakras",
+)
 SHARED_IMAGE_OVERRIDES = {
     ("practice", "breath"): "nature.jpg",
     ("practice", "meditation"): "nature.jpg",
@@ -351,6 +357,13 @@ def _merge_seed_into_existing(existing_payload: dict[str, object], seed_payload:
     for field in EDITABLE_FIELDS:
         if field in overrides and field in current_public:
             merged[field] = current_public.get(field, "")
+
+    # Preserve enrichment fields that exist in DB but not in seed data
+    # (populated by scripts like enrich_name_en.py, summarize_aroma_fields.py)
+    for field in _ENRICHMENT_FIELDS:
+        value = current_public.get(field)
+        if value and field not in merged:
+            merged[field] = value
 
     seed_resources = dict(seed_payload.get("resource_values", {}) or {})
     current_resources = dict(current_public.get("resource_values", {}) or {})

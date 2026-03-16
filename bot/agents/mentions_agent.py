@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-import anthropic
-
 from config import settings
+from bot.services.claude_client import call_claude
 
 TONE_CONFIGS = {
     "official": {
@@ -50,7 +49,6 @@ def generate_replies_sync(
     }.get(platform, platform)
 
     replies = []
-    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
 
     for tone, cfg in TONE_CONFIGS.items():
         prompt = f"""\
@@ -69,12 +67,11 @@ def generate_replies_sync(
 - Только сам текст ответа, без пояснений
 """
         try:
-            response = client.messages.create(
-                model="claude-haiku-4-5-20251001",
-                max_tokens=200,
+            text = call_claude(
                 messages=[{"role": "user", "content": prompt}],
+                max_tokens=200,
+                context="mentions_agent",
             )
-            text = response.content[0].text.strip()
             # Trim to max_length
             if len(text) > cfg["max_length"]:
                 text = text[: cfg["max_length"]].rsplit(" ", 1)[0]
