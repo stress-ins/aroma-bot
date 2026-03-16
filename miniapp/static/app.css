@@ -3981,11 +3981,11 @@ body.is-mobile-layout .detail-icon-actions button {
 
 /* ── Smart Search Hero ── */
 .smart-search-hero { padding: 12px; background: var(--surface); border: 1px solid var(--brand-border); border-radius: var(--radius-lg); margin-bottom: 12px; }
-.smart-search-bar { display: flex; align-items: center; gap: 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 99px; padding: 8px 12px; margin-bottom: 10px; transition: border-color var(--duration-fast); }
-.smart-search-bar:focus-within { border-color: var(--brand-border); }
-.smart-search-icon { font-size: 14px; color: var(--hint); flex-shrink: 0; }
-.smart-search-input { flex: 1; background: none; border: none; outline: none; font-size: 13px; color: var(--text); }
-.smart-search-input::placeholder { color: var(--hint); }
+.smart-search-bar { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1.5px solid var(--brand-border); border-radius: 12px; padding: 10px 14px; margin-bottom: 10px; transition: border-color var(--duration-fast), box-shadow var(--duration-fast); }
+.smart-search-bar:focus-within { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(180,92,61,.12); }
+.smart-search-icon { font-size: 14px; color: var(--hint); flex-shrink: 0; line-height: 0; }
+.smart-search-input { flex: 1; background: none; border: none; outline: none; font-size: 14px; color: var(--text); }
+.smart-search-input::placeholder { color: var(--hint); font-size: 13px; }
 .smart-search-clear { background: none; border: none; color: var(--hint); cursor: pointer; font-size: 12px; }
 .smart-search-tags { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin-bottom: 10px; padding-bottom: 2px; }
 .smart-search-tags::-webkit-scrollbar { display: none; }
@@ -4120,6 +4120,10 @@ body.tg-theme-dark .blend-constructor-cta { color: #d4845e; }
   text-align: center;
 }
 .my-blends-btn:active { opacity: 0.7; }
+.blend-actions-stack { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+.blend-adjust-row { display: flex; gap: 8px; align-items: center; }
+.blend-adjust-row .field-input { flex: 1; }
+.section-adjust h3 { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--brand); margin: 0 0 4px; }
 
 /* Saved Blends List */
 .saved-blends-list { display: flex; flex-direction: column; gap: 10px; }
