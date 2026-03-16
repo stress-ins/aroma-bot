@@ -4,6 +4,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
+from bot.services.daily_oil import toggle_subscription
 from bot.services.subscription_store import (
     FREE_DAILY_LIMIT,
     activate_promo,
@@ -59,3 +60,12 @@ async def activate_promo_code(
     ends_at = user.trial_ends_at.isoformat() + "Z" if user.trial_ends_at and not user.trial_ends_at.isoformat().endswith("Z") else (user.trial_ends_at.isoformat() if user.trial_ends_at else None)
 
     return {"tier": tier, "ends_at": ends_at}
+
+
+@router.post("/api/user/daily-oil-subscription")
+async def toggle_daily_oil_subscription(
+    telegram_id: int = Depends(_resolve_telegram_id),
+):
+    """Toggle daily oil subscription for the user."""
+    subscribed = await toggle_subscription(telegram_id)
+    return {"daily_oil_subscribed": subscribed}

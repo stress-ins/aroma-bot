@@ -11,10 +11,20 @@ from bot.services.miniapp_references import (
     update_reference_card,
 )
 from config import settings
+from bot.services.daily_oil import get_daily_oil
 from ..auth import _require_reference_access, _telegram_user_id_from_init_data, _verify_init_data
 from ..models import AromaCardPayload
 
 router = APIRouter()
+
+
+@router.get("/api/references/daily-oil")
+async def daily_oil_endpoint(_: int = Depends(_require_reference_access)):
+    """Return today's daily oil card."""
+    oil = await get_daily_oil()
+    if not oil:
+        raise HTTPException(status_code=404, detail="no_daily_oil")
+    return oil
 
 
 @router.get("/api/references/access")

@@ -4377,3 +4377,22 @@ body.tg-theme-dark .reco-cta-btn { color: #d4845e; }
 .reco-general-advice p { margin: 0; }
 .reco-restart-btn { display: block; width: 100%; padding: 10px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; color: var(--text); cursor: pointer; text-align: center; }
 .reco-restart-btn:hover { background: var(--surface-3); }
+
+/* ── Daily Oil Banner ─────────────────────────────────────────────────── */
+.daily-oil-banner {
+  background: linear-gradient(135deg, var(--surface-2), var(--surface-3));
+  border: 1px solid var(--brand-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4) var(--space-5);
+  margin-bottom: var(--space-4);
+  cursor: pointer;
+  transition: box-shadow var(--duration-fast) var(--ease-standard);
+}
+.daily-oil-banner:hover { box-shadow: 0 2px 8px rgba(var(--brand-rgb), 0.15); }
+.daily-oil-header { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2); }
+.daily-oil-icon { width: 18px; height: 18px; color: var(--brand); }
+.daily-oil-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--brand); }
+.daily-oil-name { margin: 0 0 var(--space-2); font-size: 18px; font-weight: 700; color: var(--text); }
+.daily-oil-fact { margin: 0 0 var(--space-2); font-size: 14px; line-height: 1.45; color: var(--muted); }
+.daily-oil-practice { margin: 0; font-size: 14px; line-height: 1.45; color: var(--text); }
+.daily-oil-practice strong { color: var(--sage); }
