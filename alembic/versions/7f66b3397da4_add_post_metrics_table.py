@@ -1,7 +1,7 @@
 """add post_metrics table
 
 Revision ID: 7f66b3397da4
-Revises: 168c58f78084
+Revises: f78119590d91
 Create Date: 2026-03-17 00:09:45.154479
 
 """
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = '7f66b3397da4'
-down_revision: Union[str, Sequence[str], None] = '168c58f78084'
+down_revision: Union[str, Sequence[str], None] = 'f78119590d91'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
