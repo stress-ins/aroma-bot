@@ -284,10 +284,7 @@ export function createReferencesModule(deps) {
     if (byExpert && byDoctor) {
       return `<div class="verification-badge is-verified">✓ Проверено ароматерапевтом и врачом</div>`;
     }
-    const pending = [];
-    if (!byExpert) pending.push("ароматерапевт");
-    if (!byDoctor) pending.push("врач");
-    return `<div class="verification-badge is-pending">⏳ Ожидает проверки: ${pending.join(", ")}</div>`;
+    return "";
   }
 
   function renderMedicalDisclaimer() {
@@ -469,7 +466,7 @@ export function createReferencesModule(deps) {
       <section class="section aroma-hero ${heroClass}">
         <div class="reference-hero-copy">
           <p class="eyebrow">${eyebrowLabel}</p>
-          <h2 class="detail-title">${escapeHtml(state.tab === "symptoms" ? toSentenceCase(reference.name) : reference.name)}</h2>
+          <h2 class="detail-title">${escapeHtml(state.tab === "symptoms" ? normalizePdfSymptomName(reference.name) : reference.name)}</h2>
           ${subtitle ? `<p class="reference-keyline">${escapeHtml(subtitle)}</p>` : ""}
         </div>
         <div class="reference-hero-media">
@@ -677,9 +674,12 @@ export function createReferencesModule(deps) {
           <div class="draft-kind">${!["symptoms", "concepts", "blends"].includes(state.tab) ? `<span class="kind-glyph handbook-glyph" aria-hidden="true">${aromaCardIcon(item, state.tab)}</span>` : ""}${handbookCardBadge(state.tab, item) ? `<span>${state.tab === "concepts" ? `<span class="concept-kind-mark" aria-hidden="true">${escapeHtml(aromaCardIcon(item, state.tab))}</span>` : ""}${escapeHtml(handbookCardBadge(state.tab, item))}</span>` : ""}</div>
           ${(() => { const dateLabel = formatCourseSourceLabel(item.course_source) || (state.tab === "aromas" ? REFERENCE_SOURCE_TYPE_LABELS[item.source_type] || "" : ""); return dateLabel ? `<span class="overview-card-date">${escapeHtml(dateLabel)}</span>` : ""; })()}
         </div>
-        <h3 class="draft-topic">${escapeHtml(state.tab === "symptoms" ? toSentenceCase(item.name) : item.name)}</h3>
+        <h3 class="draft-topic">${escapeHtml(state.tab === "symptoms" ? normalizePdfSymptomName(item.name) : item.name)}</h3>
         ${item.name_en ? `<div class="reference-name-en">${escapeHtml(item.name_en)}</div>` : ""}
-        <div class="draft-preview">${escapeHtml(stripMarkdown(item.description_short || item.description || item.course_notes || ""))}</div>
+        <div class="draft-preview">${escapeHtml(stripMarkdown(
+          (state.tab === "concepts" ? item.key : null)
+          || item.description_short || item.description || item.course_notes || ""
+        ))}</div>
         <div class="draft-meta overview-card-footer">
           ${item.chakra_focus ? tagMarkup(item.chakra_focus, "source") : ""}
           ${item.polarity ? tagMarkup(item.polarity, "feedback") : ""}
