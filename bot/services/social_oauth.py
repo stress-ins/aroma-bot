@@ -302,6 +302,19 @@ def parse_oauth_state(*, state: str, secret: str, max_age_seconds: int = 3600) -
     return OAuthConnectState(service=service, chat_id=chat_id, user_id=user_id, issued_at=issued_at)
 
 
+def extract_state_payload_unsafe(state: str) -> dict:
+    """Decode state payload without verifying HMAC signature.
+
+    Returns raw dict or empty dict on any failure.
+    """
+    try:
+        encoded_body = state.split(".", 1)[0]
+        body = _urlsafe_b64decode(encoded_body)
+        return json.loads(body.decode("utf-8"))
+    except Exception:
+        return {}
+
+
 def bundle_env_updates(bundle: OAuthTokenBundle) -> dict[str, str]:
     if bundle.service == "threads":
         return {

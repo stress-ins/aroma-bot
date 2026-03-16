@@ -15,6 +15,7 @@ from bot.services.social_oauth import (
     bundle_env_updates,
     exchange_instagram_code,
     exchange_threads_code,
+    extract_state_payload_unsafe,
     notify_telegram_chat,
     parse_oauth_state,
     update_env_file,
@@ -119,6 +120,10 @@ async def _complete_oauth(service: str, request: Request) -> HTMLResponse:
             logger.warning("OAuth state/service mismatch: expected %s, got %s", service, state_payload.service)
     except OAuthStateError as exc:
         logger.warning("OAuth state validation failed (non-fatal): %s", exc)
+        raw = extract_state_payload_unsafe(state)
+        chat_id = str(raw.get("chat_id", "")).strip() or None
+        if chat_id:
+            logger.info("Extracted chat_id=%s from unsigned state payload", chat_id)
 
     try:
         bundle = _exchange_bundle(service, code)
