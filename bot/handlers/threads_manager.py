@@ -268,6 +268,157 @@ def build_threads_manager_handler():
     return [
         CommandHandler("threads_account", cmd_threads_account),
         CommandHandler("threads_inbox", cmd_threads_inbox),
+        CommandHandler("threads_trends", cmd_threads_trends),
         CallbackQueryHandler(cb_threads_manager, pattern="^tm:"),
+        CallbackQueryHandler(cb_trend_threads, pattern="^tt:"),
         MessageHandler(filters.TEXT & ~filters.COMMAND, msg_threads_manager),
     ]
+
+
+
+# ── Thread Trends Monitor ──────────────────────────────────────────────────
+
+
+async def cmd_threads_trends(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.message:
+        return
+    if not threads_api_enabled():
+        await update.message.reply_text("❌ Threads API не настроен.")
+        return
+
+    from bot.services.tracked_threads_store import list_tracked_threads
+
+    threads = await list_tracked_threads(status="new", min_score=0.5, limit=10)
+    if not threads:
+        await update.message.reply_text(
+            "🧵 Нет новых релевантных веток в Threads.\n"
+            "Мониторинг запускается каждые 2 часа автоматически.",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("🔄 Запустить мониторинг", callback_data="tt:scan")],
+            ]),
+        )
+        return
+
+    lines = [f"🧵 Релевантные ветки в Threads ({len(threads)}):\n"]
+    for i, t in enumerate(threads, 1):
+        action_emoji = {"reply": "💬", "create_content": "✍️", "engage": "👍"}.get(t.suggested_action, "👀")
+        lines.append(
+            f"{i}. @{t.author_username} — {t.ai_summary or t.text[:80]}\n"
+            f"   {action_emoji} {t.suggested_action or '?'} | {t.relevance_score:.0%}\n"
+        )
+
+    keyboard = InlineKeyboardMarkup(
+        [
+            [InlineKeyboardButton(f"{i}. @{t.author_username[:20]}", callback_data=f"tt:view:{t.thread_id}")]
+            for i, t in enumerate(threads[:5], 1)
+        ]
+        + [[InlineKeyboardButton("🔄 Запустить мониторинг", callback_data="tt:scan")]]
+    )
+    await update.message.reply_text("\n".join(lines), reply_markup=keyboard)
+
+
+async def cb_trend_threads(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query
+    await query.answer()
+    data = query.data
+
+    if data == "tt:scan":
+        await query.message.reply_text("⏳ Запускаю мониторинг Threads...")
+        try:
+            from bot.services.thread_monitor import run_thread_monitor
+            count = await run_thread_monitor()
+            await query.message.reply_text(
+                f"✅ Мониторинг завершён. Найдено {count} релевантных веток.\n"
+                f"Запустите /threads_trends для просмотра."
+            )
+        except Exception as exc:
+            await query.message.reply_text(f"❌ Ошибка мониторинга: {exc}")
+        return
+
+    parts = data.split(":", 2)
+    if len(parts) < 3:
+        return
+    action, thread_id = parts[1], parts[2]
+
+    from bot.services.tracked_threads_store import get_tracked_thread, update_tracked_status
+
+    thread = await get_tracked_thread(thread_id)
+    if not thread:
+        await query.message.reply_text("❌ Ветка не найдена.")
+        return
+
+    if action == "view":
+        text = (
+            f"🧵 @{thread.author_username}\n"
+            f"Релевантность: {thread.relevance_score:.0%} | {thread.suggested_action or '?'}\n\n"
+            f"{thread.text[:600]}\n"
+        )
+        if thread.root_text:
+            text += f"\nКорневой пост:\n{thread.root_text[:300]}\n"
+        if thread.content_angle:
+            text += f"\n💡 Угол для контента: {thread.content_angle}\n"
+        if thread.permalink:
+            text += f"\n🔗 {thread.permalink}"
+
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton("💬 Ответить в ветке", callback_data=f"tt:reply:{thread_id}")],
+            [InlineKeyboardButton("✍️ Создать пост на эту тему", callback_data=f"tt:content:{thread_id}")],
+            [InlineKeyboardButton("🚫 Не релевантно", callback_data=f"tt:dismiss:{thread_id}")],
+        ])
+        await query.message.reply_text(text, reply_markup=keyboard)
+
+    elif action == "reply":
+        await query.message.reply_text("✍️ Генерирую ответ...")
+        loop = asyncio.get_event_loop()
+        candidate = ThreadsCandidate(
+            thread_id=thread.thread_id,
+            source="keyword_match",
+            author=thread.author_username,
+            text=thread.text,
+            permalink=thread.permalink,
+            timestamp=thread.found_at.isoformat() if thread.found_at else "",
+            root_text=thread.root_text,
+        )
+        try:
+            suggestions = await loop.run_in_executor(_executor, suggest_replies_sync, [candidate])
+        except Exception as exc:
+            await query.message.reply_text(f"❌ Не удалось сгенерировать ответ: {exc}")
+            return
+        if not suggestions:
+            await query.message.reply_text("❌ Claude не предложил ответ для этой ветки.")
+            return
+        context.user_data["tm_candidates"] = [candidate]
+        context.user_data["tm_suggestions"] = suggestions
+        suggestion = suggestions[0]
+        await query.message.reply_text(
+            _render_suggestion(candidate, suggestion.reason, suggestion.draft_reply, 0, 1),
+            reply_markup=_reply_actions_keyboard(0),
+        )
+
+    elif action == "content":
+        if not thread.content_angle:
+            await query.message.reply_text("❌ Нет угла для контента по этой ветке.")
+            return
+        await query.message.reply_text(f"✍️ Создаю черновик поста на тему:\n«{thread.content_angle}»")
+        try:
+            from bot.agents.content import generate_content_draft
+            from bot.services.drafts_store import save_draft
+            draft = await generate_content_draft(topic=thread.content_angle, goal_key="trust", format_key="threads")
+            saved = await save_draft(
+                kind="threads", topic=thread.content_angle, source="thread_monitor",
+                payload={"angle": draft.angle, "hook": draft.hook, "caption": draft.caption,
+                         "cta": draft.cta, "hashtags": draft.hashtags,
+                         "source_thread": thread.permalink, "source_keyword": thread.keyword_matched},
+            )
+            await update_tracked_status(thread.thread_id, "content_created")
+            await query.message.reply_text(
+                f"✅ Черновик создан: #{saved.seq_id or '?'}\n"
+                f"Тема: {thread.content_angle}\n"
+                f"Откройте Mini App → Контент для редактирования."
+            )
+        except Exception as exc:
+            await query.message.reply_text(f"❌ Не удалось создать черновик: {exc}")
+
+    elif action == "dismiss":
+        await update_tracked_status(thread_id, "dismissed")
+        await query.message.reply_text("🚫 Ветка помечена как нерелевантная.")

@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from typing import Any
 
 import httpx
 
 from config import settings
+
+logger = logging.getLogger(__name__)
 
 BASE_URL = "https://graph.threads.net"
 
@@ -94,6 +97,33 @@ class ThreadsClient:
         """Deprecated for standalone posts: Use bot.services.publisher. Kept for reply publishing."""
         creation_id = self.create_text_container(text, reply_to_id=reply_to_id)
         return self.publish_container(creation_id)
+
+
+    def search_threads(self, keyword: str, *, limit: int = 20) -> list[dict[str, Any]]:
+        """Search public Threads posts by keyword. Placeholder — returns [] until Meta adds endpoint."""
+        if not settings.threads_keyword_search_enabled:
+            logger.debug("search_threads('%s') — keyword search disabled", keyword)
+            return []
+        try:
+            payload = self._request("GET", "/threads/search", params={"q": keyword, "fields": THREAD_FIELDS, "limit": limit})
+            return payload.get("data", [])
+        except ThreadsAPIError:
+            return []
+
+    def get_thread_conversation(self, thread_id: str, *, limit: int = 10) -> list[dict[str, Any]]:
+        """Get replies to a thread (conversation context)."""
+        try:
+            payload = self._request("GET", f"/{thread_id}/conversation", params={"fields": REPLY_FIELDS, "limit": limit})
+            return payload.get("data", [])
+        except ThreadsAPIError:
+            return []
+
+
+WATCH_KEYWORDS: list[str] = [
+    "ароматерапия", "эфирные масла", "гонг медитация",
+    "aromatherapy", "essential oils", "gong meditation",
+    "звуковое исцеление", "sound healing",
+]
 
 
 def collect_inbox_candidates_sync(limit_threads: int = 5, limit_replies: int = 10) -> tuple[dict[str, Any], list[ThreadsCandidate]]:

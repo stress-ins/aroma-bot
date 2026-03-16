@@ -115,6 +115,28 @@ async def _send_weekly_cost_report(app: Application) -> None:
 # Post metrics polling: every 6 hours (at :00 of 0, 6, 12, 18 UTC)
 _METRICS_POLL_HOURS = {0, 6, 12, 18}
 
+# Thread monitor: every 2 hours
+_THREAD_MONITOR_HOURS = {0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22}
+
+
+# Daily oil: 06:00 UTC (09:00 MSK)
+_DAILY_OIL_HOUR = 6
+_DAILY_OIL_MINUTE = 0
+
+
+def _is_daily_oil_time(now: datetime) -> bool:
+    return now.hour == _DAILY_OIL_HOUR and now.minute == _DAILY_OIL_MINUTE
+
+
+async def _run_daily_oil(app: Application) -> None:
+    from bot.services.daily_oil import select_daily_oil, send_daily_oil_notifications
+
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    logger.info("Selecting daily oil for %s...", today)
+    await select_daily_oil(today)
+    await send_daily_oil_notifications(app)
+    logger.info("Daily oil job complete for %s", today)
+
 
 async def _fetch_post_metrics() -> None:
     from bot.services.metrics_fetcher import fetch_all_pending_metrics
@@ -135,7 +157,9 @@ async def run_loop(app: Application) -> None:
     """
     last_digest_date: date | None = None
     last_cost_report_date: date | None = None
+    last_daily_oil_date: date | None = None
     last_metrics_fetch_hour: int | None = None
+    last_thread_monitor_hour: int | None = None
     logger.info(
         "Scheduler loop started (digest at %s %s, post check every %ds)",
         settings.daily_digest_time,
@@ -167,6 +191,14 @@ async def run_loop(app: Application) -> None:
                 except Exception as exc:
                     logger.error("Cost report failed: %s", exc)
 
+            # Daily oil at 06:00 UTC
+            if _is_daily_oil_time(now) and last_daily_oil_date != now.date():
+                last_daily_oil_date = now.date()
+                try:
+                    await _run_daily_oil(app)
+                except Exception as exc:
+                    logger.error("Daily oil job failed: %s", exc)
+
             # Post metrics polling every 6 hours
             if (
                 now.hour in _METRICS_POLL_HOURS
@@ -178,6 +210,21 @@ async def run_loop(app: Application) -> None:
                     await _fetch_post_metrics()
                 except Exception as exc:
                     logger.error("Metrics fetch failed: %s", exc)
+
+            # Thread monitor every 2 hours
+            if (
+                now.hour in _THREAD_MONITOR_HOURS
+                and now.minute == 0
+                and last_thread_monitor_hour != now.hour
+            ):
+                last_thread_monitor_hour = now.hour
+                try:
+                    from bot.services.thread_monitor import run_thread_monitor
+                    count = await run_thread_monitor()
+                    if count:
+                        logger.info("Thread monitor: %d new relevant threads", count)
+                except Exception as exc:
+                    logger.error("Thread monitor failed: %s", exc)
 
             # Scheduled posts
             try:
