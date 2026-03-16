@@ -62,7 +62,7 @@ jobs:
             .venv/bin/python scripts/cleanup_duplicates.py 2>&1 | tail -3 && \
             .venv/bin/python scripts/cleanup_blend_ingredients.py 2>&1 | tail -3 && \
             .venv/bin/python scripts/generate_name_ru.py 2>&1 | tail -3 && \
-            .venv/bin/python scripts/generate_description_short.py 2>&1 | tail -3 && \
+            .venv/bin/python scripts/summarize_aroma_fields.py --card-summary 2>&1 | tail -3 && \
             .venv/bin/python scripts/generate_symptom_descriptions.py 2>&1 | tail -3 && \
             touch "$MARKER" && \
             echo "Enrichment complete."' || echo "Enrichment step failed (non-blocking)"

@@ -449,6 +449,9 @@ export function createReferencesModule(deps) {
       const effectiveKeyline = keyline !== currentHandbookMeta().title ? keyline : "";
       const parts = [reference.name_en, effectiveKeyline].filter(Boolean);
       subtitle = parts.join(" · ");
+      if (reference.article_number) {
+        subtitle += (subtitle ? "\n" : "") + `🔖 ${reference.article_number}`;
+      }
     } else if (state.tab === "symptoms") {
       // Category group: "Нарушения сна"
       subtitle = keyline || "";
@@ -715,7 +718,7 @@ export function createReferencesModule(deps) {
           ${renderBackButton()}
           ${renderReferenceImage(reference)}
           ${aromaHtmlSection("Паспорт аромата", renderReferencePassport(reference))}
-          ${renderCollapsibleSection("Описание", reference.description, 280, reference.description_short)}
+          ${renderCollapsibleDescription(reference)}
           ${aromaSection("Терапевтические свойства", reference.therapeutic_properties)}
           ${renderStructuredList("При каких состояниях", reference.conditions_for_use)}
           ${recipeHtml}
