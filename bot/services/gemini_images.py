@@ -63,7 +63,7 @@ def generate_gemini_image_sync(
     for attempt in range(_SUBMIT_MAX_RETRIES):
         try:
             with httpx.Client(timeout=_SUBMIT_TIMEOUT) as client:
-                resp = client.post(f"{_BASE_URL}/generate-2", headers=headers, json=payload)
+                resp = client.post(f"{_BASE_URL}/generate", headers=headers, json=payload)
             if _is_retryable_status(resp.status_code) and attempt < _SUBMIT_MAX_RETRIES - 1:
                 last_error = f"HTTP {resp.status_code}"
                 time.sleep(2 * (attempt + 1))
