@@ -697,13 +697,20 @@ export function createReferencesModule(deps) {
       });
     }
 
-    const filtered = visible;
+    const query = (state.referenceSearch || "").trim().toLowerCase();
+    const filtered = visible.filter((item) =>
+      `${item.name} ${item.description || ""} ${item.course_notes || ""} ${item.conditions_for_use || ""} ${item.category_group || ""}`.toLowerCase().includes(query)
+    );
     const reference = state.selectedReference;
 
     elements.listTitle.textContent = meta.title;
-    elements.draftCount.textContent = meta.count(items);
+    elements.draftCount.textContent = query
+      ? `Найдено ${filtered.length} из ${items.length}`
+      : meta.count(items);
 
-    setEmptyState(filtered.length > 0, meta.empty);
+    setEmptyState(filtered.length > 0, query
+      ? { eyebrow: meta.title, title: "Ничего не найдено", body: "Попробуйте другой запрос или сбросьте фильтр." }
+      : meta.empty);
 
     let listContainer = document.getElementById("referenceListContainer");
     if (!listContainer) {
@@ -723,13 +730,7 @@ export function createReferencesModule(deps) {
       }
     }
     const filterChipsEl = document.getElementById("referenceFilterChips");
-    if (filterChipsEl) {
-      filterChipsEl.innerHTML = renderFilterChips(items, tabId);
-      if (state.tab === "aromas" || state.tab === "blends") {
-        filterChipsEl.insertAdjacentHTML("beforeend",
-          `<button class="blend-constructor-inline-cta" onclick="openBlendConstructor()">\ud83e\uddea \u0421\u043e\u0437\u0434\u0430\u0442\u044c \u0441\u043c\u0435\u0441\u044c \u043f\u043e\u0434 \u0437\u0430\u0434\u0430\u0447\u0443</button>`);
-      }
-    }
+    if (filterChipsEl) filterChipsEl.innerHTML = renderFilterChips(items, tabId);
 
     listContainer.innerHTML = filtered.map((item) => `
       <article ${interactiveCardAttrs(`Открыть карточку ${item.name}`)} class="draft-card overview-card reference-card${state.tab === "concepts" ? " is-theory concept-card" : ""}${item.slug === reference?.slug ? " active" : ""} interactive-card" onclick='openReference(${JSON.stringify(item.slug)}, ${JSON.stringify(state.tab)})'>
@@ -956,7 +957,7 @@ export function createReferencesModule(deps) {
           <button class="search-tag" onclick="runSmartSearch('\u0441\u0442\u0440\u0435\u0441\u0441')">\ud83d\ude24 \u0441\u0442\u0440\u0435\u0441\u0441</button>
           <button class="search-tag" onclick="runSmartSearch('\u043a\u043e\u043d\u0446\u0435\u043d\u0442\u0440\u0430\u0446\u0438\u044f')">\ud83e\udde0 \u0444\u043e\u043a\u0443\u0441</button>
         </div>
-        <button class="my-blends-btn" onclick="openSavedBlends()">\u2665 \u041c\u043e\u0438 \u0441\u043c\u0435\u0441\u0438</button>
+        <button class="my-blends-btn" onclick="openSavedBlends()">\u2665 \u0421\u043e\u0445\u0440\u0430\u043d\u0451\u043d\u043d\u043e\u0435</button>
       </div>`;
   }
 
@@ -992,13 +993,11 @@ export function createReferencesModule(deps) {
 
     await loadAllReferencesForSearch();
     const q = query.toLowerCase();
-    const tabTypeMap = { aromas: "aroma", blends: "blend", symptoms: "symptom" };
-    const allowedType = tabTypeMap[state.tab];
     const allItems = [
       ...(_searchCache.aromas || []),
       ...(_searchCache.blends || []),
       ...(_searchCache.symptoms || []),
-    ].filter(item => !allowedType || item._type === allowedType);
+    ];
     const scored = allItems.map(item => {
       let score = 0;
       const fields = [
@@ -1022,10 +1021,10 @@ export function createReferencesModule(deps) {
       if (aMatch !== bMatch) return bMatch - aMatch;
       return b._score - a._score;
     });
-    renderSearchResults(scored, query, !!allowedType);
+    renderSearchResults(scored, query);
   }
 
-  function renderSearchResults(items, query, singleType = false) {
+  function renderSearchResults(items, query) {
     const listContainer = document.getElementById("referenceListContainer");
     if (!listContainer) return;
     const filterChipsEl = document.getElementById("referenceFilterChips");
@@ -1040,7 +1039,7 @@ export function createReferencesModule(deps) {
     let lastType = null;
     const cardsHtml = items.slice(0, 50).map(item => {
       let header = "";
-      if (!singleType && item._type !== lastType) {
+      if (item._type !== lastType) {
         header = `<div class="search-group-header">${groupLabels[item._type] || item._type}</div>`;
         lastType = item._type;
       }
@@ -1120,7 +1119,7 @@ export function createReferencesModule(deps) {
     fetchJson("/api/blend-constructor/construct", {
       method: "POST",
       body: JSON.stringify({brief, effects, speed, application, contraindications}),
-    }).then(result => renderBlendResult(result, {brief, effects, speed, application, contraindications})).catch(() => {
+    }).then(result => renderBlendResult(result)).catch(() => {
       btn.disabled = false;
       btn.textContent = "\u2726 \u041f\u043e\u0434\u043e\u0431\u0440\u0430\u0442\u044c \u0441\u043c\u0435\u0441\u044c";
       showUiNotice("\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0441\u0433\u0435\u043d\u0435\u0440\u0438\u0440\u043e\u0432\u0430\u0442\u044c \u0441\u043c\u0435\u0441\u044c.", "error");
@@ -1129,8 +1128,8 @@ export function createReferencesModule(deps) {
 
   /* ── Blend Result ── */
 
-  function renderBlendResult(result, origRequest = null) {
-    const blendState = { oils: result.oils.map(o => ({...o, active: true, _origDrops: o.drops})), result, origRequest };
+  function renderBlendResult(result) {
+    const blendState = { oils: result.oils.map(o => ({...o, active: true, _origDrops: o.drops})), result };
     function recalcDrops() {
       const active = blendState.oils.filter(o => o.active);
       if (!active.length) return;
@@ -1167,62 +1166,6 @@ export function createReferencesModule(deps) {
       oil.active = !oil.active;
       recalcDrops();
       rerender();
-    };
-    window.blendAdjustWithOil = () => {
-      const input = document.getElementById("blendCustomOilInput");
-      const oilName = input?.value.trim();
-      if (!oilName) { showUiNotice("\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u043d\u0430\u0437\u0432\u0430\u043d\u0438\u0435 \u043c\u0430\u0441\u043b\u0430", "error"); return; }
-      if (!blendState.origRequest) { showUiNotice("\u041d\u0435\u0442 \u0434\u0430\u043d\u043d\u044b\u0445 \u0434\u043b\u044f \u043f\u0435\u0440\u0435\u0441\u0442\u0440\u043e\u0439\u043a\u0438", "error"); return; }
-      const btn = document.getElementById("blendAdjustBtn");
-      if (btn) { btn.disabled = true; btn.textContent = "\u041f\u0435\u0440\u0435\u0441\u0442\u0440\u0430\u0438\u0432\u0430\u044e..."; }
-      const req = { ...blendState.origRequest, custom_oils: [oilName] };
-      fetchJson("/api/blend-constructor/adjust", {
-        method: "POST",
-        body: JSON.stringify(req),
-      })
-        .then(newResult => renderBlendResult(newResult, blendState.origRequest))
-        .catch(() => {
-          if (btn) { btn.disabled = false; btn.textContent = "\u041f\u0435\u0440\u0435\u0441\u0442\u0440\u043e\u0438\u0442\u044c \u0441\u043c\u0435\u0441\u044c"; }
-          showUiNotice("\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043f\u0435\u0440\u0435\u0441\u0442\u0440\u043e\u0438\u0442\u044c \u0441\u043c\u0435\u0441\u044c", "error");
-        });
-    };
-    window.blendSaveCurrentBlend = async () => {
-      const btn = document.getElementById("blendSaveBtn");
-      if (btn) { btn.disabled = true; btn.textContent = "\u0421\u043e\u0445\u0440\u0430\u043d\u044f\u044e..."; }
-      const activeOils = blendState.oils
-        .filter(o => o.active)
-        .map(o => ({
-          name_ru: o.name_ru,
-          name_en: o.name_en || "",
-          drops: o.displayDrops || o.drops,
-          role: o.role,
-        }));
-      const total = activeOils.reduce((s, o) => s + o.drops, 0);
-      const body = {
-        title: result.title,
-        brief: blendState.origRequest?.brief || "",
-        tags: result.tags || [],
-        oils: activeOils,
-        total_drops: total,
-        profile: result.profile || {},
-        expert_note: result.expert_note || "",
-        application_guide: result.application_guide || "",
-        safety_status: result.safety_status || "safe",
-      };
-      try {
-        await fetchJson("/api/blend-constructor/saved", {
-          method: "POST",
-          body: JSON.stringify(body),
-        });
-        if (btn) {
-          btn.textContent = "\u2713 \u0421\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u043e";
-          btn.classList.add("is-saved");
-        }
-        showUiNotice("\u0421\u043c\u0435\u0441\u044c \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0430 \u0432 \u00ab\u041c\u043e\u0438 \u0441\u043c\u0435\u0441\u0438\u00bb", "success");
-      } catch {
-        if (btn) { btn.disabled = false; btn.textContent = "\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c \u0441\u043c\u0435\u0441\u044c"; }
-        showUiNotice("\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0441\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c \u0441\u043c\u0435\u0441\u044c", "error");
-      }
     };
     function rerender() {
       const active = blendState.oils.filter(o => o.active);
@@ -1263,109 +1206,12 @@ export function createReferencesModule(deps) {
         ${result.restrictions?.length ? `<div class="blend-restrictions">${result.restrictions.map(r => `<div class="blend-restriction-row"><span class="chip chip-bad">${escapeHtml(r.condition)}</span><span>\u0438\u0441\u043a\u043b\u044e\u0447\u0438\u0442\u044c ${(r.oils_to_exclude || []).join(", ")}</span></div>`).join("")}</div>` : ""}
       </div>
       ${result.incompatible_oils?.length ? `<section class="section section-warning"><h3>\u26a0\ufe0f \u041d\u0435 \u0434\u043e\u0431\u0430\u0432\u043b\u044f\u0442\u044c \u0432 \u044d\u0442\u0443 \u0441\u043c\u0435\u0441\u044c</h3>${result.incompatible_oils.map(o => `<div class="incompat-row"><span class="chip chip-bad">${escapeHtml(o.name_ru)}</span><span>${escapeHtml(o.reason)}</span></div>`).join("")}</section>` : ""}
-      <div class="blend-save-row">
-        <button class="secondary-button blend-save-btn" id="blendSaveBtn" type="button" onclick="blendSaveCurrentBlend()">\u2665 \u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c \u0441\u043c\u0435\u0441\u044c</button>
-      </div>
-      <section class="section section-adjust">
-        <h3>\u2726 \u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c \u0441\u0432\u043e\u0451 \u043c\u0430\u0441\u043b\u043e</h3>
-        <p class="field-help">\u0423\u043a\u0430\u0436\u0438\u0442\u0435 \u043c\u0430\u0441\u043b\u043e \u2014 \u0418\u0418 \u043f\u0435\u0440\u0435\u0441\u0442\u0440\u043e\u0438\u0442 \u0441\u043c\u0435\u0441\u044c \u0441 \u0435\u0433\u043e \u0443\u0447\u0451\u0442\u043e\u043c</p>
-        <div class="blend-adjust-row">
-          <input type="text" id="blendCustomOilInput" class="field-input" placeholder="\u041d\u0430\u043f\u0440\u0438\u043c\u0435\u0440: \u041b\u0430\u0432\u0430\u043d\u0434\u0430 \u0438\u043b\u0438 Vetiver">
-          <button class="secondary-button" id="blendAdjustBtn" type="button" onclick="blendAdjustWithOil()">\u041f\u0435\u0440\u0435\u0441\u0442\u0440\u043e\u0438\u0442\u044c \u0441\u043c\u0435\u0441\u044c</button>
-        </div>
-      </section>
       <div class="actions-grid-two">
         <button class="primary-button" onclick="openBlendConstructor()">\u2726 \u041d\u043e\u0432\u0430\u044f \u0441\u043c\u0435\u0441\u044c</button>
         <button class="secondary-button" onclick="clearSmartSearch()">\u2190 \u041a \u0431\u0430\u0437\u0435 \u0437\u043d\u0430\u043d\u0438\u0439</button>
       </div>
     </div>`;
   }
-
-  /* ── Saved Blends ── */
-
-  async function openSavedBlends() {
-    enterDetailView();
-    elements.draftDetail.innerHTML = `${renderBackButton()}${renderDetailLoader("\u0417\u0430\u0433\u0440\u0443\u0436\u0430\u044e \u043c\u043e\u0438 \u0441\u043c\u0435\u0441\u0438")}`;
-    try {
-      const data = await fetchJson("/api/blend-constructor/saved");
-      renderSavedBlendsList(data.items || []);
-    } catch {
-      elements.draftDetail.innerHTML = `${renderBackButton()}
-        <div class="detail-empty"><p>\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u0441\u043e\u0445\u0440\u0430\u043d\u0451\u043d\u043d\u044b\u0435 \u0441\u043c\u0435\u0441\u0438.</p></div>`;
-    }
-    syncMobileNavigation();
-  }
-
-  function renderSavedBlendsList(items) {
-    if (!items.length) {
-      elements.draftDetail.innerHTML = `${renderBackButton()}
-        <div class="detail-grid">
-          <p class="eyebrow">\u2665 \u041c\u041e\u0418 \u0421\u041c\u0415\u0421\u0418</p>
-          <div class="detail-empty">
-            <p>\u041f\u043e\u043a\u0430 \u043d\u0435\u0442 \u0441\u043e\u0445\u0440\u0430\u043d\u0451\u043d\u043d\u044b\u0445 \u0441\u043c\u0435\u0441\u0435\u0439.</p>
-            <p>\u0421\u043e\u0437\u0434\u0430\u0439\u0442\u0435 \u0441\u043c\u0435\u0441\u044c \u0432 \u043a\u043e\u043d\u0441\u0442\u0440\u0443\u043a\u0442\u043e\u0440\u0435 \u0438 \u043d\u0430\u0436\u043c\u0438\u0442\u0435 \u00ab\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c \u0441\u043c\u0435\u0441\u044c\u00bb.</p>
-            <button class="primary-button" onclick="openBlendConstructor()">\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043a\u043e\u043d\u0441\u0442\u0440\u0443\u043a\u0442\u043e\u0440</button>
-          </div>
-        </div>`;
-      syncMobileNavigation();
-      return;
-    }
-
-    const SAFETY_ICONS = { safe: "\u2713 \u0431\u0435\u0437\u043e\u043f\u0430\u0441\u043d\u043e", caution: "\u26a0 \u043e\u0441\u0442\u043e\u0440\u043e\u0436\u043d\u043e", warning: "\u26d4 \u043e\u0433\u0440\u0430\u043d\u0438\u0447\u0435\u043d\u0438\u044f" };
-    const SAFETY_COLORS = { safe: "var(--good)", caution: "var(--brand)", warning: "var(--bad)" };
-
-    const cardsHtml = items.map(item => `
-      <div class="saved-blend-card">
-        <div class="saved-blend-header">
-          <div>
-            <div class="saved-blend-title">${escapeHtml(item.title)}</div>
-            ${item.brief ? `<div class="saved-blend-brief">${escapeHtml(item.brief)}</div>` : ""}
-          </div>
-          <button class="saved-blend-delete" type="button"
-            onclick="deleteSavedBlend('${item.saved_id}', this)" title="\u0423\u0434\u0430\u043b\u0438\u0442\u044c">\u2715</button>
-        </div>
-        <div class="saved-blend-oils">
-          ${(item.oils || []).map(o =>
-            `<span class="saved-blend-oil">${escapeHtml(o.name_ru)} <strong>${o.drops} \u043a\u0430\u043f.</strong></span>`
-          ).join("")}
-        </div>
-        <div class="saved-blend-footer">
-          <span class="saved-blend-drops">${item.total_drops} \u043a\u0430\u043f. \u00b7 10 \u043c\u043b \u0431\u0430\u0437\u044b</span>
-          <span style="color:${SAFETY_COLORS[item.safety_status] || SAFETY_COLORS.safe}; font-size:11px; font-weight:600">
-            ${SAFETY_ICONS[item.safety_status] || SAFETY_ICONS.safe}
-          </span>
-        </div>
-        ${item.expert_note ? `<p class="saved-blend-note">${escapeHtml(item.expert_note)}</p>` : ""}
-        ${item.application_guide ? `<p class="saved-blend-application"><strong>\u041a\u0430\u043a \u043f\u0440\u0438\u043c\u0435\u043d\u044f\u0442\u044c:</strong> ${escapeHtml(item.application_guide)}</p>` : ""}
-      </div>
-    `).join("");
-
-    elements.draftDetail.innerHTML = `${renderBackButton()}
-      <div class="detail-grid">
-        <p class="eyebrow">\u2665 \u041c\u041e\u0418 \u0421\u041c\u0415\u0421\u0418</p>
-        <h2 class="detail-title">\u0421\u043e\u0445\u0440\u0430\u043d\u0451\u043d\u043d\u044b\u0435 \u0441\u043c\u0435\u0441\u0438</h2>
-        <div class="saved-blends-list">${cardsHtml}</div>
-        <div class="actions-row" style="margin-top:8px">
-          <button class="primary-button" onclick="openBlendConstructor()">\u2726 \u041d\u043e\u0432\u0430\u044f \u0441\u043c\u0435\u0441\u044c</button>
-        </div>
-      </div>`;
-    syncMobileNavigation();
-  }
-
-  window.deleteSavedBlend = async (savedId, btn) => {
-    btn.disabled = true;
-    btn.textContent = "...";
-    try {
-      await fetchJson(`/api/blend-constructor/saved/${savedId}`, { method: "DELETE" });
-      showUiNotice("\u0421\u043c\u0435\u0441\u044c \u0443\u0434\u0430\u043b\u0435\u043d\u0430", "success");
-      const data = await fetchJson("/api/blend-constructor/saved");
-      renderSavedBlendsList(data.items || []);
-    } catch {
-      btn.disabled = false;
-      btn.textContent = "\u2715";
-      showUiNotice("\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0443\u0434\u0430\u043b\u0438\u0442\u044c", "error");
-    }
-  };
 
   function renderReferencesLocked() {
     const meta = currentHandbookMeta();
