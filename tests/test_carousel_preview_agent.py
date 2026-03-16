@@ -46,10 +46,8 @@ class TestAnalyzeTextPlacement:
         img = _make_test_image()
         placement = {"top": 0.6, "left": 0.1, "width": 0.8, "height": 0.25, "text_color": "light"}
 
-        mock_client = MagicMock()
-        mock_client.messages.create.return_value = _mock_vision_response(placement)
-        with patch(f"{_MOD}.anthropic") as mock_mod:
-            mock_mod.Anthropic.return_value = mock_client
+        import json as _json
+        with patch("bot.services.claude_client.call_claude", return_value=_json.dumps(placement)):
             result = analyze_text_placement(img, 0)
 
         assert isinstance(result, dict)
@@ -62,10 +60,8 @@ class TestAnalyzeTextPlacement:
         img = _make_test_image()
         placement = {"top": 1.5, "left": -0.2, "width": 0.8, "height": 0.3, "text_color": "dark"}
 
-        mock_client = MagicMock()
-        mock_client.messages.create.return_value = _mock_vision_response(placement)
-        with patch(f"{_MOD}.anthropic") as mock_mod:
-            mock_mod.Anthropic.return_value = mock_client
+        import json as _json
+        with patch("bot.services.claude_client.call_claude", return_value=_json.dumps(placement)):
             result = analyze_text_placement(img, 1)
 
         assert result["top"] == 1.0
@@ -76,10 +72,8 @@ class TestAnalyzeTextPlacement:
         placement = {"top": 0.5, "left": 0.1, "width": 0.8, "height": 0.25, "text_color": "light"}
         bias = {"top": -0.1, "left": 0.05}
 
-        mock_client = MagicMock()
-        mock_client.messages.create.return_value = _mock_vision_response(placement)
-        with patch(f"{_MOD}.anthropic") as mock_mod:
-            mock_mod.Anthropic.return_value = mock_client
+        import json as _json
+        with patch("bot.services.claude_client.call_claude", return_value=_json.dumps(placement)):
             result = analyze_text_placement(img, 0, bias=bias)
 
         assert abs(result["top"] - 0.4) < 0.001
@@ -88,8 +82,7 @@ class TestAnalyzeTextPlacement:
     def test_fallback_on_error(self):
         img = _make_test_image()
 
-        with patch(f"{_MOD}.anthropic") as mock_mod:
-            mock_mod.Anthropic.side_effect = Exception("API error")
+        with patch("bot.services.claude_client.call_claude", side_effect=Exception("API error")):
             result = analyze_text_placement(img, 0)
 
         assert result["source"] == "heuristic"
@@ -100,14 +93,7 @@ class TestAnalyzeTextPlacement:
     def test_fallback_on_invalid_json(self):
         img = _make_test_image()
 
-        mock_client = MagicMock()
-        resp = MagicMock()
-        content = MagicMock()
-        content.text = "not json at all"
-        resp.content = [content]
-        mock_client.messages.create.return_value = resp
-        with patch(f"{_MOD}.anthropic") as mock_mod:
-            mock_mod.Anthropic.return_value = mock_client
+        with patch("bot.services.claude_client.call_claude", return_value="not json at all"):
             result = analyze_text_placement(img, 2)
 
         assert result["source"] == "heuristic"
@@ -115,8 +101,7 @@ class TestAnalyzeTextPlacement:
     def test_role_assignment(self):
         img = _make_test_image()
         for i, role in enumerate(SLIDE_ROLES):
-            with patch(f"{_MOD}.anthropic") as mock_mod:
-                mock_mod.Anthropic.side_effect = Exception("skip")
+            with patch("bot.services.claude_client.call_claude", side_effect=Exception("skip")):
                 result = analyze_text_placement(img, i)
             assert result["role"] == role
 

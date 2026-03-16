@@ -406,25 +406,16 @@ class TestGenerateSlideImagePrompts:
 
     def test_prompt_includes_forbidden_visual_motifs(self, monkeypatch):
         import bot.handlers.carousel as c
-        import anthropic as _anthropic
+        from unittest.mock import patch as _patch
 
         captured: dict[str, str] = {}
 
-        class _FakeClient:
-            def __init__(self, **kw):
-                pass
+        def _fake_call_claude(*, messages, max_tokens, context="", **kw):
+            captured["prompt"] = messages[0]["content"]
+            return "IMG1: one\nIMG2: two\nIMG3: three\nIMG4: four\nIMG5: five\nIMG6: six"
 
-            class messages:
-                @staticmethod
-                def create(*a, **kw):
-                    captured["prompt"] = kw["messages"][0]["content"]
-                    class _R:
-                        content = [type("c", (), {"text": "IMG1: one\nIMG2: two\nIMG3: three\nIMG4: four\nIMG5: five\nIMG6: six"})()]
-                    return _R()
-
-        monkeypatch.setattr(c, "settings", type("s", (), {"anthropic_api_key": "x"})())
-        monkeypatch.setattr(_anthropic, "Anthropic", lambda **kw: _FakeClient())
-        c._generate_slide_image_prompts_sync(self._SLIDES_6, "тема")
+        with _patch("bot.services.claude_client.call_claude", side_effect=_fake_call_claude):
+            c._generate_slide_image_prompts_sync(self._SLIDES_6, "тема")
         lowered = captured["prompt"].lower()
         assert "also forbidden everywhere" in lowered
         assert "hands joined together" in lowered
