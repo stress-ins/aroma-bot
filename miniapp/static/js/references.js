@@ -51,6 +51,7 @@ export function createReferencesModule(deps) {
     tagMarkup,
     stripMarkdown,
     toSentenceCase,
+    showUiNotice,
     SOURCE_TYPE_ICONS,
     SYMPTOM_CATEGORY_ICONS,
     SYMPTOM_PARENT_GROUP_ICONS,
@@ -59,6 +60,10 @@ export function createReferencesModule(deps) {
     PRACTICE_TYPE_ICONS,
     PRACTICE_RU_LABELS,
   } = deps;
+
+  /* ── Smart Search state ── */
+  const _searchCache = {};
+  let _smartSearchDebounce = null;
 
   function currentHandbookMeta() {
     return HANDBOOK_CATEGORY_META[state.tab] || HANDBOOK_CATEGORY_META.aromas;
@@ -229,6 +234,10 @@ export function createReferencesModule(deps) {
     const seen = new Set();
     const chips = pairs.map(({ slug, name, meta }) => {
       if (!name) return "";
+      const trimmed = name.trim();
+      if (trimmed.length < 3 || trimmed.length > 50) return "";
+      if (/^(который|которая|которое|которые|где|что|как|при|для|и|в|с|на|по|действует|гормон)/i.test(trimmed)) return "";
+      if (/действует|гормон|надпочечник|коры\b/i.test(trimmed)) return "";
       const key = slug || name;
       if (seen.has(key)) return "";
       seen.add(key);
@@ -421,7 +430,8 @@ export function createReferencesModule(deps) {
       eyebrowLabel = `${cardCategoryIcon(reference)}<span>${escapeHtml(currentHandbookMeta().title)} · учебный модуль</span>`;
     } else if (state.tab === "symptoms") {
       const eyebrowText = toSentenceCase(String(reference.parent_group || reference.category_group || currentHandbookMeta().title));
-      eyebrowLabel = `${cardCategoryIcon(reference)}<span>${escapeHtml(eyebrowText)}</span>`;
+      const groupIcon = SYMPTOM_PARENT_GROUP_ICONS[String(reference.parent_group || "").toUpperCase()] || "🩺";
+      eyebrowLabel = `${groupIcon}<span>${escapeHtml(eyebrowText)}</span>`;
     } else {
       eyebrowLabel = `${cardCategoryIcon(reference)}<span>${escapeHtml(currentHandbookMeta().title)}</span>`;
     }
@@ -450,8 +460,8 @@ export function createReferencesModule(deps) {
       const parts = [reference.name_en, effectiveKeyline].filter(Boolean);
       subtitle = parts.join(" · ");
     } else if (state.tab === "symptoms") {
-      // Category group: "Нарушения сна"
-      subtitle = keyline || "";
+      // Eyebrow already shows parent_group — skip duplicate keyline
+      subtitle = "";
     } else if (state.tab === "practices" || state.tab === "concepts") {
       // Type label: "Медитация" / "Чакра"
       subtitle = conceptTypeMeta(reference.source_type).label;
@@ -638,6 +648,7 @@ export function createReferencesModule(deps) {
     let listContainer = document.getElementById("referenceListContainer");
     if (!listContainer) {
       elements.draftList.innerHTML = `
+        ${renderSmartSearchHero()}
         <div id="referenceFilterChips"></div>
         <div class="aroma-search">
           <label>${escapeHtml(meta.searchLabel)}<input id="referenceSearchInput" type="search" placeholder="${escapeHtml(meta.searchPlaceholder)}" value="${escapeHtml(state.referenceSearch)}" /></label>
@@ -846,6 +857,265 @@ export function createReferencesModule(deps) {
     syncMobileNavigation();
   }
 
+  /* ── Smart Search ── */
+
+  function renderSmartSearchHero() {
+    return `
+      <div class="smart-search-hero">
+        <div class="smart-search-bar" id="smartSearchBar">
+          <span class="smart-search-icon">\u2315</span>
+          <input type="text" class="smart-search-input" id="smartSearchInput"
+            placeholder="\u0420\u0430\u0441\u0441\u043b\u0430\u0431\u043b\u0435\u043d\u0438\u0435, \u0442\u0432\u043e\u0440\u0447\u0435\u0441\u0442\u0432\u043e, \u043d\u0430\u0441\u043c\u043e\u0440\u043a, \u0441\u0442\u0440\u0435\u0441\u0441..."
+            oninput="handleSmartSearch(this.value)"
+            onkeydown="if(event.key==='Enter') runSmartSearch(this.value)">
+          <button class="smart-search-clear" id="smartSearchClear" onclick="clearSmartSearch()" hidden>\u2715</button>
+        </div>
+        <div class="smart-search-tags" id="smartSearchTags">
+          <button class="search-tag" onclick="runSmartSearch('\u0440\u0430\u0441\u0441\u043b\u0430\u0431\u043b\u0435\u043d\u0438\u0435')">\ud83d\udca4 \u0441\u043e\u043d</button>
+          <button class="search-tag" onclick="runSmartSearch('\u0442\u0432\u043e\u0440\u0447\u0435\u0441\u0442\u0432\u043e')">\u2726 \u0442\u0432\u043e\u0440\u0447\u0435\u0441\u0442\u0432\u043e</button>
+          <button class="search-tag" onclick="runSmartSearch('\u0441\u0442\u0440\u0435\u0441\u0441')">\ud83d\ude24 \u0441\u0442\u0440\u0435\u0441\u0441</button>
+          <button class="search-tag" onclick="runSmartSearch('\u0432\u043e\u0441\u043f\u0430\u043b\u0435\u043d\u0438\u0435')">\ud83d\udd25 \u0432\u043e\u0441\u043f\u0430\u043b\u0435\u043d\u0438\u0435</button>
+          <button class="search-tag" onclick="runSmartSearch('\u043a\u043e\u043d\u0446\u0435\u043d\u0442\u0440\u0430\u0446\u0438\u044f')">\ud83e\udde0 \u0444\u043e\u043a\u0443\u0441</button>
+        </div>
+        <button class="blend-constructor-cta" onclick="openBlendConstructor()">\ud83e\uddea \u0421\u043e\u0437\u0434\u0430\u0442\u044c \u0441\u043c\u0435\u0441\u044c \u043f\u043e\u0434 \u0437\u0430\u0434\u0430\u0447\u0443</button>
+      </div>`;
+  }
+
+  async function loadAllReferencesForSearch() {
+    const tabs = ["aromas", "blends", "symptoms"];
+    const promises = tabs.filter(t => !_searchCache[t]).map(async (tabId) => {
+      const meta = HANDBOOK_CATEGORY_META[tabId];
+      if (!meta) return;
+      try {
+        const data = await fetchJson(`/api/references/${meta.category}`);
+        _searchCache[tabId] = (data.items || []).map(i => ({...i, _type: tabId.replace(/s$/, "")}));
+      } catch { _searchCache[tabId] = []; }
+    });
+    await Promise.all(promises);
+  }
+
+  function handleSmartSearch(value) {
+    clearTimeout(_smartSearchDebounce);
+    const clearBtn = document.getElementById("smartSearchClear");
+    if (clearBtn) clearBtn.hidden = !value.trim();
+    _smartSearchDebounce = setTimeout(() => {
+      if (value.trim().length >= 2) runSmartSearch(value);
+      else if (!value.trim()) clearSmartSearch();
+    }, 300);
+  }
+
+  async function runSmartSearch(query) {
+    if (!query.trim()) { clearSmartSearch(); return; }
+    const input = document.getElementById("smartSearchInput");
+    if (input && input.value !== query) input.value = query;
+    const clearBtn = document.getElementById("smartSearchClear");
+    if (clearBtn) clearBtn.hidden = false;
+
+    await loadAllReferencesForSearch();
+    const q = query.toLowerCase();
+    const allItems = [
+      ...(_searchCache.aromas || []),
+      ...(_searchCache.blends || []),
+      ...(_searchCache.symptoms || []),
+    ];
+    const scored = allItems.map(item => {
+      let score = 0;
+      const fields = [
+        item.name, item.name_en, item.name_ru,
+        item.description, item.description_short,
+        item.therapeutic_properties, item.indications,
+        item.key_theme, item.conditions_for_use,
+        ...(item.alt_names || []),
+      ].filter(Boolean).map(f => String(f).toLowerCase());
+      fields.forEach(f => {
+        if (f === q) score += 10;
+        else if (f.startsWith(q)) score += 7;
+        else if (f.includes(q)) score += 3;
+      });
+      return {...item, _score: score};
+    }).filter(i => i._score > 0).sort((a, b) => b._score - a._score);
+    renderSearchResults(scored, query);
+  }
+
+  function renderSearchResults(items, query) {
+    const listContainer = document.getElementById("referenceListContainer");
+    if (!listContainer) return;
+    const filterChipsEl = document.getElementById("referenceFilterChips");
+    if (filterChipsEl) filterChipsEl.innerHTML = "";
+    elements.draftCount.textContent = `${items.length} \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442\u043e\u0432 \u043f\u043e \u0437\u0430\u043f\u0440\u043e\u0441\u0443 \u00ab${query}\u00bb`;
+    if (items.length === 0) {
+      listContainer.innerHTML = `<div class="search-empty"><p>\u041d\u0438\u0447\u0435\u0433\u043e \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d\u043e.</p>
+        <button class="blend-constructor-cta" onclick="openBlendConstructor('${escapeHtml(query)}')">\ud83e\uddea \u0421\u043e\u0437\u0434\u0430\u0442\u044c \u0441\u043c\u0435\u0441\u044c \u043f\u043e\u0434 \u044d\u0442\u0443 \u0437\u0430\u0434\u0430\u0447\u0443 \u2197</button></div>`;
+      return;
+    }
+    listContainer.innerHTML = `<div class="search-results-header">${items.length} \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442\u043e\u0432</div>${items.slice(0, 50).map(item => renderSearchResultCard(item)).join("")}`;
+  }
+
+  function renderSearchResultCard(item) {
+    const typeLabels = {aroma: "\u043c\u0430\u0441\u043b\u043e", blend: "\u0441\u043c\u0435\u0441\u044c", symptom: "\u0441\u0438\u043c\u043f\u0442\u043e\u043c"};
+    const typeIcons = {aroma: "\ud83c\udf3f", blend: "\ud83e\uddea", symptom: "\ud83e\ude7a"};
+    const typeLabel = typeLabels[item._type] || item._type;
+    const typeIcon = typeIcons[item._type] || "";
+    const tabId = item._type + "s";
+    const name = item.name_ru || item.name || "";
+    return `<article ${interactiveCardAttrs("\u041e\u0442\u043a\u0440\u044b\u0442\u044c " + name)} class="draft-card overview-card interactive-card"
+      onclick='openReference(${JSON.stringify(item.slug)}, ${JSON.stringify(tabId)})'>
+      <div class="overview-card-top"><span class="search-type-badge">${typeIcon} ${escapeHtml(typeLabel)}</span></div>
+      <h3 class="draft-topic">${escapeHtml(name)}</h3>
+      ${item.name_en ? `<div class="reference-name-en">${escapeHtml(item.name_en)}</div>` : ""}
+      <div class="draft-preview">${escapeHtml(stripMarkdown(item.description_short || item.description || item.indications || "").slice(0, 100))}...</div>
+    </article>`;
+  }
+
+  function clearSmartSearch() {
+    const input = document.getElementById("smartSearchInput");
+    if (input) input.value = "";
+    const clearBtn = document.getElementById("smartSearchClear");
+    if (clearBtn) clearBtn.hidden = true;
+    renderReferences();
+  }
+
+  /* ── Blend Constructor ── */
+
+  function openBlendConstructor(prefill = "") {
+    enterDetailView();
+    const effects = ["\u043a\u043e\u043d\u0446\u0435\u043d\u0442\u0440\u0430\u0446\u0438\u044f","\u0442\u0432\u043e\u0440\u0447\u0435\u0441\u0442\u0432\u043e","\u0440\u0430\u0441\u0441\u043b\u0430\u0431\u043b\u0435\u043d\u0438\u0435","\u044d\u043d\u0435\u0440\u0433\u0438\u044f","\u0441\u043e\u043d","\u0431\u0430\u043b\u0430\u043d\u0441","\u0437\u0430\u0449\u0438\u0442\u0430"];
+    const speeds = [["\u0431\u044b\u0441\u0442\u0440\u043e\u0435","fast"],["\u0441\u0440\u0435\u0434\u043d\u0435\u0435","medium"],["\u043f\u0440\u043e\u043b\u043e\u043d\u0433\u0438\u0440\u043e\u0432\u0430\u043d\u043d\u043e\u0435","extended"]];
+    const apps = [["\ud83d\udca8 \u0414\u0438\u0444\u0444\u0443\u0437\u043e\u0440","diffuser"],["\ud83e\udd32 \u041d\u0430\u043d\u0435\u0441\u0435\u043d\u0438\u0435","topical"],["\ud83d\udc8a \u0412\u043d\u0443\u0442\u0440\u044c","internal"]];
+    elements.draftDetail.innerHTML = `<div class="detail-grid">
+      ${renderBackButton()}
+      <p class="eyebrow">\ud83e\uddea \u041a\u041e\u041d\u0421\u0422\u0420\u0423\u041a\u0422\u041e\u0420 \u0421\u041c\u0415\u0421\u0418</p>
+      <h2 class="detail-title">\u041e\u043f\u0438\u0448\u0438\u0442\u0435 \u0437\u0430\u0434\u0430\u0447\u0443</h2>
+      <section class="section"><label class="field-label">\u0427\u0442\u043e \u043d\u0443\u0436\u043d\u043e \u043e\u0442 \u0441\u043c\u0435\u0441\u0438?
+        <textarea id="blendBrief" class="field-textarea" placeholder="\u041d\u0430\u043f\u0440\u0438\u043c\u0435\u0440: \u0441\u043c\u0435\u0441\u044c \u0434\u043b\u044f \u043a\u043e\u043d\u0446\u0435\u043d\u0442\u0440\u0430\u0446\u0438\u0438 \u0438 \u0442\u0432\u043e\u0440\u0447\u0435\u0441\u0442\u0432\u0430" oninput="updateConstructBtn()">${escapeHtml(prefill)}</textarea>
+      </label></section>
+      <section class="section"><h3>\u0416\u0435\u043b\u0430\u0435\u043c\u044b\u0439 \u044d\u0444\u0444\u0435\u043a\u0442</h3>
+        <div class="chip-list">${effects.map(e => `<button class="chip chip-selectable" data-effect="${e}" onclick="toggleEffect(this)">${e}</button>`).join("")}</div>
+      </section>
+      <section class="section"><h3>\u0421\u043a\u043e\u0440\u043e\u0441\u0442\u044c \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044f</h3>
+        <div class="radio-row">${speeds.map(([l,v]) => `<button class="chip chip-selectable ${v==="medium"?"is-selected":""}" data-speed="${v}" onclick="selectSpeed(this)">${l}</button>`).join("")}</div>
+      </section>
+      <section class="section"><h3>\u0421\u043f\u043e\u0441\u043e\u0431 \u043f\u0440\u0438\u043c\u0435\u043d\u0435\u043d\u0438\u044f</h3>
+        <div class="radio-row">${apps.map(([l,v]) => `<button class="chip chip-selectable ${v==="diffuser"?"is-selected":""}" data-app="${v}" onclick="selectApp(this)">${l}</button>`).join("")}</div>
+      </section>
+      <section class="section"><label class="field-label">\u041f\u0440\u043e\u0442\u0438\u0432\u043e\u043f\u043e\u043a\u0430\u0437\u0430\u043d\u0438\u044f (\u043d\u0435\u043e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u043e)
+        <input type="text" id="blendContra" placeholder="\u0411\u0435\u0440\u0435\u043c\u0435\u043d\u043d\u043e\u0441\u0442\u044c, \u0430\u043b\u043b\u0435\u0440\u0433\u0438\u044f, \u0434\u0435\u0442\u0438..." class="field-input">
+      </label></section>
+      <button class="primary-button" id="constructBtn" onclick="submitBlendConstructor(this)" ${!prefill ? "disabled" : ""}>\u2726 \u041f\u043e\u0434\u043e\u0431\u0440\u0430\u0442\u044c \u0441\u043c\u0435\u0441\u044c</button>
+    </div>`;
+  }
+
+  function toggleEffect(btn) { btn.classList.toggle("is-selected"); }
+  function selectSpeed(btn) { btn.closest(".radio-row").querySelectorAll(".chip-selectable").forEach(c => c.classList.remove("is-selected")); btn.classList.add("is-selected"); }
+  function selectApp(btn) { btn.closest(".radio-row").querySelectorAll(".chip-selectable").forEach(c => c.classList.remove("is-selected")); btn.classList.add("is-selected"); }
+  function updateConstructBtn() { const btn = document.getElementById("constructBtn"); const brief = document.getElementById("blendBrief"); if (btn && brief) btn.disabled = !brief.value.trim(); }
+
+  function submitBlendConstructor(btn) {
+    const brief = document.getElementById("blendBrief")?.value.trim();
+    if (!brief) return;
+    const effects = [...document.querySelectorAll(".chip-selectable.is-selected[data-effect]")].map(c => c.dataset.effect);
+    const speed = document.querySelector("[data-speed].is-selected")?.dataset.speed || "medium";
+    const application = document.querySelector("[data-app].is-selected")?.dataset.app || "diffuser";
+    const contraindications = document.getElementById("blendContra")?.value.trim() || "";
+    btn.disabled = true;
+    btn.textContent = "\u0413\u0435\u043d\u0435\u0440\u0438\u0440\u0443\u044e \u0441\u043c\u0435\u0441\u044c...";
+    fetchJson("/api/blend-constructor/construct", {
+      method: "POST",
+      body: JSON.stringify({brief, effects, speed, application, contraindications}),
+    }).then(result => renderBlendResult(result)).catch(() => {
+      btn.disabled = false;
+      btn.textContent = "\u2726 \u041f\u043e\u0434\u043e\u0431\u0440\u0430\u0442\u044c \u0441\u043c\u0435\u0441\u044c";
+      showUiNotice("\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0441\u0433\u0435\u043d\u0435\u0440\u0438\u0440\u043e\u0432\u0430\u0442\u044c \u0441\u043c\u0435\u0441\u044c.", "error");
+    });
+  }
+
+  /* ── Blend Result ── */
+
+  function renderBlendResult(result) {
+    const blendState = { oils: result.oils.map(o => ({...o, active: true, _origDrops: o.drops})), result };
+    function recalcDrops() {
+      const active = blendState.oils.filter(o => o.active);
+      if (!active.length) return;
+      const sum = active.reduce((s, o) => s + o.drops, 0);
+      const target = result.total_drops;
+      const scale = target / sum;
+      active.forEach(o => { o.displayDrops = Math.max(1, Math.round(o.drops * scale)); });
+      const tot = active.reduce((s, o) => s + (o.displayDrops || o.drops), 0);
+      const diff = target - tot;
+      if (diff !== 0) active[0].displayDrops = (active[0].displayDrops || active[0].drops) + diff;
+    }
+    function renderOils() {
+      return blendState.oils.map(o => {
+        const d = o.displayDrops || o.drops;
+        const changed = o.active && d !== o._origDrops;
+        const id = o.db_id || o.name_ru;
+        return `<div class="oil-edit-row ${o.active ? "" : "is-removed"}">
+          <button class="oil-edit-toggle ${o.active ? "is-on" : "is-off"}" onclick="blendToggleOil('${escapeHtml(id)}')">${o.active ? "\u2713" : "\u2715"}</button>
+          <span class="oil-edit-name">${escapeHtml(o.name_ru)}</span>
+          <span class="oil-edit-drops ${changed ? "is-recalculated" : ""}">${o.active ? d + " \u043a\u0430\u043f." : "\u2014"}</span>
+          <span class="oil-edit-role">${escapeHtml(o.role)}</span>
+        </div>`;
+      }).join("");
+    }
+    function renderProfileBars(p) {
+      return [["\u041a\u043e\u043d\u0446\u0435\u043d\u0442\u0440\u0430\u0446\u0438\u044f","focus"],["\u0422\u0432\u043e\u0440\u0447\u0435\u0441\u0442\u0432\u043e","creativity"],["\u042d\u043d\u0435\u0440\u0433\u0438\u044f","energy"],["\u0421\u043f\u043e\u043a\u043e\u0439\u0441\u0442\u0432\u0438\u0435","calm"]]
+        .filter(([, k]) => (p[k] || 0) > 0)
+        .map(([lbl, k]) => `<div class="profile-bar-row"><div class="profile-bar-label"><span>${lbl}</span><span>${p[k]}%</span></div><div class="profile-bar"><div class="profile-bar-fill" style="width:${p[k]}%"></div></div></div>`).join("");
+    }
+    window.blendToggleOil = (oilId) => {
+      const oil = blendState.oils.find(o => (o.db_id || o.name_ru) === oilId);
+      if (!oil) return;
+      if (oil.active && blendState.oils.filter(o => o.active).length <= 1) return;
+      oil.active = !oil.active;
+      recalcDrops();
+      rerender();
+    };
+    function rerender() {
+      const active = blendState.oils.filter(o => o.active);
+      const total = active.reduce((s, o) => s + (o.displayDrops || o.drops), 0);
+      const el = (id) => document.getElementById(id);
+      if (el("blendOilsList")) el("blendOilsList").innerHTML = renderOils();
+      if (el("blendTotalDrops")) el("blendTotalDrops").textContent = total;
+      if (el("blendTotalLabel")) el("blendTotalLabel").textContent = `${total} \u043a\u0430\u043f. \u00b7 10 \u043c\u043b \u0431\u0430\u0437\u044b`;
+      if (el("blendProfileBars")) el("blendProfileBars").innerHTML = renderProfileBars(result.profile);
+      const warn = el("blendWarn");
+      if (warn) { warn.hidden = active.length > 1; if (active.length === 1) warn.textContent = "\u041e\u0441\u0442\u0430\u043b\u043e\u0441\u044c \u043e\u0434\u043d\u043e \u043c\u0430\u0441\u043b\u043e \u2014 \u0441\u0438\u043d\u0435\u0440\u0433\u0438\u044f \u043f\u043e\u0442\u0435\u0440\u044f\u043d\u0430."; }
+    }
+    recalcDrops();
+    const p = result.profile || {};
+    const totalDrops = blendState.oils.filter(o => o.active).reduce((s, o) => s + (o.displayDrops || o.drops), 0);
+    const safetyColor = {safe: "var(--good)", caution: "var(--brand)", warning: "var(--bad)"}[result.safety_status] || "var(--good)";
+    const safetyLabel = {safe: "\u2713 \u0431\u0435\u0437\u043e\u043f\u0430\u0441\u043d\u043e", caution: "\u26a0 \u043e\u0441\u0442\u043e\u0440\u043e\u0436\u043d\u043e", warning: "\u26d4 \u043e\u0433\u0440\u0430\u043d\u0438\u0447\u0435\u043d\u0438\u044f"}[result.safety_status] || "\u2713 \u0431\u0435\u0437\u043e\u043f\u0430\u0441\u043d\u043e";
+    elements.draftDetail.innerHTML = `<div class="detail-grid">
+      ${renderBackButton()}
+      <p class="eyebrow">\ud83e\uddea \u041a\u041e\u041d\u0421\u0422\u0420\u0423\u041a\u0422\u041e\u0420 \u0421\u041c\u0415\u0421\u0418</p>
+      <h2 class="detail-title">${escapeHtml(result.title)}</h2>
+      <div class="draft-meta">${(result.tags || []).map(t => tagMarkup(t, "brand")).join("")}</div>
+      <section class="section">
+        <h3>\ud83d\udccb \u0420\u0435\u0446\u0435\u043f\u0442 \u00b7 <span id="blendTotalDrops">${totalDrops}</span> \u043a\u0430\u043f. <span class="section-hint">\u043d\u0430\u0436\u043c\u0438\u0442\u0435 \u2713 \u0447\u0442\u043e\u0431\u044b \u0443\u0431\u0440\u0430\u0442\u044c \u043c\u0430\u0441\u043b\u043e</span></h3>
+        <div id="blendOilsList">${renderOils()}</div>
+        <div class="blend-total-row"><span>\u0418\u0442\u043e\u0433\u043e:</span><span id="blendTotalLabel">${totalDrops} \u043a\u0430\u043f. \u00b7 10 \u043c\u043b \u0431\u0430\u0437\u044b</span></div>
+      </section>
+      <div class="field-help blend-warn" id="blendWarn" hidden></div>
+      <section class="section"><h3>\u041f\u0440\u043e\u0444\u0438\u043b\u044c \u0441\u043c\u0435\u0441\u0438</h3><div id="blendProfileBars">${renderProfileBars(p)}</div></section>
+      <div class="blend-expert-card blend-expert-aroma">
+        <div class="blend-expert-header"><span class="blend-expert-icon">\ud83c\udf3f</span><div><div class="blend-expert-name">\u042d\u043a\u0441\u043f\u0435\u0440\u0442-\u0430\u0440\u043e\u043c\u0430\u0442\u0435\u0440\u0430\u043f\u0435\u0432\u0442</div><div class="blend-expert-sub">\u0421\u0438\u043d\u0435\u0440\u0433\u0438\u044f \u043c\u0430\u0441\u0435\u043b</div></div></div>
+        <p class="blend-expert-text">${escapeHtml(result.expert_note)}</p>
+        ${result.application_guide ? `<div class="blend-application"><span class="blend-application-label">\u041a\u0430\u043a \u043f\u0440\u0438\u043c\u0435\u043d\u044f\u0442\u044c:</span> ${escapeHtml(result.application_guide)}</div>` : ""}
+      </div>
+      <div class="blend-expert-card blend-expert-doctor">
+        <div class="blend-expert-header"><span class="blend-expert-icon">\u2695\ufe0f</span><div><div class="blend-expert-name">\u041c\u0435\u0434\u0438\u0446\u0438\u043d\u0441\u043a\u0430\u044f \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0430</div></div><span class="blend-safety-badge" style="color:${safetyColor}">${safetyLabel}</span></div>
+        <p class="blend-expert-text">${escapeHtml(result.doctor_note)}</p>
+        ${result.restrictions?.length ? `<div class="blend-restrictions">${result.restrictions.map(r => `<div class="blend-restriction-row"><span class="chip chip-bad">${escapeHtml(r.condition)}</span><span>\u0438\u0441\u043a\u043b\u044e\u0447\u0438\u0442\u044c ${(r.oils_to_exclude || []).join(", ")}</span></div>`).join("")}</div>` : ""}
+      </div>
+      ${result.incompatible_oils?.length ? `<section class="section section-warning"><h3>\u26a0\ufe0f \u041d\u0435 \u0434\u043e\u0431\u0430\u0432\u043b\u044f\u0442\u044c \u0432 \u044d\u0442\u0443 \u0441\u043c\u0435\u0441\u044c</h3>${result.incompatible_oils.map(o => `<div class="incompat-row"><span class="chip chip-bad">${escapeHtml(o.name_ru)}</span><span>${escapeHtml(o.reason)}</span></div>`).join("")}</section>` : ""}
+      <div class="actions-grid-two">
+        <button class="primary-button" onclick="openBlendConstructor()">\u2726 \u041d\u043e\u0432\u0430\u044f \u0441\u043c\u0435\u0441\u044c</button>
+        <button class="secondary-button" onclick="clearSmartSearch()">\u2190 \u041a \u0431\u0430\u0437\u0435 \u0437\u043d\u0430\u043d\u0438\u0439</button>
+      </div>
+    </div>`;
+  }
+
   function renderReferencesLocked() {
     const meta = currentHandbookMeta();
     elements.listTitle.textContent = meta.title;
@@ -911,5 +1181,14 @@ export function createReferencesModule(deps) {
     openAroma,
     renderAromas,
     renderAromasLocked,
+    handleSmartSearch,
+    runSmartSearch,
+    clearSmartSearch,
+    openBlendConstructor,
+    toggleEffect,
+    selectSpeed,
+    selectApp,
+    updateConstructBtn,
+    submitBlendConstructor,
   };
 }
