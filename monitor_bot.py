@@ -6,6 +6,7 @@ Commands (owner only):
   /logs     — last 30 lines of aroma-bot journal
   /errors   — last 5 WARNING/ERROR lines from aroma-bot journal
   /restart  — restart aroma-bot
+  /costs    — API cost stats (today/week/date)
 """
 from __future__ import annotations
 
@@ -16,8 +17,10 @@ import subprocess
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
-MONITOR_BOT_TOKEN = "211516795:AAHqQ5UwsgM9SYngGBNAWF5UPUhsN9SHoFs"
-OWNER_CHAT_ID = 62912125
+from config import settings
+
+MONITOR_BOT_TOKEN = settings.monitor_bot_token
+OWNER_CHAT_ID = settings.admin_telegram_id
 
 SERVICES = [
     ("aroma-bot",       "🤖 Aroma Bot"),
@@ -63,6 +66,7 @@ async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         "/logs [N] — последние N строк логов aroma-bot (по умолч. 30)\n"
         "/errors — последние 5 WARNING/ERROR из aroma-bot\n"
         "/restart — перезапустить aroma-bot\n"
+        "/costs [today|week|YYYY-MM-DD] — расходы API\n"
     )
     await update.message.reply_text(text, parse_mode="HTML")
 
@@ -150,6 +154,55 @@ async def cmd_restart(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     )
 
 
+@_owner_only
+async def cmd_costs(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    from bot.services.cost_report import build_html_report, build_telegram_text
+    from bot.services.cost_stats_store import (
+        date_range_last7,
+        date_range_today,
+        get_cost_stats,
+    )
+
+    args = context.args or []
+    arg = args[0].lower() if args else "today"
+
+    if arg == "today":
+        since, until = date_range_today()
+        label = f"за {since}"
+    elif arg == "week":
+        since, until = date_range_last7()
+        label = f"за 7 дней ({since} — {until})"
+    else:
+        since = until = arg
+        label = f"за {since}"
+
+    await update.message.reply_text("⏳ Считаю расходы...")
+
+    try:
+        stats = await get_cost_stats(since, until)
+    except Exception as exc:
+        await update.message.reply_text(f"❌ Ошибка: {exc}")
+        return
+
+    text = build_telegram_text(stats, label)
+
+    if len(text) <= 3800:
+        await update.message.reply_text(text, parse_mode="HTML")
+    else:
+        import io
+
+        summary = "\n".join(text.split("\n")[:12]) + "\n\n📎 <i>Полный отчёт в файле</i>"
+        await update.message.reply_text(summary, parse_mode="HTML")
+        html = build_html_report(stats, label)
+        buf = io.BytesIO(html.encode("utf-8"))
+        buf.name = f"costs_{since}.html"
+        await update.message.reply_document(
+            document=buf,
+            filename=f"costs_{since}.html",
+            caption=f"📊 Полный отчёт {label}",
+        )
+
+
 def main() -> None:
     app = (
         Application.builder()
@@ -166,6 +219,7 @@ def main() -> None:
     app.add_handler(CommandHandler("logs", cmd_logs))
     app.add_handler(CommandHandler("errors", cmd_errors))
     app.add_handler(CommandHandler("restart", cmd_restart))
+    app.add_handler(CommandHandler("costs", cmd_costs))
 
     logger.info("Monitor bot started")
     app.run_polling(drop_pending_updates=True)

@@ -210,6 +210,29 @@ class MentionReplyModel(Base):
     publish_error: Mapped[str] = mapped_column(String(1000), default="")
 
 
+class SavedBlendModel(Base):
+    __tablename__ = "saved_blends"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    saved_id: Mapped[str] = mapped_column(
+        String(36), unique=True, index=True,
+        default=lambda: str(uuid.uuid4())
+    )
+    telegram_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    title: Mapped[str] = mapped_column(String(255))
+    brief: Mapped[str] = mapped_column(String(1000), default="")
+    tags: Mapped[list[str]] = mapped_column(MutableList.as_mutable(JSON), default=list)
+    oils: Mapped[list[dict[str, Any]]] = mapped_column(MutableList.as_mutable(JSON), default=list)
+    total_drops: Mapped[int] = mapped_column(Integer, default=0)
+    profile: Mapped[dict[str, Any]] = mapped_column(MutableDict.as_mutable(JSON), default=dict)
+    expert_note: Mapped[str] = mapped_column(String(2000), default="")
+    application_guide: Mapped[str] = mapped_column(String(1000), default="")
+    safety_status: Mapped[str] = mapped_column(String(16), default="safe")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )
+
+
 class PlatformTokenModel(Base):
     __tablename__ = "platform_tokens"
 
@@ -221,4 +244,20 @@ class PlatformTokenModel(Base):
         DateTime,
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+
+class ApiCostLog(Base):
+    __tablename__ = "api_cost_logs"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    date: Mapped[str] = mapped_column(String(16), index=True)
+    telegram_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True, index=True)
+    context: Mapped[str] = mapped_column(String(128), default="")
+    model: Mapped[str] = mapped_column(String(64), default="")
+    input_tokens: Mapped[int] = mapped_column(Integer, default=0)
+    output_tokens: Mapped[int] = mapped_column(Integer, default=0)
+    cost_usd: Mapped[float] = mapped_column(default=0.0)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
     )

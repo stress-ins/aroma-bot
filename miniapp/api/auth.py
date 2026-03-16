@@ -106,6 +106,8 @@ async def _resolve_telegram_id(
     user_id = _telegram_user_id_from_init_data(x_telegram_init_data)
     if user_id is None:
         raise HTTPException(status_code=403, detail="forbidden")
+    from bot.services.claude_client import current_telegram_id
+    current_telegram_id.set(user_id)
     return user_id
 
 
