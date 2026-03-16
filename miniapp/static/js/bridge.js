@@ -63,6 +63,14 @@ export function registerWindowBridge(deps) {
     removeTodoItem,
     goBackToList,
     renderReferences,
+    // Threads-series slot actions
+    regenSlot,
+    saveThreadsSlot,
+    showSlotHistory,
+    approveThreadsSeries,
+    scheduleThreadsSeries,
+    openThreadsScheduler,
+    saveThreadsReviewDraft,
   } = deps;
 
   window.retryCurrentTab = retryCurrentTab;
@@ -124,6 +132,15 @@ export function registerWindowBridge(deps) {
   window.openReelsImageFullscreen = openReelsImageFullscreen;
   window.publishReels = publishReels;
   window.retryPlatform = retryPlatform;
+
+  // Threads-series slot actions
+  window.regenSlot = regenSlot;
+  window.saveThreadsSlot = saveThreadsSlot;
+  window.showSlotHistory = showSlotHistory;
+  window.approveThreadsSeries = approveThreadsSeries;
+  window.scheduleThreadsSeries = scheduleThreadsSeries;
+  window.openThreadsScheduler = openThreadsScheduler;
+  window.saveThreadsReviewDraft = saveThreadsReviewDraft;
 
   window.publishDraft = publishDraft;
   window.cancelPublishSchedule = cancelPublishSchedule;

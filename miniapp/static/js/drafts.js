@@ -190,10 +190,12 @@ export function createDraftsModule(deps) {
             <div class="threads-char-counter${isOver ? " is-over" : ""}" id="charCount_${post.slot}_${d.draft_id}">${charCount}</div>
           </div>
           ${!isApproved ? `
+          <div class="threads-regen-note">
+            <input class="threads-regen-input" id="regenNote_${post.slot}_${d.draft_id}" type="text" placeholder="Пожелание к перегенерации (необязательно)">
+          </div>
           <div class="threads-regen-row">
-            <input class="threads-regen-input" id="regenNote_${post.slot}_${d.draft_id}" type="text" placeholder="Пожелание (необязательно)">
             <button class="secondary-button" type="button" onclick="regenSlot('${d.draft_id}','${post.slot}',this)">${actionLabel("regenerate", "Переписать")}</button>
-            <button class="ghost-button" type="button" onclick="showSlotHistory('${d.draft_id}','${post.slot}')">${uiIcon("eye")}</button>
+            <button class="secondary-button" type="button" onclick="showSlotHistory('${d.draft_id}','${post.slot}')">${actionLabel("history", "История")}</button>
           </div>
           <div class="actions-row" style="margin-top:4px">
             <button class="secondary-button" type="button" onclick="saveThreadsSlot('${d.draft_id}','${post.slot}',this)">${actionLabel("approve", "Сохранить слот")}</button>
