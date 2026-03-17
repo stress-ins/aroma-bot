@@ -743,12 +743,12 @@ class TestForbiddenPhrasesAPI:
 
     def _patch_preload(self, monkeypatch):
         """Prevent lifespan from querying brand_settings table (not available in CI)."""
-        import miniapp_server
+        import bot.services.brand_settings_store as _bss
 
         async def _noop():
             pass
 
-        monkeypatch.setattr(miniapp_server, "preload_brand_settings", _noop)
+        monkeypatch.setattr(_bss, "preload_brand_settings", _noop)
 
     def test_get_forbidden_phrases_returns_defaults(self, tmp_path, monkeypatch):
         """When no custom config file exists, defaults are returned (not empty list)."""
