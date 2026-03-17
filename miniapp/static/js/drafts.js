@@ -242,9 +242,7 @@ export function createDraftsModule(deps) {
           <div class="actions-row detail-actions">
             ${!isApproved ? `<button class="primary-button" type="button" onclick="approveThreadsSeries('${d.draft_id}',this)">${actionLabel("approve", "Согласовать")}</button>` : ""}
             ${isApproved && d.status !== "published" ? `<button class="secondary-button" type="button" onclick="openThreadsScheduler('${d.draft_id}')">${actionLabel("calendar", "Выбрать дату публикации")}</button>` : ""}
-            <div class="detail-icon-actions">
-              <button class="secondary-button" title="Отправить в чат" onclick="sendDraftToChat('${d.draft_id}',this)">${uiIcon("chat")}</button>
-            </div>
+            <button class="secondary-button" onclick="sendDraftToChat('${d.draft_id}',this)">${actionLabel("chat", "В чат")}</button>
             <button class="danger-button" onclick="deleteDraft('${d.draft_id}','drafts',this)">${actionLabel("trash", "Удалить")}</button>
           </div>
           ${schedulerHtml}

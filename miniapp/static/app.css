@@ -4378,21 +4378,32 @@ body.tg-theme-dark .reco-cta-btn { color: #d4845e; }
 .reco-restart-btn { display: block; width: 100%; padding: 10px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; color: var(--text); cursor: pointer; text-align: center; }
 .reco-restart-btn:hover { background: var(--surface-3); }
 
+/* ── Blend Constructor Form ───────────────────────────────────────────── */
+.blend-constructor-form .section { padding: var(--space-3) 0; }
+.blend-constructor-form .chip-list,
+.blend-constructor-form .radio-row { gap: 8px; }
+.blend-constructor-form .primary-button { width: 100%; }
+.blend-constructor-form .field-textarea,
+.blend-constructor-form .field-input { width: 100%; box-sizing: border-box; }
+
 /* ── Daily Oil Banner ─────────────────────────────────────────────────── */
 .daily-oil-banner {
-  background: linear-gradient(135deg, var(--surface-2), var(--surface-3));
-  border: 1px solid var(--brand-border);
-  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, rgba(180,92,61,.1), rgba(180,92,61,.03));
+  border: 1px solid rgba(180,92,61,.2);
+  border-radius: var(--radius-lg);
   padding: var(--space-4) var(--space-5);
   margin-bottom: var(--space-4);
   cursor: pointer;
-  transition: box-shadow var(--duration-fast) var(--ease-standard);
+  transition: box-shadow var(--duration-fast) var(--ease-standard), transform var(--duration-fast);
 }
-.daily-oil-banner:hover { box-shadow: 0 2px 8px rgba(var(--brand-rgb), 0.15); }
+.daily-oil-banner:hover { box-shadow: 0 4px 16px rgba(180,92,61,.15); }
+.daily-oil-banner:active { transform: scale(0.98); }
 .daily-oil-header { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2); }
 .daily-oil-icon { width: 18px; height: 18px; color: var(--brand); }
-.daily-oil-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--brand); }
-.daily-oil-name { margin: 0 0 var(--space-2); font-size: 18px; font-weight: 700; color: var(--text); }
-.daily-oil-fact { margin: 0 0 var(--space-2); font-size: 14px; line-height: 1.45; color: var(--muted); }
-.daily-oil-practice { margin: 0; font-size: 14px; line-height: 1.45; color: var(--text); }
+.daily-oil-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--brand); }
+.daily-oil-name { margin: 0 0 var(--space-2); font-size: 20px; font-weight: 700; color: var(--text); }
+.daily-oil-fact { margin: 0 0 var(--space-2); font-size: 14px; line-height: 1.5; color: var(--muted); }
+.daily-oil-practice { margin: 0 0 var(--space-2); font-size: 14px; line-height: 1.5; color: var(--text); }
 .daily-oil-practice strong { color: var(--sage); }
+.daily-oil-cta { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; color: var(--brand); margin-top: var(--space-1); }
+.daily-oil-cta i { width: 14px; height: 14px; }

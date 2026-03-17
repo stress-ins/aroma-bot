@@ -605,6 +605,12 @@ function uiIcon(name) {
     play:       "play",
     layers:     "layers",
     loader:     "loader-circle",
+    calendar:   "calendar-days",
+    link:       "link",
+    "external-link": "external-link",
+    "message-circle": "message-circle",
+    camera:     "camera",
+    "check-circle": "check-circle",
   };
   return `<span class="ui-icon ui-icon-${escapeHtml(name)}">${icon(LUCIDE_MAP[name] || "square-terminal", 16)}</span>`;
 }
@@ -880,6 +886,7 @@ function _selectSchedulerDate(draftId, date, btn) {
     scheduleBtn.disabled = false;
   }
 }
+window._selectSchedulerDate = _selectSchedulerDate;
 
 async function saveContentReviewDraft(draftId, button) {
   return saveContentReviewDraftImpl(draftId, button);
