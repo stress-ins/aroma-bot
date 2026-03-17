@@ -20,7 +20,9 @@ async def filter_drafts(
 
     filtered = records
     if kind:
-        filtered = [record for record in filtered if record.kind.lower() == kind]
+        # "threads" filter should also match "threads_series"
+        match_kinds = {kind, "threads_series"} if kind == "threads" else {kind}
+        filtered = [record for record in filtered if record.kind.lower() in match_kinds]
     if status:
         filtered = [record for record in filtered if record.status.lower() == status]
     if feedback:
