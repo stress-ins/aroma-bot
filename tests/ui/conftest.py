@@ -198,16 +198,24 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
         }
     )
 
+    server_log = root / "server.log"
+    server_log_fh = server_log.open("w")
     process = subprocess.Popen(
         [sys.executable, "-m", "uvicorn", "miniapp_server:app", "--host", "127.0.0.1", "--port", str(port)],
         cwd=Path(__file__).resolve().parents[2],
         env=env,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
+        stdout=server_log_fh,
+        stderr=subprocess.STDOUT,
     )
     try:
+        print(f"\n[UI TEST] Server PID={process.pid} starting on {base_url}...", flush=True)
         _wait_until_ready(base_url)
+        print(f"[UI TEST] Server ready!", flush=True)
         yield base_url
+    except Exception:
+        server_log_fh.flush()
+        print(f"\n=== SERVER LOG ===\n{server_log.read_text()}\n=== END SERVER LOG ===", flush=True)
+        raise
     finally:
         process.terminate()
         try:
