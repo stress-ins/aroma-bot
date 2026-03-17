@@ -12,6 +12,15 @@ export function createCoreModule(deps) {
     callbacks,
   } = deps;
 
+  class ApiError extends Error {
+    constructor(message, { status = 0, detail = "" } = {}) {
+      super(message);
+      this.name = "ApiError";
+      this.status = status;
+      this.detail = detail;
+    }
+  }
+
   function interactiveCardAttrs(label) {
     return `role="button" tabindex="0" aria-label="${escapeHtml(label)}"`;
   }
@@ -484,8 +493,18 @@ export function createCoreModule(deps) {
       }
       if (response.status === 429) {
         const detail = typeof body?.detail === "object" ? body.detail : {};
-        showDailyLimitBanner(detail?.used ?? 0, detail?.max ?? 10);
-        throw new Error("daily_limit");
+        const errorType = detail?.error || "rate_limit";
+        if (errorType === "daily_limit") {
+          showDailyLimitBanner(detail?.used ?? 0, detail?.max ?? 10);
+        } else if (errorType === "regen_limit") {
+          showUiNotice(
+            `Лимит перегенераций: ${detail?.used ?? "?"}/${detail?.max ?? 5}. Создайте новую карточку.`,
+            "error",
+          );
+        } else {
+          showUiNotice("Слишком много запросов. Подождите минуту.", "error");
+        }
+        throw new Error(errorType);
       }
       const detail = body?.detail ? (typeof body.detail === "string" ? ` (${body.detail})` : "") : "";
       throw new Error(`${response.status} ${response.statusText}${detail}`);
