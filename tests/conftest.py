@@ -10,6 +10,8 @@ import bot.services.kb_context_builder
 import bot.services.post_metrics_store
 import bot.services.daily_oil
 import analytics.trend_signal_store
+import analytics.signal_enricher
+import analytics.trend_intelligence
 
 
 @pytest.fixture(autouse=True, scope="function")
@@ -29,6 +31,8 @@ async def setup_test_db(monkeypatch, tmp_path):
     monkeypatch.setattr(bot.services.post_metrics_store, "AsyncSessionLocal", AsyncSessionLocal)
     monkeypatch.setattr(bot.services.daily_oil, "AsyncSessionLocal", AsyncSessionLocal)
     monkeypatch.setattr(analytics.trend_signal_store, "AsyncSessionLocal", AsyncSessionLocal)
+    monkeypatch.setattr(analytics.signal_enricher, "AsyncSessionLocal", AsyncSessionLocal)
+    monkeypatch.setattr(analytics.trend_intelligence, "AsyncSessionLocal", AsyncSessionLocal)
 
     # Create tables
     async with engine.begin() as conn:
