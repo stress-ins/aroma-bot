@@ -294,25 +294,25 @@ export function createSettingsModule(deps) {
           <h3>Авто-замены</h3>
           <p class="settings-hint">При генерации текст «было» автоматически заменяется на «стало».</p>
           <div id="rewritesList" class="chips-list keyword-items"></div>
-          <div class="keyword-form" style="gap:6px;flex-direction:column;">
+          <div class="keyword-form settings-form-col">
             <div class="keyword-add-row">
               <input id="rewritePatternInput" type="text" placeholder="Было (regex или слово)">
               <input id="rewriteReplacementInput" type="text" placeholder="Стало">
             </div>
-            <button class="secondary-button" type="button" onclick="addRewrite()" style="align-self:flex-start;">Добавить замену</button>
+            <button class="secondary-button btn-align-start" type="button" onclick="addRewrite()">Добавить замену</button>
           </div>
         </section>
         <section class="section settings-section">
           <h3>Публикация (Upload-Post)</h3>
           <p class="settings-hint">Credentials для публикации через upload-post.com. API-ключ не отображается после сохранения.</p>
-          <div class="keyword-field" style="margin-bottom:12px;">
+          <div class="keyword-field" class="field-mb">
             <strong>API Key</strong>
-            <input id="uploadPostApiKey" type="password" placeholder="Введите API-ключ…" class="draft-textarea" style="font-size:14px;padding:8px 10px;min-height:auto;">
+            <input id="uploadPostApiKey" type="password" placeholder="Введите API-ключ…" class="draft-textarea" class="field-compact">
             <span id="uploadPostKeyStatus" class="plan-entry-hint"></span>
           </div>
-          <div class="keyword-field" style="margin-bottom:12px;">
+          <div class="keyword-field" class="field-mb">
             <strong>Username</strong>
-            <input id="uploadPostUser" type="text" placeholder="Имя пользователя upload-post" class="draft-textarea" style="font-size:14px;padding:8px 10px;min-height:auto;">
+            <input id="uploadPostUser" type="text" placeholder="Имя пользователя upload-post" class="draft-textarea" class="field-compact">
           </div>
           <button class="secondary-button" type="button" onclick="saveUploadPostPrefs()">Сохранить</button>
         </section>
@@ -324,7 +324,7 @@ export function createSettingsModule(deps) {
             { key: "telegram",  label: "Telegram"  },
             { key: "threads",   label: "Threads"   },
           ].map(({ key, label }) => `
-            <div class="keyword-field" style="margin-bottom:12px;">
+            <div class="keyword-field" class="field-mb">
               <strong class="platform-label">${uiIcon(key)}<span>${label}</span></strong>
               <textarea id="tone-${key}" class="draft-textarea" rows="2"
                 placeholder="Например: personal, visual, emotional"
@@ -477,7 +477,7 @@ export function createSettingsModule(deps) {
         <div id="accountsList" class="accounts-list">
           <div class="account-card skeleton"><div class="skeleton-line"></div></div>
         </div>
-        <p class="settings-hint" style="color:var(--hint);font-size:13px;margin-top:4px;">
+        <p class="settings-hint" class="settings-hint-text">
           Подключите аккаунты для автоматической публикации контента.
         </p>
       </div>
@@ -488,7 +488,6 @@ export function createSettingsModule(deps) {
       const container = document.getElementById("accountsList");
       if (container) {
         container.innerHTML = (data.accounts || []).map(accountCardHtml).join("");
-        if (window.lucide) lucide.createIcons();
       }
     } catch (_err) {
       const container = document.getElementById("accountsList");

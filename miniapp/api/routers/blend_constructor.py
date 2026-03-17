@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from miniapp.api.auth import _require_auth, _resolve_telegram_id
+from ..auth import _require_auth, _resolve_telegram_id
 
 router = APIRouter()
 
@@ -36,9 +36,14 @@ async def construct_blend(body: BlendConstructRequest, telegram_id: int = Depend
     if not body.brief.strip():
         raise HTTPException(status_code=400, detail="brief is required")
 
-    from miniapp.api.generation import generate_blend_construct
+    from ..generation import generate_blend_construct
 
-    result = await generate_blend_construct(body, telegram_id=telegram_id)
+    try:
+        result = await generate_blend_construct(body, telegram_id=telegram_id)
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=500, detail="blend_generation_failed")
     return result
 
 
@@ -50,9 +55,14 @@ async def adjust_blend(body: BlendConstructRequest, telegram_id: int = Depends(_
     if not body.custom_oils:
         raise HTTPException(status_code=400, detail="custom_oils is required for adjust")
 
-    from miniapp.api.generation import generate_blend_construct
+    from ..generation import generate_blend_construct
 
-    result = await generate_blend_construct(body, telegram_id=telegram_id)
+    try:
+        result = await generate_blend_construct(body, telegram_id=telegram_id)
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=500, detail="blend_generation_failed")
     return result
 
 

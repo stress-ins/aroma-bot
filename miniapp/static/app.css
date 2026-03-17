@@ -4708,3 +4708,14 @@ body.tg-theme-dark .reco-cta-btn { color: #d4845e; }
     align-items: center;
   }
 }
+
+/* ── Inline style extractions ──────────────────────────────────────────────────── */
+.settings-form-col { display: flex; gap: 6px; flex-direction: column; }
+.btn-align-start { align-self: flex-start; }
+.field-mb { margin-bottom: 12px; }
+.field-compact { font-size: 14px; padding: 8px 10px; min-height: auto; }
+.settings-hint-text { color: var(--hint); font-size: 13px; margin-top: 4px; }
+.section-error { border-color: rgba(176,58,46,.25); background: rgba(176,58,46,.06); }
+.error-msg-text { font-size: 13px; color: var(--bad); }
+.error-fallback-msg { padding: 16px; color: var(--bad); }
+.chip-list, .radio-row { width: 100%; box-sizing: border-box; }

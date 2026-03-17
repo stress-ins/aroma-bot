@@ -98,6 +98,8 @@ export function registerWindowBridge(deps) {
     recoToggleAroma,
     recoUpdateContra,
     submitRecommendations,
+    _selectSchedulerDate,
+    _renderThreadsSchedulerDates,
   } = deps;
 
   window.retryCurrentTab = retryCurrentTab;
@@ -197,6 +199,8 @@ export function registerWindowBridge(deps) {
   window.blendAdjustWithOil = blendAdjustWithOil;
   window.deleteSavedBlend = deleteSavedBlend;
   window.connectPlatform = connectPlatform;
+  window._selectSchedulerDate = _selectSchedulerDate;
+  window._renderThreadsSchedulerDates = _renderThreadsSchedulerDates;
 
   // Recommendations wizard
   window.openRecommendationsWizard = openRecommendationsWizard;
