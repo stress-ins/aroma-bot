@@ -18,9 +18,6 @@ import { createSettingsModule } from "./js/settings.js";
 import { createRecommendationsModule } from "./js/recommendations.js";
 import { createShellModule } from "./js/shell.js";
 
-window.__appModuleLoaded = true;
-console.log("app.js module: top-level execution started");
-
 const state = {
   mode: "content", // 'content' or 'handbook'
   tab: new URLSearchParams(window.location.search).get("tab") || "drafts",
@@ -1901,9 +1898,8 @@ document.addEventListener("click", () => {
 });
 function refreshIcons() { if (window.lucide) lucide.createIcons(); }
 
-console.log("app.js: calling bootstrap()");
 bootstrap()
-  .then(() => { console.log("app.js: bootstrap resolved"); refreshIcons(); })
+  .then(() => refreshIcons())
   .catch((err) => {
     console.error("bootstrap failed", err);
     document.body.classList.add("app-ready");

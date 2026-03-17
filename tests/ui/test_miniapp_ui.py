@@ -440,15 +440,6 @@ def _make_context(playwright, miniapp_server, *, viewport, is_mobile, dark=False
             " () => document.body.classList.add('tg-theme-dark'))"
         )
     page.goto(miniapp_server, wait_until="load", timeout=60000)
-    # Inject safety net: set app-ready after 12s regardless
-    page.evaluate("""
-        setTimeout(() => {
-            if (!document.body.classList.contains('app-ready')) {
-                console.warn('SAFETY NET: setting app-ready after 12s timeout');
-                document.body.classList.add('app-ready');
-            }
-        }, 12000);
-    """)
     page.wait_for_selector("body.app-ready", timeout=30000)
     if dark:
         page.evaluate("document.body.classList.add('tg-theme-dark')")
