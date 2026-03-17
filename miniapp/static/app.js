@@ -1892,13 +1892,18 @@ document.addEventListener("click", () => {
     });
   });
 });
-bootstrap().then(() => {
-  if (window.lucide) lucide.createIcons();
-});
+function refreshIcons() { if (window.lucide) lucide.createIcons(); }
+
+bootstrap().then(() => refreshIcons());
 
 if (window.lucide) {
-  const _lcObs = new MutationObserver(() => {
-    if (document.querySelector("i[data-lucide]")) lucide.createIcons();
+  const _lcObs = new MutationObserver((mutations) => {
+    const hasNewIcons = mutations.some(m =>
+      [...m.addedNodes].some(n =>
+        n.nodeType === 1 && (n.matches?.("[data-lucide]") || n.querySelector?.("[data-lucide]"))
+      )
+    );
+    if (hasNewIcons) lucide.createIcons();
   });
   _lcObs.observe(document.getElementById("app") || document.body, { childList: true, subtree: true });
 }

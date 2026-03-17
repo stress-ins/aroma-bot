@@ -80,9 +80,15 @@ async def generate_blend_construct(body, telegram_id: int | None = None) -> dict
         body.brief,
     )
 
-    expert_result, doctor_result, incompat_result = await asyncio.gather(
-        expert_task, doctor_task, incompat_task
-    )
+    from fastapi import HTTPException
+
+    try:
+        expert_result, doctor_result, incompat_result = await asyncio.wait_for(
+            asyncio.gather(expert_task, doctor_task, incompat_task),
+            timeout=55.0,
+        )
+    except asyncio.TimeoutError:
+        raise HTTPException(status_code=504, detail="blend_generation_timeout")
 
     # Match oils to DB entries
     oils = expert_result.get("oils", [])
