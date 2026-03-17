@@ -1445,6 +1445,7 @@ const {
   fetchJson,
   escapeHtml,
   renderBackButton,
+  renderDetailLoader,
   enterDetailView,
   syncMobileNavigation,
   openReference,
