@@ -9,6 +9,7 @@ on:
 jobs:
   pytest:
     runs-on: ubuntu-latest
+    timeout-minutes: 8
     env:
       TELEGRAM_BOT_TOKEN: test-token
       REPORT_TARGET_CHAT_ID: test-chat
@@ -25,20 +26,17 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt pytest
+          pip install -r requirements.txt pytest pytest-timeout
 
       - name: Run tests
-        run: python -m pytest tests/test_utils.py tests/test_formatters.py tests/test_social_oauth.py
+        run: python -m pytest tests/ -q --ignore=tests/ui --ignore=tests/smoke -x --timeout=300
 
   miniapp-ui:
     runs-on: ubuntu-latest
+    timeout-minutes: 8
     env:
       TELEGRAM_BOT_TOKEN: test-token
       REPORT_TARGET_CHAT_ID: test-chat
-      # Always regenerate baselines on CI — pixel-perfect comparison doesn't
-      # work across macOS (local) and Ubuntu (CI) due to font rendering differences.
-      # Tests still verify that all UI elements load and interactions work.
-      UPDATE_VISUAL_BASELINE: "1"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -52,10 +50,10 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt pytest
+          pip install -r requirements.txt pytest pytest-timeout
 
       - name: Install Chromium
         run: python -m playwright install --with-deps chromium
 
-      - name: Run Mini App UI smoke tests
-        run: python -m pytest tests/ui/test_miniapp_ui.py
+      - name: Run Mini App UI tests
+        run: python -m pytest tests/ui/ -q -m "not visual" -x --timeout=300
