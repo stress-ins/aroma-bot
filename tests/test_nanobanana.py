@@ -1,6 +1,7 @@
-"""Tests for NanoBanana image generation client."""
+"""Tests for image generation client (Kie.ai + NanoBanana fallback)."""
 from __future__ import annotations
 
+import json
 from unittest.mock import MagicMock, patch
 
 import httpx
@@ -9,9 +10,11 @@ import pytest
 from bot.services.gemini_images import generate_gemini_image_sync
 
 
-def _make_settings(api_key="test-key-123"):
+def _make_settings(kie_key="test-kie-key", nano_key=""):
     s = MagicMock()
-    s.image_api_key = api_key
+    s.kie_ai_api_key = kie_key
+    s.nana_banana_api_key = nano_key
+    s.image_api_key = kie_key or nano_key
     return s
 
 
@@ -29,23 +32,18 @@ def _make_response(status_code=200, json_data=None, content=b""):
 
 
 def _mock_client(responses):
-    """Create a mock httpx.Client context manager that returns responses in order."""
     idx = {"i": 0}
-
     def factory(*args, **kwargs):
         c = MagicMock()
-
         def do_request(*a, **kw):
             r = responses[idx["i"]]
             idx["i"] += 1
             return r
-
         c.post = do_request
         c.get = do_request
         c.__enter__ = MagicMock(return_value=c)
         c.__exit__ = MagicMock(return_value=False)
         return c
-
     return factory
 
 
@@ -54,12 +52,13 @@ _CLIENT_PATH = "bot.services.gemini_images.httpx.Client"
 _SLEEP_PATH = "bot.services.gemini_images.time.sleep"
 
 
-class TestSubmitAndPollSuccess:
+class TestKieSubmitAndPollSuccess:
     def test_success(self):
+        result_json = json.dumps({"resultUrls": ["https://cdn.example.com/img.png"]})
         responses = [
-            _make_response(json_data={"taskId": "abc-123"}),
-            _make_response(json_data={"successFlag": 0}),
-            _make_response(json_data={"successFlag": 1, "resultImageUrl": "https://cdn.example.com/img.png"}),
+            _make_response(json_data={"code": 200, "data": {"taskId": "kie-123"}}),
+            _make_response(json_data={"code": 200, "data": {"state": "generating"}}),
+            _make_response(json_data={"code": 200, "data": {"state": "success", "resultJson": result_json}}),
             _make_response(content=b"\x89PNG" + b"\x00" * 200),
         ]
         with patch(_SETTINGS_PATH, _make_settings()), \
@@ -70,25 +69,27 @@ class TestSubmitAndPollSuccess:
         assert len(result) > 100
 
 
-class TestSubmitFailure:
-    def test_submit_failure(self):
+class TestKieSubmitFailFallsBackToNano:
+    def test_fallback(self):
         responses = [
             _make_response(status_code=500),
             _make_response(status_code=500),
+            _make_response(json_data={"taskId": "nano-456"}),
+            _make_response(json_data={"successFlag": 1, "resultImageUrl": "https://cdn.example.com/img.png"}),
+            _make_response(content=b"\x89PNG" + b"\x00" * 200),
         ]
-        with patch(_SETTINGS_PATH, _make_settings()), \
+        with patch(_SETTINGS_PATH, _make_settings(kie_key="kie-key", nano_key="nano-key")), \
              patch(_CLIENT_PATH, side_effect=_mock_client(responses)), \
              patch(_SLEEP_PATH), \
              patch("bot.services.gemini_images._notify_image_failure"):
             result = generate_gemini_image_sync("test prompt")
-        assert result is None
+        assert result is not None
 
 
-class TestPollTimeout:
+class TestKiePollTimeout:
     def test_poll_timeout(self):
-        responses = [_make_response(json_data={"taskId": "abc-123"})]
-        responses += [_make_response(json_data={"successFlag": 0})] * 5
-
+        responses = [_make_response(json_data={"code": 200, "data": {"taskId": "kie-123"}})]
+        responses += [_make_response(json_data={"code": 200, "data": {"state": "generating"}})] * 5
         with patch(_SETTINGS_PATH, _make_settings()), \
              patch(_CLIENT_PATH, side_effect=_mock_client(responses)), \
              patch(_SLEEP_PATH), \
@@ -98,11 +99,11 @@ class TestPollTimeout:
         assert result is None
 
 
-class TestPollFailureFlag:
-    def test_poll_failure_flag(self):
+class TestKiePollFailState:
+    def test_fail_state(self):
         responses = [
-            _make_response(json_data={"taskId": "abc-123"}),
-            _make_response(json_data={"successFlag": 2}),
+            _make_response(json_data={"code": 200, "data": {"taskId": "kie-123"}}),
+            _make_response(json_data={"code": 200, "data": {"state": "fail", "failMsg": "content policy"}}),
         ]
         with patch(_SETTINGS_PATH, _make_settings()), \
              patch(_CLIENT_PATH, side_effect=_mock_client(responses)), \
@@ -112,41 +113,13 @@ class TestPollFailureFlag:
         assert result is None
 
 
-class TestAspectRatioDefault:
-    def test_default_aspect_ratio(self):
-        captured = {}
-        responses = [
-            _make_response(json_data={"taskId": "abc-123"}),
-            _make_response(json_data={"successFlag": 1, "resultImageUrl": "https://cdn.example.com/img.png"}),
-            _make_response(content=b"\x89PNG" + b"\x00" * 200),
-        ]
-
-        original_factory = _mock_client(responses)
-
-        def capturing_factory(*args, **kwargs):
-            c = original_factory(*args, **kwargs)
-            original_post = c.post
-
-            def capturing_post(*a, **kw):
-                captured.update(kw.get("json", {}))
-                return original_post(*a, **kw)
-
-            c.post = capturing_post
-            return c
-
-        with patch(_SETTINGS_PATH, _make_settings()), \
-             patch(_CLIENT_PATH, side_effect=capturing_factory), \
-             patch(_SLEEP_PATH):
-            generate_gemini_image_sync("test prompt")
-        assert captured.get("aspectRatio") == "1:1"
-
-
 class TestRetryOn429:
     def test_retry_429(self):
+        result_json = json.dumps({"resultUrls": ["https://cdn.example.com/img.png"]})
         responses = [
             _make_response(status_code=429),
-            _make_response(json_data={"taskId": "abc-123"}),
-            _make_response(json_data={"successFlag": 1, "resultImageUrl": "https://cdn.example.com/img.png"}),
+            _make_response(json_data={"code": 200, "data": {"taskId": "kie-123"}}),
+            _make_response(json_data={"code": 200, "data": {"state": "success", "resultJson": result_json}}),
             _make_response(content=b"\x89PNG" + b"\x00" * 200),
         ]
         with patch(_SETTINGS_PATH, _make_settings()), \
@@ -158,6 +131,45 @@ class TestRetryOn429:
 
 class TestNoApiKey:
     def test_no_key(self):
-        with patch(_SETTINGS_PATH, _make_settings(api_key="")):
+        with patch(_SETTINGS_PATH, _make_settings(kie_key="", nano_key="")):
             result = generate_gemini_image_sync("test prompt")
         assert result is None
+
+
+class TestImageToImage:
+    def test_image_urls_passed(self):
+        captured = {}
+        result_json = json.dumps({"resultUrls": ["https://cdn.example.com/img.png"]})
+        responses = [
+            _make_response(json_data={"code": 200, "data": {"taskId": "kie-123"}}),
+            _make_response(json_data={"code": 200, "data": {"state": "success", "resultJson": result_json}}),
+            _make_response(content=b"\x89PNG" + b"\x00" * 200),
+        ]
+        original_factory = _mock_client(responses)
+        def capturing_factory(*args, **kwargs):
+            c = original_factory(*args, **kwargs)
+            original_post = c.post
+            def capturing_post(*a, **kw):
+                captured.update(kw.get("json", {}))
+                return original_post(*a, **kw)
+            c.post = capturing_post
+            return c
+        with patch(_SETTINGS_PATH, _make_settings()), \
+             patch(_CLIENT_PATH, side_effect=capturing_factory), \
+             patch(_SLEEP_PATH):
+            generate_gemini_image_sync("edit this", image_urls=["https://example.com/photo.jpg"])
+        assert captured.get("input", {}).get("image_input") == ["https://example.com/photo.jpg"]
+
+
+class TestNanoBananaOnlySuccess:
+    def test_nano_only(self):
+        responses = [
+            _make_response(json_data={"taskId": "nano-789"}),
+            _make_response(json_data={"successFlag": 1, "resultImageUrl": "https://cdn.example.com/img.png"}),
+            _make_response(content=b"\x89PNG" + b"\x00" * 200),
+        ]
+        with patch(_SETTINGS_PATH, _make_settings(kie_key="", nano_key="nano-key")), \
+             patch(_CLIENT_PATH, side_effect=_mock_client(responses)), \
+             patch(_SLEEP_PATH):
+            result = generate_gemini_image_sync("test prompt")
+        assert result is not None

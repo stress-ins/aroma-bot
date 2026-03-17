@@ -28,11 +28,12 @@ class Settings(BaseSettings):
     tiktok_ms_token: str = ""
     gemini_api_key: str = ""  # deprecated, kept for .env compat
     nana_banana_api_key: str = ""
+    kie_ai_api_key: str = ""
 
     @property
     def image_api_key(self) -> str:
-        """Key for NanoBanana image generation API."""
-        return self.nana_banana_api_key
+        """Primary image generation API key (Kie.ai preferred, NanoBanana fallback)."""
+        return self.kie_ai_api_key or self.nana_banana_api_key
 
     # Phase 2
     telegram_api_id: int | None = None
