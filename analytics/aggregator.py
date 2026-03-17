@@ -15,6 +15,7 @@ from analytics.wordstat import WordstatCollector
 from analytics.tiktok import TikTokCollector, TikTokRUCollector
 from analytics.threads_collector import ThreadsCollector
 from analytics.ai_recommendations import get_ai_recommendations
+from analytics.resilient_collector import ResilientCollector
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +39,7 @@ _BASE_COLLECTORS: list[BaseCollector] = [
 
 async def collect_all() -> list[SourceResult]:
     """Run all collectors concurrently, then get AI recommendations. Never raises."""
-    tasks = [c.collect() for c in _BASE_COLLECTORS]
+    tasks = [ResilientCollector(c).collect() for c in _BASE_COLLECTORS]
     results: list[SourceResult] = list(await asyncio.gather(*tasks, return_exceptions=False))
 
     for r in results:

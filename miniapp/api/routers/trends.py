@@ -58,3 +58,11 @@ async def trigger_trends(_: None = Depends(_require_webhook_auth)):
 @router.get("/api/trends/status")
 async def trends_status(_: None = Depends(_require_webhook_auth)):
     return _collection_status
+
+
+@router.get("/api/trends/health")
+async def trends_health():
+    """Return collector health status (circuit breaker state)."""
+    from analytics.trend_signal_store import get_health_status
+
+    return await get_health_status()

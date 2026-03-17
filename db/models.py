@@ -318,3 +318,36 @@ class TrackedThreadModel(Base):
     status: Mapped[str] = mapped_column(String(32), default="new", index=True)
     found_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
     acted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, default=None)
+
+
+class TrendSignal(Base):
+    __tablename__ = "trend_signals"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    source_key: Mapped[str] = mapped_column(String(32), index=True)
+    collected_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc), index=True
+    )
+    keyword: Mapped[str] = mapped_column(String(255), index=True)
+    score_raw: Mapped[float] = mapped_column(default=0.0)
+    velocity: Mapped[float] = mapped_column(default=0.0)
+    lifecycle_stage: Mapped[str] = mapped_column(String(32), default="")
+    convergence_score: Mapped[float] = mapped_column(default=0.0)
+    sentiment: Mapped[str] = mapped_column(String(16), default="")
+    items_json: Mapped[dict[str, Any]] = mapped_column(
+        MutableDict.as_mutable(JSON), default=dict
+    )
+
+
+class CollectorHealth(Base):
+    __tablename__ = "collector_health"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    source_key: Mapped[str] = mapped_column(String(32), unique=True, index=True)
+    last_success: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_failure: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    consecutive_failures: Mapped[int] = mapped_column(Integer, default=0)
+    circuit_open_until: Mapped[datetime | None] = mapped_column(
+        DateTime, nullable=True
+    )
+    last_error: Mapped[str] = mapped_column(String(1000), default="")
