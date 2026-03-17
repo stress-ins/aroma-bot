@@ -55,6 +55,21 @@ async def publish(
     """
     results: dict[str, Any] = {}
 
+    # Pre-publish quality gate: block if quality_score is critically low
+    draft = await get_draft(draft_id)
+    if draft:
+        quality = (draft.payload or {}).get("quality_score", {})
+        overall = quality.get("overall", 1.0) if isinstance(quality, dict) else 1.0
+        if overall < 0.5:
+            logger.error(
+                "Refusing to publish draft %s: quality_score=%.2f (threshold 0.5)",
+                draft_id, overall,
+            )
+            await update_draft(draft_id, status="failed", error=f"quality_score {overall:.2f} below 0.5")
+            return {"error": f"quality_score {overall:.2f} below threshold"}
+        if overall < 0.65:
+            logger.warning("Publishing draft %s with low quality_score=%.2f", draft_id, overall)
+
     upload_platforms = [p for p in platforms if p in UPLOAD_POST_PLATFORMS]
     if upload_platforms:
         result = await _upload_post_publish(draft_id, upload_platforms, scheduled_at)

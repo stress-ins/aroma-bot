@@ -1,6 +1,7 @@
 """Plan activation service -- resolves schedule slots and creates drafts."""
 from __future__ import annotations
 
+import asyncio
 import logging
 from datetime import datetime, timedelta, timezone
 
@@ -64,41 +65,64 @@ def _entry_kind(entry: dict) -> str:
     return "instagram"
 
 
+async def _create_draft_from_entry(
+    entry: dict, plan_id: str, now: datetime | None,
+) -> dict:
+    """Create a single scheduled draft from a plan entry."""
+    topic = str(entry.get("topic", "")).strip()
+    if not topic:
+        return {}
+
+    platform = _entry_platform(entry)
+    kind = _entry_kind(entry)
+    day_label = str(entry.get("day_label", "")).strip()
+    scheduled_at = _resolve_scheduled_at(day_label, platform, now=now)
+    platform_display = {"instagram": "Instagram", "threads": "Threads", "telegram": "Telegram"}.get(
+        platform, platform.capitalize(),
+    )
+
+    draft = await save_draft(
+        kind=kind, topic=topic, source="/plan-activate",
+        payload={"angle": entry.get("angle", ""), "goal": entry.get("goal", ""), "plan_id": plan_id},
+    )
+
+    await update_draft(
+        draft.draft_id, status="scheduled",
+        scheduled_at=scheduled_at, publish_platforms=[platform_display],
+    )
+
+    return {
+        "draft_id": draft.draft_id, "topic": topic,
+        "scheduled_at": scheduled_at.isoformat(),
+    }
+
+
 async def activate_plan(plan_id: str, now: datetime | None = None) -> dict:
     plan = await get_plan(plan_id)
     if not plan:
         raise ValueError(f"Plan {plan_id} not found")
 
     await update_plan_status(plan_id, "activating")
-    created_drafts: list[dict] = []
 
     try:
-        for entry in plan.entries:
-            topic = str(entry.get("topic", "")).strip()
-            if not topic:
-                continue
+        tasks = [
+            _create_draft_from_entry(entry, plan_id, now)
+            for entry in plan.entries
+        ]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
 
-            platform = _entry_platform(entry)
-            kind = _entry_kind(entry)
-            day_label = str(entry.get("day_label", "")).strip()
-            scheduled_at = _resolve_scheduled_at(day_label, platform, now=now)
+        created_drafts: list[dict] = []
+        failures = 0
+        for r in results:
+            if isinstance(r, Exception):
+                logger.error("Plan entry activation failed: %s", r)
+                failures += 1
+            elif r:  # skip empty dicts from entries without topic
+                created_drafts.append(r)
 
-            platform_display = {"instagram": "Instagram", "threads": "Threads", "telegram": "Telegram"}.get(platform, platform.capitalize())
-
-            draft = await save_draft(
-                kind=kind, topic=topic, source="/plan-activate",
-                payload={"angle": entry.get("angle", ""), "goal": entry.get("goal", ""), "plan_id": plan_id},
-            )
-
-            await update_draft(
-                draft.draft_id, status="scheduled",
-                scheduled_at=scheduled_at, publish_platforms=[platform_display],
-            )
-
-            created_drafts.append({
-                "draft_id": draft.draft_id, "topic": topic,
-                "scheduled_at": scheduled_at.isoformat(),
-            })
+        if failures and not created_drafts:
+            await update_plan_status(plan_id, "failed")
+            raise RuntimeError(f"All {failures} plan entries failed to activate")
 
         await update_plan_status(plan_id, "active")
     except Exception:

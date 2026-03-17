@@ -60,7 +60,26 @@ async def _transition(draft_id: str, target: str, **kwargs) -> DraftRecord:
 
 
 async def submit_for_review(draft_id: str) -> DraftRecord:
-    """draft → pending_review"""
+    """draft → pending_review (with policy pre-check)"""
+    from bot.services.policy_engine import enforce_policy
+
+    draft = await get_draft(draft_id)
+    if draft:
+        caption = (draft.payload or {}).get("caption", "")
+        platform = ((draft.payload or {}).get("platform", "")
+                     or (draft.publish_platforms or [""])[0] if draft.publish_platforms else "")
+        if caption:
+            policy = enforce_policy(caption, platform)
+            if policy.violations:
+                logger.warning(
+                    "Draft %s has policy violations on submit: %s",
+                    draft_id, policy.violations,
+                )
+                await update_draft(
+                    draft_id,
+                    revision_notes=f"Policy violations: {', '.join(policy.violations)}",
+                )
+
     return await _transition(draft_id, "pending_review")
 
 
