@@ -1,7 +1,7 @@
-"""Monitor external service status pages via RSS feeds.
+"""Monitor external service status pages via RSS/Atom feeds.
 
-Polls Anthropic and Meta status RSS feeds, detects new incidents,
-and sends proactive notifications to the admin.
+Polls status RSS feeds for all critical external services,
+detects new incidents, and sends proactive notifications to the admin.
 """
 
 from __future__ import annotations
@@ -28,6 +28,27 @@ _STATUS_FEEDS = [
         "url": "https://metastatus.com/history.rss",
         "emoji": "\U0001f4f1",
     },
+    {
+        "name": "Reddit",
+        "url": "https://www.redditstatus.com/history.rss",
+        "emoji": "\U0001f4ac",
+    },
+    {
+        "name": "Twitter/X",
+        "url": "https://api.twitterstat.us/history.rss",
+        "emoji": "\U0001d54f",
+    },
+    {
+        "name": "GitHub (CI/CD)",
+        "url": "https://www.githubstatus.com/history.rss",
+        "emoji": "\U0001f4bb",
+    },
+    {
+        "name": "Google Cloud (YouTube API)",
+        "url": "https://status.cloud.google.com/en/feed.atom",
+        "emoji": "\u2601\ufe0f",
+        "format": "atom",
+    },
 ]
 
 _seen_guids: set[str] = set()
@@ -36,14 +57,17 @@ _FRESHNESS_HOURS = 24
 _HTTP_TIMEOUT = 15
 
 
-def parse_rss_items(xml_text: str) -> list[dict[str, str]]:
-    """Parse RSS XML and return list of items with title, link, pubDate, guid, description."""
+def parse_rss_items(xml_text: str, fmt: str = "rss") -> list[dict[str, str]]:
+    """Parse RSS or Atom XML and return list of items with title, link, pubDate, guid, description."""
     items: list[dict[str, str]] = []
     try:
         root = ET.fromstring(xml_text)
     except ET.ParseError:
-        logger.warning("Failed to parse RSS XML")
+        logger.warning("Failed to parse RSS/Atom XML")
         return items
+
+    if fmt == "atom":
+        return _parse_atom_entries(root)
 
     for item_el in root.iter("item"):
         item: dict[str, str] = {}
@@ -54,6 +78,35 @@ def parse_rss_items(xml_text: str) -> list[dict[str, str]]:
         if not item["guid"]:
             item["guid"] = item["link"]
         items.append(item)
+    return items
+
+
+_ATOM_NS = "{http://www.w3.org/2005/Atom}"
+
+
+def _parse_atom_entries(root: ET.Element) -> list[dict[str, str]]:
+    """Parse Atom feed entries into the same dict format as RSS items."""
+    items: list[dict[str, str]] = []
+    for entry in root.iter(f"{_ATOM_NS}entry"):
+        title_el = entry.find(f"{_ATOM_NS}title")
+        link_el = entry.find(f"{_ATOM_NS}link")
+        updated_el = entry.find(f"{_ATOM_NS}updated")
+        id_el = entry.find(f"{_ATOM_NS}id")
+        content_el = entry.find(f"{_ATOM_NS}content")
+        if content_el is None:
+            content_el = entry.find(f"{_ATOM_NS}summary")
+
+        link = (link_el.get("href", "") if link_el is not None else "").strip()
+        guid = (id_el.text or "").strip() if id_el is not None else link
+        updated = (updated_el.text or "").strip() if updated_el is not None else ""
+
+        items.append({
+            "title": (title_el.text or "").strip() if title_el is not None else "",
+            "link": link,
+            "pubDate": updated,
+            "guid": guid or link,
+            "description": (content_el.text or "").strip() if content_el is not None else "",
+        })
     return items
 
 
@@ -72,9 +125,7 @@ def filter_fresh_items(
         if not pub_date_str:
             continue
         try:
-            pub_date = parsedate_to_datetime(pub_date_str)
-            if pub_date.tzinfo is None:
-                pub_date = pub_date.replace(tzinfo=timezone.utc)
+            pub_date = _parse_date(pub_date_str)
         except (ValueError, TypeError):
             continue
         if pub_date >= cutoff:
@@ -82,10 +133,23 @@ def filter_fresh_items(
     return fresh
 
 
+def _parse_date(date_str: str) -> datetime:
+    """Parse RFC 2822 (RSS) or ISO 8601 (Atom) date strings."""
+    try:
+        return parsedate_to_datetime(date_str)
+    except (ValueError, TypeError):
+        pass
+    # ISO 8601 fallback (Atom feeds)
+    dt = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt
+
+
 def _format_notification(feed_name: str, emoji: str, item: dict[str, str]) -> str:
     pub_date = item.get("pubDate", "")
     try:
-        dt = parsedate_to_datetime(pub_date)
+        dt = _parse_date(pub_date)
         pub_date = dt.strftime("%Y-%m-%d %H:%M UTC")
     except (ValueError, TypeError):
         pass
@@ -113,7 +177,8 @@ async def check_status_feeds() -> None:
                 logger.warning("Failed to fetch %s RSS: %s", feed["name"], exc)
                 continue
 
-            items = parse_rss_items(resp.text)
+            fmt = feed.get("format", "rss")
+            items = parse_rss_items(resp.text, fmt=fmt)
             fresh = filter_fresh_items(items)
 
             for item in fresh:
