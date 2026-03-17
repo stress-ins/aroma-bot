@@ -79,8 +79,11 @@ class TestImageGenNotifies:
         with (
             patch("bot.handlers.monitor.notify_owner") as mock_owner,
             patch("bot.handlers.monitor._recent_alerts", {}),
+            patch("bot.services.gemini_images.settings") as mock_settings,
             patch("httpx.Client") as mock_client_cls,
         ):
+            mock_settings.kie_ai_api_key = "fake-kie-key"
+            mock_settings.nana_banana_api_key = ""
             mock_client = MagicMock()
             mock_client.__enter__ = MagicMock(return_value=mock_client)
             mock_client.__exit__ = MagicMock(return_value=False)

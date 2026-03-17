@@ -110,7 +110,7 @@ async def test_compose_blend_does_not_crash(in_memory_db):
 
     with (
         patch("bot.agents.blend_composer.get_brand_settings_cached") as mock_bs,
-        patch("bot.services.claude_client.call_claude", return_value=fake_response),
+        patch("bot.agents.blend_composer.call_claude", return_value=fake_response),
     ):
         mock_bs.return_value = MagicMock(brand_voice="test voice", forbidden_phrases=[])
         result = await compose_blend(goal="сон", oils_available=[])
@@ -134,7 +134,7 @@ async def test_advise_by_symptom_returns_list(in_memory_db):
 
     with (
         patch("bot.agents.symptom_advisor.get_brand_settings_cached") as mock_bs,
-        patch("bot.services.claude_client.call_claude", return_value=fake_response),
+        patch("bot.agents.symptom_advisor.call_claude", return_value=fake_response),
     ):
         mock_bs.return_value = MagicMock(brand_voice="test voice", forbidden_phrases=[])
         result = await advise_by_symptom("бессонница")
@@ -162,7 +162,7 @@ async def test_check_compatibility_returns_expected_keys(in_memory_db):
 
     with (
         patch("bot.agents.compatibility_checker.get_brand_settings_cached") as mock_bs,
-        patch("bot.services.claude_client.call_claude", return_value=fake_response),
+        patch("bot.agents.compatibility_checker.call_claude", return_value=fake_response),
     ):
         mock_bs.return_value = MagicMock(brand_voice="test voice", forbidden_phrases=[])
         result = await check_compatibility(["лаванда", "кедр"])

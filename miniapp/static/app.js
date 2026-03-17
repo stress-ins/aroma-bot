@@ -1898,7 +1898,12 @@ document.addEventListener("click", () => {
 });
 function refreshIcons() { if (window.lucide) lucide.createIcons(); }
 
-bootstrap().then(() => refreshIcons());
+bootstrap()
+  .then(() => refreshIcons())
+  .catch((err) => {
+    console.error("bootstrap failed", err);
+    document.body.classList.add("app-ready");
+  });
 
 if (window.lucide) {
   const _lcObs = new MutationObserver((mutations) => {
