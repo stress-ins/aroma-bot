@@ -33,7 +33,7 @@ jobs:
 
   miniapp-ui:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 15
     continue-on-error: true
     env:
       TELEGRAM_BOT_TOKEN: test-token
@@ -57,4 +57,4 @@ jobs:
         run: python -m playwright install --with-deps chromium
 
       - name: Run Mini App UI tests
-        run: python -m pytest tests/ui/ -q -m "not visual" -x --timeout=120
+        run: python -m pytest tests/ui/ -v -m "not visual" --timeout=120 -o timeout_func_only=false --durations=20
