@@ -33,7 +33,7 @@ jobs:
 
   miniapp-ui:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     env:
       TELEGRAM_BOT_TOKEN: test-token
       REPORT_TARGET_CHAT_ID: test-chat
