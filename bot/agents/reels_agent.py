@@ -328,12 +328,20 @@ def generate_reels_director_sync(topic: str, script: str) -> list[StoryboardFram
         )
         frames = _parse_storyboard(last_raw)
         if len(frames) >= 4:
-            return frames[:4]
+            break
         logger.warning("Reels director parse returned %d frames on attempt %d", len(frames), attempt + 1)
 
-    logger.warning("Reels director fallback: returning %d parsed frames", len(frames))
-    if last_raw:
-        logger.warning("Reels director raw response preview: %s", last_raw[:800])
+    if not frames:
+        logger.warning("Reels director fallback: returning 0 parsed frames")
+        if last_raw:
+            logger.warning("Reels director raw response preview: %s", last_raw[:800])
+        return []
+
+    # Enhance each frame's gemini_prompt with Image Prompt Engineer
+    for frame in frames[:4]:
+        if frame.gemini_prompt:
+            frame.gemini_prompt = _enhance_frame_prompt(frame.gemini_prompt)
+
     return frames[:4]
 
 
@@ -425,6 +433,25 @@ def generate_reels_v2_draft_sync(
     return _parse_draft(text)
 
 
+def _enhance_frame_prompt(raw_prompt: str, aspect_ratio: str = "9:16") -> str:
+    """Enhance a frame prompt using the Image Prompt Engineer agent.
+
+    Falls back to the original prompt if the agent fails.
+    """
+    try:
+        from bot.agents.image_prompt_engineer import craft_image_prompt_sync
+
+        result = craft_image_prompt_sync(
+            scene_description=raw_prompt,
+            style="botanical_wellness",
+            aspect_ratio=aspect_ratio,
+        )
+        return result.get("prompt", raw_prompt)
+    except Exception:
+        logger.warning("Image Prompt Engineer fallback for frame prompt", exc_info=True)
+        return raw_prompt
+
+
 def generate_frame_prompts_sync(
     topic: str,
     scenario: str,
@@ -441,7 +468,14 @@ def generate_frame_prompts_sync(
         max_tokens=1200,
         context="reels frame_prompts",
     )
-    return _parse_frame_prompts(text, n_frames=n_frames)
+    frames = _parse_frame_prompts(text, n_frames=n_frames)
+
+    # Enhance each frame prompt with Image Prompt Engineer
+    for frame in frames:
+        if frame.image_prompt:
+            frame.image_prompt = _enhance_frame_prompt(frame.image_prompt)
+
+    return frames
 
 
 def generate_reels_v2_caption_sync(
