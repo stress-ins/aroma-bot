@@ -1,3 +1,7 @@
+/* ═══════════════════════════════════════
+   SECTION: CSS Variables & Reset
+   ═══════════════════════════════════════ */
+
 /* ── Tokens ─────────────────────────────────────────────────────────────── */
 :root {
   --bg:           #f5f0e8;
@@ -119,6 +123,10 @@ textarea,
   touch-action: manipulation;
 }
 
+/* ═══════════════════════════════════════
+   SECTION: Layout
+   ═══════════════════════════════════════ */
+
 /* ── Shell ──────────────────────────────────────────────────────────────── */
 .shell {
   display: flex;
@@ -165,6 +173,10 @@ textarea,
   gap: 6px;
   flex-wrap: wrap;
 }
+
+/* ═══════════════════════════════════════
+   SECTION: Navigation
+   ═══════════════════════════════════════ */
 
 /* ── Toolbar ─────────────────────────────────────────────────────────────── */
 .topbar {
@@ -442,6 +454,10 @@ body.app-ready .splash {
   color: var(--text);
 }
 
+/* ═══════════════════════════════════════
+   SECTION: Cards & List Items
+   ═══════════════════════════════════════ */
+
 /* ── Draft list ──────────────────────────────────────────────────────────── */
 .draft-list { display: flex; flex-direction: column; gap: var(--space-2); }
 .create-list { display: flex; flex-direction: column; gap: var(--space-2); }
@@ -586,6 +602,10 @@ body.app-ready .splash {
   margin-top: 10px;
 }
 
+/* ═══════════════════════════════════════
+   SECTION: Tags & Badges
+   ═══════════════════════════════════════ */
+
 /* ── Tags ────────────────────────────────────────────────────────────────── */
 .tag {
   display: inline-flex;
@@ -613,6 +633,10 @@ body.app-ready .splash {
 .tag-source-neutral { background: rgba(107, 90, 78, 0.1); color: var(--muted); border-color: rgba(107, 90, 78, 0.16); }
 .tag-progress,
 .tag-pending { color: #b8860b; background: rgba(184, 134, 11, 0.12); border-color: rgba(184, 134, 11, 0.20); }
+
+/* ═══════════════════════════════════════
+   SECTION: Detail View & Hero
+   ═══════════════════════════════════════ */
 
 /* ── Detail panel ────────────────────────────────────────────────────────── */
 .detail-empty {
@@ -694,6 +718,10 @@ body.app-ready .splash {
   font-size: 13px;
 }
 
+/* ═══════════════════════════════════════
+   SECTION: Loading States & Skeletons
+   ═══════════════════════════════════════ */
+
 .brand-loader {
   position: relative;
   display: grid;
@@ -742,6 +770,10 @@ body.app-ready .splash {
   margin-top: 12px;
   border: 1px solid var(--border);
 }
+
+/* ═══════════════════════════════════════
+   SECTION: Empty States
+   ═══════════════════════════════════════ */
 
 .empty {
   display: grid;
@@ -986,6 +1018,10 @@ body.is-mobile-layout .detail-top {
   border-top: 1px solid var(--border);
   padding-top: var(--space-3);
 }
+
+/* ═══════════════════════════════════════
+   SECTION: Forms & Inputs
+   ═══════════════════════════════════════ */
 
 /* Character counter */
 .char-counter {
@@ -1446,6 +1482,10 @@ body.tg-theme-dark .bottom-tab-bar-inner {
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.40);
 }
 
+/* ═══════════════════════════════════════
+   SECTION: Dark Theme Overrides
+   ═══════════════════════════════════════ */
+
 /* ── Dark-mode overrides for tg-theme-dark class ──────────────────────────
    When Telegram sets body.tg-theme-dark, CSS vars from @media may not fire
    (OS and Telegram dark settings can diverge). Override backgrounds and text
@@ -1531,6 +1571,10 @@ body.tg-theme-dark .reference-hero-card.is-theory {
 }
 
 /* settings section inputs — dark theme */
+/* ═══════════════════════════════════════
+   SECTION: Settings
+   ═══════════════════════════════════════ */
+
 .settings-section input[type="text"],
 .settings-section input[type="password"],
 .settings-section textarea {
@@ -1603,6 +1647,10 @@ body.tg-theme-dark .danger-button {
   color: #e27266;
   border-color: rgba(176, 58, 46, 0.40);
 }
+
+/* ═══════════════════════════════════════
+   SECTION: Navigation (Bottom Tab Bar)
+   ═══════════════════════════════════════ */
 
 .bottom-tab-btn {
   display: grid;
@@ -1883,6 +1931,10 @@ body.tg-theme-dark .danger-button {
   margin: 0;
 }
 
+/* ═══════════════════════════════════════
+   SECTION: Mobile Layout & Responsive
+   ═══════════════════════════════════════ */
+
 /* ── Safe Area Insets (Dynamic Island, Telegram chrome) ─────────────────── */
 /* --tg-content-inset-top is set by JS from Telegram.WebApp.contentSafeAreaInset.top.  */
 /* It includes both the iPhone notch/Dynamic Island AND the Telegram close bar height.  */
@@ -2075,6 +2127,10 @@ body.tg-theme-dark .danger-button {
     min-height: 44px;
   }
 }
+/* ═══════════════════════════════════════
+   SECTION: Buttons
+   ═══════════════════════════════════════ */
+
 .secondary-button,
 .status-button,
 .feedback-button,
@@ -2358,6 +2414,10 @@ body.tg-theme-dark .danger-button {
 .slide-version-actions > button {
   min-width: 0;
 }
+
+/* ═══════════════════════════════════════
+   SECTION: Blend Constructor & References
+   ═══════════════════════════════════════ */
 
 .aroma-hero {
   overflow: hidden;
@@ -2968,6 +3028,10 @@ body.tg-theme-dark .concept-card {
   color: var(--text);
 }
 
+/* ═══════════════════════════════════════
+   SECTION: Plans & Schedule
+   ═══════════════════════════════════════ */
+
 /* ── Plan / keyword / reels cards ────────────────────────────────────────── */
 .plan-card, .keyword-topic, .reels-card {
   border: 1px solid var(--border);
@@ -3090,6 +3154,10 @@ body.tg-theme-dark .concept-card {
   font-size: 13px;
   color: var(--muted);
 }
+
+/* ═══════════════════════════════════════
+   SECTION: Reels
+   ═══════════════════════════════════════ */
 
 /* ── Reels ───────────────────────────────────────────────────────────────── */
 .reels-frames {
@@ -3457,6 +3525,10 @@ body.tg-theme-dark .concept-card {
   display: block;
 }
 
+/* ═══════════════════════════════════════
+   SECTION: Carousel
+   ═══════════════════════════════════════ */
+
 /* ── Carousel slide image container (4:5 aspect ratio) ───────────────────── */
 .carousel-slide-image-wrap {
   aspect-ratio: 4 / 5;
@@ -3688,6 +3760,7 @@ body.is-mobile-layout[data-mode="handbook"] .tabs::-webkit-scrollbar { display: 
   gap: var(--space-2);
   justify-content: center;
   flex-wrap: wrap;
+  flex-shrink: 0;
 }
 .detail-icon-actions button {
   flex: 0 0 auto;
@@ -3711,6 +3784,7 @@ body.is-mobile-layout .detail-icon-actions {
   grid-template-columns: repeat(auto-fit, 44px);
   gap: 8px;
   justify-content: center;
+  width: 100%;
 }
 body.is-mobile-layout .detail-icon-actions button {
   aspect-ratio: 1;
@@ -3819,6 +3893,10 @@ body.is-mobile-layout .detail-icon-actions button {
 
 /* Publish panel */
 .publish-panel { display: grid; gap: var(--space-3); }
+/* ═══════════════════════════════════════
+   SECTION: Publish Panel
+   ═══════════════════════════════════════ */
+
 .publish-platforms { display: flex; gap: var(--space-3); flex-wrap: wrap; }
 .publish-platform-toggle { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 14px; }
 .publish-platform-toggle input { accent-color: var(--brand); }
@@ -3907,6 +3985,10 @@ body.is-mobile-layout .detail-icon-actions button {
   background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 600;
 }
 
+/* ═══════════════════════════════════════
+   SECTION: Mentions
+   ═══════════════════════════════════════ */
+
 /* ── Mentions ────────────────────────────────────────────────────────────── */
 .mention-list { display: flex; flex-direction: column; gap: 10px; }
 .mention-card {
@@ -3977,6 +4059,10 @@ body.is-mobile-layout .detail-icon-actions button {
 .draft-meta .meta-chip--muted + .tag,
 .draft-meta .tag + .meta-chip--muted { margin-left: 2px; }
 .draft-meta .meta-chip--muted + .meta-chip--muted::before { content: "·"; margin-right: 6px; opacity: 0.5; }
+
+/* ═══════════════════════════════════════
+   SECTION: Onboarding
+   ═══════════════════════════════════════ */
 
 /* ── Onboarding overlay ─────────────────────────────────────────────────── */
 .onboarding-overlay {
@@ -4365,6 +4451,10 @@ body.tg-theme-dark .blend-constructor-cta { color: #d4845e; }
 .plan-card-metrics-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; color: var(--muted); margin-top: var(--space-1); }
 .plan-card-metrics-badge i, .plan-card-metrics-badge svg { width: 12px; height: 12px; }
 
+/* ═══════════════════════════════════════
+   SECTION: Recommendations
+   ═══════════════════════════════════════ */
+
 /* -- Recommendations Wizard -- */
 .reco-cta-btn { display: block; width: 100%; padding: 10px var(--space-4); margin-top: var(--space-2); background: var(--brand-bg); color: var(--brand); border: 1px solid var(--brand-border); border-radius: 99px; font-size: 14px; font-weight: 600; cursor: pointer; }
 .reco-cta-btn:hover { background: rgba(var(--brand-rgb), 0.18); }
@@ -4442,6 +4532,10 @@ body.tg-theme-dark .reco-cta-btn { color: #d4845e; }
 .daily-oil-practice strong { color: var(--sage); }
 .daily-oil-cta { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; color: var(--brand); margin-top: var(--space-1); }
 .daily-oil-cta i { width: 14px; height: 14px; }
+
+/* ═══════════════════════════════════════
+   SECTION: Utilities
+   ═══════════════════════════════════════ */
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Design System — Utility Classes (PR 17 + PR 18)
