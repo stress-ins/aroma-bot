@@ -278,10 +278,15 @@ def _create_page(browser, miniapp_server, *, viewport, is_mobile, dark=False):
             "document.addEventListener('DOMContentLoaded',"
             " () => document.body.classList.add('tg-theme-dark'))"
         )
-    page.goto(miniapp_server, wait_until="domcontentloaded", timeout=15000)
+    response = page.goto(miniapp_server, wait_until="commit", timeout=10000)
+    print(f"[UI TEST] page.goto returned status={response.status if response else 'None'}", flush=True)
+    page.wait_for_timeout(3000)
+    print(f"[UI TEST] waited 3s, checking app-ready...", flush=True)
     try:
         page.wait_for_selector("body.app-ready", timeout=5000)
+        print(f"[UI TEST] app-ready found!", flush=True)
     except Error:
+        print(f"[UI TEST] app-ready not found, forcing...", flush=True)
         page.evaluate("document.body.classList.add('app-ready')")
         page.wait_for_timeout(200)
     if dark:
