@@ -123,15 +123,15 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
 
     now = "2026-03-11T18:00:00+00:00"
     cursor.execute(
-        "INSERT INTO drafts (draft_id, kind, topic, source, status, feedback, payload, publish_platforms, external_ids, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, '[]', '{}', ?)",
+        "INSERT INTO drafts (draft_id, kind, topic, source, status, feedback, payload, publish_platforms, external_ids, revision_notes, error, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, '[]', '{}', '', '', ?)",
         (draft_id, "reels", "Вечерний ароматический ритуал", "/miniapp", "draft", "", json.dumps(reels_payload), now),
     )
     cursor.execute(
-        "INSERT INTO drafts (draft_id, kind, topic, source, status, feedback, payload, publish_platforms, external_ids, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, '[]', '{}', ?)",
+        "INSERT INTO drafts (draft_id, kind, topic, source, status, feedback, payload, publish_platforms, external_ids, revision_notes, error, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, '[]', '{}', '', '', ?)",
         ("threads001", "threads", "Как мягко выйти из рабочего напряжения", "/content", "in_review", "worked", json.dumps(threads_payload), now),
     )
     cursor.execute(
-        "INSERT INTO drafts (draft_id, kind, topic, source, status, feedback, payload, publish_platforms, external_ids, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, '[]', '{}', ?)",
+        "INSERT INTO drafts (draft_id, kind, topic, source, status, feedback, payload, publish_platforms, external_ids, revision_notes, error, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, '[]', '{}', '', '', ?)",
         ("carousel001", "carousel", "Сенсорная карусель для вечернего ритуала", "/miniapp", "draft", "", json.dumps(carousel_payload), now),
     )
     for slug, name, category, source_type in [
