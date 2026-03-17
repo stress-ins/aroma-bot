@@ -66,3 +66,20 @@ async def trends_health():
     from analytics.trend_signal_store import get_health_status
 
     return await get_health_status()
+
+
+@router.get("/api/trends/intelligence")
+async def trends_intelligence():
+    """Return enriched trend intelligence report."""
+    from analytics.trend_intelligence import generate_trend_report
+
+    return await generate_trend_report()
+
+
+@router.post("/api/trends/enrich")
+async def trigger_enrichment(_: None = Depends(_require_webhook_auth)):
+    """Trigger trend signal enrichment (called by n8n or manually)."""
+    from analytics.signal_enricher import enrich_signals
+
+    count = await enrich_signals()
+    return {"status": "done", "enriched": count}

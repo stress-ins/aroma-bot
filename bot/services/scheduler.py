@@ -118,6 +118,9 @@ _METRICS_POLL_HOURS = {0, 6, 12, 18}
 # Thread monitor: every 2 hours
 _THREAD_MONITOR_HOURS = {0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22}
 
+# Trend enrichment: every 6 hours (offset from metrics by 1 hour)
+_ENRICHMENT_HOURS = {1, 7, 13, 19}
+
 
 # Daily oil: 06:00 UTC (09:00 MSK)
 _DAILY_OIL_HOUR = 6
@@ -136,6 +139,14 @@ async def _run_daily_oil(app: Application) -> None:
     await select_daily_oil(today)
     await send_daily_oil_notifications(app)
     logger.info("Daily oil job complete for %s", today)
+
+
+async def _run_trend_enrichment() -> None:
+    from analytics.signal_enricher import enrich_signals
+
+    count = await enrich_signals()
+    if count:
+        logger.info("Enriched %d trend signals", count)
 
 
 async def _fetch_post_metrics() -> None:
@@ -160,6 +171,7 @@ async def run_loop(app: Application) -> None:
     last_daily_oil_date: date | None = None
     last_metrics_fetch_hour: int | None = None
     last_thread_monitor_hour: int | None = None
+    last_enrichment_hour: int | None = None
     logger.info(
         "Scheduler loop started (digest at %s %s, post check every %ds)",
         settings.daily_digest_time,
@@ -225,6 +237,18 @@ async def run_loop(app: Application) -> None:
                         logger.info("Thread monitor: %d new relevant threads", count)
                 except Exception as exc:
                     logger.error("Thread monitor failed: %s", exc)
+
+            # Trend enrichment every 6 hours (offset)
+            if (
+                now.hour in _ENRICHMENT_HOURS
+                and now.minute == 0
+                and last_enrichment_hour != now.hour
+            ):
+                last_enrichment_hour = now.hour
+                try:
+                    await _run_trend_enrichment()
+                except Exception as exc:
+                    logger.error("Trend enrichment failed: %s", exc)
 
             # Scheduled posts
             try:
