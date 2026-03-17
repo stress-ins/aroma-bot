@@ -126,79 +126,114 @@ def render_preview_png(
     placement: dict,
     size: tuple[int, int] = (1080, 1350),
 ) -> bytes:
-    """Render a preview PNG with text overlaid on the image."""
-    from PIL import Image, ImageDraw, ImageFont
+    """Render editorial-style preview PNG: frosted blur + dark scrim + Poppins typography."""
+    from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
     img = Image.open(io.BytesIO(img_bytes)).convert("RGBA")
     target_w, target_h = size
 
-    # Crop-to-fill: scale to cover, then center-crop
     src_w, src_h = img.size
     src_ratio = src_w / src_h
     tgt_ratio = target_w / target_h
-
     if src_ratio > tgt_ratio:
         new_h = target_h
         new_w = int(src_w * target_h / src_h)
     else:
         new_w = target_w
         new_h = int(src_h * target_w / src_w)
-
     img = img.resize((new_w, new_h), Image.LANCZOS)
-
-    left = (new_w - target_w) // 2
-    top = (new_h - target_h) // 2
-    img = img.crop((left, top, left + target_w, top + target_h))
+    lc = (new_w - target_w) // 2
+    tc = (new_h - target_h) // 2
+    img = img.crop((lc, tc, lc + target_w, tc + target_h))
 
     w, h = size
 
-    box_left = int(w * placement.get("left", 0.08))
-    box_top = int(h * placement.get("top", 0.6))
-    box_w = int(w * placement.get("width", 0.84))
-    box_h = int(h * placement.get("height", 0.25))
+    box_left   = int(w * placement.get("left",   0.06))
+    box_top    = int(h * placement.get("top",    0.58))
+    box_w      = int(w * placement.get("width",  0.88))
+    box_h      = int(h * placement.get("height", 0.32))
+    box_right  = box_left + box_w
+    box_bottom = box_top  + box_h
 
-    # Semi-transparent overlay: #180E08 at 58% opacity
-    overlay = Image.new("RGBA", (box_w, box_h), (0x18, 0x0E, 0x08, int(255 * 0.58)))
-    img.paste(overlay, (box_left, box_top), overlay)
+    # LAYER 1: Frosted blur base
+    blur_region = img.crop((box_left, box_top, box_right, box_bottom))
+    blurred = blur_region.filter(ImageFilter.GaussianBlur(radius=18))
+    img.paste(blurred, (box_left, box_top))
+
+    # LAYER 2: Dark tinted scrim (rounded rectangle)
+    scrim_layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    scrim_draw = ImageDraw.Draw(scrim_layer)
+    scrim_draw.rounded_rectangle(
+        [box_left, box_top, box_right, box_bottom],
+        radius=20,
+        fill=(0x0E, 0x08, 0x04, 145),
+    )
+    img = Image.alpha_composite(img, scrim_layer)
+
+    # LAYER 3: Typography
+    _POPPINS_BOLD   = "/usr/share/fonts/truetype/google-fonts/Poppins-Bold.ttf"
+    _POPPINS_MEDIUM = "/usr/share/fonts/truetype/google-fonts/Poppins-Medium.ttf"
+    FONT_SIZE   = 44
+    LINE_HEIGHT = 60
+    PAD_H       = 32
+    PAD_BOTTOM  = 28
+
+    try:
+        font = ImageFont.truetype(_POPPINS_BOLD, FONT_SIZE)
+    except Exception:
+        try:
+            font = ImageFont.truetype(_POPPINS_MEDIUM, FONT_SIZE)
+        except Exception:
+            try:
+                font = ImageFont.truetype(str(_FONT_PATH), FONT_SIZE)
+            except Exception:
+                font = ImageFont.load_default()
 
     draw = ImageDraw.Draw(img)
 
-    # Load font
-    try:
-        font = ImageFont.truetype(str(_FONT_PATH), 32)
-    except Exception:
-        font = ImageFont.load_default()
+    text_color = (255, 255, 255) if placement.get("text_color", "light") == "light" else (40, 28, 20)
+    shadow_color = (0, 0, 0, 160)
 
-    text_color = (255, 255, 255) if placement.get("text_color", "light") == "light" else (61, 43, 31)
-
-    # Word-wrap text
-    margin = 24
-    max_text_w = box_w - margin * 2
+    max_text_w = box_w - PAD_H * 2
     lines = _wrap_text(draw, text, font, max_text_w)
 
-    y = box_top + margin
-    for line in lines:
-        if y + 36 > box_top + box_h:
-            break
-        draw.text((box_left + margin, y), line, fill=text_color, font=font)
-        y += 40
+    total_text_h = len(lines) * LINE_HEIGHT
 
-    # Convert to RGB for PNG output
+    y = box_bottom - PAD_BOTTOM - total_text_h
+    y = max(y, box_top + 16)
+
+    shadow_layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    shadow_draw = ImageDraw.Draw(shadow_layer)
+
+    for line in lines:
+        x = box_left + PAD_H
+        if y + FONT_SIZE > box_bottom:
+            break
+        shadow_draw.text((x + 2, y + 3), line, font=font, fill=shadow_color)
+        draw.text((x, y), line, font=font, fill=text_color)
+        y += LINE_HEIGHT
+
+    img = Image.alpha_composite(img, shadow_layer)
+
     result = img.convert("RGB")
     buf = io.BytesIO()
-    result.save(buf, format="PNG")
+    result.save(buf, format="PNG", quality=92)
     return buf.getvalue()
 
 
 def _wrap_text(draw: "ImageDraw.ImageDraw", text: str, font: "ImageFont.FreeTypeFont", max_w: int) -> list[str]:
-    """Simple word-wrap."""
+    """Word-wrap using textlength for accurate measurement."""
     words = text.split()
     lines: list[str] = []
     current = ""
     for word in words:
         test = f"{current} {word}".strip()
-        bbox = draw.textbbox((0, 0), test, font=font)
-        if bbox[2] - bbox[0] <= max_w:
+        try:
+            line_w = draw.textlength(test, font=font)
+        except AttributeError:
+            bbox = draw.textbbox((0, 0), test, font=font)
+            line_w = bbox[2] - bbox[0]
+        if line_w <= max_w:
             current = test
         else:
             if current:

@@ -90,6 +90,20 @@ const carouselNoteSaveTimers = {};
 const reelsNoteSaveTimers = {};
 const reelsPromptSaveTimers = {};
 
+// Forward-declared module functions — assigned during module initialization below
+let loadInbox, loadReels, loadKeywords, loadSettings;
+let renderCreate, renderCreateTool;
+let renderDraftList, openDraft, openReels, renderDraftDetail, renderEmptyDetail;
+let renderInbox, renderStatus, renderPlans, renderReels, renderReelsDetail, renderKeywords;
+let addRewrite, removeRewrite, savePlatformTone, saveUploadPostPrefs, connectPlatform;
+let addKeywordItem, removeKeywordItem, openKeywordTopic;
+let addForbiddenPhrase, removeForbiddenPhrase;
+let saveContentReviewDraft, saveThreadsReviewDraft, polishContentDraft, refreshDraftMetrics;
+let loadCurrentTab, safeLoadCurrentTab, retryCurrentTab;
+let publishDraft, cancelPublishSchedule, loadPublishStatus;
+let openPendingReelsCreation, finalizePendingReelsCreation, recoverPendingReelsCreation;
+let refreshReelsDetail;
+
 const elements = {
   tabsContainer: document.getElementById("tabsContainer"),
   filtersContainer: document.getElementById("filtersContainer"),
@@ -577,6 +591,8 @@ function uiIcon(name) {
     pptx:       "presentation",
     note:       "pencil-line",
     reject:     "x",
+    close:      "x",
+    "x":        "x",
     trash:      "trash-2",
     back:       "chevron-left",
     gear:       "settings-2",
@@ -886,23 +902,6 @@ function _selectSchedulerDate(draftId, date, btn) {
     scheduleBtn.disabled = false;
   }
 }
-window._selectSchedulerDate = _selectSchedulerDate;
-
-async function saveContentReviewDraft(draftId, button) {
-  return saveContentReviewDraftImpl(draftId, button);
-}
-
-async function saveThreadsReviewDraft(draftId, button) {
-  return saveThreadsReviewDraftImpl(draftId, button);
-}
-
-async function polishContentDraft(draftId, button) {
-  return polishContentDraftImpl(draftId, button);
-}
-
-async function refreshDraftMetrics(draftId, button) {
-  return refreshDraftMetricsImpl(draftId, button);
-}
 
 function confirmAction(message) {
   const tg = window.Telegram?.WebApp;
@@ -1002,39 +1001,18 @@ function formatPlanDate(value) {
   return date.toLocaleDateString("ru-RU") + " " + date.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
 }
 
-function humanizeRequestMessage(message) {
-  if (message === "request_timeout") {
-    return "Сервер отвечает слишком долго. Действие могло уже запуститься, проверьте карточку ещё раз.";
-  }
-  if (message === "Load failed" || message === "Failed to fetch") {
-    return "Не удалось связаться с сервером. Проверьте соединение и попробуйте ещё раз.";
-  }
-  return message;
+function humanizeRequestMessage(error) {
+  if (error?.status === 402) return "Требуется подписка";
+  if (error?.status === 403) return "Нет доступа";
+  if (error?.status === 504) return "Сервер не ответил вовремя";
+  if (error?.status >= 500) return "Ошибка сервера";
+  if (error?.message === "request_timeout") return "Превышено время ожидания";
+  if (error?.message === "network_error") return "Нет соединения";
+  return error?.message || "Неизвестная ошибка";
 }
 
 function showRequestError(prefix, error) {
-  const message = error?.message || String(error || "unknown_error");
-  showUiNotice(`${prefix}: ${humanizeRequestMessage(message)}`, "error");
-}
-
-async function addKeywordItem(topicIdx, field, form, button) {
-  return addKeywordItemImpl(topicIdx, field, form, button);
-}
-
-async function removeKeywordItem(topicIdx, field, word, button) {
-  return removeKeywordItemImpl(topicIdx, field, word, button);
-}
-
-function openKeywordTopic(topicIdx) {
-  return openKeywordTopicImpl(topicIdx);
-}
-
-async function addForbiddenPhrase() {
-  return addForbiddenPhraseImpl();
-}
-
-async function removeForbiddenPhrase(phrase) {
-  return removeForbiddenPhraseImpl(phrase);
+  showUiNotice(`${prefix}: ${humanizeRequestMessage(error)}`, "error");
 }
 
 const {
@@ -1240,10 +1218,11 @@ const {
   syncMobileNavigation,
   loadPlans,
   loadDrafts,
-  loadReels,
-  openDraft,
-  openReels,
+  loadReels: (...a) => loadReels(...a),
+  openDraft: (...a) => openDraft(...a),
+  openReels: (...a) => openReels(...a),
 });
+renderPlans = renderPlansImpl;
 
 // ── Mentions module ──────────────────────────────────────────────────────────
 
@@ -1260,7 +1239,7 @@ window.mentionsModule = mentionsModule;
 function setPlansSubMode(mode) {
   state.plansSubMode = mode;
   if (mode === "mentions") state.selectedMention = null;
-  renderPlansImpl();
+  renderPlans();
 }
 
 function openMentionDetail(mentionId) { mentionsModule.openMentionDetail(mentionId); }
@@ -1328,8 +1307,6 @@ const {
   callbacks: reelsCallbacks,
 });
 
-async function loadInbox() { return loadInboxImpl(); }
-
 async function loadStatus() {
   state.status = await fetchJson("/api/status");
   renderStatus();
@@ -1339,28 +1316,10 @@ async function loadPlans() {
   await Promise.all([loadPlansImpl(), loadPlansFeedImpl()]);
 }
 
-async function loadReels() { return loadReelsImpl(); }
-
 async function loadSchedule() {
   await loadScheduleImpl();
   renderScheduleListImpl();
   renderScheduleDetailImpl();
-}
-
-async function loadKeywords() {
-  return loadKeywordsImpl();
-}
-
-async function loadSettings() {
-  return loadSettingsImpl();
-}
-
-function renderCreate() {
-  return renderCreateImpl();
-}
-
-function renderCreateTool(toolId) {
-  return renderCreateToolImpl(toolId);
 }
 
 const {
@@ -1452,12 +1411,7 @@ const {
   showUiNotice,
 });
 
-const {
-  renderPublishPanel,
-  publishDraft: publishDraftImpl,
-  cancelPublishSchedule: cancelPublishScheduleImpl,
-  loadPublishStatus: loadPublishStatusImpl,
-} = createPublishModule({
+const _publishMod = createPublishModule({
   fetchJson,
   withButtonFeedback,
   escapeHtml,
@@ -1468,6 +1422,8 @@ const {
   renderDraftList: () => renderDraftList(),
   renderDraftDetail: (d) => renderDraftDetail(d),
 });
+const { renderPublishPanel } = _publishMod;
+({ publishDraft, cancelPublishSchedule, loadPublishStatus } = _publishMod);
 
 const {
   loadSchedule: loadScheduleImpl,
@@ -1491,15 +1447,15 @@ const {
   interactiveCardAttrs,
 });
 
-const {
-  saveContentReviewDraft: saveContentReviewDraftImpl,
-  saveThreadsReviewDraft: saveThreadsReviewDraftImpl,
-  polishContentDraft: polishContentDraftImpl,
-  renderDraftList: renderDraftListImpl,
-  openDraft: openDraftImpl,
-  renderDraftDetail: renderDraftDetailImpl,
-  renderEmptyDetail: renderEmptyDetailImpl,
-  refreshDraftMetrics: refreshDraftMetricsImpl,
+({
+  saveContentReviewDraft,
+  saveThreadsReviewDraft,
+  polishContentDraft,
+  renderDraftList,
+  openDraft,
+  renderDraftDetail,
+  renderEmptyDetail,
+  refreshDraftMetrics,
 } = createDraftsModule({
   state,
   elements,
@@ -1544,28 +1500,9 @@ const {
     renderDraftDetail: (...args) => renderDraftDetail(...args),
     openReels: (...args) => openReels(...args),
   },
-});
+}));
 
-const {
-  addKeywordItem: addKeywordItemImpl,
-  removeKeywordItem: removeKeywordItemImpl,
-  openKeywordTopic: openKeywordTopicImpl,
-  loadKeywords: loadKeywordsImpl,
-  loadSettings: loadSettingsImpl,
-  renderStatus: renderStatusImpl,
-  renderKeywords: renderKeywordsImpl,
-  renderBrand: renderBrandImpl,
-  loadForbiddenPhrases: loadForbiddenPhrasesImpl,
-  addForbiddenPhrase: addForbiddenPhraseImpl,
-  removeForbiddenPhrase: removeForbiddenPhraseImpl,
-  loadPolicy: loadPolicyImpl,
-  addRewrite: addRewriteImpl,
-  removeRewrite: removeRewriteImpl,
-  savePlatformTone: savePlatformToneImpl,
-  saveUploadPostPrefs: saveUploadPostPrefsImpl,
-  renderAccounts: renderAccountsImpl,
-  connectPlatform: connectPlatformImpl,
-} = createSettingsModule({
+const _settingsMod = createSettingsModule({
   state,
   elements,
   escapeHtml,
@@ -1582,10 +1519,18 @@ const {
   syncMobileNavigation,
   enterDetailView,
 });
+const { renderBrand: renderBrandImpl, loadForbiddenPhrases: loadForbiddenPhrasesImpl, loadPolicy: loadPolicyImpl, renderAccounts: renderAccountsImpl } = _settingsMod;
+({
+  addKeywordItem, removeKeywordItem, openKeywordTopic,
+  loadKeywords, loadSettings,
+  renderStatus, renderKeywords,
+  addForbiddenPhrase, removeForbiddenPhrase,
+  addRewrite, removeRewrite, savePlatformTone, saveUploadPostPrefs,
+  connectPlatform,
+} = _settingsMod);
 
-const {
-  renderCreate: renderCreateImpl,
-  renderCreateTool: renderCreateToolImpl,
+({
+  renderCreate, renderCreateTool,
 } = createCreateModule({
   state,
   elements,
@@ -1602,24 +1547,17 @@ const {
   openPendingDraftCreation,
   finalizePendingDraftCreation,
   recoverPendingDraftCreation,
-  openPendingReelsCreation,
-  finalizePendingReelsCreation,
-  recoverPendingReelsCreation,
-  openDraft,
-  openReels,
+  openPendingReelsCreation: (...a) => openPendingReelsCreation(...a),
+  finalizePendingReelsCreation: (...a) => finalizePendingReelsCreation(...a),
+  recoverPendingReelsCreation: (...a) => recoverPendingReelsCreation(...a),
+  openDraft: (...a) => openDraft(...a),
+  openReels: (...a) => openReels(...a),
   setTab,
   loadPlans,
   renderPlanDetail,
-});
+}));
 
-const {
-  loadCurrentTab: loadCurrentTabImpl,
-  safeLoadCurrentTab: safeLoadCurrentTabImpl,
-  bootstrap: bootstrapImpl,
-  retryCurrentTab: retryCurrentTabImpl,
-  bindBootFallbackReload,
-  bindStartupErrorFallbacks,
-} = createRuntimeModule({
+const _runtimeMod = createRuntimeModule({
   state,
   elements,
   MODE_TABS,
@@ -1648,9 +1586,9 @@ const {
   setTab,
   loadReferenceAccess,
   loadDrafts,
-  loadInbox,
+  loadInbox: (...a) => loadInbox(...a),
   loadPlans,
-  loadReels,
+  loadReels: (...a) => loadReels(...a),
   loadSchedule,
   loadReferences,
   loadSettings,
@@ -1662,20 +1600,22 @@ const {
   showRuntimeWarning,
   renderPanelLoader,
 });
+const { bindBootFallbackReload, bindStartupErrorFallbacks, bootstrap: bootstrapImpl } = _runtimeMod;
+({ loadCurrentTab, safeLoadCurrentTab, retryCurrentTab } = _runtimeMod);
 
 const onboarding = createOnboardingModule({ state, icon });
 
-const {
-  loadInbox: loadInboxImpl,
-  loadReels: loadReelsImpl,
-  openReels: openReelsImpl,
-  openPendingReelsCreation: openPendingReelsCreationImpl,
-  finalizePendingReelsCreation: finalizePendingReelsCreationImpl,
-  recoverPendingReelsCreation: recoverPendingReelsCreationImpl,
-  renderInbox: renderInboxImpl,
-  renderReels: renderReelsImpl,
-  renderReelsDetail: renderReelsDetailImpl,
-  refreshReelsDetail: refreshReelsDetailImpl,
+({
+  loadInbox,
+  loadReels,
+  openReels,
+  openPendingReelsCreation,
+  finalizePendingReelsCreation,
+  recoverPendingReelsCreation,
+  renderInbox,
+  renderReels,
+  renderReelsDetail,
+  refreshReelsDetail,
 } = createContentModule({
   state,
   elements,
@@ -1707,27 +1647,9 @@ const {
   callbacks: {
     renderReelsDetailMarkup,
   },
-});
+}));
 
-sessionCallbacks.refreshReelsDetail = refreshReelsDetailImpl;
-
-function renderDraftList() {
-  return renderDraftListImpl();
-}
-
-async function openDraft(id) {
-  return openDraftImpl(id);
-}
-
-async function openReels(id) { return openReelsImpl(id); }
-
-function renderDraftDetail(d) {
-  return renderDraftDetailImpl(d);
-}
-
-function renderEmptyDetail() {
-  return renderEmptyDetailImpl();
-}
+sessionCallbacks.refreshReelsDetail = refreshReelsDetail;
 
 function setMode(m) {
   clearBackgroundRefreshes();
@@ -1807,18 +1729,6 @@ function setTab(t) {
   syncMobileNavigation();
 }
 
-async function loadCurrentTab() { return loadCurrentTabImpl(); }
-
-async function safeLoadCurrentTab(prefix = "Не удалось загрузить раздел") {
-  return safeLoadCurrentTabImpl(prefix);
-}
-
-function openPendingReelsCreation(topic) { return openPendingReelsCreationImpl(topic); }
-
-function finalizePendingReelsCreation(draft) { return finalizePendingReelsCreationImpl(draft); }
-
-async function recoverPendingReelsCreation(topic, pendingDraftId) { return recoverPendingReelsCreationImpl(topic, pendingDraftId); }
-
 async function bootstrap() {
   const sharedBlendId = new URLSearchParams(window.location.search).get("shared");
   if (sharedBlendId) {
@@ -1840,7 +1750,7 @@ registerWindowBridge({
   loadSettings,
   renderCreate,
   renderCreateTool,
-  retryCurrentTab: retryCurrentTabImpl,
+  retryCurrentTab,
   openDraft,
   openAroma,
   openReference,
@@ -1897,17 +1807,17 @@ registerWindowBridge({
   removeKeywordItem,
   addForbiddenPhrase,
   removeForbiddenPhrase,
-  addRewrite: addRewriteImpl,
-  removeRewrite: removeRewriteImpl,
-  savePlatformTone: savePlatformToneImpl,
-  saveUploadPostPrefs: saveUploadPostPrefsImpl,
-  connectPlatform: connectPlatformImpl,
+  addRewrite,
+  removeRewrite,
+  savePlatformTone,
+  saveUploadPostPrefs,
+  connectPlatform,
   setPlanStatusFilter,
   setPlanPlatformFilter,
   setPlanDateFilter,
   openPlanDetail,
-  publishDraft: publishDraftImpl,
-  cancelPublishSchedule: cancelPublishScheduleImpl,
+  publishDraft,
+  cancelPublishSchedule,
   goBackToList,
   renderReferences,
   setPlansSubMode,
@@ -1943,36 +1853,13 @@ registerWindowBridge({
   recoToggleAroma,
   recoUpdateContra,
   submitRecommendations,
+  _selectSchedulerDate,
+  _renderThreadsSchedulerDates,
 });
-
-function renderInbox() { return renderInboxImpl(); }
-
-function renderStatus() {
-  return renderStatusImpl();
-}
-
-function addRewrite() { return addRewriteImpl(); }
-function removeRewrite(pattern) { return removeRewriteImpl(pattern); }
-function savePlatformTone(platform) { return savePlatformToneImpl(platform); }
-function saveUploadPostPrefs() { return saveUploadPostPrefsImpl(); }
-function connectPlatform(platform) { return connectPlatformImpl(platform); }
-
-function renderPlans() {
-  return renderPlansImpl();
-}
-
-function renderReels() { return renderReelsImpl(); }
 
 reelsCallbacks.renderReels = renderReels;
 reelsCallbacks.renderReelsDetail = renderReelsDetail;
 
-function renderReelsDetail(r) {
-  return renderReelsDetailImpl(r);
-}
-
-function renderKeywords() {
-  return renderKeywordsImpl();
-}
 // Auto-resize .prompt-note-field textareas so content fits without inner scroll
 document.addEventListener("input", (e) => {
   if (e.target.matches(".prompt-note-field textarea")) {
