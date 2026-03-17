@@ -98,8 +98,9 @@ export function createRuntimeModule(deps) {
         "Мы не дождались первого ответа. Попробуйте повторить загрузку.",
         true,
       );
-      return false;
     }
+    // Mark app-ready even on error/timeout so UI tests don't hang
+    document.body.classList.add("app-ready");
     return false;
   }
 
