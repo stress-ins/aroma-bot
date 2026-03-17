@@ -1901,8 +1901,9 @@ document.addEventListener("click", () => {
 });
 function refreshIcons() { if (window.lucide) lucide.createIcons(); }
 
+console.log("app.js: calling bootstrap()");
 bootstrap()
-  .then(() => refreshIcons())
+  .then(() => { console.log("app.js: bootstrap resolved"); refreshIcons(); })
   .catch((err) => {
     console.error("bootstrap failed", err);
     document.body.classList.add("app-ready");

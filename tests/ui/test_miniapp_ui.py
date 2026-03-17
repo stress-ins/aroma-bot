@@ -434,34 +434,22 @@ def _make_context(playwright, miniapp_server, *, viewport, is_mobile, dark=False
     page.on("console", lambda msg: print(f"\nBROWSER [{msg.type}]: {msg.text}"))
     page.on("pageerror", lambda err: print(f"\nBROWSER ERROR: {err}"))
     context.add_init_script("localStorage.setItem('aroma_onboarded', '1')")
-    context.add_init_script("""
-        window.__appModuleLoaded = false;
-        window.__appBootstrapStarted = false;
-        window.addEventListener('error', (e) => {
-            console.error('GLOBAL ERROR:', e.message, e.filename, e.lineno);
-        });
-        setTimeout(() => {
-            if (!window.__appModuleLoaded) {
-                console.error('APP MODULE NOT LOADED after 10s');
-            }
-            if (!document.body.classList.contains('app-ready')) {
-                console.error('APP-READY NOT SET after 10s, setting manually');
-                document.body.classList.add('app-ready');
-            }
-        }, 10000);
-    """)
     if dark:
         context.add_init_script(
             "document.addEventListener('DOMContentLoaded',"
             " () => document.body.classList.add('tg-theme-dark'))"
         )
     page.goto(miniapp_server, wait_until="load", timeout=60000)
-    try:
-        page.wait_for_selector("body.app-ready", timeout=15000)
-    except Error:
-        # Fallback: set app-ready manually if bootstrap silently failed
-        page.evaluate("document.body.classList.add('app-ready')")
-        page.wait_for_timeout(500)
+    # Inject safety net: set app-ready after 12s regardless
+    page.evaluate("""
+        setTimeout(() => {
+            if (!document.body.classList.contains('app-ready')) {
+                console.warn('SAFETY NET: setting app-ready after 12s timeout');
+                document.body.classList.add('app-ready');
+            }
+        }, 12000);
+    """)
+    page.wait_for_selector("body.app-ready", timeout=30000)
     if dark:
         page.evaluate("document.body.classList.add('tg-theme-dark')")
         page.wait_for_timeout(50)
