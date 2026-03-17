@@ -1,5 +1,5 @@
 export function createRecommendationsModule(deps) {
-  const { state, elements, fetchJson, escapeHtml, renderBackButton, enterDetailView, syncMobileNavigation, openReference, showUiNotice } = deps;
+  const { state, elements, fetchJson, escapeHtml, renderBackButton, renderDetailLoader, enterDetailView, syncMobileNavigation, openReference, showUiNotice } = deps;
   let _wizardOpen = false, _wizardStep = 0, _wizardData = _empty(), _wizardResults = null, _wizardLoading = false;
   function _empty() { return { mood: "", goal: "", symptoms: [], aroma_preferences: [], contraindications: "" }; }
   const MOOD_OPTIONS = [{value:"stressed",label:"Стресс",icon:"flame"},{value:"tired",label:"Усталость",icon:"battery-low"},{value:"anxious",label:"Тревога",icon:"cloud-lightning"},{value:"neutral",label:"Нормально",icon:"smile"},{value:"energetic",label:"Энергия",icon:"zap"}];
@@ -10,7 +10,7 @@ export function createRecommendationsModule(deps) {
   function isWizardOpen() { return _wizardOpen; }
   function renderWizard() {
     if (!_wizardOpen) return;
-    if (_wizardLoading) { elements.draftDetail.innerHTML = renderBackButton("closeRecommendationsWizard") + '<div class="reco-wizard"><div class="reco-step reco-loading"><div class="detail-loader-container"><div class="detail-loader-spinner"></div><p class="detail-loader-label">Подбираем масла...</p></div></div></div>'; return; }
+    if (_wizardLoading) { elements.draftDetail.innerHTML = '<div class="detail-grid">' + renderBackButton("closeRecommendationsWizard") + renderDetailLoader("\u041f\u043e\u0434\u0431\u0438\u0440\u0430\u0435\u043c \u043c\u0430\u0441\u043b\u0430", "\u0410\u043d\u0430\u043b\u0438\u0437\u0438\u0440\u0443\u0435\u043c \u0432\u0430\u0448\u0438 \u043f\u0440\u0435\u0434\u043f\u043e\u0447\u0442\u0435\u043d\u0438\u044f \u0438 \u043f\u043e\u0434\u0431\u0438\u0440\u0430\u0435\u043c \u043f\u043e\u0434\u0445\u043e\u0434\u044f\u0449\u0438\u0435 \u043c\u0430\u0441\u043b\u0430.") + '</div>'; return; }
     if (_wizardResults) { _renderResults(); return; }
     const steps = [_renderMoodStep, _renderGoalStep, _renderSymptomsStep, _renderAromaPrefsStep, _renderContraindicationsStep];
     const titles = ["Как вы себя чувствуете?", "Что хотите получить?", "Есть ли симптомы?", "Предпочтения по аромату", "Противопоказания"];
@@ -41,7 +41,7 @@ export function createRecommendationsModule(deps) {
   function recoUpdateContra(v) { _wizardData.contraindications = v; }
   async function submitRecommendations() {
     _wizardLoading = true; renderWizard();
-    try { const result = await fetchJson("/api/recommendations/personal", { method: "POST", body: JSON.stringify(_wizardData) }); _wizardResults = result; _wizardLoading = false; renderWizard(); }
+    try { const result = await fetchJson("/api/recommendations/personal", { method: "POST", timeout: 45000, body: JSON.stringify(_wizardData) }); _wizardResults = result; _wizardLoading = false; renderWizard(); }
     catch (err) { _wizardLoading = false; renderWizard(); showUiNotice("Ошибка подбора. Попробуйте ещё раз.", "error"); }
   }
   return { openRecommendationsWizard, closeRecommendationsWizard, isWizardOpen, renderWizard, recoWizardNext, recoWizardBack, recoSelectMood, recoSelectGoal, recoUpdateSymptoms, recoToggleAroma, recoUpdateContra, submitRecommendations };
