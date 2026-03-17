@@ -11,6 +11,7 @@ from bot.services.status_monitor import (
     parse_rss_items,
     filter_fresh_items,
     check_status_feeds,
+    _parse_date,
     _seen_guids,
 )
 
@@ -60,6 +61,57 @@ class TestParseRssItems:
         assert items[0]["guid"] == ""  # no link fallback either
 
 
+_SAMPLE_ATOM = """\
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Google Cloud Status</title>
+  <entry>
+    <title>Google Cloud Networking — disruption</title>
+    <link href="https://status.cloud.google.com/incidents/abc456"/>
+    <updated>2026-03-18T15:00:00Z</updated>
+    <id>tag:status.cloud.google.com,2026:abc456</id>
+    <content type="html">Network issue in us-east1.</content>
+  </entry>
+  <entry>
+    <title>Old Cloud Incident</title>
+    <link href="https://status.cloud.google.com/incidents/old888"/>
+    <updated>2025-01-01T00:00:00Z</updated>
+    <id>tag:status.cloud.google.com,2025:old888</id>
+    <content type="html">Resolved.</content>
+  </entry>
+</feed>
+"""
+
+
+class TestParseAtomItems:
+    def test_parses_atom_entries(self):
+        items = parse_rss_items(_SAMPLE_ATOM, fmt="atom")
+        assert len(items) == 2
+        assert items[0]["title"] == "Google Cloud Networking — disruption"
+        assert items[0]["link"] == "https://status.cloud.google.com/incidents/abc456"
+        assert items[0]["guid"] == "tag:status.cloud.google.com,2026:abc456"
+        assert items[0]["pubDate"] == "2026-03-18T15:00:00Z"
+
+    def test_atom_with_no_entries(self):
+        xml = '<?xml version="1.0"?><feed xmlns="http://www.w3.org/2005/Atom"><title>Empty</title></feed>'
+        assert parse_rss_items(xml, fmt="atom") == []
+
+
+class TestParseDate:
+    def test_rfc2822(self):
+        dt = _parse_date("Mon, 18 Mar 2026 14:30:00 +0000")
+        assert dt.year == 2026 and dt.month == 3 and dt.hour == 14
+
+    def test_iso8601(self):
+        dt = _parse_date("2026-03-18T15:00:00Z")
+        assert dt.year == 2026 and dt.hour == 15
+        assert dt.tzinfo is not None
+
+    def test_iso8601_with_offset(self):
+        dt = _parse_date("2026-03-18T15:00:00+03:00")
+        assert dt.hour == 15
+
+
 class TestFilterFreshItems:
     def test_filters_old_items(self):
         items = parse_rss_items(_SAMPLE_RSS)
@@ -73,6 +125,13 @@ class TestFilterFreshItems:
         now = datetime(2027, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
         fresh = filter_fresh_items(items, max_age_hours=24, now=now)
         assert fresh == []
+
+    def test_filters_atom_items_by_freshness(self):
+        items = parse_rss_items(_SAMPLE_ATOM, fmt="atom")
+        now = datetime(2026, 3, 18, 20, 0, 0, tzinfo=timezone.utc)
+        fresh = filter_fresh_items(items, max_age_hours=24, now=now)
+        assert len(fresh) == 1
+        assert fresh[0]["title"] == "Google Cloud Networking — disruption"
 
     def test_items_without_pubdate_skipped(self):
         items = [{"title": "No date", "guid": "x"}]
@@ -126,8 +185,8 @@ class TestCheckStatusFeeds:
 
             await check_status_feeds()
 
-            # 2 feeds × 1 unique item each = 2 notifications
-            assert mock_notify.call_count == 2
+            # 6 feeds × 1 unique item each = 6 notifications
+            assert mock_notify.call_count == 6
             text = mock_notify.call_args_list[0][0][0]
             assert "Test Incident" in text
 
