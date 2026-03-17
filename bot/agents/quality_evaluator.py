@@ -82,6 +82,29 @@ def _call_claude(prompt: str, system: str = "") -> str:
     )
 
 
+def _self_audit(scores: dict, text: str) -> dict:
+    """Cross-check evaluator scores against hard rules (AI marker detection)."""
+    from bot.services.humanizer import detect_ai_markers
+
+    markers = detect_ai_markers(text)
+    if markers and scores.get("humanness", 0) > 0.7:
+        scores["humanness"] = max(0.4, scores["humanness"] - 0.3)
+        marker_names = ", ".join(markers[:5])
+        audit_note = f" Self-audit: AI markers detected ({marker_names}), humanness adjusted."
+        scores["critique"] = scores.get("critique", "") + audit_note
+        # Recalculate overall
+        scores["overall"] = round(
+            scores["hook_strength"] * 0.25
+            + scores["coherence"] * 0.20
+            + scores["cta_clarity"] * 0.15
+            + scores["brand_fit"] * 0.20
+            + scores["humanness"] * 0.20,
+            3,
+        )
+        scores["passed"] = scores["overall"] >= _THRESHOLD
+    return scores
+
+
 def _evaluate_sync(text: str, platform: str, topic: str) -> ContentScore:
     prompt = _EVAL_PROMPT_TEMPLATE.format(
         platform=platform,
@@ -104,16 +127,18 @@ def _evaluate_sync(text: str, platform: str, topic: str) -> ContentScore:
         humanness = float(data.get("humanness", 0.5))
         overall = round((hook * 0.25 + coherence * 0.20 + cta * 0.15 + brand * 0.20 + humanness * 0.20), 3)
         critique = str(data.get("critique", ""))
-        return ContentScore(
-            hook_strength=round(hook, 3),
-            coherence=round(coherence, 3),
-            cta_clarity=round(cta, 3),
-            brand_fit=round(brand, 3),
-            humanness=round(humanness, 3),
-            overall=overall,
-            critique=critique,
-            passed=overall >= _THRESHOLD,
-        )
+        scores = {
+            "hook_strength": round(hook, 3),
+            "coherence": round(coherence, 3),
+            "cta_clarity": round(cta, 3),
+            "brand_fit": round(brand, 3),
+            "humanness": round(humanness, 3),
+            "overall": overall,
+            "critique": critique,
+            "passed": overall >= _THRESHOLD,
+        }
+        scores = _self_audit(scores, text)
+        return ContentScore(**scores)
     except Exception as exc:
         logger.warning("QualityEvaluator parse error: %s", exc)
         return ContentScore(
