@@ -232,6 +232,7 @@ class ReelsV2Draft:
     scenario: str
     caption: str
     music_mood: str
+    production_guide: dict | None = None
 
 
 @dataclass
@@ -430,7 +431,20 @@ def generate_reels_v2_draft_sync(
         max_tokens=1800,
         context="reels draft",
     )
-    return _parse_draft(text)
+    draft = _parse_draft(text)
+
+    # Video Coach: attach production guidance (non-blocking, never breaks pipeline)
+    try:
+        from bot.agents.video_coach import review_scenario_sync
+
+        draft.production_guide = review_scenario_sync(
+            scenario_text=draft.scenario,
+            target_duration=30.0,
+        )
+    except Exception:
+        logger.warning("Video Coach failed, skipping production guide", exc_info=True)
+
+    return draft
 
 
 def _enhance_frame_prompt(raw_prompt: str, aspect_ratio: str = "9:16") -> str:
