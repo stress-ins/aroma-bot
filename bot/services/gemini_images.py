@@ -25,7 +25,7 @@ def _notify_image_failure(log_context: str, error: str) -> None:
 # Kie.ai unified API (primary provider)
 # ---------------------------------------------------------------------------
 _KIE_BASE_URL = "https://api.kie.ai/api/v1/jobs"
-_KIE_MODEL = "nano-banana-2"  # Gemini 3.1 Flash — fast & cheap ($0.04/1K)
+_KIE_MODEL = "google/nano-banana"  # Gemini 2.5 Flash Image Preview
 
 # ---------------------------------------------------------------------------
 # Legacy NanoBanana direct API (fallback)
