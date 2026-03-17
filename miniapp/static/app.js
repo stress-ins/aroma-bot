@@ -96,7 +96,7 @@ let loadInbox, loadReels, loadKeywords, loadSettings;
 let renderCreate, renderCreateTool;
 let renderDraftList, openDraft, openReels, renderDraftDetail, renderEmptyDetail;
 let renderInbox, renderStatus, renderPlans, renderReels, renderReelsDetail, renderKeywords;
-let addRewrite, removeRewrite, savePlatformTone, saveUploadPostPrefs, connectPlatform;
+let addRewrite, removeRewrite, savePlatformTone, saveUploadPostPrefs, saveImageModels, connectPlatform;
 let addKeywordItem, removeKeywordItem, openKeywordTopic;
 let addForbiddenPhrase, removeForbiddenPhrase;
 let saveContentReviewDraft, saveThreadsReviewDraft, polishContentDraft, refreshDraftMetrics;
@@ -1272,6 +1272,7 @@ const {
   regenCaption,
   regenFrameImage,
   regenFrameImageWithPrompt,
+  generateReelsImages,
   approveReels,
   scheduleFrameOverlaySave,
   saveFrameImagePrompt,
@@ -1542,6 +1543,7 @@ const { renderBrand: renderBrandImpl, loadForbiddenPhrases: loadForbiddenPhrases
   renderStatus, renderKeywords,
   addForbiddenPhrase, removeForbiddenPhrase,
   addRewrite, removeRewrite, savePlatformTone, saveUploadPostPrefs,
+  saveImageModels,
   connectPlatform,
 } = _settingsMod);
 
@@ -1803,6 +1805,7 @@ registerWindowBridge({
   regenCaption,
   regenFrameImage,
   regenFrameImageWithPrompt,
+  generateReelsImages,
   approveReels,
   scheduleFrameOverlaySave,
   saveFrameImagePrompt,
@@ -1827,6 +1830,7 @@ registerWindowBridge({
   removeRewrite,
   savePlatformTone,
   saveUploadPostPrefs,
+  saveImageModels,
   connectPlatform,
   setPlanStatusFilter,
   setPlanPlatformFilter,

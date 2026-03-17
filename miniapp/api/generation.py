@@ -372,14 +372,26 @@ async def complete_reels_v2_generation(
                 "music_mood": draft_obj.music_mood,
                 "frames": frames_payload,
                 "images_ready": 0,
-                "generation_pending": True,
-                "generation_stage": "images",
-                "generation_message": "Генерирую изображения для кадров.",
             }
         )
-        await update_draft(draft_id, payload=payload, status="draft")
 
-        await populate_frame_assets(draft_id)
+        # Check if auto-image generation is enabled
+        from bot.services.brand_settings_store import get_brand_settings
+        bs = await get_brand_settings()
+        auto_images = bs.reels_auto_images if bs.reels_auto_images is not None else False
+
+        if auto_images:
+            payload["generation_pending"] = True
+            payload["generation_stage"] = "images"
+            payload["generation_message"] = "Генерирую изображения для кадров."
+            await update_draft(draft_id, payload=payload, status="draft")
+            await populate_frame_assets(draft_id)
+        else:
+            payload["generation_pending"] = False
+            payload["generation_stage"] = ""
+            payload["generation_message"] = ""
+            await update_draft(draft_id, payload=payload, status="draft")
+
         await set_generation_state(draft_id, pending=False)
 
     except Exception as exc:
@@ -390,6 +402,15 @@ async def complete_reels_v2_generation(
             message="Не удалось закончить генерацию рилса. Попробуйте ещё раз.",
             error=str(exc),
         )
+
+
+async def complete_reels_v2_generate_images(draft_id: str) -> None:
+    """Generate images for all v2 frames (manual trigger)."""
+    await _run_generation_task(
+        draft_id,
+        populate_frame_assets(draft_id),
+        "Не удалось сгенерировать изображения для кадров. Попробуйте ещё раз.",
+    )
 
 
 async def complete_reels_v2_regen_frame(
@@ -543,13 +564,23 @@ async def complete_reels_v2_regen_concept(
                 "scenario": draft_obj.scenario,
                 "frames": frames_payload,
                 "images_ready": 0,
-                "generation_pending": True,
-                "generation_stage": "images",
-                "generation_message": "Генерирую изображения для обновлённых кадров.",
             }
         )
-        await update_draft(draft_id, payload=payload, status="draft")
-        await populate_frame_assets(draft_id)
+
+        from bot.services.brand_settings_store import get_brand_settings as _get_bs
+        bs = await _get_bs()
+        auto_images = bs.reels_auto_images if bs.reels_auto_images is not None else False
+
+        if auto_images:
+            payload["generation_pending"] = True
+            payload["generation_stage"] = "images"
+            payload["generation_message"] = "Генерирую изображения для обновлённых кадров."
+            await update_draft(draft_id, payload=payload, status="draft")
+            await populate_frame_assets(draft_id)
+        else:
+            payload["generation_pending"] = False
+            await update_draft(draft_id, payload=payload, status="draft")
+
         await set_generation_state(draft_id, pending=False)
 
     except Exception as exc:

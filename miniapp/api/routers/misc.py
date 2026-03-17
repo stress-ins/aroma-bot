@@ -50,6 +50,13 @@ class UploadPostPayload(BaseModel):
     user: str | None = None
 
 
+class ImageModelPayload(BaseModel):
+    image_model_carousel: str | None = None
+    image_model_img2img: str | None = None
+    image_model_reels: str | None = None
+    reels_auto_images: bool | None = None
+
+
 class TodoAddPayload(BaseModel):
     text: str
 
@@ -187,6 +194,58 @@ async def update_upload_post_prefs(payload: UploadPostPayload, _: None = Depends
     return {
         "user": bs.upload_post_user or "",
         "has_key": bool(bs.upload_post_api_key),
+    }
+
+
+ALLOWED_CAROUSEL_MODELS = {"gpt-image/1.5-text-to-image", "google/nano-banana"}
+ALLOWED_IMG2IMG_MODELS = {"google/nano-banana-edit"}
+ALLOWED_REELS_MODELS = {"gpt-image/1.5-text-to-image", "flux-2/pro-text-to-image", "google/nano-banana"}
+
+
+@router.get("/api/preferences/image-models")
+async def get_image_models(_: None = Depends(_require_auth)):
+    bs = await get_brand_settings()
+    return {
+        "image_model_carousel": bs.image_model_carousel or "gpt-image/1.5-text-to-image",
+        "image_model_img2img": bs.image_model_img2img or "google/nano-banana-edit",
+        "image_model_reels": bs.image_model_reels or "gpt-image/1.5-text-to-image",
+        "reels_auto_images": bs.reels_auto_images if bs.reels_auto_images is not None else False,
+        "options": {
+            "carousel": [
+                {"value": "gpt-image/1.5-text-to-image", "label": "GPT Image 1.5"},
+                {"value": "google/nano-banana", "label": "Nano Banana"},
+            ],
+            "img2img": [
+                {"value": "google/nano-banana-edit", "label": "Nano Banana Edit"},
+            ],
+            "reels": [
+                {"value": "gpt-image/1.5-text-to-image", "label": "GPT Image 1.5"},
+                {"value": "flux-2/pro-text-to-image", "label": "Flux 2 Pro"},
+                {"value": "google/nano-banana", "label": "Nano Banana"},
+            ],
+        },
+    }
+
+
+@router.put("/api/preferences/image-models")
+async def update_image_models(payload: ImageModelPayload, _: None = Depends(_require_auth)):
+    updates: dict = {}
+    if payload.image_model_carousel is not None and payload.image_model_carousel in ALLOWED_CAROUSEL_MODELS:
+        updates["image_model_carousel"] = payload.image_model_carousel
+    if payload.image_model_img2img is not None and payload.image_model_img2img in ALLOWED_IMG2IMG_MODELS:
+        updates["image_model_img2img"] = payload.image_model_img2img
+    if payload.image_model_reels is not None and payload.image_model_reels in ALLOWED_REELS_MODELS:
+        updates["image_model_reels"] = payload.image_model_reels
+    if payload.reels_auto_images is not None:
+        updates["reels_auto_images"] = payload.reels_auto_images
+    if updates:
+        await update_brand_settings(**updates)
+    bs = await get_brand_settings()
+    return {
+        "image_model_carousel": bs.image_model_carousel or "gpt-image/1.5-text-to-image",
+        "image_model_img2img": bs.image_model_img2img or "google/nano-banana-edit",
+        "image_model_reels": bs.image_model_reels or "gpt-image/1.5-text-to-image",
+        "reels_auto_images": bs.reels_auto_images if bs.reels_auto_images is not None else False,
     }
 
 
