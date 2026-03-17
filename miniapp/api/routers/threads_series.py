@@ -18,9 +18,9 @@ _executor = ThreadPoolExecutor(max_workers=2)
 
 _SLOT_LABELS = {"morning": "УТРО", "day": "ДЕНЬ", "evening": "ВЕЧЕР"}
 _SLOT_DESCRIPTIONS = {
-    "morning": "утреннее наблюдение, мысль или инсайт",
-    "day": "практический микро-совет с одним конкретным выводом",
-    "evening": "открытый вопрос аудитории или мягкое вечернее размышление",
+    "morning": "провокационный тезис или спорное мнение + открытый вопрос (Hot Take, байт на обсуждение)",
+    "day": "лаконичный список, мясной совет или быстрый туториал (для сохранений и репостов)",
+    "evening": "личная история, факап, шутка или рефлексия (эмоция, уютный чат в комментариях)",
 }
 
 
@@ -87,9 +87,10 @@ async def regen_slot(
 
     # Regenerate via content factory (writer + editor)
     goal_key = p.get("goal", "trust")
-    new_text = await _regen_slot_text(draft.topic, goal_key, payload.slot, payload.note)
+    new_text, new_why = await _regen_slot_text(draft.topic, goal_key, payload.slot, payload.note)
 
     slot_post["text"] = new_text
+    slot_post["why_it_works"] = new_why
     slot_post["versions"] = versions
 
     p["threads_posts"] = posts
@@ -99,11 +100,11 @@ async def regen_slot(
     return await serialize_draft(saved)
 
 
-async def _regen_slot_text(topic: str, goal_key: str, slot: str, note: str | None) -> str:
+async def _regen_slot_text(topic: str, goal_key: str, slot: str, note: str | None) -> tuple[str, str]:
     loop = asyncio.get_running_loop()
 
-    def _sync() -> str:
-        from bot.agents.content import _call_claude, BRAND_CONTEXT, GOAL_GUIDANCE
+    def _sync() -> tuple[str, str]:
+        from bot.agents.content import _call_claude, _extract_why_it_works, BRAND_CONTEXT, GOAL_GUIDANCE
         from bot.agents.creative_team import edit_post_sync
 
         slot_desc = _SLOT_DESCRIPTIONS.get(slot, "один пост")
@@ -112,21 +113,30 @@ async def _regen_slot_text(topic: str, goal_key: str, slot: str, note: str | Non
         note_block = f"\nПожелание: {note}\n" if note else ""
 
         prompt = f"""{BRAND_CONTEXT}
-Роль: ты Platform Writer. Напиши один пост для серии Threads.
+Роль: ты топовый контент-стратег и автор в Threads с навыками вирального сторителлинга.
+Напиши один пост для серии Threads.
 
 Тема серии: {topic}
 Цель: {goal_guidance}
 Слот: {slot_label} — {slot_desc}.
 {note_block}
+Стиль:
+- Первая строчка = 80% успеха. Провокационная или очень жизненная.
+- Короткие, рубленые предложения. Минимум эмодзи (1-2 на пост).
+- Никаких ИИ-штампов: забудь слова «трансформация», «ключевой», «инсайт», «в современном мире».
+
 Правила:
 - Один пост, одна идея, 5-12 коротких строк, 40-120 слов
 - Разговорный стиль, без хэштегов, без длинных вводных
 - Звучит как живой человек, не как лектор
 
+В конце добавь строку: ПОЧЕМУ ЭТО СРАБОТАЕТ: [одно предложение]
 Верни только текст поста, без меток УТРО/ДЕНЬ/ВЕЧЕР.
 """
         raw = _call_claude(prompt, max_tokens=400)
-        return edit_post_sync(raw, topic, platform="threads_slot")
+        edited = edit_post_sync(raw, topic, platform="threads_slot")
+        text, why = _extract_why_it_works(edited)
+        return text, why
 
     return await loop.run_in_executor(_executor, _sync)
 
