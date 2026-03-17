@@ -172,6 +172,7 @@ async def run_loop(app: Application) -> None:
     last_metrics_fetch_hour: int | None = None
     last_thread_monitor_hour: int | None = None
     last_enrichment_hour: int | None = None
+    last_status_check_minute: int | None = None
     logger.info(
         "Scheduler loop started (digest at %s %s, post check every %ds)",
         settings.daily_digest_time,
@@ -249,6 +250,18 @@ async def run_loop(app: Application) -> None:
                     await _run_trend_enrichment()
                 except Exception as exc:
                     logger.error("Trend enrichment failed: %s", exc)
+
+            # Status monitor every 5 minutes
+            if (
+                now.minute % 5 == 0
+                and last_status_check_minute != now.minute
+            ):
+                last_status_check_minute = now.minute
+                try:
+                    from bot.services.status_monitor import check_status_feeds
+                    await check_status_feeds()
+                except Exception as exc:
+                    logger.error("Status monitor failed: %s", exc)
 
             # Scheduled posts
             try:
