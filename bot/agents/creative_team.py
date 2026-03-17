@@ -94,5 +94,17 @@ def edit_post_sync(raw: str, topic: str, platform: str = "default", user_forbidd
     # Apply policy enforcement (soft rewrites + forbidden phrase detection)
     policy_result = enforce_policy(result, platform)
     cleaned = humanize(policy_result.text, platform)
-    return humanize_llm(cleaned, platform)
+    humanized = humanize_llm(cleaned, platform)
+
+    # Brand Guardian validation pass
+    from bot.agents.brand_guardian import audit_brand_sync
+
+    try:
+        audit = audit_brand_sync(humanized, platform)
+        if not audit.get("passed", True) and audit.get("cleaned_text"):
+            humanized = audit["cleaned_text"]
+    except Exception:
+        pass  # Never let brand guardian break the pipeline
+
+    return humanized
 
