@@ -1880,22 +1880,7 @@ registerWindowBridge({
 reelsCallbacks.renderReels = renderReels;
 reelsCallbacks.renderReelsDetail = renderReelsDetail;
 
-// Auto-resize .prompt-note-field textareas so content fits without inner scroll
-document.addEventListener("input", (e) => {
-  if (e.target.matches(".prompt-note-field textarea")) {
-    const el = e.target;
-    el.style.height = "auto";
-    el.style.height = el.scrollHeight + "px";
-  }
-});
-document.addEventListener("click", () => {
-  requestAnimationFrame(() => {
-    document.querySelectorAll(".prompt-note-field textarea").forEach((el) => {
-      el.style.height = "auto";
-      el.style.height = el.scrollHeight + "px";
-    });
-  });
-});
+// Auto-resize for textareas is handled by shell.js bindTextareaAutoExpand()
 function refreshIcons() { if (window.lucide) lucide.createIcons(); }
 
 bootstrap()
