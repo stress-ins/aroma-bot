@@ -1748,7 +1748,9 @@ class TestMiniAppRussianLocale:
         assert 'await recoverPendingDraftCreation(format, topic, pending.draft_id);' in app_js
         assert 'await recoverPendingDraftCreation("carousel", topic, pending.draft_id);' in app_js
         assert 'if (String(preferredId).startsWith("pending-")) {' in app_js
-        assert 'renderDetailLoader("Генерирую карточку", "Сохраняю черновик и подгружаю содержимое.", "detail-loader-card-compact")' in app_js
+        assert 'isSeries ? "Генерирую серию" : "Генерирую карточку"' in app_js
+        assert '"Сохраняю черновик и подгружаю содержимое."' in app_js
+        assert '"detail-loader-card-compact"' in app_js
 
     def test_drafts_do_not_auto_open_first_item_on_boot(self):
         app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
