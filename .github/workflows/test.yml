@@ -57,4 +57,4 @@ jobs:
         run: python -m playwright install --with-deps chromium
 
       - name: Run Mini App UI tests
-        run: python -m pytest tests/ui/ -v -m "not visual" -x --timeout=120 --durations=20
+        run: python -m pytest tests/ui/ -v -m "not visual" --timeout=120 -o timeout_func_only=false --durations=20
