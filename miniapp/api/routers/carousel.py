@@ -9,7 +9,6 @@ from bot.services.carousel_assets import (
     delete_carousel_slide_version,
     extract_images_from_pptx,
     load_carousel_slide_images,
-    regenerate_carousel_slide_asset,
     save_carousel_slide_asset,
     select_carousel_slide_version,
     update_carousel_slide_note,
@@ -21,7 +20,7 @@ from bot.services.draft_revisions_store import create_revision
 from bot.services.miniapp_presenter import serialize_draft
 from ..auth import _require_auth, _resolve_init_data, require_tier
 from ..deps import require_draft
-from ..generation import complete_carousel_regenerate_all, set_generation_state
+from ..generation import complete_carousel_regen_slide, complete_carousel_regenerate_all, set_generation_state
 from ..models import (
     CarouselSlideNotePayload,
     CarouselSlideRegeneratePayload,
@@ -80,6 +79,7 @@ async def regenerate_carousel_slide(
     draft_id: str,
     slide_index: int,
     payload: CarouselSlideRegeneratePayload,
+    background_tasks: BackgroundTasks,
     _: None = Depends(_require_auth),
 ):
     draft = await get_draft(draft_id)
@@ -100,14 +100,11 @@ async def regenerate_carousel_slide(
             status_code=429,
             detail={"error": "regen_limit", "used": regen_count, "max": REGEN_LIMIT_PER_CARD},
         )
-    updated_payload = await regenerate_carousel_slide_asset(draft_id, slide_index, note=payload.note)
-    if updated_payload is None:
-        raise HTTPException(status_code=404, detail="carousel_slide_not_found")
-    # Increment regen counter
-    new_count = regen_count + 1
-    payload_dict = dict(draft.payload)
-    payload_dict["regen_count"] = new_count
-    await update_draft(draft_id, payload=payload_dict)
+    await set_generation_state(
+        draft_id, pending=True, stage="images",
+        message="Перегенерирую картинку для слайда.",
+    )
+    background_tasks.add_task(complete_carousel_regen_slide, draft_id, slide_index, payload.note)
     refreshed = await get_draft(draft_id)
     if not refreshed:
         raise HTTPException(status_code=404, detail="carousel_not_found")

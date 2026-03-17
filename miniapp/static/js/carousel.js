@@ -333,6 +333,7 @@ export function createCarouselModule(deps) {
       const draft = await fetchJson(`/api/carousel/${draftId}/slides/${slideIndex}/regenerate`, {
         method: "POST",
         body: JSON.stringify({ note }),
+        timeout: 60000,
       });
       mergeDraftIntoState(draft);
       renderDraftList();

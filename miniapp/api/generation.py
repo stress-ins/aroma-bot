@@ -13,7 +13,11 @@ from bot.agents.reels_agent import (
     generate_reels_v2_draft_sync,
 )
 from bot.handlers.carousel import _generate_carousel_sync
-from bot.services.carousel_assets import populate_carousel_slide_assets, regenerate_all_carousel_slide_assets
+from bot.services.carousel_assets import (
+    populate_carousel_slide_assets,
+    regenerate_all_carousel_slide_assets,
+    regenerate_carousel_slide_asset,
+)
 from bot.services.drafts_store import get_draft, update_draft
 from bot.services.forbidden_phrases import load_forbidden_phrases
 from bot.services.miniapp_references import build_reference_context
@@ -252,6 +256,31 @@ async def complete_reels_generation(draft_id: str, topic: str) -> None:
             pending=False,
             stage="error",
             message="Не удалось закончить генерацию рилса. Попробуйте ещё раз.",
+            error=str(exc),
+        )
+
+
+
+async def complete_carousel_regen_slide(
+    draft_id: str, slide_index: int, note: str | None = None
+) -> None:
+    """Regenerate image for a single carousel slide as a background task."""
+    try:
+        result = await regenerate_carousel_slide_asset(draft_id, slide_index, note=note)
+        if result is None:
+            raise RuntimeError("carousel_slide_regenerate_failed")
+        draft = await get_draft(draft_id)
+        if draft:
+            payload = dict(draft.payload)
+            payload["regen_count"] = payload.get("regen_count", 0) + 1
+            await update_draft(draft_id, payload=payload)
+        await set_generation_state(draft_id, pending=False)
+    except Exception as exc:
+        await set_generation_state(
+            draft_id,
+            pending=False,
+            stage="error",
+            message="Не удалось перегенерировать картинку. Попробуйте ещё раз.",
             error=str(exc),
         )
 
