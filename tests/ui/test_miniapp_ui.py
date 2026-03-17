@@ -191,6 +191,10 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
             target_platforms JSON DEFAULT '[]',
             upload_post_user VARCHAR(255) DEFAULT '',
             upload_post_api_key VARCHAR(255) DEFAULT '',
+            image_model_carousel VARCHAR(100) DEFAULT 'gpt-image/1.5-text-to-image',
+            image_model_img2img VARCHAR(100) DEFAULT 'google/nano-banana-edit',
+            image_model_reels VARCHAR(100) DEFAULT 'gpt-image/1.5-text-to-image',
+            reels_auto_images BOOLEAN DEFAULT 0,
             updated_at DATETIME
         )
         """
