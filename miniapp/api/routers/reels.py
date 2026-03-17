@@ -25,6 +25,7 @@ from ..auth import _require_auth, require_tier
 from ..deps import require_draft
 from ..generation import (
     complete_reels_regenerate_all,
+    complete_reels_v2_generate_images,
     complete_reels_v2_regen_caption,
     complete_reels_v2_regen_concept_only,
     complete_reels_v2_regen_frame,
@@ -125,6 +126,21 @@ async def reels_regen_frame_image(
         raise HTTPException(status_code=400, detail="empty_frame_id")
     await set_generation_state(draft_id, pending=True, stage="images", message="Перегенерирую кадр.")
     background_tasks.add_task(complete_reels_v2_regen_frame, draft_id, frame_id, payload.prompt)
+    draft = await serialize_reels_draft(draft_id)
+    if not draft:
+        raise HTTPException(status_code=404, detail="reels_not_found")
+    return draft
+
+
+@router.post("/api/reels/{draft_id}/generate-images", dependencies=[Depends(require_tier("expert"))])
+async def reels_generate_images(
+    draft_id: str,
+    background_tasks: BackgroundTasks,
+    _: None = Depends(_require_auth),
+):
+    """Generate images for all v2 frames (manual trigger)."""
+    await set_generation_state(draft_id, pending=True, stage="images", message="Генерирую изображения для кадров.")
+    background_tasks.add_task(complete_reels_v2_generate_images, draft_id)
     draft = await serialize_reels_draft(draft_id)
     if not draft:
         raise HTTPException(status_code=404, detail="reels_not_found")

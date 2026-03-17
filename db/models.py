@@ -90,6 +90,11 @@ class BrandSettingsModel(Base):
     target_platforms: Mapped[list[str]] = mapped_column(MutableList.as_mutable(JSON), default=list)
     upload_post_user: Mapped[str] = mapped_column(String(255), default="")
     upload_post_api_key: Mapped[str] = mapped_column(String(255), default="")
+    # Image generation model preferences
+    image_model_carousel: Mapped[str] = mapped_column(String(100), default="gpt-image/1.5-text-to-image")
+    image_model_img2img: Mapped[str] = mapped_column(String(100), default="google/nano-banana-edit")
+    image_model_reels: Mapped[str] = mapped_column(String(100), default="gpt-image/1.5-text-to-image")
+    reels_auto_images: Mapped[bool] = mapped_column(default=False)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
         default=lambda: datetime.now(timezone.utc),

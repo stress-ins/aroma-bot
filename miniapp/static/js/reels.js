@@ -481,6 +481,24 @@ export function createReelsModule(deps) {
     }, "Запущено");
   }
 
+  async function generateReelsImages(draftId, btn) {
+    try {
+      await withButtonFeedback(btn, "Запускаю...", async () => {
+        const draft = await fetchJson(`/api/reels/${draftId}/generate-images`, {
+          method: "POST",
+          body: "{}",
+          timeout: 30000,
+        });
+        mergeReelsIntoState(draft);
+        callbacks.renderReels?.();
+        callbacks.renderReelsDetail?.(draft);
+        scheduleReelsRefresh(draft.draft_id);
+      }, "Запущено");
+    } catch (error) {
+      showRequestError("Не удалось запустить генерацию картинок", error);
+    }
+  }
+
   async function regenFrameImage(draftId, frameId, btn) {
     await withButtonFeedback(btn, "Генерирую...", async () => {
       const draft = await fetchJson(`/api/reels/${draftId}/regen-frame-image`, {
@@ -697,6 +715,13 @@ export function createReelsModule(deps) {
         ${frames.length ? `
           <section class="section">
             <h3>${sectionHeadingIcon("Кадры")}Кадры</h3>
+            ${frames.some((f) => !f?.image_url && f?.image_status !== "ready") ? `
+              <div class="actions-row" style="margin-bottom:12px">
+                <button class="primary-button" type="button" onclick="generateReelsImages('${r.draft_id}', this)">
+                  ${actionLabel("reel", "Сгенерировать все картинки")}
+                </button>
+              </div>
+            ` : ""}
             ${frames.map((frame, i) => renderFrameV2(frame, r.draft_id, i + 1)).join("")}
           </section>
         ` : ""}
@@ -1095,6 +1120,7 @@ export function createReelsModule(deps) {
     regenCaption,
     regenFrameImage,
     regenFrameImageWithPrompt,
+    generateReelsImages,
     approveReels,
     scheduleFrameOverlaySave,
     saveFrameImagePrompt,

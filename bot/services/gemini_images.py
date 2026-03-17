@@ -56,6 +56,7 @@ def _kie_submit(
     aspect_ratio: str,
     image_urls: list[str] | None,
     log_context: str,
+    model: str | None = None,
 ) -> str | None:
     """Submit a task to Kie.ai. Returns taskId or None."""
     input_block: dict[str, object] = {
@@ -68,7 +69,7 @@ def _kie_submit(
         input_block["image_input"] = image_urls
 
     payload: dict[str, object] = {
-        "model": _KIE_MODEL,
+        "model": model or _KIE_MODEL,
         "callBackUrl": "https://example.com/noop",
         "input": input_block,
     }
@@ -279,6 +280,7 @@ def generate_gemini_image_sync(
     aspect_ratio: str | None = None,
     image_urls: list[str] | None = None,
     log_context: str = "image",
+    model: str | None = None,
 ) -> bytes | None:
     """Generate an image. Uses Kie.ai (primary) with NanoBanana fallback.
 
@@ -287,6 +289,7 @@ def generate_gemini_image_sync(
         aspect_ratio: e.g. "1:1", "4:5", "9:16".
         image_urls: Optional list of source image URLs for image-to-image editing.
         log_context: Label for logs/alerts.
+        model: Kie.ai model ID override (e.g. "gpt-image/1.5-text-to-image").
     """
     kie_key = settings.kie_ai_api_key
     nano_key = settings.nana_banana_api_key
@@ -299,7 +302,7 @@ def generate_gemini_image_sync(
     # --- Primary: Kie.ai ---
     if kie_key:
         headers = {"Authorization": f"Bearer {kie_key}", "Content-Type": "application/json"}
-        task_id = _kie_submit(prompt, headers, ar, image_urls, log_context)
+        task_id = _kie_submit(prompt, headers, ar, image_urls, log_context, model=model)
         if task_id:
             logger.info("%s: Kie submitted taskId=%s", log_context, task_id)
             image_url = _kie_poll(task_id, headers, log_context)

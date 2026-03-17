@@ -14,6 +14,26 @@ from uuid import uuid4
 from bot.services.drafts_store import get_draft, update_draft
 from bot.services.gemini_images import generate_gemini_image_sync
 
+
+def _get_carousel_model() -> str:
+    """Get configured carousel image model, with fallback."""
+    try:
+        from bot.services.brand_settings_store import get_brand_settings_cached
+        bs = get_brand_settings_cached()
+        return bs.image_model_carousel or "gpt-image/1.5-text-to-image"
+    except Exception:
+        return "gpt-image/1.5-text-to-image"
+
+
+def _get_img2img_model() -> str:
+    """Get configured img2img model, with fallback."""
+    try:
+        from bot.services.brand_settings_store import get_brand_settings_cached
+        bs = get_brand_settings_cached()
+        return bs.image_model_img2img or "google/nano-banana-edit"
+    except Exception:
+        return "google/nano-banana-edit"
+
 logger = logging.getLogger(__name__)
 
 CAROUSEL_ASSETS_DIR = Path(
@@ -138,6 +158,7 @@ async def populate_carousel_slide_assets(draft_id: str) -> None:
                 prompt or _FALLBACK_PROMPT,
                 aspect_ratio="4:5",
                 log_context=f"carousel slide {i + 1}/{len(img_prompts)}",
+                model=_get_carousel_model(),
             )
             if image_bytes:
                 version = save_carousel_slide_asset(draft_id, i, image_bytes, prompt=prompt)
@@ -187,10 +208,13 @@ async def regenerate_carousel_slide_asset(
         user_note=notes[slide_index],
     )
     try:
+        # Use img2img model when editing based on existing image
+        regen_model = _get_img2img_model() if slide_images[slide_index] else _get_carousel_model()
         image_bytes = generate_gemini_image_sync(
             final_prompt,
             aspect_ratio="4:5",
             log_context=f"carousel slide regenerate {slide_index + 1}/{len(img_prompts)}",
+            model=regen_model,
         )
     except Exception:
         logger.exception("carousel_assets: regenerate failed on slide %d for draft %s", slide_index + 1, draft_id)
@@ -230,6 +254,7 @@ async def regenerate_all_carousel_slide_assets(draft_id: str) -> dict[str, objec
                 final_prompt,
                 aspect_ratio="4:5",
                 log_context=f"carousel slide regenerate all {index + 1}/{len(img_prompts)}",
+                model=_get_carousel_model(),
             )
         except Exception:
             logger.exception("carousel_assets: regenerate-all failed on slide %d for draft %s", index + 1, draft_id)

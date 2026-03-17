@@ -9,6 +9,16 @@ from uuid import uuid4
 from bot.services.drafts_store import get_draft, update_draft
 from bot.services.gemini_images import generate_gemini_image_sync
 
+
+def _get_reels_model() -> str:
+    """Get configured reels image model, with fallback."""
+    try:
+        from bot.services.brand_settings_store import get_brand_settings_cached
+        bs = get_brand_settings_cached()
+        return bs.image_model_reels or "gpt-image/1.5-text-to-image"
+    except Exception:
+        return "gpt-image/1.5-text-to-image"
+
 logger = logging.getLogger(__name__)
 
 ASSETS_DIR = Path(os.getenv("AROMA_REELS_ASSETS_DIR", Path(__file__).parent.parent.parent / "data" / "reels_assets"))
@@ -83,7 +93,7 @@ async def populate_reels_frame_assets(
         if should_generate:
             current_prompt = str(frame.get("gemini_prompt", "")).strip()
             if current_prompt:
-                image = generate_gemini_image_sync(current_prompt, aspect_ratio="9:16", log_context=f"MiniApp reels frame {idx + 1}")
+                image = generate_gemini_image_sync(current_prompt, aspect_ratio="9:16", log_context=f"MiniApp reels frame {idx + 1}", model=_get_reels_model())
                 if image:
                     asset = save_reels_frame_asset(draft_id, idx, image, prompt=current_prompt)
                     revisions = list(frame.get("asset_revisions", [])) if isinstance(frame.get("asset_revisions"), list) else []
@@ -182,6 +192,7 @@ async def populate_frame_assets(
                     current_prompt,
                     aspect_ratio="9:16",
                     log_context=f"ReelsV2 frame {fid[:8]}",
+                    model=_get_reels_model(),
                 )
                 if image:
                     asset = save_frame_asset(draft_id, fid, image, prompt=current_prompt)

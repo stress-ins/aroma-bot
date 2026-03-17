@@ -40,6 +40,39 @@ export function createSettingsModule(deps) {
 
   // ── Brand Voice (Policy Engine) ──────────────────────────────────────────
 
+  async function loadImageModels() {
+    try {
+      const cfg = await fetchJson("/api/preferences/image-models");
+      const carouselSelect = document.getElementById("imageModelCarousel");
+      const img2imgSelect = document.getElementById("imageModelImg2img");
+      const reelsSelect = document.getElementById("imageModelReels");
+      const autoCheckbox = document.getElementById("reelsAutoImages");
+      if (carouselSelect) carouselSelect.value = cfg.image_model_carousel;
+      if (img2imgSelect) img2imgSelect.value = cfg.image_model_img2img;
+      if (reelsSelect) reelsSelect.value = cfg.image_model_reels;
+      if (autoCheckbox) autoCheckbox.checked = cfg.reels_auto_images;
+    } catch (_err) { /* ignore */ }
+  }
+
+  async function saveImageModels() {
+    const carouselSelect = document.getElementById("imageModelCarousel");
+    const reelsSelect = document.getElementById("imageModelReels");
+    const autoCheckbox = document.getElementById("reelsAutoImages");
+    try {
+      await fetchJson("/api/preferences/image-models", {
+        method: "PUT",
+        body: JSON.stringify({
+          image_model_carousel: carouselSelect?.value || null,
+          image_model_reels: reelsSelect?.value || null,
+          reels_auto_images: autoCheckbox?.checked ?? false,
+        }),
+      });
+      showUiNotice("Настройки моделей сохранены", "success");
+    } catch (_err) {
+      showUiNotice("Не удалось сохранить настройки моделей", "error");
+    }
+  }
+
   async function loadPolicy() {
     try {
       const cfg = await fetchJson("/api/preferences/policy");
@@ -332,10 +365,43 @@ export function createSettingsModule(deps) {
             </div>
           `).join("")}
         </section>
+        <section class="section settings-section">
+          <h3>Модели генерации изображений</h3>
+          <p class="settings-hint">Выберите AI-модели для генерации изображений в каруселях и рилсах.</p>
+          <div class="keyword-field">
+            <strong>Карусели (text-to-image)</strong>
+            <select id="imageModelCarousel" class="draft-textarea" onchange="saveImageModels()">
+              <option value="gpt-image/1.5-text-to-image">GPT Image 1.5</option>
+              <option value="google/nano-banana">Nano Banana</option>
+            </select>
+          </div>
+          <div class="keyword-field">
+            <strong>Редактирование (image-to-image)</strong>
+            <select id="imageModelImg2img" class="draft-textarea" disabled>
+              <option value="google/nano-banana-edit">Nano Banana Edit</option>
+            </select>
+          </div>
+          <div class="keyword-field">
+            <strong>Рилсы (text-to-image)</strong>
+            <select id="imageModelReels" class="draft-textarea" onchange="saveImageModels()">
+              <option value="gpt-image/1.5-text-to-image">GPT Image 1.5</option>
+              <option value="flux-2/pro-text-to-image">Flux 2 Pro</option>
+              <option value="google/nano-banana">Nano Banana</option>
+            </select>
+          </div>
+          <div class="keyword-field">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+              <input type="checkbox" id="reelsAutoImages" onchange="saveImageModels()">
+              <span>Автогенерация картинок при создании рилса</span>
+            </label>
+            <p class="settings-hint" style="margin-top:4px">Если выключено, картинки для кадров генерируются по кнопке вручную.</p>
+          </div>
+        </section>
       </div>
     `;
     void loadPolicy();
     void loadUploadPostPrefs();
+    void loadImageModels();
     enterDetailView();
   }
 
@@ -525,6 +591,8 @@ export function createSettingsModule(deps) {
     savePlatformTone,
     loadUploadPostPrefs,
     saveUploadPostPrefs,
+    saveImageModels,
+    loadImageModels,
     renderAccounts,
     connectPlatform,
   };
