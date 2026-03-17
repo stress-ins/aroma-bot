@@ -278,7 +278,7 @@ def _create_page(browser, miniapp_server, *, viewport, is_mobile, dark=False):
             "document.addEventListener('DOMContentLoaded',"
             " () => document.body.classList.add('tg-theme-dark'))"
         )
-    page.goto(miniapp_server, wait_until="load", timeout=60000)
+    page.goto(miniapp_server, wait_until="commit", timeout=10000)
     try:
         page.wait_for_selector("body.app-ready", timeout=15000)
     except Error:
