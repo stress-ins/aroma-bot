@@ -1,0 +1,7 @@
+[
+  {"file": "calm_ambient.mp3", "mood": ["calm", "contemplative"], "bpm": 70, "duration": 45},
+  {"file": "warm_acoustic.mp3", "mood": ["warm", "uplifting"], "bpm": 95, "duration": 60},
+  {"file": "gentle_piano.mp3", "mood": ["calm", "warm"], "bpm": 75, "duration": 50},
+  {"file": "energetic_beat.mp3", "mood": ["energetic", "uplifting"], "bpm": 120, "duration": 40},
+  {"file": "mysterious_pad.mp3", "mood": ["mysterious", "contemplative"], "bpm": 60, "duration": 55}
+]
