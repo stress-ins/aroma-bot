@@ -32,18 +32,18 @@ class BlendConstructResult(BaseModel):
 
 
 @router.post("/api/blend-constructor/construct", response_model=BlendConstructResult)
-async def construct_blend(body: BlendConstructRequest, _: None = Depends(_require_auth)):
+async def construct_blend(body: BlendConstructRequest, telegram_id: int = Depends(_resolve_telegram_id)):
     if not body.brief.strip():
         raise HTTPException(status_code=400, detail="brief is required")
 
     from miniapp.api.generation import generate_blend_construct
 
-    result = await generate_blend_construct(body)
+    result = await generate_blend_construct(body, telegram_id=telegram_id)
     return result
 
 
 @router.post("/api/blend-constructor/adjust", response_model=BlendConstructResult)
-async def adjust_blend(body: BlendConstructRequest, _: None = Depends(_require_auth)):
+async def adjust_blend(body: BlendConstructRequest, telegram_id: int = Depends(_resolve_telegram_id)):
     """Re-generate blend forcing inclusion of user-specified oils."""
     if not body.brief.strip():
         raise HTTPException(status_code=400, detail="brief is required")
@@ -52,7 +52,7 @@ async def adjust_blend(body: BlendConstructRequest, _: None = Depends(_require_a
 
     from miniapp.api.generation import generate_blend_construct
 
-    result = await generate_blend_construct(body)
+    result = await generate_blend_construct(body, telegram_id=telegram_id)
     return result
 
 

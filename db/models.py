@@ -339,6 +339,19 @@ class TrendSignal(Base):
     )
 
 
+class LlmCacheModel(Base):
+    __tablename__ = "llm_cache"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    cache_key: Mapped[str] = mapped_column(String(128), unique=True, index=True)
+    cache_type: Mapped[str] = mapped_column(String(32))  # "blend" | "recommendation"
+    telegram_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    result: Mapped[dict[str, Any]] = mapped_column(MutableDict.as_mutable(JSON), default=dict)
+    hit_count: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    expires_at: Mapped[datetime] = mapped_column(DateTime)
+
+
 class CollectorHealth(Base):
     __tablename__ = "collector_health"
 
