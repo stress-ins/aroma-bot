@@ -33,6 +33,35 @@
   --font-serif:   "Georgia", "Times New Roman", serif;
   --shadow-sm:    0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.05);
   --text-secondary: var(--muted);
+
+  /* ── Semantic color tokens ─────────────────────────────────────────────── */
+  --color-primary: var(--sage, #6B8F71);
+  --color-secondary: var(--brand, #C4956A);
+  --color-accent: #8B7DB8;
+  --color-cta: var(--brand, #D4845E);
+  --color-surface: var(--bg, #FAFAF7);
+  --color-card: var(--surface, #FFFFFF);
+  --color-text: var(--text, #2D3436);
+  --color-muted: var(--muted, #6C7A89);
+  --color-border: var(--border, #E8E5DF);
+  --color-success: #4CAF50;
+  --color-warning: #FF9800;
+  --color-error: #F44336;
+
+  /* ── Extended spacing scale ────────────────────────────────────────────── */
+  --space-6: 32px;
+  --space-8: 48px;
+
+  /* ── Typography scale ──────────────────────────────────────────────────── */
+  --text-xs: 11px;
+  --text-sm: 13px;
+  --text-base: 15px;
+  --text-lg: 17px;
+  --text-xl: 20px;
+  --text-2xl: 24px;
+
+  /* ── Touch target minimum ──────────────────────────────────────────────── */
+  --touch-min: 44px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -4413,3 +4442,175 @@ body.tg-theme-dark .reco-cta-btn { color: #d4845e; }
 .daily-oil-practice strong { color: var(--sage); }
 .daily-oil-cta { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; color: var(--brand); margin-top: var(--space-1); }
 .daily-oil-cta i { width: 14px; height: 14px; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Design System — Utility Classes (PR 17 + PR 18)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Wellness Card base class ────────────────────────────────────────────── */
+.wellness-card {
+  background: var(--color-card, var(--surface));
+  border: 1px solid var(--color-border, var(--border));
+  border-radius: var(--radius-md, 12px);
+  padding: var(--space-4);
+  transition: box-shadow 0.2s;
+}
+.wellness-card:active {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+/* ── Loading skeleton ────────────────────────────────────────────────────── */
+.loading-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--surface-2, #f0ebe3) 25%,
+    var(--border, #e0dbd3) 50%,
+    var(--surface-2, #f0ebe3) 75%
+  );
+  background-size: 200% 100%;
+  animation: loading-skeleton-shimmer 1.5s ease-in-out infinite;
+  border-radius: var(--radius-sm, 8px);
+  color: transparent !important;
+  pointer-events: none;
+  user-select: none;
+}
+
+.loading-skeleton * {
+  visibility: hidden;
+}
+
+@keyframes loading-skeleton-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Skeleton sizing helpers */
+.loading-skeleton--line {
+  height: 14px;
+  margin-bottom: 8px;
+  border-radius: 4px;
+}
+
+.loading-skeleton--line-short {
+  height: 14px;
+  width: 60%;
+  margin-bottom: 8px;
+  border-radius: 4px;
+}
+
+.loading-skeleton--block {
+  height: 80px;
+  border-radius: var(--radius-md, 12px);
+  margin-bottom: 12px;
+}
+
+.loading-skeleton--circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+
+/* ── Empty state ─────────────────────────────────────────────────────────── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-6, 32px) var(--space-4);
+  min-height: 160px;
+  gap: var(--space-3);
+  color: var(--hint, #9b8678);
+}
+
+.empty-state-icon {
+  width: 40px;
+  height: 40px;
+  color: var(--hint, #9b8678);
+  opacity: 0.5;
+}
+
+.empty-state-icon i,
+.empty-state-icon svg,
+.empty-state-icon [data-lucide] {
+  width: 40px;
+  height: 40px;
+}
+
+.empty-state-title {
+  font-size: var(--text-lg, 17px);
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+.empty-state-text {
+  font-size: var(--text-sm, 13px);
+  color: var(--muted);
+  line-height: 1.55;
+  max-width: 280px;
+  margin: 0;
+}
+
+.empty-state-action {
+  margin-top: var(--space-2);
+}
+
+/* ── Touch target enforcement ────────────────────────────────────────────── */
+/* Ensure interactive chip/filter elements meet 44px minimum on mobile */
+@media (max-width: 760px) {
+  /* Standalone chip-like elements — safe to enlarge */
+  .filter-chip,
+  .search-tag,
+  .chip-selectable,
+  .reco-chip,
+  .date-picker-btn,
+  .platform-format-option {
+    min-height: var(--touch-min, 44px);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Ensure filter chips have adequate padding for touch */
+  .filter-chip,
+  .search-tag,
+  .chip-selectable {
+    padding: 10px 16px;
+  }
+
+  /* Calendar day cells need adequate touch size */
+  .plans-cal-day {
+    min-width: var(--touch-min, 44px);
+    min-height: var(--touch-min, 44px);
+    padding: 8px;
+  }
+
+  /* Date picker buttons */
+  .date-picker-btn {
+    padding: 10px 16px;
+  }
+
+  /* Platform format options in create form */
+  .platform-format-option {
+    padding: 10px 14px;
+  }
+
+  /* Recommendation chips */
+  .reco-chip {
+    padding: 10px 16px;
+  }
+
+  /* Sound player button already 40px, bump to 44px */
+  .sound-player-btn {
+    width: var(--touch-min, 44px);
+    height: var(--touch-min, 44px);
+  }
+
+  /* Expandable section toggle button */
+  .exp-btn {
+    min-height: var(--touch-min, 44px);
+    display: inline-flex;
+    align-items: center;
+  }
+}
