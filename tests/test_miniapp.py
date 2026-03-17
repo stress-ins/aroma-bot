@@ -663,8 +663,9 @@ class TestMiniAppApi:
             calls["list_recent_drafts"] += 1
             return []
 
+        import bot.services.drafts_store as _ds
         monkeypatch.setattr(miniapp_server, "_acquire_startup_recovery_lock", lambda: None)
-        monkeypatch.setattr(miniapp_server, "list_recent_drafts", _fake_list_recent_drafts)
+        monkeypatch.setattr(_ds, "list_recent_drafts", _fake_list_recent_drafts)
 
         async with miniapp_server.app.router.lifespan_context(miniapp_server.app):
             pass
