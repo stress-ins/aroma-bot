@@ -53,6 +53,7 @@ export function createRuntimeModule(deps) {
     } catch (error) {
       console.error("miniapp runtime tab load failed", error);
       showRuntimeWarning(prefix, error);
+      hideBootFallback();
       return false;
     }
   }
