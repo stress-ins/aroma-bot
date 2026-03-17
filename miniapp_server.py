@@ -14,13 +14,6 @@ from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
-from bot.services.brand_settings_store import preload_brand_settings
-from bot.services.carousel_assets import CAROUSEL_ASSETS_DIR, populate_carousel_slide_assets
-from bot.services.drafts_store import list_recent_drafts
-from bot.services.reels_assets import ASSETS_DIR, populate_reels_frame_assets
-from miniapp.api.generation import complete_carousel_generation, complete_reels_generation
-from miniapp.api.routers import blend_constructor, carousel, create, drafts, keywords, mentions, misc, plans, publish, recommendations, references, reels, social, threads_series, tokens, trends, user
-
 BASE_DIR = Path(__file__).parent
 MINIAPP_DIR = BASE_DIR / "miniapp"
 STATIC_DIR = MINIAPP_DIR / "static"
@@ -54,6 +47,12 @@ def _acquire_startup_recovery_lock():
 @asynccontextmanager
 async def _lifespan(app: FastAPI):  # noqa: ARG001
     """On startup: load brand settings and resume any interrupted generations."""
+    from bot.services.brand_settings_store import preload_brand_settings
+    from bot.services.drafts_store import list_recent_drafts
+    from bot.services.carousel_assets import populate_carousel_slide_assets
+    from bot.services.reels_assets import populate_reels_frame_assets
+    from miniapp.api.generation import complete_carousel_generation, complete_reels_generation
+
     await preload_brand_settings()
     recovery_lock = _acquire_startup_recovery_lock()
     try:
@@ -96,18 +95,39 @@ async def _no_cache_js_modules(request, call_next):
     if path.startswith("/static/") and (path.endswith(".js") or path.endswith(".css")):
         response.headers["Cache-Control"] = "no-store, max-age=0"
     return response
-app.mount("/generated/reels_assets", StaticFiles(directory=ASSETS_DIR), name="reels-generated-assets")
-app.mount("/generated/carousel_assets", StaticFiles(directory=CAROUSEL_ASSETS_DIR), name="carousel-generated-assets")
 
-REFERENCE_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
-app.mount("/reference-images", StaticFiles(directory=REFERENCE_IMAGES_DIR), name="reference-images")
 
-SOUNDS_DIR = BASE_DIR / "assets" / "sounds"
-SOUNDS_DIR.mkdir(parents=True, exist_ok=True)
-app.mount("/sounds", StaticFiles(directory=SOUNDS_DIR), name="sounds")
+def _setup_mounts_and_routers():
+    """Register asset mounts and API routers (lazy imports for faster module load)."""
+    from bot.services.reels_assets import ASSETS_DIR
+    from bot.services.carousel_assets import CAROUSEL_ASSETS_DIR
+    from miniapp.api.routers import (
+        blend_constructor, carousel, create, drafts, keywords, mentions,
+        misc, plans, publish, recommendations, references, reels, social,
+        threads_series, tokens, trends, user,
+    )
 
-for _router in (blend_constructor.router, drafts.router, carousel.router, reels.router, plans.router, recommendations.router, references.router, create.router, keywords.router, misc.router, publish.router, social.router, threads_series.router, trends.router, mentions.router, tokens.router, user.router):
-    app.include_router(_router)
+    app.mount("/generated/reels_assets", StaticFiles(directory=ASSETS_DIR), name="reels-generated-assets")
+    app.mount("/generated/carousel_assets", StaticFiles(directory=CAROUSEL_ASSETS_DIR), name="carousel-generated-assets")
+
+    REFERENCE_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+    app.mount("/reference-images", StaticFiles(directory=REFERENCE_IMAGES_DIR), name="reference-images")
+
+    SOUNDS_DIR = BASE_DIR / "assets" / "sounds"
+    SOUNDS_DIR.mkdir(parents=True, exist_ok=True)
+    app.mount("/sounds", StaticFiles(directory=SOUNDS_DIR), name="sounds")
+
+    for _router in (
+        blend_constructor.router, drafts.router, carousel.router, reels.router,
+        plans.router, recommendations.router, references.router, create.router,
+        keywords.router, misc.router, publish.router, social.router,
+        threads_series.router, trends.router, mentions.router, tokens.router,
+        user.router,
+    ):
+        app.include_router(_router)
+
+
+_setup_mounts_and_routers()
 
 
 @app.get("/", response_class=HTMLResponse)
