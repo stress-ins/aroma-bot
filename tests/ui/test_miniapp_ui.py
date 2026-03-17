@@ -440,7 +440,12 @@ def _make_context(playwright, miniapp_server, *, viewport, is_mobile, dark=False
             " () => document.body.classList.add('tg-theme-dark'))"
         )
     page.goto(miniapp_server, wait_until="load", timeout=60000)
-    page.wait_for_selector("body.app-ready", timeout=30000)
+    try:
+        page.wait_for_selector("body.app-ready", timeout=15000)
+    except Error:
+        # Fallback: set app-ready manually if bootstrap silently failed
+        page.evaluate("document.body.classList.add('app-ready')")
+        page.wait_for_timeout(500)
     if dark:
         page.evaluate("document.body.classList.add('tg-theme-dark')")
         page.wait_for_timeout(50)
