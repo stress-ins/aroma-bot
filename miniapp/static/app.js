@@ -1035,7 +1035,7 @@ const {
   uiIcon,
   setMode,
   setTab,
-  safeLoadCurrentTab,
+  safeLoadCurrentTab: (...args) => safeLoadCurrentTab(...args),
   HANDBOOK_CATEGORY_META,
 });
 
