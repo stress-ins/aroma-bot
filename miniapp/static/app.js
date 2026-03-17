@@ -8,6 +8,7 @@ import { createPublishModule } from "./js/publish.js";
 import { createScheduleModule } from "./js/schedule.js";
 import { createPlansModule } from "./js/plans.js";
 import { createMentionsModule } from "./js/mentions.js";
+import { createBlendConstructorModule } from "./js/blend_constructor.js";
 import { createReferencesModule } from "./js/references.js";
 import { createReelsModule } from "./js/reels.js";
 import { createOnboardingModule } from "./js/onboarding.js";
@@ -1336,21 +1337,6 @@ const {
   handleSmartSearch,
   runSmartSearch,
   clearSmartSearch,
-  openBlendConstructor,
-  toggleEffect,
-  selectSpeed,
-  selectApp,
-  updateConstructBtn,
-  submitBlendConstructor,
-  blendSaveCurrentBlend,
-  blendCreateContent,
-  blendLaunchContent,
-  blendRegenerate,
-  blendAdjustWithOil,
-  openSavedBlends,
-  deleteSavedBlend,
-  shareBlend,
-  openSharedBlend,
 } = createReferencesModule({
   state,
   elements,
@@ -1383,6 +1369,36 @@ const {
   CONCEPT_TYPE_ICONS,
   PRACTICE_TYPE_ICONS,
   PRACTICE_RU_LABELS,
+});
+
+const {
+  openBlendConstructor,
+  toggleEffect,
+  selectSpeed,
+  selectApp,
+  updateConstructBtn,
+  submitBlendConstructor,
+  blendSaveCurrentBlend,
+  blendCreateContent,
+  blendLaunchContent,
+  blendRegenerate,
+  blendAdjustWithOil,
+  openSavedBlends,
+  deleteSavedBlend,
+  shareBlend,
+  openSharedBlend,
+} = createBlendConstructorModule({
+  state,
+  elements,
+  escapeHtml,
+  fetchJson,
+  enterDetailView,
+  syncMobileNavigation,
+  renderBackButton,
+  renderDetailLoader,
+  showUiNotice,
+  tagMarkup,
+  openReference,
 });
 
 const {
