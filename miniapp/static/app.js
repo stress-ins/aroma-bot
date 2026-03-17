@@ -18,6 +18,9 @@ import { createSettingsModule } from "./js/settings.js";
 import { createRecommendationsModule } from "./js/recommendations.js";
 import { createShellModule } from "./js/shell.js";
 
+window.__appModuleLoaded = true;
+console.log("app.js module: top-level execution started");
+
 const state = {
   mode: "content", // 'content' or 'handbook'
   tab: new URLSearchParams(window.location.search).get("tab") || "drafts",

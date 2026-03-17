@@ -434,6 +434,22 @@ def _make_context(playwright, miniapp_server, *, viewport, is_mobile, dark=False
     page.on("console", lambda msg: print(f"\nBROWSER [{msg.type}]: {msg.text}"))
     page.on("pageerror", lambda err: print(f"\nBROWSER ERROR: {err}"))
     context.add_init_script("localStorage.setItem('aroma_onboarded', '1')")
+    context.add_init_script("""
+        window.__appModuleLoaded = false;
+        window.__appBootstrapStarted = false;
+        window.addEventListener('error', (e) => {
+            console.error('GLOBAL ERROR:', e.message, e.filename, e.lineno);
+        });
+        setTimeout(() => {
+            if (!window.__appModuleLoaded) {
+                console.error('APP MODULE NOT LOADED after 10s');
+            }
+            if (!document.body.classList.contains('app-ready')) {
+                console.error('APP-READY NOT SET after 10s, setting manually');
+                document.body.classList.add('app-ready');
+            }
+        }, 10000);
+    """)
     if dark:
         context.add_init_script(
             "document.addEventListener('DOMContentLoaded',"
