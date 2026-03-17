@@ -108,3 +108,37 @@ def edit_post_sync(raw: str, topic: str, platform: str = "default", user_forbidd
 
     return humanized
 
+
+def edit_post_with_optimization_sync(
+    raw: str,
+    topic: str,
+    platform: str = "default",
+    content_type: str = "post",
+    user_forbidden: list[str] | None = None,
+) -> dict:
+    """Edit a post and augment with platform optimization suggestions.
+
+    Returns {
+        "text": str,  # the edited post text
+        "platform_optimization": dict | None,  # optimization suggestions
+    }
+    """
+    text = edit_post_sync(raw, topic, platform, user_forbidden)
+
+    platform_optimization = None
+    try:
+        from bot.agents.platform_optimizer import optimize_for_platform_sync
+
+        platform_optimization = optimize_for_platform_sync(
+            text=text,
+            platform=platform,
+            content_type=content_type,
+        )
+    except Exception:
+        pass  # Never let platform optimizer break the pipeline
+
+    return {
+        "text": text,
+        "platform_optimization": platform_optimization,
+    }
+
