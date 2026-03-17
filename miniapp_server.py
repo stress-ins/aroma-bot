@@ -130,10 +130,28 @@ def _setup_mounts_and_routers():
 _setup_mounts_and_routers()
 
 
+_TELEGRAM_STUB_JS = (
+    "window.Telegram={WebApp:{initData:'',initDataUnsafe:{user:{id:12345}},"
+    "ready:function(){},expand:function(){},close:function(){},"
+    "MainButton:{show:function(){},hide:function(){},setText:function(){},onClick:function(){}},"
+    "BackButton:{show:function(){},hide:function(){},onClick:function(){}},"
+    "themeParams:{},colorScheme:'light',isExpanded:true,"
+    "setHeaderColor:function(){},setBackgroundColor:function(){},"
+    "onEvent:function(){},offEvent:function(){},sendData:function(){},openLink:function(){},"
+    "HapticFeedback:{impactOccurred:function(){},notificationOccurred:function(){},selectionChanged:function(){}}}};"
+)
+
+
 @app.get("/", response_class=HTMLResponse)
 async def index():
     html = (MINIAPP_DIR / "index.html").read_text(encoding="utf-8")
     html = html.replace("__ASSET_VERSION__", _asset_version())
+    # In test mode, replace Telegram CDN script with inline stub to avoid blocking
+    if os.getenv("AROMA_BYPASS_AUTH") == "1":
+        html = html.replace(
+            '<script src="https://telegram.org/js/telegram-web-app.js"></script>',
+            f"<script>{_TELEGRAM_STUB_JS}</script>",
+        )
     return HTMLResponse(
         content=html,
         headers={"Cache-Control": "no-store, max-age=0"},

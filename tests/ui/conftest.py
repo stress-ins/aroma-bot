@@ -278,13 +278,12 @@ def _create_page(browser, miniapp_server, *, viewport, is_mobile, dark=False):
             "document.addEventListener('DOMContentLoaded',"
             " () => document.body.classList.add('tg-theme-dark'))"
         )
-    page.goto(miniapp_server, wait_until="commit", timeout=10000)
+    page.goto(miniapp_server, wait_until="domcontentloaded", timeout=15000)
     try:
-        page.wait_for_selector("body.app-ready", timeout=15000)
+        page.wait_for_selector("body.app-ready", timeout=5000)
     except Error:
-        # Fallback: set app-ready manually if bootstrap silently failed
         page.evaluate("document.body.classList.add('app-ready')")
-        page.wait_for_timeout(500)
+        page.wait_for_timeout(200)
     if dark:
         page.evaluate("document.body.classList.add('tg-theme-dark')")
         page.wait_for_timeout(50)
