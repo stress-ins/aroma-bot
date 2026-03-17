@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
 
+from config import settings
 from bot.services.drafts_store import get_draft, update_draft
 from bot.services.gemini_images import generate_gemini_image_sync
 
@@ -207,12 +208,24 @@ async def regenerate_carousel_slide_asset(
         total_slides=len(img_prompts),
         user_note=notes[slide_index],
     )
+
+    # Image-to-image: pass current slide image so the model edits rather than
+    # generating from scratch.
+    image_urls: list[str] | None = None
+    current_image = slide_images[slide_index]
+    if current_image and isinstance(current_image, dict):
+        relative_url = current_image.get("url", "")
+        base_url = settings.assets_base_url
+        if relative_url and base_url:
+            image_urls = [f"{base_url}{relative_url}"]
+
     try:
         # Use img2img model when editing based on existing image
         regen_model = _get_img2img_model() if slide_images[slide_index] else _get_carousel_model()
         image_bytes = generate_gemini_image_sync(
             final_prompt,
             aspect_ratio="4:5",
+            image_urls=image_urls,
             log_context=f"carousel slide regenerate {slide_index + 1}/{len(img_prompts)}",
             model=regen_model,
         )
@@ -249,10 +262,21 @@ async def regenerate_all_carousel_slide_assets(draft_id: str) -> dict[str, objec
     changed = False
     for index, prompt in enumerate(img_prompts):
         final_prompt = _prompt_with_note(prompt, notes[index])
+
+        # Image-to-image: pass current slide image when available.
+        image_urls: list[str] | None = None
+        current_image = slide_images[index]
+        if current_image and isinstance(current_image, dict):
+            relative_url = current_image.get("url", "")
+            base_url = settings.assets_base_url
+            if relative_url and base_url:
+                image_urls = [f"{base_url}{relative_url}"]
+
         try:
             image_bytes = generate_gemini_image_sync(
                 final_prompt,
                 aspect_ratio="4:5",
+                image_urls=image_urls,
                 log_context=f"carousel slide regenerate all {index + 1}/{len(img_prompts)}",
                 model=_get_carousel_model(),
             )
