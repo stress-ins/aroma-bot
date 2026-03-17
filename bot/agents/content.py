@@ -274,7 +274,14 @@ def _custom_topics_prompt(user_brief: str, goal_key: str, format_key: str) -> st
 """
 
 
-def _strategist_prompt(topic: str, goal_key: str, format_key: str) -> str:
+def _strategist_prompt(topic: str, goal_key: str, format_key: str, blend_context: dict | None = None) -> str:
+    blend_block = ""
+    if blend_context:
+        from bot.agents.blend_content_context import build_blend_strategist_block
+        blend_block = (
+            "\nКонтекст смеси:\n" + build_blend_strategist_block(blend_context) + "\n"
+            "Угол должен раскрывать воздействие смеси через её профиль.\n"
+        )
     return f"""\
 {get_brand_context()}
 Роль: ты Content Strategist. Твоя задача — найти угол и первую строку.
@@ -288,11 +295,23 @@ ANGLE: [1-2 предложения — почему эта тема резони
 HOOK: [точная первая строка поста — останавливает скролл, без приветствий, без "Сегодня хочу поделиться"]
 
 Пунктуация: тире (— –) → запятая. Запрещено: "важно отметить", "данный", "осуществляется", "в рамках", markdown-форматирование.
-"""
+{blend_block}"""
 
 
-def _writer_prompt(topic: str, goal_key: str, format_key: str, angle: str, hook: str) -> str:
+def _writer_prompt(topic: str, goal_key: str, format_key: str, angle: str, hook: str, blend_context: dict | None = None) -> str:
     rules = _PLATFORM_RULES_WRITER.get(format_key, _PLATFORM_RULES_WRITER["telegram"])
+    blend_block = ""
+    if blend_context:
+        from bot.agents.blend_content_context import build_blend_writer_block
+        blend_block = (
+            "\nКонтекст смеси:\n" + build_blend_writer_block(blend_context) + "\n"
+            "Правила для текста о смеси:\n"
+            "- Начни с состояния, к которому ведёт смесь\n"
+            "- Упомяни 1-2 масла с ролью и свойством\n"
+            "- Объясни синергию\n"
+            "- Включи способ применения\n"
+            "- Это рассказ, не рецепт\n"
+        )
     return f"""\
 {get_brand_context()}
 Роль: ты Platform Writer. Ты получил угол и хук от стратега. Напиши готовый пост.
@@ -301,7 +320,7 @@ def _writer_prompt(topic: str, goal_key: str, format_key: str, angle: str, hook:
 Цель: {GOAL_GUIDANCE[goal_key]}
 Стратегический угол: {angle}
 Первая строка (хук): {hook}
-
+{blend_block}
 {rules}
 
 Дополнительные правила письма:
@@ -349,9 +368,9 @@ def _generate_topics_sync(
     return parse_numbered_list(raw, limit=10)
 
 
-def _generate_strategist_sync(topic: str, goal_key: str, format_key: str) -> tuple[str, str]:
+def _generate_strategist_sync(topic: str, goal_key: str, format_key: str, blend_context: dict | None = None) -> tuple[str, str]:
     """Step 1: Strategist finds creative angle and hook line."""
-    raw = _call_claude(_strategist_prompt(topic, goal_key, format_key), max_tokens=250)
+    raw = _call_claude(_strategist_prompt(topic, goal_key, format_key, blend_context=blend_context), max_tokens=250)
     angle = ""
     hook = ""
     for line in raw.strip().splitlines():
@@ -369,14 +388,14 @@ _MAX_QUALITY_RETRIES = 2
 
 
 def _generate_writer_sync(
-    topic: str, goal_key: str, format_key: str, angle: str, hook: str
+    topic: str, goal_key: str, format_key: str, angle: str, hook: str, blend_context: dict | None = None
 ) -> ContentDraft:
     """Step 2: Writer produces platform-native draft. Step 3: Editor polishes."""
     from bot.agents.creative_team import edit_post_sync
 
     token_limit = 1200 if format_key in ("threads", "threads_series") else 900
     raw = _call_claude(
-        _writer_prompt(topic, goal_key, format_key, angle, hook), max_tokens=token_limit
+        _writer_prompt(topic, goal_key, format_key, angle, hook, blend_context=blend_context), max_tokens=token_limit
     )
     draft = parse_content_draft(raw)
     draft.angle = angle
@@ -401,7 +420,7 @@ def _generate_writer_sync(
             break
         if attempt < _MAX_QUALITY_RETRIES - 1:
             critique_prompt = (
-                f"{_writer_prompt(topic, goal_key, format_key, angle, hook)}\n\n"
+                f"{_writer_prompt(topic, goal_key, format_key, angle, hook, blend_context=blend_context)}\n\n"
                 f"Предыдущая версия получила низкую оценку. Критика редактора:\n"
                 f"{score['critique']}\n\n"
                 f"Перепиши текст учитывая это замечание. "
@@ -421,10 +440,10 @@ def _generate_writer_sync(
     return draft
 
 
-def _generate_draft_sync(topic: str, goal_key: str, format_key: str) -> ContentDraft:
+def _generate_draft_sync(topic: str, goal_key: str, format_key: str, blend_context: dict | None = None) -> ContentDraft:
     """Full 3-agent chain: Strategist → Writer → Editor."""
-    angle, hook = _generate_strategist_sync(topic, goal_key, format_key)
-    return _generate_writer_sync(topic, goal_key, format_key, angle, hook)
+    angle, hook = _generate_strategist_sync(topic, goal_key, format_key, blend_context=blend_context)
+    return _generate_writer_sync(topic, goal_key, format_key, angle, hook, blend_context=blend_context)
 
 
 # ── Public async API ─────────────────────────────────────────────────────────
@@ -461,10 +480,10 @@ async def generate_writer_step(
     )
 
 
-async def generate_content_draft(topic: str, goal_key: str, format_key: str) -> ContentDraft:
+async def generate_content_draft(topic: str, goal_key: str, format_key: str, blend_context: dict | None = None) -> ContentDraft:
     """Full 3-agent chain as a single async call."""
     loop = asyncio.get_running_loop()
-    return await loop.run_in_executor(_executor, _generate_draft_sync, topic, goal_key, format_key)
+    return await loop.run_in_executor(_executor, _generate_draft_sync, topic, goal_key, format_key, blend_context)
 
 
 def generate_image_bytes(prompt: str) -> bytes | None:

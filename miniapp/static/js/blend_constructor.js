@@ -277,6 +277,19 @@ export function createBlendConstructorModule(deps) {
     const req = _blendState.origRequest || {};
     const oilsList = (_blendState.oils || r.oils).filter(o => o.active !== false).map(o => `${o.name_ru} ${o.displayDrops || o.drops} \u043a\u0430\u043f.`).join(", ");
     const topic = `${r.title}${req.brief ? ": " + req.brief : ""}. \u0421\u043e\u0441\u0442\u0430\u0432: ${oilsList}.`;
+    // Save blend context for create form
+    try {
+      const bc = {
+        title: r.title, brief: req.brief || "",
+        oils: (_blendState.oils || r.oils).filter(o => o.active !== false).map(o => ({
+          name_ru: o.name_ru, name_en: o.name_en || "", drops: o.displayDrops || o.drops, role: o.role || "",
+        })),
+        total_drops: r.total_drops, profile: r.profile || {},
+        expert_note: r.expert_note || "", application_guide: r.application_guide || "",
+        tags: r.tags || [],
+      };
+      sessionStorage.setItem("blend_create_context", JSON.stringify(bc));
+    } catch(_e) {}
     if (typeof window.openCreateTool === "function") window.openCreateTool(toolId);
     let attempts = 0;
     const tryFill = () => {

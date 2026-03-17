@@ -408,6 +408,7 @@ def generate_reels_v2_draft_sync(
     topic: str,
     goal: str = "trust",
     emotion: str = "calm",
+    blend_context: dict | None = None,
 ) -> ReelsV2Draft:
     """Generate a v2 reels draft: concept, hook, scenario, caption, music mood."""
     bs = get_brand_settings_cached()
@@ -419,9 +420,13 @@ def generate_reels_v2_draft_sync(
     )
     goal_label = GOAL_LABELS.get(goal, goal)
     emotion_label = EMOTION_LABELS.get(emotion, emotion)
+    blend_block = ""
+    if blend_context:
+        from bot.agents.blend_content_context import build_blend_reels_concept
+        blend_block = "\nКонтекст смеси:\n" + build_blend_reels_concept(blend_context) + "\n"
     prompt = _DRAFT_PROMPT.format(
         brand_context=bs.brand_voice,
-        topic=topic,
+        topic=topic + ("\n" + blend_block if blend_block else ""),
         goal_label=goal_label,
         emotion_label=emotion_label,
         forbidden_block=forbidden_block,
@@ -470,11 +475,21 @@ def generate_frame_prompts_sync(
     topic: str,
     scenario: str,
     n_frames: int = 4,
+    blend_context: dict | None = None,
 ) -> list[FramePromptV2]:
     """Generate per-frame image prompts and overlay texts."""
+    blend_visual_block = ""
+    if blend_context:
+        from bot.agents.blend_content_context import mood_to_visual_directive
+        visual = mood_to_visual_directive(blend_context.get("profile", {}))
+        oil_names = [o.get("name_en", "") for o in blend_context.get("oils", []) if o.get("name_en")]
+        if visual:
+            blend_visual_block = f"\nBlend visual mood: {visual}\n"
+        if oil_names:
+            blend_visual_block += f"Featured botanicals: {', '.join(oil_names)}\n"
     prompt = _FRAMES_PROMPT.format(
         topic=topic,
-        scenario=scenario[:2000],
+        scenario=scenario[:2000] + ("\n" + blend_visual_block if blend_visual_block else ""),
         n_frames=n_frames,
     )
     text = call_claude(

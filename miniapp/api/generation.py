@@ -172,12 +172,12 @@ async def _run_generation_task(
         )
 
 
-async def complete_carousel_generation(draft_id: str, topic: str) -> None:
+async def complete_carousel_generation(draft_id: str, topic: str, blend_context: dict | None = None) -> None:
     try:
         loop = asyncio.get_running_loop()
         forbidden = load_forbidden_phrases()
         slides, img_prompts, _angle, _hook = await loop.run_in_executor(
-            None, _generate_carousel_sync, topic, forbidden
+            None, _generate_carousel_sync, topic, forbidden, blend_context
         )
         if not slides:
             raise RuntimeError("carousel_generation_failed")
@@ -199,6 +199,8 @@ async def complete_carousel_generation(draft_id: str, topic: str) -> None:
                 "generation_message": "Генерирую картинки для слайдов.",
             }
         )
+        if blend_context:
+            payload["blend_context"] = blend_context
         await update_draft(draft_id, payload=payload, status="draft")
         await populate_carousel_slide_assets(draft_id)
         await set_generation_state(draft_id, pending=False)
@@ -312,13 +314,14 @@ async def complete_reels_v2_generation(
     topic: str,
     goal: str = "trust",
     emotion: str = "calm",
+    blend_context: dict | None = None,
 ) -> None:
     """Full 4-stage v2 pipeline: concept → frames → caption → images."""
     try:
         loop = asyncio.get_running_loop()
 
         draft_obj = await loop.run_in_executor(
-            None, generate_reels_v2_draft_sync, topic, goal, emotion
+            None, generate_reels_v2_draft_sync, topic, goal, emotion, blend_context
         )
         await set_generation_state(
             draft_id,
@@ -328,7 +331,7 @@ async def complete_reels_v2_generation(
         )
 
         frame_prompts = await loop.run_in_executor(
-            None, generate_frame_prompts_sync, topic, draft_obj.scenario, 4
+            None, generate_frame_prompts_sync, topic, draft_obj.scenario, 4, blend_context
         )
         frames_payload = [
             {
@@ -374,6 +377,8 @@ async def complete_reels_v2_generation(
                 "images_ready": 0,
             }
         )
+        if blend_context:
+            payload["blend_context"] = blend_context
 
         # Check if auto-image generation is enabled
         from bot.services.brand_settings_store import get_brand_settings
@@ -438,7 +443,7 @@ async def complete_reels_v2_regen_concept_only(
     try:
         loop = asyncio.get_running_loop()
         draft_obj = await loop.run_in_executor(
-            None, generate_reels_v2_draft_sync, topic, goal, emotion
+            None, generate_reels_v2_draft_sync, topic, goal, emotion, blend_context
         )
         draft = await get_draft(draft_id)
         if not draft:
@@ -470,7 +475,7 @@ async def complete_reels_v2_regen_scenario_only(draft_id: str) -> None:
         loop = asyncio.get_running_loop()
 
         draft_obj = await loop.run_in_executor(
-            None, generate_reels_v2_draft_sync, topic, goal, emotion
+            None, generate_reels_v2_draft_sync, topic, goal, emotion, blend_context
         )
         scenario = draft_obj.scenario
 
@@ -527,7 +532,7 @@ async def complete_reels_v2_regen_concept(
         loop = asyncio.get_running_loop()
 
         draft_obj = await loop.run_in_executor(
-            None, generate_reels_v2_draft_sync, topic, goal, emotion
+            None, generate_reels_v2_draft_sync, topic, goal, emotion, blend_context
         )
         await set_generation_state(
             draft_id,
@@ -537,7 +542,7 @@ async def complete_reels_v2_regen_concept(
         )
 
         frame_prompts = await loop.run_in_executor(
-            None, generate_frame_prompts_sync, topic, draft_obj.scenario, 4
+            None, generate_frame_prompts_sync, topic, draft_obj.scenario, 4, blend_context
         )
         frames_payload = [
             {

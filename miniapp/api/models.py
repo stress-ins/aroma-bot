@@ -48,10 +48,22 @@ class ReelsFrameFieldsPayload(BaseModel):
     timecode: str = Field(default="")
 
 
+class BlendContext(BaseModel):
+    title: str = Field(default="")
+    brief: str = Field(default="")
+    oils: list[dict] = Field(default_factory=list)
+    total_drops: int = Field(default=0)
+    profile: dict = Field(default_factory=dict)
+    expert_note: str = Field(default="")
+    application_guide: str = Field(default="")
+    tags: list[str] = Field(default_factory=list)
+
+
 class CreateContentPayload(BaseModel):
     topic: str = Field(default="")
     goal_key: str = Field(default="")
     format_key: str = Field(default="")
+    blend_context: BlendContext | None = Field(default=None)
 
 
 class CreateReelsPayload(BaseModel):
@@ -62,6 +74,7 @@ class CreateReelsV2Payload(BaseModel):
     topic: str = Field(default="")
     goal: str = Field(default="trust")
     emotion: str = Field(default="calm")
+    blend_context: BlendContext | None = Field(default=None)
 
 
 class ReelsFramePatchPayload(BaseModel):
@@ -87,6 +100,7 @@ class ReelsRegenFramePayload(BaseModel):
 
 class CreateCarouselPayload(BaseModel):
     topic: str = Field(default="")
+    blend_context: BlendContext | None = Field(default=None)
 
 
 class CarouselSlideRegeneratePayload(BaseModel):
@@ -113,6 +127,7 @@ class ThreadsSeriesCreateRequest(BaseModel):
     topic: str = Field(default="")
     goal_key: str = Field(default="trust")
     emotion: str = Field(default="")
+    blend_context: BlendContext | None = Field(default=None)
 
 
 class ThreadsSlotPatchRequest(BaseModel):
