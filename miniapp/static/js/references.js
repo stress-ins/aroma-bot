@@ -1135,6 +1135,7 @@ export function createReferencesModule(deps) {
       body: JSON.stringify({brief, effects, speed, application, contraindications}),
     }).then(result => {
       _blendState = { origRequest: {brief, effects, speed, application, contraindications} };
+      try { sessionStorage.setItem("blend_last_result", JSON.stringify(result)); } catch(_e) {}
       renderBlendResult(result);
     }).catch(() => {
       openBlendConstructor(brief);

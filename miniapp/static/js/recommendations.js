@@ -41,7 +41,7 @@ export function createRecommendationsModule(deps) {
   function recoUpdateContra(v) { _wizardData.contraindications = v; }
   async function submitRecommendations() {
     _wizardLoading = true; renderWizard();
-    try { const result = await fetchJson("/api/recommendations/personal", { method: "POST", timeout: 45000, body: JSON.stringify(_wizardData) }); _wizardResults = result; _wizardLoading = false; renderWizard(); }
+    try { const result = await fetchJson("/api/recommendations/personal", { method: "POST", timeout: 45000, body: JSON.stringify(_wizardData) }); _wizardResults = result; try { sessionStorage.setItem("reco_last_result", JSON.stringify(result)); } catch(_e) {} _wizardLoading = false; renderWizard(); }
     catch (err) { _wizardLoading = false; renderWizard(); showUiNotice("Ошибка подбора. Попробуйте ещё раз.", "error"); }
   }
   return { openRecommendationsWizard, closeRecommendationsWizard, isWizardOpen, renderWizard, recoWizardNext, recoWizardBack, recoSelectMood, recoSelectGoal, recoUpdateSymptoms, recoToggleAroma, recoUpdateContra, submitRecommendations };
