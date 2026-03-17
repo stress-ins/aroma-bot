@@ -420,10 +420,6 @@ def _create_page(browser, miniapp_server, *, viewport, is_mobile, dark=False):
         extra_http_headers={"X-Telegram-Init-Data": "user=%7B%22id%22%3A12345%2C%22username%22%3A%22test%22%7D"},
     )
     page = context.new_page()
-    # Intercept Telegram SDK CDN — serve stub to avoid network delays in CI
-    page.route("**/telegram.org/**", lambda route: route.fulfill(
-        status=200, content_type="application/javascript", body=_TELEGRAM_JS_STUB,
-    ))
     page.on("console", lambda msg: print(f"\nBROWSER [{msg.type}]: {msg.text}"))
     page.on("pageerror", lambda err: print(f"\nBROWSER ERROR: {err}"))
     context.add_init_script("localStorage.setItem('aroma_onboarded', '1')")
@@ -432,13 +428,13 @@ def _create_page(browser, miniapp_server, *, viewport, is_mobile, dark=False):
             "document.addEventListener('DOMContentLoaded',"
             " () => document.body.classList.add('tg-theme-dark'))"
         )
-    page.goto(miniapp_server, wait_until="domcontentloaded", timeout=10000)
+    page.goto(miniapp_server, wait_until="load", timeout=60000)
     try:
-        page.wait_for_selector("body.app-ready", timeout=5000)
+        page.wait_for_selector("body.app-ready", timeout=15000)
     except Error:
         # Fallback: set app-ready manually if bootstrap silently failed
         page.evaluate("document.body.classList.add('app-ready')")
-        page.wait_for_timeout(100)
+        page.wait_for_timeout(500)
     if dark:
         page.evaluate("document.body.classList.add('tg-theme-dark')")
         page.wait_for_timeout(50)
