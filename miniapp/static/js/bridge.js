@@ -87,6 +87,7 @@ export function registerWindowBridge(deps) {
     blendRegenerate,
     blendAdjustWithOil,
     deleteSavedBlend,
+    connectPlatform,
   } = deps;
 
   window.retryCurrentTab = retryCurrentTab;
@@ -185,6 +186,7 @@ export function registerWindowBridge(deps) {
   window.blendRegenerate = blendRegenerate;
   window.blendAdjustWithOil = blendAdjustWithOil;
   window.deleteSavedBlend = deleteSavedBlend;
+  window.connectPlatform = connectPlatform;
 
   window.openImageFullscreen = function(src, title) {
     const existing = document.getElementById("img-fullscreen-modal");

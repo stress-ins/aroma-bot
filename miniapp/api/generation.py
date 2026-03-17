@@ -42,6 +42,7 @@ async def generate_blend_construct(body) -> dict:
         body.application,
         body.contraindications,
         reference_context,
+        body.custom_oils or None,
     )
     doctor_task = loop.run_in_executor(
         None,

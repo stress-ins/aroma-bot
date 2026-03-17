@@ -1080,7 +1080,7 @@ export function createReferencesModule(deps) {
     const effects = ["\u043a\u043e\u043d\u0446\u0435\u043d\u0442\u0440\u0430\u0446\u0438\u044f","\u0442\u0432\u043e\u0440\u0447\u0435\u0441\u0442\u0432\u043e","\u0440\u0430\u0441\u0441\u043b\u0430\u0431\u043b\u0435\u043d\u0438\u0435","\u044d\u043d\u0435\u0440\u0433\u0438\u044f","\u0441\u043e\u043d","\u0431\u0430\u043b\u0430\u043d\u0441","\u0437\u0430\u0449\u0438\u0442\u0430"];
     const speeds = [["\u0431\u044b\u0441\u0442\u0440\u043e\u0435","fast"],["\u0441\u0440\u0435\u0434\u043d\u0435\u0435","medium"],["\u043f\u0440\u043e\u043b\u043e\u043d\u0433\u0438\u0440\u043e\u0432\u0430\u043d\u043d\u043e\u0435","extended"]];
     const apps = [["\u0414\u0438\u0444\u0444\u0443\u0437\u043e\u0440","diffuser"],["\u041d\u0430\u043d\u0435\u0441\u0435\u043d\u0438\u0435","topical"],["\u0412\u043d\u0443\u0442\u0440\u044c","internal"],["\u041b\u044e\u0431\u043e\u0439","any"]];
-    elements.draftDetail.innerHTML = `<div class="detail-grid">
+    elements.draftDetail.innerHTML = `<div class="detail-grid blend-constructor-form">
       ${renderBackButton()}
       <p class="eyebrow">\u041a\u041e\u041d\u0421\u0422\u0420\u0423\u041a\u0422\u041e\u0420 \u0421\u041c\u0415\u0421\u0418</p>
       <h2 class="detail-title">\u041e\u043f\u0438\u0448\u0438\u0442\u0435 \u0437\u0430\u0434\u0430\u0447\u0443</h2>
@@ -1118,17 +1118,22 @@ export function createReferencesModule(deps) {
     const speed = document.querySelector("[data-speed].is-selected")?.dataset.speed || "medium";
     const application = document.querySelector("[data-app].is-selected")?.dataset.app || "any";
     const contraindications = document.getElementById("blendContra")?.value.trim() || "";
-    btn.disabled = true;
-    btn.textContent = "\u0413\u0435\u043d\u0435\u0440\u0438\u0440\u0443\u044e \u0441\u043c\u0435\u0441\u044c...";
+
+    // Show full-page loader (like draft generation)
+    elements.draftDetail.innerHTML = `<div class="detail-grid">
+      ${renderBackButton()}
+      ${renderDetailLoader("\u0413\u0435\u043d\u0435\u0440\u0438\u0440\u0443\u044e \u0441\u043c\u0435\u0441\u044c", "\u041f\u043e\u0434\u0431\u0438\u0440\u0430\u044e \u043c\u0430\u0441\u043b\u0430, \u043f\u0440\u043e\u0432\u0435\u0440\u044f\u044e \u0441\u043e\u0432\u043c\u0435\u0441\u0442\u0438\u043c\u043e\u0441\u0442\u044c \u0438 \u0431\u0435\u0437\u043e\u043f\u0430\u0441\u043d\u043e\u0441\u0442\u044c.")}
+    </div>`;
+
     fetchJson("/api/blend-constructor/construct", {
       method: "POST",
+      timeout: 45000,
       body: JSON.stringify({brief, effects, speed, application, contraindications}),
     }).then(result => {
       _blendState = { origRequest: {brief, effects, speed, application, contraindications} };
       renderBlendResult(result);
     }).catch(() => {
-      btn.disabled = false;
-      btn.textContent = "\u041f\u043e\u0434\u043e\u0431\u0440\u0430\u0442\u044c \u0441\u043c\u0435\u0441\u044c";
+      openBlendConstructor(brief);
       showUiNotice("\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0441\u0433\u0435\u043d\u0435\u0440\u0438\u0440\u043e\u0432\u0430\u0442\u044c \u0441\u043c\u0435\u0441\u044c.", "error");
     });
   }
@@ -1491,12 +1496,13 @@ export function createReferencesModule(deps) {
       el.innerHTML = `
         <div class="daily-oil-banner" onclick='openReference(${JSON.stringify(oil.slug)}, "aromas")'>
           <div class="daily-oil-header">
-            <i data-lucide="sun" class="daily-oil-icon"></i>
-            <span class="daily-oil-label">Масло дня</span>
+            <i data-lucide="sparkles" class="daily-oil-icon"></i>
+            <span class="daily-oil-label">\u041c\u0430\u0441\u043b\u043e \u0434\u043d\u044f</span>
           </div>
           <h3 class="daily-oil-name">${escapeHtml(oil.name)}</h3>
           ${oil.fact ? `<p class="daily-oil-fact">${escapeHtml(oil.fact)}</p>` : ""}
-          ${oil.daily_practice ? `<p class="daily-oil-practice"><strong>Практика:</strong> ${escapeHtml(oil.daily_practice)}</p>` : ""}
+          ${oil.daily_practice ? `<p class="daily-oil-practice">${escapeHtml(oil.daily_practice)}</p>` : ""}
+          <span class="daily-oil-cta">\u0423\u0437\u043d\u0430\u0442\u044c \u0431\u043e\u043b\u044c\u0448\u0435 <i data-lucide="chevron-right"></i></span>
         </div>`;
       if (window.lucide) lucide.createIcons();
     } catch {
