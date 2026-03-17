@@ -161,7 +161,7 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
             (slug, name, "symptom", "symptom", json.dumps([]), json.dumps({"category_group": cat_group, "parent_group": cat_group}), now, now),
         )
     cursor.execute(
-        "INSERT INTO plans (plan_id, raw_text, entries, created_at) VALUES (?, ?, ?, ?)",
+        "INSERT INTO plans (plan_id, raw_text, entries, status, created_at) VALUES (?, ?, ?, 'draft', ?)",
         (
             "20260311180000",
             "## Контент-план\n- Понедельник: Threads\n- Среда: Reels",
