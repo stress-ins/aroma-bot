@@ -6,7 +6,7 @@ from bot.agents.platform_rules import (
     get_brand_context,
 )
 from bot.services.brand_settings_store import get_brand_settings_cached
-from bot.services.humanizer import humanize
+from bot.services.humanizer import humanize, humanize_llm
 from bot.services.policy_engine import enforce_policy
 
 
@@ -93,5 +93,6 @@ def edit_post_sync(raw: str, topic: str, platform: str = "default", user_forbidd
     result = result if len(result) > 30 else raw
     # Apply policy enforcement (soft rewrites + forbidden phrase detection)
     policy_result = enforce_policy(result, platform)
-    return humanize(policy_result.text, platform)
+    cleaned = humanize(policy_result.text, platform)
+    return humanize_llm(cleaned, platform)
 
