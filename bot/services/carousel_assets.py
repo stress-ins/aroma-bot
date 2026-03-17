@@ -137,6 +137,17 @@ def save_carousel_slide_asset(
     }
 
 
+
+def _get_blend_mood_from_payload(payload: dict) -> str | None:
+    """Extract blend visual directive from draft payload if blend_context exists."""
+    bc = payload.get("blend_context")
+    if not bc or not isinstance(bc, dict):
+        return None
+    from bot.agents.blend_content_context import mood_to_visual_directive
+    directive = mood_to_visual_directive(bc.get("profile", {}))
+    return directive or None
+
+
 async def populate_carousel_slide_assets(draft_id: str) -> None:
     """Generate Gemini images for all slides that don't have one yet.
 
@@ -200,13 +211,17 @@ async def regenerate_carousel_slide_asset(
     if note is not None:
         notes[slide_index] = note.strip()
 
-    from bot.agents.nanobanana_prompt_expert import optimize_prompt_for_nanobanana
-    final_prompt = optimize_prompt_for_nanobanana(
+    from bot.agents.image_prompt_router import optimize_image_prompt
+    blend_mood = _get_blend_mood_from_payload(draft.payload)
+    regen_model = _get_img2img_model() if slide_images[slide_index] else _get_carousel_model()
+    final_prompt = optimize_image_prompt(
         img_prompts[slide_index],
+        model=regen_model,
         topic=draft.topic,
         slide_number=slide_index,
         total_slides=len(img_prompts),
         user_note=notes[slide_index],
+        blend_mood=blend_mood,
     )
 
     # Image-to-image: pass current slide image so the model edits rather than
@@ -259,9 +274,21 @@ async def regenerate_all_carousel_slide_assets(draft_id: str) -> dict[str, objec
     while len(notes) < len(img_prompts):
         notes.append("")
 
+    from bot.agents.image_prompt_router import optimize_image_prompt as _optimize
+    blend_mood = _get_blend_mood_from_payload(draft.payload)
+
     changed = False
     for index, prompt in enumerate(img_prompts):
-        final_prompt = _prompt_with_note(prompt, notes[index])
+        regen_model = _get_img2img_model() if slide_images[index] else _get_carousel_model()
+        try:
+            final_prompt = _optimize(
+                prompt, model=regen_model, topic=draft.topic,
+                slide_number=index, total_slides=len(img_prompts),
+                user_note=notes[index], blend_mood=blend_mood,
+            )
+        except Exception:
+            logger.exception("carousel_assets: optimize failed on slide %d", index + 1)
+            final_prompt = _prompt_with_note(prompt, notes[index])
 
         # Image-to-image: pass current slide image when available.
         image_urls: list[str] | None = None
@@ -278,7 +305,7 @@ async def regenerate_all_carousel_slide_assets(draft_id: str) -> dict[str, objec
                 aspect_ratio="4:5",
                 image_urls=image_urls,
                 log_context=f"carousel slide regenerate all {index + 1}/{len(img_prompts)}",
-                model=_get_carousel_model(),
+                model=regen_model,
             )
         except Exception:
             logger.exception("carousel_assets: regenerate-all failed on slide %d for draft %s", index + 1, draft_id)

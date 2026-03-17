@@ -347,7 +347,7 @@ class TestMiniAppApi:
     def test_generate_content_creates_draft_and_detail(self, miniapp_test_client, monkeypatch):
         import miniapp_server
 
-        async def _fake_generate_content(topic, goal_key, format_key):
+        async def _fake_generate_content(topic, goal_key, format_key, blend_context=None):
             return ContentDraft(
                 angle="Угол",
                 hook="Хук",

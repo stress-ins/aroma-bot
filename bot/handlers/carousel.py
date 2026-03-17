@@ -150,21 +150,32 @@ def _forbidden_visual_motifs_text() -> str:
     return ", ".join(_forbidden_visual_motifs())
 
 
-def _generate_slide_image_prompts_sync(slides: list[str], topic: str) -> list[str]:
-    """Generate one unique, detailed image prompt per slide via art-director + NanoBanana expert.
+def _generate_slide_image_prompts_sync(slides: list[str], topic: str, blend_context: dict | None = None) -> list[str]:
+    """Generate one unique, detailed image prompt per slide via art-director + image prompt router.
 
     Step 1: Claude as art director produces short 30-50 word prompts per slide.
-    Step 2: Each prompt is expanded by the NanoBanana prompt expert (150-400 words).
+    Step 2: Each prompt is expanded by the image prompt router (model-aware).
     """
-    from bot.agents.nanobanana_prompt_expert import optimize_prompt_for_nanobanana
+    from bot.agents.image_prompt_router import optimize_image_prompt
     from bot.services.claude_client import call_claude
 
     slides_desc = "\n".join(
         f"Slide {i + 1}: {text}" for i, text in enumerate(slides)
     )
 
+    blend_visual = ""
+    if blend_context:
+        from bot.agents.blend_content_context import mood_to_visual_directive
+        visual_directive = mood_to_visual_directive(blend_context.get("profile", {}))
+        oil_names_en = [o.get("name_en", "") for o in blend_context.get("oils", []) if o.get("name_en")]
+        if visual_directive:
+            blend_visual = f"\nBlend visual mood: {visual_directive}\n"
+        if oil_names_en:
+            blend_visual += f"Featured botanicals: {', '.join(oil_names_en)}\n"
+
     prompt = (
         f'You are an art director for an Instagram carousel on the topic: "{topic}"\n\n'
+        f"{blend_visual}"
         "Step 1: Determine the ideal color palette, mood, and lighting from the topic.\n"
         "The palette must match the emotional tone of the topic. Examples:\n"
         "- 'кайф от кабриолета' → bright sun, azure sky, warm golden light, vivid saturated colors\n"
@@ -211,21 +222,29 @@ def _generate_slide_image_prompts_sync(slides: list[str], topic: str) -> list[st
                 f"rich saturated colors, natural light"
             )
 
-    # Expand each raw prompt through the NanoBanana expert
+    # Expand each raw prompt through the image prompt router
+    from bot.services.carousel_assets import _get_carousel_model
+    blend_mood = ""
+    if blend_context:
+        from bot.agents.blend_content_context import mood_to_visual_directive as _m2v
+        blend_mood = _m2v(blend_context.get("profile", {}))
+
+    model = _get_carousel_model()
     optimized: list[str] = []
     for i, raw in enumerate(raw_prompts):
         try:
-            expanded = optimize_prompt_for_nanobanana(
-                raw, topic=topic, slide_number=i, total_slides=len(slides)
+            expanded = optimize_image_prompt(
+                raw, model=model, topic=topic, slide_number=i, total_slides=len(slides),
+                blend_mood=blend_mood or None,
             )
             optimized.append(expanded)
         except Exception:
-            logger.exception("NanoBanana prompt expert failed for slide %d", i + 1)
+            logger.exception("Image prompt router failed for slide %d", i + 1)
             optimized.append(raw)
     return optimized
 
 
-def _generate_carousel_sync(topic: str, user_forbidden: list[str] | None = None) -> tuple[list[str], list[str], str, str]:
+def _generate_carousel_sync(topic: str, user_forbidden: list[str] | None = None, blend_context: dict | None = None) -> tuple[list[str], list[str], str, str]:
     """Draft → editor → 6 refined slides + per-slide image prompts.
 
     Returns (slides, img_prompts, angle, hook).
@@ -234,7 +253,7 @@ def _generate_carousel_sync(topic: str, user_forbidden: list[str] | None = None)
     import time
 
     from bot.agents.content import _generate_strategist_sync
-    angle, hook = _generate_strategist_sync(topic, goal_key="trust", format_key="carousel")
+    angle, hook = _generate_strategist_sync(topic, goal_key="trust", format_key="carousel", blend_context=blend_context)
 
     for attempt in range(2):
         try:
@@ -252,7 +271,7 @@ def _generate_carousel_sync(topic: str, user_forbidden: list[str] | None = None)
                     time.sleep(3)
                     continue
                 return [], [], angle, hook
-            img_prompts = _generate_slide_image_prompts_sync(refined, topic)
+            img_prompts = _generate_slide_image_prompts_sync(refined, topic, blend_context=blend_context)
             return refined, img_prompts, angle, hook
         except Exception:
             logger.exception("_generate_carousel_sync attempt %d failed for topic: %s", attempt + 1, topic)

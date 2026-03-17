@@ -251,13 +251,17 @@ export function createCreateModule(deps) {
     if (contentForm) bindTopicForm(contentForm, { pendingText: "Создаю...", onSubmit: async (topic) => {
       const goal = contentForm.querySelector("select[name='goal_key']").value;
       const format = contentForm.querySelector("[name='format_key']:checked")?.value || "threads";
+      const bcRaw = sessionStorage.getItem("blend_create_context");
+      let blend_context = null;
+      if (bcRaw) { try { blend_context = JSON.parse(bcRaw); } catch(_e) {} }
       const pending = openPendingDraftCreation(format, topic);
       try {
         const draft = await fetchJson("/api/generate/content", {
           method: "POST",
           timeout: 45000,
-          body: JSON.stringify({ topic, goal_key: goal, format_key: format }),
+          body: JSON.stringify({ topic, goal_key: goal, format_key: format, blend_context }),
         });
+        sessionStorage.removeItem("blend_create_context");
         finalizePendingDraftCreation(draft);
         await openDraft(draft.draft_id);
       } catch (error) {
@@ -273,13 +277,17 @@ export function createCreateModule(deps) {
     if (reelsForm) bindTopicForm(reelsForm, { pendingText: "Создаю...", onSubmit: async (topic) => {
       const goal = reelsForm.querySelector("select[name='goal']")?.value || "trust";
       const emotion = reelsForm.querySelector("select[name='emotion']")?.value || "calm";
+      const bcRaw = sessionStorage.getItem("blend_create_context");
+      let blend_context = null;
+      if (bcRaw) { try { blend_context = JSON.parse(bcRaw); } catch(_e) {} }
       const pending = openPendingReelsCreation(topic);
       try {
         const reel = await fetchJson("/api/generate/reels", {
           method: "POST",
           timeout: 45000,
-          body: JSON.stringify({ topic, goal, emotion }),
+          body: JSON.stringify({ topic, goal, emotion, blend_context }),
         });
+        sessionStorage.removeItem("blend_create_context");
         finalizePendingReelsCreation(reel);
         await openReels(reel.draft_id);
       } catch (error) {
@@ -318,13 +326,17 @@ export function createCreateModule(deps) {
 
     const carouselForm = elements.draftDetail.querySelector("[data-create-carousel]");
     if (carouselForm) bindTopicForm(carouselForm, { pendingText: "Создаю...", onSubmit: async (topic) => {
+      const bcRaw = sessionStorage.getItem("blend_create_context");
+      let blend_context = null;
+      if (bcRaw) { try { blend_context = JSON.parse(bcRaw); } catch(_e) {} }
       const pending = openPendingDraftCreation("carousel", topic);
       try {
         const draft = await fetchJson("/api/generate/carousel", {
           method: "POST",
           timeout: 45000,
-          body: JSON.stringify({ topic }),
+          body: JSON.stringify({ topic, blend_context }),
         });
+        sessionStorage.removeItem("blend_create_context");
         finalizePendingDraftCreation(draft);
         await openDraft(draft.draft_id);
       } catch (error) {
@@ -340,13 +352,17 @@ export function createCreateModule(deps) {
     if (threadsSeriesForm) bindTopicForm(threadsSeriesForm, { pendingText: "Создаю...", onSubmit: async (topic) => {
       const goal_key = threadsSeriesForm.querySelector("select[name='goal_key']")?.value || "trust";
       const emotion = threadsSeriesForm.querySelector("select[name='emotion']")?.value || "";
+      const bcRaw = sessionStorage.getItem("blend_create_context");
+      let blend_context = null;
+      if (bcRaw) { try { blend_context = JSON.parse(bcRaw); } catch(_e) {} }
       const pending = openPendingDraftCreation("threads_series", topic);
       try {
         const draft = await fetchJson("/api/generate/threads-series", {
           method: "POST",
           timeout: 60000,
-          body: JSON.stringify({ topic, goal_key, emotion }),
+          body: JSON.stringify({ topic, goal_key, emotion, blend_context }),
         });
+        sessionStorage.removeItem("blend_create_context");
         finalizePendingDraftCreation(draft);
         await openDraft(draft.draft_id);
       } catch (error) {
