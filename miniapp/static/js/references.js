@@ -734,6 +734,10 @@ export function createReferencesModule(deps) {
     const filterChipsEl = document.getElementById("referenceFilterChips");
     if (filterChipsEl) filterChipsEl.innerHTML = renderFilterChips(items, tabId);
 
+    // Hide daily oil banner when searching
+    const dailyOilEl = document.getElementById("dailyOilBanner");
+    if (dailyOilEl) dailyOilEl.hidden = !!query;
+
     listContainer.innerHTML = filtered.map((item) => `
       <article ${interactiveCardAttrs(`Открыть карточку ${item.name}`)} class="draft-card overview-card reference-card${state.tab === "concepts" ? " is-theory concept-card" : ""}${item.slug === reference?.slug ? " active" : ""} interactive-card" onclick='openReference(${JSON.stringify(item.slug)}, ${JSON.stringify(state.tab)})'>
         <div class="overview-card-top">

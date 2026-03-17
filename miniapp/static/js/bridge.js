@@ -88,6 +88,16 @@ export function registerWindowBridge(deps) {
     blendAdjustWithOil,
     deleteSavedBlend,
     connectPlatform,
+    openRecommendationsWizard,
+    closeRecommendationsWizard,
+    recoWizardNext,
+    recoWizardBack,
+    recoSelectMood,
+    recoSelectGoal,
+    recoUpdateSymptoms,
+    recoToggleAroma,
+    recoUpdateContra,
+    submitRecommendations,
   } = deps;
 
   window.retryCurrentTab = retryCurrentTab;
@@ -187,6 +197,18 @@ export function registerWindowBridge(deps) {
   window.blendAdjustWithOil = blendAdjustWithOil;
   window.deleteSavedBlend = deleteSavedBlend;
   window.connectPlatform = connectPlatform;
+
+  // Recommendations wizard
+  window.openRecommendationsWizard = openRecommendationsWizard;
+  window.closeRecommendationsWizard = closeRecommendationsWizard;
+  window.recoWizardNext = recoWizardNext;
+  window.recoWizardBack = recoWizardBack;
+  window.recoSelectMood = recoSelectMood;
+  window.recoSelectGoal = recoSelectGoal;
+  window.recoUpdateSymptoms = recoUpdateSymptoms;
+  window.recoToggleAroma = recoToggleAroma;
+  window.recoUpdateContra = recoUpdateContra;
+  window.submitRecommendations = submitRecommendations;
 
   window.openImageFullscreen = function(src, title) {
     const existing = document.getElementById("img-fullscreen-modal");
