@@ -132,6 +132,16 @@ async def _check_content_limit(telegram_id: int = Depends(_resolve_telegram_id))
     if tier == "free":
         used, max_allowed = await check_daily_limit(telegram_id)
         if used >= max_allowed:
+            from bot.handlers.monitor import notify_owner_throttled
+
+            notify_owner_throttled(
+                f"⚠️ <b>Daily limit hit</b>\n"
+                f"User: <code>{telegram_id}</code>\n"
+                f"Used: {used}/{max_allowed}\n"
+                f"Tier: free",
+                dedup_key=f"daily_limit:{telegram_id}",
+                cooldown=21600,
+            )
             raise HTTPException(
                 status_code=429,
                 detail={"error": "daily_limit", "used": used, "max": max_allowed},

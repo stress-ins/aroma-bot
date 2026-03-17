@@ -87,6 +87,15 @@ async def regenerate_carousel_slide(
         raise HTTPException(status_code=404, detail="carousel_not_found")
     regen_count = draft.payload.get("regen_count", 0)
     if regen_count >= REGEN_LIMIT_PER_CARD:
+        from bot.handlers.monitor import notify_owner_throttled
+
+        notify_owner_throttled(
+            f"⚠️ <b>Regen limit hit</b>\n"
+            f"Draft: <code>{draft_id}</code>\n"
+            f"Regens: {regen_count}/{REGEN_LIMIT_PER_CARD}",
+            dedup_key=f"regen_limit:{draft_id}",
+            cooldown=3600,
+        )
         raise HTTPException(
             status_code=429,
             detail={"error": "regen_limit", "used": regen_count, "max": REGEN_LIMIT_PER_CARD},
