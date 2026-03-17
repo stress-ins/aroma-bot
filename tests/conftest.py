@@ -13,6 +13,7 @@ import analytics.trend_signal_store
 import analytics.signal_enricher
 import analytics.trend_intelligence
 import bot.services.llm_cache
+import bot.services.brand_settings_store
 
 
 @pytest.fixture(autouse=True, scope="function")
@@ -35,6 +36,7 @@ async def setup_test_db(monkeypatch, tmp_path):
     monkeypatch.setattr(analytics.signal_enricher, "AsyncSessionLocal", AsyncSessionLocal)
     monkeypatch.setattr(analytics.trend_intelligence, "AsyncSessionLocal", AsyncSessionLocal)
     monkeypatch.setattr(bot.services.llm_cache, "AsyncSessionLocal", AsyncSessionLocal)
+    monkeypatch.setattr(bot.services.brand_settings_store, "AsyncSessionLocal", AsyncSessionLocal)
 
     # Create tables
     async with engine.begin() as conn:
