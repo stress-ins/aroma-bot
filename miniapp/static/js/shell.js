@@ -137,7 +137,8 @@ export function createShellModule(deps) {
     const resizeTextarea = (field) => {
       if (!(field instanceof HTMLTextAreaElement)) return;
       field.style.height = "auto";
-      field.style.height = `${field.scrollHeight}px`;
+      const maxH = parseFloat(getComputedStyle(field).maxHeight) || Infinity;
+      field.style.height = `${Math.min(field.scrollHeight, maxH)}px`;
     };
 
     const bindField = (field) => {
@@ -271,10 +272,16 @@ export function createShellModule(deps) {
 
     const viewport = window.visualViewport;
     if (!viewport) return;
+    let lastViewportH = viewport.height;
     const handleViewportChange = () => {
       // Keyboard is open when visual viewport is meaningfully smaller than layout viewport
       const keyboardVisible = window.innerHeight - viewport.height > 80;
       document.body.classList.toggle("is-keyboard-open", keyboardVisible);
+      // Only scroll-assist when viewport height actually changed (keyboard open/close),
+      // not on minor scroll reflows that cause oscillation
+      const heightDelta = Math.abs(viewport.height - lastViewportH);
+      lastViewportH = viewport.height;
+      if (heightDelta < 20) return;
       const active = document.activeElement;
       if (!(active instanceof HTMLElement)) return;
       if (!active.matches("textarea, input, select, [contenteditable='true']")) return;

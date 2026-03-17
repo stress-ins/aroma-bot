@@ -126,7 +126,7 @@ async def _regen_slot_text(topic: str, goal_key: str, slot: str, note: str | Non
 Верни только текст поста, без меток УТРО/ДЕНЬ/ВЕЧЕР.
 """
         raw = _call_claude(prompt, max_tokens=400)
-        return edit_post_sync(raw, topic, platform="threads_series")
+        return edit_post_sync(raw, topic, platform="threads_slot")
 
     return await loop.run_in_executor(_executor, _sync)
 

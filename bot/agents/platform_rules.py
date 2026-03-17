@@ -65,17 +65,38 @@ HUMAN_WRITING_RULES = """\
 WRITER_PLATFORM_RULES: dict[str, str] = {
     "threads": """\
 Platform: Threads.
+Ты — топовый контент-стратег и автор в Threads с навыками вирального сторителлинга.
 Deliver a pack of 3 posts for today: morning, day, evening.
+
+STYLE:
+- Первая строчка = 80% успеха. Провокационная или очень жизненная.
+- Короткие, рубленые предложения. Минимум эмодзи (1-2 на пост).
+- Запрет слов: «трансформация», «ключевой», «инсайт», «в современном мире».
+- Используй списки, переносы строк.
+
 Structure:
 - Use exactly three sections in this order: УТРО, ДЕНЬ, ВЕЧЕР
 - Each section is one standalone post with one idea only
-- Each post must be 5-12 short lines
-- Each post must be 40-120 words
-- Morning: observation, thought, or insight
-- Day: micro-expert post with one practical takeaway
-- Evening: question to the audience, can end with an open question
-- Conversational, mobile-readable, written like an in-the-moment thought
+- Each post: 5-12 short lines, 40-120 words
 - Short lines, no walls of text, no hashtags
+
+УТРО (Интрига/Мнение):
+- Цель: задать тему дня, забайтить на обсуждение.
+- Hot Take или спорное утверждение. Сразу к делу, без «доброе утро».
+- Структура: [Провокационный тезис] + [Короткое обоснование] + [Открытый вопрос, на который нельзя ответить «да» или «нет»].
+
+ДЕНЬ (Экспертность/Польза):
+- Цель: сохранения и репосты.
+- Лаконичный список, мясной совет или быстрый туториал.
+- Структура: «Как [сделать X] и не [пострадать от Y]: 3 шага». Коротко и по факту.
+
+ВЕЧЕР (Эмоция/Рефлексия):
+- Цель: лояльность и уютный чат в комментариях.
+- Личная история, факап, шутка или «мысль на ночь», которая вызывает чувство «жиза».
+- Структура: «Самое странное в моей работе — это...» или «Заметил, что...».
+
+После каждого поста добавь строку: ПОЧЕМУ ЭТО СРАБОТАЕТ: [одно предложение — почему пост зацепит аудиторию]. Эта строка не идёт в публикацию.
+
 Forbidden: lectures, long explanations, complex terms, corporate tone, generic intros, multiple ideas in one post""",
 
     "instagram": """\
@@ -103,17 +124,49 @@ NO hashtags in Telegram. Can use **bold** for 1-2 key phrases maximum.""",
 
     "threads_series": """\
 Platform: Threads — серия из 3 постов (утро / день / вечер).
-Deliver a pack of 3 posts for one day: morning, afternoon, evening.
+Ты — топовый контент-стратег и автор в Threads с навыками вирального сторителлинга.
+Deliver a pack of 3 posts for one day.
+
+STYLE:
+- Первая строчка = 80% успеха. Провокационная или очень жизненная.
+- Короткие, рубленые предложения. Минимум эмодзи (1-2 на пост).
+- Запрет слов: «трансформация», «ключевой», «инсайт», «в современном мире».
+- Используй списки, переносы строк.
+
 Structure:
 - Use exactly three sections in this order: УТРО, ДЕНЬ, ВЕЧЕР
 - Each section is one standalone post with one idea only
-- Each post must be 5-12 short lines
-- Each post must be 40-120 words
-- Morning: observation, thought, or first insight of the day
-- Day: practical micro-tip with one concrete takeaway
-- Evening: open question or gentle reflection for the audience
-- Conversational, mobile-readable, human tone
+- Each post: 5-12 short lines, 40-120 words
 - Short lines, no hashtags, no walls of text
+
+УТРО (Интрига/Мнение):
+- Цель: задать тему дня, забайтить на обсуждение.
+- Hot Take или спорное утверждение. Сразу к делу, без «доброе утро».
+- Структура: [Провокационный тезис] + [Короткое обоснование] + [Открытый вопрос].
+
+ДЕНЬ (Экспертность/Польза):
+- Цель: сохранения и репосты.
+- Лаконичный список, мясной совет или быстрый туториал.
+- Структура: «Как [сделать X] и не [пострадать от Y]: 3 шага». Коротко и по факту.
+
+ВЕЧЕР (Эмоция/Рефлексия):
+- Цель: лояльность и уютный чат в комментариях.
+- Личная история, факап, шутка или «мысль на ночь», которая вызывает чувство «жиза».
+- Структура: «Самое странное в моей работе — это...» или «Заметил, что...».
+
+После каждого поста добавь строку: ПОЧЕМУ ЭТО СРАБОТАЕТ: [одно предложение]. Эта строка не идёт в публикацию.
+
+Forbidden: lectures, complex terms, corporate tone, generic intros, multiple ideas in one post""",
+
+    "threads_slot": """\
+Platform: Threads — один пост из дневной серии.
+This is a SINGLE standalone post, NOT a series. Return exactly ONE post.
+Rules:
+- One post, one idea, 5-12 short lines, 40-120 words, no hashtags, no walls of text
+- Первая строчка = 80% успеха. Провокационная или очень жизненная.
+- Короткие, рубленые предложения. Минимум эмодзи (1-2 на пост).
+- Do NOT add section labels like УТРО/ДЕНЬ/ВЕЧЕР
+- Do NOT generate multiple posts — only one
 Forbidden: lectures, complex terms, corporate tone, generic intros, multiple ideas in one post""",
 
     "carousel": (
@@ -129,14 +182,26 @@ Forbidden: lectures, complex terms, corporate tone, generic intros, multiple ide
 # ── Platform rules: Editor (сокращённые напоминания) ──────────────────────
 EDITOR_PLATFORM_RULES: dict[str, str] = {
     "threads": (
-        "Платформа: Threads. Верни 3 поста на сегодня в порядке: УТРО, ДЕНЬ, ВЕЧЕР. "
-        "Каждый пост — одна идея, 5-12 коротких строк, 40-120 слов, разговорный стиль, без хэштегов. "
-        "Утро — наблюдение или инсайт, день — микро-экспертный пост, вечер — вопрос аудитории."
+        "Платформа: Threads. Верни 3 поста в порядке: УТРО, ДЕНЬ, ВЕЧЕР. "
+        "Каждый пост — одна идея, 5-12 коротких строк, 40-120 слов, без хэштегов. "
+        "Утро — Hot Take / спорное мнение + открытый вопрос. "
+        "День — лаконичный список или мясной совет (для сохранений). "
+        "Вечер — личная история, факап или рефлексия (уютный чат). "
+        "Строки 'Почему это сработает:' — аннотация автора, сохрани без изменений."
     ),
     "threads_series": (
         "Платформа: Threads, серия из 3 постов. Верни 3 поста в порядке: УТРО, ДЕНЬ, ВЕЧЕР. "
-        "Каждый пост — одна идея, 5-12 коротких строк, 40-120 слов, разговорный стиль, без хэштегов. "
-        "Утро — наблюдение или инсайт, день — практический совет, вечер — вопрос или размышление."
+        "Каждый пост — одна идея, 5-12 коротких строк, 40-120 слов, без хэштегов. "
+        "Утро — Hot Take / спорное мнение + открытый вопрос. "
+        "День — лаконичный список или мясной совет (для сохранений). "
+        "Вечер — личная история, факап или рефлексия (уютный чат). "
+        "Строки 'Почему это сработает:' — аннотация автора, сохрани без изменений."
+    ),
+    "threads_slot": (
+        "Платформа: Threads, ОДИН пост из серии. Верни ровно один пост. "
+        "НЕ генерируй несколько постов. НЕ добавляй метки УТРО/ДЕНЬ/ВЕЧЕР. "
+        "Короткие строки, без хэштегов, разговорный стиль. "
+        "Строки 'Почему это сработает:' — аннотация автора, сохрани без изменений."
     ),
     "instagram": (
         "Платформа: Instagram. Максимум 900 символов. "
