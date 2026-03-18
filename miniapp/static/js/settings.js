@@ -746,15 +746,13 @@ export function createSettingsModule(deps) {
     try {
       const data = await fetchJson(`/api/social/connect-url?platform=${platform}`);
       if (data.url) {
-        // Route through /start page to bypass iOS Universal Links.
-        // Instagram app intercepts instagram.com URLs → shows error.
-        // JS redirect from our domain doesn't trigger Universal Links.
-        const startUrl = `https://oauth.aromara.ru/start?url=${encodeURIComponent(data.url)}`;
+        // Open OAuth URL directly — Instagram now uses /consent/ URL
+        // which may not be intercepted by iOS Universal Links
         const tg = window.Telegram?.WebApp;
         if (tg?.openLink) {
-          tg.openLink(startUrl);
+          tg.openLink(data.url);
         } else {
-          window.open(startUrl, "_blank");
+          window.open(data.url, "_blank");
         }
       }
     } catch (err) {
