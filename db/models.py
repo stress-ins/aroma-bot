@@ -1,18 +1,64 @@
 from datetime import datetime, timezone
 import uuid
 from typing import Any
-from sqlalchemy import BigInteger, Boolean, Float, String, JSON, DateTime, Integer, UniqueConstraint
+from sqlalchemy import BigInteger, Boolean, Float, ForeignKey, String, JSON, DateTime, Integer, UniqueConstraint
 from sqlalchemy.ext.mutable import MutableDict, MutableList
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 class Base(DeclarativeBase):
     pass
 
+
+class TeamModel(Base):
+    __tablename__ = "teams"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    team_id: Mapped[str] = mapped_column(
+        String(36), unique=True, index=True, default=lambda: str(uuid.uuid4())
+    )
+    name: Mapped[str] = mapped_column(String(255))
+    slug: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    created_by: Mapped[int] = mapped_column(BigInteger)  # telegram_id of creator
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+
+class TeamMemberModel(Base):
+    __tablename__ = "team_members"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    team_id: Mapped[str] = mapped_column(String(36), ForeignKey("teams.team_id"), index=True)
+    telegram_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    role: Mapped[str] = mapped_column(String(16), default="viewer")  # owner/editor/viewer
+    joined_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (UniqueConstraint("team_id", "telegram_id"),)
+
+
+class TeamInviteModel(Base):
+    __tablename__ = "team_invites"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    invite_code: Mapped[str] = mapped_column(String(32), unique=True, index=True)
+    team_id: Mapped[str] = mapped_column(String(36), ForeignKey("teams.team_id"), index=True)
+    created_by: Mapped[int] = mapped_column(BigInteger)  # telegram_id
+    role: Mapped[str] = mapped_column(String(16), default="editor")  # role assigned on accept
+    max_uses: Mapped[int] = mapped_column(Integer, default=1)
+    uses_count: Mapped[int] = mapped_column(Integer, default=0)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, default=None)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+
 class DraftModel(Base):
     __tablename__ = "drafts"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     draft_id: Mapped[str] = mapped_column(String(32), unique=True, index=True)
+    team_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("teams.team_id"), nullable=True, index=True)
+    created_by: Mapped[int | None] = mapped_column(BigInteger, nullable=True)  # telegram_id
     kind: Mapped[str] = mapped_column(String(64))
     topic: Mapped[str] = mapped_column(String(255))
     source: Mapped[str] = mapped_column(String(64))
@@ -33,6 +79,7 @@ class PlanModel(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     plan_id: Mapped[str] = mapped_column(String(32), unique=True, index=True)
+    team_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("teams.team_id"), nullable=True, index=True)
     raw_text: Mapped[str] = mapped_column(String)
     entries: Mapped[list[dict[str, Any]]] = mapped_column(MutableList.as_mutable(JSON), default=list)
     status: Mapped[str] = mapped_column(String(32), default="draft")
@@ -71,6 +118,7 @@ class PublishLogModel(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     draft_id: Mapped[str] = mapped_column(String(32), index=True)
+    team_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("teams.team_id"), nullable=True, index=True)
     platform: Mapped[str] = mapped_column(String(32))  # "threads" | "instagram" | "telegram"
     action: Mapped[str] = mapped_column(String(32))  # "publish" | "schedule" | "cancel"
     status: Mapped[str] = mapped_column(String(32), default="pending")  # "pending" | "success" | "failed"
@@ -84,6 +132,7 @@ class BrandSettingsModel(Base):
     __tablename__ = "brand_settings"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    team_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("teams.team_id"), nullable=True, unique=True)
     brand_voice: Mapped[str] = mapped_column(String(4000), default="")
     forbidden_phrases: Mapped[list[str]] = mapped_column(MutableList.as_mutable(JSON), default=list)
     base_instructions: Mapped[str] = mapped_column(String(4000), default="")
@@ -114,6 +163,7 @@ class DraftRevisionModel(Base):
     rev_num: Mapped[int] = mapped_column(Integer)
     payload: Mapped[dict[str, Any]] = mapped_column(MutableDict.as_mutable(JSON), default=dict)
     author: Mapped[str] = mapped_column(String(64), default="user")
+    author_telegram_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     note: Mapped[str] = mapped_column(String(512), default="")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
@@ -195,6 +245,7 @@ class MentionModel(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     mention_id: Mapped[str] = mapped_column(String(36), unique=True, index=True)
+    team_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("teams.team_id"), nullable=True, index=True)
     platform: Mapped[str] = mapped_column(String(32), index=True)
     external_id: Mapped[str] = mapped_column(String(255), index=True, default="")
     type: Mapped[str] = mapped_column(String(32), default="mention")
@@ -230,6 +281,7 @@ class SavedBlendModel(Base):
         default=lambda: str(uuid.uuid4())
     )
     telegram_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    team_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("teams.team_id"), nullable=True, index=True)
     title: Mapped[str] = mapped_column(String(255))
     brief: Mapped[str] = mapped_column(String(1000), default="")
     tags: Mapped[list[str]] = mapped_column(MutableList.as_mutable(JSON), default=list)
@@ -248,7 +300,8 @@ class PlatformTokenModel(Base):
     __tablename__ = "platform_tokens"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    platform: Mapped[str] = mapped_column(String(32), unique=True, index=True)
+    platform: Mapped[str] = mapped_column(String(32), index=True)
+    team_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("teams.team_id"), nullable=True, index=True)
     access_token: Mapped[str] = mapped_column(String(1024), default="")
     expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, default=None)
     updated_at: Mapped[datetime] = mapped_column(
@@ -256,6 +309,8 @@ class PlatformTokenModel(Base):
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
     )
+
+    __table_args__ = (UniqueConstraint("team_id", "platform"),)
 
 
 class ApiCostLog(Base):
@@ -281,6 +336,7 @@ class PostMetricsModel(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     draft_id: Mapped[str] = mapped_column(String(32), index=True)
+    team_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("teams.team_id"), nullable=True, index=True)
     platform: Mapped[str] = mapped_column(String(32))  # threads | instagram
     external_id: Mapped[str] = mapped_column(String(255), default="")
     metrics: Mapped[dict[str, Any]] = mapped_column(

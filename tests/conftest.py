@@ -22,6 +22,7 @@ import bot.services.mentions_store
 import bot.services.cost_stats_store
 import bot.services.publish_log_store
 import bot.services.tracked_threads_store
+import bot.services.team_store
 import miniapp.api.routers.plans
 import miniapp.api.routers.misc
 
@@ -56,6 +57,7 @@ async def setup_test_db(monkeypatch):
     monkeypatch.setattr(bot.services.cost_stats_store, "AsyncSessionLocal", AsyncSessionLocal)
     monkeypatch.setattr(bot.services.publish_log_store, "AsyncSessionLocal", AsyncSessionLocal)
     monkeypatch.setattr(bot.services.tracked_threads_store, "AsyncSessionLocal", AsyncSessionLocal)
+    monkeypatch.setattr(bot.services.team_store, "AsyncSessionLocal", AsyncSessionLocal)
     monkeypatch.setattr(miniapp.api.routers.plans, "AsyncSessionLocal", AsyncSessionLocal)
     monkeypatch.setattr(miniapp.api.routers.misc, "AsyncSessionLocal", AsyncSessionLocal)
 
