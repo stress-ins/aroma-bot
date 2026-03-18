@@ -1891,13 +1891,19 @@ bootstrap()
   });
 
 if (window.lucide) {
+  let _lcBusy = false;
   const _lcObs = new MutationObserver((mutations) => {
+    if (_lcBusy) return;
     const hasNewIcons = mutations.some(m =>
       [...m.addedNodes].some(n =>
-        n.nodeType === 1 && (n.matches?.("[data-lucide]") || n.querySelector?.("[data-lucide]"))
+        n.nodeType === 1 && (n.matches?.("i[data-lucide]") || n.querySelector?.("i[data-lucide]"))
       )
     );
-    if (hasNewIcons) lucide.createIcons();
+    if (hasNewIcons) {
+      _lcBusy = true;
+      lucide.createIcons();
+      _lcBusy = false;
+    }
   });
   _lcObs.observe(document.getElementById("app") || document.body, { childList: true, subtree: true });
 }

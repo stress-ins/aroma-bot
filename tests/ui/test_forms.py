@@ -25,9 +25,9 @@ def test_create_tool_selection_isolates_form(page):
 
     if page.locator(".back-button").is_visible():
         page.locator(".back-button").click()
-        page.wait_for_timeout(100)
-        assert page.get_by_text("Инструменты").is_visible()
-        assert page.get_by_text("Пост для соцсетей").is_visible()
+        page.wait_for_timeout(300)
+        assert page.locator("#listTitle").evaluate("(el) => el.textContent.trim()") == "Инструменты"
+        assert page.locator(".create-card").count() >= 2
 
 
 def test_settings_and_keywords_use_guided_detail_copy(desktop_page):
