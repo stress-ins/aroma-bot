@@ -460,7 +460,7 @@ async def select_daily_oil(target_date: str) -> DailyOilModel:
 
 
 async def get_daily_oil(target_date: str | None = None) -> dict | None:
-    """Return today's daily oil card as a dict, or None."""
+    """Return today's daily oil card as a dict, creating it lazily if needed."""
     if target_date is None:
         target_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     async with AsyncSessionLocal() as session:
@@ -470,7 +470,20 @@ async def get_daily_oil(target_date: str | None = None) -> dict | None:
             )
         ).scalar_one_or_none()
         if not row:
-            return None
+            try:
+                oil = await select_daily_oil(target_date)
+                return {
+                    "date": oil.date,
+                    "slug": oil.slug,
+                    "name": oil.name,
+                    "fact": oil.fact,
+                    "daily_practice": oil.daily_practice,
+                    "reason": oil.reason,
+                    "context": oil.context,
+                    "sent_at": oil.sent_at.isoformat() if oil.sent_at else None,
+                }
+            except Exception:
+                return None
         return {
             "date": row.date,
             "slug": row.slug,
