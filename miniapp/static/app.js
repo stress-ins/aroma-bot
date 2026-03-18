@@ -898,6 +898,30 @@ async function scheduleThreadsSeries(draftId, date, slots, btn) {
   }, "Запланировано");
 }
 
+async function publishThreadsSeriesNow(draftId, btn) {
+  const confirmed = await confirmAction("Опубликовать все посты серии сейчас? Между постами будет пауза 30 секунд.");
+  if (!confirmed) return;
+  await withButtonFeedback(btn, "Публикую...", async () => {
+    const result = await fetchJson(`/api/threads-series/${draftId}/publish-now`, {
+      method: "POST",
+      body: "{}",
+      timeout: 120000,
+    });
+    const ok = (result.results || []).filter(r => r.status === "ok").length;
+    const errs = (result.results || []).filter(r => r.status === "error").length;
+    showUiNotice(
+      errs ? `Опубликовано ${ok}, ошибок ${errs}` : `Все ${ok} поста опубликованы`,
+      errs ? "warning" : "success",
+    );
+    const draft = await fetchJson(`/api/drafts/${draftId}`);
+    if (draft) {
+      mergeDraftIntoState(draft);
+      renderDraftList();
+      renderDraftDetail(draft);
+    }
+  }, "Опубликовано");
+}
+
 function openThreadsScheduler(draftId) {
   const container = document.getElementById(`scheduler_${draftId}`);
   if (!container) return;

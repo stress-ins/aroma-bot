@@ -60,20 +60,68 @@ async def _send_daily_digest(app: Application) -> None:
 
 
 async def _check_scheduled_posts(app: Application) -> None:
-    """Find scheduled drafts due for publishing and publish them."""
+    """Find scheduled drafts due for publishing and publish them.
+
+    For threads_series drafts: publishes individual slots at their scheduled_time.
+    For other drafts: publishes the whole draft at scheduled_at.
+    """
     from bot.services.drafts_store import list_scheduled_drafts_due
     from bot.services.publisher import publish
 
     drafts = await list_scheduled_drafts_due()
+    now = datetime.now(timezone.utc)
+
     for draft in drafts:
         try:
-            platforms = draft.publish_platforms or ["threads"]
-            await publish(draft.draft_id, platforms)
-            logger.info("Scheduled post published: %s", draft.draft_id)
+            if draft.kind == "threads_series":
+                await _publish_series_slots(draft, now)
+            else:
+                platforms = draft.publish_platforms or ["threads"]
+                await publish(draft.draft_id, platforms)
+                logger.info("Scheduled post published: %s", draft.draft_id)
         except Exception as exc:
             logger.error(
                 "Failed to publish scheduled draft %s: %s", draft.draft_id, exc
             )
+
+
+async def _publish_series_slots(draft, now: datetime) -> None:
+    """Publish due slots of a threads_series one by one."""
+    from bot.services.publisher import publish_threads_series_slot
+
+    posts = (draft.payload or {}).get("threads_posts", [])
+    scheduled_at = draft.scheduled_at
+    if isinstance(scheduled_at, str):
+        base_date = datetime.fromisoformat(scheduled_at).date()
+    else:
+        base_date = scheduled_at.date() if scheduled_at else now.date()
+
+    for post in posts:
+        if post.get("status") != "scheduled":
+            continue
+
+        time_str = post.get("scheduled_time", "09:00")
+        try:
+            h, m = map(int, time_str.split(":"))
+        except ValueError:
+            continue
+
+        slot_time = datetime(
+            base_date.year, base_date.month, base_date.day,
+            h, m, tzinfo=timezone.utc,
+        )
+        if slot_time <= now:
+            try:
+                await publish_threads_series_slot(draft.draft_id, post["slot"])
+                logger.info(
+                    "Published series slot %s for draft %s",
+                    post["slot"], draft.draft_id,
+                )
+            except Exception as exc:
+                logger.error(
+                    "Failed to publish series slot %s for draft %s: %s",
+                    post["slot"], draft.draft_id, exc,
+                )
 
 
 def _is_digest_time(now: datetime) -> bool:
