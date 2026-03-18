@@ -20,6 +20,7 @@ from bot.services.social_oauth import (
     parse_oauth_state,
     update_env_file,
 )
+from bot.services.mentions_store import upsert_token
 from config import settings
 
 
@@ -161,6 +162,7 @@ async def _complete_oauth(service: str, request: Request) -> HTMLResponse:
     try:
         bundle = _exchange_bundle(service, code)
         update_env_file(ENV_FILE, bundle_env_updates(bundle))
+        await _save_token_to_db(service, bundle)
         _restart_aroma_bot()
         if chat_id:
             _notify_success(chat_id, bundle)
@@ -180,6 +182,23 @@ async def _complete_oauth(service: str, request: Request) -> HTMLResponse:
         subtitle=f"@{bundle.username}" if bundle.username else None,
         detail="Токен сохранён. Бот перезапущен.",
     ))
+
+
+async def _save_token_to_db(service: str, bundle: OAuthTokenBundle) -> None:
+    """Persist token into platform_tokens table so miniapp /api/social/status reflects it."""
+    from datetime import datetime, timezone, timedelta
+    try:
+        expires_at = None
+        if bundle.expires_in:
+            expires_at = datetime.now(timezone.utc) + timedelta(seconds=bundle.expires_in)
+        await upsert_token(platform=service, access_token=bundle.access_token, expires_at=expires_at)
+        if bundle.user_id:
+            await upsert_token(platform=f"{service}_user_id", access_token=str(bundle.user_id))
+        if bundle.username:
+            await upsert_token(platform=f"{service}_username", access_token=bundle.username)
+        logger.info("Saved %s token to DB (user_id=%s)", service, bundle.user_id)
+    except Exception:
+        logger.exception("Failed to save %s token to DB", service)
 
 
 def _exchange_bundle(service: str, code: str) -> OAuthTokenBundle:
