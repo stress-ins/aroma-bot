@@ -1530,14 +1530,14 @@ body.tg-webapp .back-button { display: none !important; }
   .bottom-tab-bar-inner {
     background: var(--surface);
     border-color: rgba(255, 230, 200, 0.12);
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.40);
+    box-shadow: none;
   }
 }
 
 body.tg-theme-dark .bottom-tab-bar-inner {
   background: var(--surface);
   border-color: rgba(255, 230, 200, 0.12);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.40);
+  box-shadow: none;
 }
 
 /* ═══════════════════════════════════════
