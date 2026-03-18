@@ -1,4 +1,7 @@
-"""Centralised brand-settings store (SQLite, single-row)."""
+"""Centralised brand-settings store (SQLite, per-team).
+
+Backward compatible: callers without team_id get the global/default settings row.
+"""
 
 from __future__ import annotations
 
@@ -50,9 +53,10 @@ _DEFAULT_TARGET_PLATFORMS: list[str] = ["threads", "instagram", "telegram"]
 
 # ---------------------------------------------------------------------------
 # Module-level cache for sync access from agents running in run_in_executor.
+# Dict keyed by team_id (None = global/default).
 # ---------------------------------------------------------------------------
 
-_cache: BrandSettingsModel | None = None
+_cache: dict[str | None, BrandSettingsModel] = {}
 
 
 class BrandSettingsNotLoaded(RuntimeError):
@@ -64,45 +68,81 @@ class BrandSettingsNotLoaded(RuntimeError):
 # ---------------------------------------------------------------------------
 
 
-async def get_brand_settings() -> BrandSettingsModel:
-    """Return the single brand-settings row, creating a default if absent."""
+def _build_default_row(team_id: str | None = None) -> BrandSettingsModel:
+    return BrandSettingsModel(
+        team_id=team_id,
+        brand_voice=_DEFAULT_BRAND_VOICE,
+        forbidden_phrases=list(_DEFAULT_FORBIDDEN_PHRASES),
+        base_instructions="",
+        target_platforms=list(_DEFAULT_TARGET_PLATFORMS),
+        upload_post_user="",
+        upload_post_api_key="",
+        updated_at=datetime.now(timezone.utc),
+    )
+
+
+async def get_brand_settings(team_id: str | None = None) -> BrandSettingsModel:
+    """Return brand settings for team_id, creating defaults if absent.
+
+    Pass team_id=None to get the global/default settings (backward compat).
+    """
     async with AsyncSessionLocal() as session:
-        result = await session.execute(select(BrandSettingsModel).limit(1))
+        if team_id:
+            result = await session.execute(
+                select(BrandSettingsModel).where(BrandSettingsModel.team_id == team_id)
+            )
+        else:
+            result = await session.execute(
+                select(BrandSettingsModel)
+                .where(BrandSettingsModel.team_id.is_(None))
+                .limit(1)
+            )
         row = result.scalar_one_or_none()
         if row is not None:
             return row
-        row = BrandSettingsModel(
-            brand_voice=_DEFAULT_BRAND_VOICE,
-            forbidden_phrases=list(_DEFAULT_FORBIDDEN_PHRASES),
-            base_instructions="",
-            target_platforms=list(_DEFAULT_TARGET_PLATFORMS),
-            upload_post_user="",
-            upload_post_api_key="",
-            updated_at=datetime.now(timezone.utc),
-        )
+        row = _build_default_row(team_id)
         session.add(row)
         await session.commit()
         await session.refresh(row)
-        logger.info("Brand settings: created default row (id=%s)", row.id)
+        logger.info("Brand settings: created default row (id=%s, team_id=%s)", row.id, team_id)
         return row
 
 
-async def update_brand_settings(**kwargs) -> BrandSettingsModel:
-    """Update brand settings and refresh the cache."""
+async def update_brand_settings(team_id: str | None = None, **kwargs) -> BrandSettingsModel:
+    """Update brand settings for a team and refresh the cache."""
     async with AsyncSessionLocal() as session:
-        result = await session.execute(select(BrandSettingsModel).limit(1))
+        if team_id:
+            result = await session.execute(
+                select(BrandSettingsModel).where(BrandSettingsModel.team_id == team_id)
+            )
+        else:
+            result = await session.execute(
+                select(BrandSettingsModel)
+                .where(BrandSettingsModel.team_id.is_(None))
+                .limit(1)
+            )
         row = result.scalar_one_or_none()
         if row is None:
-            row = await get_brand_settings()
-            result = await session.execute(select(BrandSettingsModel).limit(1))
-            row = result.scalar_one_or_none()
+            row = await get_brand_settings(team_id)
+            async with AsyncSessionLocal() as s2:
+                if team_id:
+                    result = await s2.execute(
+                        select(BrandSettingsModel).where(BrandSettingsModel.team_id == team_id)
+                    )
+                else:
+                    result = await s2.execute(
+                        select(BrandSettingsModel)
+                        .where(BrandSettingsModel.team_id.is_(None))
+                        .limit(1)
+                    )
+                row = result.scalar_one_or_none()
         for key, value in kwargs.items():
             if hasattr(row, key):
                 setattr(row, key, value)
         row.updated_at = datetime.now(timezone.utc)
         await session.commit()
         await session.refresh(row)
-        await _refresh_cache()
+        await _refresh_cache(team_id)
         return row
 
 
@@ -112,25 +152,26 @@ async def update_brand_settings(**kwargs) -> BrandSettingsModel:
 
 
 async def preload_brand_settings() -> None:
-    """Call once at startup to populate the sync cache."""
-    global _cache
-    _cache = await get_brand_settings()
+    """Call once at startup to populate the sync cache (global/default settings)."""
+    _cache[None] = await get_brand_settings(team_id=None)
     logger.info("Brand settings cache preloaded")
 
 
-async def _refresh_cache() -> None:
-    global _cache
-    _cache = await get_brand_settings()
+async def _refresh_cache(team_id: str | None = None) -> None:
+    _cache[team_id] = await get_brand_settings(team_id)
 
 
-def get_brand_settings_cached() -> BrandSettingsModel:
+def get_brand_settings_cached(team_id: str | None = None) -> BrandSettingsModel:
     """Sync getter for agents running in ``run_in_executor``.
 
     Raises ``BrandSettingsNotLoaded`` if ``preload_brand_settings()`` was not
     called (typically during bot startup).
+    Falls back to global settings if team-specific settings not cached.
     """
-    if _cache is None:
-        raise BrandSettingsNotLoaded(
-            "Brand settings not loaded. Call preload_brand_settings() at startup."
-        )
-    return _cache
+    if team_id in _cache:
+        return _cache[team_id]
+    if None in _cache:
+        return _cache[None]
+    raise BrandSettingsNotLoaded(
+        "Brand settings not loaded. Call preload_brand_settings() at startup."
+    )

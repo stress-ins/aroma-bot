@@ -18,7 +18,7 @@ async def in_memory_db(monkeypatch):
     factory = async_sessionmaker(engine, expire_on_commit=False)
     monkeypatch.setattr(bs_mod, "AsyncSessionLocal", factory)
     # Reset cache before each test
-    bs_mod._cache = None
+    bs_mod._cache = {}
     yield factory
     await engine.dispose()
 
@@ -77,14 +77,14 @@ async def test_update_forbidden_phrases(in_memory_db):
 
 @pytest.mark.asyncio
 async def test_preload_populates_cache(in_memory_db):
-    assert bs_mod._cache is None
+    assert not bs_mod._cache
     await bs_mod.preload_brand_settings()
-    assert bs_mod._cache is not None
-    assert bs_mod._cache.brand_voice == bs_mod._DEFAULT_BRAND_VOICE
+    assert None in bs_mod._cache
+    assert bs_mod._cache[None].brand_voice == bs_mod._DEFAULT_BRAND_VOICE
 
 
 def test_get_cached_raises_when_not_loaded():
-    bs_mod._cache = None
+    bs_mod._cache = {}
     with pytest.raises(bs_mod.BrandSettingsNotLoaded):
         bs_mod.get_brand_settings_cached()
 
@@ -102,3 +102,19 @@ async def test_update_refreshes_cache(in_memory_db):
     await bs_mod.update_brand_settings(brand_voice="updated")
     cached = bs_mod.get_brand_settings_cached()
     assert cached.brand_voice == "updated"
+
+
+@pytest.mark.asyncio
+async def test_per_team_brand_settings(in_memory_db):
+    """Team-scoped settings are independent from global."""
+    global_bs = await bs_mod.get_brand_settings(team_id=None)
+    team_bs = await bs_mod.get_brand_settings(team_id="team-123")
+    assert global_bs.id != team_bs.id
+    assert team_bs.team_id == "team-123"
+
+    await bs_mod.update_brand_settings(team_id="team-123", brand_voice="team voice")
+    team_updated = await bs_mod.get_brand_settings(team_id="team-123")
+    assert team_updated.brand_voice == "team voice"
+    # Global unchanged
+    global_check = await bs_mod.get_brand_settings(team_id=None)
+    assert global_check.brand_voice == bs_mod._DEFAULT_BRAND_VOICE

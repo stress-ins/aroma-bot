@@ -620,7 +620,7 @@ class TestEditPostFallback:
             "brand_voice": "test voice",
             "forbidden_phrases": ["\u0442\u0430\u0437\u043e\u0432\u0430\u044f \u0432\u043e\u043b\u043d\u0430"],
         })()
-        monkeypatch.setattr(bs_mod, "_cache", fake)
+        monkeypatch.setattr(bs_mod, "_cache", {None: fake})
 
     def test_fallback_on_short_result(self, monkeypatch):
         """If Claude returns a very short string, keep original."""
