@@ -613,7 +613,8 @@ export function createSettingsModule(deps) {
       if (data.url) {
         const tg = window.Telegram?.WebApp;
         if (tg?.openLink) {
-          tg.openLink(data.url);
+          // Open in external browser — OAuth doesn't work in Telegram's in-app WebView
+          tg.openLink(data.url, { try_instant_view: false });
         } else {
           window.open(data.url, "_blank");
         }
