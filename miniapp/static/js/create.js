@@ -192,6 +192,7 @@ export function createCreateModule(deps) {
             </div>
             <button class="primary-button" type="submit">Собрать черновик</button>
           </form>
+          ${_trendSuggestionsPanel("instagram")}
         </section>
       `;
     } else if (toolId === "reels") {
@@ -302,6 +303,7 @@ export function createCreateModule(deps) {
         format_key: contentForm.querySelector("[name='format_key']:checked")?.value || "instagram",
       }));
     }
+    _bindTrendSuggestionsPanels();
     if (contentForm) bindTopicForm(contentForm, { pendingText: "Создаю...", onSubmit: async (topic) => {
       const goal = contentForm.querySelector("select[name='goal_key']").value;
       const format = contentForm.querySelector("[name='format_key']:checked")?.value || "instagram";
@@ -447,9 +449,84 @@ export function createCreateModule(deps) {
     } });
   }
 
+  // ── Trend Suggestions Panel ────────────────────────────────────────
+
+  const _suggestionsCache = {};
+  const _CACHE_TTL = 3600_000; // 1 hour
+
+  function _trendSuggestionsPanel(platform) {
+    return `
+      <details class="trend-suggestions-panel" data-platform="${platform}">
+        <summary class="trend-suggestions-toggle">
+          ${uiIcon("bar-chart-3")} Подсказки из трендов
+        </summary>
+        <div class="trend-suggestions-body" data-trend-body>
+          <div class="suggest-topics-loading"><span class="button-spinner" aria-hidden="true"></span> Загрузка…</div>
+        </div>
+      </details>
+    `;
+  }
+
+  function _bindTrendSuggestionsPanels() {
+    document.querySelectorAll(".trend-suggestions-panel").forEach((panel) => {
+      panel.addEventListener("toggle", async () => {
+        if (!panel.open) return;
+        const platform = panel.dataset.platform || "instagram";
+        const body = panel.querySelector("[data-trend-body]");
+        if (!body) return;
+
+        const cacheKey = `trends_${platform}`;
+        const cached = _suggestionsCache[cacheKey];
+        if (cached && Date.now() - cached.ts < _CACHE_TTL) {
+          body.innerHTML = _renderSuggestionsBody(cached.data, platform);
+          return;
+        }
+
+        try {
+          const data = await fetchJson(`/api/trends/suggestions?platform=${platform}`);
+          _suggestionsCache[cacheKey] = { data, ts: Date.now() };
+          body.innerHTML = _renderSuggestionsBody(data, platform);
+        } catch {
+          body.innerHTML = `<div class="field-help">Нет данных о трендах</div>`;
+        }
+      });
+    });
+  }
+
+  function _renderSuggestionsBody(data, platform) {
+    const parts = [];
+
+    if (data.trending_topics?.length) {
+      const items = data.trending_topics.map((t) =>
+        `<button type="button" class="suggest-topic-item" onclick="this.closest('.create-form')?.querySelector('textarea[name=topic]') && (this.closest('.create-form').querySelector('textarea[name=topic]').value = this.textContent)">${escapeHtml(t)}</button>`
+      ).join("");
+      parts.push(`<div class="trend-suggestions-section"><div class="trend-suggestions-label">Популярные темы</div>${items}</div>`);
+    }
+
+    if (data.trending_hashtags?.length && platform === "instagram") {
+      const tags = data.trending_hashtags.map((t) => `<span class="trends-tagcloud-chip" style="font-size:0.8rem">#${escapeHtml(t)}</span>`).join(" ");
+      parts.push(`<div class="trend-suggestions-section"><div class="trend-suggestions-label">Хэштеги</div><div class="trends-tagcloud">${tags}</div></div>`);
+    }
+
+    if (data.hooks?.length && platform === "threads") {
+      const items = data.hooks.map((h) =>
+        `<button type="button" class="suggest-topic-item" onclick="this.closest('.create-form')?.querySelector('textarea[name=topic]') && (this.closest('.create-form').querySelector('textarea[name=topic]').value = this.textContent)">"${escapeHtml(h)}"</button>`
+      ).join("");
+      parts.push(`<div class="trend-suggestions-section"><div class="trend-suggestions-label">Зацепки (хуки)</div>${items}</div>`);
+    }
+
+    if (data.best_times?.length) {
+      const times = data.best_times.slice(0, 3).map((t) => `${t.hour}:00`).join(", ");
+      parts.push(`<div class="trend-suggestions-section"><div class="trend-suggestions-label">Лучшее время</div><div class="field-help">${times}</div></div>`);
+    }
+
+    return parts.length ? parts.join("") : `<div class="field-help">Нет данных о трендах</div>`;
+  }
+
   return {
     bindTopicForm,
     renderCreate,
     renderCreateTool,
+    _bindTrendSuggestionsPanels,
   };
 }
