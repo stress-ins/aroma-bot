@@ -1342,6 +1342,9 @@ const {
   loadReels: (...a) => loadReels(...a),
   openDraft: (...a) => openDraft(...a),
   openReels: (...a) => openReels(...a),
+  openPendingReelsCreation: (...a) => openPendingReelsCreation(...a),
+  finalizePendingReelsCreation: (...a) => finalizePendingReelsCreation(...a),
+  recoverPendingReelsCreation: (...a) => recoverPendingReelsCreation(...a),
 });
 renderPlans = renderPlansImpl;
 
