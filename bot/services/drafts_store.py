@@ -33,6 +33,7 @@ class DraftRecord:
         published_at: str | None = None,
         error: str = "",
         created_by: int | None = None,
+        updated_at: str | None = None,
     ):
         self.draft_id = draft_id
         self.kind = kind
@@ -50,6 +51,7 @@ class DraftRecord:
         self.published_at = published_at
         self.error = error
         self.created_by = created_by
+        self.updated_at = updated_at
 
     @classmethod
     def from_model(cls, model: DraftModel) -> DraftRecord:
@@ -76,6 +78,7 @@ class DraftRecord:
             published_at=published_at,
             error=model.error or "",
             created_by=model.created_by,
+            updated_at=model.updated_at.isoformat() if isinstance(model.updated_at, datetime) else str(model.updated_at) if model.updated_at else None,
         )
 
 

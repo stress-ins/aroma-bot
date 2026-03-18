@@ -73,6 +73,12 @@ class DraftModel(Base):
     published_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, default=None)
     error: Mapped[str] = mapped_column(String(2000), default="")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime | None] = mapped_column(
+        DateTime,
+        nullable=True,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
 
 
 class PlanModel(Base):

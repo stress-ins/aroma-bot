@@ -2,7 +2,11 @@ from __future__ import annotations
 
 from typing import Any
 
+from sqlalchemy import select
+
 from bot.services.drafts_store import DraftRecord
+from db.models import TeamMemberModel
+from db.session import AsyncSessionLocal
 
 
 async def filter_drafts(
@@ -73,6 +77,23 @@ def payload_preview(kind: str, payload: dict[str, Any]) -> str:
     return ""
 
 
+
+async def _resolve_username(telegram_id: int | None) -> str:
+    if not telegram_id:
+        return ""
+    try:
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                select(TeamMemberModel.username)
+                .where(TeamMemberModel.telegram_id == telegram_id)
+                .limit(1)
+            )
+            row = result.scalar_one_or_none()
+            return row or ""
+    except Exception:
+        return ""
+
+
 async def serialize_draft(record: DraftRecord) -> dict[str, Any]:
     payload = dict(record.payload)
     slides_count = len(payload.get("slides", [])) if isinstance(payload.get("slides"), list) else 0
@@ -88,6 +109,7 @@ async def serialize_draft(record: DraftRecord) -> dict[str, Any]:
             generation_pending = generation_pending or images_ready < slides_count
         if record.kind == "reels" and storyboard_count:
             generation_pending = generation_pending or images_ready < storyboard_count
+    created_by_username = await _resolve_username(record.created_by)
     return {
         "draft_id": record.draft_id,
         "seq_id": record.seq_id,
@@ -95,6 +117,7 @@ async def serialize_draft(record: DraftRecord) -> dict[str, Any]:
         "topic": record.topic,
         "source": record.source,
         "created_at": record.created_at,
+        "updated_at": record.updated_at,
         "status": record.status,
         "feedback": record.feedback,
         "preview": payload_preview(record.kind, payload),
@@ -105,6 +128,8 @@ async def serialize_draft(record: DraftRecord) -> dict[str, Any]:
         "generation_stage": generation_stage,
         "generation_message": str(payload.get("generation_message", "")),
         "generation_error": str(payload.get("generation_error", "")),
+        "created_by": record.created_by,
+        "created_by_username": created_by_username,
         "payload": payload,
     }
 
