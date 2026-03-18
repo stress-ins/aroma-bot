@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import random
 from datetime import datetime, timedelta, timezone
+from functools import partial
 
 import httpx
 from sqlalchemy import select
@@ -410,8 +412,9 @@ async def select_daily_oil(target_date: str) -> DailyOilModel:
         if existing:
             if not existing.reason and not existing.fact and not existing.daily_practice:
                 # Content generation failed on initial run — retry
-                fact, practice = _generate_fact_and_practice(
-                    existing.name, existing.context
+                loop = asyncio.get_running_loop()
+                fact, practice = await loop.run_in_executor(
+                    None, partial(_generate_fact_and_practice, existing.name, existing.context)
                 )
                 if fact or practice:
                     existing.fact = fact
@@ -450,11 +453,16 @@ async def select_daily_oil(target_date: str) -> DailyOilModel:
         # Pre-filter to top N by context relevance
         top_candidates = _prefilter_candidates(candidates, ctx)
 
-        # Let Claude pick the best one
-        chosen, reason = _pick_oil_via_claude(top_candidates, ctx)
+        # Let Claude pick the best one (sync → run in thread to avoid blocking event loop)
+        loop = asyncio.get_running_loop()
+        chosen, reason = await loop.run_in_executor(
+            None, partial(_pick_oil_via_claude, top_candidates, ctx)
+        )
 
         # Generate fact and daily practice with context
-        fact, practice = _generate_fact_and_practice(chosen.name, ctx)
+        fact, practice = await loop.run_in_executor(
+            None, partial(_generate_fact_and_practice, chosen.name, ctx)
+        )
 
         row = DailyOilModel(
             date=target_date,
