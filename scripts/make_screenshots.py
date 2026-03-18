@@ -35,7 +35,7 @@ BASELINE = GALLERY / "baseline"
 DIFF_DIR = GALLERY / "diff"
 REGISTRY = GALLERY / "registry.json"
 VIEWPORT = {"width": 390, "height": 844}
-TIMEOUT = 10000
+TIMEOUT = 20000
 
 # 1x1 transparent PNG for image stubs
 _PNG_1X1 = b64decode(
@@ -430,8 +430,8 @@ def _start_server(db_path: Path, assets_dir: Path) -> tuple[str, subprocess.Pope
         [sys.executable, "-m", "uvicorn", "miniapp_server:app", "--host", "127.0.0.1", "--port", str(port)],
         cwd=str(ROOT),
         env=env,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
     )
     _wait_until_ready(base_url)
     return base_url, process
@@ -444,17 +444,20 @@ def navigate_to_screen(page, base_url: str, screen: dict) -> bool:
 
         if action == "goto":
             url = step["url"]
-            if url.startswith("?"):
-                page.goto(f"{base_url}/{url}", wait_until="domcontentloaded")
-                try:
-                    page.wait_for_selector("body.app-ready", timeout=10000)
-                except Exception:
-                    page.evaluate("document.body.classList.add('app-ready')")
-                    page.wait_for_timeout(200)
-            elif url.startswith("/"):
-                page.goto(f"{base_url}{url}", wait_until="domcontentloaded")
-            else:
-                page.goto(f"{base_url}/{url}", wait_until="domcontentloaded")
+            try:
+                if url.startswith("?"):
+                    page.goto(f"{base_url}/{url}", wait_until="domcontentloaded", timeout=TIMEOUT)
+                    try:
+                        page.wait_for_selector("body.app-ready", timeout=10000)
+                    except Exception:
+                        page.evaluate("document.body.classList.add('app-ready')")
+                        page.wait_for_timeout(200)
+                elif url.startswith("/"):
+                    page.goto(f"{base_url}{url}", wait_until="domcontentloaded", timeout=TIMEOUT)
+                else:
+                    page.goto(f"{base_url}/{url}", wait_until="domcontentloaded", timeout=TIMEOUT)
+            except Exception:
+                return False
             page.wait_for_timeout(API_ROUNDTRIP)
 
         elif action == "click":
@@ -651,6 +654,17 @@ def _capture_screens(browser, base_url, screens, *, dark=False, click_results=No
     page = context.new_page()
     _init_page(page, base_url, dark=dark, safe_area_overlay=safe_area_overlay)
 
+    def _fresh_page():
+        """Create a fresh page in the context."""
+        nonlocal page
+        try:
+            page.close()
+        except Exception:
+            pass
+        page = context.new_page()
+        _init_page(page, base_url, dark=dark, safe_area_overlay=safe_area_overlay)
+
+    nav_failures = 0
     for screen in screens:
         sid = screen["id"]
         label = screen.get("label", sid)
@@ -680,24 +694,52 @@ def _capture_screens(browser, base_url, screens, *, dark=False, click_results=No
                 pg2.wait_for_timeout(50)
             take_screenshot(pg2, CURRENT / f"{prefix}{sid}.png", f"[{theme}] {label}")
             ctx2.close()
+            _fresh_page()
             continue
 
         # Navigate to screen
-        ok = navigate_to_screen(page, base_url, screen)
+        try:
+            ok = navigate_to_screen(page, base_url, screen)
+        except Exception:
+            ok = False
         if not ok:
             print(f"  \u2717 Navigation failed for {sid}")
-            take_screenshot(page, CURRENT / f"{prefix}{sid}__FAIL.png", f"[{theme}] {label} (FAIL)")
+            try:
+                take_screenshot(page, CURRENT / f"{prefix}{sid}__FAIL.png", f"[{theme}] {label} (FAIL)")
+            except Exception:
+                pass
+            nav_failures += 1
+            if nav_failures >= 2:
+                print("  \u27f3 Refreshing page after consecutive failures")
+                try:
+                    _fresh_page()
+                except Exception:
+                    pass
+                nav_failures = 0
             continue
 
+        nav_failures = 0
+
         # Viewport screenshot
-        take_screenshot(page, CURRENT / f"{prefix}{sid}.png", f"[{theme}] {label}")
+        try:
+            take_screenshot(page, CURRENT / f"{prefix}{sid}.png", f"[{theme}] {label}")
+        except Exception as e:
+            print(f"  \u2717 Screenshot failed for {sid}: {e}")
+            try:
+                _fresh_page()
+            except Exception:
+                pass
+            continue
 
         # Full-page scrolled screenshot for scrollable screens
         if scrollable:
-            take_screenshot(
-                page, CURRENT / f"{prefix}{sid}_full.png",
-                f"[{theme}] {label} (full)", full_page=True
-            )
+            try:
+                take_screenshot(
+                    page, CURRENT / f"{prefix}{sid}_full.png",
+                    f"[{theme}] {label} (full)", full_page=True
+                )
+            except Exception:
+                pass
 
         # Test clicks (light theme only, no need to duplicate)
         if not dark and click_results is not None:
