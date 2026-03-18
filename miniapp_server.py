@@ -155,3 +155,9 @@ async def index():
         content=html,
         headers={"Cache-Control": "no-store, max-age=0"},
     )
+
+
+@app.get("/privacy", response_class=HTMLResponse)
+async def privacy_policy():
+    html = (MINIAPP_DIR / "privacy.html").read_text(encoding="utf-8")
+    return HTMLResponse(content=html)
