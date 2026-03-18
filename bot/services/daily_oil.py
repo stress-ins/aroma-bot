@@ -16,6 +16,18 @@ from db.session import AsyncSessionLocal
 logger = logging.getLogger(__name__)
 
 _LOOKBACK_DAYS = 30
+
+
+def _strip_markdown_json(text: str) -> str:
+    """Remove ```json ... ``` wrapper if present."""
+    s = text.strip()
+    if s.startswith("```"):
+        # Remove opening ``` line
+        s = s.split("\n", 1)[1] if "\n" in s else s[3:]
+        # Remove closing ```
+        if s.endswith("```"):
+            s = s[:-3]
+    return s.strip()
 _MAX_CANDIDATES = 10
 
 # ---------------------------------------------------------------------------
@@ -311,7 +323,7 @@ def _pick_oil_via_claude(
             model=HAIKU,
             context="daily_oil_pick",
         )
-        data = json.loads(raw)
+        data = json.loads(_strip_markdown_json(raw))
         slug = data.get("slug", "")
         reason = data.get("reason", "")
         for c in candidates:
@@ -372,7 +384,7 @@ def _generate_fact_and_practice(oil_name: str, ctx: dict | None = None) -> tuple
             model=HAIKU,
             context="daily_oil",
         )
-        data = json.loads(raw)
+        data = json.loads(_strip_markdown_json(raw))
         return data.get("fact", ""), data.get("daily_practice", "")
     except Exception as exc:
         logger.warning("Claude daily-oil generation failed: %s", exc)
