@@ -17,6 +17,7 @@ import { createSessionModule } from "./js/session.js";
 import { createSettingsModule } from "./js/settings.js";
 import { createRecommendationsModule } from "./js/recommendations.js";
 import { createShellModule } from "./js/shell.js";
+import { createTeamsModule } from "./js/teams.js";
 
 const state = {
   mode: "content", // 'content' or 'handbook'
@@ -55,6 +56,8 @@ const state = {
   plansSubMode: "publications",
   mentions: [],
   mentionsFilter: { platform: "all", status: "pending" },
+  activeTeamId: localStorage.getItem("activeTeamId") || null,
+  teams: [],
 };
 
 const MODE_TABS = {
@@ -100,7 +103,7 @@ let addRewrite, removeRewrite, savePlatformTone, saveUploadPostPrefs, saveImageM
 let addKeywordItem, removeKeywordItem, openKeywordTopic;
 let addForbiddenPhrase, removeForbiddenPhrase;
 let createNewTeam, createTeamInvite, removeTeamMember, activatePromo, generatePromos;
-let saveContentReviewDraft, saveThreadsReviewDraft, polishContentDraft, refreshDraftMetrics;
+let saveContentReviewDraft, saveThreadsReviewDraft, polishContentDraft, refreshDraftMetrics, moveDraftToTeam;
 let loadCurrentTab, safeLoadCurrentTab, retryCurrentTab;
 let publishDraft, cancelPublishSchedule, loadPublishStatus;
 let openPendingReelsCreation, finalizePendingReelsCreation, recoverPendingReelsCreation;
@@ -670,6 +673,7 @@ function actionLabel(icon, text) {
 }
 
 function tagMarkup(label, tone = "neutral") {
+  if (!label) return "";
   const safeTone = String(tone || "neutral")
     .replace(/[^a-z0-9_-]/gi, "")
     .toLowerCase();
@@ -1001,7 +1005,7 @@ function sourceLabel(value) {
   const normalized = String(value || "").trim().toLowerCase();
   if (normalized === "/plan") return "Из плана";
   if (normalized === "/content") return "Контент";
-  if (normalized === "/miniapp") return "Mini App";
+  if (normalized === "/miniapp") return "";
   return String(value || "");
 }
 
@@ -1110,7 +1114,9 @@ const {
   renderMarkdown,
   getInitDataHeaders: () => {
     const initData = window.Telegram?.WebApp?.initData;
-    return initData ? { "X-Telegram-Init-Data": initData } : {};
+    const headers = initData ? { "X-Telegram-Init-Data": initData } : {};
+    if (state.activeTeamId) headers["X-Team-Id"] = state.activeTeamId;
+    return headers;
   },
   getCurrentDraftId: () => state.draftId || state.selectedReels?.draft_id || "",
   timers: {
@@ -1118,6 +1124,17 @@ const {
     setUiNotice: (value) => { uiNoticeTimer = value; },
   },
   callbacks: coreCallbacks,
+});
+
+const teamsModule = createTeamsModule({
+  state,
+  elements,
+  api: (method, url, body) => fetchJson(url, {
+    method,
+    ...(body ? { body: JSON.stringify(body) } : {}),
+  }),
+  escapeHtml,
+  icon: uiIcon,
 });
 
 const sessionCallbacks = {
@@ -1494,6 +1511,7 @@ const {
   renderDraftDetail,
   renderEmptyDetail,
   refreshDraftMetrics,
+  moveDraftToTeam,
 } = createDraftsModule({
   state,
   elements,
@@ -1771,15 +1789,20 @@ function setTab(t) {
 }
 
 async function bootstrap() {
+  // Allow teams module to reload current tab on team switch
+  state._reloadCurrentTab = () => safeLoadCurrentTab("Не удалось загрузить вкладку");
+
   const sharedBlendId = new URLSearchParams(window.location.search).get("shared");
   if (sharedBlendId) {
     await bootstrapImpl();
     openSharedBlend(sharedBlendId);
+    teamsModule.loadAndRenderSwitcher();
     return;
   }
   onboarding.maybeShow();
   onboarding.initHelpFab();
-  return bootstrapImpl();
+  await bootstrapImpl();
+  teamsModule.loadAndRenderSwitcher();
 }
 
 bindBootFallbackReload();
@@ -1846,6 +1869,7 @@ registerWindowBridge({
   saveContentReviewDraft,
   saveThreadsReviewDraft,
   polishContentDraft,
+  moveDraftToTeam,
   openKeywordTopic,
   addKeywordItem,
   removeKeywordItem,

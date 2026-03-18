@@ -1679,7 +1679,7 @@ class TestMiniAppRussianLocale:
         assert "function sourceLabel(value)" in app_js
         assert 'return "Из плана";' in app_js
         assert 'return "Контент";' in app_js
-        assert 'return "Mini App";' in app_js
+        assert 'if (normalized === "/miniapp") return "";' in app_js
         assert 'class="draft-card overview-card' in app_js
         assert 'class="plan-card plan-card-' in app_js
         assert 'class="reels-card overview-card' in app_js

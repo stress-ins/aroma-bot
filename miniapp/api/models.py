@@ -23,6 +23,10 @@ class DraftContentPayload(BaseModel):
     threads_posts: list[dict] | None = Field(default=None)
 
 
+class DraftMovePayload(BaseModel):
+    target_team_id: str
+
+
 class KeywordPayload(BaseModel):
     topic_idx: int
     field: str

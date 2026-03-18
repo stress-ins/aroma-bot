@@ -9,7 +9,7 @@ from bot.services.miniapp_content_review import polish_content_review_draft, upd
 from bot.services.miniapp_presenter import filter_drafts, serialize_draft, serialize_draft_summary
 from config import settings
 from ..auth import TeamContext, _require_auth, _resolve_team_context
-from ..models import DraftContentPayload, DraftFeedbackPayload, DraftStatusPayload
+from ..models import DraftContentPayload, DraftFeedbackPayload, DraftMovePayload, DraftStatusPayload
 
 router = APIRouter()
 
@@ -147,6 +147,24 @@ async def restore_draft_revision(draft_id: str, rev_num: int, _: None = Depends(
     if not updated:
         raise HTTPException(status_code=404, detail="draft_not_found")
     await create_revision(draft_id, revision.payload, author="system", note=f"restored from rev {rev_num}")
+    return await serialize_draft(updated)
+
+
+@router.post("/api/drafts/{draft_id}/move")
+async def move_draft(draft_id: str, payload: DraftMovePayload, ctx: TeamContext = Depends(_resolve_team_context)):
+    from bot.services.team_store import get_member_role, has_role
+
+    draft = await get_draft(draft_id)
+    if not draft:
+        raise HTTPException(status_code=404, detail="draft_not_found")
+
+    target_role = await get_member_role(payload.target_team_id, ctx.telegram_id)
+    if not target_role or not has_role(target_role, "editor"):
+        raise HTTPException(status_code=403, detail="insufficient_role_in_target_team")
+
+    updated = await update_draft(draft_id, team_id=payload.target_team_id)
+    if not updated:
+        raise HTTPException(status_code=404, detail="draft_not_found")
     return await serialize_draft(updated)
 
 

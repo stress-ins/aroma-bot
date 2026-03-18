@@ -105,11 +105,39 @@ export function createTeamsModule(deps) {
   function switchTeam(teamId) {
     localStorage.setItem("activeTeamId", teamId);
     state.activeTeamId = teamId;
-    location.reload();
+    // Re-render switcher to update selected option
+    renderSwitcherInTopbar(state.teams);
+    // Reload current tab content without full page reload
+    if (typeof state._reloadCurrentTab === "function") {
+      state._reloadCurrentTab();
+    }
   }
 
   function getActiveTeamId() {
     return state.activeTeamId || localStorage.getItem("activeTeamId") || null;
+  }
+
+  function renderSwitcherInTopbar(teams) {
+    const container = document.querySelector(".topbar-copy");
+    if (!container) return;
+    const existing = container.querySelector(".team-switcher");
+    if (existing) existing.remove();
+    if (!teams || teams.length <= 1) return;
+    const html = renderTeamSwitcher(teams, getActiveTeamId());
+    if (!html) return;
+    container.insertAdjacentHTML("beforeend", html);
+  }
+
+  async function loadAndRenderSwitcher() {
+    const teams = await loadTeams();
+    state.teams = teams;
+    // Auto-select first team if none active
+    if (!state.activeTeamId && teams.length > 0) {
+      state.activeTeamId = teams[0].team_id;
+      localStorage.setItem("activeTeamId", teams[0].team_id);
+    }
+    renderSwitcherInTopbar(teams);
+    return teams;
   }
 
   // Expose for inline onclick handlers
@@ -126,6 +154,8 @@ export function createTeamsModule(deps) {
     leaveTeam,
     renderTeamSettings,
     renderTeamSwitcher,
+    renderSwitcherInTopbar,
+    loadAndRenderSwitcher,
     switchTeam,
     getActiveTeamId,
   };

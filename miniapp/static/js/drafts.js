@@ -232,7 +232,7 @@ export function createDraftsModule(deps) {
         ${renderBackButton()}
         <div class="detail-top detail-hero">
           <div class="detail-hero-copy">
-            <p class="eyebrow">${contentKindIcon(d.kind)}<span>${escapeHtml(kindLabel(d.kind))} • ${escapeHtml(sourceLabel(d.source))}</span></p>
+            <p class="eyebrow">${contentKindIcon(d.kind)}<span>${escapeHtml(kindLabel(d.kind))}${sourceLabel(d.source) ? " • " + escapeHtml(sourceLabel(d.source)) : ""}</span></p>
             <h2 class="detail-title">${escapeHtml(d.topic)}</h2>
             <div class="draft-meta">
               ${tagMarkup(statusLabel(d.status), statusTone(d.status))}
@@ -273,14 +273,14 @@ export function createDraftsModule(deps) {
         <div class="detail-grid detail-grid-pending">
           ${renderBackButton()}
           <div class="detail-top">
-            <p class="eyebrow">${contentKindIcon(d.kind)}<span>${escapeHtml(kindLabel(d.kind))} • ${escapeHtml(sourceLabel(d.source || "/miniapp"))}</span></p>
+            <p class="eyebrow">${contentKindIcon(d.kind)}<span>${escapeHtml(kindLabel(d.kind))}${sourceLabel(d.source || "/miniapp") ? " • " + escapeHtml(sourceLabel(d.source || "/miniapp")) : ""}</span></p>
             <h2 class="detail-title">${escapeHtml(d.topic || "Создаём черновик")}</h2>
             <div class="draft-meta">
               ${tagMarkup("Черновик", "status-neutral")}
               ${tagMarkup("Ещё генерируется", "pending")}
             </div>
           </div>
-          ${renderDetailLoader(isSeries ? "Генерирую серию" : "Генерирую карточку", isSeries ? "Создаю три поста: утро, день, вечер. Займёт 15–30 секунд." : "Сохраняю черновик и подгружаю содержимое.", "detail-loader-card-compact")}
+          ${renderDetailLoader(isSeries ? "Генерирую серию" : "Генерирую карточку", isSeries ? "Создаю три поста: утро, день, вечер.<br>Займёт 15–30 секунд." : "Сохраняю черновик и подгружаю содержимое.", "detail-loader-card-compact")}
         </div>
       `;
       syncMobileNavigation();
@@ -366,7 +366,7 @@ export function createDraftsModule(deps) {
         ${renderBackButton()}
         <div class="detail-top detail-hero">
           <div class="detail-hero-copy">
-            <p class="eyebrow">${contentKindIcon(d.kind)}<span>${escapeHtml(kindLabel(d.kind))} • ${escapeHtml(sourceLabel(d.source))}</span></p>
+            <p class="eyebrow">${contentKindIcon(d.kind)}<span>${escapeHtml(kindLabel(d.kind))}${sourceLabel(d.source) ? " • " + escapeHtml(sourceLabel(d.source)) : ""}</span></p>
             <h2 class="detail-title">${escapeHtml(d.topic)}</h2>
             <div class="draft-meta">
               ${d.seq_id ? `<span class="meta-chip meta-chip--muted">#${d.seq_id}</span>` : ""}
@@ -386,6 +386,7 @@ export function createDraftsModule(deps) {
               ${d.kind === "carousel" ? `<button class="secondary-button" title="Импорт из Canva" onclick="importCarouselPptx('${d.draft_id}', this)">${uiIcon("upload")}</button>` : ""}
               ${d.kind === "carousel" ? `<button class="secondary-button" title="Обновить все слайды" onclick="regenerateCarouselAll('${d.draft_id}', this)">${uiIcon("regenerate")}</button>` : ""}
             </div>
+            ${renderMoveButton(d.draft_id)}
             <button class="danger-button" onclick="deleteDraft('${d.draft_id}', 'drafts', this)">${actionLabel("trash", "Удалить")}</button>
           </div>
         </div>
@@ -502,6 +503,34 @@ export function createDraftsModule(deps) {
     return !!(p.image?.filename);
   }
 
+  async function moveDraftToTeam(draftId, targetTeamId, button) {
+    await withButtonFeedback(button, "Переношу...", async () => {
+      await fetchJson(`/api/drafts/${draftId}/move`, {
+        method: "POST",
+        body: JSON.stringify({ target_team_id: targetTeamId }),
+      });
+      state.drafts = state.drafts.filter((d) => d.draft_id !== draftId);
+      if (state.selected?.draft_id === draftId) state.selected = null;
+      renderDraftList();
+      renderEmptyDetail();
+    }, "Перенесён");
+  }
+
+  function renderMoveButton(draftId) {
+    const teams = state.teams || [];
+    if (teams.length <= 1) return "";
+    const currentTeamId = state.activeTeamId;
+    const otherTeams = teams.filter((t) => t.team_id !== currentTeamId);
+    if (!otherTeams.length) return "";
+    if (otherTeams.length === 1) {
+      return `<button class="secondary-button" onclick="moveDraftToTeam('${draftId}','${otherTeams[0].team_id}',this)">${escapeHtml("→ " + otherTeams[0].name)}</button>`;
+    }
+    const options = otherTeams.map((t) =>
+      `<option value="${escapeHtml(t.team_id)}">${escapeHtml(t.name)}</option>`
+    ).join("");
+    return `<select class="team-switcher" onchange="moveDraftToTeam('${draftId}',this.value,this)"><option value="">Перенести в...</option>${options}</select>`;
+  }
+
   return {
     saveContentReviewDraft,
     saveThreadsReviewDraft,
@@ -512,5 +541,7 @@ export function createDraftsModule(deps) {
     renderThreadsSeriesDetail,
     renderEmptyDetail,
     refreshDraftMetrics,
+    moveDraftToTeam,
+    renderMoveButton,
   };
 }
