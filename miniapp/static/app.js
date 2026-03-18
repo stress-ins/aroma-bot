@@ -1051,6 +1051,7 @@ const {
   bindTapAnimation,
   bindCardKeyboardActivation,
   bindKeyboardViewportAssist,
+  bindPullToRefresh,
   bindSwipeBack,
   bindBottomTabBar,
 } = createShellModule({
@@ -1636,6 +1637,7 @@ const _runtimeMod = createRuntimeModule({
   applyTelegramTheme,
   bindTextareaAutoExpand,
   bindTapAnimation,
+  bindPullToRefresh,
   bindSwipeBack,
   bindKeyboardDismiss,
   bindCardKeyboardActivation,

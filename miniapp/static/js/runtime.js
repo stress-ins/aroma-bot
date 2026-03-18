@@ -8,6 +8,7 @@ export function createRuntimeModule(deps) {
     applyTelegramTheme,
     bindTextareaAutoExpand,
     bindTapAnimation,
+    bindPullToRefresh,
     bindSwipeBack,
     bindKeyboardDismiss,
     bindCardKeyboardActivation,
@@ -108,6 +109,7 @@ export function createRuntimeModule(deps) {
     applyTelegramTheme();
     bindTextareaAutoExpand();
     bindTapAnimation();
+    bindPullToRefresh();
     bindSwipeBack();
     bindKeyboardDismiss();
     bindCardKeyboardActivation();
