@@ -32,6 +32,7 @@ class DraftRecord:
         revision_notes: str = "",
         published_at: str | None = None,
         error: str = "",
+        created_by: int | None = None,
     ):
         self.draft_id = draft_id
         self.kind = kind
@@ -48,6 +49,7 @@ class DraftRecord:
         self.revision_notes = revision_notes
         self.published_at = published_at
         self.error = error
+        self.created_by = created_by
 
     @classmethod
     def from_model(cls, model: DraftModel) -> DraftRecord:
@@ -73,6 +75,7 @@ class DraftRecord:
             revision_notes=model.revision_notes or "",
             published_at=published_at,
             error=model.error or "",
+            created_by=model.created_by,
         )
 
 

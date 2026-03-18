@@ -928,6 +928,8 @@ export function createReferencesModule(deps) {
           ${dailyOilHtml}
           ${aromaHtmlSection("Паспорт аромата", renderReferencePassport(reference))}
           ${renderCollapsibleDescription(reference)}
+          ${blendsChips ? `<section class="section"><h3>🌀 Входит в смеси</h3><div class="detail-preview">${blendsChips}</div></section>` : ""}
+          ${symptomChips ? `<section class="section"><h3>💊 Помогает при</h3><div class="detail-preview">${symptomChips}</div></section>` : ""}
           ${renderCollapsibleSection("Психологические свойства", reference.psychological_properties, 280)}
           ${aromaSection('Ресурс "+"', reference.resource_values?.plus)}
           ${aromaSection('Ресурс "-"', reference.resource_values?.minus)}
@@ -939,8 +941,6 @@ export function createReferencesModule(deps) {
           ${renderCollapsibleSection("Духовное и эмоциональное воздействие", reference.spiritual_emotional)}
           ${renderCollapsibleSection("При каких состояниях", reference.conditions_for_use)}
           ${compChips ? `<section class="section"><h3>🌿 Комплементарные масла</h3><div class="detail-preview">${compChips}</div></section>` : ""}
-          ${blendsChips ? `<section class="section"><h3>🌀 Входит в смеси</h3><div class="detail-preview">${blendsChips}</div></section>` : ""}
-          ${symptomChips ? `<section class="section"><h3>💊 Помогает при</h3><div class="detail-preview">${symptomChips}</div></section>` : ""}
           ${renderApplicationsWithIcons(reference.applications)}
           ${renderStructuredList("Меры предосторожности", reference.precautions)}
           ${aromaSection("Материалы курса", reference.course_notes)}

@@ -22,6 +22,7 @@ class DraftRevision:
         author: str,
         note: str,
         created_at: str,
+        author_telegram_id: int | None = None,
     ):
         self.id = id
         self.draft_id = draft_id
@@ -30,6 +31,7 @@ class DraftRevision:
         self.author = author
         self.note = note
         self.created_at = created_at
+        self.author_telegram_id = author_telegram_id
 
     @classmethod
     def from_model(cls, model: DraftRevisionModel) -> DraftRevision:
@@ -45,10 +47,11 @@ class DraftRevision:
                 if isinstance(model.created_at, datetime)
                 else str(model.created_at)
             ),
+            author_telegram_id=model.author_telegram_id,
         )
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        d = {
             "id": self.id,
             "draft_id": self.draft_id,
             "rev_num": self.rev_num,
@@ -57,6 +60,9 @@ class DraftRevision:
             "note": self.note,
             "created_at": self.created_at,
         }
+        if self.author_telegram_id is not None:
+            d["author_telegram_id"] = self.author_telegram_id
+        return d
 
 
 async def create_revision(
@@ -64,6 +70,7 @@ async def create_revision(
     payload: dict[str, Any],
     author: str = "user",
     note: str = "",
+    author_telegram_id: int | None = None,
 ) -> DraftRevision:
     """Snapshot the current payload as a new revision. Rev numbers are auto-incremented."""
     async with AsyncSessionLocal() as session:
@@ -81,6 +88,7 @@ async def create_revision(
             payload=dict(payload),
             author=author,
             note=note,
+            author_telegram_id=author_telegram_id,
             created_at=datetime.now(timezone.utc),
         )
         session.add(model)

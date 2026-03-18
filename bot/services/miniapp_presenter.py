@@ -119,4 +119,5 @@ async def serialize_draft_summary(record: DraftRecord) -> dict[str, Any]:
         "generation_pending": generation_pending,
         "generation_stage": str(payload.get("generation_stage", "")),
         "generation_message": str(payload.get("generation_message", "")),
+        "created_by": record.created_by,
     }
