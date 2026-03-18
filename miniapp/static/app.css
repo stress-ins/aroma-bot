@@ -124,6 +124,77 @@ textarea,
 }
 
 /* ═══════════════════════════════════════
+   SECTION: Touch & Selection
+   Prevent native text selection on interactive elements (mobile long-press)
+   ═══════════════════════════════════════ */
+
+button,
+a,
+[role="button"],
+[role="tab"],
+[role="menuitem"],
+label,
+summary {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+.bottom-tab-bar,
+.bottom-tab-btn,
+.tab-button {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.interactive-card,
+.draft-card,
+.create-card,
+.plan-card,
+.plan-entry-card,
+.reels-card,
+.reference-card {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.date-picker-btn {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+svg,
+i[data-lucide] {
+  -webkit-user-select: none;
+  user-select: none;
+  pointer-events: none;
+  -webkit-touch-callout: none;
+}
+
+/* ── Content that MUST remain selectable ───────────────────────────── */
+input[type="text"],
+input[type="number"],
+input[type="email"],
+input[type="search"],
+textarea,
+[contenteditable] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+p,
+.detail-preview,
+.detail-markdown,
+.draft-preview {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* ═══════════════════════════════════════
    SECTION: Layout
    ═══════════════════════════════════════ */
 
