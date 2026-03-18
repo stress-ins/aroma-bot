@@ -17,7 +17,18 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.execute("UPDATE teams SET name = 'Персональная', slug = 'персональная' WHERE name IN ('Default', 'Personal') AND slug IN ('default', 'personal')")
+    # Rename each matching team individually with a unique slug (append created_by)
+    # to avoid UNIQUE constraint on the globally-unique slug index.
+    conn = op.get_bind()
+    rows = conn.execute(
+        sa.text("SELECT id, created_by FROM teams WHERE slug IN ('default', 'personal')")
+    ).fetchall()
+    for row_id, created_by in rows:
+        slug = f"персональная-{created_by}"
+        conn.execute(
+            sa.text("UPDATE teams SET name = :name, slug = :slug WHERE id = :id"),
+            {"name": "Персональная", "slug": slug, "id": row_id},
+        )
 
 
 def downgrade() -> None:
