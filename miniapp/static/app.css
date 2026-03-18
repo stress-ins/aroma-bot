@@ -3802,9 +3802,10 @@ body.is-mobile-layout .topbar-main .topbar-copy .eyebrow {
 body.is-mobile-layout .topbar-main .topbar-copy {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--space-2, 8px);
-  padding-right: 88px;
+}
+body.is-mobile-layout .topbar-main .topbar-copy .team-switcher {
+  margin-left: auto;
 }
 
 /* In content mode on mobile, top tab strip is redundant (bottom bar handles it) */
