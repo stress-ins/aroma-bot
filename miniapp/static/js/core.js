@@ -34,7 +34,7 @@ export function createCoreModule(deps) {
         </div>
         <div class="detail-loader-copy">
           <strong>${escapeHtml(label)}</strong>
-          <span>${escapeHtml(subtitle)}</span>
+          <span>${subtitle}</span>
         </div>
       </div>
     `;

@@ -2,9 +2,14 @@ from __future__ import annotations
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 
+import logging
+
 from bot.agents import generate_content_draft
+from bot.handlers.monitor import notify_owner_throttled
 from bot.services.drafts_store import save_draft
 from bot.services.miniapp_generator import build_content_payload, build_threads_series_payload, is_valid_content_format, is_valid_content_goal
+
+logger = logging.getLogger(__name__)
 from bot.services.miniapp_presenter import serialize_draft
 from bot.services.miniapp_reels import serialize_reels_draft
 from config import settings
@@ -66,8 +71,26 @@ async def generate_threads_series(payload: ThreadsSeriesCreateRequest, ctx: Team
         raise HTTPException(status_code=400, detail="invalid_goal")
 
     bc = _extract_blend_context(payload)
-    draft = await generate_content_draft(topic, goal_key, "threads_series", blend_context=bc)
+    try:
+        draft = await generate_content_draft(topic, goal_key, "threads_series", blend_context=bc)
+    except Exception as exc:
+        logger.exception("threads-series generation failed for topic=%r", topic)
+        notify_owner_throttled(
+            f"⚠️ Генерация серии тредсов упала\n<b>Тема:</b> {topic}\n<b>Ошибка:</b> {type(exc).__name__}: {exc}",
+            dedup_key="threads-series-gen-error",
+            cooldown=120,
+        )
+        raise HTTPException(status_code=502, detail="generation_failed")
     ts_payload = build_threads_series_payload(draft, goal_key=goal_key, emotion=emotion)
+    has_content = any(p.get("text") for p in ts_payload.get("threads_posts", []))
+    if not has_content:
+        logger.error("threads-series produced 0 posts for topic=%r, caption=%r", topic, draft.caption[:200] if draft.caption else None)
+        notify_owner_throttled(
+            f"⚠️ Серия тредсов: 0 постов после генерации\n<b>Тема:</b> {topic}\n<b>Caption пуст:</b> {not draft.caption}",
+            dedup_key="threads-series-empty",
+            cooldown=120,
+        )
+        raise HTTPException(status_code=502, detail="generation_empty")
     if bc:
         ts_payload["blend_context"] = bc
     saved = await save_draft(

@@ -991,7 +991,7 @@ export function createReelsModule(deps) {
         <div class="detail-grid">
           ${renderBackButton()}
           <div class="detail-top">
-            <p class="eyebrow">${uiIcon("reel")}<span>Рилсы • ${escapeHtml(sourceLabel(r.source || "/miniapp"))}</span></p>
+            <p class="eyebrow">${uiIcon("reel")}<span>Рилсы${sourceLabel(r.source || "/miniapp") ? " • " + escapeHtml(sourceLabel(r.source || "/miniapp")) : ""}</span></p>
             <h2 class="detail-title">${escapeHtml(r.topic)}</h2>
             <div class="draft-meta">
               ${tagMarkup(statusLabel(r.status || "draft"), statusTone(r.status || "draft"))}
