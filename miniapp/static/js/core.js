@@ -98,10 +98,11 @@ export function createCoreModule(deps) {
     }
     notice.textContent = String(message || "");
     notice.className = `ui-notice is-visible tone-${tone}`;
+    const duration = tone === "error" ? 6000 : 2400;
     window.clearTimeout(timers.getUiNotice());
     timers.setUiNotice(window.setTimeout(() => {
       notice.classList.remove("is-visible");
-    }, 2400));
+    }, duration));
   }
 
   function renderDetailError(title, message, retryAction = "retryCurrentTab()") {
@@ -506,8 +507,8 @@ export function createCoreModule(deps) {
         }
         throw new Error(errorType);
       }
-      const detail = body?.detail ? (typeof body.detail === "string" ? ` (${body.detail})` : "") : "";
-      throw new Error(`${response.status} ${response.statusText}${detail}`);
+      const detail = body?.detail ? (typeof body.detail === "string" ? body.detail : JSON.stringify(body.detail)) : "";
+      throw new Error(detail || `${response.status} ${response.statusText}`);
     }
     return response.json();
   }

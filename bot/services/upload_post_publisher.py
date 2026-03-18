@@ -171,6 +171,8 @@ async def publish_item(
             await update_log_status(log_id, "failed", error_message=error_msg)
             results[platform] = {"status": "failed", "error": error_msg}
             logger.error("Failed to publish draft %s to %s: %s", draft_id, platform, exc)
+            from bot.handlers.monitor import notify_owner
+            notify_owner(f"⚠️ Publish to {platform} failed for draft {draft_id}:\n{error_msg}")
 
     # Update workflow status
     try:

@@ -203,12 +203,28 @@ def test_publish_with_schedule(publish_app):
     ):
         resp = client.post("/api/drafts/d06/publish", json={
             "platforms": ["threads"],
-            "scheduled_at": "2026-03-15T10:00:00+03:00",
+            "scheduled_at": "2099-12-31T10:00:00+03:00",
         })
     assert resp.status_code == 200
     mock_pub.assert_called_once()
     call_args = mock_pub.call_args
     assert call_args[1].get("scheduled_at") or call_args.args[2] is not None
+
+
+def test_publish_rejects_past_scheduled_at(publish_app):
+    client = TestClient(publish_app)
+    draft = DraftRecord(
+        draft_id="d07", kind="threads", topic="test",
+        source="t", created_at="2026-01-01T00:00:00",
+        status="approved", feedback="", payload={},
+    )
+    with patch("miniapp.api.routers.publish.get_draft", return_value=draft):
+        resp = client.post("/api/drafts/d07/publish", json={
+            "platforms": ["threads"],
+            "scheduled_at": "2020-01-01T10:00:00+00:00",
+        })
+    assert resp.status_code == 400
+    assert resp.json()["detail"] == "scheduled_at_must_be_in_future"
 
 
 def test_publish_status_endpoint(publish_app):

@@ -47,7 +47,16 @@ async def publish_draft(draft_id: str, payload: PublishPayload, _: None = Depend
         except ValueError:
             raise HTTPException(status_code=400, detail="invalid_scheduled_at_format")
 
-    results = await publish(draft_id, payload.platforms, scheduled_at=scheduled_at)
+    if scheduled_at and scheduled_at <= datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="scheduled_at_must_be_in_future")
+
+    try:
+        results = await publish(draft_id, payload.platforms, scheduled_at=scheduled_at)
+    except Exception as exc:
+        logger.exception("publish failed for draft %s", draft_id)
+        from bot.handlers.monitor import notify_owner
+        notify_owner(f"⚠️ Publish failed for draft {draft_id}:\n{exc}")
+        raise HTTPException(status_code=500, detail=str(exc)[:500])
     return {"draft_id": draft_id, "results": results}
 
 
