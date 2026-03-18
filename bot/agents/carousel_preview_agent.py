@@ -50,12 +50,17 @@ def analyze_text_placement(
             f"You are an image layout analyst for Instagram carousel slides.\n"
             f"Find the best \"quiet zone\" on this image where overlay text will be readable.\n"
             f"The slide role is \"{role}\", preferred placement: \"{pref}\".\n\n"
+            f"RULES:\n"
+            f"- NEVER place text over the main subject of the image.\n"
+            f"- Prefer uniform, empty, or blurred areas for text placement.\n"
+            f"- Avoid busy or detailed regions.\n\n"
             f"Return ONLY a JSON object (no markdown) with these fields:\n"
             f"- \"top\": float 0.0-1.0 (vertical start as fraction of image height)\n"
             f"- \"left\": float 0.0-1.0 (horizontal start as fraction of image width)\n"
             f"- \"width\": float 0.0-1.0 (text box width as fraction)\n"
             f"- \"height\": float 0.0-1.0 (text box height as fraction)\n"
             f"- \"text_color\": \"light\" or \"dark\" (what text color works best)\n"
+            f"- \"dominant_warm\": boolean (true if image has warm dominant tones)\n"
         )
 
         raw = call_claude(
@@ -126,8 +131,8 @@ def render_preview_png(
     placement: dict,
     size: tuple[int, int] = (1080, 1350),
 ) -> bytes:
-    """Render editorial-style preview PNG: frosted blur + dark scrim + Poppins typography."""
-    from PIL import Image, ImageDraw, ImageFont, ImageFilter
+    """Render editorial-style preview PNG: stroked typography on clean image."""
+    from PIL import Image, ImageDraw, ImageFont
 
     img = Image.open(io.BytesIO(img_bytes)).convert("RGBA")
     target_w, target_h = size
@@ -155,22 +160,7 @@ def render_preview_png(
     box_right  = box_left + box_w
     box_bottom = box_top  + box_h
 
-    # LAYER 1: Frosted blur base
-    blur_region = img.crop((box_left, box_top, box_right, box_bottom))
-    blurred = blur_region.filter(ImageFilter.GaussianBlur(radius=18))
-    img.paste(blurred, (box_left, box_top))
-
-    # LAYER 2: Dark tinted scrim (rounded rectangle)
-    scrim_layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
-    scrim_draw = ImageDraw.Draw(scrim_layer)
-    scrim_draw.rounded_rectangle(
-        [box_left, box_top, box_right, box_bottom],
-        radius=20,
-        fill=(0x0E, 0x08, 0x04, 145),
-    )
-    img = Image.alpha_composite(img, scrim_layer)
-
-    # LAYER 3: Typography
+    # Typography (no blur/scrim — text rendered with stroke for readability)
     _POPPINS_BOLD   = "/usr/share/fonts/truetype/google-fonts/Poppins-Bold.ttf"
     _POPPINS_MEDIUM = "/usr/share/fonts/truetype/google-fonts/Poppins-Medium.ttf"
     FONT_SIZE   = 44
@@ -191,8 +181,11 @@ def render_preview_png(
 
     draw = ImageDraw.Draw(img)
 
-    text_color = (255, 255, 255) if placement.get("text_color", "light") == "light" else (40, 28, 20)
-    shadow_color = (0, 0, 0, 160)
+    # Warm white for warm-toned images, cool white/dark otherwise
+    if placement.get("text_color", "light") == "light":
+        text_color = (255, 248, 240) if placement.get("dominant_warm") else (255, 255, 255)
+    else:
+        text_color = (40, 28, 20)
 
     max_text_w = box_w - PAD_H * 2
     lines = _wrap_text(draw, text, font, max_text_w)
@@ -202,6 +195,7 @@ def render_preview_png(
     y = box_bottom - PAD_BOTTOM - total_text_h
     y = max(y, box_top + 16)
 
+    # Soft shadow layer beneath stroked text
     shadow_layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
     shadow_draw = ImageDraw.Draw(shadow_layer)
 
@@ -209,11 +203,23 @@ def render_preview_png(
         x = box_left + PAD_H
         if y + FONT_SIZE > box_bottom:
             break
-        shadow_draw.text((x + 2, y + 3), line, font=font, fill=shadow_color)
-        draw.text((x, y), line, font=font, fill=text_color)
+        shadow_draw.text((x + 2, y + 4), line, font=font, fill=(0, 0, 0, 140))
         y += LINE_HEIGHT
 
     img = Image.alpha_composite(img, shadow_layer)
+
+    # Re-calculate y for main text pass
+    draw = ImageDraw.Draw(img)
+    y = box_bottom - PAD_BOTTOM - total_text_h
+    y = max(y, box_top + 16)
+
+    for line in lines:
+        x = box_left + PAD_H
+        if y + FONT_SIZE > box_bottom:
+            break
+        draw.text((x, y), line, font=font, fill=text_color,
+                  stroke_width=3, stroke_fill=(0, 0, 0, 180))
+        y += LINE_HEIGHT
 
     result = img.convert("RGB")
     buf = io.BytesIO()
