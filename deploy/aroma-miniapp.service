@@ -6,6 +6,7 @@ After=network.target
 WorkingDirectory=/opt/aroma
 EnvironmentFile=/opt/aroma/.env
 ExecStart=/opt/aroma/.venv/bin/uvicorn miniapp_server:app --host 127.0.0.1 --port 8091 --workers 2
+ExecReload=/bin/kill -HUP $MAINPID
 Restart=always
 RestartSec=3
 User=root
