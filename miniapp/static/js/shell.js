@@ -449,7 +449,11 @@ export function createShellModule(deps) {
         }
 
         if (state.mode === "content" && state.tab === targetTab && state.mobileView === "detail") {
-          goBackToList(false);
+          if (targetTab === "settings" && typeof window.goBackToSettings === "function") {
+            window.goBackToSettings();
+          } else {
+            goBackToList(false);
+          }
           return;
         }
 
