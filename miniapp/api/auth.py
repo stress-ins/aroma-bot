@@ -200,7 +200,7 @@ async def _resolve_team_context(
     x_team_id: str | None = Header(default=None),
 ) -> TeamContext:
     """Resolve team context from X-Team-Id header (or auto-create default team)."""
-    from bot.services.team_store import get_default_team, get_member_role
+    from bot.services.team_store import get_default_team_with_role, get_member_role
 
     if x_team_id:
         role = await get_member_role(x_team_id, telegram_id)
@@ -208,10 +208,9 @@ async def _resolve_team_context(
             raise HTTPException(status_code=403, detail="not_a_team_member")
         return TeamContext(telegram_id=telegram_id, team_id=x_team_id, role=role)
 
-    # No team header — use default team
-    team = await get_default_team(telegram_id)
-    role = await get_member_role(team.team_id, telegram_id)
-    return TeamContext(telegram_id=telegram_id, team_id=team.team_id, role=role or "owner")
+    # No team header — single query for default team + role
+    team, role = await get_default_team_with_role(telegram_id)
+    return TeamContext(telegram_id=telegram_id, team_id=team.team_id, role=role)
 
 
 def require_team_role(min_role: str):

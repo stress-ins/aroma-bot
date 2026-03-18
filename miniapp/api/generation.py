@@ -438,6 +438,7 @@ async def complete_reels_v2_regen_concept_only(
     topic: str,
     goal: str = "trust",
     emotion: str = "calm",
+    blend_context: dict | None = None,
 ) -> None:
     """Regenerate only the concept text — leaves scenario and frames untouched."""
     try:
@@ -472,6 +473,7 @@ async def complete_reels_v2_regen_scenario_only(draft_id: str) -> None:
         topic = draft.topic
         goal = str(draft.payload.get("goal", "trust")) if isinstance(draft.payload, dict) else "trust"
         emotion = str(draft.payload.get("emotion", "calm")) if isinstance(draft.payload, dict) else "calm"
+        blend_context = draft.payload.get("blend_context") if isinstance(draft.payload, dict) else None
         loop = asyncio.get_running_loop()
 
         draft_obj = await loop.run_in_executor(
@@ -526,6 +528,7 @@ async def complete_reels_v2_regen_concept(
     topic: str,
     goal: str = "trust",
     emotion: str = "calm",
+    blend_context: dict | None = None,
 ) -> None:
     """Regenerate concept+frames for an existing v2 draft."""
     try:

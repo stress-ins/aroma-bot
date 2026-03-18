@@ -141,14 +141,15 @@ export function createRuntimeModule(deps) {
     bindBottomTabBar();
     if (MODE_TABS.handbook.find((tab) => tab.id === state.tab)) state.mode = "handbook";
     setMode(state.mode);
+
+    // Show UI immediately — data loads into visible panels with inline loaders
+    document.body.classList.add("app-ready");
+    appState.setBootstrapped(true);
+
     if (state.mode === "content") {
       void loadReferenceAccess();
     }
-    try {
-      await loadInitialScreen();
-    } catch (error) {
-      console.error("miniapp bootstrap fallback failed", error);
-    }
+    void safeLoadCurrentTab("Не удалось загрузить вкладку");
   }
 
   function retryCurrentTab() {
