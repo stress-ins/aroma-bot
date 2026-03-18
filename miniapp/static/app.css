@@ -3933,6 +3933,12 @@ body.is-mobile-layout[data-mode="handbook"] .tabs {
 }
 body.is-mobile-layout[data-mode="handbook"] .tabs::-webkit-scrollbar { display: none; }
 
+/* Toolbar must stack below the sticky topbar on mobile handbook, not overlap it */
+body.is-mobile-layout[data-mode="handbook"] .toolbar {
+  top: calc(var(--tg-content-inset-top, env(safe-area-inset-top, 0px)) + 48px);
+  z-index: 9;
+}
+
 /* Compact topbar-main padding on mobile since title is hidden.
    Add --tg-content-inset-top (set by JS from Telegram.WebApp.contentSafeAreaInset.top)
    so content is not hidden under Telegram's chrome bar in full-screen mode. */
