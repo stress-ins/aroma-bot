@@ -31,13 +31,13 @@ def test_create_tool_selection_isolates_form(page):
 
 
 def test_settings_and_keywords_use_guided_detail_copy(desktop_page):
-    desktop_page.get_by_role("button", name="Статус").click()
-    desktop_page.wait_for_timeout(100)
-    assert desktop_page.get_by_text("Проверьте состояние источников").is_visible()
+    desktop_page.evaluate("window.openSettingsSection('status')")
+    desktop_page.wait_for_timeout(300)
+    assert desktop_page.get_by_role("heading", name="Источники данных").is_visible()
 
-    desktop_page.get_by_role("button", name="Ключи").click()
-    desktop_page.wait_for_timeout(100)
-    assert desktop_page.get_by_text("Откройте тему для редактирования").is_visible()
+    desktop_page.evaluate("window.openSettingsSection('brand')")
+    desktop_page.wait_for_timeout(300)
+    assert desktop_page.get_by_role("heading", name="Бренд и ключи").is_visible()
 
 
 def test_keywords_detail_supports_add_and_remove(page):
@@ -90,18 +90,19 @@ def test_keywords_detail_supports_add_and_remove(page):
 
     page.route("**/*", handle_route)
     page.evaluate("window.openSettingsSection('keywords')")
-    page.wait_for_timeout(100)
-    page.locator(".keyword-topic").first.click()
-    page.wait_for_timeout(100)
+    page.wait_for_timeout(200)
+    page.evaluate("window.openKeywordTopic(0)")
+    page.wait_for_timeout(200)
 
-    page.locator(".keyword-form input").first.fill("пауза")
-    page.get_by_role("button", name="Добавить").first.click()
-    page.wait_for_timeout(100)
+    kw_section = page.locator(".keyword-fields")
+    kw_section.locator(".keyword-form input").first.fill("пауза")
+    kw_section.get_by_role("button", name="Добавить").first.click()
+    page.wait_for_timeout(300)
     assert page.locator("#uiNotice").is_visible()
     assert page.get_by_text("Ключ добавлен").is_visible()
     assert page.get_by_text("пауза").count() >= 1
 
-    chips_before_delete = page.locator(".keyword-chip").count()
+    chips_before_delete = kw_section.locator(".keyword-chip").count()
     page.evaluate(
         """
         () => {
@@ -111,9 +112,9 @@ def test_keywords_detail_supports_add_and_remove(page):
         }
         """
     )
-    page.locator(".keyword-chip button").first.click()
+    kw_section.locator(".keyword-chip button").first.click()
     page.wait_for_timeout(100)
-    assert page.locator(".keyword-chip").count() == chips_before_delete - 1
+    assert kw_section.locator(".keyword-chip").count() == chips_before_delete - 1
 
 
 def test_create_and_detail_forms_show_helper_microcopy(page):

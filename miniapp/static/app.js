@@ -44,6 +44,7 @@ const state = {
   status: null,
   keywords: null,
   settingsSection: "status",
+  settingsInDetail: false,
   mobileView: "list", // 'list' or 'detail'
   lastHandbookTab: "aromas",
   pendingCarouselNotes: {},
@@ -103,6 +104,7 @@ let addRewrite, removeRewrite, savePlatformTone, saveUploadPostPrefs, saveImageM
 let addKeywordItem, removeKeywordItem, openKeywordTopic;
 let addForbiddenPhrase, removeForbiddenPhrase;
 let createNewTeam, createTeamInvite, removeTeamMember, activatePromo, generatePromos;
+let goBackToSettings;
 let saveContentReviewDraft, saveThreadsReviewDraft, polishContentDraft, refreshDraftMetrics, moveDraftToTeam;
 let loadCurrentTab, safeLoadCurrentTab, retryCurrentTab;
 let publishDraft, cancelPublishSchedule, loadPublishStatus;
@@ -1580,6 +1582,7 @@ const { renderBrand: renderBrandImpl, loadForbiddenPhrases: loadForbiddenPhrases
 ({
   addKeywordItem, removeKeywordItem, openKeywordTopic,
   loadKeywords, loadSettings,
+  goBackToSettings,
   renderStatus, renderKeywords,
   addForbiddenPhrase, removeForbiddenPhrase,
   addRewrite, removeRewrite, savePlatformTone, saveUploadPostPrefs,
@@ -1889,6 +1892,7 @@ registerWindowBridge({
   removeTeamMember,
   activatePromo,
   generatePromos,
+  goBackToSettings,
   setPlanStatusFilter,
   setPlanPlatformFilter,
   setPlanDateFilter,

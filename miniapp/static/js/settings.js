@@ -28,16 +28,91 @@ export function createSettingsModule(deps) {
   }
 
   function renderSettingsSwitcher(activeSection) {
-    return `
-      <section class="settings-switcher">
-        <button class="tab-button${activeSection === "status" ? " active" : ""}" type="button" onclick="openSettingsSection('status')">${uiIcon("gear")}<span>Статус</span></button>
-        <button class="tab-button${activeSection === "keywords" ? " active" : ""}" type="button" onclick="openSettingsSection('keywords')">${uiIcon("text")}<span>Ключи</span></button>
-        <button class="tab-button${activeSection === "brand" ? " active" : ""}" type="button" onclick="openSettingsSection('brand')">${uiIcon("card")}<span>Бренд</span></button>
-        <button class="tab-button${activeSection === "accounts" ? " active" : ""}" type="button" onclick="openSettingsSection('accounts')">${uiIcon("link")}<span>Аккаунты</span></button>
-        <button class="tab-button${activeSection === "team" ? " active" : ""}" type="button" onclick="openSettingsSection('team')">${uiIcon("users")}<span>Команда</span></button>
-        <button class="tab-button${activeSection === "promo" ? " active" : ""}" type="button" onclick="openSettingsSection('promo')">${uiIcon("ticket")}<span>Промокод</span></button>
-      </section>
-    `;
+    // Legacy — kept for backward compat but unused
+    return "";
+  }
+
+  function settingsMenuRow(icon, color, title, section, badge) {
+    const badgeHtml = badge != null ? `<span class="settings-menu-badge">${escapeHtml(String(badge))}</span>` : "";
+    return `<div class="settings-menu-row" onclick="openSettingsSection('${section}')">
+      <span class="settings-menu-icon" style="background:${color}"><i data-lucide="${icon}"></i></span>
+      <span class="settings-menu-text">${escapeHtml(title)}</span>
+      ${badgeHtml}
+      <span class="settings-menu-chevron"><i data-lucide="chevron-right"></i></span>
+    </div>`;
+  }
+
+  async function renderSettingsMenu() {
+    elements.listTitle.textContent = "Настройки";
+    elements.draftCount.textContent = "";
+
+    // Fetch badge data in parallel
+    const [planRes, teamsRes, socialRes, statusRes, adminRes] = await Promise.allSettled([
+      fetchJson("/api/user/plan"),
+      fetchJson("/api/teams"),
+      fetchJson("/api/social/status"),
+      fetchJson("/api/status"),
+      fetchJson("/api/admin/promos"),
+    ]);
+
+    const teamCount = teamsRes.status === "fulfilled" ? (teamsRes.value?.items || []).reduce((n, t) => n + (t.member_count || 1), 0) : null;
+    const connectedCount = socialRes.status === "fulfilled" ? (socialRes.value?.accounts || []).filter((a) => a.connected).length : null;
+    const enabledCount = statusRes.status === "fulfilled" ? (statusRes.value?.items || []).filter((i) => i.enabled).length : null;
+    const isAdmin = adminRes.status === "fulfilled";
+
+    let html = `<div class="settings-menu">`;
+
+    // Group: Подписка
+    html += `<div class="settings-menu-group">
+      <div class="settings-menu-group-header">Подписка</div>
+      <div class="settings-menu-list">
+        ${settingsMenuRow("ticket", "#AF52DE", "Промокод", "promo", isAdmin ? "admin" : null)}
+      </div>
+    </div>`;
+
+    // Group: Управление
+    html += `<div class="settings-menu-group">
+      <div class="settings-menu-group-header">Управление</div>
+      <div class="settings-menu-list">
+        ${settingsMenuRow("users", "#007AFF", "Команда", "team", teamCount)}
+        ${settingsMenuRow("link", "#34C759", "Аккаунты", "accounts", connectedCount != null ? connectedCount : null)}
+      </div>
+    </div>`;
+
+    // Group: Контент
+    html += `<div class="settings-menu-group">
+      <div class="settings-menu-group-header">Контент</div>
+      <div class="settings-menu-list">
+        ${settingsMenuRow("palette", "#FF9500", "Бренд и ключи", "brand", null)}
+      </div>
+    </div>`;
+
+    // Group: Система
+    html += `<div class="settings-menu-group">
+      <div class="settings-menu-group-header">Система</div>
+      <div class="settings-menu-list">
+        ${settingsMenuRow("activity", "#FF3B30", "Источники данных", "status", enabledCount)}
+      </div>
+    </div>`;
+
+    html += `</div>`;
+    elements.draftList.innerHTML = html;
+
+    elements.draftDetail.innerHTML = `<div class="detail-empty">${renderGuidedState({
+      eyebrow: "Настройки",
+      title: "Выберите раздел",
+      body: "Нажмите на пункт меню слева, чтобы перейти к настройкам.",
+    })}</div>`;
+
+    if (window.lucide) lucide.createIcons();
+    syncMobileNavigation();
+  }
+
+  function goBackToSettings() {
+    state.settingsInDetail = false;
+    state.settingsSection = null;
+    state.selectedKeywordTopicIdx = null;
+    loadSettings();
   }
 
   // ── Brand Voice (Policy Engine) ──────────────────────────────────────────
@@ -285,44 +360,98 @@ export function createSettingsModule(deps) {
   }
 
   async function loadSettings() {
-    if (state.settingsSection === "keywords") {
-      if (!state.keywords) {
-        state.keywords = await fetchJson("/api/keywords");
+    if (state.settingsInDetail && state.settingsSection) {
+      if (state.settingsSection === "keywords" || state.settingsSection === "brand") {
+        if (!state.keywords) {
+          state.keywords = await fetchJson("/api/keywords");
+        }
+        renderBrandAndKeywords();
+        return;
       }
-      renderKeywords();
-      return;
+      if (state.settingsSection === "accounts") {
+        renderAccounts();
+        return;
+      }
+      if (state.settingsSection === "team") {
+        renderTeam();
+        return;
+      }
+      if (state.settingsSection === "promo") {
+        renderPromo();
+        return;
+      }
+      if (state.settingsSection === "status") {
+        if (!state.status) {
+          state.status = await fetchJson("/api/status");
+        }
+        renderStatus();
+        return;
+      }
     }
-    if (state.settingsSection === "brand") {
-      renderBrand();
-      return;
-    }
-    if (state.settingsSection === "accounts") {
-      renderAccounts();
-      return;
-    }
-    if (state.settingsSection === "team") {
-      renderTeam();
-      return;
-    }
-    if (state.settingsSection === "promo") {
-      renderPromo();
-      return;
-    }
-    if (!state.status) {
-      state.status = await fetchJson("/api/status");
-    }
-    renderStatus();
+    // Default: render the menu
+    state.settingsInDetail = false;
+    await renderSettingsMenu();
   }
 
   function renderBrand() {
+    // Redirect to merged brand+keywords view
+    renderBrandAndKeywords();
+  }
+
+  function renderBrandAndKeywords() {
+    const topics = state.keywords?.items || [];
+    const selectedTopic = topics.find((t) => t.topic_idx === state.selectedKeywordTopicIdx) || null;
+
     elements.listTitle.textContent = "Настройки";
-    elements.draftCount.textContent = "Голос бренда";
-    elements.draftList.innerHTML = renderSettingsSwitcher("brand");
+    elements.draftCount.textContent = "Бренд и ключи";
+
+    // Left panel: keyword topics list
+    elements.draftList.innerHTML = `
+      <button class="back-button" type="button" onclick="goBackToSettings()">${uiIcon("arrow-left")}<span>Назад</span></button>
+      ${topics.map((topic) => `
+      <article ${interactiveCardAttrs(`Открыть тему ${topic.name}`)} class="keyword-topic${topic.topic_idx === state.selectedKeywordTopicIdx ? " active" : ""} interactive-card" onclick="openKeywordTopic(${topic.topic_idx})">
+        <h3>${escapeHtml(topic.name)}</h3>
+        <div class="draft-meta">
+          <span class="tag">${escapeHtml(`${Object.values(topic.fields || {}).reduce((sum, items) => sum + (Array.isArray(items) ? items.length : 0), 0)} ключей`)}</span>
+        </div>
+      </article>
+    `).join("")}
+    `;
+
+    // Right panel: brand settings + selected keyword topic
+    let keywordsDetailHtml = "";
+    if (selectedTopic) {
+      keywordsDetailHtml = `
+        <section class="section settings-section">
+          <h3>${uiIcon("text")}<span>Ключи: ${escapeHtml(selectedTopic.name)}</span></h3>
+          <div class="keyword-fields">
+            ${keywordFieldEntries(selectedTopic).map(({ field, label, items }) => `
+              <div class="keyword-field">
+                <strong>${escapeHtml(label)}</strong>
+                <div class="keyword-items">
+                  ${items.map((item) => `
+                    <span class="keyword-chip">
+                      <span>${escapeHtml(item)}</span>
+                      <button type="button" aria-label="Удалить ${escapeHtml(item)}" onclick='removeKeywordItem(${selectedTopic.topic_idx}, ${JSON.stringify(String(field))}, ${JSON.stringify(String(item))}, this)'><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+                    </span>
+                  `).join("") || `<span class="plan-entry-hint">Пока пусто.</span>`}
+                </div>
+                <form class="keyword-form" onsubmit='event.preventDefault(); addKeywordItem(${selectedTopic.topic_idx}, ${JSON.stringify(String(field))}, this, this.querySelector("button"));'>
+                  <input name="word" type="text" placeholder="Добавить значение" />
+                  <button class="secondary-button" type="submit">${actionLabel("plus", "Добавить")}</button>
+                </form>
+              </div>
+            `).join("")}
+          </div>
+        </section>
+      `;
+    }
+
     elements.draftDetail.innerHTML = renderBackButton() + `
       <div class="detail-grid">
         <div class="detail-top">
-          <p class="eyebrow">${uiIcon("card")}<span>Настройки</span></p>
-          <h2 class="detail-title">Голос бренда</h2>
+          <p class="eyebrow">${uiIcon("palette")}<span>Настройки</span></p>
+          <h2 class="detail-title">Бренд и ключи</h2>
         </div>
         <section class="section settings-section">
           <h3>Запрещённые фразы</h3>
@@ -348,14 +477,14 @@ export function createSettingsModule(deps) {
         <section class="section settings-section">
           <h3>Публикация (Upload-Post)</h3>
           <p class="settings-hint">Credentials для публикации через upload-post.com. API-ключ не отображается после сохранения.</p>
-          <div class="keyword-field" class="field-mb">
+          <div class="keyword-field">
             <strong>API Key</strong>
-            <input id="uploadPostApiKey" type="password" placeholder="Введите API-ключ…" class="draft-textarea" class="field-compact">
+            <input id="uploadPostApiKey" type="password" placeholder="Введите API-ключ…" class="draft-textarea">
             <span id="uploadPostKeyStatus" class="plan-entry-hint"></span>
           </div>
-          <div class="keyword-field" class="field-mb">
+          <div class="keyword-field">
             <strong>Username</strong>
-            <input id="uploadPostUser" type="text" placeholder="Имя пользователя upload-post" class="draft-textarea" class="field-compact">
+            <input id="uploadPostUser" type="text" placeholder="Имя пользователя upload-post" class="draft-textarea">
           </div>
           <button class="secondary-button" type="button" onclick="saveUploadPostPrefs()">Сохранить</button>
         </section>
@@ -367,7 +496,7 @@ export function createSettingsModule(deps) {
             { key: "telegram",  label: "Telegram"  },
             { key: "threads",   label: "Threads"   },
           ].map(({ key, label }) => `
-            <div class="keyword-field" class="field-mb">
+            <div class="keyword-field">
               <strong class="platform-label">${uiIcon(key)}<span>${label}</span></strong>
               <textarea id="tone-${key}" class="draft-textarea" rows="2"
                 placeholder="Например: personal, visual, emotional"
@@ -407,6 +536,7 @@ export function createSettingsModule(deps) {
             <p class="settings-hint" style="margin-top:4px">Если выключено, картинки для кадров генерируются по кнопке вручную.</p>
           </div>
         </section>
+        ${keywordsDetailHtml}
       </div>
     `;
     void loadPolicy();
@@ -421,7 +551,7 @@ export function createSettingsModule(deps) {
     elements.listTitle.textContent = inSettings ? "Настройки" : "Статус";
     elements.draftCount.textContent = `${items.length} источников`;
     elements.draftList.innerHTML = `
-      ${inSettings ? renderSettingsSwitcher("status") : ""}
+      ${inSettings ? `<button class="back-button" type="button" onclick="goBackToSettings()">${uiIcon("arrow-left")}<span>Назад</span></button>` : ""}
       ${items.map((item) => `
       <article class="status-card"><strong>${escapeHtml(item.source)}</strong> <span class="${item.enabled ? "status-good" : "status-bad"}">${item.enabled ? "вкл" : "выкл"}</span></article>
     `).join("")}
@@ -429,8 +559,8 @@ export function createSettingsModule(deps) {
     elements.draftDetail.innerHTML = renderBackButton() + (inSettings ? `
       <div class="detail-grid">
         <div class="detail-top">
-          <p class="eyebrow">${uiIcon("gear")}<span>Настройки</span></p>
-          <h2 class="detail-title">Дополнительные параметры</h2>
+          <p class="eyebrow">${uiIcon("activity")}<span>Настройки</span></p>
+          <h2 class="detail-title">Источники данных</h2>
         </div>
       </div>
     ` : `<div class="detail-empty">${renderGuidedState({
@@ -443,9 +573,14 @@ export function createSettingsModule(deps) {
 
   function renderKeywords() {
     const inSettings = state.tab === "settings";
+    if (inSettings) {
+      // In settings tab, keywords are merged into brand view
+      renderBrandAndKeywords();
+      return;
+    }
     const topics = state.keywords?.items || [];
     const selectedTopic = topics.find((topic) => topic.topic_idx === state.selectedKeywordTopicIdx) || null;
-    elements.listTitle.textContent = inSettings ? "Настройки" : "Ключи";
+    elements.listTitle.textContent = "Ключи";
     elements.draftCount.textContent = `${topics.length} тем`;
     setEmptyState(topics.length > 0, {
       eyebrow: "Ключи",
@@ -453,7 +588,6 @@ export function createSettingsModule(deps) {
       body: "Когда словарь загрузится, здесь можно будет редактировать RU/EN ключи и теги.",
     });
     elements.draftList.innerHTML = `
-      ${inSettings ? renderSettingsSwitcher("keywords") : ""}
       ${topics.map((topic) => `
       <article ${interactiveCardAttrs(`Открыть тему ${topic.name}`)} class="keyword-topic${topic.topic_idx === state.selectedKeywordTopicIdx ? " active" : ""} interactive-card" onclick="openKeywordTopic(${topic.topic_idx})">
         <h3>${escapeHtml(topic.name)}</h3>
@@ -553,7 +687,7 @@ export function createSettingsModule(deps) {
   async function renderAccounts() {
     elements.listTitle.textContent = "Настройки";
     elements.draftCount.textContent = "Аккаунты";
-    elements.draftList.innerHTML = renderSettingsSwitcher("accounts");
+    elements.draftList.innerHTML = `<button class="back-button" type="button" onclick="goBackToSettings()">${uiIcon("arrow-left")}<span>Назад</span></button>`;
     elements.draftDetail.innerHTML = renderBackButton() + `
       <div class="detail-grid">
         <div class="detail-top">
@@ -634,7 +768,7 @@ export function createSettingsModule(deps) {
   async function renderTeam() {
     elements.listTitle.textContent = "Настройки";
     elements.draftCount.textContent = "Команда";
-    elements.draftList.innerHTML = renderSettingsSwitcher("team");
+    elements.draftList.innerHTML = `<button class="back-button" type="button" onclick="goBackToSettings()">${uiIcon("arrow-left")}<span>Назад</span></button>`;
     elements.draftDetail.innerHTML = renderBackButton() + `
       <div class="detail-grid">
         <div class="detail-top">
@@ -782,7 +916,7 @@ export function createSettingsModule(deps) {
   async function renderPromo() {
     elements.listTitle.textContent = "Настройки";
     elements.draftCount.textContent = "Промокод";
-    elements.draftList.innerHTML = renderSettingsSwitcher("promo");
+    elements.draftList.innerHTML = `<button class="back-button" type="button" onclick="goBackToSettings()">${uiIcon("arrow-left")}<span>Назад</span></button>`;
 
     // Load user plan to show current subscription
     let planInfo = "";
@@ -922,6 +1056,9 @@ export function createSettingsModule(deps) {
     loadKeywords,
     loadSettings,
     renderSettingsSwitcher,
+    renderSettingsMenu,
+    renderBrandAndKeywords,
+    goBackToSettings,
     renderStatus,
     renderKeywords,
     renderBrand,
