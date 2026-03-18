@@ -21,7 +21,7 @@ def normalize_plan_format(entry: dict[str, str]) -> str:
     if "карус" in format_label or "carousel" in format_label:
         return "carousel"
     if "threads" in platform:
-        return "threads"
+        return "threads_series"
     if "instagram" in platform:
         return "instagram"
     if "telegram" in platform:

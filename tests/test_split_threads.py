@@ -86,7 +86,7 @@ def test_threads_max_words_limit_is_120():
 
 def test_platform_rules_have_hard_limit():
     from bot.agents.platform_rules import WRITER_PLATFORM_RULES
-    for key in ("threads", "threads_series"):
+    for key in ("threads_series",):
         rules = WRITER_PLATFORM_RULES[key]
         assert "HARD LIMIT" in rules, f"Writer rules for {key} must have HARD LIMIT"
         assert "120" in rules

@@ -87,7 +87,7 @@ class TestContentFSMFlow:
         kb = edit_call.call_args[1]["reply_markup"]
         all_buttons = [btn for row in kb.inline_keyboard for btn in row]
         format_datas = {btn.callback_data for btn in all_buttons}
-        assert "ct:format:threads" in format_datas
+        assert "ct:format:instagram" in format_datas
 
     # ---------------------------------------------------------------------------
     # Step 3: format callback → shows source selector
@@ -96,7 +96,7 @@ class TestContentFSMFlow:
     async def test_format_callback_shows_source_selector(self, monkeypatch, ctx):
         monkeypatch.setattr("config.settings.anthropic_api_key", "test-key")
         ctx.user_data["content_goal"] = "trust"
-        update = make_callback_query(data="ct:format:threads")
+        update = make_callback_query(data="ct:format:instagram")
 
         from bot.handlers.content import cb_content
         await cb_content(update, ctx)
@@ -105,8 +105,8 @@ class TestContentFSMFlow:
         edit_call.assert_called_once()
         text = edit_call.call_args[0][0]
         assert "Доверие" in text
-        assert "Threads" in text
-        assert ctx.user_data["content_format"] == "threads"
+        assert "Instagram" in text
+        assert ctx.user_data["content_format"] == "instagram"
 
         # Verify source keyboard
         kb = edit_call.call_args[1]["reply_markup"]
@@ -129,7 +129,7 @@ class TestContentFSMFlow:
     async def test_format_without_goal_errors(self, monkeypatch, ctx):
         """Format callback without prior goal should show error."""
         monkeypatch.setattr("config.settings.anthropic_api_key", "test-key")
-        update = make_callback_query(data="ct:format:threads")
+        update = make_callback_query(data="ct:format:instagram")
 
         from bot.handlers.content import cb_content
         await cb_content(update, ctx)
@@ -145,7 +145,7 @@ class TestContentFSMFlow:
     async def test_source_prompt_asks_for_text(self, monkeypatch, ctx):
         monkeypatch.setattr("config.settings.anthropic_api_key", "test-key")
         ctx.user_data["content_goal"] = "engagement"
-        ctx.user_data["content_format"] = "threads"
+        ctx.user_data["content_format"] = "instagram"
         update = make_callback_query(data="ct:source:prompt")
 
         from bot.handlers.content import cb_content
@@ -162,7 +162,7 @@ class TestContentFSMFlow:
     async def test_source_trends_generates_topics(self, monkeypatch, ctx):
         monkeypatch.setattr("config.settings.anthropic_api_key", "test-key")
         ctx.user_data["content_goal"] = "trust"
-        ctx.user_data["content_format"] = "threads"
+        ctx.user_data["content_format"] = "instagram"
 
         fake_topics = [
             "Как лаванда помогает при бессоннице",
@@ -198,7 +198,7 @@ class TestContentFSMFlow:
     async def test_pick_topic_generates_draft(self, monkeypatch, ctx):
         monkeypatch.setattr("config.settings.anthropic_api_key", "test-key")
         ctx.user_data["content_goal"] = "trust"
-        ctx.user_data["content_format"] = "threads"
+        ctx.user_data["content_format"] = "instagram"
         ctx.user_data["content_topics"] = [
             "Как лаванда помогает при бессоннице",
             "Вечерний ритуал для нервной системы",
@@ -219,8 +219,7 @@ class TestContentFSMFlow:
         monkeypatch.setattr(content_mod, "generate_strategist_step", AsyncMock(return_value=("angle", "hook")))
         monkeypatch.setattr(content_mod, "generate_writer_step", AsyncMock(return_value=fake_draft))
         monkeypatch.setattr(content_mod, "save_draft", MagicMock(return_value=MagicMock(draft_id="d001")))
-        monkeypatch.setattr(content_mod, "threads_api_enabled", lambda: False)
-
+        
         await content_mod.cb_content(update, ctx)
 
         assert ctx.user_data["content_last_topic"] == "Как лаванда помогает при бессоннице"
@@ -260,7 +259,7 @@ class TestContentFSMFlow:
         monkeypatch.setattr("config.settings.anthropic_api_key", "test-key")
         ctx.user_data["content_last_topic"] = "Лаванда"
         ctx.user_data["content_last_goal"] = "trust"
-        ctx.user_data["content_last_format"] = "threads"
+        ctx.user_data["content_last_format"] = "instagram"
 
         fake_draft = ContentDraft(
             angle="Новый угол",
@@ -275,8 +274,7 @@ class TestContentFSMFlow:
         monkeypatch.setattr(content_mod, "generate_strategist_step", AsyncMock(return_value=("angle", "hook")))
         monkeypatch.setattr(content_mod, "generate_writer_step", AsyncMock(return_value=fake_draft))
         monkeypatch.setattr(content_mod, "save_draft", MagicMock(return_value=MagicMock(draft_id="d002")))
-        monkeypatch.setattr(content_mod, "threads_api_enabled", lambda: False)
-
+        
         await content_mod.cb_content(update, ctx)
 
         assert ctx.user_data["content_last_draft_id"] == "d002"
@@ -288,7 +286,7 @@ class TestContentFSMFlow:
     async def test_pick_with_stale_topics_errors(self, monkeypatch, ctx):
         monkeypatch.setattr("config.settings.anthropic_api_key", "test-key")
         ctx.user_data["content_goal"] = "trust"
-        ctx.user_data["content_format"] = "threads"
+        ctx.user_data["content_format"] = "instagram"
         ctx.user_data["content_topics"] = []  # empty
 
         update = make_callback_query(data="ct:pick:0")

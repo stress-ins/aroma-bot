@@ -360,34 +360,24 @@ class TestMiniAppApi:
     def test_generate_content_creates_draft_and_detail(self, miniapp_test_client, monkeypatch):
         import miniapp_server
 
-        async def _fake_generate_content(topic, goal_key, format_key, blend_context=None):
-            return ContentDraft(
-                angle="Угол",
-                hook="Хук",
-                caption=f"Контент про {topic}",
-                cta="Напишите, если откликается",
-                hashtags="",
-                visual_prompt="soft warm ritual",
-                slides=[],
-            )
-
         import miniapp.api.routers.create as _create_router
         monkeypatch.setattr(
             _create_router,
-            "generate_content_draft",
-            _fake_generate_content,
+            "complete_content_generation",
+            lambda *a, **kw: None,
         )
 
         response = miniapp_test_client.post(
             "/api/generate/content",
             headers=self.AUTH_HEADERS,
-            json={"topic": "Вечерний ритуал", "goal_key": "trust", "format_key": "threads"},
+            json={"topic": "Вечерний ритуал", "goal_key": "trust", "format_key": "instagram"},
         )
 
         assert response.status_code == 200
         payload = response.json()
         assert payload["draft_id"]
-        assert payload["kind"] == "threads"
+        assert payload["kind"] == "instagram"
+        assert payload["payload"]["generation_pending"] is True
 
         detail = miniapp_test_client.get(f"/api/drafts/{payload['draft_id']}", headers=self.AUTH_HEADERS)
         assert detail.status_code == 200
@@ -703,7 +693,8 @@ class TestMiniAppGenerator:
     def test_validates_content_goal_and_format(self):
         assert is_valid_content_goal("trust") is True
         assert is_valid_content_goal("unknown") is False
-        assert is_valid_content_format("threads") is True
+        assert is_valid_content_format("instagram") is True
+        assert is_valid_content_format("threads") is False
         assert is_valid_content_format("carousel") is False
 
     def test_build_content_payload_keeps_text_fields(self):
@@ -718,13 +709,13 @@ class TestMiniAppGenerator:
                 slides=["one", "two"],
             ),
             goal_key="trust",
-            format_key="threads",
+            format_key="instagram",
         )
 
         assert payload["caption"] == "Текст поста"
         assert payload["slides"] == ["one", "two"]
         assert payload["goal_key"] == "trust"
-        assert payload["format_key"] == "threads"
+        assert payload["format_key"] == "instagram"
 
     def test_build_reels_payload_serializes_storyboard(self):
         frames = [
@@ -745,7 +736,7 @@ class TestMiniAppGenerator:
 
 class TestMiniAppContentReview:
     def test_recognizes_supported_content_kinds(self):
-        assert is_content_review_draft("threads") is True
+        assert is_content_review_draft("instagram") is True
         assert is_content_review_draft("carousel") is False
 
     async def test_update_content_review_draft_returns_none_for_missing(self):
@@ -808,7 +799,7 @@ class TestMiniAppPlans:
     def test_normalize_plan_goal_and_format(self):
         assert normalize_plan_goal("Вовлечение") == "engagement"
         assert normalize_plan_goal("Экспертность") == "authority"
-        assert normalize_plan_format({"platform": "Threads", "format_label": "пост"}) == "threads"
+        assert normalize_plan_format({"platform": "Threads", "format_label": "пост"}) == "threads_series"
         assert normalize_plan_format({"platform": "Instagram", "format_label": "карусель"}) == "carousel"
         assert normalize_plan_format({"platform": "Reels", "format_label": "рилс"}) == "reels"
 
@@ -1852,14 +1843,14 @@ class TestIconMappings:
 class TestSuggestTopics:
     def test_suggest_topics_prompt_excludes_used(self):
         from bot.agents.content import _suggest_topics_prompt
-        prompt = _suggest_topics_prompt("trust", "threads", ["Тема A", "Тема B"])
+        prompt = _suggest_topics_prompt("trust", "instagram", ["Тема A", "Тема B"])
         assert "НЕ повторяй темы похожие на" in prompt
         assert "Тема A" in prompt and "Тема B" in prompt
         assert "5 тем" in prompt
 
     def test_suggest_topics_prompt_without_exclusions(self):
         from bot.agents.content import _suggest_topics_prompt
-        prompt = _suggest_topics_prompt("trust", "threads", [])
+        prompt = _suggest_topics_prompt("trust", "instagram", [])
         assert "НЕ повторяй" not in prompt
         assert "5 тем" in prompt
 

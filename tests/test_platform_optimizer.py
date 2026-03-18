@@ -144,9 +144,9 @@ def test_optimize_fallback_on_bad_json(mock_call_claude):
     """Returns safe fallback when Claude returns invalid JSON."""
     mock_call_claude.return_value = "broken response"
 
-    result = optimize_for_platform_sync(SAMPLE_POST, platform="threads")
+    result = optimize_for_platform_sync(SAMPLE_POST, platform="instagram")
 
-    assert result["platform"] == "threads"
+    assert result["platform"] == "instagram"
     assert result["algorithm_score"] == 5.0
     assert result["predicted_engagement_tier"] == "medium"
     assert result["optimizations"] == []

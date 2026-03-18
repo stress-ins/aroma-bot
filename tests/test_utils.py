@@ -451,7 +451,7 @@ from bot.agents.adapter import ADAPT_PLATFORM_LABELS, ADAPT_PLATFORM_SPECS
 
 class TestAdapterAgent:
     def test_all_platforms_have_labels(self):
-        for key in ["threads", "instagram", "telegram", "reels"]:
+        for key in ["instagram", "telegram", "reels"]:
             assert key in ADAPT_PLATFORM_LABELS
 
     def test_all_platforms_have_specs(self):
@@ -459,12 +459,9 @@ class TestAdapterAgent:
             assert key in ADAPT_PLATFORM_SPECS
             assert len(ADAPT_PLATFORM_SPECS[key]) > 10
 
-    def test_threads_spec_mentions_length(self):
-        spec = ADAPT_PLATFORM_SPECS["threads"]
-        assert "Утро / День / Вечер" in spec
-        assert "5-12" in spec
-        assert "40-120" in spec
-        assert "без хэштегов" in spec
+    def test_instagram_spec_mentions_structure(self):
+        spec = ADAPT_PLATFORM_SPECS["instagram"]
+        assert "900" in spec
 
     def test_telegram_spec_longer_than_threads(self):
         # telegram allows longer posts
@@ -569,11 +566,11 @@ from bot.agents.platform_rules import EDITOR_PLATFORM_RULES as _PLATFORM_RULES
 
 
 class TestCreativeTeamConstants:
-    def test_platform_rules_has_threads(self):
-        assert "threads" in _PLATFORM_RULES
-        assert "УТРО, ДЕНЬ, ВЕЧЕР" in _PLATFORM_RULES["threads"]
-        assert "5-12" in _PLATFORM_RULES["threads"]
-        assert "40-120" in _PLATFORM_RULES["threads"]
+    def test_platform_rules_has_threads_series(self):
+        assert "threads_series" in _PLATFORM_RULES
+        assert "УТРО, ДЕНЬ, ВЕЧЕР" in _PLATFORM_RULES["threads_series"]
+        assert "5-12" in _PLATFORM_RULES["threads_series"]
+        assert "40-120" in _PLATFORM_RULES["threads_series"]
 
     def test_platform_rules_has_instagram(self):
         assert "instagram" in _PLATFORM_RULES
