@@ -1,8 +1,8 @@
-"""add daily oil context fields and city to brand_settings
+"""add daily oil context and city settings
 
-Revision ID: a1b2c3d4e5f6
+Revision ID: 989b1621a261
 Revises: e89683dd7597
-Create Date: 2026-03-18 12:00:00.000000
+Create Date: 2026-03-18 11:16:57.427857
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'a1b2c3d4e5f6'
+revision: str = '989b1621a261'
 down_revision: Union[str, Sequence[str], None] = 'e89683dd7597'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
