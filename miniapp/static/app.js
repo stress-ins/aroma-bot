@@ -892,6 +892,10 @@ async function showSlotHistory(draftId, slot) {
 }
 
 async function scheduleThreadsSeries(draftId, date, slots, btn) {
+  if (!draftId || !date) {
+    showUiNotice("Не выбран черновик или дата", "error");
+    return;
+  }
   await withButtonFeedback(btn, "Планирую...", async () => {
     const result = await fetchJson("/api/publish/schedule-series", {
       method: "POST",
