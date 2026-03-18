@@ -1023,3 +1023,26 @@ class TestHandbookPdfImport:
         backend = Path("bot/services/miniapp_references.py").read_text(encoding="utf-8")
         # blends_containing_names must use name_ru, not raw blend.name
         assert "name_ru or blend.name" in backend
+
+    def test_reference_service_seeds_lesson_6_cards_and_metadata(self):
+        extra = json.loads(
+            Path("data/reference_cards_extra.json").read_text(encoding="utf-8")
+        )
+        slugs = {c["slug"] for c in extra}
+        assert "benzoin" in slugs
+        benzoin = next(c for c in extra if c["slug"] == "benzoin")
+        assert benzoin["course_source"] == "rudn_olfactotherapy_6l"
+        assert "4" in benzoin["chakra_focus"]
+        assert "winged-breathing" in slugs
+        assert "tree-qigong" in slugs
+        anahata = next(c for c in extra if c["slug"] == "anahata-chakra")
+        assert anahata["source_type"] == "chakra"
+        hierophant = next(
+            c for c in extra if c["slug"] == "hierophant-archetype"
+        )
+        assert hierophant["source_type"] == "archetype"
+
+    def test_concept_type_meta_includes_archetype(self):
+        js = _miniapp_js_bundle()
+        assert "archetype" in js
+        assert '"Архетип"' in js
