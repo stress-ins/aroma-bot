@@ -262,22 +262,22 @@ def test_handbook_detail_sections_not_clipped(page):
         assert issues is None, f"Handbook: detail integrity issues: {issues}"
 
 
-def test_detail_panel_scrollable_past_tab_bar(page):
-    """Detail panel must be scrollable — content flows under the floating tab bar."""
+def test_detail_panel_allows_scroll_past_tab_bar(page):
+    """Detail panel has overflow-y: auto so content can scroll under the floating tab bar."""
     page.locator("#btnTabDrafts").click()
     page.wait_for_timeout(100)
     page.evaluate("window.goBackToList()")
     page.locator(".draft-card").first.click()
     page.wait_for_timeout(200)
 
-    is_scrollable = page.evaluate(
+    overflow_y = page.evaluate(
         """() => {
             const panel = document.getElementById('detailPanel');
-            if (!panel) return false;
-            return panel.scrollHeight > panel.clientHeight || panel.style.overflowY === 'auto';
+            if (!panel) return 'visible';
+            return getComputedStyle(panel).overflowY;
         }"""
     )
-    assert is_scrollable, "Detail panel should be scrollable (content flows under floating tab bar)"
+    assert overflow_y == "auto", f"Detail panel overflow-y should be 'auto', got '{overflow_y}'"
 
 
 def test_themed_controls_have_no_overlaps(themed_page):
