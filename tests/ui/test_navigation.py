@@ -148,7 +148,8 @@ def test_mobile_swipe_back_from_left_edge_works_over_interactive_controls(page):
         }
         """
     )
-    page.wait_for_timeout(100)
+    # animateBackToList uses setTimeout(180ms) — wait for animation to complete
+    page.wait_for_timeout(400)
 
     assert page.locator("#listPanel").evaluate("(node) => !node.classList.contains('hidden-mobile')")
     assert page.locator("#detailPanel").evaluate("(node) => node.classList.contains('hidden-mobile')")

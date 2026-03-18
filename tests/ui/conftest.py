@@ -4,6 +4,7 @@ Key design decisions:
 - ONE Chromium browser per session (not per test) to avoid launch overhead.
 - Each test gets a fresh browser context + page (function scope) for isolation.
 - miniapp_server is session-scoped: starts uvicorn once, shared by all tests.
+- DB schema created from SQLAlchemy models (stays in sync with db/models.py).
 """
 from __future__ import annotations
 
@@ -50,173 +51,15 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
     db_file = root / "test_aroma.db"
     assets_dir = root / "reels_assets"
 
+    # Create all tables from SQLAlchemy models (stays in sync with db/models.py)
+    from sqlalchemy import create_engine
+    from db.models import Base
+    engine = create_engine(f"sqlite:///{db_file}")
+    Base.metadata.create_all(engine)
+    engine.dispose()
+
     conn = sqlite3.connect(db_file)
     cursor = conn.cursor()
-    cursor.execute(
-        """
-        CREATE TABLE drafts (
-            id INTEGER PRIMARY KEY,
-            draft_id VARCHAR(32) UNIQUE,
-            kind VARCHAR(64),
-            topic VARCHAR(255),
-            source VARCHAR(64),
-            status VARCHAR(32),
-            feedback VARCHAR(255),
-            payload JSON,
-            scheduled_at DATETIME,
-            publish_platforms JSON DEFAULT '[]',
-            external_ids JSON DEFAULT '{}',
-            revision_notes VARCHAR(2000) DEFAULT '',
-            published_at DATETIME,
-            error VARCHAR(2000) DEFAULT '',
-            created_at DATETIME
-        )
-        """
-    )
-    cursor.execute(
-        """
-        CREATE TABLE draft_revisions (
-            id INTEGER PRIMARY KEY,
-            draft_id VARCHAR(32),
-            rev_num INTEGER,
-            payload JSON,
-            author VARCHAR(64) DEFAULT 'user',
-            note VARCHAR(512) DEFAULT '',
-            created_at DATETIME
-        )
-        """
-    )
-    cursor.execute(
-        """
-        CREATE TABLE publish_log (
-            id INTEGER PRIMARY KEY,
-            draft_id VARCHAR(32),
-            platform VARCHAR(32),
-            action VARCHAR(32),
-            status VARCHAR(32) DEFAULT 'pending',
-            external_id VARCHAR(255) DEFAULT '',
-            error_message VARCHAR(1000) DEFAULT '',
-            attempt_num INTEGER DEFAULT 1,
-            created_at DATETIME
-        )
-        """
-    )
-    cursor.execute(
-        """
-        CREATE TABLE todos (
-            id INTEGER PRIMARY KEY,
-            todo_id VARCHAR(36) UNIQUE,
-            text VARCHAR(1000),
-            created_at DATETIME
-        )
-        """
-    )
-    cursor.execute(
-        """
-        CREATE TABLE aroma_cards (
-            id INTEGER PRIMARY KEY,
-            category VARCHAR(32) DEFAULT 'aroma',
-            slug VARCHAR(64) UNIQUE,
-            name VARCHAR(255),
-            source_type VARCHAR(32),
-            aliases JSON,
-            payload JSON,
-            created_at DATETIME,
-            updated_at DATETIME
-        )
-        """
-    )
-    cursor.execute(
-        """
-        CREATE TABLE plans (
-            id INTEGER PRIMARY KEY,
-            plan_id VARCHAR(32) UNIQUE,
-            raw_text TEXT,
-            entries JSON,
-            status VARCHAR(32) DEFAULT 'draft',
-            created_at DATETIME
-        )
-        """
-    )
-    cursor.execute(
-        """
-        CREATE TABLE brand_settings (
-            id INTEGER PRIMARY KEY,
-            brand_voice VARCHAR(4000) DEFAULT '',
-            forbidden_phrases JSON DEFAULT '[]',
-            base_instructions VARCHAR(4000) DEFAULT '',
-            target_platforms JSON DEFAULT '[]',
-            upload_post_user VARCHAR(255) DEFAULT '',
-            upload_post_api_key VARCHAR(255) DEFAULT '',
-            image_model_carousel VARCHAR(100) DEFAULT 'gpt-image/1.5-text-to-image',
-            image_model_img2img VARCHAR(100) DEFAULT 'google/nano-banana-edit',
-            image_model_reels VARCHAR(100) DEFAULT 'gpt-image/1.5-text-to-image',
-            reels_auto_images BOOLEAN DEFAULT 0,
-            updated_at DATETIME
-        )
-        """
-    )
-    cursor.execute(
-        """
-        CREATE TABLE blends (
-            id INTEGER PRIMARY KEY,
-            slug VARCHAR(128) UNIQUE,
-            name VARCHAR(255),
-            goal VARCHAR(512) DEFAULT '',
-            ingredients JSON DEFAULT '[]',
-            indications VARCHAR(2000) DEFAULT '',
-            contraindications VARCHAR(2000) DEFAULT '',
-            compatibility_notes VARCHAR(2000) DEFAULT '',
-            source_pdf VARCHAR(255) DEFAULT '',
-            created_at DATETIME,
-            updated_at DATETIME
-        )
-        """
-    )
-    cursor.execute(
-        """
-        CREATE TABLE mentions (
-            id INTEGER PRIMARY KEY,
-            mention_id VARCHAR(36) UNIQUE,
-            platform VARCHAR(32),
-            external_id VARCHAR(255),
-            type VARCHAR(32),
-            author_username VARCHAR(255),
-            author_name VARCHAR(255),
-            content VARCHAR(4000),
-            url VARCHAR(1024),
-            context_post VARCHAR(4000),
-            received_at DATETIME,
-            status VARCHAR(32) DEFAULT 'pending'
-        )
-        """
-    )
-    cursor.execute(
-        """
-        CREATE TABLE mention_replies (
-            id INTEGER PRIMARY KEY,
-            reply_id VARCHAR(36) UNIQUE,
-            mention_id VARCHAR(36),
-            tone VARCHAR(32),
-            content VARCHAR(2000),
-            generated_at DATETIME,
-            selected BOOLEAN DEFAULT 0,
-            published_at DATETIME,
-            publish_error VARCHAR(1000)
-        )
-        """
-    )
-    cursor.execute(
-        """
-        CREATE TABLE platform_tokens (
-            id INTEGER PRIMARY KEY,
-            platform VARCHAR(32) UNIQUE,
-            access_token VARCHAR(1024),
-            expires_at DATETIME,
-            updated_at DATETIME
-        )
-        """
-    )
 
     draft_id = "reels001"
     asset_file = assets_dir / draft_id / "frame_1.png"
@@ -281,15 +124,15 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
 
     now = "2026-03-11T18:00:00+00:00"
     cursor.execute(
-        "INSERT INTO drafts (draft_id, kind, topic, source, status, feedback, payload, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO drafts (draft_id, kind, topic, source, status, feedback, payload, publish_platforms, external_ids, revision_notes, error, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, '[]', '{}', '', '', ?)",
         (draft_id, "reels", "Вечерний ароматический ритуал", "/miniapp", "draft", "", json.dumps(reels_payload), now),
     )
     cursor.execute(
-        "INSERT INTO drafts (draft_id, kind, topic, source, status, feedback, payload, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO drafts (draft_id, kind, topic, source, status, feedback, payload, publish_platforms, external_ids, revision_notes, error, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, '[]', '{}', '', '', ?)",
         ("threads001", "threads", "Как мягко выйти из рабочего напряжения", "/content", "in_review", "worked", json.dumps(threads_payload), now),
     )
     cursor.execute(
-        "INSERT INTO drafts (draft_id, kind, topic, source, status, feedback, payload, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO drafts (draft_id, kind, topic, source, status, feedback, payload, publish_platforms, external_ids, revision_notes, error, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, '[]', '{}', '', '', ?)",
         ("carousel001", "carousel", "Сенсорная карусель для вечернего ритуала", "/miniapp", "draft", "", json.dumps(carousel_payload), now),
     )
     for slug, name, category, source_type in [
@@ -319,7 +162,7 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
             (slug, name, "symptom", "symptom", json.dumps([]), json.dumps({"category_group": cat_group, "parent_group": cat_group}), now, now),
         )
     cursor.execute(
-        "INSERT INTO plans (plan_id, raw_text, entries, created_at) VALUES (?, ?, ?, ?)",
+        "INSERT INTO plans (plan_id, raw_text, entries, status, created_at) VALUES (?, ?, ?, 'draft', ?)",
         (
             "20260311180000",
             "## Контент-план\n- Понедельник: Threads\n- Среда: Reels",
@@ -356,16 +199,22 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
         }
     )
 
+    server_log = root / "server.log"
+    server_log_fh = server_log.open("w")
     process = subprocess.Popen(
         [sys.executable, "-m", "uvicorn", "miniapp_server:app", "--host", "127.0.0.1", "--port", str(port)],
         cwd=Path(__file__).resolve().parents[2],
         env=env,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
+        stdout=server_log_fh,
+        stderr=subprocess.STDOUT,
     )
     try:
         _wait_until_ready(base_url)
         yield base_url
+    except Exception:
+        server_log_fh.flush()
+        print(f"\n=== SERVER LOG ===\n{server_log.read_text()}\n=== END ===", flush=True)
+        raise
     finally:
         process.terminate()
         try:
@@ -428,13 +277,12 @@ def _create_page(browser, miniapp_server, *, viewport, is_mobile, dark=False):
             "document.addEventListener('DOMContentLoaded',"
             " () => document.body.classList.add('tg-theme-dark'))"
         )
-    page.goto(miniapp_server, wait_until="load", timeout=60000)
+    page.goto(miniapp_server, wait_until="domcontentloaded", timeout=15000)
     try:
-        page.wait_for_selector("body.app-ready", timeout=15000)
+        page.wait_for_selector("body.app-ready", timeout=10000)
     except Error:
-        # Fallback: set app-ready manually if bootstrap silently failed
         page.evaluate("document.body.classList.add('app-ready')")
-        page.wait_for_timeout(500)
+        page.wait_for_timeout(200)
     if dark:
         page.evaluate("document.body.classList.add('tg-theme-dark')")
         page.wait_for_timeout(50)
