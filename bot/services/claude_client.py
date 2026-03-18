@@ -145,4 +145,79 @@ def call_claude(
         f"Context: {context}\nError: <code>{str(last_exc)[:200]}</code>",
         dedup_key=f"claude:retry_exhausted:{context}",
     )
+
+    # Fallback to Kie.ai Gemini 2.5 Flash
+    if settings.kie_ai_api_key:
+        logger.warning("Claude API exhausted, falling back to Kie.ai Gemini 2.5 Flash for context=%s", context)
+        try:
+            text = _call_kie_gemini(messages=messages, max_tokens=max_tokens, system=system, context=context)
+            notify_owner_throttled(
+                f"\u26a0\ufe0f <b>Claude fallback \u2192 Kie.ai Gemini</b>\nContext: {context}\n"
+                f"Claude error: <code>{str(last_exc)[:150]}</code>",
+                dedup_key=f"claude:fallback:{context}",
+            )
+            return text
+        except Exception as fallback_exc:
+            logger.exception("Kie.ai Gemini fallback also failed for context=%s", context)
+            notify_owner_throttled(
+                f"\U0001f534 <b>Both Claude AND Kie.ai Gemini failed</b>\nContext: {context}\n"
+                f"Claude: <code>{str(last_exc)[:100]}</code>\n"
+                f"Kie.ai: <code>{str(fallback_exc)[:100]}</code>",
+                dedup_key=f"claude:both_failed:{context}",
+            )
+
     raise last_exc  # type: ignore[misc]
+
+
+def _call_kie_gemini(
+    *,
+    messages: list[dict],
+    max_tokens: int,
+    system: str = "",
+    context: str = "Kie Gemini fallback",
+) -> str:
+    """Fallback: call Gemini 2.5 Flash via Kie.ai OpenAI-compatible API."""
+    import httpx
+
+    api_messages: list[dict] = []
+    if system:
+        api_messages.append({"role": "system", "content": system})
+    for msg in messages:
+        api_messages.append({"role": msg["role"], "content": msg["content"]})
+
+    resp = httpx.post(
+        "https://api.kie.ai/gemini-2.5-flash/v1/chat/completions",
+        headers={
+            "Authorization": f"Bearer {settings.kie_ai_api_key}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "messages": api_messages,
+            "stream": False,
+            "include_thoughts": False,
+        },
+        timeout=60.0,
+    )
+    resp.raise_for_status()
+    data = resp.json()
+    text = data["choices"][0]["message"]["content"].strip()
+    if not text:
+        raise ValueError("Kie.ai Gemini returned empty response")
+
+    # Fire-and-forget cost logging
+    try:
+        usage = data.get("usage", {})
+        in_tok = usage.get("prompt_tokens", 0)
+        out_tok = usage.get("completion_tokens", 0)
+        cost = (in_tok * 0.15 + out_tok * 0.60) / 1_000_000
+        tid = current_telegram_id.get()
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        threading.Thread(
+            target=_log_cost_sync,
+            args=(today, tid, context, "gemini-2.5-flash/kie", in_tok, out_tok, cost),
+            daemon=True,
+        ).start()
+    except Exception:
+        pass
+
+    return text

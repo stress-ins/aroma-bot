@@ -216,15 +216,18 @@ async def regenerate_carousel_slide_asset(
     from bot.agents.image_prompt_router import optimize_image_prompt
     blend_mood = _get_blend_mood_from_payload(draft.payload)
 
-    # Build image URL *before* choosing model — if we can't construct a valid
-    # URL the img2img model will fail with "This field is required".
+    # Use img2img only when the user provided a revision note;
+    # plain "regenerate" always creates a fresh image via text-to-image.
+    use_img2img = bool(note and note.strip())
+
     image_urls: list[str] | None = None
-    current_image = slide_images[slide_index]
-    if current_image and isinstance(current_image, dict):
-        relative_url = current_image.get("url", "")
-        base_url = settings.assets_base_url
-        if relative_url and base_url:
-            image_urls = [f"{base_url}{relative_url}"]
+    if use_img2img:
+        current_image = slide_images[slide_index]
+        if current_image and isinstance(current_image, dict):
+            relative_url = current_image.get("url", "")
+            base_url = settings.assets_base_url
+            if relative_url and base_url:
+                image_urls = [f"{base_url}{relative_url}"]
 
     regen_model = _get_img2img_model() if image_urls else _get_carousel_model()
     final_prompt = optimize_image_prompt(
@@ -280,17 +283,9 @@ async def regenerate_all_carousel_slide_assets(draft_id: str) -> dict[str, objec
 
     changed = False
     for index, prompt in enumerate(img_prompts):
-        # Build image URL first — model choice depends on whether we have a
-        # usable URL, not just whether a slide image record exists.
-        image_urls: list[str] | None = None
-        current_image = slide_images[index]
-        if current_image and isinstance(current_image, dict):
-            relative_url = current_image.get("url", "")
-            base_url = settings.assets_base_url
-            if relative_url and base_url:
-                image_urls = [f"{base_url}{relative_url}"]
-
-        regen_model = _get_img2img_model() if image_urls else _get_carousel_model()
+        # regenerate-all always uses text-to-image (fresh generation)
+        image_urls = None
+        regen_model = _get_carousel_model()
         try:
             final_prompt = _optimize(
                 prompt, model=regen_model, topic=draft.topic,
