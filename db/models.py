@@ -151,6 +151,9 @@ class BrandSettingsModel(Base):
     image_model_img2img: Mapped[str] = mapped_column(String(100), default="google/nano-banana-edit")
     image_model_reels: Mapped[str] = mapped_column(String(100), default="gpt-image/1.5-text-to-image")
     reels_auto_images: Mapped[bool] = mapped_column(default=False)
+    # Monitored social accounts for trend collection
+    instagram_accounts: Mapped[list] = mapped_column(MutableList.as_mutable(JSON), default=list)
+    threads_accounts: Mapped[list] = mapped_column(MutableList.as_mutable(JSON), default=list)
     # City for weather context (daily oil, etc.)
     city_name: Mapped[str] = mapped_column(String(100), default="Москва")
     city_lat: Mapped[float] = mapped_column(Float, default=55.7558)
@@ -392,6 +395,49 @@ class TrackedThreadModel(Base):
     status: Mapped[str] = mapped_column(String(32), default="new", index=True)
     found_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
     acted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, default=None)
+
+
+class SocialTrendPostModel(Base):
+    """Stores individual collected posts from monitored competitor accounts."""
+    __tablename__ = "social_trend_posts"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    team_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("teams.team_id"), nullable=True, index=True
+    )
+    platform: Mapped[str] = mapped_column(String(16), index=True)  # instagram | threads
+    source_type: Mapped[str] = mapped_column(String(16))  # account | hashtag
+    source_value: Mapped[str] = mapped_column(String(128))  # @username or #tag
+    post_id: Mapped[str] = mapped_column(String(128), unique=True, index=True)
+    author_username: Mapped[str] = mapped_column(String(255), default="")
+    text: Mapped[str] = mapped_column(String, default="")
+    permalink: Mapped[str] = mapped_column(String(512), default="")
+    media_type: Mapped[str] = mapped_column(String(32), default="")  # TEXT_POST | IMAGE | VIDEO | CAROUSEL_ALBUM
+    thumbnail_url: Mapped[str] = mapped_column(String, default="")
+    hashtags: Mapped[list] = mapped_column(MutableList.as_mutable(JSON), default=list)
+    like_count: Mapped[int] = mapped_column(Integer, default=0)
+    comment_count: Mapped[int] = mapped_column(Integer, default=0)
+    share_count: Mapped[int] = mapped_column(Integer, default=0)
+    reply_count: Mapped[int] = mapped_column(Integer, default=0)
+    view_count: Mapped[int] = mapped_column(Integer, default=0)
+    posted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    collected_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )
+
+
+class HashtagQuotaModel(Base):
+    """Tracks Instagram hashtag API usage (30 unique tags / 7 days per user)."""
+    __tablename__ = "hashtag_quotas"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    team_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("teams.team_id"), nullable=True, index=True
+    )
+    hashtag: Mapped[str] = mapped_column(String(128))
+    searched_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )
 
 
 class TrendSignal(Base):
