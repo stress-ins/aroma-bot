@@ -29,6 +29,8 @@ async def save_metrics(
     platform: str,
     external_id: str,
     metrics: dict[str, Any],
+    *,
+    team_id: str | None = None,
 ) -> int:
     """Save a metrics snapshot. Returns the row id."""
     async with AsyncSessionLocal() as session:
@@ -39,6 +41,8 @@ async def save_metrics(
             metrics=metrics,
             fetched_at=datetime.now(timezone.utc),
         )
+        if team_id is not None:
+            model.team_id = team_id
         session.add(model)
         await session.commit()
         await session.refresh(model)

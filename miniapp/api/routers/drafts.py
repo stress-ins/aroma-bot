@@ -8,7 +8,7 @@ from bot.services.draft_revisions_store import create_revision, get_revision, li
 from bot.services.miniapp_content_review import polish_content_review_draft, update_content_review_draft
 from bot.services.miniapp_presenter import filter_drafts, serialize_draft, serialize_draft_summary
 from config import settings
-from ..auth import _require_auth
+from ..auth import TeamContext, _require_auth, _resolve_team_context
 from ..models import DraftContentPayload, DraftFeedbackPayload, DraftStatusPayload
 
 router = APIRouter()
@@ -34,9 +34,9 @@ async def drafts(
     status: str = "",
     feedback: str = "",
     query: str = "",
-    _: None = Depends(_require_auth),
+    ctx: TeamContext = Depends(_resolve_team_context),
 ):
-    records = await list_recent_drafts(limit=200, newest_first=True)
+    records = await list_recent_drafts(limit=200, newest_first=True, team_id=ctx.team_id)
     filtered = await filter_drafts(records, kind=kind, status=status, feedback=feedback, query=query)
     return {"items": [await serialize_draft_summary(record) for record in filtered[:limit]], "total": len(filtered)}
 

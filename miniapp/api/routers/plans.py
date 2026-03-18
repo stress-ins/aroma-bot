@@ -22,7 +22,7 @@ from bot.services.plans_store import get_plan, list_recent_plans, save_plan, upd
 from config import settings
 from db.models import DraftModel
 from db.session import AsyncSessionLocal
-from ..auth import _require_auth
+from ..auth import TeamContext, _require_auth, _resolve_team_context
 from ..models import PlanGeneratePayload
 
 
@@ -175,8 +175,8 @@ async def plans_feed(
 
 
 @router.get("/api/plans")
-async def plans(limit: int = Query(default=20, ge=1, le=100), _: None = Depends(_require_auth)):
-    records = await list_recent_plans(limit=limit)
+async def plans(limit: int = Query(default=20, ge=1, le=100), ctx: TeamContext = Depends(_resolve_team_context)):
+    records = await list_recent_plans(limit=limit, team_id=ctx.team_id)
     return {"items": [await serialize_plan(record) for record in records], "total": len(records)}
 
 
@@ -189,7 +189,7 @@ async def plan_detail(plan_id: str, _: None = Depends(_require_auth)):
 
 
 @router.post("/api/generate/plan")
-async def generate_plan(_: None = Depends(_require_auth)):
+async def generate_plan(ctx: TeamContext = Depends(_resolve_team_context)):
     if not settings.anthropic_api_key:
         raise HTTPException(status_code=400, detail="anthropic_not_configured")
 
@@ -221,6 +221,7 @@ async def generate_plan(_: None = Depends(_require_auth)):
             }
             for entry in entries
         ],
+        team_id=ctx.team_id,
     )
     return await serialize_plan(record)
 

@@ -8,7 +8,7 @@ from bot.services.miniapp_generator import build_content_payload, build_threads_
 from bot.services.miniapp_presenter import serialize_draft
 from bot.services.miniapp_reels import serialize_reels_draft
 from config import settings
-from ..auth import _check_content_limit, _require_auth, require_tier
+from ..auth import TeamContext, _check_content_limit, _require_auth, _resolve_team_context, require_tier
 from ..generation import complete_carousel_generation, complete_reels_v2_generation
 from ..models import CreateCarouselPayload, CreateContentPayload, CreateReelsV2Payload, ThreadsSeriesCreateRequest
 
@@ -30,7 +30,7 @@ def _extract_blend_context(payload) -> dict | None:
 
 
 @router.post("/api/generate/content", dependencies=[Depends(require_tier("expert")), Depends(_check_content_limit)])
-async def generate_content(payload: CreateContentPayload, _: None = Depends(_require_auth)):
+async def generate_content(payload: CreateContentPayload, ctx: TeamContext = Depends(_resolve_team_context)):
     topic = _validate_topic(payload)
     goal_key = payload.goal_key.strip().lower()
     format_key = payload.format_key.strip().lower()
@@ -50,12 +50,14 @@ async def generate_content(payload: CreateContentPayload, _: None = Depends(_req
         topic=topic,
         source="/miniapp",
         payload=content_payload,
+        team_id=ctx.team_id,
+        created_by=ctx.telegram_id,
     )
     return await serialize_draft(saved)
 
 
 @router.post("/api/generate/threads-series", dependencies=[Depends(require_tier("expert")), Depends(_check_content_limit)])
-async def generate_threads_series(payload: ThreadsSeriesCreateRequest, _: None = Depends(_require_auth)):
+async def generate_threads_series(payload: ThreadsSeriesCreateRequest, ctx: TeamContext = Depends(_resolve_team_context)):
     topic = _validate_topic(payload)
     goal_key = payload.goal_key.strip().lower() or "trust"
     emotion = payload.emotion.strip().lower()
@@ -73,6 +75,8 @@ async def generate_threads_series(payload: ThreadsSeriesCreateRequest, _: None =
         topic=topic,
         source="/miniapp",
         payload=ts_payload,
+        team_id=ctx.team_id,
+        created_by=ctx.telegram_id,
     )
     return await serialize_draft(saved)
 
@@ -81,7 +85,7 @@ async def generate_threads_series(payload: ThreadsSeriesCreateRequest, _: None =
 async def generate_reels(
     payload: CreateReelsV2Payload,
     background_tasks: BackgroundTasks,
-    _: None = Depends(_require_auth),
+    ctx: TeamContext = Depends(_resolve_team_context),
 ):
     topic = _validate_topic(payload)
     goal = payload.goal.strip().lower() or "trust"
@@ -112,6 +116,8 @@ async def generate_reels(
         topic=topic,
         source="/miniapp",
         payload=reels_payload,
+        team_id=ctx.team_id,
+        created_by=ctx.telegram_id,
     )
     background_tasks.add_task(complete_reels_v2_generation, saved.draft_id, topic, goal, emotion, bc)
     draft = await serialize_reels_draft(saved.draft_id)
@@ -124,7 +130,7 @@ async def generate_reels(
 async def generate_carousel(
     payload: CreateCarouselPayload,
     background_tasks: BackgroundTasks,
-    _: None = Depends(_require_auth),
+    ctx: TeamContext = Depends(_resolve_team_context),
 ):
     topic = _validate_topic(payload)
 
@@ -148,6 +154,8 @@ async def generate_carousel(
         topic=topic,
         source="/miniapp",
         payload=carousel_payload,
+        team_id=ctx.team_id,
+        created_by=ctx.telegram_id,
     )
     background_tasks.add_task(complete_carousel_generation, saved.draft_id, topic, bc)
     return await serialize_draft(saved)

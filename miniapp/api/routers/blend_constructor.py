@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from ..auth import _require_auth, _resolve_telegram_id
+from ..auth import TeamContext, _require_auth, _resolve_team_context, _resolve_telegram_id
 
 router = APIRouter()
 
@@ -84,12 +84,12 @@ class SaveBlendRequest(BaseModel):
 @router.post("/api/blend-constructor/saved")
 async def create_saved_blend(
     body: SaveBlendRequest,
-    telegram_id: int = Depends(_resolve_telegram_id),
+    ctx: TeamContext = Depends(_resolve_team_context),
 ):
     from bot.services.saved_blends_store import save_blend
 
     result = await save_blend(
-        telegram_id=telegram_id,
+        telegram_id=ctx.telegram_id,
         title=body.title,
         brief=body.brief,
         tags=body.tags,
@@ -99,15 +99,16 @@ async def create_saved_blend(
         expert_note=body.expert_note,
         application_guide=body.application_guide,
         safety_status=body.safety_status,
+        team_id=ctx.team_id,
     )
     return result
 
 
 @router.get("/api/blend-constructor/saved")
-async def get_saved_blends(telegram_id: int = Depends(_resolve_telegram_id)):
+async def get_saved_blends(ctx: TeamContext = Depends(_resolve_team_context)):
     from bot.services.saved_blends_store import list_saved_blends
 
-    items = await list_saved_blends(telegram_id)
+    items = await list_saved_blends(ctx.telegram_id, team_id=ctx.team_id)
     return {"items": items, "total": len(items)}
 
 
