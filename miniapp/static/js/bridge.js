@@ -50,6 +50,7 @@ export function registerWindowBridge(deps) {
     autoResize,
     copyReelsCaption,
     openReelsImageFullscreen,
+    openReelsPreview,
     // Phase 4
     publishReels,
     retryPlatform,
@@ -171,6 +172,7 @@ export function registerWindowBridge(deps) {
   window.autoResize = autoResize;
   window.copyReelsCaption = copyReelsCaption;
   window.openReelsImageFullscreen = openReelsImageFullscreen;
+  window.openReelsPreview = openReelsPreview;
   window.publishReels = publishReels;
   window.retryPlatform = retryPlatform;
 

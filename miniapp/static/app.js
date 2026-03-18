@@ -1356,6 +1356,10 @@ const {
   // Phase 4 functions:
   publishReels,
   retryPlatform,
+  // Feature: copy caption + fullscreen image
+  copyReelsCaption,
+  openReelsImageFullscreen,
+  openReelsPreview,
 } = createReelsModule({
   state,
   reelsNoteSaveTimers,
@@ -1902,6 +1906,9 @@ registerWindowBridge({
   autoResize,
   publishReels,
   retryPlatform,
+  copyReelsCaption,
+  openReelsImageFullscreen,
+  openReelsPreview,
   approveThreadsSeries,
   regenSlot,
   regenerateSeriesPosts,

@@ -12,8 +12,10 @@ from bot.agents.carousel_preview_agent import (
     SLIDE_ROLES,
     ROLE_PLACEMENT_PREFS,
     analyze_text_placement,
+    analyze_reels_placement,
     render_preview_png,
     generate_slide_preview,
+    _REELS_PLACEMENT_FALLBACK,
 )
 
 _MOD = "bot.agents.carousel_preview_agent"
@@ -190,3 +192,34 @@ class TestGenerateSlidePreview:
         with patch(f"{_MOD}.get_draft", new_callable=AsyncMock, return_value=draft):
             with pytest.raises(ValueError, match="out of range"):
                 await generate_slide_preview("test", 5)
+
+
+class TestAnalyzeReelsPlacement:
+    def test_returns_valid(self):
+        img = _make_test_image()
+        ai = {"placement": {"zone": "top", "x_percent": 10, "y_percent": 8, "max_width_percent": 80}, "typography": {"color_hex": "#D4876E", "shadow_color": "rgba(0,0,0,0.5)", "font_size_px": 20, "font_weight": 700}}
+        with patch(f"{_MOD}.call_claude", return_value=json.dumps(ai)):
+            r = analyze_reels_placement(img)
+        assert r["placement"]["zone"] == "top"
+        assert r["typography"]["color_hex"] == "#D4876E"
+
+    def test_clamps(self):
+        img = _make_test_image()
+        ai = {"placement": {"zone": "bottom", "x_percent": 150, "y_percent": -5, "max_width_percent": 95}, "typography": {"color_hex": "#FFF", "shadow_color": "rgba(0,0,0,0.5)", "font_size_px": 30, "font_weight": 700}}
+        with patch(f"{_MOD}.call_claude", return_value=json.dumps(ai)):
+            r = analyze_reels_placement(img)
+        assert r["placement"]["x_percent"] == 100
+        assert r["placement"]["y_percent"] == 0
+        assert r["typography"]["font_size_px"] == 24
+
+    def test_fallback_error(self):
+        with patch(f"{_MOD}.call_claude", side_effect=Exception("e")):
+            assert analyze_reels_placement(_make_test_image()) == _REELS_PLACEMENT_FALLBACK
+
+    def test_fallback_bad_json(self):
+        with patch(f"{_MOD}.call_claude", return_value="bad"):
+            assert analyze_reels_placement(_make_test_image()) == _REELS_PLACEMENT_FALLBACK
+
+    def test_fallback_missing_keys(self):
+        with patch(f"{_MOD}.call_claude", return_value=json.dumps({"placement": {"zone": "top"}})):
+            assert analyze_reels_placement(_make_test_image()) == _REELS_PLACEMENT_FALLBACK
