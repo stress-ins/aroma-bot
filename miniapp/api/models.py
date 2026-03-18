@@ -146,8 +146,8 @@ class ThreadsSlotRegenRequest(BaseModel):
 
 
 class ScheduleSeriesRequest(BaseModel):
-    draft_id: str = Field(default="")
-    date: str = Field(default="")
+    draft_id: str = Field(..., min_length=1)
+    date: str = Field(..., min_length=1)
     slots: list[str] = Field(default_factory=lambda: ["morning", "day", "evening"])
 
 

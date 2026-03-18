@@ -120,9 +120,14 @@ async def schedule_series(payload: ScheduleSeriesRequest, _: None = Depends(_req
     from datetime import date as date_type
 
     draft = await get_draft(payload.draft_id)
-    if not draft or draft.kind != "threads_series":
-        raise HTTPException(status_code=404, detail="threads_series_not_found")
+    if not draft:
+        logger.warning("schedule-series: draft not found, draft_id=%r", payload.draft_id)
+        raise HTTPException(status_code=404, detail="draft_not_found")
+    if draft.kind != "threads_series":
+        logger.warning("schedule-series: wrong kind %r for draft %s", draft.kind, payload.draft_id)
+        raise HTTPException(status_code=400, detail="draft_kind_mismatch")
     if draft.status != "approved":
+        logger.warning("schedule-series: wrong status %r for draft %s", draft.status, payload.draft_id)
         raise HTTPException(status_code=400, detail="draft_must_be_approved")
 
     try:
