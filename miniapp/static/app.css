@@ -2020,12 +2020,18 @@ body.tg-theme-dark .danger-button {
   }
 
   body.is-mobile-layout.is-detail-view .detail-panel {
+    /* Full-screen fixed overlay — avoids layout chain height issues */
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10;
+    border: none;
+    border-radius: 0;
     padding-top: var(--tg-content-inset-top, env(safe-area-inset-top, 0px));
     padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
     overflow-y: auto;
-    /* Fill the layout grid cell so overflow-y creates a real scroll container.
-       Without a height constraint the panel grows to fit content and sticky/scroll break. */
-    height: calc(var(--tg-viewport-stable-height, 100dvh) - var(--tg-content-inset-top, env(safe-area-inset-top, 0px)));
   }
 
   body.is-mobile-layout.is-detail-view .detail-grid .section {
