@@ -10,6 +10,7 @@ export function registerWindowBridge(deps) {
     openDraft,
     openAroma,
     openReference,
+    openDailyOilReference,
     copyText,
     openReels,
     openPlan,
@@ -117,6 +118,7 @@ export function registerWindowBridge(deps) {
   window.openDraft = openDraft;
   window.openAroma = openAroma;
   window.openReference = openReference;
+  window.openDailyOilReference = openDailyOilReference;
   window.copyText = copyText;
   window.openReels = openReels;
   window.openPlan = openPlan;
