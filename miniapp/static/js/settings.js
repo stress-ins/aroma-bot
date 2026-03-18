@@ -745,13 +745,8 @@ export function createSettingsModule(deps) {
     try {
       const data = await fetchJson(`/api/social/connect-url?platform=${platform}`);
       if (data.url) {
-        const tg = window.Telegram?.WebApp;
-        if (tg?.openLink) {
-          // Open in external browser — OAuth doesn't work in Telegram's in-app WebView
-          tg.openLink(data.url, { try_instant_view: false });
-        } else {
-          window.open(data.url, "_blank");
-        }
+        // Force system browser — OAuth doesn't work in Telegram's in-app WebView
+        window.open(data.url, "_system");
       }
     } catch (err) {
       const detail = err?.detail || "";
