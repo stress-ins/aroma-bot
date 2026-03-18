@@ -14,6 +14,35 @@ _SNAPSHOT_DIR = Path(__file__).with_name("snapshots")
 
 
 # ---------------------------------------------------------------------------
+# Named timeout constants (ms) — replace magic numbers in tests
+# ---------------------------------------------------------------------------
+
+DOM_RENDER = 100       # Minimal wait for DOM re-render after click/evaluate
+ANIMATION = 300        # CSS transition / animation completion
+API_ROUNDTRIP = 500    # Network request round-trip
+THEME_APPLY = 50       # Dark/light theme class application
+
+
+# ---------------------------------------------------------------------------
+# Wait helpers — prefer these over page.wait_for_timeout(N)
+# ---------------------------------------------------------------------------
+
+def wait_visible(page, selector: str, *, timeout: int = 5000) -> None:
+    """Wait until a selector is visible on the page."""
+    page.locator(selector).first.wait_for(state="visible", timeout=timeout)
+
+
+def wait_hidden(page, selector: str, *, timeout: int = 5000) -> None:
+    """Wait until a selector is hidden/detached from the page."""
+    page.locator(selector).first.wait_for(state="hidden", timeout=timeout)
+
+
+def wait_for_app_ready(page, *, timeout: int = 10000) -> None:
+    """Wait until body.app-ready appears (miniapp JS init complete)."""
+    page.wait_for_selector("body.app-ready", timeout=timeout)
+
+
+# ---------------------------------------------------------------------------
 # Visual snapshot helpers
 # ---------------------------------------------------------------------------
 
@@ -30,7 +59,7 @@ def prepare_visual_state(page) -> None:
         }
         """
     )
-    page.wait_for_timeout(100)
+    page.wait_for_timeout(DOM_RENDER)
 
 
 def assert_visual_snapshot(locator, snapshot_name: str, *, max_diff_ratio: float = 0.0025) -> None:
@@ -67,9 +96,9 @@ def assert_visual_snapshot(locator, snapshot_name: str, *, max_diff_ratio: float
 
 def open_reels_detail_from_drafts(page):
     page.locator("#btnTabDrafts").click()
-    page.wait_for_timeout(100)
+    page.wait_for_timeout(DOM_RENDER)
     page.get_by_text("Вечерний ароматический ритуал").first.click()
-    page.wait_for_timeout(100)
+    page.wait_for_timeout(DOM_RENDER)
 
 
 # ---------------------------------------------------------------------------
