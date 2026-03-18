@@ -88,6 +88,8 @@ def _kie_submit(
         "resolution": "1K",
         "output_format": "png",
     }
+    if model_id.startswith("gpt-image/"):
+        input_block["quality"] = "high"
     if image_urls:
         input_block["image_input"] = image_urls
 
