@@ -189,8 +189,47 @@ def test_handbook_detail_title_not_clipped(page):
             assert box["y"] >= 0
 
 
+_JS_CHECK_DETAIL_INTEGRITY = """(vw) => {
+    const panel = document.getElementById('detailPanel');
+    if (!panel) return null;
+    const issues = [];
+
+    // 1. No horizontal overflow on scroll container
+    const panelDiff = panel.scrollWidth - panel.clientWidth;
+    if (panelDiff > 2) issues.push({type: 'panel_overflow', scrollW: panel.scrollWidth, clientW: panel.clientWidth});
+
+    // 2. No horizontal overflow on inner elements
+    document.querySelectorAll('#draftDetail, .detail-grid, .section, .detail-top').forEach(el => {
+        if (el.scrollWidth > el.clientWidth + 2)
+            issues.push({type: 'element_overflow', cls: el.className.slice(0,50), scrollW: el.scrollWidth, clientW: el.clientWidth});
+    });
+
+    // 3. Sections have visible border-radius (not flat/cut-off at edges)
+    document.querySelectorAll('.detail-grid .section').forEach(el => {
+        const style = getComputedStyle(el);
+        const radius = parseFloat(style.borderRadius);
+        if (radius < 1) issues.push({type: 'section_no_radius', cls: el.className.slice(0,50)});
+    });
+
+    // 4. Sections have horizontal gap from viewport edge (not edge-to-edge)
+    document.querySelectorAll('.detail-grid .section').forEach(el => {
+        const rect = el.getBoundingClientRect();
+        if (rect.width === 0) return;
+        if (rect.left < 4) issues.push({type: 'section_flush_left', cls: el.className.slice(0,50), left: rect.left});
+        if (rect.right > vw - 4) issues.push({type: 'section_flush_right', cls: el.className.slice(0,50), right: rect.right, vw});
+    });
+
+    // 5. Detail-panel has no visible border/radius (full-screen container)
+    const panelStyle = getComputedStyle(panel);
+    const panelRadius = parseFloat(panelStyle.borderRadius);
+    if (panelRadius > 1) issues.push({type: 'panel_has_radius', radius: panelRadius});
+
+    return issues.length ? issues : null;
+}"""
+
+
 def test_detail_sections_not_clipped_on_sides(page):
-    """Detail view: no horizontal overflow in the scroll container."""
+    """Detail view: sections have border-radius, horizontal gap from edges, no overflow."""
     page.locator("#btnTabDrafts").click()
     page.wait_for_timeout(100)
     page.evaluate("window.goBackToList()")
@@ -205,26 +244,12 @@ def test_detail_sections_not_clipped_on_sides(page):
         cards.nth(i).click()
         page.wait_for_timeout(200)
 
-        overflow = page.evaluate(
-            """() => {
-                const panel = document.getElementById('detailPanel');
-                if (!panel) return null;
-                const diff = panel.scrollWidth - panel.clientWidth;
-                if (diff > 2) return {scrollW: panel.scrollWidth, clientW: panel.clientWidth, diff};
-                // Also check the detail grid and sections
-                const bad = [];
-                document.querySelectorAll('#draftDetail, .detail-grid, .section, .detail-top').forEach(el => {
-                    if (el.scrollWidth > el.clientWidth + 2)
-                        bad.push({cls: el.className.slice(0,50), scrollW: el.scrollWidth, clientW: el.clientWidth});
-                });
-                return bad.length ? bad : null;
-            }"""
-        )
-        assert overflow is None, f"Card {i}: horizontal overflow: {overflow}"
+        issues = page.evaluate(_JS_CHECK_DETAIL_INTEGRITY, 430)
+        assert issues is None, f"Card {i}: detail integrity issues: {issues}"
 
 
 def test_handbook_detail_sections_not_clipped(page):
-    """Handbook detail: no horizontal overflow."""
+    """Handbook detail: sections have proper card styling, no overflow."""
     page.locator("#btnTabHandbook").click()
     page.wait_for_timeout(100)
 
@@ -233,21 +258,27 @@ def test_handbook_detail_sections_not_clipped(page):
         card.click()
         page.wait_for_timeout(200)
 
-        overflow = page.evaluate(
-            """() => {
-                const panel = document.getElementById('detailPanel');
-                if (!panel) return null;
-                const diff = panel.scrollWidth - panel.clientWidth;
-                if (diff > 2) return {scrollW: panel.scrollWidth, clientW: panel.clientWidth, diff};
-                const bad = [];
-                document.querySelectorAll('#draftDetail, .detail-grid, .section, .detail-top').forEach(el => {
-                    if (el.scrollWidth > el.clientWidth + 2)
-                        bad.push({cls: el.className.slice(0,50), scrollW: el.scrollWidth, clientW: el.clientWidth});
-                });
-                return bad.length ? bad : null;
-            }"""
-        )
-        assert overflow is None, f"Handbook: horizontal overflow: {overflow}"
+        issues = page.evaluate(_JS_CHECK_DETAIL_INTEGRITY, 430)
+        assert issues is None, f"Handbook: detail integrity issues: {issues}"
+
+
+def test_detail_panel_bottom_padding_clears_tab_bar(page):
+    """Detail panel must have enough bottom padding so content isn't hidden behind the tab bar."""
+    page.locator("#btnTabDrafts").click()
+    page.wait_for_timeout(100)
+    page.evaluate("window.goBackToList()")
+    page.locator(".draft-card").first.click()
+    page.wait_for_timeout(200)
+
+    padding = page.evaluate(
+        """() => {
+            const panel = document.getElementById('detailPanel');
+            if (!panel) return 0;
+            return parseFloat(getComputedStyle(panel).paddingBottom);
+        }"""
+    )
+    # Tab bar is ~80px (position:fixed). Padding must exceed it.
+    assert padding >= 80, f"Detail panel padding-bottom ({padding}px) is less than tab bar height"
 
 
 def test_themed_controls_have_no_overlaps(themed_page):

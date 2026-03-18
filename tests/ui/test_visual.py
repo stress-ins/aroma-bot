@@ -47,6 +47,26 @@ def test_visual_mobile_reels_detail_baseline(page):
 
 
 @pytest.mark.visual
+def test_visual_mobile_threads_series_detail_baseline(page):
+    page.locator("#btnTabDrafts").click()
+    page.wait_for_timeout(100)
+    page.get_by_text("Восстановление энергии и ресурса").first.click()
+    page.wait_for_timeout(100)
+    prepare_visual_state(page)
+    assert_visual_snapshot(page.locator("#detailPanel"), "mobile-threads-series-detail.png")
+
+
+@pytest.mark.visual
+def test_visual_mobile_handbook_detail_baseline(page):
+    page.locator("#btnTabHandbook").click()
+    page.wait_for_timeout(100)
+    page.locator(".reference-card").first.click()
+    page.wait_for_timeout(200)
+    prepare_visual_state(page)
+    assert_visual_snapshot(page.locator("#detailPanel"), "mobile-handbook-detail.png")
+
+
+@pytest.mark.visual
 def test_visual_desktop_split_view_baseline(desktop_page):
     desktop_page.get_by_role("button", name="Черновики").click()
     desktop_page.wait_for_timeout(100)
