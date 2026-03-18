@@ -14,6 +14,7 @@ export function registerWindowBridge(deps) {
     copyText,
     openReels,
     openPlan,
+    openPlanDetail,
     generateDraftFromPlan,
     openPlanRelatedDraft,
     updateDraft,
@@ -100,6 +101,25 @@ export function registerWindowBridge(deps) {
     activatePromo,
     generatePromos,
     goBackToSettings,
+    setPlanStatusFilter,
+    setPlanPlatformFilter,
+    setPlanDateFilter,
+    setPlansSubMode,
+    activatePlan,
+    addForbiddenPhrase,
+    removeForbiddenPhrase,
+    addRewrite,
+    removeRewrite,
+    savePlatformTone,
+    saveUploadPostPrefs,
+    saveImageModels,
+    openMentionDetail,
+    closeMentionDetail,
+    generateReplies,
+    publishReply,
+    ignoreMentionAction,
+    setMentionsFilter,
+    generateReelsImages,
     moveDraftToTeam,
     switchAccountsTeam,
     openRecommendationsWizard,
@@ -135,6 +155,11 @@ export function registerWindowBridge(deps) {
   window.copyText = copyText;
   window.openReels = openReels;
   window.openPlan = openPlan;
+  window.openPlanDetail = openPlanDetail;
+  window.setPlanStatusFilter = setPlanStatusFilter;
+  window.setPlanPlatformFilter = setPlanPlatformFilter;
+  window.setPlanDateFilter = setPlanDateFilter;
+  window.setPlansSubMode = setPlansSubMode;
   window.generateDraftFromPlan = generateDraftFromPlan;
   window.openPlanRelatedDraft = openPlanRelatedDraft;
   window.updateDraft = updateDraft;
@@ -175,6 +200,7 @@ export function registerWindowBridge(deps) {
   window.copyReelsCaption = copyReelsCaption;
   window.openReelsImageFullscreen = openReelsImageFullscreen;
   window.openReelsPreview = openReelsPreview;
+  window.generateReelsImages = generateReelsImages;
   window.publishReels = publishReels;
   window.retryPlatform = retryPlatform;
 
@@ -196,8 +222,16 @@ export function registerWindowBridge(deps) {
   window.saveContentReviewDraft = saveContentReviewDraft;
   window.polishContentDraft = polishContentDraft;
   window.openKeywordTopic = openKeywordTopic;
+  window.activatePlan = activatePlan;
   window.addKeywordItem = addKeywordItem;
   window.removeKeywordItem = removeKeywordItem;
+  window.addForbiddenPhrase = addForbiddenPhrase;
+  window.removeForbiddenPhrase = removeForbiddenPhrase;
+  window.addRewrite = addRewrite;
+  window.removeRewrite = removeRewrite;
+  window.savePlatformTone = savePlatformTone;
+  window.saveUploadPostPrefs = saveUploadPostPrefs;
+  window.saveImageModels = saveImageModels;
   window.addTodoItem = () => addTodoItem();
   window.removeTodoItem = (id) => removeTodoItem(id);
   window.renderCreateTool = renderCreateTool;
@@ -225,6 +259,12 @@ export function registerWindowBridge(deps) {
   window.activatePromo = activatePromo;
   window.generatePromos = generatePromos;
   window.goBackToSettings = goBackToSettings;
+  window.openMentionDetail = openMentionDetail;
+  window.closeMentionDetail = closeMentionDetail;
+  window.generateReplies = generateReplies;
+  window.publishReply = publishReply;
+  window.ignoreMentionAction = ignoreMentionAction;
+  window.setMentionsFilter = setMentionsFilter;
   window.moveDraftToTeam = moveDraftToTeam;
   window.switchAccountsTeam = switchAccountsTeam;
   window._selectSchedulerDate = _selectSchedulerDate;
