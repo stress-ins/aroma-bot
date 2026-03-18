@@ -158,6 +158,32 @@ async def slot_history(
     return {"slot": slot, "versions": slot_post.get("versions", [])}
 
 
+@router.post("/api/threads-series/{draft_id}/regenerate-posts")
+async def regenerate_posts(draft_id: str, _: None = Depends(_require_auth)):
+    """Regenerate all posts for a threads_series with empty threads_posts."""
+    draft = await get_draft(draft_id)
+    _require_threads_series(draft)
+
+    from bot.services.miniapp_generator import build_threads_series_payload
+    from bot.agents import generate_content_draft
+
+    p = dict(draft.payload or {})
+    goal_key = p.get("goal", "trust")
+    emotion = p.get("emotion", "")
+
+    raw_draft = await generate_content_draft(draft.topic, goal_key, "threads_series")
+    new_payload = build_threads_series_payload(raw_draft, goal_key=goal_key, emotion=emotion)
+
+    # Preserve existing series_summary if the new one is empty
+    if p.get("series_summary") and not new_payload.get("series_summary"):
+        new_payload["series_summary"] = p["series_summary"]
+
+    saved = await update_draft(draft_id, payload=new_payload)
+    if not saved:
+        raise HTTPException(status_code=404, detail="draft_not_found")
+    return await serialize_draft(saved)
+
+
 @router.post("/api/threads-series/{draft_id}/approve")
 async def approve_series(draft_id: str, _: None = Depends(_require_auth)):
     draft = await get_draft(draft_id)

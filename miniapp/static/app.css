@@ -2043,6 +2043,10 @@ body.tg-theme-dark .danger-button {
     padding-left: 0;
     padding-right: 0;
     overflow-y: auto;
+    /* Full-screen scroll container — no card frame so it doesn't look "cut off" */
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
   }
 
   body.is-mobile-layout.is-detail-view .detail-grid .section {
