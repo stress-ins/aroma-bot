@@ -30,12 +30,58 @@ logger = logging.getLogger(__name__)
 __all__ = [
     "UPLOAD_POST_PLATFORMS",
     "publish",
+    "publish_threads_series_slot",
     "check_status",
     "cancel_scheduled",
     "_draft_text",
     "_resolve_media_paths",
     "_get_upload_client",
 ]
+
+
+async def publish_threads_series_slot(draft_id: str, slot: str) -> dict[str, Any]:
+    """Publish a single slot of a threads_series via Meta Graph API.
+
+    Updates the slot status to 'published' in the payload.
+    If all slots are published, marks the whole draft as 'published'.
+    """
+    from bot.services.meta_publisher import publish_to_threads
+
+    draft = await get_draft(draft_id)
+    if not draft:
+        raise RuntimeError(f"Draft {draft_id} not found")
+
+    p = dict(draft.payload or {})
+    posts = list(p.get("threads_posts", []))
+
+    slot_post = next((post for post in posts if post["slot"] == slot), None)
+    if not slot_post:
+        raise RuntimeError(f"Slot {slot} not found in draft {draft_id}")
+
+    text = slot_post.get("text", "")
+    if not text.strip():
+        raise RuntimeError(f"Slot {slot} has no text")
+
+    result = await publish_to_threads(text)
+    logger.info(
+        "Published threads_series slot %s for draft %s: %s",
+        slot, draft_id, result,
+    )
+
+    slot_post["status"] = "published"
+    slot_post["external_id"] = result.get("id", "")
+    p["threads_posts"] = posts
+
+    all_published = all(
+        post.get("status") == "published" for post in posts
+    )
+
+    if all_published:
+        await update_draft(draft_id, payload=p, status="published")
+    else:
+        await update_draft(draft_id, payload=p)
+
+    return {"status": "ok", "slot": slot, "external_id": result.get("id", "")}
 
 
 async def publish(

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 
@@ -11,6 +12,8 @@ from bot.services.drafts_store import get_draft, update_draft
 from bot.services.miniapp_presenter import serialize_draft
 from ..auth import _require_auth
 from ..models import ThreadsSlotPatchRequest, ThreadsSlotRegenRequest
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -178,6 +181,10 @@ async def regenerate_posts(draft_id: str, _: None = Depends(_require_auth)):
     if p.get("series_summary") and not new_payload.get("series_summary"):
         new_payload["series_summary"] = p["series_summary"]
 
+    new_posts = new_payload.get("threads_posts", [])
+    if not new_posts:
+        raise HTTPException(status_code=502, detail="generation_produced_no_posts")
+
     saved = await update_draft(draft_id, payload=new_payload)
     if not saved:
         raise HTTPException(status_code=404, detail="draft_not_found")
@@ -189,7 +196,58 @@ async def approve_series(draft_id: str, _: None = Depends(_require_auth)):
     draft = await get_draft(draft_id)
     _require_threads_series(draft)
 
+    posts = (draft.payload or {}).get("threads_posts", [])
+    if not posts:
+        raise HTTPException(status_code=400, detail="no_posts_to_approve")
+
     saved = await update_draft(draft_id, status="approved")
     if not saved:
         raise HTTPException(status_code=404, detail="draft_not_found")
     return await serialize_draft(saved)
+
+
+@router.post("/api/threads-series/{draft_id}/publish-now")
+async def publish_series_now(draft_id: str, _: None = Depends(_require_auth)):
+    """Publish ALL posts of a threads_series immediately with 30s pauses."""
+    from bot.services.publisher import publish_threads_series_slot
+
+    draft = await get_draft(draft_id)
+    _require_threads_series(draft)
+    if draft.status not in ("approved", "scheduled"):
+        raise HTTPException(
+            status_code=400, detail="draft_must_be_approved_or_scheduled",
+        )
+
+    posts = (draft.payload or {}).get("threads_posts", [])
+    if not posts:
+        raise HTTPException(status_code=400, detail="no_posts_to_publish")
+
+    results = []
+    for i, post in enumerate(posts):
+        if post.get("status") == "published":
+            results.append({"slot": post["slot"], "status": "already_published"})
+            continue
+        try:
+            result = await publish_threads_series_slot(draft_id, post["slot"])
+            results.append(result)
+            logger.info(
+                "publish-now: slot %s published for %s", post["slot"], draft_id,
+            )
+        except Exception as exc:
+            logger.error(
+                "publish-now: slot %s failed for %s: %s",
+                post["slot"], draft_id, exc,
+            )
+            results.append({
+                "slot": post["slot"], "status": "error", "error": str(exc),
+            })
+        # Pause between posts (except after the last one)
+        if i < len(posts) - 1:
+            await asyncio.sleep(30)
+
+    updated = await get_draft(draft_id)
+    return {
+        "draft_id": draft_id,
+        "status": updated.status if updated else "unknown",
+        "results": results,
+    }

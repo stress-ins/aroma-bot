@@ -1,6 +1,7 @@
 """Publish API — publish/schedule drafts, check status, cancel scheduled posts."""
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -11,6 +12,8 @@ from bot.services.publish_log_store import list_all_logs, list_logs
 from bot.services.publisher import cancel_scheduled, check_status, publish
 from ..auth import TeamContext, _require_auth, _resolve_team_context, require_tier
 from ..models import ScheduleSeriesRequest
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -133,7 +136,11 @@ async def schedule_series(payload: ScheduleSeriesRequest, _: None = Depends(_req
             continue
         scheduled_at = datetime(pub_date.year, pub_date.month, pub_date.day, h, m, tzinfo=timezone.utc)
         if scheduled_at <= now:
-            continue  # skip expired slots
+            logger.info(
+                "schedule-series: skipping expired slot %s (scheduled_at=%s <= now=%s)",
+                post["slot"], scheduled_at.isoformat(), now.isoformat(),
+            )
+            continue
         post["status"] = "scheduled"
         scheduled.append({"slot": post["slot"], "scheduled_at": scheduled_at.isoformat()})
 
@@ -150,6 +157,10 @@ async def schedule_series(payload: ScheduleSeriesRequest, _: None = Depends(_req
     else:
         await update_draft(payload.draft_id, payload=p)
 
+    logger.info(
+        "schedule-series: draft=%s date=%s scheduled_count=%d",
+        payload.draft_id, payload.date, len(scheduled),
+    )
     return {"draft_id": payload.draft_id, "scheduled": scheduled}
 
 
