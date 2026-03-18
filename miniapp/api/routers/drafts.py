@@ -36,8 +36,11 @@ async def drafts(
     query: str = "",
     ctx: TeamContext = Depends(_resolve_team_context),
 ):
-    records = await list_recent_drafts(limit=200, newest_first=True, team_id=ctx.team_id)
-    filtered = await filter_drafts(records, kind=kind, status=status, feedback=feedback, query=query)
+    records = await list_recent_drafts(
+        limit=limit, newest_first=True, team_id=ctx.team_id,
+        kind=kind or None, status=status or None, feedback=feedback or None,
+    )
+    filtered = await filter_drafts(records, query=query)
     return {"items": [await serialize_draft_summary(record) for record in filtered[:limit]], "total": len(filtered)}
 
 

@@ -1207,8 +1207,8 @@ const {
   isCurrentDraftDetail,
   isPromptDisclosureOpen,
   mergeDraftIntoState,
-  renderDraftList,
-  renderDraftDetail,
+  renderDraftList: (...args) => renderDraftList(...args),
+  renderDraftDetail: (...args) => renderDraftDetail(...args),
   scheduleCarouselRefresh,
 });
 

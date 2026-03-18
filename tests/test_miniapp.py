@@ -1186,9 +1186,10 @@ class TestMiniAppRussianLocale:
         assert ".boot-fallback" in app_css
         assert ".boot-fallback.is-error" in app_css
         assert "async function loadInitialScreen()" in runtime_js
-        assert 'await loadInitialScreen();' in runtime_js
         assert 'if (!appState.isBootstrapped()) {' in runtime_js
         assert 'appState.setBootstrapped(true)' in runtime_js
+        # Bootstrap shows UI immediately via app-ready + safeLoadCurrentTab
+        assert 'void safeLoadCurrentTab(' in runtime_js
 
     def test_handbook_has_all_reference_tabs(self):
         app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))

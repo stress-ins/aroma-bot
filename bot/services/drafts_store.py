@@ -114,6 +114,8 @@ async def list_recent_drafts(
     kind: str | None = None,
     newest_first: bool = False,
     team_id: str | None = None,
+    status: str | None = None,
+    feedback: str | None = None,
 ) -> list[DraftRecord]:
     async with AsyncSessionLocal() as session:
         order = DraftModel.id.desc() if newest_first else DraftModel.id.asc()
@@ -121,7 +123,15 @@ async def list_recent_drafts(
         if team_id:
             query = query.filter(or_(DraftModel.team_id == team_id, DraftModel.team_id.is_(None)))
         if kind:
-            query = query.filter(DraftModel.kind == kind)
+            # "threads" filter should also match "threads_series"
+            if kind == "threads":
+                query = query.filter(DraftModel.kind.in_(["threads", "threads_series"]))
+            else:
+                query = query.filter(DraftModel.kind == kind)
+        if status:
+            query = query.filter(DraftModel.status == status)
+        if feedback:
+            query = query.filter(DraftModel.feedback == feedback)
         query = query.limit(limit)
         result = await session.execute(query)
         models = result.scalars().all()

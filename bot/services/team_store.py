@@ -80,6 +80,25 @@ async def get_default_team(telegram_id: int, username: str = "") -> TeamModel:
     return await create_team("Персональная", telegram_id, creator_username=username)
 
 
+async def get_default_team_with_role(telegram_id: int, username: str = "") -> tuple[TeamModel, str]:
+    """Return (team, role) for the user's default team in a single session."""
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(
+            select(TeamModel, TeamMemberModel.role)
+            .join(TeamMemberModel, TeamModel.team_id == TeamMemberModel.team_id)
+            .where(TeamMemberModel.telegram_id == telegram_id)
+            .order_by(TeamModel.created_at)
+            .limit(1)
+        )
+        row = result.first()
+        if row:
+            return row[0], row[1]
+
+    # No teams — auto-create personal workspace (uses its own session)
+    team = await create_team("Персональная", telegram_id, creator_username=username)
+    return team, "owner"
+
+
 async def get_team(team_id: str) -> TeamModel | None:
     async with AsyncSessionLocal() as session:
         result = await session.execute(
