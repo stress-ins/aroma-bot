@@ -245,7 +245,6 @@ export function createDraftsModule(deps) {
             ${isApproved && d.status !== "published" ? `<button class="secondary-button" type="button" onclick="openThreadsScheduler('${d.draft_id}')">${actionLabel("calendar", "Выбрать дату публикации")}</button>` : ""}
             <button class="secondary-button" onclick="sendDraftToChat('${d.draft_id}',this)">${actionLabel("chat", "В чат")}</button>
             ${renderMoveButton(d.draft_id)}
-            <button class="danger-button" onclick="deleteDraft('${d.draft_id}','drafts',this)">${actionLabel("trash", "Удалить")}</button>
           </div>
           ${schedulerHtml}
         </div>
@@ -262,6 +261,9 @@ export function createDraftsModule(deps) {
           </div>
           ` : ""}
         </section>
+        <div class="actions-row detail-actions-danger">
+          <button class="danger-button" onclick="deleteDraft('${d.draft_id}','drafts',this)">${actionLabel("trash", "Удалить")}</button>
+        </div>
       </div>
     `;
     syncMobileNavigation();
@@ -388,7 +390,6 @@ export function createDraftsModule(deps) {
               ${d.kind === "carousel" ? `<button class="secondary-button" title="Обновить все слайды" onclick="regenerateCarouselAll('${d.draft_id}', this)">${uiIcon("regenerate")}</button>` : ""}
             </div>
             ${renderMoveButton(d.draft_id)}
-            <button class="danger-button" onclick="deleteDraft('${d.draft_id}', 'drafts', this)">${actionLabel("trash", "Удалить")}</button>
           </div>
         </div>
         ${payloadSection("Превью", fullPreview(d))}
@@ -401,6 +402,9 @@ export function createDraftsModule(deps) {
         ${d.status === "published" ? `<section class="section metrics-section" id="metricsSection_${d.draft_id}"><div class="metrics-empty"><i data-lucide="bar-chart-3"></i><span>Загружаю метрики...</span></div></section>` : ""}
         ${renderSlides(d.draft_id, p.slides, p.img_prompts, p.slide_images, p.img_prompt_notes, p.slide_image_versions)}
         ${promptSection("Промпт для изображения", p.visual_prompt, "Скопировать промпт", `draft:${d.draft_id}:visual`)}
+        <div class="actions-row detail-actions-danger">
+          <button class="danger-button" onclick="deleteDraft('${d.draft_id}', 'drafts', this)">${actionLabel("trash", "Удалить")}</button>
+        </div>
       </div>
     `;
     if (d.status === "published") _loadMetricsSection(d.draft_id);
