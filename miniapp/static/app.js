@@ -18,6 +18,7 @@ import { createSettingsModule } from "./js/settings.js";
 import { createRecommendationsModule } from "./js/recommendations.js";
 import { createShellModule } from "./js/shell.js";
 import { createTeamsModule } from "./js/teams.js";
+import { createTrendsModule } from "./js/trends.js";
 
 const state = {
   mode: "content", // 'content' or 'handbook'
@@ -70,6 +71,7 @@ const MODE_TABS = {
     { id: "reels", label: "Рилсы" },
     { id: "schedule", label: "Расписание" },
     { id: "keywords", label: "Ключи" },
+    { id: "trends", label: "Тренды" },
     { id: "status", label: "Статус" },
   ],
   handbook: [
@@ -96,7 +98,7 @@ const reelsNoteSaveTimers = {};
 const reelsPromptSaveTimers = {};
 
 // Forward-declared module functions — assigned during module initialization below
-let loadInbox, loadReels, loadKeywords, loadSettings;
+let loadInbox, loadReels, loadKeywords, loadSettings, loadTrends;
 let renderCreate, renderCreateTool;
 let renderDraftList, openDraft, openReels, renderDraftDetail, renderEmptyDetail;
 let renderInbox, renderStatus, renderPlans, renderReels, renderReelsDetail, renderKeywords;
@@ -651,6 +653,19 @@ function uiIcon(name) {
     "alert-circle": "alert-circle",
     check:      "check",
     lock:       "lock",
+    "bar-chart-3": "bar-chart-3",
+    "columns-2": "columns-2",
+    "corner-down-right": "corner-down-right",
+    hash:       "hash",
+    heart:      "heart",
+    "refresh-cw": "refresh-cw",
+    repeat:     "repeat",
+    "thumbs-up": "thumbs-up",
+    "align-left": "align-left",
+    "at-sign":  "at-sign",
+    clock:      "clock",
+    "file-text": "file-text",
+    "layout-grid": "layout-grid",
   };
   return `<span class="ui-icon ui-icon-${escapeHtml(name)}">${icon(LUCIDE_MAP[name] || "square-terminal", 16)}</span>`;
 }
@@ -1680,6 +1695,29 @@ const { renderBrand: renderBrandImpl, loadForbiddenPhrases: loadForbiddenPhrases
   activatePromo, generatePromos,
 } = _settingsMod);
 
+let selectTrendsPlatform, selectTrendsPeriod, refreshTrends, openTrendsPost;
+({
+  loadTrends,
+  selectTrendsPlatform,
+  selectTrendsPeriod,
+  refreshTrends,
+  openTrendsPost,
+} = createTrendsModule({
+  state,
+  elements,
+  escapeHtml,
+  uiIcon,
+  actionLabel,
+  renderBackButton,
+  renderGuidedState,
+  withButtonFeedback,
+  fetchJson,
+  showUiNotice,
+  setEmptyState,
+  syncMobileNavigation,
+  enterDetailView,
+}));
+
 ({
   renderCreate, renderCreateTool,
 } = createCreateModule({
@@ -1748,6 +1786,7 @@ const _runtimeMod = createRuntimeModule({
   loadSettings,
   loadStatus,
   loadKeywords,
+  loadTrends: (...a) => loadTrends(...a),
   renderCreate,
   showBootFallback,
   hideBootFallback,
@@ -2033,6 +2072,10 @@ registerWindowBridge({
   submitRecommendations,
   _selectSchedulerDate,
   _renderThreadsSchedulerDates,
+  selectTrendsPlatform,
+  selectTrendsPeriod,
+  refreshTrends,
+  openTrendsPost,
 });
 
 reelsCallbacks.renderReels = renderReels;

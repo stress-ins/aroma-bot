@@ -26,6 +26,7 @@ export function createRuntimeModule(deps) {
     loadSettings,
     loadStatus,
     loadKeywords,
+    loadTrends,
     renderCreate,
     showBootFallback,
     hideBootFallback,
@@ -43,6 +44,7 @@ export function createRuntimeModule(deps) {
     if (state.tab === "settings") return loadSettings();
     if (state.tab === "status") return loadStatus();
     if (state.tab === "keywords") return loadKeywords();
+    if (state.tab === "trends") return loadTrends();
     return loadDrafts();
   }
 

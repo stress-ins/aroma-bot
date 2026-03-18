@@ -5301,3 +5301,92 @@ body.tg-theme-dark .reco-cta-btn { color: #d4845e; }
 .suggest-topic-item:hover { background: var(--surface-2, #f5f5f5); }
 .suggest-topic-item:active { background: var(--surface-3, #ebebeb); }
 .suggest-topics-loading { display: flex; align-items: center; gap: 8px; padding: 12px 14px; font-size: 14px; color: var(--hint); }
+
+/* ── Trends ─────────────────────────────────────────────────────────── */
+.trends-controls { padding: 12px 14px 8px; }
+.trends-platform-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+.trends-platform-btn {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px;
+  padding: 8px 4px; border-radius: 10px; font-size: 13px; font-weight: 500;
+  background: var(--surface, #f7f7f7); border: 1px solid var(--border, #e0e0e0);
+  color: var(--text); cursor: pointer; transition: all 0.15s;
+}
+.trends-platform-btn.active {
+  background: linear-gradient(180deg, rgba(var(--brand-rgb), 0.18), rgba(var(--brand-rgb), 0.1));
+  border-color: var(--brand-border); color: var(--brand);
+}
+.trends-period-row { display: flex; align-items: center; gap: 8px; }
+.trends-period-btns { display: flex; gap: 4px; flex: 1; }
+.trends-period-btn {
+  padding: 5px 12px; border-radius: 8px; font-size: 12px; font-weight: 500;
+  background: var(--surface, #f7f7f7); border: 1px solid var(--border, #e0e0e0);
+  color: var(--text); cursor: pointer; transition: all 0.12s;
+}
+.trends-period-btn.active { background: var(--brand-bg); border-color: var(--brand-border); color: var(--brand); }
+.trends-refresh-btn {
+  display: flex; align-items: center; gap: 4px;
+  padding: 5px 10px; border-radius: 8px; font-size: 12px;
+  background: var(--surface, #f7f7f7); border: 1px solid var(--border, #e0e0e0);
+  color: var(--hint); cursor: pointer;
+}
+.trends-refresh-btn:hover { border-color: var(--brand-border); color: var(--brand); }
+
+.trends-detail-content { padding: 0 14px 20px; }
+
+/* Tag cloud */
+.trends-tagcloud { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 0; }
+.trends-tagcloud-chip {
+  display: inline-block; padding: 4px 10px; border-radius: 16px;
+  background: var(--brand-bg); color: var(--brand); font-weight: 500;
+  cursor: default; transition: transform 0.1s;
+}
+.trends-tagcloud-chip:hover { transform: scale(1.05); }
+
+/* Heatmap */
+.trends-heatmap { overflow-x: auto; padding: 4px 0; }
+.trends-heatmap-header { display: flex; gap: 2px; margin-bottom: 2px; }
+.trends-heatmap-row { display: flex; gap: 2px; margin-bottom: 2px; }
+.trends-heatmap-label { width: 28px; flex-shrink: 0; font-size: 10px; color: var(--hint); display: flex; align-items: center; }
+.trends-heatmap-hour { width: 14px; flex-shrink: 0; font-size: 9px; color: var(--hint); text-align: center; }
+.trends-heatmap-cell {
+  width: 14px; height: 14px; flex-shrink: 0; border-radius: 3px;
+  border: 1px solid transparent; cursor: default; position: relative;
+}
+.trends-heatmap-cell.top { border-color: var(--brand); }
+.trends-heatmap-cell:hover { border-color: var(--brand-border); }
+
+/* Format breakdown */
+.trends-format-bar { display: flex; height: 20px; border-radius: 10px; overflow: hidden; gap: 2px; margin: 8px 0; }
+.trends-format-segment { min-width: 8px; border-radius: 4px; }
+.trends-format-labels { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 12px; color: var(--hint); }
+.trends-format-label { display: flex; align-items: center; gap: 4px; }
+.trends-format-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+/* Hook cards */
+.trends-hook-card {
+  padding: 10px 14px; margin: 6px 0; border-radius: 10px;
+  background: var(--surface, #f7f7f7); border: 1px solid var(--border, #e0e0e0);
+}
+.trends-hook-quote { font-style: italic; color: var(--text); font-size: 14px; }
+
+/* Best times */
+.trends-time-row {
+  display: flex; align-items: center; gap: 12px; padding: 8px 0;
+  border-bottom: 1px solid var(--border, #e0e0e0); font-size: 13px;
+}
+.trends-time-row:last-child { border-bottom: none; }
+.trends-time-hour { font-weight: 600; min-width: 48px; color: var(--brand); }
+.trends-time-eng { flex: 1; color: var(--text); }
+.trends-time-count { color: var(--hint); font-size: 12px; }
+
+/* Comparison */
+.trends-compare-cards { display: flex; gap: 10px; padding: 8px 14px; }
+.trends-compare-card {
+  flex: 1; padding: 14px; border-radius: 12px;
+  background: var(--surface, #f7f7f7); border: 1px solid var(--border, #e0e0e0);
+}
+.trends-compare-card-title { font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+.trends-compare-metric { font-size: 13px; color: var(--text); padding: 3px 0; display: flex; align-items: center; gap: 4px; }
+.trends-comparison-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.trends-comparison-table th { padding: 8px 12px; text-align: left; border-bottom: 2px solid var(--border, #e0e0e0); font-weight: 600; }
+.trends-comparison-table td { padding: 8px 12px; border-bottom: 1px solid var(--border, #e0e0e0); }
