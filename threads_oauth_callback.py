@@ -49,47 +49,7 @@ async def oauth_start(url: str = "", platform: str = ""):
     import json
     safe_url_js = json.dumps(url)
     label = "Instagram" if "instagram" in url.lower() else "Threads" if "threads" in url.lower() else platform or "платформу"
-    is_instagram = "instagram" in url.lower()
-    # Instagram on iOS: Universal Links intercept any navigation to instagram.com
-    # and open the Instagram app which can't handle /oauth/authorize.
-    # Only pasting URL in address bar works. For Threads — direct link is fine.
-    if is_instagram:
-        return HTMLResponse(
-            '<!DOCTYPE html><html><head><meta charset="utf-8">'
-            '<meta name="viewport" content="width=device-width,initial-scale=1">'
-            '<title>Подключение Instagram</title></head>'
-            '<body style="margin:0;min-height:100vh;display:flex;align-items:center;'
-            'justify-content:center;background:#1a1a2e;color:#e5e7eb;'
-            'font-family:-apple-system,BlinkMacSystemFont,sans-serif;text-align:center">'
-            '<div style="padding:40px 24px;max-width:380px">'
-            '<svg width="64" height="64" viewBox="0 0 64 64" style="margin-bottom:20px">'
-            '<circle cx="32" cy="32" r="30" stroke="#c0785c" stroke-width="3" fill="none"/>'
-            '<path d="M26 20v24M38 20v24M20 28h24M20 36h24" stroke="#c0785c" stroke-width="2.5" '
-            'fill="none" stroke-linecap="round"/></svg>'
-            '<h1 style="font-size:22px;font-weight:700;margin:0;color:#fff">Подключение Instagram</h1>'
-            '<p style="font-size:15px;color:#9ca3af;margin:12px 0 20px">'
-            'На iPhone приложение Instagram перехватывает ссылку.<br>'
-            'Нажмите <b style="color:#fff">Скопировать</b>, затем вставьте в адресную строку Safari и нажмите Enter.</p>'
-            '<button id="copyBtn" onclick="copyUrl()" '
-            'style="display:inline-block;padding:14px 36px;background:#c0785c;color:#fff;'
-            'border:none;border-radius:12px;font-weight:600;font-size:16px;cursor:pointer;'
-            'width:100%">Скопировать ссылку</button>'
-            '<p id="status" style="font-size:13px;color:#4ade80;margin-top:12px;min-height:20px"></p>'
-            f'<script>'
-            f'var u={safe_url_js};'
-            'function copyUrl(){'
-            'navigator.clipboard.writeText(u).then(function(){'
-            'document.getElementById("status").textContent="Скопировано! Вставьте в адресную строку Safari.";'
-            'document.getElementById("copyBtn").textContent="Скопировано ✓";'
-            '}).catch(function(){'
-            'prompt("Скопируйте ссылку:",u);'
-            '});}'
-            '</script>'
-            '</div></body></html>'
-        )
-    # For non-Instagram (Threads etc.) — direct link works fine
-    from html import escape
-    safe_href = escape(url, quote=True)
+    # Simple JS redirect — works for both Instagram consent URL and Threads
     return HTMLResponse(
         '<!DOCTYPE html><html><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width,initial-scale=1">'
