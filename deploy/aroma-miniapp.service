@@ -5,8 +5,13 @@ After=network.target
 [Service]
 WorkingDirectory=/opt/aroma
 EnvironmentFile=/opt/aroma/.env
-ExecStart=/opt/aroma/.venv/bin/uvicorn miniapp_server:app --host 127.0.0.1 --port 8091 --workers 2
-ExecReload=/bin/kill -HUP $MAINPID
+ExecStart=/opt/aroma/.venv/bin/gunicorn miniapp_server:app \
+  -k uvicorn.workers.UvicornWorker \
+  --workers 2 \
+  --bind 127.0.0.1:8091 \
+  --graceful-timeout 30 \
+  --timeout 120
+ExecReload=/bin/kill -s HUP $MAINPID
 Restart=always
 RestartSec=3
 User=root
