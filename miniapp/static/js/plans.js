@@ -28,6 +28,9 @@ export function createPlansModule(deps) {
     loadReels,
     openDraft,
     openReels,
+    openPendingReelsCreation,
+    finalizePendingReelsCreation,
+    recoverPendingReelsCreation,
   } = deps;
 
   // ── State initialisation ───────────────────────────────────────────────────
@@ -461,6 +464,10 @@ export function createPlansModule(deps) {
 
         <div class="actions-row">
           ${s === "scheduled" ? `
+            <button class="primary-button"
+              onclick="publishScheduledNow('${escapeHtml(draft.draft_id)}', '${escapeHtml(draft.kind)}', this)">
+              ${actionLabel("send", "Опубликовать сейчас")}
+            </button>
             <button class="secondary-button"
               onclick="cancelPublishSchedule('${escapeHtml(draft.draft_id)}', this)">
               ✗ Отменить

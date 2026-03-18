@@ -912,6 +912,46 @@ async function scheduleThreadsSeries(draftId, date, slots, btn) {
   }, "Запланировано");
 }
 
+async function publishScheduledNow(draftId, kind, btn) {
+  const confirmed = await confirmAction("Опубликовать сейчас? Запланированное время будет проигнорировано.");
+  if (!confirmed) return;
+
+  if (kind === "threads_series") {
+    await publishThreadsSeriesNow(draftId, btn);
+    return;
+  }
+
+  await withButtonFeedback(btn, "Публикую...", async () => {
+    await fetchJson(`/api/publish/${draftId}`, {
+      method: "POST",
+      body: "{}",
+      timeout: 60000,
+    });
+    showUiNotice("Публикация запущена", "success");
+    await loadPlansFeedImpl();
+  }, "Отправлено");
+}
+
+async function retryPublication(draftId, platform, slot, btn) {
+  await withButtonFeedback(btn, "Публикую...", async () => {
+    if (slot) {
+      await fetchJson(`/api/threads-series/${draftId}/publish-now`, {
+        method: "POST",
+        body: "{}",
+        timeout: 120000,
+      });
+    } else {
+      await fetchJson(`/api/publish/${draftId}`, {
+        method: "POST",
+        body: "{}",
+        timeout: 60000,
+      });
+    }
+    showUiNotice("Повторная публикация запущена", "success");
+    await loadPlansFeedImpl();
+  }, "Отправлено");
+}
+
 async function publishThreadsSeriesNow(draftId, btn) {
   const confirmed = await confirmAction("Опубликовать все посты серии сейчас? Между постами будет пауза 30 секунд.");
   if (!confirmed) return;
@@ -1920,6 +1960,9 @@ registerWindowBridge({
   showSlotHistory,
   scheduleThreadsSeries,
   openThreadsScheduler,
+  publishThreadsSeriesNow,
+  publishScheduledNow,
+  retryPublication,
   saveContentReviewDraft,
   saveThreadsReviewDraft,
   polishContentDraft,
