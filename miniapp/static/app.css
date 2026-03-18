@@ -1830,7 +1830,12 @@ body.tg-theme-dark .danger-button {
 
 .detail-panel.swipe-back-armed {
   transform: translateX(var(--swipe-offset));
-  transition: transform 0.05s linear;
+  will-change: transform;
+}
+
+.detail-panel.swipe-back-cancel {
+  transform: translateX(0);
+  transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1);
 }
 
 .detail-panel.is-entering {

@@ -53,7 +53,7 @@ export function createShellModule(deps) {
   }
 
   function animateBackToList() {
-    elements.detailPanel.classList.remove("swipe-back-armed");
+    elements.detailPanel.classList.remove("swipe-back-armed", "swipe-back-cancel");
     elements.detailPanel.classList.add("swipe-back-exit");
     window.setTimeout(() => {
       state.mobileView = "list";
@@ -88,7 +88,7 @@ export function createShellModule(deps) {
       return;
     }
     state.mobileView = "list";
-    elements.detailPanel.classList.remove("swipe-back-exit", "swipe-back-armed");
+    elements.detailPanel.classList.remove("swipe-back-exit", "swipe-back-armed", "swipe-back-cancel");
     elements.detailPanel.style.removeProperty("--swipe-offset");
     syncMobileNavigation();
   }
@@ -422,7 +422,11 @@ export function createShellModule(deps) {
         return;
       }
       elements.detailPanel.classList.remove("swipe-back-armed");
+      elements.detailPanel.classList.add("swipe-back-cancel");
       elements.detailPanel.style.removeProperty("--swipe-offset");
+      setTimeout(() => {
+        elements.detailPanel.classList.remove("swipe-back-cancel");
+      }, 200);
     }, { passive: true });
   }
 
