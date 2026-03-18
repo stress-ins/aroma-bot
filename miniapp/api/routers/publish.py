@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 from bot.services.drafts_store import get_draft, list_scheduled_drafts_due, update_draft
 from bot.services.publish_log_store import list_all_logs, list_logs
 from bot.services.publisher import cancel_scheduled, check_status, publish
-from ..auth import _require_auth, require_tier
+from ..auth import TeamContext, _require_auth, _resolve_team_context, require_tier
 from ..models import ScheduleSeriesRequest
 
 router = APIRouter()
@@ -85,9 +85,9 @@ async def publish_by_id(item_id: str, _: None = Depends(_require_auth)):
 
 
 @router.get("/api/publish/scheduled")
-async def scheduled_posts(_: None = Depends(_require_auth)):
+async def scheduled_posts(ctx: TeamContext = Depends(_resolve_team_context)):
     from bot.services.drafts_store import list_recent_drafts
-    records = await list_recent_drafts(limit=200, newest_first=True)
+    records = await list_recent_drafts(limit=200, newest_first=True, team_id=ctx.team_id)
     scheduled = [
         {
             "draft_id": r.draft_id,
@@ -154,8 +154,8 @@ async def schedule_series(payload: ScheduleSeriesRequest, _: None = Depends(_req
 
 
 @router.get("/api/publish/history")
-async def publish_history(limit: int = 50, _: None = Depends(_require_auth)):
-    logs = await list_all_logs(limit=limit)
+async def publish_history(limit: int = 50, ctx: TeamContext = Depends(_resolve_team_context)):
+    logs = await list_all_logs(limit=limit, team_id=ctx.team_id)
     return {"items": logs}
 
 

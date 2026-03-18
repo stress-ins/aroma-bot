@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 
 from db.models import PlanModel
 from db.session import AsyncSessionLocal
@@ -29,7 +29,7 @@ class PlanRecord:
         )
 
 
-async def save_plan(raw_text: str, entries: list[dict[str, str]]) -> PlanRecord:
+async def save_plan(raw_text: str, entries: list[dict[str, str]], *, team_id: str | None = None) -> PlanRecord:
     created_at = datetime.now(timezone.utc)
     plan_id = created_at.strftime("%Y%m%d%H%M%S")
 
@@ -40,15 +40,20 @@ async def save_plan(raw_text: str, entries: list[dict[str, str]]) -> PlanRecord:
             entries=[dict(entry) for entry in entries if isinstance(entry, dict)],
             created_at=created_at,
         )
+        if team_id is not None:
+            model.team_id = team_id
         session.add(model)
         await session.commit()
         await session.refresh(model)
         return PlanRecord.from_model(model)
 
 
-async def list_recent_plans(limit: int = 10) -> list[PlanRecord]:
+async def list_recent_plans(limit: int = 10, *, team_id: str | None = None) -> list[PlanRecord]:
     async with AsyncSessionLocal() as session:
-        query = select(PlanModel).order_by(PlanModel.created_at.desc()).limit(limit)
+        query = select(PlanModel).order_by(PlanModel.created_at.desc())
+        if team_id is not None:
+            query = query.filter(or_(PlanModel.team_id == team_id, PlanModel.team_id.is_(None)))
+        query = query.limit(limit)
         result = await session.execute(query)
         models = result.scalars().all()
         return [PlanRecord.from_model(model) for model in models]

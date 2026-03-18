@@ -12,7 +12,7 @@ from bot.services.social_oauth import (
     build_threads_authorize_url,
 )
 from config import settings
-from ..auth import _require_auth, _telegram_user_id_from_init_data
+from ..auth import TeamContext, _require_auth, _telegram_user_id_from_init_data, require_team_role
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -24,8 +24,8 @@ _PLATFORMS = ("threads", "instagram")
 
 
 @router.get("/api/social/status")
-async def social_status(_: None = Depends(_require_auth)):
-    tokens = await list_tokens()
+async def social_status(ctx: TeamContext = Depends(require_team_role("owner"))):
+    tokens = await list_tokens(team_id=ctx.team_id)
     token_map: dict[str, dict] = {}
     for t in tokens:
         token_map[t.platform] = {

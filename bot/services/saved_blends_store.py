@@ -6,7 +6,7 @@ import logging
 import uuid
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 
 from db.models import SavedBlendModel
 from db.session import AsyncSessionLocal
@@ -43,6 +43,7 @@ async def save_blend(
     expert_note: str = "",
     application_guide: str = "",
     safety_status: str = "safe",
+    team_id: str | None = None,
 ) -> dict[str, Any]:
     async with AsyncSessionLocal() as session:
         m = SavedBlendModel(
@@ -58,19 +59,24 @@ async def save_blend(
             application_guide=application_guide,
             safety_status=safety_status,
         )
+        if team_id is not None:
+            m.team_id = team_id
         session.add(m)
         await session.commit()
         await session.refresh(m)
         return _row_to_dict(m)
 
 
-async def list_saved_blends(telegram_id: int) -> list[dict[str, Any]]:
+async def list_saved_blends(telegram_id: int, *, team_id: str | None = None) -> list[dict[str, Any]]:
     async with AsyncSessionLocal() as session:
-        result = await session.execute(
+        query = (
             select(SavedBlendModel)
             .filter(SavedBlendModel.telegram_id == telegram_id)
             .order_by(SavedBlendModel.created_at.desc())
         )
+        if team_id is not None:
+            query = query.filter(or_(SavedBlendModel.team_id == team_id, SavedBlendModel.team_id.is_(None)))
+        result = await session.execute(query)
         return [_row_to_dict(m) for m in result.scalars().all()]
 
 

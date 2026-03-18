@@ -12,6 +12,7 @@ from db.models import TeamModel, TeamMemberModel, TeamInviteModel
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_TEAM_ID = "00000000-0000-0000-0000-000000000001"
 VALID_ROLES = ("owner", "editor", "viewer")
 ROLE_RANK = {"owner": 3, "editor": 2, "viewer": 1}
 

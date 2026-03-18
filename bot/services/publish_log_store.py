@@ -5,7 +5,7 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
-from sqlalchemy import select, update
+from sqlalchemy import or_, select, update
 
 from db.session import AsyncSessionLocal
 from db.models import PublishLogModel
@@ -87,14 +87,13 @@ async def update_log_status(
         await session.commit()
 
 
-async def list_all_logs(limit: int = 50) -> list[dict[str, Any]]:
+async def list_all_logs(limit: int = 50, *, team_id: str | None = None) -> list[dict[str, Any]]:
     """Return the most recent publish log entries across all drafts."""
     async with AsyncSessionLocal() as session:
-        query = (
-            select(PublishLogModel)
-            .order_by(PublishLogModel.created_at.desc())
-            .limit(limit)
-        )
+        query = select(PublishLogModel).order_by(PublishLogModel.created_at.desc())
+        if team_id is not None:
+            query = query.filter(or_(PublishLogModel.team_id == team_id, PublishLogModel.team_id.is_(None)))
+        query = query.limit(limit)
         result = await session.execute(query)
         models = result.scalars().all()
         return [

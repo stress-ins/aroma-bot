@@ -18,7 +18,7 @@ from bot.services.mentions_store import (
     save_replies,
     select_reply,
 )
-from ..auth import _require_auth, _require_webhook_auth
+from ..auth import TeamContext, _require_auth, _require_webhook_auth, _resolve_team_context
 from ..models import MentionDetailResponse, MentionIngestPayload, MentionListResponse, MentionReplyResponse, MentionReplySelectPayload
 
 logger = logging.getLogger(__name__)
@@ -62,9 +62,9 @@ async def list_mentions_endpoint(
     status: str = "pending",
     limit: int = 20,
     offset: int = 0,
-    _: None = Depends(_require_auth),
+    ctx: TeamContext = Depends(_resolve_team_context),
 ):
-    mentions = await list_mentions(platform=platform, status=status, limit=limit, offset=offset)
+    mentions = await list_mentions(platform=platform, status=status, limit=limit, offset=offset, team_id=ctx.team_id)
     items = [_serialize_mention(m) for m in mentions]
     return {"items": items, "total": len(items)}
 

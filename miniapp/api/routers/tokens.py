@@ -8,7 +8,7 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException
 
 from bot.services.mentions_store import get_token, list_expiring_tokens, list_tokens, upsert_token
-from ..auth import _require_auth, _require_webhook_auth
+from ..auth import TeamContext, _require_auth, _require_webhook_auth, require_team_role
 from ..models import TokenStatusResponse, TokenUpdatePayload
 
 logger = logging.getLogger(__name__)
@@ -35,8 +35,8 @@ def _serialize_token(t) -> dict:
 
 
 @router.get("/api/tokens/status")
-async def tokens_status(_: None = Depends(_require_auth)):
-    tokens = await list_tokens()
+async def tokens_status(ctx: TeamContext = Depends(require_team_role("owner"))):
+    tokens = await list_tokens(team_id=ctx.team_id)
     return {"tokens": [_serialize_token(t) for t in tokens]}
 
 

@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from typing import Any
 from uuid import uuid4
 
-from sqlalchemy import select, update, delete
+from sqlalchemy import or_, select, update, delete
 from sqlalchemy.orm import selectinload
 
 from db.session import AsyncSessionLocal
@@ -116,7 +116,7 @@ async def list_recent_drafts(
         order = DraftModel.id.desc() if newest_first else DraftModel.id.asc()
         query = select(DraftModel).order_by(order)
         if team_id:
-            query = query.filter(DraftModel.team_id == team_id)
+            query = query.filter(or_(DraftModel.team_id == team_id, DraftModel.team_id.is_(None)))
         if kind:
             query = query.filter(DraftModel.kind == kind)
         query = query.limit(limit)

@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from typing import Any
 from uuid import uuid4
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 
 from db.session import AsyncSessionLocal
 from db.models import MentionModel, MentionReplyModel, PlatformTokenModel
@@ -22,6 +22,7 @@ async def save_mention(
     content: str,
     url: str = "",
     context_post: str = "",
+    team_id: str | None = None,
 ) -> str:
     """Save a new mention and return its mention_id."""
     mention_id = str(uuid4())
@@ -39,6 +40,8 @@ async def save_mention(
             received_at=datetime.now(timezone.utc),
             status="pending",
         )
+        if team_id is not None:
+            model.team_id = team_id
         session.add(model)
         await session.commit()
     return mention_id
@@ -57,9 +60,12 @@ async def list_mentions(
     status: str | None = None,
     limit: int = 20,
     offset: int = 0,
+    team_id: str | None = None,
 ) -> list[MentionModel]:
     async with AsyncSessionLocal() as session:
         query = select(MentionModel).order_by(MentionModel.received_at.desc())
+        if team_id is not None:
+            query = query.filter(or_(MentionModel.team_id == team_id, MentionModel.team_id.is_(None)))
         if platform and platform != "all":
             query = query.filter(MentionModel.platform == platform)
         if status and status != "all":
@@ -187,9 +193,12 @@ async def upsert_token(
         return model
 
 
-async def list_tokens() -> list[PlatformTokenModel]:
+async def list_tokens(*, team_id: str | None = None) -> list[PlatformTokenModel]:
     async with AsyncSessionLocal() as session:
-        result = await session.execute(select(PlatformTokenModel))
+        query = select(PlatformTokenModel)
+        if team_id is not None:
+            query = query.filter(or_(PlatformTokenModel.team_id == team_id, PlatformTokenModel.team_id.is_(None)))
+        result = await session.execute(query)
         return list(result.scalars().all())
 
 
