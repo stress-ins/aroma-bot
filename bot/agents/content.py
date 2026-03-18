@@ -193,6 +193,56 @@ def split_threads_posts(caption: str) -> list[dict[str, str]]:
     return posts
 
 
+_THREADS_MAX_WORDS = 120
+
+
+def _trim_thread_post_sync(text: str, topic: str) -> str:
+    """If a threads post exceeds _THREADS_MAX_WORDS, ask Claude to shorten it."""
+    word_count = len(text.split())
+    if word_count <= _THREADS_MAX_WORDS:
+        return text
+    prompt = (
+        f"Сократи этот пост для Threads до СТРОГО 80-110 слов. "
+        f"Сохрани первую строку (хук) и основную мысль. Убери лишние детали. "
+        f"Тема: {topic}\n\nТекст:\n{text}\n\n"
+        f"Верни ТОЛЬКО сокращённый текст, ничего больше."
+    )
+    result = _call_claude(prompt, max_tokens=400)
+    trimmed = humanize(result.strip())
+    if len(trimmed.split()) < word_count and len(trimmed) > 20:
+        return trimmed
+    return text
+
+
+def trim_threads_posts(caption: str, topic: str) -> str:
+    """Trim each УТРО/ДЕНЬ/ВЕЧЕР section if over word limit."""
+    posts = split_threads_posts(caption)
+    changed = False
+    for post in posts:
+        text = post.get("text", "")
+        if not text:
+            continue
+        trimmed = _trim_thread_post_sync(text, topic)
+        if trimmed != text:
+            post["text"] = trimmed
+            changed = True
+    if not changed:
+        return caption
+    import re
+    parts = []
+    for post in posts:
+        parts.append(f"{post['label']}")
+        if post["text"]:
+            parts.append(post["text"])
+        if post.get("why_it_works"):
+            parts.append(f"ПОЧЕМУ ЭТО СРАБОТАЕТ: {post['why_it_works']}")
+        parts.append("")
+    vp_match = re.search(r"VISUAL_PROMPT:\s*(.+)", caption)
+    if vp_match:
+        parts.append(f"VISUAL_PROMPT: {vp_match.group(1)}")
+    return "\n".join(parts).strip()
+
+
 def _has_structured_content(draft: ContentDraft) -> bool:
     return any([
         draft.angle, draft.hook, draft.caption,
@@ -473,7 +523,7 @@ def _generate_writer_sync(
     """Step 2: Writer produces platform-native draft. Step 3: Editor polishes."""
     from bot.agents.creative_team import edit_post_sync
 
-    token_limit = 1200 if format_key in ("threads", "threads_series") else 900
+    token_limit = 900
     raw = _call_claude(
         _writer_prompt(topic, goal_key, format_key, angle, hook, blend_context=blend_context), max_tokens=token_limit
     )

@@ -1,5 +1,5 @@
 """Tests for split_threads_posts and _extract_why_it_works."""
-from bot.agents.content import split_threads_posts, _extract_why_it_works
+from bot.agents.content import split_threads_posts, _extract_why_it_works, _THREADS_MAX_WORDS
 
 
 def test_extract_why_it_works_present():
@@ -78,3 +78,15 @@ def test_split_threads_default_times():
     assert posts[0]["default_time"] == "09:00"
     assert posts[1]["default_time"] == "13:00"
     assert posts[2]["default_time"] == "19:00"
+
+
+def test_threads_max_words_limit_is_120():
+    assert _THREADS_MAX_WORDS == 120
+
+
+def test_platform_rules_have_hard_limit():
+    from bot.agents.platform_rules import WRITER_PLATFORM_RULES
+    for key in ("threads", "threads_series"):
+        rules = WRITER_PLATFORM_RULES[key]
+        assert "HARD LIMIT" in rules, f"Writer rules for {key} must have HARD LIMIT"
+        assert "120" in rules
