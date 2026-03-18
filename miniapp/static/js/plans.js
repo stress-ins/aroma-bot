@@ -619,15 +619,39 @@ export function createPlansModule(deps) {
   }
 
   async function generateDraftFromPlan(planId, entryIndex, button) {
+    const plan = state.selectedPlan || state.plans.find((p) => p.plan_id === planId);
+    const entries = plan?.entries || [];
+    const entry = entries[entryIndex] || {};
+    const isReels = planEntryTargetKind(entry) === "reels";
+
+    if (isReels) {
+      const topic = String(entry.topic || "").trim();
+      const pending = openPendingReelsCreation(topic);
+      try {
+        const payload = await fetchJson(`/api/plans/${planId}/generate`, {
+          method: "POST",
+          body: JSON.stringify({ entry_index: entryIndex }),
+          timeout: 45000,
+        });
+        const draft = payload?.draft || null;
+        if (draft?.draft_id) {
+          finalizePendingReelsCreation(draft);
+          await reloadPlans();
+          await openReels(draft.draft_id);
+        }
+      } catch {
+        recoverPendingReelsCreation(String(entry.topic || "").trim(), pending.draft_id);
+      }
+      return;
+    }
+
     const apply = async () => {
       const payload = await fetchJson(`/api/plans/${planId}/generate`, {
         method: "POST",
         body: JSON.stringify({ entry_index: entryIndex }),
       });
       const draft = payload?.draft || null;
-      if (draft?.kind === "reels") {
-        state.reels = [draft, ...state.reels.filter((item) => item.draft_id !== draft.draft_id)];
-      } else if (draft?.draft_id) {
+      if (draft?.draft_id) {
         upsertDraftSummary(draftSummaryFromDraft(draft));
       }
       await reloadPlans();

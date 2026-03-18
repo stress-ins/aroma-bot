@@ -3,11 +3,11 @@ from __future__ import annotations
 import asyncio
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from sqlalchemy import or_, and_, select
 
 from bot.agents.planner import generate_plan_sync
-from bot.agents.reels_agent import generate_reels_director_sync, generate_reels_scenario_sync
+from bot.services.miniapp_reels import serialize_reels_draft
 from bot.handlers.planner import _parse_plan_entries
 from bot.handlers.threads import _format_trends
 from bot.services.drafts_store import save_draft, get_draft
@@ -16,7 +16,7 @@ from bot.services.miniapp_plans import serialize_plan
 from bot.services.plan_activation import activate_plan
 from bot.services.miniapp_presenter import serialize_draft
 from bot.services.miniapp_inbox import list_inbox_items
-from bot.services.miniapp_references import build_reference_context
+from miniapp.api.generation import complete_reels_v2_generation
 from bot.agents import generate_content_draft
 from bot.services.plans_store import get_plan, list_recent_plans, save_plan, update_plan_status
 from config import settings
@@ -227,7 +227,7 @@ async def generate_plan(ctx: TeamContext = Depends(_resolve_team_context)):
 
 
 @router.post("/api/plans/{plan_id}/generate")
-async def plan_generate(plan_id: str, payload: PlanGeneratePayload, _: None = Depends(_require_auth)):
+async def plan_generate(plan_id: str, payload: PlanGeneratePayload, background_tasks: BackgroundTasks, _: None = Depends(_require_auth)):
     if not settings.anthropic_api_key:
         raise HTTPException(status_code=400, detail="anthropic_not_configured")
 
@@ -245,29 +245,35 @@ async def plan_generate(plan_id: str, payload: PlanGeneratePayload, _: None = De
     target = normalize_plan_format(entry)
 
     if target == "reels":
-        loop = asyncio.get_running_loop()
-        reference_context = await build_reference_context()
-        scenario = await loop.run_in_executor(None, generate_reels_scenario_sync, topic, reference_context)
-        frames = await loop.run_in_executor(None, generate_reels_director_sync, topic, scenario)
+        goal_key = normalize_plan_goal(str(entry.get("goal", "")))
+        emotion = "calm"
+        reels_payload: dict = {
+            "goal": goal_key,
+            "emotion": emotion,
+            "concept": "",
+            "hook": "",
+            "scenario": "",
+            "caption": "",
+            "music_mood": "",
+            "frames": [],
+            "images_ready": 0,
+            "approved": False,
+            "shooting_deadline_days": 0,
+            "feedback": {},
+            "generation_pending": True,
+            "generation_stage": "concept",
+            "generation_message": "Собираю концепцию рилса.",
+        }
         saved = await save_draft(
-            kind="reels",
+            kind="reels_v2",
             topic=topic,
             source="/plan",
-            payload={
-                "scenario": scenario,
-                "storyboard": [
-                    {
-                        "timecode": frame.timecode,
-                        "scene": frame.scene,
-                        "angle": frame.angle,
-                        "gemini_prompt": frame.gemini_prompt,
-                    }
-                    for frame in frames
-                ],
-                "images_ready": 0,
-            },
+            payload=reels_payload,
         )
-        draft = await serialize_draft(saved)
+        background_tasks.add_task(complete_reels_v2_generation, saved.draft_id, topic, goal_key, emotion, None)
+        draft = await serialize_reels_draft(saved.draft_id)
+        if not draft:
+            raise HTTPException(status_code=500, detail="reels_not_saved")
         return {"kind": "draft", "draft": draft}
 
     goal_key = normalize_plan_goal(str(entry.get("goal", "")))
