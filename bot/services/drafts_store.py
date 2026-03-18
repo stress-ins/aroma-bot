@@ -76,13 +76,22 @@ class DraftRecord:
         )
 
 
-async def save_draft(kind: str, topic: str, source: str, payload: dict[str, Any]) -> DraftRecord:
+async def save_draft(
+    kind: str,
+    topic: str,
+    source: str,
+    payload: dict[str, Any],
+    team_id: str | None = None,
+    created_by: int | None = None,
+) -> DraftRecord:
     draft_id = uuid4().hex[:8]
     created_at = datetime.now(timezone.utc)
-    
+
     async with AsyncSessionLocal() as session:
         model = DraftModel(
             draft_id=draft_id,
+            team_id=team_id,
+            created_by=created_by,
             kind=kind,
             topic=topic.strip(),
             source=source.strip(),
@@ -101,10 +110,13 @@ async def list_recent_drafts(
     limit: int = 10,
     kind: str | None = None,
     newest_first: bool = False,
+    team_id: str | None = None,
 ) -> list[DraftRecord]:
     async with AsyncSessionLocal() as session:
         order = DraftModel.id.desc() if newest_first else DraftModel.id.asc()
         query = select(DraftModel).order_by(order)
+        if team_id:
+            query = query.filter(DraftModel.team_id == team_id)
         if kind:
             query = query.filter(DraftModel.kind == kind)
         query = query.limit(limit)
