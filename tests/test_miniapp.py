@@ -132,6 +132,19 @@ class TestMiniAppPresenter:
         preview = payload_preview("reels", {"scenario": "Сценарий с таймкодами"})
         assert "таймкодами" in preview
 
+    def test_payload_preview_threads_series_uses_summary(self):
+        preview = payload_preview("threads_series", {
+            "series_summary": "Опорная мысль серии про восстановление.",
+            "posts": [{"slot": 1, "text": "Утренний пост."}],
+        })
+        assert "восстановление" in preview
+
+    def test_payload_preview_threads_series_falls_back_to_post(self):
+        preview = payload_preview("threads_series", {
+            "posts": [{"slot": 1, "text": "Утренний пост серии."}],
+        })
+        assert "Утренний" in preview
+
     def test_payload_preview_uses_slides_for_carousel(self):
         preview = payload_preview("carousel", {"slides": ["Слайд 1", "Слайд 2", "Слайд 3"]})
         assert "Слайд 1" in preview
