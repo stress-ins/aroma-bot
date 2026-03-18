@@ -112,6 +112,7 @@ export function createSettingsModule(deps) {
     state.settingsInDetail = false;
     state.settingsSection = null;
     state.selectedKeywordTopicIdx = null;
+    state.mobileView = "list";
     loadSettings();
   }
 
