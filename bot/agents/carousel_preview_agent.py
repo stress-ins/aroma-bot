@@ -53,14 +53,14 @@ def analyze_text_placement(
             f"RULES:\n"
             f"- NEVER place text over the main subject of the image.\n"
             f"- Prefer uniform, empty, or blurred areas for text placement.\n"
-            f"- Avoid busy or detailed regions.\n\n"
+            f"- Avoid busy or detailed regions.\n"
+            f"- Place text in areas with lowest visual complexity.\n\n"
             f"Return ONLY a JSON object (no markdown) with these fields:\n"
             f"- \"top\": float 0.0-1.0 (vertical start as fraction of image height)\n"
             f"- \"left\": float 0.0-1.0 (horizontal start as fraction of image width)\n"
             f"- \"width\": float 0.0-1.0 (text box width as fraction)\n"
             f"- \"height\": float 0.0-1.0 (text box height as fraction)\n"
             f"- \"text_color\": \"light\" or \"dark\" (what text color works best)\n"
-            f"- \"dominant_warm\": boolean (true if image has warm dominant tones)\n"
         )
 
         raw = call_claude(
@@ -160,7 +160,20 @@ def render_preview_png(
     box_right  = box_left + box_w
     box_bottom = box_top  + box_h
 
-    # Typography (no blur/scrim — text rendered with stroke for readability)
+    # Bottom gradient fade for text readability (no full scrim)
+    grad_top = max(0, box_top - 40)
+    gradient = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    grad_draw = ImageDraw.Draw(gradient)
+    grad_h = box_bottom - grad_top
+    for i in range(grad_h):
+        alpha = int(160 * (i / grad_h) ** 1.5)
+        grad_draw.line(
+            [(0, grad_top + i), (w, grad_top + i)],
+            fill=(0, 0, 0, min(alpha, 160)),
+        )
+    img = Image.alpha_composite(img, gradient)
+
+    # Typography
     _POPPINS_BOLD   = "/usr/share/fonts/truetype/google-fonts/Poppins-Bold.ttf"
     _POPPINS_MEDIUM = "/usr/share/fonts/truetype/google-fonts/Poppins-Medium.ttf"
     FONT_SIZE   = 44
@@ -181,11 +194,7 @@ def render_preview_png(
 
     draw = ImageDraw.Draw(img)
 
-    # Warm white for warm-toned images, cool white/dark otherwise
-    if placement.get("text_color", "light") == "light":
-        text_color = (255, 248, 240) if placement.get("dominant_warm") else (255, 255, 255)
-    else:
-        text_color = (40, 28, 20)
+    text_color = (255, 255, 255) if placement.get("text_color", "light") == "light" else (40, 28, 20)
 
     max_text_w = box_w - PAD_H * 2
     lines = _wrap_text(draw, text, font, max_text_w)
@@ -195,30 +204,12 @@ def render_preview_png(
     y = box_bottom - PAD_BOTTOM - total_text_h
     y = max(y, box_top + 16)
 
-    # Soft shadow layer beneath stroked text
-    shadow_layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
-    shadow_draw = ImageDraw.Draw(shadow_layer)
-
-    for line in lines:
-        x = box_left + PAD_H
-        if y + FONT_SIZE > box_bottom:
-            break
-        shadow_draw.text((x + 2, y + 4), line, font=font, fill=(0, 0, 0, 140))
-        y += LINE_HEIGHT
-
-    img = Image.alpha_composite(img, shadow_layer)
-
-    # Re-calculate y for main text pass
-    draw = ImageDraw.Draw(img)
-    y = box_bottom - PAD_BOTTOM - total_text_h
-    y = max(y, box_top + 16)
-
     for line in lines:
         x = box_left + PAD_H
         if y + FONT_SIZE > box_bottom:
             break
         draw.text((x, y), line, font=font, fill=text_color,
-                  stroke_width=3, stroke_fill=(0, 0, 0, 180))
+                  stroke_width=5, stroke_fill=(0, 0, 0, 200))
         y += LINE_HEIGHT
 
     result = img.convert("RGB")
