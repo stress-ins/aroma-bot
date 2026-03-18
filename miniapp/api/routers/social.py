@@ -1,10 +1,12 @@
-"""Social accounts — connect status and OAuth URL generation for Mini App."""
+"""Social accounts — connect status, OAuth URL, and monitored accounts management."""
 from __future__ import annotations
 
 import logging
 
 from fastapi import APIRouter, Depends, Header, HTTPException
+from pydantic import BaseModel
 
+from bot.services.brand_settings_store import get_brand_settings, update_brand_settings
 from bot.services.mentions_store import get_token, list_tokens
 from bot.services.social_oauth import (
     build_instagram_authorize_url,
@@ -93,3 +95,84 @@ async def social_connect_url(
         )
 
     return {"url": url, "platform": platform}
+
+
+# ---------------------------------------------------------------------------
+# Monitored accounts management
+# ---------------------------------------------------------------------------
+
+_MAX_MONITORED_PER_PLATFORM = 20
+
+
+class MonitoredAccountPayload(BaseModel):
+    platform: str  # "instagram" | "threads"
+    username: str
+
+
+@router.get("/api/social/monitored-accounts")
+async def list_monitored_accounts(
+    ctx: TeamContext = Depends(require_team_role("viewer")),
+):
+    """List all monitored IG + Threads accounts for this team."""
+    bs = await get_brand_settings(ctx.team_id)
+    return {
+        "instagram": bs.instagram_accounts or [],
+        "threads": bs.threads_accounts or [],
+    }
+
+
+@router.post("/api/social/monitored-accounts")
+async def add_monitored_account(
+    payload: MonitoredAccountPayload,
+    ctx: TeamContext = Depends(require_team_role("editor")),
+):
+    """Add a monitored account for this team."""
+    if payload.platform not in ("instagram", "threads"):
+        raise HTTPException(status_code=400, detail="unsupported_platform")
+
+    username = payload.username.strip().lstrip("@")
+    if not username:
+        raise HTTPException(status_code=400, detail="empty_username")
+
+    bs = await get_brand_settings(ctx.team_id)
+    field = f"{payload.platform}_accounts"
+    accounts: list = getattr(bs, field, None) or []
+
+    # Check limit
+    if len(accounts) >= _MAX_MONITORED_PER_PLATFORM:
+        raise HTTPException(status_code=400, detail="max_accounts_reached")
+
+    # Check duplicate
+    if any(a.get("username", "").lower() == username.lower() for a in accounts):
+        raise HTTPException(status_code=400, detail="already_monitored")
+
+    new_entry = {"username": username, "status": "checking"}
+    accounts.append(new_entry)
+    await update_brand_settings(ctx.team_id, **{field: accounts})
+
+    return {"added": new_entry, "total": len(accounts)}
+
+
+@router.delete("/api/social/monitored-accounts/{platform}/{username}")
+async def remove_monitored_account(
+    platform: str,
+    username: str,
+    ctx: TeamContext = Depends(require_team_role("editor")),
+):
+    """Remove a monitored account."""
+    if platform not in ("instagram", "threads"):
+        raise HTTPException(status_code=400, detail="unsupported_platform")
+
+    username_clean = username.strip().lstrip("@").lower()
+    bs = await get_brand_settings(ctx.team_id)
+    field = f"{platform}_accounts"
+    accounts: list = getattr(bs, field, None) or []
+
+    original_len = len(accounts)
+    accounts = [a for a in accounts if a.get("username", "").lower() != username_clean]
+
+    if len(accounts) == original_len:
+        raise HTTPException(status_code=404, detail="account_not_found")
+
+    await update_brand_settings(ctx.team_id, **{field: accounts})
+    return {"removed": username_clean, "remaining": len(accounts)}

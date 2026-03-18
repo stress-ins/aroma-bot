@@ -104,7 +104,7 @@ def _setup_mounts_and_routers():
     from miniapp.api.routers import (
         blend_constructor, carousel, create, drafts, keywords, mentions,
         misc, plans, publish, recommendations, references, reels, social,
-        teams, threads_series, tokens, trends, user,
+        social_trends, teams, threads_series, tokens, trends, user,
     )
 
     app.mount("/generated/reels_assets", StaticFiles(directory=ASSETS_DIR), name="reels-generated-assets")
@@ -120,7 +120,7 @@ def _setup_mounts_and_routers():
     for _router in (
         blend_constructor.router, drafts.router, carousel.router, reels.router,
         plans.router, recommendations.router, references.router, create.router,
-        keywords.router, misc.router, publish.router, social.router,
+        keywords.router, misc.router, publish.router, social.router, social_trends.router,
         teams.router, threads_series.router, trends.router, mentions.router,
         tokens.router, user.router,
     ):
