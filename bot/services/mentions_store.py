@@ -166,6 +166,28 @@ async def get_token(platform: str) -> PlatformTokenModel | None:
         return result.scalar_one_or_none()
 
 
+async def get_token_for_team(platform: str, team_id: str) -> PlatformTokenModel | None:
+    """Get OAuth token for a specific team + platform."""
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(
+            select(PlatformTokenModel).filter(
+                PlatformTokenModel.platform == platform,
+                PlatformTokenModel.team_id == team_id,
+            )
+        )
+        token = result.scalar_one_or_none()
+        if token is not None:
+            return token
+        # Fallback to global (team_id=None) token
+        result = await session.execute(
+            select(PlatformTokenModel).filter(
+                PlatformTokenModel.platform == platform,
+                PlatformTokenModel.team_id.is_(None),
+            )
+        )
+        return result.scalar_one_or_none()
+
+
 async def upsert_token(
     platform: str,
     access_token: str,
