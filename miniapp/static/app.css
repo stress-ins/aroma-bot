@@ -3348,9 +3348,13 @@ body.tg-theme-dark .concept-card {
 
   .actions-row > button,
   .actions > button,
-  .prompt-actions > button {
+  .prompt-actions > button,
+  .detail-actions > button {
     flex: 1 1 100%;
     width: 100%;
+  }
+  .detail-actions > .danger-button {
+    margin-left: 0;
   }
 
   .layout {
@@ -3772,7 +3776,8 @@ body.is-mobile-layout .topbar-main .topbar-copy .eyebrow {
 body.is-mobile-layout .topbar-main .topbar-copy {
   display: flex;
   align-items: center;
-  gap: 0;
+  justify-content: space-between;
+  gap: var(--space-2, 8px);
   padding-right: 88px;
 }
 
