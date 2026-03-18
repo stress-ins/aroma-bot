@@ -245,6 +245,15 @@ async def publish_series_now(draft_id: str, _: None = Depends(_require_auth)):
         if i < len(posts) - 1:
             await asyncio.sleep(30)
 
+    # Notify admin about failed slots
+    error_slots = [r for r in results if r.get("status") == "error"]
+    if error_slots:
+        from bot.handlers.monitor import notify_owner
+        await notify_owner(
+            f"⚠️ Publish-now failed for {draft_id}:\n"
+            + "\n".join(f"  {r['slot']}: {r['error']}" for r in error_slots)
+        )
+
     updated = await get_draft(draft_id)
     return {
         "draft_id": draft_id,

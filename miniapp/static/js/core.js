@@ -535,6 +535,7 @@ export function createCoreModule(deps) {
       }
       return result;
     } catch (error) {
+      showUiNotice(error.message || "Неизвестная ошибка", "error");
       if (target) {
         target.disabled = false;
         target.classList.remove("is-busy");
