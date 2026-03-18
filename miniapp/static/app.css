@@ -5047,3 +5047,61 @@ body.tg-theme-dark .reco-cta-btn { color: #d4845e; }
   line-height: 1;
 }
 .chip-remove-btn:hover { color: var(--bad, #dc2626); }
+
+/* ═══════════════════════════════════════
+   SECTION: iPhone-style Settings Menu
+   ═══════════════════════════════════════ */
+.settings-menu { padding: 0; }
+.settings-menu-group { margin-bottom: 20px; }
+.settings-menu-group-header {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--hint);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0 16px 6px;
+}
+.settings-menu-list {
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.settings-menu-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background var(--duration-fast) ease;
+  border-bottom: 0.5px solid var(--border);
+}
+.settings-menu-list > .settings-menu-row:last-child { border-bottom: none; }
+.settings-menu-row:active { background: var(--surface-2); }
+.settings-menu-icon {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  color: #fff;
+}
+.settings-menu-icon i[data-lucide] { width: 18px; height: 18px; }
+.settings-menu-text {
+  flex: 1;
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--text);
+  line-height: 1.3;
+}
+.settings-menu-badge {
+  font-size: 14px;
+  color: var(--hint);
+  white-space: nowrap;
+}
+.settings-menu-chevron {
+  color: var(--hint);
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+.settings-menu-chevron i[data-lucide] { width: 16px; height: 16px; }

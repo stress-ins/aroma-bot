@@ -95,6 +95,7 @@ export function registerWindowBridge(deps) {
     removeTeamMember,
     activatePromo,
     generatePromos,
+    goBackToSettings,
     moveDraftToTeam,
     switchAccountsTeam,
     openRecommendationsWizard,
@@ -215,6 +216,7 @@ export function registerWindowBridge(deps) {
   window.removeTeamMember = removeTeamMember;
   window.activatePromo = activatePromo;
   window.generatePromos = generatePromos;
+  window.goBackToSettings = goBackToSettings;
   window.moveDraftToTeam = moveDraftToTeam;
   window.switchAccountsTeam = switchAccountsTeam;
   window._selectSchedulerDate = _selectSchedulerDate;
@@ -271,6 +273,7 @@ export function registerWindowBridge(deps) {
   window.openSettingsSection = async (section) => {
     const valid = ["keywords", "brand", "accounts", "status", "team", "promo"];
     state.settingsSection = valid.includes(section) ? section : "status";
+    state.settingsInDetail = true;
     if (state.tab !== "settings") {
       setMode("content");
       setTab("settings");
