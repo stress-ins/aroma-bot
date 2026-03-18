@@ -2040,8 +2040,8 @@ body.tg-theme-dark .danger-button {
     min-height: 0;
     padding-top: var(--tg-content-inset-top, env(safe-area-inset-top, 0px));
     padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
-    padding-left: 0;
-    padding-right: 0;
+    padding-left: 8px;
+    padding-right: 8px;
     overflow-y: auto;
     /* Full-screen scroll container — no card frame so it doesn't look "cut off" */
     border: none;
@@ -2074,17 +2074,14 @@ body.tg-theme-dark .danger-button {
     padding-right: 0;
   }
 
-  /* Sections stretch edge-to-edge, separated by inset bottom border */
+  /* Sections keep their full card styling (border + radius from base .section) */
   body.is-mobile-layout .detail-grid .section {
-    border-radius: 0;
-    margin-left: 0;
-    margin-right: 0;
-    border-left: none;
-    border-right: none;
-    border-bottom: none;
     position: relative;
   }
   body.is-mobile-layout .detail-grid .section::after {
+    display: none; /* Use base border-bottom instead of inset pseudo-divider */
+  }
+  body.is-mobile-layout .detail-grid .section-placeholder::after {
     content: '';
     position: absolute;
     bottom: 0;
