@@ -10,6 +10,7 @@ import shutil
 from pathlib import Path
 
 import pytest
+from sqlalchemy import create_engine, text
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
 from db.models import Base
@@ -35,6 +36,27 @@ async def prod_db(monkeypatch, tmp_path):
 
     db_path = tmp_path / "prod_copy.db"
     shutil.copy2(PROD_DUMP, db_path)
+
+    # Migrate the prod copy to current schema (add missing columns/tables)
+    sync_engine = create_engine(f"sqlite:///{db_path}")
+    # First create any entirely new tables
+    Base.metadata.create_all(sync_engine)
+    # Then add missing columns to existing tables
+    with sync_engine.connect() as conn:
+        for table in Base.metadata.sorted_tables:
+            try:
+                existing = {r[1] for r in conn.execute(text(f"PRAGMA table_info('{table.name}')")).fetchall()}
+            except Exception:
+                continue
+            for col in table.columns:
+                if col.name not in existing:
+                    col_type = col.type.compile(dialect=sync_engine.dialect)
+                    try:
+                        conn.execute(text(f"ALTER TABLE {table.name} ADD COLUMN {col.name} {col_type}"))
+                    except Exception:
+                        pass
+        conn.commit()
+    sync_engine.dispose()
 
     url = f"sqlite+aiosqlite:///{db_path}"
     engine = create_async_engine(url, echo=False)
