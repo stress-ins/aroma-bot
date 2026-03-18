@@ -430,8 +430,9 @@ export function createCarouselModule(deps) {
       </div>
     `;
     document.body.appendChild(modal);
+    document.body.style.overflow = "hidden";
     if (window.lucide) lucide.createIcons();
-    const cleanup = () => { URL.revokeObjectURL(imageUrl); modal.remove(); };
+    const cleanup = () => { document.body.style.overflow = ""; URL.revokeObjectURL(imageUrl); modal.remove(); };
     modal.querySelector(".preview-modal-close").addEventListener("click", cleanup);
     modal.addEventListener("click", (e) => { if (e.target === modal) cleanup(); });
   }
