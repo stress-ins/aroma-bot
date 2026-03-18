@@ -34,6 +34,8 @@ export function createSettingsModule(deps) {
         <button class="tab-button${activeSection === "keywords" ? " active" : ""}" type="button" onclick="openSettingsSection('keywords')">${uiIcon("text")}<span>Ключи</span></button>
         <button class="tab-button${activeSection === "brand" ? " active" : ""}" type="button" onclick="openSettingsSection('brand')">${uiIcon("card")}<span>Бренд</span></button>
         <button class="tab-button${activeSection === "accounts" ? " active" : ""}" type="button" onclick="openSettingsSection('accounts')">${uiIcon("link")}<span>Аккаунты</span></button>
+        <button class="tab-button${activeSection === "team" ? " active" : ""}" type="button" onclick="openSettingsSection('team')">${uiIcon("users")}<span>Команда</span></button>
+        <button class="tab-button${activeSection === "promo" ? " active" : ""}" type="button" onclick="openSettingsSection('promo')">${uiIcon("ticket")}<span>Промокод</span></button>
       </section>
     `;
   }
@@ -296,6 +298,14 @@ export function createSettingsModule(deps) {
     }
     if (state.settingsSection === "accounts") {
       renderAccounts();
+      return;
+    }
+    if (state.settingsSection === "team") {
+      renderTeam();
+      return;
+    }
+    if (state.settingsSection === "promo") {
+      renderPromo();
       return;
     }
     if (!state.status) {
@@ -577,6 +587,281 @@ export function createSettingsModule(deps) {
     }
   }
 
+  // ── Team management ──────────────────────────────────────────────────────
+
+  async function renderTeam() {
+    elements.listTitle.textContent = "Настройки";
+    elements.draftCount.textContent = "Команда";
+    elements.draftList.innerHTML = renderSettingsSwitcher("team");
+    elements.draftDetail.innerHTML = renderBackButton() + `
+      <div class="detail-grid">
+        <div class="detail-top">
+          <p class="eyebrow">${uiIcon("users")}<span>Настройки</span></p>
+          <h2 class="detail-title">Команда</h2>
+        </div>
+        <div id="teamContent" class="section">
+          <div class="account-card skeleton"><div class="skeleton-line"></div></div>
+        </div>
+      </div>
+    `;
+    enterDetailView();
+
+    try {
+      const teamsData = await fetchJson("/api/teams");
+      const teams = teamsData?.items || [];
+      const container = document.getElementById("teamContent");
+      if (!container) return;
+
+      if (teams.length === 0) {
+        container.innerHTML = `
+          <p class="settings-hint">У вас пока нет команды.</p>
+          <div class="keyword-form keyword-add-row">
+            <input id="newTeamName" type="text" placeholder="Название команды">
+            <button class="secondary-button" type="button" onclick="createNewTeam()">Создать</button>
+          </div>
+        `;
+        return;
+      }
+
+      let html = "";
+      for (const t of teams) {
+        const detail = await fetchJson(`/api/teams/${t.team_id}`);
+        const isOwner = detail.role === "owner";
+        const roleLabels = { owner: "Владелец", editor: "Редактор", viewer: "Читатель" };
+
+        const membersHtml = (detail.members || []).map((m) => {
+          const roleLabel = roleLabels[m.role] || m.role;
+          const removeBtn = isOwner && m.telegram_id !== detail.created_by
+            ? ` <button class="chip-remove-btn" type="button" onclick="removeTeamMember('${escapeHtml(t.team_id)}', ${m.telegram_id})" title="Удалить">&times;</button>`
+            : "";
+          return `
+            <div class="team-member-row">
+              <span class="team-member-id">${m.telegram_id}</span>
+              <span class="keyword-chip">${escapeHtml(roleLabel)}${removeBtn}</span>
+            </div>`;
+        }).join("");
+
+        const inviteBtn = isOwner
+          ? `<button class="secondary-button" type="button" onclick="createTeamInvite('${escapeHtml(t.team_id)}')">${uiIcon("user-plus")}<span>Пригласить</span></button>`
+          : "";
+
+        html += `
+          <section class="section settings-section">
+            <h3>${uiIcon("users")}<span>${escapeHtml(t.name)}</span></h3>
+            <p class="settings-hint">Ваша роль: <strong>${escapeHtml(roleLabels[detail.role] || detail.role)}</strong></p>
+            <div class="team-members-list">${membersHtml}</div>
+            <div id="inviteResult-${t.team_id}"></div>
+            ${inviteBtn}
+          </section>
+        `;
+      }
+
+      html += `
+        <section class="section settings-section">
+          <h3>Создать новую команду</h3>
+          <div class="keyword-form keyword-add-row">
+            <input id="newTeamName" type="text" placeholder="Название команды">
+            <button class="secondary-button" type="button" onclick="createNewTeam()">Создать</button>
+          </div>
+        </section>
+      `;
+
+      container.innerHTML = html;
+    } catch (err) {
+      const container = document.getElementById("teamContent");
+      if (container) container.innerHTML = `<p class="plan-entry-hint">Не удалось загрузить команды.</p>`;
+    }
+  }
+
+  async function createNewTeam() {
+    const input = document.getElementById("newTeamName");
+    const name = String(input?.value || "").trim();
+    if (!name) { input?.focus(); return; }
+    try {
+      await fetchJson("/api/teams", { method: "POST", body: JSON.stringify({ name }) });
+      showUiNotice("Команда создана", "success");
+      renderTeam();
+    } catch (_err) {
+      showUiNotice("Не удалось создать команду", "error");
+    }
+  }
+
+  async function createTeamInvite(teamId) {
+    try {
+      const result = await fetchJson(`/api/teams/${teamId}/invites`, {
+        method: "POST",
+        body: JSON.stringify({ role: "editor", max_uses: 5 }),
+      });
+      if (result?.deep_link) {
+        const container = document.getElementById(`inviteResult-${teamId}`);
+        if (container) {
+          container.innerHTML = `
+            <div class="invite-link-box">
+              <p class="settings-hint">Отправьте ссылку коллеге в Telegram:</p>
+              <div class="keyword-form keyword-add-row">
+                <input type="text" value="${escapeHtml(result.deep_link)}" readonly onclick="this.select()">
+                <button class="secondary-button" type="button" onclick="copyText('${escapeHtml(result.deep_link)}')">Копировать</button>
+              </div>
+            </div>
+          `;
+        }
+        showUiNotice("Ссылка-приглашение создана", "success");
+      }
+    } catch (_err) {
+      showUiNotice("Не удалось создать приглашение", "error");
+    }
+  }
+
+  async function removeTeamMember(teamId, memberId) {
+    const confirmed = await confirmAction("Удалить участника из команды?");
+    if (!confirmed) return;
+    try {
+      await fetchJson(`/api/teams/${teamId}/members/${memberId}`, { method: "DELETE" });
+      showUiNotice("Участник удалён", "success");
+      renderTeam();
+    } catch (_err) {
+      showUiNotice("Не удалось удалить участника", "error");
+    }
+  }
+
+  // ── Promo code activation + admin management ─────────────────────────────
+
+  async function renderPromo() {
+    elements.listTitle.textContent = "Настройки";
+    elements.draftCount.textContent = "Промокод";
+    elements.draftList.innerHTML = renderSettingsSwitcher("promo");
+
+    // Load user plan to show current subscription
+    let planInfo = "";
+    try {
+      const plan = await fetchJson("/api/user/plan");
+      const tierLabels = { free: "Бесплатный", student: "Студент", expert: "Эксперт" };
+      const tierLabel = tierLabels[plan.effective_tier] || plan.effective_tier;
+      const trialInfo = plan.trial_ends_at
+        ? ` · до ${new Date(plan.trial_ends_at).toLocaleDateString("ru-RU", { day: "numeric", month: "short", year: "numeric" })}`
+        : "";
+      planInfo = `
+        <section class="section settings-section">
+          <h3>${uiIcon("crown")}<span>Текущая подписка</span></h3>
+          <p class="promo-plan-badge"><strong>${escapeHtml(tierLabel)}</strong>${trialInfo}</p>
+        </section>
+      `;
+    } catch (_err) { /* ignore */ }
+
+    // Check if admin
+    let adminHtml = "";
+    try {
+      const promos = await fetchJson("/api/admin/promos");
+      // If we get here, user is admin
+      const rows = (promos.items || []).map((p) => {
+        const exp = p.expires_at ? new Date(p.expires_at).toLocaleDateString("ru-RU") : "∞";
+        return `
+          <tr>
+            <td><code>${escapeHtml(p.code)}</code></td>
+            <td>${escapeHtml(p.tier)}</td>
+            <td>${p.duration_days}д</td>
+            <td>${p.uses_count}/${p.max_uses}</td>
+            <td>${exp}</td>
+          </tr>`;
+      }).join("");
+
+      adminHtml = `
+        <section class="section settings-section">
+          <h3>${uiIcon("shield")}<span>Управление промокодами</span></h3>
+          <div class="promo-gen-form">
+            <div class="keyword-add-row">
+              <select id="promoTier">
+                <option value="expert">Expert</option>
+                <option value="student">Student</option>
+              </select>
+              <input id="promoDays" type="number" value="30" min="1" max="365" placeholder="Дней">
+              <input id="promoCount" type="number" value="1" min="1" max="50" placeholder="Кол-во">
+            </div>
+            <div class="keyword-add-row" style="margin-top:8px">
+              <input id="promoPrefix" type="text" value="AROMA" placeholder="Префикс">
+              <button class="secondary-button" type="button" onclick="generatePromos()">Создать</button>
+            </div>
+          </div>
+          <div id="promoGenResult"></div>
+          ${promos.items.length > 0 ? `
+            <div class="promo-table-wrap">
+              <table class="promo-table">
+                <thead><tr><th>Код</th><th>Тариф</th><th>Срок</th><th>Исп.</th><th>Истекает</th></tr></thead>
+                <tbody>${rows}</tbody>
+              </table>
+            </div>
+          ` : `<p class="plan-entry-hint">Промокодов пока нет.</p>`}
+        </section>
+      `;
+    } catch (_err) {
+      // Not admin — that's fine
+    }
+
+    elements.draftDetail.innerHTML = renderBackButton() + `
+      <div class="detail-grid">
+        <div class="detail-top">
+          <p class="eyebrow">${uiIcon("ticket")}<span>Настройки</span></p>
+          <h2 class="detail-title">Промокод</h2>
+        </div>
+        ${planInfo}
+        <section class="section settings-section">
+          <h3>${uiIcon("ticket")}<span>Активировать промокод</span></h3>
+          <p class="settings-hint">Введите код, чтобы активировать подписку.</p>
+          <div class="keyword-form keyword-add-row">
+            <input id="promoCodeInput" type="text" placeholder="AROMA-XXXXXX" style="text-transform:uppercase">
+            <button class="secondary-button" type="button" onclick="activatePromo()">Активировать</button>
+          </div>
+          <div id="promoActivateResult"></div>
+        </section>
+        ${adminHtml}
+      </div>
+    `;
+    enterDetailView();
+  }
+
+  async function activatePromo() {
+    const input = document.getElementById("promoCodeInput");
+    const code = String(input?.value || "").trim().toUpperCase();
+    if (!code) { input?.focus(); return; }
+    const resultEl = document.getElementById("promoActivateResult");
+    try {
+      const result = await fetchJson("/api/promo/activate", {
+        method: "POST",
+        body: JSON.stringify({ code }),
+      });
+      const endsAt = result.ends_at
+        ? new Date(result.ends_at).toLocaleDateString("ru-RU", { day: "numeric", month: "short", year: "numeric" })
+        : "";
+      if (resultEl) resultEl.innerHTML = `<p class="promo-success">Подписка активирована: <strong>${escapeHtml(result.tier)}</strong>${endsAt ? ` до ${endsAt}` : ""}</p>`;
+      if (input) input.value = "";
+      showUiNotice("Промокод активирован!", "success");
+    } catch (err) {
+      if (resultEl) resultEl.innerHTML = `<p class="promo-error">Промокод не найден или истёк.</p>`;
+      showUiNotice("Не удалось активировать промокод", "error");
+    }
+  }
+
+  async function generatePromos() {
+    const tier = document.getElementById("promoTier")?.value || "expert";
+    const days = parseInt(document.getElementById("promoDays")?.value || "30", 10);
+    const count = parseInt(document.getElementById("promoCount")?.value || "1", 10);
+    const prefix = document.getElementById("promoPrefix")?.value?.trim() || "AROMA";
+    const resultEl = document.getElementById("promoGenResult");
+    try {
+      const result = await fetchJson("/api/admin/promos", {
+        method: "POST",
+        body: JSON.stringify({ tier, days, count, prefix }),
+      });
+      const codes = (result.codes || []).map((c) => `<code>${escapeHtml(c)}</code>`).join("<br>");
+      if (resultEl) resultEl.innerHTML = `<div class="promo-gen-codes"><p class="settings-hint">Созданные коды:</p>${codes}</div>`;
+      showUiNotice(`Создано ${result.codes.length} промокодов`, "success");
+      // Reload to show in table
+      setTimeout(() => renderPromo(), 1500);
+    } catch (_err) {
+      showUiNotice("Не удалось создать промокоды", "error");
+    }
+  }
+
   return {
     addKeywordItem,
     removeKeywordItem,
@@ -600,5 +885,12 @@ export function createSettingsModule(deps) {
     loadImageModels,
     renderAccounts,
     connectPlatform,
+    renderTeam,
+    createNewTeam,
+    createTeamInvite,
+    removeTeamMember,
+    renderPromo,
+    activatePromo,
+    generatePromos,
   };
 }

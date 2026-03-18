@@ -99,6 +99,7 @@ let renderInbox, renderStatus, renderPlans, renderReels, renderReelsDetail, rend
 let addRewrite, removeRewrite, savePlatformTone, saveUploadPostPrefs, saveImageModels, connectPlatform;
 let addKeywordItem, removeKeywordItem, openKeywordTopic;
 let addForbiddenPhrase, removeForbiddenPhrase;
+let createNewTeam, createTeamInvite, removeTeamMember, activatePromo, generatePromos;
 let saveContentReviewDraft, saveThreadsReviewDraft, polishContentDraft, refreshDraftMetrics;
 let loadCurrentTab, safeLoadCurrentTab, retryCurrentTab;
 let publishDraft, cancelPublishSchedule, loadPublishStatus;
@@ -1547,6 +1548,8 @@ const { renderBrand: renderBrandImpl, loadForbiddenPhrases: loadForbiddenPhrases
   addRewrite, removeRewrite, savePlatformTone, saveUploadPostPrefs,
   saveImageModels,
   connectPlatform,
+  createNewTeam, createTeamInvite, removeTeamMember,
+  activatePromo, generatePromos,
 } = _settingsMod);
 
 ({
@@ -1835,6 +1838,11 @@ registerWindowBridge({
   saveUploadPostPrefs,
   saveImageModels,
   connectPlatform,
+  createNewTeam,
+  createTeamInvite,
+  removeTeamMember,
+  activatePromo,
+  generatePromos,
   setPlanStatusFilter,
   setPlanPlatformFilter,
   setPlanDateFilter,
