@@ -1433,6 +1433,7 @@ const {
   confirmAction,
   mergeReelsIntoState,
   scheduleReelsRefresh,
+  showUiNotice,
   callbacks: reelsCallbacks,
 });
 
@@ -1797,6 +1798,7 @@ const onboarding = createOnboardingModule({ state, icon });
   scheduleReelsRefresh,
   isCurrentReelsDetail,
   isEditingDetailForm,
+  showUiNotice,
   callbacks: {
     renderReelsDetailMarkup,
   },

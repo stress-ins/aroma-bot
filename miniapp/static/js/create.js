@@ -47,8 +47,8 @@ export function createCreateModule(deps) {
           dropdown.innerHTML = `<div class="suggest-topics-loading">Нет тем</div>`;
           return;
         }
-        dropdown.innerHTML = data.topics.map(t =>
-          `<button type="button" class="suggest-topic-item">${escapeHtml(t)}</button>`
+        dropdown.innerHTML = `<p class="suggest-topics-hint">Нажмите на тему, чтобы выбрать</p>` + data.topics.map(t =>
+          `<button type="button" class="suggest-topic-item" role="option">${escapeHtml(t)}</button>`
         ).join("");
         dropdown.querySelectorAll(".suggest-topic-item").forEach(item => {
           item.addEventListener("click", () => {
@@ -199,12 +199,6 @@ export function createCreateModule(deps) {
         <section class="section create-tool-panel">
           <h3>СОЗДАТЬ РИЛС</h3>
           <form class="create-form" data-create-reels>
-            <label>Тема рилса
-              <textarea name="topic" placeholder="Например: момент когда тело само переключается в отдых через запах"></textarea>
-            </label>
-            <p class="field-help">Опишите через сцену, состояние или ощущение — так легче получить рабочий сценарий.</p>
-            <button type="button" class="suggest-topic-btn">${uiIcon("zap")}<span>Предложи тему</span></button>
-            <div class="suggest-topics-dropdown" hidden></div>
             <div class="field-grid">
               <label>Цель публикации
                 <select name="goal">
@@ -225,6 +219,12 @@ export function createCreateModule(deps) {
                 </select>
               </label>
             </div>
+            <label>Тема рилса
+              <textarea name="topic" placeholder="Например: момент когда тело само переключается в отдых через запах"></textarea>
+            </label>
+            <p class="field-help">Опишите через сцену, состояние или ощущение — так легче получить рабочий сценарий.</p>
+            <button type="button" class="suggest-topic-btn">${uiIcon("zap")}<span>Предложи тему</span></button>
+            <div class="suggest-topics-dropdown" hidden></div>
             <button class="primary-button" type="submit" disabled>Создать рилс</button>
           </form>
         </section>

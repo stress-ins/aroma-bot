@@ -25,6 +25,7 @@ export function createReelsModule(deps) {
     confirmAction,
     mergeReelsIntoState,
     scheduleReelsRefresh,
+    showUiNotice,
     callbacks,
   } = deps;
 
@@ -261,7 +262,9 @@ export function createReelsModule(deps) {
     reelsPromptSaveTimers[key] = window.setTimeout(() => {
       const prompt = String(state.pendingReelsPrompts[key] || "").trim();
       if (!prompt) return;
-      void persistReelsFramePrompt(draftId, frameIndex, prompt).catch(() => {});
+      void persistReelsFramePrompt(draftId, frameIndex, prompt).then(() => {
+        if (showUiNotice) showUiNotice("Промпт сохранён", "success");
+      }).catch(() => {});
     }, 600);
   }
 
@@ -297,7 +300,9 @@ export function createReelsModule(deps) {
     state.pendingReelsNotes[key] = String(value || "");
     window.clearTimeout(reelsNoteSaveTimers[key]);
     reelsNoteSaveTimers[key] = window.setTimeout(() => {
-      void persistReelsFrameNote(draftId, frameIndex, state.pendingReelsNotes[key]).catch(() => {});
+      void persistReelsFrameNote(draftId, frameIndex, state.pendingReelsNotes[key]).then(() => {
+        if (showUiNotice) showUiNotice("Заметка сохранена", "success");
+      }).catch(() => {});
     }, 600);
   }
 
@@ -337,9 +342,11 @@ export function createReelsModule(deps) {
       ? `Кадры и промпты <span class="meta">${readyCount} / ${frameItems.length} готовы</span>`
       : "Кадры и промпты";
     const swipeHint = frameItems.length > 1 ? `<span class="storyboard-swipe-hint"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>свайп<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>` : "";
+    const dotIndicator = frameItems.length > 1 ? `<div class="storyboard-dots">${frameItems.map((_, i) => `<span class="storyboard-dot" data-idx="${i}"></span>`).join("")}</div>` : "";
     return `
       <section class="section">
         <h3>${sectionHeadingIcon("Кадры и промпты")}${header}${swipeHint}</h3>
+        ${dotIndicator}
         <div class="storyboard">
           ${frameItems.map((frame, index) => {
             const prompt = bufferedReelsPrompt(draftId, index, frame.gemini_prompt || "");
@@ -424,6 +431,7 @@ export function createReelsModule(deps) {
           method: "PATCH",
           body: JSON.stringify({ frame_id: frameId, overlay_text: value }),
         });
+        if (showUiNotice) showUiNotice("Сохранено", "success");
       } catch (_e) {}
     }, 600);
   }
@@ -570,9 +578,11 @@ export function createReelsModule(deps) {
     } else if (imageStatus === "ready" && imageUrl) {
       imageAreaHtml = `<img src="${escapeHtml(imageUrl)}" style="width:100%;height:100%;object-fit:cover;cursor:pointer" alt="Кадр ${n}" data-overlay="${escapeHtml(frame.overlay_text || '')}" data-frame-id="${escapeHtml(frameId)}" data-draft-id="${escapeHtml(draftId)}" onclick="openReelsPreview(this.src, this.dataset.overlay, this.dataset.frameId, this.dataset.draftId)" />`;
     } else if (imageStatus === "error") {
+      const errorReason = frame.error_message || frame.error || "";
       imageAreaHtml = `
         <div class="reels-frame-v2-image-generating">
           <span style="color:var(--danger);font-size:13px">Ошибка генерации</span>
+          ${errorReason ? `<span style="color:var(--hint);font-size:11px;margin-top:4px;text-align:center">${escapeHtml(errorReason)}</span>` : ""}
           <button class="secondary-button compact" style="margin-top:8px" onclick="regenFrameImage('${escapeHtml(draftId)}', '${escapeHtml(frameId)}', this)">↺ Повторить</button>
         </div>
       `;
@@ -627,12 +637,41 @@ export function createReelsModule(deps) {
     `;
   }
 
+  // ── V2 stepper ───────────────────────────────────────────────────────
+
+  function reelsStepperMarkup(status, generationPending) {
+    const steps = [
+      { key: "generating", label: "Генерация" },
+      { key: "draft", label: "Черновик" },
+      { key: "approved", label: "Съёмка" },
+      { key: "video_uploaded", label: "Видео" },
+      { key: "published", label: "Публикация" },
+    ];
+    let activeIdx = 0;
+    if (generationPending) {
+      activeIdx = 0;
+    } else if (status === "draft") {
+      activeIdx = 1;
+    } else if (status === "approved") {
+      activeIdx = 2;
+    } else if (status === "video_uploaded" || status === "checking" || status === "passed") {
+      activeIdx = 3;
+    } else if (status === "publishing" || status === "published") {
+      activeIdx = 4;
+    }
+    return `<div class="reels-stepper">${steps.map((s, i) => {
+      const cls = i < activeIdx ? "done" : i === activeIdx ? "active" : "";
+      return `<div class="reels-step ${cls}"><span class="reels-step-dot"></span><span class="reels-step-label">${s.label}</span></div>`;
+    }).join("")}</div>`;
+  }
+
   // ── V2 screen renderers ────────────────────────────────────────────────
 
   function renderScreen2Generating(r) {
     return `
       <div class="detail-grid">
         ${renderBackButton()}
+        ${reelsStepperMarkup(r.status, true)}
         <div class="detail-top">
           <p class="eyebrow">🎬 <span>РИЛС · Генерируется</span></p>
           <h2 class="detail-title">${escapeHtml(r.topic)}</h2>
@@ -671,6 +710,7 @@ export function createReelsModule(deps) {
     return `
       <div class="detail-grid">
         ${renderBackButton()}
+        ${reelsStepperMarkup(r.status, false)}
         <div class="detail-top">
           <p class="eyebrow">🎬 <span>РИЛС</span></p>
           <h2 class="detail-title">${escapeHtml(r.topic)}</h2>
@@ -736,6 +776,12 @@ export function createReelsModule(deps) {
             <button class="secondary-button compact" type="button" onclick="regenCaption('${r.draft_id}', this)">↺ Перегенерировать описание</button>
           </div>
         </section>
+
+        <div class="actions-row" style="justify-content:center;padding:8px 0">
+          <button class="secondary-button" type="button" onclick="openCreateTool('reels')">
+            ${actionLabel("reel", "Создать ещё один рилс")}
+          </button>
+        </div>
       </div>
     `;
   }
@@ -751,6 +797,7 @@ export function createReelsModule(deps) {
     return `
       <div class="detail-grid">
         ${renderBackButton()}
+        ${reelsStepperMarkup(r.status, false)}
         <div class="detail-top">
           <p class="eyebrow">🎬 <span>РИЛС · Согласован</span></p>
           <h2 class="detail-title">${escapeHtml(r.topic)}</h2>
@@ -803,6 +850,7 @@ export function createReelsModule(deps) {
     return `
       <div class="detail-grid">
         ${renderBackButton()}
+        ${reelsStepperMarkup(r.status, false)}
         <div class="detail-top">
           <p class="eyebrow">🎬 <span>РИЛС · Видео загружено</span></p>
           <h2 class="detail-title">${escapeHtml(r.topic)}</h2>
@@ -867,6 +915,7 @@ export function createReelsModule(deps) {
     return `
       <div class="detail-grid">
         ${renderBackButton()}
+        ${reelsStepperMarkup(r.status, false)}
         <div class="detail-top">
           <p class="eyebrow">🎬 <span>РИЛС · Публикация</span></p>
           <h2 class="detail-title">${escapeHtml(r.topic)}</h2>
@@ -950,6 +999,7 @@ export function createReelsModule(deps) {
     return `
       <div class="detail-grid">
         ${renderBackButton()}
+        ${reelsStepperMarkup(r.status, false)}
         <div class="detail-top">
           <p class="eyebrow">🎬 <span>РИЛС · Опубликован</span></p>
           <h2 class="detail-title">${escapeHtml(r.topic)}</h2>
