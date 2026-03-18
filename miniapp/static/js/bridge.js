@@ -95,6 +95,7 @@ export function registerWindowBridge(deps) {
     removeTeamMember,
     activatePromo,
     generatePromos,
+    moveDraftToTeam,
     openRecommendationsWizard,
     closeRecommendationsWizard,
     recoWizardNext,
@@ -213,6 +214,7 @@ export function registerWindowBridge(deps) {
   window.removeTeamMember = removeTeamMember;
   window.activatePromo = activatePromo;
   window.generatePromos = generatePromos;
+  window.moveDraftToTeam = moveDraftToTeam;
   window._selectSchedulerDate = _selectSchedulerDate;
   window._renderThreadsSchedulerDates = _renderThreadsSchedulerDates;
 
