@@ -523,13 +523,10 @@ export function createDraftsModule(deps) {
     const currentTeamId = state.activeTeamId;
     const otherTeams = teams.filter((t) => t.team_id !== currentTeamId);
     if (!otherTeams.length) return "";
-    if (otherTeams.length === 1) {
-      return `<button class="secondary-button" onclick="moveDraftToTeam('${draftId}','${otherTeams[0].team_id}',this)">${escapeHtml("→ " + otherTeams[0].name)}</button>`;
-    }
     const options = otherTeams.map((t) =>
       `<option value="${escapeHtml(t.team_id)}">${escapeHtml(t.name)}</option>`
     ).join("");
-    return `<select class="team-switcher" onchange="moveDraftToTeam('${draftId}',this.value,this)"><option value="">Перенести в...</option>${options}</select>`;
+    return `<select class="move-to-team-select" onchange="if(this.value){moveDraftToTeam('${draftId}',this.value,this)}"><option value="">Перенести в...</option>${options}</select>`;
   }
 
   return {
