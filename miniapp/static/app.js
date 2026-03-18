@@ -815,6 +815,18 @@ async function regenSlot(draftId, slot, btn) {
   }, "Готово");
 }
 
+async function regenerateSeriesPosts(draftId, btn) {
+  await withButtonFeedback(btn, "Генерирую посты...", async () => {
+    const draft = await fetchJson(`/api/threads-series/${draftId}/regenerate-posts`, {
+      method: "POST",
+      timeout: 60000,
+    });
+    mergeDraftIntoState(draft);
+    renderDraftList();
+    renderDraftDetail(draft);
+  }, "Готово");
+}
+
 async function saveThreadsSlot(draftId, slot, btn) {
   const textEl = document.getElementById(`slotText_${slot}_${draftId}`);
   const timeEl = document.getElementById(`slotTime_${slot}_${draftId}`);
@@ -1820,6 +1832,7 @@ registerWindowBridge({
   retryPlatform,
   approveThreadsSeries,
   regenSlot,
+  regenerateSeriesPosts,
   saveThreadsSlot,
   showSlotHistory,
   scheduleThreadsSeries,

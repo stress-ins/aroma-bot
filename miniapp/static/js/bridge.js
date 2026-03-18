@@ -66,6 +66,7 @@ export function registerWindowBridge(deps) {
     renderReferences,
     // Threads-series slot actions
     regenSlot,
+    regenerateSeriesPosts,
     saveThreadsSlot,
     showSlotHistory,
     approveThreadsSeries,
@@ -171,6 +172,7 @@ export function registerWindowBridge(deps) {
 
   // Threads-series slot actions
   window.regenSlot = regenSlot;
+  window.regenerateSeriesPosts = regenerateSeriesPosts;
   window.saveThreadsSlot = saveThreadsSlot;
   window.showSlotHistory = showSlotHistory;
   window.approveThreadsSeries = approveThreadsSeries;
