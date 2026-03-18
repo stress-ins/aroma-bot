@@ -524,8 +524,8 @@ export function createSettingsModule(deps) {
             <strong>${label}</strong>
             <span class="account-subtitle">${subtitle}</span>
           </div>
+          <div class="account-card-action">${btn}</div>
         </div>
-        <div class="account-card-action">${btn}</div>
       </article>
     `;
   }
@@ -565,7 +565,12 @@ export function createSettingsModule(deps) {
     try {
       const data = await fetchJson(`/api/social/connect-url?platform=${platform}`);
       if (data.url) {
-        window.open(data.url, "_blank");
+        const tg = window.Telegram?.WebApp;
+        if (tg?.openLink) {
+          tg.openLink(data.url);
+        } else {
+          window.open(data.url, "_blank");
+        }
       }
     } catch (err) {
       showUiNotice(`Не удалось получить ссылку для ${platform}`, "error");
