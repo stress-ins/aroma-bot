@@ -262,23 +262,22 @@ def test_handbook_detail_sections_not_clipped(page):
         assert issues is None, f"Handbook: detail integrity issues: {issues}"
 
 
-def test_detail_panel_bottom_padding_clears_tab_bar(page):
-    """Detail panel must have enough bottom padding so content isn't hidden behind the tab bar."""
+def test_detail_panel_scrollable_past_tab_bar(page):
+    """Detail panel must be scrollable — content flows under the floating tab bar."""
     page.locator("#btnTabDrafts").click()
     page.wait_for_timeout(100)
     page.evaluate("window.goBackToList()")
     page.locator(".draft-card").first.click()
     page.wait_for_timeout(200)
 
-    padding = page.evaluate(
+    is_scrollable = page.evaluate(
         """() => {
             const panel = document.getElementById('detailPanel');
-            if (!panel) return 0;
-            return parseFloat(getComputedStyle(panel).paddingBottom);
+            if (!panel) return false;
+            return panel.scrollHeight > panel.clientHeight || panel.style.overflowY === 'auto';
         }"""
     )
-    # Tab bar is ~80px (position:fixed). Padding must exceed it.
-    assert padding >= 80, f"Detail panel padding-bottom ({padding}px) is less than tab bar height"
+    assert is_scrollable, "Detail panel should be scrollable (content flows under floating tab bar)"
 
 
 def test_themed_controls_have_no_overlaps(themed_page):
