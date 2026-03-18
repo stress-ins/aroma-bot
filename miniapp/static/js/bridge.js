@@ -134,6 +134,10 @@ export function registerWindowBridge(deps) {
     submitRecommendations,
     _selectSchedulerDate,
     _renderThreadsSchedulerDates,
+    selectTrendsPlatform,
+    selectTrendsPeriod,
+    refreshTrends,
+    openTrendsPost,
   } = deps;
 
   window.retryCurrentTab = retryCurrentTab;
@@ -328,4 +332,10 @@ export function registerWindowBridge(deps) {
     }
     await loadSettings();
   };
+
+  // Trends
+  window.selectTrendsPlatform = selectTrendsPlatform;
+  window.selectTrendsPeriod = selectTrendsPeriod;
+  window.refreshTrends = refreshTrends;
+  window.openTrendsPost = openTrendsPost;
 }
