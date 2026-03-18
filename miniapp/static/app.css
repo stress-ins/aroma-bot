@@ -1073,6 +1073,37 @@ body.is-mobile-layout .detail-top::after {
   padding-top: var(--space-3);
 }
 
+/* ── Button Row System ──────────────────────────── */
+.btn-row {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+.btn-row > button,
+.btn-row > .btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 16px;
+  white-space: nowrap;
+  min-width: 0;
+}
+.btn-row > button svg,
+.btn-row > button .icon,
+.btn-row > button .ui-icon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+}
+.btn-row--icons > button,
+.btn-row--icons > .btn {
+  padding: 12px;
+  aspect-ratio: 1;
+  flex: 1;
+}
+
 /* ═══════════════════════════════════════
    SECTION: Forms & Inputs
    ═══════════════════════════════════════ */
@@ -1943,6 +1974,10 @@ body.tg-theme-dark .danger-button {
   gap: 6px;
   margin-top: 6px;
   align-items: center;
+  width: 100%;
+}
+.threads-regen-row > button {
+  flex: 1;
 }
 .threads-regen-input {
   width: 100%;
@@ -2051,7 +2086,6 @@ body.tg-theme-dark .danger-button {
 /* Fallback: env(safe-area-inset-top) for older Telegram versions (no contentSafeArea) */
 .shell {
   padding-top: var(--tg-content-inset-top, env(safe-area-inset-top, 0px));
-  background: var(--surface);
 }
 
 /* ── Mobile Layout Fixes ─────────────────────────────────────────────────── */
@@ -2120,8 +2154,8 @@ body.tg-theme-dark .danger-button {
        The height is constrained by body→shell→layout flex chain above. */
     align-self: stretch;
     min-height: 0;
-    padding-top: var(--tg-content-inset-top, env(safe-area-inset-top, 0px));
-    padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
+    padding-top: 0;
+    padding-bottom: 0;
     padding-left: 8px;
     padding-right: 8px;
     overflow-y: auto;
@@ -2193,7 +2227,7 @@ body.tg-theme-dark .danger-button {
     padding: 10px 10px calc(10px + env(safe-area-inset-bottom, 0px));
     z-index: 30;
     pointer-events: none;
-    background: var(--surface);
+    background: transparent;
   }
 
   .bottom-tab-bar .bottom-tab-bar-inner {
