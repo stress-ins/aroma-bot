@@ -189,6 +189,67 @@ def test_handbook_detail_title_not_clipped(page):
             assert box["y"] >= 0
 
 
+def test_detail_sections_not_clipped_on_sides(page):
+    """Detail view: no horizontal overflow in the scroll container."""
+    page.locator("#btnTabDrafts").click()
+    page.wait_for_timeout(100)
+    page.evaluate("window.goBackToList()")
+
+    cards = page.locator(".draft-card")
+    cards.first.wait_for(state="visible")
+    count = cards.count()
+
+    for i in range(count):
+        page.evaluate("window.goBackToList()")
+        page.wait_for_timeout(100)
+        cards.nth(i).click()
+        page.wait_for_timeout(200)
+
+        overflow = page.evaluate(
+            """() => {
+                const panel = document.getElementById('detailPanel');
+                if (!panel) return null;
+                const diff = panel.scrollWidth - panel.clientWidth;
+                if (diff > 2) return {scrollW: panel.scrollWidth, clientW: panel.clientWidth, diff};
+                // Also check the detail grid and sections
+                const bad = [];
+                document.querySelectorAll('#draftDetail, .detail-grid, .section, .detail-top').forEach(el => {
+                    if (el.scrollWidth > el.clientWidth + 2)
+                        bad.push({cls: el.className.slice(0,50), scrollW: el.scrollWidth, clientW: el.clientWidth});
+                });
+                return bad.length ? bad : null;
+            }"""
+        )
+        assert overflow is None, f"Card {i}: horizontal overflow: {overflow}"
+
+
+def test_handbook_detail_sections_not_clipped(page):
+    """Handbook detail: no horizontal overflow."""
+    page.locator("#btnTabHandbook").click()
+    page.wait_for_timeout(100)
+
+    card = page.locator(".reference-card").first
+    if card.count():
+        card.click()
+        page.wait_for_timeout(200)
+
+        overflow = page.evaluate(
+            """() => {
+                const panel = document.getElementById('detailPanel');
+                if (!panel) return null;
+                const diff = panel.scrollWidth - panel.clientWidth;
+                if (diff > 2) return {scrollW: panel.scrollWidth, clientW: panel.clientWidth, diff};
+                const bad = [];
+                document.querySelectorAll('#draftDetail, .detail-grid, .section, .detail-top').forEach(el => {
+                    if (el.scrollWidth > el.clientWidth + 2)
+                        bad.push({cls: el.className.slice(0,50), scrollW: el.scrollWidth, clientW: el.clientWidth});
+                });
+                return bad.length ? bad : null;
+            }"""
+        )
+        assert overflow is None, f"Handbook: horizontal overflow: {overflow}"
+
+
 def test_themed_controls_have_no_overlaps(themed_page):
     """No controls overlap in either theme."""
     for tab_id in ["#btnTabDrafts", "#btnTabPlans", "#btnTabCreate"]:

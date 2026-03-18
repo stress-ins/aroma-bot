@@ -42,6 +42,17 @@ def payload_preview(kind: str, payload: dict[str, Any]) -> str:
     if kind == "reels":
         return str(payload.get("scenario", "")).strip()[:220]
 
+    if kind == "threads_series":
+        summary = str(payload.get("series_summary", "")).strip()
+        if summary:
+            return summary[:220]
+        posts = payload.get("posts")
+        if isinstance(posts, list) and posts:
+            first_text = str(posts[0].get("text", "")).strip() if isinstance(posts[0], dict) else ""
+            if first_text:
+                return first_text[:220]
+        return str(payload.get("angle", "")).strip()[:220]
+
     # For carousels, prefer hook/angle (concept summary) over individual slide text
     if kind == "carousel":
         for key in ("hook", "angle"):

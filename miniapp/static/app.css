@@ -1154,6 +1154,10 @@ body.is-mobile-layout .detail-top::after {
   font-size: 14px;
   line-height: 1.65;
   white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  max-width: 100%;
+  box-sizing: border-box;
   overflow-wrap: anywhere;
   color: var(--text);
   text-align: left;
@@ -2036,6 +2040,8 @@ body.tg-theme-dark .danger-button {
     min-height: 0;
     padding-top: var(--tg-content-inset-top, env(safe-area-inset-top, 0px));
     padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+    padding-left: 0;
+    padding-right: 0;
     overflow-y: auto;
   }
 
@@ -2944,11 +2950,15 @@ body.tg-theme-dark .concept-card {
   border: 1px dashed var(--border);
   border-radius: var(--radius-sm);
   background: linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
+  overflow: hidden;
+  min-width: 0;
 }
 
 .prompt-disclosure {
   display: grid;
   gap: 8px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .prompt-toggle {
@@ -2960,6 +2970,10 @@ body.tg-theme-dark .concept-card {
   font-size: 13px;
   line-height: 1.65;
   color: var(--text);
+  overflow: hidden;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  min-width: 0;
 }
 
 .prompt-note-field {
