@@ -641,6 +641,7 @@ body.app-ready .splash {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  align-items: center;
   margin-top: 10px;
 }
 
@@ -4490,8 +4491,8 @@ body.tg-theme-dark .blend-constructor-cta { color: #d4845e; }
 /* ── Blend Constructor ── */
 .chip-selectable { padding: 6px 12px; border-radius: 99px; border: 1px solid var(--border); background: var(--surface-2); font-size: 12px; font-weight: 500; color: var(--muted); cursor: pointer; transition: 0.15s; }
 .chip-selectable.is-selected { background: var(--brand-bg); border-color: var(--brand-border); color: var(--brand); font-weight: 600; }
-.chip-list { display: flex; flex-wrap: wrap; gap: 6px; }
-.radio-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip-list { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.radio-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .field-label { display: grid; gap: 4px; font-size: 12px; font-weight: 500; color: var(--muted); }
 .field-textarea { width: 100%; min-height: 72px; border: 1px solid var(--border); background: var(--surface-2); border-radius: var(--radius-sm); padding: 8px 10px; font-size: 13px; color: var(--text); resize: vertical; font-family: inherit; }
 .field-input { width: 100%; border: 1px solid var(--border); background: var(--surface-2); border-radius: var(--radius-sm); padding: 8px 10px; font-size: 13px; color: var(--text); font-family: inherit; }

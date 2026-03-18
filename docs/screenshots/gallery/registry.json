@@ -1,0 +1,574 @@
+{
+  "screens": [
+    {
+      "id": "create",
+      "group": "content-list",
+      "label": "Create tab",
+      "mode": "content",
+      "steps": [
+        {"action": "goto", "url": "?tab=create"}
+      ]
+    },
+    {
+      "id": "inbox",
+      "group": "content-list",
+      "label": "Inbox / review queue",
+      "mode": "content",
+      "steps": [
+        {"action": "goto", "url": "?tab=inbox"}
+      ]
+    },
+    {
+      "id": "drafts",
+      "group": "content-list",
+      "label": "Drafts list",
+      "mode": "content",
+      "steps": [
+        {"action": "goto", "url": "?tab=drafts"}
+      ]
+    },
+    {
+      "id": "plans",
+      "group": "content-list",
+      "label": "Plans list",
+      "mode": "content",
+      "steps": [
+        {"action": "goto", "url": "?tab=plans"}
+      ]
+    },
+    {
+      "id": "reels",
+      "group": "content-list",
+      "label": "Reels list",
+      "mode": "content",
+      "steps": [
+        {"action": "goto", "url": "?tab=reels"}
+      ]
+    },
+    {
+      "id": "schedule",
+      "group": "content-list",
+      "label": "Schedule view",
+      "mode": "content",
+      "steps": [
+        {"action": "goto", "url": "?tab=schedule"}
+      ]
+    },
+    {
+      "id": "keywords",
+      "group": "content-list",
+      "label": "Keywords / SEO",
+      "mode": "content",
+      "steps": [
+        {"action": "goto", "url": "?tab=keywords"}
+      ]
+    },
+    {
+      "id": "status",
+      "group": "content-list",
+      "label": "Status overview",
+      "mode": "content",
+      "steps": [
+        {"action": "goto", "url": "?tab=status"}
+      ]
+    },
+    {
+      "id": "drafts-detail-threads",
+      "group": "content-detail",
+      "label": "Threads draft detail",
+      "mode": "content",
+      "scrollable": true,
+      "steps": [
+        {"action": "goto", "url": "?tab=drafts"},
+        {"action": "click", "selector": ".draft-card:has-text('Как мягко выйти')", "wait": ".detail-title"}
+      ]
+    },
+    {
+      "id": "drafts-detail-carousel",
+      "group": "content-detail",
+      "label": "Carousel draft detail",
+      "mode": "content",
+      "scrollable": true,
+      "steps": [
+        {"action": "goto", "url": "?tab=drafts"},
+        {"action": "click", "selector": ".draft-card:has-text('Сенсорная карусель')", "wait": ".detail-title"}
+      ]
+    },
+    {
+      "id": "drafts-detail-reels",
+      "group": "content-detail",
+      "label": "Reels draft detail",
+      "mode": "content",
+      "scrollable": true,
+      "steps": [
+        {"action": "goto", "url": "?tab=drafts"},
+        {"action": "click", "selector": ".draft-card:has-text('Вечерний ароматический')", "wait": ".detail-title"}
+      ]
+    },
+    {
+      "id": "drafts-detail-threads-series",
+      "group": "content-detail",
+      "label": "Threads series draft detail",
+      "mode": "content",
+      "scrollable": true,
+      "steps": [
+        {"action": "goto", "url": "?tab=drafts"},
+        {"action": "click", "selector": ".draft-card:has-text('Восстановление энергии')", "wait": ".detail-title"}
+      ]
+    },
+    {
+      "id": "drafts-detail-scheduled",
+      "group": "content-detail",
+      "label": "Scheduled draft detail",
+      "mode": "content",
+      "scrollable": true,
+      "steps": [
+        {"action": "goto", "url": "?tab=drafts"},
+        {"action": "evaluate", "js": "document.querySelector('[data-filter=\"scheduled\"]')?.click()"},
+        {"action": "click", "selector": ".draft-card:has-text('Утренний ритуал')", "wait": ".detail-title"}
+      ]
+    },
+    {
+      "id": "drafts-detail-published",
+      "group": "content-detail",
+      "label": "Published draft detail",
+      "mode": "content",
+      "scrollable": true,
+      "steps": [
+        {"action": "goto", "url": "?tab=drafts"},
+        {"action": "evaluate", "js": "document.querySelector('[data-filter=\"published\"]')?.click()"},
+        {"action": "click", "selector": ".draft-card:has-text('Вечерняя медитация')", "wait": ".detail-title"}
+      ]
+    },
+    {
+      "id": "inbox-detail",
+      "group": "content-detail",
+      "label": "Inbox item detail",
+      "mode": "content",
+      "scrollable": true,
+      "steps": [
+        {"action": "goto", "url": "?tab=inbox"},
+        {"action": "click", "selector": ".draft-card", "wait": ".detail-title"}
+      ]
+    },
+    {
+      "id": "plans-detail",
+      "group": "content-detail",
+      "label": "Plan detail",
+      "mode": "content",
+      "scrollable": true,
+      "steps": [
+        {"action": "goto", "url": "?tab=plans"},
+        {"action": "click", "selector": ".plan-card", "wait": ".plan-detail, .detail-title"}
+      ]
+    },
+    {
+      "id": "reels-detail",
+      "group": "content-detail",
+      "label": "Reels detail",
+      "mode": "content",
+      "scrollable": true,
+      "steps": [
+        {"action": "goto", "url": "?tab=reels"},
+        {"action": "click", "selector": ".reels-overview-card", "wait": ".detail-title"}
+      ]
+    },
+    {
+      "id": "create-threads",
+      "group": "create-form",
+      "label": "Create Threads post form",
+      "mode": "content",
+      "steps": [
+        {"action": "goto", "url": "?tab=create"},
+        {"action": "click", "selector": "[data-tool='content']", "wait": "#topicField"}
+      ]
+    },
+    {
+      "id": "create-carousel",
+      "group": "create-form",
+      "label": "Create Carousel form",
+      "mode": "content",
+      "steps": [
+        {"action": "goto", "url": "?tab=create"},
+        {"action": "click", "selector": "[data-tool='carousel']", "wait": "#topicField"}
+      ]
+    },
+    {
+      "id": "create-reels",
+      "group": "create-form",
+      "label": "Create Reels form",
+      "mode": "content",
+      "steps": [
+        {"action": "goto", "url": "?tab=create"},
+        {"action": "click", "selector": "[data-tool='reels']", "wait": "#topicField"}
+      ]
+    },
+    {
+      "id": "create-threads-series",
+      "group": "create-form",
+      "label": "Create Threads Series form",
+      "mode": "content",
+      "steps": [
+        {"action": "goto", "url": "?tab=create"},
+        {"action": "click", "selector": "[data-tool='threads_series']", "wait": "#topicField"}
+      ]
+    },
+    {
+      "id": "create-plan",
+      "group": "create-form",
+      "label": "Create Plan form",
+      "mode": "content",
+      "steps": [
+        {"action": "goto", "url": "?tab=create"},
+        {"action": "click", "selector": "[data-tool='plan']", "wait": "#topicField, .create-form"}
+      ]
+    },
+    {
+      "id": "settings-menu",
+      "group": "settings",
+      "label": "Settings main menu",
+      "mode": "content",
+      "steps": [
+        {"action": "goto", "url": "?tab=status"},
+        {"action": "evaluate", "js": "openSettingsSection('status')"},
+        {"action": "evaluate", "js": "state.settingsInDetail = false; renderSettingsMenu()"}
+      ]
+    },
+    {
+      "id": "settings-status",
+      "group": "settings",
+      "label": "Settings: Status",
+      "mode": "content",
+      "steps": [
+        {"action": "goto", "url": "?tab=status"},
+        {"action": "evaluate", "js": "openSettingsSection('status')"}
+      ]
+    },
+    {
+      "id": "settings-promo",
+      "group": "settings",
+      "label": "Settings: Promo codes",
+      "mode": "content",
+      "steps": [
+        {"action": "goto", "url": "?tab=status"},
+        {"action": "evaluate", "js": "openSettingsSection('promo')"}
+      ]
+    },
+    {
+      "id": "settings-team",
+      "group": "settings",
+      "label": "Settings: Team management",
+      "mode": "content",
+      "steps": [
+        {"action": "goto", "url": "?tab=status"},
+        {"action": "evaluate", "js": "openSettingsSection('team')"}
+      ]
+    },
+    {
+      "id": "settings-accounts",
+      "group": "settings",
+      "label": "Settings: Connected accounts",
+      "mode": "content",
+      "steps": [
+        {"action": "goto", "url": "?tab=status"},
+        {"action": "evaluate", "js": "openSettingsSection('accounts')"}
+      ]
+    },
+    {
+      "id": "settings-brand",
+      "group": "settings",
+      "label": "Settings: Brand voice",
+      "mode": "content",
+      "steps": [
+        {"action": "goto", "url": "?tab=status"},
+        {"action": "evaluate", "js": "openSettingsSection('brand')"}
+      ]
+    },
+    {
+      "id": "aromas",
+      "group": "handbook-list",
+      "label": "Aromas list",
+      "mode": "handbook",
+      "steps": [
+        {"action": "click", "selector": "#btnTabHandbook"},
+        {"action": "click", "selector": "button.tab-button:has-text('Ароматы')"}
+      ]
+    },
+    {
+      "id": "blends",
+      "group": "handbook-list",
+      "label": "Blends list",
+      "mode": "handbook",
+      "steps": [
+        {"action": "click", "selector": "#btnTabHandbook"},
+        {"action": "click", "selector": "button.tab-button:has-text('Смеси')"}
+      ]
+    },
+    {
+      "id": "symptoms",
+      "group": "handbook-list",
+      "label": "Symptoms list",
+      "mode": "handbook",
+      "steps": [
+        {"action": "click", "selector": "#btnTabHandbook"},
+        {"action": "click", "selector": "button.tab-button:has-text('Симптомы')"}
+      ]
+    },
+    {
+      "id": "concepts",
+      "group": "handbook-list",
+      "label": "Concepts list",
+      "mode": "handbook",
+      "steps": [
+        {"action": "click", "selector": "#btnTabHandbook"},
+        {"action": "click", "selector": "button.tab-button:has-text('Теория')"}
+      ]
+    },
+    {
+      "id": "practices",
+      "group": "handbook-list",
+      "label": "Practices list",
+      "mode": "handbook",
+      "steps": [
+        {"action": "click", "selector": "#btnTabHandbook"},
+        {"action": "click", "selector": "button.tab-button:has-text('Практики')"}
+      ]
+    },
+    {
+      "id": "sounds",
+      "group": "handbook-list",
+      "label": "Sounds list",
+      "mode": "handbook",
+      "steps": [
+        {"action": "click", "selector": "#btnTabHandbook"},
+        {"action": "click", "selector": "button.tab-button:has-text('Звуки')"}
+      ]
+    },
+    {
+      "id": "aromas-detail",
+      "group": "handbook-detail",
+      "label": "Aroma card detail",
+      "mode": "handbook",
+      "scrollable": true,
+      "steps": [
+        {"action": "click", "selector": "#btnTabHandbook"},
+        {"action": "click", "selector": "button.tab-button:has-text('Ароматы')"},
+        {"action": "click", "selector": ".reference-card:has-text('Лаванда')", "wait": ".reference-detail"}
+      ]
+    },
+    {
+      "id": "blends-detail",
+      "group": "handbook-detail",
+      "label": "Blend card detail",
+      "mode": "handbook",
+      "scrollable": true,
+      "steps": [
+        {"action": "click", "selector": "#btnTabHandbook"},
+        {"action": "click", "selector": "button.tab-button:has-text('Смеси')"},
+        {"action": "click", "selector": ".reference-card:has-text('Grounding')", "wait": ".reference-detail"}
+      ]
+    },
+    {
+      "id": "symptoms-detail",
+      "group": "handbook-detail",
+      "label": "Symptom card detail",
+      "mode": "handbook",
+      "scrollable": true,
+      "steps": [
+        {"action": "click", "selector": "#btnTabHandbook"},
+        {"action": "click", "selector": "button.tab-button:has-text('Симптомы')"},
+        {"action": "click", "selector": ".reference-card:has-text('Стресс')", "wait": ".reference-detail"}
+      ]
+    },
+    {
+      "id": "concepts-detail",
+      "group": "handbook-detail",
+      "label": "Concept card detail",
+      "mode": "handbook",
+      "scrollable": true,
+      "steps": [
+        {"action": "click", "selector": "#btnTabHandbook"},
+        {"action": "click", "selector": "button.tab-button:has-text('Теория')"},
+        {"action": "click", "selector": ".reference-card:has-text('Лимбическая')", "wait": ".reference-detail"}
+      ]
+    },
+    {
+      "id": "practices-detail",
+      "group": "handbook-detail",
+      "label": "Practice card detail",
+      "mode": "handbook",
+      "scrollable": true,
+      "steps": [
+        {"action": "click", "selector": "#btnTabHandbook"},
+        {"action": "click", "selector": "button.tab-button:has-text('Практики')"},
+        {"action": "click", "selector": ".reference-card:has-text('Квадратное')", "wait": ".reference-detail"}
+      ]
+    },
+    {
+      "id": "sounds-detail",
+      "group": "handbook-detail",
+      "label": "Sound card detail",
+      "mode": "handbook",
+      "scrollable": true,
+      "steps": [
+        {"action": "click", "selector": "#btnTabHandbook"},
+        {"action": "click", "selector": "button.tab-button:has-text('Звуки')"},
+        {"action": "click", "selector": ".reference-card:has-text('Гонг')", "wait": ".reference-detail"}
+      ]
+    },
+    {
+      "id": "blend-constructor",
+      "group": "modal",
+      "label": "Blend constructor form",
+      "mode": "handbook",
+      "scrollable": true,
+      "steps": [
+        {"action": "click", "selector": "#btnTabHandbook"},
+        {"action": "click", "selector": "button.tab-button:has-text('Смеси')"},
+        {"action": "evaluate", "js": "openBlendConstructor()"}
+      ]
+    },
+    {
+      "id": "recommendations-wizard",
+      "group": "modal",
+      "label": "Recommendations wizard",
+      "mode": "handbook",
+      "steps": [
+        {"action": "click", "selector": "#btnTabHandbook"},
+        {"action": "click", "selector": "button.tab-button:has-text('Симптомы')"},
+        {"action": "evaluate", "js": "openRecommendationsWizard()"}
+      ]
+    },
+    {
+      "id": "reco-wizard-step2",
+      "group": "modal",
+      "label": "Recommendations wizard — step 2 (goal)",
+      "mode": "handbook",
+      "steps": [
+        {"action": "click", "selector": "#btnTabHandbook"},
+        {"action": "click", "selector": "button.tab-button:has-text('Симптомы')"},
+        {"action": "evaluate", "js": "openRecommendationsWizard()"},
+        {"action": "click", "selector": ".wizard-next, .btn-next, button:has-text('Далее')"}
+      ]
+    },
+    {
+      "id": "reco-wizard-step3",
+      "group": "modal",
+      "label": "Recommendations wizard — step 3 (symptoms)",
+      "mode": "handbook",
+      "steps": [
+        {"action": "click", "selector": "#btnTabHandbook"},
+        {"action": "click", "selector": "button.tab-button:has-text('Симптомы')"},
+        {"action": "evaluate", "js": "openRecommendationsWizard()"},
+        {"action": "click", "selector": ".wizard-next, .btn-next, button:has-text('Далее')"},
+        {"action": "click", "selector": ".wizard-next, .btn-next, button:has-text('Далее')"}
+      ]
+    },
+    {
+      "id": "saved-blends",
+      "group": "handbook-interactive",
+      "label": "Saved blends list",
+      "mode": "handbook",
+      "steps": [
+        {"action": "click", "selector": "#btnTabHandbook"},
+        {"action": "click", "selector": "button.tab-button:has-text('Смеси')"},
+        {"action": "click", "selector": "button:has-text('Сохранённое'), button:has-text('♥')"}
+      ]
+    },
+    {
+      "id": "smart-search-results",
+      "group": "handbook-interactive",
+      "label": "Smart search results",
+      "mode": "handbook",
+      "steps": [
+        {"action": "click", "selector": "#btnTabHandbook"},
+        {"action": "click", "selector": "button.tab-button:has-text('Ароматы')"},
+        {"action": "evaluate", "js": "document.querySelector('.search-input, input[placeholder*=\"Поиск\"], input[placeholder*=\"поиск\"]').value = 'Расслабление'"},
+        {"action": "evaluate", "js": "document.querySelector('.search-input, input[placeholder*=\"Поиск\"], input[placeholder*=\"поиск\"]').dispatchEvent(new Event('input', {bubbles:true}))"}
+      ]
+    },
+    {
+      "id": "smart-search-empty",
+      "group": "handbook-interactive",
+      "label": "Smart search — empty result",
+      "mode": "handbook",
+      "steps": [
+        {"action": "click", "selector": "#btnTabHandbook"},
+        {"action": "click", "selector": "button.tab-button:has-text('Ароматы')"},
+        {"action": "evaluate", "js": "document.querySelector('.search-input, input[placeholder*=\"Поиск\"], input[placeholder*=\"поиск\"]').value = 'xyzнесуществующее'"},
+        {"action": "evaluate", "js": "document.querySelector('.search-input, input[placeholder*=\"Поиск\"], input[placeholder*=\"поиск\"]').dispatchEvent(new Event('input', {bubbles:true}))"}
+      ]
+    },
+    {
+      "id": "reels-preview",
+      "group": "modal",
+      "label": "Reels frame preview modal",
+      "mode": "content",
+      "steps": [
+        {"action": "goto", "url": "?tab=drafts"},
+        {"action": "click", "selector": ".draft-card:has-text('Вечерний ароматический')", "wait": ".detail-title"},
+        {"action": "evaluate", "js": "openReelsPreview('/generated/reels_assets/reels001/frame_1.png', 'Preview text', 'frame_1', 'reels001')"}
+      ]
+    },
+    {
+      "id": "drafts-filter-kind-reels",
+      "group": "content-filter",
+      "label": "Drafts filtered by Reels kind",
+      "mode": "content",
+      "steps": [
+        {"action": "goto", "url": "?tab=drafts"},
+        {"action": "evaluate", "js": "document.querySelector('select[data-filter-kind], .filter-kind select')?.value && (document.querySelector('select[data-filter-kind], .filter-kind select').value = 'reels', document.querySelector('select[data-filter-kind], .filter-kind select').dispatchEvent(new Event('change', {bubbles:true}))) || document.querySelector('[data-filter=\"reels\"]')?.click()"}
+      ]
+    },
+    {
+      "id": "drafts-filter-status-approved",
+      "group": "content-filter",
+      "label": "Drafts filtered by Approved status",
+      "mode": "content",
+      "steps": [
+        {"action": "goto", "url": "?tab=drafts"},
+        {"action": "evaluate", "js": "document.querySelector('select[data-filter-status], .filter-status select')?.value && (document.querySelector('select[data-filter-status], .filter-status select').value = 'approved', document.querySelector('select[data-filter-status], .filter-status select').dispatchEvent(new Event('change', {bubbles:true}))) || document.querySelector('[data-filter=\"approved\"]')?.click()"}
+      ]
+    },
+    {
+      "id": "drafts-search",
+      "group": "content-filter",
+      "label": "Drafts text search",
+      "mode": "content",
+      "steps": [
+        {"action": "goto", "url": "?tab=drafts"},
+        {"action": "evaluate", "js": "const el = document.querySelector('.search-input, input[placeholder*=\"Поиск\"]'); if(el){el.value='лаванда';el.dispatchEvent(new Event('input',{bubbles:true}))}"}
+      ]
+    },
+    {
+      "id": "plans-mentions",
+      "group": "content-detail",
+      "label": "Mentions (from plans)",
+      "mode": "content",
+      "steps": [
+        {"action": "goto", "url": "?tab=plans"},
+        {"action": "click", "selector": "button:has-text('Упоминания'), [data-section='mentions']"}
+      ]
+    },
+    {
+      "id": "onboarding",
+      "group": "special",
+      "label": "Onboarding screen",
+      "mode": "content",
+      "steps": [
+        {"action": "evaluate", "js": "localStorage.removeItem('aroma_onboarded'); location.reload()"},
+        {"action": "wait", "selector": ".onboarding-screen, .onboarding"}
+      ]
+    },
+    {
+      "id": "privacy",
+      "group": "special",
+      "label": "Privacy policy page",
+      "mode": "content",
+      "scrollable": true,
+      "steps": [
+        {"action": "goto", "url": "/privacy"}
+      ]
+    }
+  ]
+}
