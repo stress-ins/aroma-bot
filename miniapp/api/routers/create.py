@@ -5,8 +5,9 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 import logging
 
 from bot.agents import generate_content_draft
+from bot.agents.content import suggest_topics
 from bot.handlers.monitor import notify_owner_throttled
-from bot.services.drafts_store import save_draft
+from bot.services.drafts_store import list_recent_drafts, save_draft
 from bot.services.miniapp_generator import build_content_payload, build_threads_series_payload, is_valid_content_format, is_valid_content_goal
 
 logger = logging.getLogger(__name__)
@@ -15,7 +16,7 @@ from bot.services.miniapp_reels import serialize_reels_draft
 from config import settings
 from ..auth import TeamContext, _check_content_limit, _require_auth, _resolve_team_context, require_tier
 from ..generation import complete_carousel_generation, complete_reels_v2_generation
-from ..models import CreateCarouselPayload, CreateContentPayload, CreateReelsV2Payload, ThreadsSeriesCreateRequest
+from ..models import CreateCarouselPayload, CreateContentPayload, CreateReelsV2Payload, SuggestTopicsRequest, ThreadsSeriesCreateRequest
 
 router = APIRouter()
 
@@ -32,6 +33,18 @@ def _validate_topic(payload) -> str:
 def _extract_blend_context(payload) -> dict | None:
     bc = getattr(payload, "blend_context", None)
     return bc.model_dump() if bc else None
+
+
+
+
+@router.post("/api/suggest-topics", dependencies=[Depends(require_tier("expert"))])
+async def api_suggest_topics(payload: SuggestTopicsRequest):
+    used_topics: list[str] = []
+    for status in ("approved", "published"):
+        drafts = await list_recent_drafts(limit=200, status=status, newest_first=True)
+        used_topics.extend(d.topic for d in drafts if d.topic)
+    topics = await suggest_topics(payload.goal_key, payload.format_key, used_topics)
+    return {"topics": topics}
 
 
 @router.post("/api/generate/content", dependencies=[Depends(require_tier("expert")), Depends(_check_content_limit)])
