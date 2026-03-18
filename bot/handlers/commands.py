@@ -75,7 +75,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         invite_code = context.args[0][len("invite_"):]
         from bot.services.team_store import accept_invite
 
-        result = await accept_invite(invite_code, update.effective_user.id)
+        result = await accept_invite(invite_code, update.effective_user.id, username=update.effective_user.username or "")
         if result is None:
             await update.message.reply_text("❌ Приглашение не найдено или истекло\\.", parse_mode=ParseMode.MARKDOWN_V2)
         elif result.get("already_member"):
