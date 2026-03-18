@@ -2051,6 +2051,7 @@ body.tg-theme-dark .danger-button {
 /* Fallback: env(safe-area-inset-top) for older Telegram versions (no contentSafeArea) */
 .shell {
   padding-top: var(--tg-content-inset-top, env(safe-area-inset-top, 0px));
+  background: var(--surface);
 }
 
 /* ── Mobile Layout Fixes ─────────────────────────────────────────────────── */
@@ -2192,7 +2193,7 @@ body.tg-theme-dark .danger-button {
     padding: 10px 10px calc(10px + env(safe-area-inset-bottom, 0px));
     z-index: 30;
     pointer-events: none;
-    background: var(--bg);
+    background: var(--surface);
   }
 
   .bottom-tab-bar .bottom-tab-bar-inner {
