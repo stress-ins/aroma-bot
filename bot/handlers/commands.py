@@ -70,6 +70,26 @@ SOURCE_LABELS = {
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    # Deep link: /start invite_<code> -> accept team invite
+    if context.args and context.args[0].startswith("invite_"):
+        invite_code = context.args[0][len("invite_"):]
+        from bot.services.team_store import accept_invite
+
+        result = await accept_invite(invite_code, update.effective_user.id)
+        if result is None:
+            await update.message.reply_text("❌ Приглашение не найдено или истекло\\.", parse_mode=ParseMode.MARKDOWN_V2)
+        elif result.get("already_member"):
+            await update.message.reply_text("✅ Вы уже участник этой команды\\.", parse_mode=ParseMode.MARKDOWN_V2)
+        else:
+            team_name = result.get("team_name", "команду")
+            await update.message.reply_text(
+                f"✅ Вы присоединились к команде *{team_name}*\\!\n\n"
+                "Откройте Mini App, чтобы увидеть общие черновики\\.",
+                parse_mode=ParseMode.MARKDOWN_V2,
+                reply_markup=build_mini_app_markup(label="🧭 Открыть Mini App", tab="drafts"),
+            )
+        return
+
     # Deep link: /start blend_<saved_id> -> open shared blend in Mini App
     if context.args and context.args[0].startswith("blend_"):
         saved_id = context.args[0][len("blend_"):]
