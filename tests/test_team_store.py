@@ -41,7 +41,7 @@ class TestTeamStore:
 
         team = await get_default_team(444)
         assert team is not None
-        assert team.name == "Personal"
+        assert team.name == "Персональная"
         assert team.created_by == 444
 
     async def test_add_member(self):
