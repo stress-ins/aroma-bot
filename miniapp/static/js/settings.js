@@ -745,15 +745,18 @@ export function createSettingsModule(deps) {
   async function connectPlatform(platform) {
     try {
       const data = await fetchJson(`/api/social/connect-url?platform=${platform}`);
-      if (data.url) {
-        // Open OAuth URL directly — Instagram now uses /consent/ URL
-        // which may not be intercepted by iOS Universal Links
-        const tg = window.Telegram?.WebApp;
-        if (tg?.openLink) {
-          tg.openLink(data.url);
-        } else {
-          window.open(data.url, "_blank");
-        }
+      if (!data.url) return;
+
+      if (platform === "instagram") {
+        _showInstagramCopyPanel(data.url);
+        return;
+      }
+
+      const tg = window.Telegram?.WebApp;
+      if (tg?.openLink) {
+        tg.openLink(data.url);
+      } else {
+        window.open(data.url, "_blank");
       }
     } catch (err) {
       const detail = err?.detail || "";
@@ -764,6 +767,43 @@ export function createSettingsModule(deps) {
         showUiNotice(`Не удалось получить ссылку для ${platform}`, "error");
       }
     }
+  }
+
+  function _showInstagramCopyPanel(url) {
+    elements.draftDetail.innerHTML = `
+      ${renderBackButton()}
+      <div class="detail-grid">
+        <div class="detail-top" style="text-align:center">
+          <p class="eyebrow">${uiIcon("camera")}<span>Instagram</span></p>
+          <h2 class="detail-title">Подключение Instagram</h2>
+        </div>
+        <section class="section" style="text-align:center">
+          <p style="margin-bottom:16px;color:var(--hint)">
+            На iPhone приложение Instagram перехватывает ссылку авторизации.
+          </p>
+          <ol style="text-align:left;padding-left:20px;color:var(--text-secondary);line-height:1.8;margin-bottom:20px">
+            <li>Нажмите <b>Скопировать ссылку</b></li>
+            <li>Откройте <b>Safari</b></li>
+            <li>Вставьте в адресную строку и нажмите Enter</li>
+            <li>Пройдите авторизацию в Instagram</li>
+          </ol>
+          <button class="primary-button account-full-btn" type="button" id="igCopyBtn"
+            onclick="window.__copyIgUrl()">${uiIcon("link")}<span>Скопировать ссылку</span></button>
+          <p id="igCopyStatus" style="font-size:13px;color:var(--good);margin-top:12px;min-height:20px"></p>
+        </section>
+      </div>
+    `;
+    enterDetailView();
+    window.__copyIgUrl = () => {
+      navigator.clipboard.writeText(url).then(() => {
+        document.getElementById("igCopyStatus").textContent = "Скопировано! Вставьте в Safari.";
+        const btn = document.getElementById("igCopyBtn");
+        if (btn) btn.innerHTML = `${uiIcon("approve")}<span>Скопировано</span>`;
+      }).catch(() => {
+        prompt("Скопируйте ссылку:", url);
+      });
+    };
+    if (window.lucide) lucide.createIcons();
   }
 
   // ── Team management ──────────────────────────────────────────────────────
