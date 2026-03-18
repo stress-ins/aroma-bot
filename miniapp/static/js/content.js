@@ -27,6 +27,7 @@ export function createContentModule(deps) {
     scheduleReelsRefresh,
     isCurrentReelsDetail,
     isEditingDetailForm,
+    showUiNotice,
     callbacks,
   } = deps;
 
@@ -139,11 +140,11 @@ export function createContentModule(deps) {
       }
       await new Promise((resolve) => window.setTimeout(resolve, 1500));
     }
-    elements.draftDetail.innerHTML = renderDetailError(
-      "Рилс создаётся дольше обычного",
-      "Мы продолжаем ждать сценарий и кадры. Откройте Рилсы ещё раз или повторите позже.",
-      "retryCurrentTab()",
-    );
+    state.pendingCreateRecovery = null;
+    setTab("reels");
+    await loadReels();
+    renderReels();
+    if (showUiNotice) showUiNotice("Генерация продолжается в фоне — рилс появится в списке", "info");
     syncMobileNavigation();
     return false;
   }
@@ -183,7 +184,8 @@ export function createContentModule(deps) {
       actionLabel: "Открыть создание",
       action: "openCreateTool()",
     });
-    elements.draftList.innerHTML = state.reels.map((reel, idx) => `
+    const createBtn = `<button class="reels-create-fab" onclick="openCreateTool('reels')" title="Создать рилс"><i data-lucide="plus" style="width:20px;height:20px"></i></button>`;
+    elements.draftList.innerHTML = (state.reels.length > 0 ? createBtn : "") + state.reels.map((reel, idx) => `
       <article ${interactiveCardAttrs(`Открыть рилс ${reel.topic}`)} class="reels-card overview-card${reel.draft_id === state.selectedReels?.draft_id ? " active" : ""} interactive-card" onclick="openReels('${reel.draft_id}')">
         <div class="overview-card-top">
           <div class="draft-kind">${contentKindIcon("reels")}<span>Рилс</span></div>
@@ -207,7 +209,23 @@ export function createContentModule(deps) {
     if (reel.generation_pending || hasGenerating || (reel.images_ready || 0) < (reel.frame_count || 0)) {
       scheduleReelsRefresh(reel.draft_id);
     }
+    bindStoryboardDots(elements.draftDetail);
     syncMobileNavigation();
+  }
+
+  function bindStoryboardDots(container) {
+    const storyboard = container.querySelector(".storyboard");
+    const dots = container.querySelectorAll(".storyboard-dot");
+    if (!storyboard || dots.length < 2) return;
+    if (dots.length > 0) dots[0].classList.add("active");
+    storyboard.addEventListener("scroll", () => {
+      const cards = storyboard.querySelectorAll(".storyboard-card, .reels-frame-v2");
+      if (!cards.length) return;
+      const scrollLeft = storyboard.scrollLeft;
+      const cardWidth = cards[0].offsetWidth + 12;
+      const idx = Math.round(scrollLeft / cardWidth);
+      dots.forEach((d, i) => d.classList.toggle("active", i === idx));
+    }, { passive: true });
   }
 
   async function refreshReelsDetail(draftId) {
