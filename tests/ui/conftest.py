@@ -22,6 +22,12 @@ from pathlib import Path
 import pytest
 from playwright.sync_api import Error, sync_playwright
 
+from tests.ui.forbidden_zones import (
+    INTERACTIVE_SELECTORS,
+    get_forbidden_zones,
+    overlaps,
+)
+
 _PNG_1X1 = b64decode(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO7Zk6cAAAAASUVORK5CYII="
 )
@@ -343,3 +349,98 @@ def desktop_page(browser, miniapp_server):
     )
     yield pg
     context.close()
+
+
+# ---- Forbidden-zone fixtures ----
+
+
+@pytest.fixture()
+def forbidden_zones(page):
+    """Return forbidden zones for the current page viewport."""
+    vp = page.viewport_size
+    return get_forbidden_zones(vp["width"], vp["height"])
+
+
+def _check_interactive_elements_in_zones(page, zones: list) -> list[str]:
+    """Check all interactive elements against forbidden zones. Returns list of violations."""
+    violations: list[str] = []
+    for selector in INTERACTIVE_SELECTORS:
+        for el in page.locator(selector).all():
+            try:
+                box = el.bounding_box()
+            except Error:
+                continue
+            if box is None or box["width"] == 0 or box["height"] == 0:
+                continue
+            # Skip invisible elements
+            try:
+                visible = el.evaluate(
+                    "e => { const s = getComputedStyle(e); "
+                    "return s.display !== 'none' && s.visibility !== 'hidden' && s.opacity !== '0'; }"
+                )
+                if not visible:
+                    continue
+            except Error:
+                continue
+            for zone in zones:
+                if overlaps(box, zone):
+                    try:
+                        tag = el.evaluate("e => e.tagName.toLowerCase()")
+                        text = (el.evaluate("e => (e.textContent || '').trim()") or "")[:40]
+                        el_id = el.evaluate("e => e.id") or ""
+                        el_cls = (el.evaluate("e => e.className") or "")[:60]
+                    except Error:
+                        tag, text, el_id, el_cls = "?", "?", "", ""
+                    ident = f"<{tag}"
+                    if el_id:
+                        ident += f" id='{el_id}'"
+                    if el_cls:
+                        ident += f" class='{el_cls}'"
+                    ident += f"> '{text}'"
+                    violations.append(
+                        f"{ident} overlaps zone '{zone.name}' "
+                        f"(el: {box['x']:.0f},{box['y']:.0f} {box['width']:.0f}x{box['height']:.0f}  "
+                        f"zone: {zone.x:.0f},{zone.y:.0f} {zone.width:.0f}x{zone.height:.0f})"
+                    )
+    return violations
+
+
+@pytest.fixture(autouse=True)
+def check_forbidden_zones(request):
+    """After every UI test, verify no interactive element sits in a forbidden zone."""
+    yield
+
+    # Skip if marked
+    if request.node.get_closest_marker("skip_zone_check"):
+        return
+
+    # Only run for tests that use a page fixture
+    page = None
+    for fixture_name in ("page", "dark_page", "themed_page", "desktop_page"):
+        if fixture_name in request.fixturenames:
+            try:
+                page = request.getfixturevalue(fixture_name)
+            except Exception:
+                return
+            break
+
+    if page is None:
+        return
+
+    # Skip if page/context already closed
+    try:
+        page.evaluate("1")
+    except Error:
+        return
+
+    vp = page.viewport_size
+    if vp is None:
+        return
+
+    zones = get_forbidden_zones(vp["width"], vp["height"])
+    violations = _check_interactive_elements_in_zones(page, zones)
+
+    if violations:
+        msg = f"Forbidden zone violations ({len(violations)}):\n"
+        msg += "\n".join(f"  - {v}" for v in violations)
+        pytest.fail(msg)

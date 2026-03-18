@@ -1643,6 +1643,8 @@ const { renderBrand: renderBrandImpl, loadForbiddenPhrases: loadForbiddenPhrases
   enterDetailView,
   fetchJson,
   showRequestError,
+  showUiNotice,
+  escapeHtml,
   openPendingDraftCreation,
   finalizePendingDraftCreation,
   recoverPendingDraftCreation,

@@ -402,6 +402,37 @@ def _call_claude(prompt: str, max_tokens: int, system: str = "") -> str:
     )
 
 
+
+def _suggest_topics_prompt(goal_key: str, format_key: str, exclude_topics: list[str]) -> str:
+    exclude_block = ""
+    if exclude_topics:
+        items = "\n".join(f"- {t}" for t in exclude_topics[:30])
+        exclude_block = f"\n\nНЕ повторяй темы похожие на:\n{items}\n"
+    return f"""\
+{get_brand_context()}
+Роль: ты Content Strategist.
+Цель контента: {GOAL_GUIDANCE.get(goal_key, GOAL_GUIDANCE["trust"])}
+Формат: {FORMAT_LABELS.get(format_key, format_key)}.
+
+Сгенерируй 5 тем для контента.
+Требования:
+- Каждая тема должна быть привязана к состоянию, ощущению в теле, ритуалу восстановления или практическому применению.
+- Подходящие углы: стресс, перегрузка, сон, заземление, сенсорные ритуалы, корпоративный wellbeing, аромат как якорь состояния, гонг как способ замедления.
+- Избегай пустых общих формулировок и слишком мистического языка.
+- Формулируй так, чтобы тема подходила под выбранную цель.
+{exclude_block}
+Верни строго нумерованный список без пояснений:
+1. ...
+5. ...
+"""
+
+
+def _suggest_topics_sync(goal_key: str, format_key: str, exclude_topics: list[str]) -> list[str]:
+    prompt = _suggest_topics_prompt(goal_key, format_key, exclude_topics)
+    raw = _call_claude(prompt, max_tokens=500)
+    return parse_numbered_list(raw, limit=5)
+
+
 def _generate_topics_sync(
     results: list[SourceResult] | None,
     goal_key: str,
@@ -453,6 +484,11 @@ def _generate_writer_sync(
 
     if not _has_structured_content(draft) and raw.strip():
         draft.caption = humanize(raw.strip())
+
+    # Threads format uses УТРО/ДЕНЬ/ВЕЧЕР markers, not CAPTION: —
+    # parse_content_draft won't capture the text, but split_threads_posts needs it in caption.
+    if format_key in ("threads", "threads_series") and not draft.caption and raw.strip():
+        draft.caption = raw.strip()
 
     # Step 3: Editor pass
     if draft.caption:
@@ -506,6 +542,15 @@ async def generate_topic_options(
     loop = asyncio.get_running_loop()
     return await loop.run_in_executor(
         _executor, _generate_topics_sync, results, goal_key, format_key, user_brief
+    )
+
+
+
+
+async def suggest_topics(goal_key: str, format_key: str, exclude_topics: list[str]) -> list[str]:
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(
+        _executor, _suggest_topics_sync, goal_key, format_key, exclude_topics
     )
 
 

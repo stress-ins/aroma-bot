@@ -240,5 +240,10 @@ class TokenStatusResponse(BaseModel):
 
 # ── Thread Monitor ──────────────────────────────────────────────────────────
 
+class SuggestTopicsRequest(BaseModel):
+    goal_key: str = Field(default="trust")
+    format_key: str = Field(default="threads")
+
+
 class ThreadActionRequest(BaseModel):
     action: str = Field(default="")

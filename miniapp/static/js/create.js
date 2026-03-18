@@ -23,7 +23,48 @@ export function createCreateModule(deps) {
     setTab,
     loadPlans,
     renderPlanDetail,
+    showUiNotice,
+    escapeHtml,
   } = deps;
+
+  function bindSuggestButton(form, getParams) {
+    const btn = form.querySelector(".suggest-topic-btn");
+    const dropdown = form.querySelector(".suggest-topics-dropdown");
+    const topicField = form.querySelector("textarea[name='topic']");
+    if (!btn || !dropdown || !topicField) return;
+
+    btn.addEventListener("click", async () => {
+      dropdown.hidden = false;
+      dropdown.innerHTML = `<div class="suggest-topics-loading"><span class="button-spinner" aria-hidden="true"></span><span>Генерирую темы...</span></div>`;
+      btn.disabled = true;
+      try {
+        const params = getParams();
+        const data = await fetchJson("/api/suggest-topics", {
+          method: "POST",
+          body: JSON.stringify(params),
+        });
+        if (!data.topics || !data.topics.length) {
+          dropdown.innerHTML = `<div class="suggest-topics-loading">Нет тем</div>`;
+          return;
+        }
+        dropdown.innerHTML = data.topics.map(t =>
+          `<button type="button" class="suggest-topic-item">${escapeHtml(t)}</button>`
+        ).join("");
+        dropdown.querySelectorAll(".suggest-topic-item").forEach(item => {
+          item.addEventListener("click", () => {
+            topicField.value = item.textContent;
+            topicField.dispatchEvent(new Event("input", { bubbles: true }));
+            dropdown.hidden = true;
+          });
+        });
+      } catch (err) {
+        dropdown.hidden = true;
+        showUiNotice("Не удалось предложить темы", "error");
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  }
 
   function bindTopicForm(form, config) {
     const topicField = form.querySelector("textarea[name='topic']");
@@ -138,6 +179,8 @@ export function createCreateModule(deps) {
           <form class="create-form" data-create-content>
             <label>Тема<textarea name="topic" placeholder="Например: как мягко переключиться после рабочего дня"></textarea></label>
             <p class="field-help">Сформулируйте тему как готовую мысль. Так черновик сразу получится ближе к нужной подаче.</p>
+            <button type="button" class="suggest-topic-btn">${uiIcon("zap")}<span>Предложи тему</span></button>
+            <div class="suggest-topics-dropdown" hidden></div>
             <div class="field-grid">
               <label>Цель<select name="goal_key"><option value="trust">Доверие</option><option value="authority">Экспертность</option><option value="engagement">Вовлечённость</option><option value="sales">Продажи</option></select></label>
               <label>Формат
@@ -161,6 +204,8 @@ export function createCreateModule(deps) {
               <textarea name="topic" placeholder="Например: момент когда тело само переключается в отдых через запах"></textarea>
             </label>
             <p class="field-help">Опишите через сцену, состояние или ощущение — так легче получить рабочий сценарий.</p>
+            <button type="button" class="suggest-topic-btn">${uiIcon("zap")}<span>Предложи тему</span></button>
+            <div class="suggest-topics-dropdown" hidden></div>
             <div class="field-grid">
               <label>Цель публикации
                 <select name="goal">
@@ -202,6 +247,8 @@ export function createCreateModule(deps) {
           <form class="create-form" data-create-carousel>
             <label>Тема<textarea name="topic" placeholder="Например: утренний ритуал с маслами"></textarea></label>
             <p class="field-help">Лучше работает тема с обещанием результата: что человек поймет, почувствует или сможет сделать после карусели.</p>
+            <button type="button" class="suggest-topic-btn">${uiIcon("zap")}<span>Предложи тему</span></button>
+            <div class="suggest-topics-dropdown" hidden></div>
             <button class="primary-button" type="submit">Собрать карусель</button>
           </form>
         </section>
@@ -213,6 +260,8 @@ export function createCreateModule(deps) {
           <form class="create-form" data-create-threads-series>
             <label>Тема<textarea name="topic" placeholder="Например: как восстановиться после перегруженной недели"></textarea></label>
             <p class="field-help">Тема станет основой для трёх постов: утреннего наблюдения, дневного совета и вечернего вопроса.</p>
+            <button type="button" class="suggest-topic-btn">${uiIcon("zap")}<span>Предложи тему</span></button>
+            <div class="suggest-topics-dropdown" hidden></div>
             <div class="field-grid">
               <label>Цель
                 <select name="goal_key">
@@ -248,6 +297,12 @@ export function createCreateModule(deps) {
     enterDetailView();
 
     const contentForm = elements.draftDetail.querySelector("[data-create-content]");
+    if (contentForm) {
+      bindSuggestButton(contentForm, () => ({
+        goal_key: contentForm.querySelector("select[name='goal_key']").value,
+        format_key: contentForm.querySelector("[name='format_key']:checked")?.value || "threads",
+      }));
+    }
     if (contentForm) bindTopicForm(contentForm, { pendingText: "Создаю...", onSubmit: async (topic) => {
       const goal = contentForm.querySelector("select[name='goal_key']").value;
       const format = contentForm.querySelector("[name='format_key']:checked")?.value || "threads";
@@ -274,6 +329,12 @@ export function createCreateModule(deps) {
     } });
 
     const reelsForm = elements.draftDetail.querySelector("[data-create-reels]");
+    if (reelsForm) {
+      bindSuggestButton(reelsForm, () => ({
+        goal_key: reelsForm.querySelector("select[name='goal']")?.value || "trust",
+        format_key: "reels_v2",
+      }));
+    }
     if (reelsForm) bindTopicForm(reelsForm, { pendingText: "Создаю...", onSubmit: async (topic) => {
       const goal = reelsForm.querySelector("select[name='goal']")?.value || "trust";
       const emotion = reelsForm.querySelector("select[name='emotion']")?.value || "calm";
@@ -325,6 +386,12 @@ export function createCreateModule(deps) {
     }
 
     const carouselForm = elements.draftDetail.querySelector("[data-create-carousel]");
+    if (carouselForm) {
+      bindSuggestButton(carouselForm, () => ({
+        goal_key: "trust",
+        format_key: "carousel",
+      }));
+    }
     if (carouselForm) bindTopicForm(carouselForm, { pendingText: "Создаю...", onSubmit: async (topic) => {
       const bcRaw = sessionStorage.getItem("blend_create_context");
       let blend_context = null;
@@ -349,6 +416,12 @@ export function createCreateModule(deps) {
     } });
 
     const threadsSeriesForm = elements.draftDetail.querySelector("[data-create-threads-series]");
+    if (threadsSeriesForm) {
+      bindSuggestButton(threadsSeriesForm, () => ({
+        goal_key: threadsSeriesForm.querySelector("select[name='goal_key']")?.value || "trust",
+        format_key: "threads_series",
+      }));
+    }
     if (threadsSeriesForm) bindTopicForm(threadsSeriesForm, { pendingText: "Создаю...", onSubmit: async (topic) => {
       const goal_key = threadsSeriesForm.querySelector("select[name='goal_key']")?.value || "trust";
       const emotion = threadsSeriesForm.querySelector("select[name='emotion']")?.value || "";
