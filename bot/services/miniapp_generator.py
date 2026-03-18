@@ -6,7 +6,7 @@ from bot.agents.reels_agent import StoryboardFrame
 
 
 CONTENT_GOAL_OPTIONS = {"trust", "authority", "engagement", "sales"}
-CONTENT_FORMAT_OPTIONS = {"threads", "instagram", "telegram", "threads_series"}
+CONTENT_FORMAT_OPTIONS = {"instagram", "telegram", "threads_series"}
 
 
 def is_valid_content_goal(goal_key: str) -> bool:
@@ -30,12 +30,6 @@ def build_content_payload(draft: ContentDraft, *, goal_key: str, format_key: str
         "slides": list(draft.slides),
     }
 
-    # For threads: split combined caption into 3 separate posts
-    if format_key == "threads" and draft.caption:
-        posts = split_threads_posts(draft.caption)
-        if any(p["text"] for p in posts):
-            payload["threads_posts"] = posts
-
     return payload
 
 
@@ -54,6 +48,7 @@ def build_threads_series_payload(
             "slot": post["slot"],
             "label": post["label"],
             "text": post["text"],
+            "why_it_works": post.get("why_it_works", ""),
             "scheduled_time": default_times.get(post["slot"], "09:00"),
             "status": "draft",
             "error_message": None,

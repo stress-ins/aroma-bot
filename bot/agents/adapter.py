@@ -6,14 +6,12 @@ from bot.services.brand_settings_store import get_brand_settings_cached
 from bot.services.humanizer import humanize
 
 ADAPT_PLATFORM_SPECS = {
-    "threads": "Threads: 3 поста на сегодня в порядке Утро / День / Вечер. Каждый пост с одной идеей, 5-12 коротких строк, 40-120 слов, разговорный стиль, без хэштегов.",
     "instagram": "Instagram: до 900 символов, эмоциональное начало, структурированный текст с абзацами, хэштеги в конце.",
     "telegram": "Telegram: до 1200 символов, экспертный тон, можно глубже и подробнее, без лишних хэштегов.",
     "reels": "Reels/TikTok подпись: 1-2 живых предложения как крючок + 2-3 хэштега. Пост короткий, зовёт смотреть видео.",
 }
 
 ADAPT_PLATFORM_LABELS = {
-    "threads": "Threads",
     "instagram": "Instagram",
     "telegram": "Telegram",
     "reels": "Reels",

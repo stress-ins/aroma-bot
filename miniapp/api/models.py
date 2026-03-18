@@ -242,7 +242,7 @@ class TokenStatusResponse(BaseModel):
 
 class SuggestTopicsRequest(BaseModel):
     goal_key: str = Field(default="trust")
-    format_key: str = Field(default="threads")
+    format_key: str = Field(default="instagram")
 
 
 class ThreadActionRequest(BaseModel):

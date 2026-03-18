@@ -8,16 +8,6 @@ import re
 logger = logging.getLogger(__name__)
 
 _PLATFORM_KNOWLEDGE: dict[str, str] = {
-    "threads": (
-        "Platform: Threads\n"
-        "- Max 500 characters per post\n"
-        "- Hashtags are NOT needed and can hurt reach\n"
-        "- Conversation-starters perform best (questions, hot takes, relatable observations)\n"
-        "- First line IS the hook — it appears in the feed preview\n"
-        "- Replies and quote-posts boost algorithm signal\n"
-        "- Carousel text-posts get higher engagement than single posts\n"
-        "- Optimal posting: early morning or late evening"
-    ),
     "instagram": (
         "Platform: Instagram\n"
         "- Reels: first 3 seconds are critical for retention\n"

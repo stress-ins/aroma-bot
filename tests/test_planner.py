@@ -57,8 +57,8 @@ class TestThreadsPrompts:
     def test_writer_rules_for_threads_define_three_daily_posts(self):
         from bot.agents.content import _PLATFORM_RULES_WRITER
 
-        rules = _PLATFORM_RULES_WRITER["threads"]
-        assert "morning, day, evening" in rules
+        rules = _PLATFORM_RULES_WRITER["threads_series"]
+        assert "3 posts" in rules
         assert "5-12 short lines" in rules
         assert "40-120 words" in rules
         assert "no hashtags" in rules

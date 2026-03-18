@@ -4,18 +4,16 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 
 import logging
 
-from bot.agents import generate_content_draft
 from bot.agents.content import suggest_topics
-from bot.handlers.monitor import notify_owner_throttled
 from bot.services.drafts_store import list_recent_drafts, save_draft
-from bot.services.miniapp_generator import build_content_payload, build_threads_series_payload, is_valid_content_format, is_valid_content_goal
+from bot.services.miniapp_generator import is_valid_content_format, is_valid_content_goal
 
 logger = logging.getLogger(__name__)
 from bot.services.miniapp_presenter import serialize_draft
 from bot.services.miniapp_reels import serialize_reels_draft
 from config import settings
 from ..auth import TeamContext, _check_content_limit, _require_auth, _resolve_team_context, require_tier
-from ..generation import complete_carousel_generation, complete_reels_v2_generation
+from ..generation import complete_carousel_generation, complete_content_generation, complete_reels_v2_generation, complete_threads_series_generation
 from ..models import CreateCarouselPayload, CreateContentPayload, CreateReelsV2Payload, SuggestTopicsRequest, ThreadsSeriesCreateRequest
 
 router = APIRouter()
@@ -48,7 +46,11 @@ async def api_suggest_topics(payload: SuggestTopicsRequest):
 
 
 @router.post("/api/generate/content", dependencies=[Depends(require_tier("expert")), Depends(_check_content_limit)])
-async def generate_content(payload: CreateContentPayload, ctx: TeamContext = Depends(_resolve_team_context)):
+async def generate_content(
+    payload: CreateContentPayload,
+    background_tasks: BackgroundTasks,
+    ctx: TeamContext = Depends(_resolve_team_context),
+):
     topic = _validate_topic(payload)
     goal_key = payload.goal_key.strip().lower()
     format_key = payload.format_key.strip().lower()
@@ -59,23 +61,33 @@ async def generate_content(payload: CreateContentPayload, ctx: TeamContext = Dep
         raise HTTPException(status_code=400, detail="invalid_format")
 
     bc = _extract_blend_context(payload)
-    draft = await generate_content_draft(topic, goal_key, format_key, blend_context=bc)
-    content_payload = build_content_payload(draft, goal_key=goal_key, format_key=format_key)
+    stub_payload: dict = {
+        "generation_pending": True,
+        "generation_stage": "content",
+        "generation_message": "Собираю черновик.",
+        "goal_key": goal_key,
+        "format_key": format_key,
+    }
     if bc:
-        content_payload["blend_context"] = bc
+        stub_payload["blend_context"] = bc
     saved = await save_draft(
         kind=format_key,
         topic=topic,
         source="/miniapp",
-        payload=content_payload,
+        payload=stub_payload,
         team_id=ctx.team_id,
         created_by=ctx.telegram_id,
     )
+    background_tasks.add_task(complete_content_generation, saved.draft_id, topic, goal_key, format_key, bc)
     return await serialize_draft(saved)
 
 
 @router.post("/api/generate/threads-series", dependencies=[Depends(require_tier("expert")), Depends(_check_content_limit)])
-async def generate_threads_series(payload: ThreadsSeriesCreateRequest, ctx: TeamContext = Depends(_resolve_team_context)):
+async def generate_threads_series(
+    payload: ThreadsSeriesCreateRequest,
+    background_tasks: BackgroundTasks,
+    ctx: TeamContext = Depends(_resolve_team_context),
+):
     topic = _validate_topic(payload)
     goal_key = payload.goal_key.strip().lower() or "trust"
     emotion = payload.emotion.strip().lower()
@@ -84,36 +96,25 @@ async def generate_threads_series(payload: ThreadsSeriesCreateRequest, ctx: Team
         raise HTTPException(status_code=400, detail="invalid_goal")
 
     bc = _extract_blend_context(payload)
-    try:
-        draft = await generate_content_draft(topic, goal_key, "threads_series", blend_context=bc)
-    except Exception as exc:
-        logger.exception("threads-series generation failed for topic=%r", topic)
-        notify_owner_throttled(
-            f"⚠️ Генерация серии тредсов упала\n<b>Тема:</b> {topic}\n<b>Ошибка:</b> {type(exc).__name__}: {exc}",
-            dedup_key="threads-series-gen-error",
-            cooldown=120,
-        )
-        raise HTTPException(status_code=502, detail="generation_failed")
-    ts_payload = build_threads_series_payload(draft, goal_key=goal_key, emotion=emotion)
-    has_content = any(p.get("text") for p in ts_payload.get("threads_posts", []))
-    if not has_content:
-        logger.error("threads-series produced 0 posts for topic=%r, caption=%r", topic, draft.caption[:200] if draft.caption else None)
-        notify_owner_throttled(
-            f"⚠️ Серия тредсов: 0 постов после генерации\n<b>Тема:</b> {topic}\n<b>Caption пуст:</b> {not draft.caption}",
-            dedup_key="threads-series-empty",
-            cooldown=120,
-        )
-        raise HTTPException(status_code=502, detail="generation_empty")
+    stub_payload: dict = {
+        "generation_pending": True,
+        "generation_stage": "content",
+        "generation_message": "Собираю серию постов.",
+        "goal": goal_key,
+        "emotion": emotion,
+        "threads_posts": [],
+    }
     if bc:
-        ts_payload["blend_context"] = bc
+        stub_payload["blend_context"] = bc
     saved = await save_draft(
         kind="threads_series",
         topic=topic,
         source="/miniapp",
-        payload=ts_payload,
+        payload=stub_payload,
         team_id=ctx.team_id,
         created_by=ctx.telegram_id,
     )
+    background_tasks.add_task(complete_threads_series_generation, saved.draft_id, topic, goal_key, emotion, bc)
     return await serialize_draft(saved)
 
 

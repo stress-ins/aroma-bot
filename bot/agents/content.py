@@ -31,7 +31,6 @@ GOAL_GUIDANCE = {
 }
 
 FORMAT_LABELS = {
-    "threads": "Threads",
     "threads_series": "Серия Threads",
     "instagram": "Instagram",
     "telegram": "Telegram",
@@ -396,7 +395,7 @@ VISUAL_PROMPT: [на английском, до 25 слов, terracotta/beige/sa
 
 
 def _threads_output_format(format_key: str) -> str:
-    if format_key in ("threads", "threads_series"):
+    if format_key == "threads_series":
         return _OUTPUT_FORMAT_THREADS
     return _OUTPUT_FORMAT_DEFAULT
 
@@ -537,7 +536,7 @@ def _generate_writer_sync(
 
     # Threads format uses УТРО/ДЕНЬ/ВЕЧЕР markers, not CAPTION: —
     # parse_content_draft won't capture the text, but split_threads_posts needs it in caption.
-    if format_key in ("threads", "threads_series") and not draft.caption and raw.strip():
+    if format_key == "threads_series" and not draft.caption and raw.strip():
         draft.caption = raw.strip()
 
     # Step 3: Editor pass
