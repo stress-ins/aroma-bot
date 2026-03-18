@@ -72,6 +72,7 @@ export function registerWindowBridge(deps) {
     approveThreadsSeries,
     scheduleThreadsSeries,
     openThreadsScheduler,
+    publishThreadsSeriesNow,
     saveThreadsReviewDraft,
     handleSmartSearch,
     runSmartSearch,
@@ -181,6 +182,7 @@ export function registerWindowBridge(deps) {
   window.approveThreadsSeries = approveThreadsSeries;
   window.scheduleThreadsSeries = scheduleThreadsSeries;
   window.openThreadsScheduler = openThreadsScheduler;
+  window.publishThreadsSeriesNow = publishThreadsSeriesNow;
   window.saveThreadsReviewDraft = saveThreadsReviewDraft;
 
   window.publishDraft = publishDraft;
