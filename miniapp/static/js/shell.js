@@ -292,6 +292,91 @@ export function createShellModule(deps) {
     viewport.addEventListener("scroll", handleViewportChange);
   }
 
+  function bindPullToRefresh() {
+    const THRESHOLD = 64;
+    const MAX_PULL = 96;
+    let pullStart = null;
+    let pulling = false;
+    let indicator = null;
+
+    function getIndicator() {
+      if (!indicator) {
+        indicator = document.createElement("div");
+        indicator.className = "pull-to-refresh-indicator";
+        indicator.innerHTML = `<span class="ptr-spinner"></span>`;
+        document.body.appendChild(indicator);
+      }
+      return indicator;
+    }
+
+    function getScrollParent() {
+      const isMobile = window.matchMedia("(max-width: 760px)").matches;
+      if (isMobile && state.mobileView === "detail") return elements.detailPanel;
+      return null; // list view scrolls via document/body
+    }
+
+    function isAtTop() {
+      const parent = getScrollParent();
+      if (parent) return parent.scrollTop <= 0;
+      return (window.scrollY || document.documentElement.scrollTop) <= 0;
+    }
+
+    document.addEventListener("touchstart", (e) => {
+      if (!isAtTop()) return;
+      const touch = e.touches[0];
+      if (!touch) return;
+      pullStart = { y: touch.clientY, locked: false };
+      pulling = false;
+    }, { passive: true });
+
+    document.addEventListener("touchmove", (e) => {
+      if (!pullStart) return;
+      const touch = e.touches[0];
+      if (!touch) return;
+      const dy = touch.clientY - pullStart.y;
+
+      if (!pullStart.locked) {
+        if (dy < 0) { pullStart = null; return; }
+        if (dy > 10 && isAtTop()) {
+          pullStart.locked = true;
+          pulling = true;
+        } else {
+          return;
+        }
+      }
+
+      if (!pulling) return;
+      const progress = Math.min(dy, MAX_PULL);
+      const el = getIndicator();
+      el.classList.add("visible");
+      el.classList.toggle("ready", dy >= THRESHOLD);
+      el.style.setProperty("--ptr-progress", `${progress}px`);
+    }, { passive: true });
+
+    document.addEventListener("touchend", async () => {
+      if (!pulling || !pullStart) { pullStart = null; pulling = false; return; }
+      const el = getIndicator();
+      const isReady = el.classList.contains("ready");
+      pullStart = null;
+      pulling = false;
+
+      if (!isReady) {
+        el.classList.remove("visible", "ready");
+        el.style.removeProperty("--ptr-progress");
+        return;
+      }
+
+      el.classList.add("refreshing");
+      el.style.setProperty("--ptr-progress", `${THRESHOLD}px`);
+      try {
+        await safeLoadCurrentTab("Не удалось обновить");
+      } finally {
+        el.classList.remove("visible", "ready", "refreshing");
+        el.style.removeProperty("--ptr-progress");
+      }
+    }, { passive: true });
+  }
+
   function bindSwipeBack() {
     const isMobile = window.matchMedia("(max-width: 760px)").matches;
     if (!isMobile) return;
@@ -391,6 +476,7 @@ export function createShellModule(deps) {
     bindTapAnimation,
     bindCardKeyboardActivation,
     bindKeyboardViewportAssist,
+    bindPullToRefresh,
     bindSwipeBack,
     bindBottomTabBar,
   };

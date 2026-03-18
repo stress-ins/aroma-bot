@@ -50,9 +50,19 @@ def _is_retryable_status(status_code: int) -> bool:
 # ---------------------------------------------------------------------------
 
 
-_KIE_ASPECT_RATIO_MAP = {
-    "4:5": "3:4",    # Kie doesn't support 4:5; use closest portrait ratio
+_KIE_ASPECT_RATIO_MAP: dict[str, str] = {
+    "4:5": "3:4",    # default fallback for models without 4:5
     "5:4": "4:3",
+}
+
+# gpt-image models only support 1:1, 2:3, 3:2
+_KIE_GPT_IMAGE_RATIO_MAP: dict[str, str] = {
+    "4:5": "2:3",
+    "3:4": "2:3",
+    "5:4": "3:2",
+    "4:3": "3:2",
+    "9:16": "2:3",
+    "16:9": "3:2",
 }
 
 
@@ -65,7 +75,12 @@ def _kie_submit(
     model: str | None = None,
 ) -> str | None:
     """Submit a task to Kie.ai. Returns taskId or None."""
-    ar = _KIE_ASPECT_RATIO_MAP.get(aspect_ratio, aspect_ratio)
+    model_id = model or _KIE_MODEL
+    if model_id.startswith("gpt-image/"):
+        ratio_map = _KIE_GPT_IMAGE_RATIO_MAP
+    else:
+        ratio_map = _KIE_ASPECT_RATIO_MAP
+    ar = ratio_map.get(aspect_ratio, aspect_ratio)
     input_block: dict[str, object] = {
         "prompt": prompt,
         "aspect_ratio": ar,
