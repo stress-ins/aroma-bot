@@ -177,6 +177,9 @@ _THREAD_MONITOR_HOURS = {0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22}
 # Trend enrichment: every 6 hours (offset from metrics by 1 hour)
 _ENRICHMENT_HOURS = {1, 7, 13, 19}
 
+# Social trends collection: every 6 hours (offset from others)
+_SOCIAL_TRENDS_HOURS = {3, 9, 15, 21}
+
 
 # Daily oil: 06:00 UTC (09:00 MSK)
 _DAILY_OIL_HOUR = 6
@@ -213,6 +216,57 @@ async def _fetch_post_metrics() -> None:
         logger.info("Fetched metrics for %d published drafts", count)
 
 
+async def _collect_social_trends() -> None:
+    """Iterate over all teams with configured social accounts and collect posts."""
+    from bot.services.social_trends_store import list_teams_with_social_accounts
+    from bot.services.mentions_store import get_token_for_team
+    from bot.services.brand_settings_store import get_brand_settings
+    from analytics.instagram_trends import InstagramTrendsCollector
+    from analytics.threads_trends_api import ThreadsTrendsCollector
+
+    teams = await list_teams_with_social_accounts()
+    if not teams:
+        return
+
+    logger.info("Social trends: collecting for %d team(s)", len(teams))
+
+    for team in teams:
+        team_id = team["team_id"]
+        try:
+            # Instagram collection
+            if team["has_ig"]:
+                ig_token = await get_token_for_team("instagram", team_id)
+                ig_uid = await get_token_for_team("instagram_user_id", team_id)
+                if ig_token and ig_uid:
+                    settings = await get_brand_settings(team_id)
+                    collector = InstagramTrendsCollector(
+                        team_id, ig_token.access_token, ig_uid.access_token
+                    )
+                    count = await collector.collect_from_accounts(
+                        settings.instagram_accounts or []
+                    )
+                    logger.info("Social trends: IG collected %d posts (team=%s)", count, team_id)
+
+            # Threads collection
+            if team["has_threads"]:
+                th_token = await get_token_for_team("threads", team_id)
+                th_uid = await get_token_for_team("threads_user_id", team_id)
+                if th_token and th_uid:
+                    settings = await get_brand_settings(team_id)
+                    collector = ThreadsTrendsCollector(
+                        team_id, th_token.access_token, th_uid.access_token
+                    )
+                    count = await collector.collect_from_accounts(
+                        settings.threads_accounts or []
+                    )
+                    logger.info("Social trends: Threads collected %d posts (team=%s)", count, team_id)
+                    await collector.collect_own_insights()
+
+        except Exception as exc:
+            logger.error("Social trends failed for team %s: %s", team_id, exc)
+        await asyncio.sleep(2)  # pause between teams
+
+
 async def run_loop(app: Application) -> None:
     """Main scheduler loop — runs forever.
 
@@ -221,6 +275,7 @@ async def run_loop(app: Application) -> None:
     - Checks if daily/weekly cost report should fire
     - Publishes any scheduled posts that are due
     - Fetches post engagement metrics every 6 hours
+    - Collects social trends every 6 hours
     """
     last_digest_date: date | None = None
     last_cost_report_date: date | None = None
@@ -228,6 +283,7 @@ async def run_loop(app: Application) -> None:
     last_metrics_fetch_hour: int | None = None
     last_thread_monitor_hour: int | None = None
     last_enrichment_hour: int | None = None
+    last_social_trends_hour: int | None = None
     last_status_check_minute: int | None = None
     logger.info(
         "Scheduler loop started (digest at %s %s, post check every %ds)",
@@ -306,6 +362,18 @@ async def run_loop(app: Application) -> None:
                     await _run_trend_enrichment()
                 except Exception as exc:
                     logger.error("Trend enrichment failed: %s", exc)
+
+            # Social trends collection every 6 hours (offset)
+            if (
+                now.hour in _SOCIAL_TRENDS_HOURS
+                and now.minute == 0
+                and last_social_trends_hour != now.hour
+            ):
+                last_social_trends_hour = now.hour
+                try:
+                    await _collect_social_trends()
+                except Exception as exc:
+                    logger.error("Social trends collection failed: %s", exc)
 
             # Status monitor every 5 minutes
             if (
