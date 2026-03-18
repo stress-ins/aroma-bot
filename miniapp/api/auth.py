@@ -7,6 +7,7 @@ import logging
 import os
 import time
 import urllib.parse
+from dataclasses import dataclass
 
 from fastapi import Depends, Header, HTTPException, Query
 
@@ -148,3 +149,47 @@ async def _check_content_limit(telegram_id: int = Depends(_resolve_telegram_id))
             )
     await increment_daily_usage(telegram_id)
     return telegram_id
+
+
+# ---------------------------------------------------------------------------
+# Team context resolution
+# ---------------------------------------------------------------------------
+
+@dataclass
+class TeamContext:
+    telegram_id: int
+    team_id: str
+    role: str  # owner/editor/viewer
+
+
+async def _resolve_team_context(
+    telegram_id: int = Depends(_resolve_telegram_id),
+    x_team_id: str | None = Header(default=None),
+) -> TeamContext:
+    """Resolve team context from X-Team-Id header (or auto-create default team)."""
+    from bot.services.team_store import get_default_team, get_member_role
+
+    if x_team_id:
+        role = await get_member_role(x_team_id, telegram_id)
+        if not role:
+            raise HTTPException(status_code=403, detail="not_a_team_member")
+        return TeamContext(telegram_id=telegram_id, team_id=x_team_id, role=role)
+
+    # No team header — use default team
+    team = await get_default_team(telegram_id)
+    role = await get_member_role(team.team_id, telegram_id)
+    return TeamContext(telegram_id=telegram_id, team_id=team.team_id, role=role or "owner")
+
+
+def require_team_role(min_role: str):
+    """Factory: returns FastAPI dependency that checks team membership and minimum role."""
+    async def _dep(ctx: TeamContext = Depends(_resolve_team_context)) -> TeamContext:
+        from bot.services.team_store import has_role
+
+        if not has_role(ctx.role, min_role):
+            raise HTTPException(
+                status_code=403,
+                detail={"error": "insufficient_role", "required": min_role, "current": ctx.role},
+            )
+        return ctx
+    return _dep
