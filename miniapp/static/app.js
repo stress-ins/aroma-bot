@@ -99,7 +99,7 @@ let loadInbox, loadReels, loadKeywords, loadSettings;
 let renderCreate, renderCreateTool;
 let renderDraftList, openDraft, openReels, renderDraftDetail, renderEmptyDetail;
 let renderInbox, renderStatus, renderPlans, renderReels, renderReelsDetail, renderKeywords;
-let addRewrite, removeRewrite, savePlatformTone, saveUploadPostPrefs, saveImageModels, connectPlatform;
+let addRewrite, removeRewrite, savePlatformTone, saveUploadPostPrefs, saveImageModels, connectPlatform, switchAccountsTeam;
 let addKeywordItem, removeKeywordItem, openKeywordTopic;
 let addForbiddenPhrase, removeForbiddenPhrase;
 let createNewTeam, createTeamInvite, removeTeamMember, activatePromo, generatePromos;
@@ -1583,7 +1583,7 @@ const { renderBrand: renderBrandImpl, loadForbiddenPhrases: loadForbiddenPhrases
   addForbiddenPhrase, removeForbiddenPhrase,
   addRewrite, removeRewrite, savePlatformTone, saveUploadPostPrefs,
   saveImageModels,
-  connectPlatform,
+  connectPlatform, switchAccountsTeam,
   createNewTeam, createTeamInvite, removeTeamMember,
   activatePromo, generatePromos,
 } = _settingsMod);
@@ -1881,6 +1881,7 @@ registerWindowBridge({
   saveUploadPostPrefs,
   saveImageModels,
   connectPlatform,
+  switchAccountsTeam,
   createNewTeam,
   createTeamInvite,
   removeTeamMember,

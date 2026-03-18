@@ -4,6 +4,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
+from bot.services.mentions_store import get_token, list_tokens
 from bot.services.team_store import (
     accept_invite,
     add_member,
@@ -78,6 +79,30 @@ async def get_team_detail(
     if not team:
         raise HTTPException(status_code=404, detail="team_not_found")
     members = await get_team_members(team_id)
+
+    # Connected social accounts for this team
+    tokens = await list_tokens(team_id=team_id)
+    token_map: dict[str, dict] = {}
+    for t in tokens:
+        if t.platform in ("threads", "instagram"):
+            token_map[t.platform] = {
+                "connected": bool(t.access_token),
+                "expires_at": t.expires_at.isoformat() if t.expires_at else None,
+            }
+    connected_accounts = []
+    for platform in ("threads", "instagram"):
+        info = token_map.get(platform, {})
+        acc: dict = {
+            "platform": platform,
+            "connected": info.get("connected", False),
+            "username": None,
+            "expires_at": info.get("expires_at"),
+        }
+        uid_token = await get_token(f"{platform}_user_id")
+        if uid_token and uid_token.access_token:
+            acc["username"] = uid_token.access_token
+        connected_accounts.append(acc)
+
     return {
         "team_id": team.team_id,
         "name": team.name,
@@ -85,6 +110,7 @@ async def get_team_detail(
         "created_by": team.created_by,
         "role": role,
         "members": members,
+        "connected_accounts": connected_accounts,
     }
 
 

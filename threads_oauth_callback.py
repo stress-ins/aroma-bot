@@ -97,14 +97,47 @@ def _render_oauth_callback_html(service: str, request: Request) -> HTMLResponse:
     return HTMLResponse(html)
 
 
+def _styled_page(*, success: bool, title: str, subtitle: str | None = None, detail: str | None = None) -> str:
+    icon_color = "#4ade80" if success else "#f87171"
+    icon_svg = (
+        '<circle cx="32" cy="32" r="30" stroke="{c}" stroke-width="3" fill="none"/>'
+        '<path d="M20 33l8 8 16-16" stroke="{c}" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'
+    ).format(c=icon_color) if success else (
+        '<circle cx="32" cy="32" r="30" stroke="{c}" stroke-width="3" fill="none"/>'
+        '<path d="M22 22l20 20M42 22l-20 20" stroke="{c}" stroke-width="3" fill="none" stroke-linecap="round"/>'
+    ).format(c=icon_color)
+
+    subtitle_html = f'<p style="font-size:18px;color:#c0785c;font-weight:600;margin:4px 0 0">{subtitle}</p>' if subtitle else ""
+    detail_html = f'<p style="font-size:14px;color:#9ca3af;margin:8px 0 0">{detail}</p>' if detail else ""
+    bot_user = settings.telegram_bot_username
+    tg_link = f"https://t.me/{bot_user}" if bot_user else ""
+    tg_btn = (
+        f'<a href="{tg_link}" style="display:inline-block;margin-top:24px;padding:12px 32px;'
+        f'background:#c0785c;color:#fff;border-radius:12px;text-decoration:none;font-weight:600;font-size:15px">'
+        f'Вернуться в Telegram</a>'
+    ) if tg_link else ""
+
+    return (
+        '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+        '<title>Aroma OAuth</title></head>'
+        '<body style="margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;'
+        'background:#1a1a2e;font-family:-apple-system,BlinkMacSystemFont,sans-serif;color:#e5e7eb">'
+        '<div style="text-align:center;padding:40px 24px;max-width:380px">'
+        f'<svg width="64" height="64" viewBox="0 0 64 64" style="margin-bottom:20px">{icon_svg}</svg>'
+        f'<h1 style="font-size:22px;font-weight:700;margin:0;color:#fff">{title}</h1>'
+        f'{subtitle_html}{detail_html}{tg_btn}'
+        '</div></body></html>'
+    )
+
+
 async def _complete_oauth(service: str, request: Request) -> HTMLResponse:
     code = request.query_params.get("code", "")
     state = request.query_params.get("state", "")
     error = request.query_params.get("error", "")
     if error:
-        return HTMLResponse(f"<h1>{service.title()} OAuth error</h1><pre>{error}</pre>", status_code=400)
+        return HTMLResponse(_styled_page(success=False, title=f"{service.title()} — ошибка", detail=error), status_code=400)
     if not code:
-        return HTMLResponse("<h1>No code provided</h1>", status_code=400)
+        return HTMLResponse(_styled_page(success=False, title="Ошибка", detail="No code provided"), status_code=400)
 
     chat_id: str | None = None
     logger.info(
@@ -134,19 +167,19 @@ async def _complete_oauth(service: str, request: Request) -> HTMLResponse:
     except OAuthExchangeError as exc:
         if chat_id:
             _notify_failure(chat_id, service, str(exc))
-        return HTMLResponse(f"<h1>{service.title()} OAuth exchange failed</h1><pre>{exc}</pre>", status_code=500)
+        return HTMLResponse(_styled_page(success=False, title=f"{service.title()} — ошибка обмена", detail=str(exc)), status_code=500)
     except Exception as exc:  # pragma: no cover
         logger.exception("Unexpected OAuth callback failure for %s", service)
         if chat_id:
             _notify_failure(chat_id, service, str(exc))
-        return HTMLResponse(f"<h1>{service.title()} OAuth failed</h1><pre>{exc}</pre>", status_code=500)
+        return HTMLResponse(_styled_page(success=False, title=f"{service.title()} — ошибка", detail=str(exc)), status_code=500)
 
-    html = (
-        f"<h1>{service.title()} connected</h1>"
-        "<p>Токен сохранён на сервере.</p>"
-        "<p>Бот перезапущен и пришлёт подтверждение в Telegram.</p>"
-    )
-    return HTMLResponse(html)
+    return HTMLResponse(_styled_page(
+        success=True,
+        title=f"{service.title()} подключён",
+        subtitle=f"@{bundle.username}" if bundle.username else None,
+        detail="Токен сохранён. Бот перезапущен.",
+    ))
 
 
 def _exchange_bundle(service: str, code: str) -> OAuthTokenBundle:
