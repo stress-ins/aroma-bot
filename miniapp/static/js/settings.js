@@ -661,7 +661,7 @@ export function createSettingsModule(deps) {
       const statusMeta = `<span class="account-meta">${uiIcon("check-circle")}<span>Подключено</span>${expiry ? ` · до ${expiry}` : ""}</span>`;
       const btn = readOnly
         ? ""
-        : `<button class="secondary-button account-full-btn" type="button" onclick="connectPlatform('${acc.platform}')">${uiIcon("refresh-cw")}<span>Переподключить</span></button>`;
+        : `<button class="secondary-button account-full-btn" type="button" onclick="connectPlatform('${acc.platform}')">${uiIcon("regenerate")}<span>Переподключить</span></button>`;
       return `
         <article class="account-card account-card--vertical">
           <div class="account-card-title">${icon}<strong>${label}</strong></div>
