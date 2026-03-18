@@ -19,7 +19,7 @@ systemctl restart aroma-bot
 systemctl restart threads-oauth
 echo '=== threads-oauth restarted ==='
 if systemctl is-enabled aroma-miniapp &>/dev/null; then
-    systemctl restart aroma-miniapp
+    systemctl reload-or-restart aroma-miniapp
     echo '=== aroma-miniapp restarted ==='
 fi
 
