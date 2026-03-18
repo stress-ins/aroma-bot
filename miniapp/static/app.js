@@ -641,6 +641,16 @@ function uiIcon(name) {
     ticket:     "ticket",
     shield:     "shield",
     crown:      "crown",
+    send:       "send",
+    copy:       "copy",
+    zap:        "zap",
+    publish:    "upload",
+    palette:    "palette",
+    activity:   "activity",
+    "arrow-left": "arrow-left",
+    "alert-circle": "alert-circle",
+    check:      "check",
+    lock:       "lock",
   };
   return `<span class="ui-icon ui-icon-${escapeHtml(name)}">${icon(LUCIDE_MAP[name] || "square-terminal", 16)}</span>`;
 }
@@ -909,6 +919,8 @@ async function publishThreadsSeriesNow(draftId, btn) {
     });
     const ok = (result.results || []).filter(r => r.status === "ok").length;
     const errs = (result.results || []).filter(r => r.status === "error").length;
+    const errorDetails = (result.results || []).filter(r => r.error).map(r => `${r.slot}: ${r.error}`);
+    if (errorDetails.length) showUiNotice(errorDetails.join("\n"), "error");
     showUiNotice(
       errs ? `Опубликовано ${ok}, ошибок ${errs}` : `Все ${ok} поста опубликованы`,
       errs ? "warning" : "success",

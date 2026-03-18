@@ -1796,3 +1796,54 @@ class TestMiniAppRussianLocale:
         src = Path("bot/agents/content.py").read_text(encoding="utf-8")
         assert "get_event_loop" not in src
         assert "get_running_loop" in src or "asyncio.to_thread" in src
+
+
+class TestIconMappings:
+    """Guard tests: every icon name used in JS must have a LUCIDE_MAP entry."""
+
+    def _parse_lucide_map_keys(self) -> set[str]:
+        """Extract all keys from LUCIDE_MAP in app.js."""
+        import re
+        src = _miniapp_static_text("app.js")
+        # Find LUCIDE_MAP block
+        m = re.search(r"const LUCIDE_MAP\s*=\s*\{(.*?)\};", src, re.DOTALL)
+        assert m, "LUCIDE_MAP not found in app.js"
+        block = m.group(1)
+        # Extract keys: either bare identifiers or quoted strings
+        keys = set()
+        for km in re.finditer(r'(?:^|,)\s*(?:"([^"]+)"|\'([^\']+)\'|(\w[\w-]*))\s*:', block):
+            keys.add(km.group(1) or km.group(2) or km.group(3))
+        return keys
+
+    def _find_used_icon_names(self) -> set[str]:
+        """Find all icon names passed to uiIcon() and actionLabel() across JS files."""
+        import re
+        bundle = _miniapp_js_bundle()
+        names: set[str] = set()
+        for fn in ("uiIcon", "actionLabel"):
+            for m in re.finditer(rf'{fn}\(\s*["\']([^"\']+)["\']', bundle):
+                names.add(m.group(1))
+        return names
+
+    def test_all_icon_names_have_lucide_mapping(self):
+        """Every icon name referenced in uiIcon/actionLabel must exist in LUCIDE_MAP."""
+        lucide_keys = self._parse_lucide_map_keys()
+        used_names = self._find_used_icon_names()
+        missing = used_names - lucide_keys
+        assert not missing, (
+            f"Icon names used but missing from LUCIDE_MAP: {sorted(missing)}. "
+            f"Add them to LUCIDE_MAP in miniapp/static/app.js"
+        )
+
+    def test_no_square_terminal_fallback_in_rendered_html(self):
+        """No JS file should hard-code square-terminal except as the prompt icon mapping."""
+        import re
+        bundle = _miniapp_js_bundle()
+        # Remove the LUCIDE_MAP prompt entry — that's intentional
+        # Remove the LUCIDE_MAP prompt entry and the fallback line — both intentional
+        cleaned = re.sub(r'prompt:\s*"square-terminal"', '', bundle)
+        cleaned = re.sub(r'LUCIDE_MAP\[name\]\s*\|\|\s*"square-terminal"', '', cleaned)
+        assert 'square-terminal' not in cleaned, (
+            "Found 'square-terminal' outside of LUCIDE_MAP prompt entry — "
+            "likely a fallback icon is being used where a proper mapping should exist"
+        )

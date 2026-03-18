@@ -122,6 +122,14 @@ async def _publish_series_slots(draft, now: datetime) -> None:
                     "Failed to publish series slot %s for draft %s: %s",
                     post["slot"], draft.draft_id, exc,
                 )
+                try:
+                    from bot.handlers.monitor import notify_owner
+                    await notify_owner(
+                        f"⚠️ Scheduled publish failed for {draft.draft_id}:\n"
+                        f"  {post['slot']}: {exc}"
+                    )
+                except Exception:
+                    pass
 
 
 def _is_digest_time(now: datetime) -> bool:
