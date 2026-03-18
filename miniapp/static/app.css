@@ -2008,6 +2008,9 @@ body.tg-theme-dark .danger-button {
   }
 
   /* In detail view the topbar-main is hidden, so back button sticks right at the top */
+  body.is-mobile-layout.is-detail-view {
+    overflow: hidden;  /* prevent body scroll — only detail-panel scrolls */
+  }
   body.is-mobile-layout.is-detail-view .topbar-main {
     display: none;
   }
@@ -2020,6 +2023,9 @@ body.tg-theme-dark .danger-button {
     padding-top: var(--tg-content-inset-top, env(safe-area-inset-top, 0px));
     padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
     overflow-y: auto;
+    /* Fill the layout grid cell so overflow-y creates a real scroll container.
+       Without a height constraint the panel grows to fit content and sticky/scroll break. */
+    height: calc(var(--tg-viewport-stable-height, 100dvh) - var(--tg-content-inset-top, env(safe-area-inset-top, 0px)));
   }
 
   body.is-mobile-layout.is-detail-view .detail-grid .section {
