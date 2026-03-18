@@ -286,11 +286,14 @@ def _serialize_model(model: AromaCardModel) -> dict[str, object]:
         payload["name_en"] = model.name if (name_ru and model.name != name_ru) else ""
     elif model.category == "aroma":
         name_ru = str(payload.get("name_ru", "")).strip()
-        if name_ru and name_ru != model.name:
+        has_cyrillic = any("\u0400" <= ch <= "\u04ff" for ch in name_ru)
+        if name_ru and has_cyrillic and name_ru != model.name:
             payload["name"] = name_ru
             payload.setdefault("name_en", model.name)
         else:
             payload["name"] = model.name
+            if name_ru and not has_cyrillic:
+                payload.setdefault("name_en", name_ru)
     else:
         payload["name"] = model.name
     payload["category"] = model.category
