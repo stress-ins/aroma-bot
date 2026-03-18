@@ -5256,3 +5256,15 @@ body.tg-theme-dark .reco-cta-btn { color: #d4845e; }
   font-size: 14px;
   color: var(--hint);
 }
+/* ── Suggest topic button + dropdown ────────────────────────────────── */
+.suggest-topic-btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid var(--border, #e0e0e0); border-radius: 8px; background: transparent; color: var(--accent, #6366f1); font-size: 14px; font-weight: 500; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+.suggest-topic-btn:hover { background: var(--surface-2, #f5f5f5); }
+.suggest-topic-btn:disabled { opacity: 0.5; pointer-events: none; }
+.suggest-topic-btn i[data-lucide] { width: 16px; height: 16px; }
+.suggest-topics-dropdown { position: relative; margin-top: 6px; border: 1px solid var(--border, #e0e0e0); border-radius: 10px; background: var(--surface, #fff); overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+.suggest-topics-dropdown[hidden] { display: none; }
+.suggest-topic-item { display: block; width: 100%; padding: 10px 14px; border: none; background: transparent; text-align: left; font-size: 14px; color: var(--text); cursor: pointer; transition: background 0.12s; }
+.suggest-topic-item:not(:last-child) { border-bottom: 1px solid var(--border, #e0e0e0); }
+.suggest-topic-item:hover { background: var(--surface-2, #f5f5f5); }
+.suggest-topic-item:active { background: var(--surface-3, #ebebeb); }
+.suggest-topics-loading { display: flex; align-items: center; gap: 8px; padding: 12px 14px; font-size: 14px; color: var(--hint); }

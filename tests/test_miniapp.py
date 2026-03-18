@@ -1847,3 +1847,32 @@ class TestIconMappings:
             "Found 'square-terminal' outside of LUCIDE_MAP prompt entry — "
             "likely a fallback icon is being used where a proper mapping should exist"
         )
+
+
+class TestSuggestTopics:
+    def test_suggest_topics_prompt_excludes_used(self):
+        from bot.agents.content import _suggest_topics_prompt
+        prompt = _suggest_topics_prompt("trust", "threads", ["Тема A", "Тема B"])
+        assert "НЕ повторяй темы похожие на" in prompt
+        assert "Тема A" in prompt and "Тема B" in prompt
+        assert "5 тем" in prompt
+
+    def test_suggest_topics_prompt_without_exclusions(self):
+        from bot.agents.content import _suggest_topics_prompt
+        prompt = _suggest_topics_prompt("trust", "threads", [])
+        assert "НЕ повторяй" not in prompt
+        assert "5 тем" in prompt
+
+    def test_create_forms_have_suggest_button(self):
+        from pathlib import Path
+        create_js = Path("miniapp/static/js/create.js").read_text(encoding="utf-8")
+        assert "suggest-topic-btn" in create_js
+        assert "bindSuggestButton" in create_js
+
+    def test_threads_caption_fallback_when_no_caption_parsed(self):
+        from bot.agents.content import parse_content_draft, _has_structured_content
+        raw = "УТРО\nТекст.\n\nДЕНЬ\nТекст.\n\nВЕЧЕР\nТекст.\n\nVISUAL_PROMPT: soft light"
+        draft = parse_content_draft(raw)
+        assert draft.visual_prompt
+        assert _has_structured_content(draft)
+        assert not draft.caption
