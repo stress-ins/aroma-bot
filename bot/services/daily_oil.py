@@ -396,6 +396,16 @@ async def select_daily_oil(target_date: str) -> DailyOilModel:
             )
         ).scalar_one_or_none()
         if existing:
+            if not existing.reason and not existing.fact and not existing.daily_practice:
+                # Content generation failed on initial run — retry
+                fact, practice = _generate_fact_and_practice(
+                    existing.name, existing.context
+                )
+                if fact or practice:
+                    existing.fact = fact
+                    existing.daily_practice = practice
+                    await session.commit()
+                    await session.refresh(existing)
             return existing
 
         # Build day context (weather, Kp, season, etc.)
