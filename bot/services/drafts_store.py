@@ -154,6 +154,7 @@ async def update_draft(
     revision_notes: str | None = None,
     published_at: Any = _SENTINEL,
     error: str | None = None,
+    team_id: Any = _SENTINEL,
 ) -> DraftRecord | None:
     async with AsyncSessionLocal() as session:
         query = select(DraftModel).filter(DraftModel.draft_id == draft_id)
@@ -183,6 +184,8 @@ async def update_draft(
             model.published_at = published_at
         if error is not None:
             model.error = error
+        if team_id is not _SENTINEL:
+            model.team_id = team_id
 
         await session.commit()
         await session.refresh(model)
