@@ -17,6 +17,7 @@ from bot.services.team_store import (
     remove_member,
     update_role,
 )
+from config import settings
 from ..auth import TeamContext, TelegramUser, _resolve_telegram_id, _resolve_telegram_user, _resolve_team_context, require_team_role
 
 router = APIRouter()
@@ -192,7 +193,7 @@ async def create_team_invite(
     )
     return {
         "invite_code": invite.invite_code,
-        "deep_link": f"https://t.me/AromaBot?start=invite_{invite.invite_code}",
+        "deep_link": f"https://t.me/{settings.telegram_bot_username}?start=invite_{invite.invite_code}",
     }
 
 

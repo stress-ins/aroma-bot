@@ -630,6 +630,12 @@ function uiIcon(name) {
     "message-circle": "message-circle",
     camera:     "camera",
     "check-circle": "check-circle",
+    users:      "users",
+    "user-plus": "user-plus",
+    "user-minus": "user-minus",
+    ticket:     "ticket",
+    shield:     "shield",
+    crown:      "crown",
   };
   return `<span class="ui-icon ui-icon-${escapeHtml(name)}">${icon(LUCIDE_MAP[name] || "square-terminal", 16)}</span>`;
 }

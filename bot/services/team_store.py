@@ -71,13 +71,13 @@ async def get_user_teams(telegram_id: int) -> list[dict]:
         ]
 
 
-async def get_default_team(telegram_id: int) -> TeamModel:
+async def get_default_team(telegram_id: int, username: str = "") -> TeamModel:
     teams = await get_user_teams(telegram_id)
     if teams:
         return await get_team(teams[0]["team_id"])
 
     # Auto-create personal workspace
-    return await create_team("Personal", telegram_id)
+    return await create_team("Персональная", telegram_id, creator_username=username)
 
 
 async def get_team(team_id: str) -> TeamModel | None:

@@ -88,6 +88,7 @@ class Settings(BaseSettings):
 
     # Admin
     admin_telegram_id: int = 62912125
+    telegram_bot_username: str = "Stress_ins_bot"
 
     # Cache
     cache_ttl: int = 3600
