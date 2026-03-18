@@ -235,6 +235,10 @@ export function createDraftsModule(deps) {
             <p class="eyebrow">${contentKindIcon(d.kind)}<span>${escapeHtml(kindLabel(d.kind))}${sourceLabel(d.source) ? " • " + escapeHtml(sourceLabel(d.source)) : ""}</span></p>
             <h2 class="detail-title">${escapeHtml(d.topic)}</h2>
             <div class="draft-meta">
+              ${d.seq_id ? `<span class="meta-chip meta-chip--muted">#${d.seq_id}</span>` : ""}
+              ${formatPlanDate(d.created_at) ? `<span class="meta-chip meta-chip--muted">${escapeHtml(formatPlanDate(d.created_at))}</span>` : ""}
+              ${d.updated_at && d.updated_at !== d.created_at ? `<span class="meta-chip meta-chip--muted">изм. ${escapeHtml(formatPlanDate(d.updated_at))}</span>` : ""}
+              ${d.created_by_username ? `<span class="meta-chip meta-chip--muted">@${escapeHtml(d.created_by_username)}</span>` : ""}
               ${tagMarkup(statusLabel(d.status), statusTone(d.status))}
               ${p.goal ? tagMarkup(GOAL_LABELS[p.goal] || p.goal, "status-neutral") : ""}
               ${p.emotion ? tagMarkup(EMOTION_LABELS[p.emotion] || p.emotion, "status-neutral") : ""}
@@ -375,6 +379,8 @@ export function createDraftsModule(deps) {
             <div class="draft-meta">
               ${d.seq_id ? `<span class="meta-chip meta-chip--muted">#${d.seq_id}</span>` : ""}
               ${formatPlanDate(d.created_at) ? `<span class="meta-chip meta-chip--muted">${escapeHtml(formatPlanDate(d.created_at))}</span>` : ""}
+              ${d.updated_at && d.updated_at !== d.created_at ? `<span class="meta-chip meta-chip--muted">изм. ${escapeHtml(formatPlanDate(d.updated_at))}</span>` : ""}
+              ${d.created_by_username ? `<span class="meta-chip meta-chip--muted">@${escapeHtml(d.created_by_username)}</span>` : ""}
               ${tagMarkup(statusLabel(d.status), statusTone(d.status))}
               ${d.generation_pending && draftGenerationLabel(d) ? tagMarkup(draftGenerationLabel(d), "pending") : ""}
               ${isContentReviewKind(d.kind) ? tagMarkup(feedbackLabel(d.feedback), feedbackTone(d.feedback)) : ""}
