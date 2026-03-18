@@ -78,12 +78,16 @@ async def serialize_draft(record: DraftRecord) -> dict[str, Any]:
     slides_count = len(payload.get("slides", [])) if isinstance(payload.get("slides"), list) else 0
     storyboard_count = len(payload.get("storyboard", [])) if isinstance(payload.get("storyboard"), list) else 0
     images_ready = int(payload.get("images_ready", 0) or 0)
+    generation_stage = str(payload.get("generation_stage", ""))
+    has_error = generation_stage == "error"
     explicit_pending = bool(payload.get("generation_pending"))
     generation_pending = explicit_pending
-    if record.kind == "carousel" and slides_count:
-        generation_pending = generation_pending or images_ready < slides_count
-    if record.kind == "reels" and storyboard_count:
-        generation_pending = generation_pending or images_ready < storyboard_count
+    # Don't derive pending from missing images when generation already failed
+    if not has_error:
+        if record.kind == "carousel" and slides_count:
+            generation_pending = generation_pending or images_ready < slides_count
+        if record.kind == "reels" and storyboard_count:
+            generation_pending = generation_pending or images_ready < storyboard_count
     return {
         "draft_id": record.draft_id,
         "seq_id": record.seq_id,
@@ -98,8 +102,9 @@ async def serialize_draft(record: DraftRecord) -> dict[str, Any]:
         "storyboard_count": storyboard_count,
         "images_ready": images_ready,
         "generation_pending": generation_pending,
-        "generation_stage": str(payload.get("generation_stage", "")),
+        "generation_stage": generation_stage,
         "generation_message": str(payload.get("generation_message", "")),
+        "generation_error": str(payload.get("generation_error", "")),
         "payload": payload,
     }
 
@@ -109,11 +114,14 @@ async def serialize_draft_summary(record: DraftRecord) -> dict[str, Any]:
     slides_count = len(payload.get("slides", [])) if isinstance(payload.get("slides"), list) else 0
     storyboard_count = len(payload.get("storyboard", [])) if isinstance(payload.get("storyboard"), list) else 0
     images_ready = int(payload.get("images_ready", 0) or 0)
+    generation_stage = str(payload.get("generation_stage", ""))
+    has_error = generation_stage == "error"
     generation_pending = bool(payload.get("generation_pending"))
-    if record.kind == "carousel" and slides_count:
-        generation_pending = generation_pending or images_ready < slides_count
-    if record.kind == "reels" and storyboard_count:
-        generation_pending = generation_pending or images_ready < storyboard_count
+    if not has_error:
+        if record.kind == "carousel" and slides_count:
+            generation_pending = generation_pending or images_ready < slides_count
+        if record.kind == "reels" and storyboard_count:
+            generation_pending = generation_pending or images_ready < storyboard_count
     return {
         "draft_id": record.draft_id,
         "seq_id": record.seq_id,
@@ -128,7 +136,8 @@ async def serialize_draft_summary(record: DraftRecord) -> dict[str, Any]:
         "storyboard_count": storyboard_count,
         "images_ready": images_ready,
         "generation_pending": generation_pending,
-        "generation_stage": str(payload.get("generation_stage", "")),
+        "generation_stage": generation_stage,
         "generation_message": str(payload.get("generation_message", "")),
+        "generation_error": str(payload.get("generation_error", "")),
         "created_by": record.created_by,
     }
