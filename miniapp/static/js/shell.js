@@ -455,6 +455,12 @@ export function createShellModule(deps) {
           }
           setTab(rememberedHandbookTab);
           void safeLoadCurrentTab("Не удалось загрузить справочник");
+          if (elements.listPanel) elements.listPanel.scrollTop = 0;
+          return;
+        }
+
+        if (state.mode === "content" && state.tab === targetTab && state.mobileView === "list") {
+          if (elements.listPanel) elements.listPanel.scrollTop = 0;
           return;
         }
 
@@ -468,6 +474,8 @@ export function createShellModule(deps) {
         }
         setTab(targetTab);
         void safeLoadCurrentTab("Не удалось загрузить вкладку");
+        if (elements.listPanel) elements.listPanel.scrollTop = 0;
+        if (elements.detailPanel) elements.detailPanel.scrollTop = 0;
       });
     });
 
