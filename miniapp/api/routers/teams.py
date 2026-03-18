@@ -17,7 +17,7 @@ from bot.services.team_store import (
     remove_member,
     update_role,
 )
-from ..auth import TeamContext, _resolve_telegram_id, _resolve_team_context, require_team_role
+from ..auth import TeamContext, TelegramUser, _resolve_telegram_id, _resolve_telegram_user, _resolve_team_context, require_team_role
 
 router = APIRouter()
 
@@ -53,11 +53,11 @@ async def list_teams(telegram_id: int = Depends(_resolve_telegram_id)):
 @router.post("/api/teams")
 async def create_team_endpoint(
     body: CreateTeamPayload,
-    telegram_id: int = Depends(_resolve_telegram_id),
+    tg_user: TelegramUser = Depends(_resolve_telegram_user),
 ):
     if not body.name.strip():
         raise HTTPException(status_code=400, detail="name_required")
-    team = await create_team(body.name.strip(), telegram_id)
+    team = await create_team(body.name.strip(), tg_user.telegram_id, creator_username=tg_user.username)
     return {
         "team_id": team.team_id,
         "name": team.name,
@@ -199,9 +199,9 @@ async def create_team_invite(
 @router.post("/api/invites/{invite_code}/accept")
 async def accept_team_invite(
     invite_code: str,
-    telegram_id: int = Depends(_resolve_telegram_id),
+    tg_user: TelegramUser = Depends(_resolve_telegram_user),
 ):
-    result = await accept_invite(invite_code, telegram_id)
+    result = await accept_invite(invite_code, tg_user.telegram_id, username=tg_user.username)
     if result is None:
         raise HTTPException(status_code=404, detail="invite_not_found_or_expired")
     return result

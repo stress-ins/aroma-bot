@@ -634,9 +634,10 @@ export function createSettingsModule(deps) {
           const removeBtn = isOwner && m.telegram_id !== detail.created_by
             ? ` <button class="chip-remove-btn" type="button" onclick="removeTeamMember('${escapeHtml(t.team_id)}', ${m.telegram_id})" title="Удалить">&times;</button>`
             : "";
+          const displayName = m.username ? `@${escapeHtml(m.username)}` : `ID: ${m.telegram_id}`;
           return `
             <div class="team-member-row">
-              <span class="team-member-id">${m.telegram_id}</span>
+              <span class="team-member-id">${displayName}</span>
               <span class="keyword-chip">${escapeHtml(roleLabel)}${removeBtn}</span>
             </div>`;
         }).join("");

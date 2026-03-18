@@ -33,6 +33,7 @@ class TeamMemberModel(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     team_id: Mapped[str] = mapped_column(String(36), ForeignKey("teams.team_id"), index=True)
     telegram_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    username: Mapped[str] = mapped_column(String(128), default="")
     role: Mapped[str] = mapped_column(String(16), default="viewer")  # owner/editor/viewer
     joined_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
