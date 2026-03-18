@@ -215,7 +215,18 @@ async def regenerate_carousel_slide_asset(
 
     from bot.agents.image_prompt_router import optimize_image_prompt
     blend_mood = _get_blend_mood_from_payload(draft.payload)
-    regen_model = _get_img2img_model() if slide_images[slide_index] else _get_carousel_model()
+
+    # Build image URL *before* choosing model — if we can't construct a valid
+    # URL the img2img model will fail with "This field is required".
+    image_urls: list[str] | None = None
+    current_image = slide_images[slide_index]
+    if current_image and isinstance(current_image, dict):
+        relative_url = current_image.get("url", "")
+        base_url = settings.assets_base_url
+        if relative_url and base_url:
+            image_urls = [f"{base_url}{relative_url}"]
+
+    regen_model = _get_img2img_model() if image_urls else _get_carousel_model()
     final_prompt = optimize_image_prompt(
         img_prompts[slide_index],
         model=regen_model,
@@ -226,19 +237,7 @@ async def regenerate_carousel_slide_asset(
         blend_mood=blend_mood,
     )
 
-    # Image-to-image: pass current slide image so the model edits rather than
-    # generating from scratch.
-    image_urls: list[str] | None = None
-    current_image = slide_images[slide_index]
-    if current_image and isinstance(current_image, dict):
-        relative_url = current_image.get("url", "")
-        base_url = settings.assets_base_url
-        if relative_url and base_url:
-            image_urls = [f"{base_url}{relative_url}"]
-
     try:
-        # Use img2img model when editing based on existing image
-        regen_model = _get_img2img_model() if slide_images[slide_index] else _get_carousel_model()
         image_bytes = generate_gemini_image_sync(
             final_prompt,
             aspect_ratio="4:5",
@@ -281,7 +280,17 @@ async def regenerate_all_carousel_slide_assets(draft_id: str) -> dict[str, objec
 
     changed = False
     for index, prompt in enumerate(img_prompts):
-        regen_model = _get_img2img_model() if slide_images[index] else _get_carousel_model()
+        # Build image URL first — model choice depends on whether we have a
+        # usable URL, not just whether a slide image record exists.
+        image_urls: list[str] | None = None
+        current_image = slide_images[index]
+        if current_image and isinstance(current_image, dict):
+            relative_url = current_image.get("url", "")
+            base_url = settings.assets_base_url
+            if relative_url and base_url:
+                image_urls = [f"{base_url}{relative_url}"]
+
+        regen_model = _get_img2img_model() if image_urls else _get_carousel_model()
         try:
             final_prompt = _optimize(
                 prompt, model=regen_model, topic=draft.topic,
@@ -291,15 +300,6 @@ async def regenerate_all_carousel_slide_assets(draft_id: str) -> dict[str, objec
         except Exception:
             logger.exception("carousel_assets: optimize failed on slide %d", index + 1)
             final_prompt = _prompt_with_note(prompt, notes[index])
-
-        # Image-to-image: pass current slide image when available.
-        image_urls: list[str] | None = None
-        current_image = slide_images[index]
-        if current_image and isinstance(current_image, dict):
-            relative_url = current_image.get("url", "")
-            base_url = settings.assets_base_url
-            if relative_url and base_url:
-                image_urls = [f"{base_url}{relative_url}"]
 
         try:
             image_bytes = generate_gemini_image_sync(
