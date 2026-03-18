@@ -45,9 +45,14 @@ async def social_status(ctx: TeamContext = Depends(require_team_role("owner"))):
             "updated_at": info.get("updated_at"),
         })
     for acc in accounts:
-        user_id_token = await get_token(f"{acc['platform']}_user_id")
-        if user_id_token and user_id_token.access_token:
-            acc["username"] = user_id_token.access_token
+        # Prefer human-readable username over numeric user_id
+        username_token = await get_token(f"{acc['platform']}_username")
+        if username_token and username_token.access_token:
+            acc["username"] = username_token.access_token
+        else:
+            user_id_token = await get_token(f"{acc['platform']}_user_id")
+            if user_id_token and user_id_token.access_token:
+                acc["username"] = user_id_token.access_token
     return {"accounts": accounts}
 
 
