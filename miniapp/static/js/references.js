@@ -911,10 +911,20 @@ export function createReferencesModule(deps) {
         zipNamesAndSlugs(reference.related_symptom_names, reference.related_symptom_slugs, reference.related_symptom_parent_groups),
         "symptoms"
       );
+      const _dOil = state._dailyOil;
+      state._dailyOil = null;
+      const dailyOilHtml = _dOil && (_dOil.reason || _dOil.fact || _dOil.daily_practice)
+        ? `<section class="section daily-oil-detail-section">
+            <h3><i data-lucide="sparkles"></i> Масло дня</h3>
+            ${_dOil.reason ? `<p class="daily-oil-detail-reason">💡 ${escapeHtml(_dOil.reason)}</p>` : ""}
+            ${_dOil.fact ? `<p>${escapeHtml(_dOil.fact)}</p>` : ""}
+            ${_dOil.daily_practice ? `<p><strong>Практика дня:</strong> ${escapeHtml(_dOil.daily_practice)}</p>` : ""}
+          </section>` : "";
       detailHtml = `
         <div class="detail-grid">
           ${renderBackButton()}
           ${renderReferenceImage(reference)}
+          ${dailyOilHtml}
           ${aromaHtmlSection("Паспорт аромата", renderReferencePassport(reference))}
           ${renderCollapsibleDescription(reference)}
           ${renderCollapsibleSection("Психологические свойства", reference.psychological_properties, 280)}
@@ -1129,6 +1139,18 @@ export function createReferencesModule(deps) {
     renderReferencesLocked();
   }
 
+  async function openDailyOilReference(slug) {
+    const banner = document.querySelector(".daily-oil-banner");
+    if (banner) {
+      state._dailyOil = {
+        reason: banner.dataset.dailyReason || "",
+        fact: banner.dataset.dailyFact || "",
+        daily_practice: banner.dataset.dailyPractice || "",
+      };
+    }
+    await openReference(slug, "aromas");
+  }
+
   /* ── Daily Oil Banner ── */
   async function _loadDailyOilBanner() {
     const el = document.getElementById("dailyOilBanner");
@@ -1136,7 +1158,10 @@ export function createReferencesModule(deps) {
     try {
       const oil = await fetchJson("/api/references/daily-oil");
       el.innerHTML = `
-        <div class="daily-oil-banner" onclick='openReference(${JSON.stringify(oil.slug)}, "aromas")'>
+        <div class="daily-oil-banner" onclick='openDailyOilReference(${JSON.stringify(oil.slug).replace(/'/g, "&#39;")})'
+             data-daily-reason="${escapeHtml(oil.reason || "")}"
+             data-daily-fact="${escapeHtml(oil.fact || "")}"
+             data-daily-practice="${escapeHtml(oil.daily_practice || "")}">
           <div class="daily-oil-header">
             <i data-lucide="sparkles" class="daily-oil-icon"></i>
             <span class="daily-oil-label">\u041c\u0430\u0441\u043b\u043e \u0434\u043d\u044f</span>
@@ -1158,6 +1183,7 @@ export function createReferencesModule(deps) {
     loadReferenceAccess,
     loadReferences,
     openReference,
+    openDailyOilReference,
     renderReferences,
     renderReferencesLocked,
     renderReferencesUnavailable,

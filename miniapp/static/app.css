@@ -2006,6 +2006,8 @@ body.tg-theme-dark .danger-button {
 
   body.is-mobile-layout.is-detail-view .detail-panel {
     padding-top: var(--tg-content-inset-top, env(safe-area-inset-top, 0px));
+    padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+    overflow-y: auto;
   }
 
   body.is-mobile-layout.is-detail-view .detail-grid .section {
@@ -4733,3 +4735,28 @@ body.tg-theme-dark .reco-cta-btn { color: #d4845e; }
 .error-msg-text { font-size: 13px; color: var(--bad); }
 .error-fallback-msg { padding: 16px; color: var(--bad); }
 .chip-list, .radio-row { width: 100%; box-sizing: border-box; }
+
+/* ── Daily oil detail section (inside aroma card) ────────────────────────────── */
+.daily-oil-detail-section {
+  background: linear-gradient(135deg, rgba(var(--accent-rgb, 99,102,241), .08), rgba(var(--accent-rgb, 99,102,241), .03));
+  border: 1px solid rgba(var(--accent-rgb, 99,102,241), .15);
+  border-radius: var(--radius-lg, 12px);
+  padding: var(--space-3) var(--space-4);
+}
+.daily-oil-detail-section h3 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 8px;
+  font-size: 15px;
+  color: var(--accent);
+}
+.daily-oil-detail-section p {
+  margin: 6px 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text);
+}
+.daily-oil-detail-section .daily-oil-detail-reason {
+  font-weight: 500;
+}

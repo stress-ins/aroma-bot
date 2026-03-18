@@ -5,7 +5,6 @@ import os
 import pytest
 from httpx import AsyncClient, ASGITransport
 
-os.environ.setdefault("AROMA_BYPASS_AUTH", "1")
 
 SECRET = "test-webhook-secret-123"
 # Dummy header for _require_auth endpoints (AROMA_BYPASS_AUTH=1 makes _verify_init_data return True)

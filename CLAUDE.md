@@ -27,7 +27,7 @@
 **Порядок шагов в Software Factory:**
 1. Создать ветку `feature/...`
 2. Реализовать фичу
-3. Запустить тесты локально: `.venv/bin/python -m pytest tests/ -q --ignore=tests/ui`
+3. Запустить тесты локально: `.venv/bin/python -m pytest tests/ -q --ignore=tests/ui -n auto`
 4. Создать PR через `gh pr create`
 5. Проверить: `gh pr view <N> --json mergeable,mergeStateStatus` → MERGEABLE
 6. Дождаться: `gh pr checks <N>` → все зелёные
@@ -84,7 +84,7 @@ ssh root@46.32.186.192 'screen -S symptom-reseed -d -m bash -c "cd /opt/aroma &&
 
 Запускать оба набора:
 ```bash
-.venv/bin/python -m pytest tests/ -q --ignore=tests/ui   # backend
+.venv/bin/python -m pytest tests/ -q --ignore=tests/ui -n auto  # backend
 .venv/bin/python -m pytest tests/ui/ -q                   # UI (Playwright)
 ```
 

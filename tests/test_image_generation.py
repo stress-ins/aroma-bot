@@ -92,6 +92,7 @@ async def test_image_saved_to_correct_path(tmp_path):
         patch.object(generator, "_upsert_image_url", new=AsyncMock()),
         patch.object(generator, "IMAGES_DIR", tmp_path / "reference_images"),
         patch("config.settings") as mock_settings,
+        patch("time.sleep"),
     ):
         mock_settings.image_api_key = "fake-key"
         result = await generator.run(dry_run=False, category="aroma")
@@ -129,6 +130,7 @@ async def test_generation_failure_skips_card(tmp_path):
         patch.object(generator, "_upsert_image_url", new=AsyncMock()),
         patch.object(generator, "IMAGES_DIR", tmp_path / "reference_images"),
         patch("config.settings") as mock_settings,
+        patch("time.sleep"),
     ):
         mock_settings.image_api_key = "fake-key"
         result = await generator.run(dry_run=False, category="aroma")
