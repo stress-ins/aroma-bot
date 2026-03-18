@@ -99,6 +99,7 @@ export function createShellModule(deps) {
     syncMobileNavigation();
     window.Telegram?.WebApp?.BackButton?.show();
     if (elements.detailPanel) {
+      elements.detailPanel.scrollTop = 0;
       elements.detailPanel.classList.remove("is-entering");
       window.clearTimeout(detailEntryTimer);
       requestAnimationFrame(() => {

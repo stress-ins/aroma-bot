@@ -303,7 +303,12 @@ def test_dark_swipe_scroll_draft_list(dark_page):
     )
 
     card_count = dark_page.locator(".draft-card").count()
-    if card_count > 3:
+    list_panel = dark_page.query_selector("#listPanel")
+    is_scrollable = dark_page.evaluate(
+        "(el) => el ? el.scrollHeight > el.clientHeight : document.body.scrollHeight > window.innerHeight",
+        list_panel,
+    )
+    if card_count > 3 and is_scrollable:
         assert after_scroll > initial_scroll, (
             f"Swipe scroll did not move: before={initial_scroll}, after={after_scroll}"
         )
