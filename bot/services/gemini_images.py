@@ -81,6 +81,7 @@ def _kie_submit(
     else:
         ratio_map = _KIE_ASPECT_RATIO_MAP
     ar = ratio_map.get(aspect_ratio, aspect_ratio)
+    task_type = "IMAGETOIMAGE" if image_urls else "TEXTTOIMAGE"
     input_block: dict[str, object] = {
         "prompt": prompt,
         "aspect_ratio": ar,
@@ -92,6 +93,7 @@ def _kie_submit(
 
     payload: dict[str, object] = {
         "model": model or _KIE_MODEL,
+        "type": task_type,
         "callBackUrl": "https://example.com/noop",
         "input": input_block,
     }

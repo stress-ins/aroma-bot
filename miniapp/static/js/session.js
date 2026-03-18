@@ -46,6 +46,11 @@ export function createSessionModule(deps) {
     tg.expand();
     // Request fullscreen (Bot API 8.0+); expand() is the fallback
     try { if (tg.requestFullscreen) tg.requestFullscreen(); } catch (_e) {}
+    // Match Telegram's native background to our --surface so no dark strips
+    // show through safe-area insets (top notch / bottom home indicator).
+    const surfaceColor = tg.colorScheme === "dark" ? "#251e18" : "#f5f0e8";
+    try { tg.setBackgroundColor(surfaceColor); } catch (_e) {}
+    try { tg.setBottomBarColor(surfaceColor); } catch (_e) {}
     const bgColor = tg.themeParams.secondary_bg_color;
     const textColor = tg.themeParams.text_color;
     if (bgColor) document.documentElement.style.setProperty("--panel", bgColor);

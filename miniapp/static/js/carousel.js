@@ -202,9 +202,12 @@ export function createCarouselModule(deps) {
       const prompt = String(promptItems[index] || "");
       const note = bufferedCarouselNote(draftId, index, String(noteItems[index] || ""));
       const versions = Array.isArray(versionItems[index]) ? versionItems[index] : [];
+      const genFailed = !img?.url && state.selected?.generation_stage === "error" && !state.selected?.generation_pending;
       const imgHtml = img?.url
         ? `<div class="carousel-slide-image-wrap"><img src="${escapeHtml(img.url)}" alt="Слайд ${index + 1}" style="cursor:pointer" onclick="openImageFullscreen(this.src, 'Слайд ${index + 1}')" /></div>`
-        : `<div class="carousel-slide-image-wrap"><div class="frame-loading"><div class="frame-loading-inner"><span class="button-spinner" aria-hidden="true"></span><span>Изображение ещё готовится</span></div></div></div>`;
+        : genFailed
+          ? `<div class="carousel-slide-image-wrap"><div class="frame-loading"><div class="frame-loading-inner"><i data-lucide="alert-triangle"></i><span>Не удалось сгенерировать картинку. Нажмите «Новый вариант» чтобы попробовать снова.</span></div></div></div>`
+          : `<div class="carousel-slide-image-wrap"><div class="frame-loading"><div class="frame-loading-inner"><span class="button-spinner" aria-hidden="true"></span><span>Изображение ещё готовится</span></div></div></div>`;
       return `
         <article class="slide">
           <strong>Слайд ${index + 1}</strong>
