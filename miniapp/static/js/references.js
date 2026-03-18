@@ -12,6 +12,7 @@ const REFERENCE_SOURCE_TYPE_LABELS = {
 
 export function createReferencesModule(deps) {
   let openReferenceInFlight = false;
+  let _dailyOilData = null;
   const _aromaSlugMap = {};
 
   function lookupNameRu(slug) {
@@ -1140,12 +1141,11 @@ export function createReferencesModule(deps) {
   }
 
   async function openDailyOilReference(slug) {
-    const banner = document.querySelector(".daily-oil-banner");
-    if (banner) {
+    if (_dailyOilData) {
       state._dailyOil = {
-        reason: banner.dataset.dailyReason || "",
-        fact: banner.dataset.dailyFact || "",
-        daily_practice: banner.dataset.dailyPractice || "",
+        reason: _dailyOilData.reason || "",
+        fact: _dailyOilData.fact || "",
+        daily_practice: _dailyOilData.daily_practice || "",
       };
     }
     await openReference(slug, "aromas");
@@ -1157,11 +1157,9 @@ export function createReferencesModule(deps) {
     if (!el) return;
     try {
       const oil = await fetchJson("/api/references/daily-oil");
+      _dailyOilData = oil;
       el.innerHTML = `
-        <div class="daily-oil-banner" onclick='openDailyOilReference(${JSON.stringify(oil.slug).replace(/'/g, "&#39;")})'
-             data-daily-reason="${escapeHtml(oil.reason || "")}"
-             data-daily-fact="${escapeHtml(oil.fact || "")}"
-             data-daily-practice="${escapeHtml(oil.daily_practice || "")}">
+        <div class="daily-oil-banner" onclick='openDailyOilReference(${JSON.stringify(oil.slug).replace(/'/g, "&#39;")})'>
           <div class="daily-oil-header">
             <i data-lucide="sparkles" class="daily-oil-icon"></i>
             <span class="daily-oil-label">\u041c\u0430\u0441\u043b\u043e \u0434\u043d\u044f</span>
