@@ -36,6 +36,29 @@ async def root():
     return {"ok": True, "service": "threads-oauth-callback"}
 
 
+@app.get("/start")
+async def oauth_start(url: str = ""):
+    """Intermediate redirect to bypass iOS Universal Links.
+
+    Instagram app intercepts instagram.com URLs and can't handle /oauth/authorize.
+    JS redirect from our domain doesn't trigger Universal Links.
+    """
+    if not url or not url.startswith("https://"):
+        return HTMLResponse("<h1>Missing url parameter</h1>", status_code=400)
+    import json
+    safe_url = json.dumps(url)
+    return HTMLResponse(
+        '<!DOCTYPE html><html><head><meta charset="utf-8">'
+        '<meta name="viewport" content="width=device-width,initial-scale=1">'
+        '</head><body style="margin:0;min-height:100vh;display:flex;align-items:center;'
+        'justify-content:center;background:#1a1a2e;color:#e5e7eb;'
+        'font-family:-apple-system,BlinkMacSystemFont,sans-serif">'
+        '<p style="font-size:18px">Перенаправляю...</p>'
+        f'<script>window.location.replace({safe_url});</script>'
+        '</body></html>'
+    )
+
+
 @app.get("/threads/callback")
 async def threads_callback(request: Request):
     return await _complete_oauth("threads", request)

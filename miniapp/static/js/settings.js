@@ -745,8 +745,9 @@ export function createSettingsModule(deps) {
     try {
       const data = await fetchJson(`/api/social/connect-url?platform=${platform}`);
       if (data.url) {
-        // Force system browser — OAuth doesn't work in Telegram's in-app WebView
-        window.open(data.url, "_system");
+        // Route through /start redirect to bypass iOS Universal Links
+        const startUrl = `https://oauth.aromara.ru/start?url=${encodeURIComponent(data.url)}`;
+        window.open(startUrl, "_system");
       }
     } catch (err) {
       const detail = err?.detail || "";
