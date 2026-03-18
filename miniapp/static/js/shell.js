@@ -76,6 +76,12 @@ export function createShellModule(deps) {
         return;
       }
     }
+    // Settings sub-sections need a full reset, not just a view toggle
+    if (state.tab === "settings" && state.settingsInDetail && typeof window.goBackToSettings === "function") {
+      window.Telegram?.WebApp?.BackButton?.hide();
+      window.goBackToSettings();
+      return;
+    }
     window.Telegram?.WebApp?.BackButton?.hide();
     if (animated) {
       animateBackToList();
@@ -449,11 +455,7 @@ export function createShellModule(deps) {
         }
 
         if (state.mode === "content" && state.tab === targetTab && state.mobileView === "detail") {
-          if (targetTab === "settings" && typeof window.goBackToSettings === "function") {
-            window.goBackToSettings();
-          } else {
-            goBackToList(false);
-          }
+          goBackToList(false);
           return;
         }
 
