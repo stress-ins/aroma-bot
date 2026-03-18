@@ -181,12 +181,14 @@ async def populate_carousel_slide_assets(draft_id: str) -> None:
         except Exception:
             logger.exception("carousel_assets: failed on slide %d for draft %s", i + 1, draft_id)
 
-    if changed:
-        payload = dict(draft.payload)
-        payload["slide_images"] = slide_images
-        payload["slide_image_versions"] = slide_versions
-        payload["images_ready"] = sum(1 for img in slide_images if img)
-        await update_draft(draft_id, payload=payload)
+    # Always persist slide_images so the auto-trigger guard
+    # (``not payload.get("slide_images")``) won't re-fire endlessly
+    # when all providers fail (e.g. 402 insufficient credits).
+    payload = dict(draft.payload)
+    payload["slide_images"] = slide_images
+    payload["slide_image_versions"] = slide_versions
+    payload["images_ready"] = sum(1 for img in slide_images if img)
+    await update_draft(draft_id, payload=payload)
 
 
 async def regenerate_carousel_slide_asset(
