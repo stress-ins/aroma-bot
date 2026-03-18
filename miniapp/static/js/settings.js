@@ -515,27 +515,37 @@ export function createSettingsModule(deps) {
     } catch (_) { return null; }
   }
 
-  function accountCardHtml(acc) {
+  function accountCardHtml(acc, opts = {}) {
     const icon = uiIcon(acc.platform === "threads" ? "message-circle" : "camera");
     const label = acc.platform === "threads" ? "Threads" : "Instagram";
     const connected = acc.connected;
     const expiry = formatExpiry(acc.expires_at);
-    const subtitle = connected
-      ? (acc.username ? `ID: ${escapeHtml(acc.username)}` : "Аккаунт подключён") + (expiry ? ` · до ${expiry}` : "")
-      : "Не подключено";
-    const btn = connected
-      ? `<span class="account-badge connected">${uiIcon("check-circle")}<span>Подключено</span></span>`
-      : `<button class="primary-button compact connect-btn" type="button" onclick="connectPlatform('${acc.platform}')">${uiIcon("external-link")}<span>Подключить</span></button>`;
+    const readOnly = opts.readOnly || false;
+
+    if (connected) {
+      const usernameRow = acc.username ? `<span class="account-username">@${escapeHtml(acc.username)}</span>` : "";
+      const statusMeta = `<span class="account-meta">${uiIcon("check-circle")}<span>Подключено</span>${expiry ? ` · до ${expiry}` : ""}</span>`;
+      const btn = readOnly
+        ? ""
+        : `<button class="secondary-button account-full-btn" type="button" onclick="connectPlatform('${acc.platform}')">${uiIcon("refresh-cw")}<span>Переподключить</span></button>`;
+      return `
+        <article class="account-card account-card--vertical">
+          <div class="account-card-title">${icon}<strong>${label}</strong></div>
+          ${usernameRow}
+          ${statusMeta}
+          ${btn}
+        </article>
+      `;
+    }
+
+    const btn = readOnly
+      ? `<span class="account-meta">Не подключено</span>`
+      : `<button class="primary-button account-full-btn" type="button" onclick="connectPlatform('${acc.platform}')">${uiIcon("link")}<span>Подключить ${label}</span></button>`;
     return `
-      <article class="account-card">
-        <div class="account-card-header">
-          <span class="account-platform-icon">${icon}</span>
-          <div class="account-card-info">
-            <strong>${label}</strong>
-            <span class="account-subtitle">${subtitle}</span>
-          </div>
-          <div class="account-card-action">${btn}</div>
-        </div>
+      <article class="account-card account-card--vertical">
+        <div class="account-card-title">${icon}<strong>${label}</strong></div>
+        <span class="account-meta">Не подключено</span>
+        ${readOnly ? "" : btn}
       </article>
     `;
   }
@@ -550,25 +560,51 @@ export function createSettingsModule(deps) {
           <p class="eyebrow">${uiIcon("link")}<span>Настройки</span></p>
           <h2 class="detail-title">Подключённые аккаунты</h2>
         </div>
+        <div id="accountsTeamSwitcher"></div>
         <div id="accountsList" class="accounts-list">
           <div class="account-card skeleton"><div class="skeleton-line"></div></div>
         </div>
-        <p class="settings-hint" class="settings-hint-text">
+        <p class="settings-hint">
           Подключите аккаунты для автоматической публикации контента.
         </p>
       </div>
     `;
     enterDetailView();
+
+    // Load teams for switcher
+    try {
+      const teamsData = await fetchJson("/api/teams");
+      const teams = teamsData?.items || [];
+      const switcherEl = document.getElementById("accountsTeamSwitcher");
+      if (switcherEl && teams.length > 1) {
+        const currentTeamId = state.accountsTeamId || (teams[0] && teams[0].team_id);
+        state.accountsTeamId = currentTeamId;
+        switcherEl.innerHTML = `
+          <div class="team-switcher">
+            ${teams.map((t) => `<button class="team-switcher-chip${t.team_id === currentTeamId ? " active" : ""}" type="button" onclick="switchAccountsTeam('${escapeHtml(t.team_id)}')">${uiIcon("users")}<span>${escapeHtml(t.name)}</span></button>`).join("")}
+          </div>
+        `;
+      } else if (switcherEl && teams.length === 1) {
+        state.accountsTeamId = teams[0].team_id;
+        switcherEl.innerHTML = `<p class="settings-hint" style="margin:0">${uiIcon("users")} ${escapeHtml(teams[0].name)}</p>`;
+      }
+    } catch (_err) { /* ignore */ }
+
     try {
       const data = await fetchJson("/api/social/status");
       const container = document.getElementById("accountsList");
       if (container) {
-        container.innerHTML = (data.accounts || []).map(accountCardHtml).join("");
+        container.innerHTML = (data.accounts || []).map((a) => accountCardHtml(a)).join("");
       }
     } catch (_err) {
       const container = document.getElementById("accountsList");
       if (container) container.innerHTML = `<p class="plan-entry-hint">Не удалось загрузить статус аккаунтов.</p>`;
     }
+  }
+
+  function switchAccountsTeam(teamId) {
+    state.accountsTeamId = teamId;
+    renderAccounts();
   }
 
   async function connectPlatform(platform) {
@@ -646,11 +682,21 @@ export function createSettingsModule(deps) {
           ? `<button class="secondary-button" type="button" onclick="createTeamInvite('${escapeHtml(t.team_id)}')">${uiIcon("user-plus")}<span>Пригласить</span></button>`
           : "";
 
+        // Connected accounts for this team
+        const connectedAccounts = (detail.connected_accounts || []);
+        const connectedAccountsHtml = connectedAccounts.length > 0
+          ? `<div class="team-accounts-section">
+              <h4>Подключённые аккаунты</h4>
+              <div class="accounts-list">${connectedAccounts.map((a) => accountCardHtml(a, { readOnly: !isOwner })).join("")}</div>
+            </div>`
+          : "";
+
         html += `
           <section class="section settings-section">
             <h3>${uiIcon("users")}<span>${escapeHtml(t.name)}</span></h3>
             <p class="settings-hint">Ваша роль: <strong>${escapeHtml(roleLabels[detail.role] || detail.role)}</strong></p>
             <div class="team-members-list">${membersHtml}</div>
+            ${connectedAccountsHtml}
             <div id="inviteResult-${t.team_id}"></div>
             ${inviteBtn}
           </section>
@@ -886,6 +932,7 @@ export function createSettingsModule(deps) {
     loadImageModels,
     renderAccounts,
     connectPlatform,
+    switchAccountsTeam,
     renderTeam,
     createNewTeam,
     createTeamInvite,

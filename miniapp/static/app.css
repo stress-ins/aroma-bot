@@ -2865,23 +2865,49 @@ body.tg-theme-dark .concept-card {
   transition: box-shadow var(--duration-fast) var(--ease-standard);
 }
 .account-card:hover { box-shadow: 0 2px 10px rgba(0,0,0,.07); }
-.account-card-header { display: flex; align-items: center; gap: 12px; }
-.account-platform-icon {
-  display: flex; align-items: center; justify-content: center;
-  width: 40px; height: 40px; flex-shrink: 0;
-  border-radius: 12px; background: var(--surface-2); color: var(--text);
+
+/* Vertical layout */
+.account-card--vertical {
+  display: flex; flex-direction: column; gap: 6px;
 }
-.account-platform-icon svg, .account-platform-icon i { width: 22px; height: 22px; }
-.account-card-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
-.account-card-info strong { font-size: 15px; font-weight: 600; color: var(--text); }
-.account-subtitle { font-size: 13px; color: var(--hint); }
-.account-card-action { flex-shrink: 0; margin-left: auto; }
-.account-badge {
+.account-card-title {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 16px; color: var(--text);
+}
+.account-card-title i, .account-card-title svg { width: 20px; height: 20px; flex-shrink: 0; }
+.account-username {
+  font-size: 15px; font-weight: 600; color: var(--brand);
+  padding-left: 28px;
+}
+.account-meta {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 13px; color: var(--hint); padding-left: 28px;
+}
+.account-meta i, .account-meta svg { width: 14px; height: 14px; color: var(--good); }
+.account-full-btn { width: 100%; justify-content: center; margin-top: 6px; }
+
+/* Team switcher chips */
+.team-switcher {
+  display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px;
+}
+.team-switcher-chip {
   display: inline-flex; align-items: center; gap: 5px;
-  font-size: 13px; font-weight: 600; padding: 6px 14px; border-radius: 999px;
+  padding: 6px 14px; border-radius: 999px;
+  font-size: 13px; font-weight: 500;
+  border: 1px solid var(--border); background: var(--surface-2); color: var(--hint);
+  cursor: pointer; transition: all var(--duration-fast) var(--ease-standard);
 }
-.account-badge.connected { background: rgba(46, 125, 79, 0.1); color: var(--good); }
-.connect-btn { font-size: 14px; padding: 8px 18px; }
+.team-switcher-chip i, .team-switcher-chip svg { width: 14px; height: 14px; }
+.team-switcher-chip:hover { border-color: var(--brand); color: var(--text); }
+.team-switcher-chip.active { background: var(--brand); color: #fff; border-color: var(--brand); }
+
+/* Team accounts section in team detail */
+.team-accounts-section { margin-top: 12px; }
+.team-accounts-section h4 {
+  font-size: 13px; font-weight: 600; color: var(--hint);
+  text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;
+}
+
 .account-card.skeleton { padding: 20px; }
 .account-card .skeleton-line {
   height: 40px; border-radius: var(--radius-md);

@@ -317,7 +317,7 @@ class TestOAuthCallbacks:
         client = TestClient(oauth_callback_app)
         response = client.get(f"/threads/callback?code=abc123&state={state}")
         assert response.status_code == 200
-        assert "Threads connected" in response.text
+        assert "Threads подключён" in response.text
         assert restarted["called"] is True
         assert notifications == [("42", "✅ Threads подключён.\nАккаунт: @stress_ins\nUser ID: 123")]
         assert "THREADS_ACCESS_TOKEN=long" in (tmp_path / ".env").read_text(encoding="utf-8")
@@ -350,7 +350,7 @@ class TestOAuthCallbacks:
         client = TestClient(oauth_callback_app)
         response = client.get(f"/instagram/callback?code=ig123&state={state}")
         assert response.status_code == 200
-        assert "Instagram connected" in response.text
+        assert "Instagram подключён" in response.text
         assert "INSTAGRAM_ACCESS_TOKEN=long" in (tmp_path / ".env").read_text(encoding="utf-8")
 
     def test_threads_deauthorize_returns_ok(self):
