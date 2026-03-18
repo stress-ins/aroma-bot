@@ -69,7 +69,13 @@ async def setup_test_db(monkeypatch):
     from bot.services.brand_settings_store import preload_brand_settings
     await preload_brand_settings()
 
-    yield
+    yield AsyncSessionLocal
 
     # Cleanup
     await engine.dispose()
+
+
+@pytest.fixture
+def db_session(setup_test_db):
+    """Return the patched AsyncSessionLocal for direct use in tests."""
+    return setup_test_db
