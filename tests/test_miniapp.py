@@ -1199,8 +1199,9 @@ class TestMiniAppRussianLocale:
         assert 'searchLabel: "Поиск темы"' in app_js
         assert "COURSE_NAMES" in app_js  # human-readable course source labels
         assert 'function conceptTypeMeta(sourceType)' in app_js
-        assert 'founder: { label: "Автор",   icon: "👤" }' in app_js
-        assert 'chakra:  { label: "Чакра",   icon: "🔮" }' in app_js
+        assert 'founder:   { label: "Автор",   icon: "👤" }' in app_js
+        assert 'chakra:    { label: "Чакра",   icon: "🔮" }' in app_js
+        assert 'archetype: { label: "Архетип", icon: "✧" }' in app_js
         assert 'class="draft-card overview-card' in app_js
         assert 'class="kind-glyph handbook-glyph" aria-hidden="true"' in app_js
         assert 'tone-${escapeHtml(item.tone)}' in app_js
