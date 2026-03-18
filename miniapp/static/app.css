@@ -5390,3 +5390,17 @@ body.tg-theme-dark .reco-cta-btn { color: #d4845e; }
 .trends-comparison-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .trends-comparison-table th { padding: 8px 12px; text-align: left; border-bottom: 2px solid var(--border, #e0e0e0); font-weight: 600; }
 .trends-comparison-table td { padding: 8px 12px; border-bottom: 1px solid var(--border, #e0e0e0); }
+
+/* Trend Suggestions Panel (in create form) */
+.trend-suggestions-panel { margin-top: 12px; border: 1px solid var(--border, #e0e0e0); border-radius: 10px; overflow: hidden; }
+.trend-suggestions-toggle {
+  padding: 10px 14px; cursor: pointer; font-size: 13px; font-weight: 500;
+  color: var(--hint); display: flex; align-items: center; gap: 6px;
+  list-style: none;
+}
+.trend-suggestions-toggle::-webkit-details-marker { display: none; }
+.trend-suggestions-toggle::before { content: "▸"; transition: transform 0.15s; }
+details[open] > .trend-suggestions-toggle::before { transform: rotate(90deg); }
+.trend-suggestions-body { padding: 0 14px 12px; }
+.trend-suggestions-section { margin-bottom: 10px; }
+.trend-suggestions-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--hint); margin-bottom: 4px; }

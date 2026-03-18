@@ -10,6 +10,7 @@ _PLAN_PROMPT = """\
 
 Тренды недели для вдохновения:
 {trends_text}
+{social_trends_text}
 
 Для каждого поста укажи:
 - День недели
@@ -40,9 +41,13 @@ _PLAN_PROMPT = """\
 """
 
 
-def generate_plan_sync(trends_text: str) -> str:
+def generate_plan_sync(trends_text: str, social_trends_text: str = "") -> str:
     bs = get_brand_settings_cached()
-    prompt = _PLAN_PROMPT.format(brand_context=bs.brand_voice, trends_text=trends_text)
+    prompt = _PLAN_PROMPT.format(
+        brand_context=bs.brand_voice,
+        trends_text=trends_text,
+        social_trends_text=social_trends_text,
+    )
     return call_claude(
         messages=[{"role": "user", "content": prompt}],
         max_tokens=1200,

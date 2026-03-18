@@ -630,7 +630,7 @@ class TestMiniAppApi:
         monkeypatch.setattr(
             _plans_router,
             "generate_plan_sync",
-            lambda trends_text: (
+            lambda trends_text, social_trends_text="": (
                 "📅 Понедельник\n"
                 "Платформа: Threads\n"
                 "Формат: Пост\n"
