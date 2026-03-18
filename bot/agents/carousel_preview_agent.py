@@ -123,6 +123,59 @@ def analyze_text_placement(
         }
 
 
+# ── 1b. Analyze reels text placement via Claude Vision ───────────────────
+
+_REELS_PLACEMENT_FALLBACK: dict = {
+    "placement": {"zone": "top", "x_percent": 10, "y_percent": 8, "max_width_percent": 80},
+    "typography": {"color_hex": "#FFFFFF", "shadow_color": "rgba(0,0,0,0.7)", "font_size_px": 18, "font_weight": 700},
+}
+
+
+def analyze_reels_placement(img_bytes: bytes) -> dict:
+    """Use Claude Vision to find optimal text placement on a 9:16 reels frame."""
+    try:
+        b64 = base64.standard_b64encode(img_bytes).decode()
+        prompt = (
+            "You are an image layout analyst for Instagram Reels frames (9:16 vertical).\n"
+            "Find the best zone on this image for short overlay text (1-2 lines).\n\n"
+            "RULES:\n"
+            "- NEVER place text over the main subject.\n"
+            "- Prefer uniform, empty, or blurred areas.\n"
+            "- Pick a harmonious color from the image palette (NOT plain #FFFFFF or #000000).\n"
+            "- Warm images \u2192 terracotta/amber tones; cool images \u2192 indigo/teal tones.\n"
+            "- Ensure WCAG AA contrast (\u22654.5:1) between text color and background.\n"
+            "- Shadow color should complement the text color for readability.\n\n"
+            "Return ONLY a JSON object (no markdown) with:\n"
+            '- "placement": {"zone": "top"|"center"|"bottom", "x_percent": int 0-100, '
+            '"y_percent": int 0-100, "max_width_percent": int 50-90}\n'
+            '- "typography": {"color_hex": "#RRGGBB", "shadow_color": "rgba(...)", '
+            '"font_size_px": int 16-24, "font_weight": 600|700|800}\n'
+        )
+        raw = call_claude(messages=[{"role": "user", "content": [{"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": b64}}, {"type": "text", "text": prompt}]}], max_tokens=300, context="reels_preview")
+        if raw.startswith("```"):
+            raw = raw.split("\n", 1)[1] if "\n" in raw else raw[3:]
+            if raw.endswith("```"): raw = raw[:-3]
+            raw = raw.strip()
+        result = json.loads(raw)
+        if "placement" not in result or "typography" not in result:
+            raise ValueError("Missing placement or typography key")
+        for key in ("zone", "x_percent", "y_percent", "max_width_percent"):
+            if key not in result["placement"]: raise ValueError(f"Missing placement.{key}")
+        for key in ("color_hex", "shadow_color", "font_size_px", "font_weight"):
+            if key not in result["typography"]: raise ValueError(f"Missing typography.{key}")
+        p = result["placement"]
+        p["x_percent"] = max(0, min(100, int(p["x_percent"])))
+        p["y_percent"] = max(0, min(100, int(p["y_percent"])))
+        p["max_width_percent"] = max(50, min(90, int(p["max_width_percent"])))
+        t = result["typography"]
+        t["font_size_px"] = max(16, min(24, int(t["font_size_px"])))
+        t["font_weight"] = int(t["font_weight"])
+        return result
+    except Exception as exc:
+        logger.warning("Reels placement analysis failed: %s \u2014 using fallback", exc)
+        return dict(_REELS_PLACEMENT_FALLBACK)
+
+
 # ── 2. Render preview PNG ─────────────────────────────────────────────────────
 
 def render_preview_png(

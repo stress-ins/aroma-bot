@@ -397,6 +397,47 @@ async def reels_frame_fields(
 
 
 # ---------------------------------------------------------------------------
+# Reels preview: AI-powered text placement analysis
+# ---------------------------------------------------------------------------
+
+@router.post("/api/reels/{draft_id}/frame/{frame_id}/analyze-placement")
+async def reels_analyze_placement(draft_id: str, frame_id: str, _: None = Depends(_require_auth)):
+    import asyncio, httpx
+    from bot.agents.carousel_preview_agent import analyze_reels_placement
+    draft = await serialize_reels_draft(draft_id)
+    if not draft: raise HTTPException(status_code=404, detail="reels_not_found")
+    frames = draft.get("frames", [])
+    frame = None
+    for f in frames:
+        if isinstance(f, dict) and str(f.get("id", "")) == frame_id: frame = f; break
+    if not frame: raise HTTPException(status_code=404, detail="frame_not_found")
+    payload_data = draft.get("payload", {})
+    if isinstance(payload_data, dict):
+        cached = payload_data.get("frame_placement_data", {}).get(frame_id)
+        if cached: return cached
+    image_url = frame.get("image_url", "")
+    if not image_url: raise HTTPException(status_code=400, detail="no_image")
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(f"http://127.0.0.1:8000{image_url}", timeout=10)
+            resp.raise_for_status()
+            img_bytes = resp.content
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"image_download_failed: {exc}")
+    loop = asyncio.get_running_loop()
+    result = await loop.run_in_executor(None, analyze_reels_placement, img_bytes)
+    from bot.services.drafts_store import get_draft as _get_draft, update_draft as _update_draft
+    raw_draft = await _get_draft(draft_id)
+    if raw_draft:
+        new_payload = dict(raw_draft.payload)
+        fpd = new_payload.get("frame_placement_data", {})
+        fpd[frame_id] = result
+        new_payload["frame_placement_data"] = fpd
+        await _update_draft(draft_id, payload=new_payload)
+    return result
+
+
+# ---------------------------------------------------------------------------
 # Video pipeline: compose & status
 # ---------------------------------------------------------------------------
 

@@ -568,7 +568,7 @@ export function createReelsModule(deps) {
         </div>
       `;
     } else if (imageStatus === "ready" && imageUrl) {
-      imageAreaHtml = `<img src="${escapeHtml(imageUrl)}" style="width:100%;height:100%;object-fit:cover;cursor:pointer" alt="Кадр ${n}" onclick="openReelsImageFullscreen(this.src, ${n})" />`;
+      imageAreaHtml = `<img src="${escapeHtml(imageUrl)}" style="width:100%;height:100%;object-fit:cover;cursor:pointer" alt="Кадр ${n}" data-overlay="${escapeHtml(frame.overlay_text || '')}" data-frame-id="${escapeHtml(frameId)}" data-draft-id="${escapeHtml(draftId)}" onclick="openReelsPreview(this.src, this.dataset.overlay, this.dataset.frameId, this.dataset.draftId)" />`;
     } else if (imageStatus === "error") {
       imageAreaHtml = `
         <div class="reels-frame-v2-image-generating">
@@ -1092,15 +1092,64 @@ export function createReelsModule(deps) {
     } catch (_e) {}
   }
 
-  function openReelsImageFullscreen(url, n) {
+  function openReelsPreview(url, overlayText, frameId, draftId) {
     const existing = document.getElementById("reels-img-modal");
     if (existing) existing.remove();
-    const modal = document.createElement("div");
-    modal.id = "reels-img-modal";
-    modal.style.cssText = "position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;cursor:zoom-out;-webkit-tap-highlight-color:transparent";
-    modal.innerHTML = `<img src="${url}" style="max-width:100vw;max-height:100vh;object-fit:contain" alt="Кадр ${n}">`;
-    modal.addEventListener("click", () => modal.remove());
-    document.body.appendChild(modal);
+    const hasOverlay = overlayText && overlayText.trim();
+    const overlayHtml = hasOverlay
+      ? `<div class="reels-overlay-text reels-overlay-loading" id="reels-overlay-text" style="top:8%;left:10%;max-width:80%">${escapeHtml(overlayText)}</div>`
+      : "";
+    const backdrop = document.createElement("div");
+    backdrop.id = "reels-img-modal";
+    backdrop.className = "preview-modal-backdrop";
+    backdrop.innerHTML = `
+      <div class="preview-modal" style="max-width:400px">
+        <div class="preview-modal-header">
+          <h3>Предпросмотр</h3>
+          <button class="secondary-button compact preview-modal-close" id="reels-preview-close">✕</button>
+        </div>
+        <div class="preview-modal-body reels-preview-body">
+          <img src="${escapeHtml(url)}" alt="Предпросмотр кадра" />
+          ${overlayHtml}
+        </div>
+      </div>
+    `;
+    document.body.appendChild(backdrop);
+    document.body.style.overflow = "hidden";
+    function closeModal() {
+      backdrop.remove();
+      document.body.style.overflow = "";
+    }
+    backdrop.querySelector("#reels-preview-close").addEventListener("click", closeModal);
+    backdrop.addEventListener("click", (e) => {
+      if (e.target === backdrop) closeModal();
+    });
+    if (hasOverlay && draftId && frameId) {
+      fetchJson(`/api/reels/${draftId}/frame/${frameId}/analyze-placement`, {
+        method: "POST",
+        timeout: 15000,
+      }).then((data) => {
+        const el = document.getElementById("reels-overlay-text");
+        if (!el) return;
+        const p = data.placement || {};
+        const t = data.typography || {};
+        if (p.y_percent !== undefined) el.style.top = p.y_percent + "%";
+        if (p.x_percent !== undefined) el.style.left = p.x_percent + "%";
+        if (p.max_width_percent) el.style.maxWidth = p.max_width_percent + "%";
+        if (t.color_hex) el.style.color = t.color_hex;
+        if (t.shadow_color) el.style.textShadow = `0 1px 4px ${t.shadow_color}, 0 0 12px ${t.shadow_color}`;
+        if (t.font_size_px) el.style.fontSize = t.font_size_px + "px";
+        if (t.font_weight) el.style.fontWeight = t.font_weight;
+        el.classList.remove("reels-overlay-loading");
+      }).catch(() => {
+        const el = document.getElementById("reels-overlay-text");
+        if (el) el.classList.remove("reels-overlay-loading");
+      });
+    }
+  }
+
+  function openReelsImageFullscreen(url, n) {
+    openReelsPreview(url, "", "", "");
   }
 
   return {
@@ -1135,5 +1184,6 @@ export function createReelsModule(deps) {
     // Feature: copy caption + fullscreen image
     copyReelsCaption,
     openReelsImageFullscreen,
+    openReelsPreview,
   };
 }

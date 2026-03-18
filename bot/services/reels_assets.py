@@ -202,6 +202,7 @@ async def populate_frame_assets(
                     frame["image_url"] = asset["url"]
                     frame["image_status"] = "ready"
                     frame["image_versions"] = versions[-5:]
+                    frame.pop("placement_data", None)
                     images_ready += 1
                 else:
                     frame["image_status"] = "failed"
@@ -217,6 +218,11 @@ async def populate_frame_assets(
     payload = dict(draft.payload)
     payload["frames"] = updated_frames
     payload["images_ready"] = images_ready
+    if allowed_ids and "frame_placement_data" in payload:
+        fpd = payload["frame_placement_data"]
+        if isinstance(fpd, dict):
+            for fid in allowed_ids:
+                fpd.pop(fid, None)
     updated = await update_draft(draft_id, payload=payload, status="draft")
     if not updated:
         return None
