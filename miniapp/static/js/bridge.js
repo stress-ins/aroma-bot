@@ -74,6 +74,8 @@ export function registerWindowBridge(deps) {
     scheduleThreadsSeries,
     openThreadsScheduler,
     publishThreadsSeriesNow,
+    publishScheduledNow,
+    retryPublication,
     saveThreadsReviewDraft,
     handleSmartSearch,
     runSmartSearch,
@@ -185,6 +187,8 @@ export function registerWindowBridge(deps) {
   window.scheduleThreadsSeries = scheduleThreadsSeries;
   window.openThreadsScheduler = openThreadsScheduler;
   window.publishThreadsSeriesNow = publishThreadsSeriesNow;
+  window.publishScheduledNow = publishScheduledNow;
+  window.retryPublication = retryPublication;
   window.saveThreadsReviewDraft = saveThreadsReviewDraft;
 
   window.publishDraft = publishDraft;
