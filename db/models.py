@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 import uuid
 from typing import Any
-from sqlalchemy import BigInteger, Boolean, String, JSON, DateTime, Integer, UniqueConstraint
+from sqlalchemy import BigInteger, Boolean, Float, String, JSON, DateTime, Integer, UniqueConstraint
 from sqlalchemy.ext.mutable import MutableDict, MutableList
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -95,6 +95,10 @@ class BrandSettingsModel(Base):
     image_model_img2img: Mapped[str] = mapped_column(String(100), default="google/nano-banana-edit")
     image_model_reels: Mapped[str] = mapped_column(String(100), default="gpt-image/1.5-text-to-image")
     reels_auto_images: Mapped[bool] = mapped_column(default=False)
+    # City for weather context (daily oil, etc.)
+    city_name: Mapped[str] = mapped_column(String(100), default="Москва")
+    city_lat: Mapped[float] = mapped_column(Float, default=55.7558)
+    city_lon: Mapped[float] = mapped_column(Float, default=37.6173)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
         default=lambda: datetime.now(timezone.utc),
@@ -296,6 +300,8 @@ class DailyOilModel(Base):
     name: Mapped[str] = mapped_column(String(255))
     fact: Mapped[str] = mapped_column(String(1000), default="")
     daily_practice: Mapped[str] = mapped_column(String(1000), default="")
+    reason: Mapped[str] = mapped_column(String(500), default="")
+    context: Mapped[dict[str, Any]] = mapped_column(MutableDict.as_mutable(JSON), default=dict)
     sent_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 

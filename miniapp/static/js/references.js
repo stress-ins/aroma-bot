@@ -1142,6 +1142,7 @@ export function createReferencesModule(deps) {
             <span class="daily-oil-label">\u041c\u0430\u0441\u043b\u043e \u0434\u043d\u044f</span>
           </div>
           <h3 class="daily-oil-name">${escapeHtml(oil.name)}</h3>
+          ${oil.reason ? `<p class="daily-oil-reason"><i data-lucide="lightbulb" style="width:14px;height:14px;vertical-align:-2px;margin-right:4px"></i>${escapeHtml(oil.reason)}</p>` : ""}
           ${oil.fact ? `<p class="daily-oil-fact">${escapeHtml(oil.fact)}</p>` : ""}
           ${oil.daily_practice ? `<p class="daily-oil-practice">${escapeHtml(oil.daily_practice)}</p>` : ""}
           <span class="daily-oil-cta">\u0423\u0437\u043d\u0430\u0442\u044c \u0431\u043e\u043b\u044c\u0448\u0435 <i data-lucide="chevron-right"></i></span>

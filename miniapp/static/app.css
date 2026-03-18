@@ -4540,6 +4540,7 @@ body.tg-theme-dark .reco-cta-btn { color: #d4845e; }
 .daily-oil-icon { width: 18px; height: 18px; color: var(--brand); }
 .daily-oil-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--brand); }
 .daily-oil-name { margin: 0 0 var(--space-2); font-size: 20px; font-weight: 700; color: var(--text); }
+.daily-oil-reason { margin: 0 0 var(--space-2); font-size: 13px; line-height: 1.4; color: var(--brand); font-style: italic; }
 .daily-oil-fact { margin: 0 0 var(--space-2); font-size: 14px; line-height: 1.5; color: var(--muted); }
 .daily-oil-practice { margin: 0 0 var(--space-2); font-size: 14px; line-height: 1.5; color: var(--text); }
 .daily-oil-practice strong { color: var(--sage); }
