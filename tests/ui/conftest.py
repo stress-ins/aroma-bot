@@ -135,6 +135,19 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
         "INSERT INTO drafts (draft_id, kind, topic, source, status, feedback, payload, publish_platforms, external_ids, revision_notes, error, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, '[]', '{}', '', '', ?)",
         ("carousel001", "carousel", "Сенсорная карусель для вечернего ритуала", "/miniapp", "draft", "", json.dumps(carousel_payload), now),
     )
+    threads_series_payload = {
+        "series_summary": "Опорная мысль серии про восстановление.",
+        "goal": "trust",
+        "emotion": "calm",
+        "posts": [
+            {"slot": 1, "text": "Утренний пост серии.", "status": "draft"},
+            {"slot": 2, "text": "Дневной пост серии.", "status": "draft"},
+        ],
+    }
+    cursor.execute(
+        "INSERT INTO drafts (draft_id, kind, topic, source, status, feedback, payload, publish_platforms, external_ids, revision_notes, error, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, '[]', '{}', '', '', ?)",
+        ("threads_series001", "threads_series", "Восстановление энергии и ресурса", "/miniapp", "draft", "", json.dumps(threads_series_payload), now),
+    )
     for slug, name, category, source_type in [
         ("lavender", "Лаванда", "aroma", "herb"),
         ("grounding", "Grounding", "blend", "blend"),

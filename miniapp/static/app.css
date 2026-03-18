@@ -795,6 +795,7 @@ body.is-mobile-layout .detail-top {
   padding: var(--space-3) var(--space-3);
   border-bottom: none;
   position: relative;
+  scroll-margin-top: 52px; /* back button height + margin */
 }
 body.is-mobile-layout .detail-top::after {
   content: '';

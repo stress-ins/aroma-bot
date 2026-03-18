@@ -145,6 +145,50 @@ def test_no_horizontal_overflow_on_mobile(page):
     assert overflows == [], f"Elements overflow viewport: {overflows}"
 
 
+def test_detail_card_title_not_clipped_on_mobile(page):
+    """Every detail card type: title must be fully visible, not clipped at top."""
+    page.locator("#btnTabDrafts").click()
+    page.wait_for_timeout(100)
+    page.evaluate("window.goBackToList()")
+
+    cards = page.locator(".draft-card")
+    cards.first.wait_for(state="visible")
+    count = cards.count()
+
+    for i in range(count):
+        page.evaluate("window.goBackToList()")
+        page.wait_for_timeout(100)
+        cards.nth(i).click()
+        page.wait_for_timeout(200)
+
+        title = page.locator(".detail-title").first
+        if not title.count():
+            continue
+
+        box = title.bounding_box()
+        assert box is not None, f"Card {i}: title has no bounding box"
+        assert box["y"] >= 0, f"Card {i}: title clipped at top (y={box['y']})"
+        assert box["y"] + box["height"] <= 932, f"Card {i}: title below viewport"
+        assert title.inner_text().strip(), f"Card {i}: title is empty"
+
+
+def test_handbook_detail_title_not_clipped(page):
+    """Handbook card detail: title must be visible."""
+    page.locator("#btnTabHandbook").click()
+    page.wait_for_timeout(100)
+
+    card = page.locator(".reference-card").first
+    if card.count():
+        card.click()
+        page.wait_for_timeout(200)
+
+        title = page.locator(".detail-title").first
+        if title.count():
+            box = title.bounding_box()
+            assert box is not None
+            assert box["y"] >= 0
+
+
 def test_themed_controls_have_no_overlaps(themed_page):
     """No controls overlap in either theme."""
     for tab_id in ["#btnTabDrafts", "#btnTabPlans", "#btnTabCreate"]:
