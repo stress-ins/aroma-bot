@@ -140,6 +140,24 @@ _THREADS_SLOTS = [
 _THREADS_DEFAULT_TIMES = {"morning": "09:00", "day": "13:00", "evening": "19:00"}
 
 
+def _extract_why_it_works(text: str) -> tuple[str, str]:
+    """Extract 'ПОЧЕМУ ЭТО СРАБОТАЕТ:' annotation from post text.
+
+    Returns (cleaned_text, why_it_works).
+    """
+    import re
+
+    match = re.search(
+        r"\n?\s*(?:\*\*)?(?:ПОЧЕМУ ЭТО СРАБОТАЕТ|Почему это сработает)(?:\*\*)?[:\s]+(.+)",
+        text,
+    )
+    if match:
+        why = match.group(1).strip()
+        cleaned = text[:match.start()].rstrip()
+        return cleaned, why
+    return text, ""
+
+
 def split_threads_posts(caption: str) -> list[dict[str, str]]:
     """Split a threads caption containing УТРО/ДЕНЬ/ВЕЧЕР sections into 3 posts."""
     import re
@@ -150,13 +168,16 @@ def split_threads_posts(caption: str) -> list[dict[str, str]]:
     parts = re.split(rf"(?:^|\n)\s*(?:\*\*)?({pattern})(?:\*\*)?[:\s]*\n?", caption, flags=re.IGNORECASE)
 
     slot_texts: dict[str, str] = {}
+    slot_why: dict[str, str] = {}
     i = 1
     while i < len(parts) - 1:
         marker = parts[i].strip().upper()
-        text = parts[i + 1].strip()
+        raw_text = parts[i + 1].strip()
         for s in _THREADS_SLOTS:
             if s["marker"] == marker:
-                slot_texts[s["slot"]] = text
+                cleaned, why = _extract_why_it_works(raw_text)
+                slot_texts[s["slot"]] = cleaned
+                slot_why[s["slot"]] = why
                 break
         i += 2
 
@@ -166,6 +187,7 @@ def split_threads_posts(caption: str) -> list[dict[str, str]]:
             "label": slot_info["label"],
             "text": slot_texts.get(slot_info["slot"], ""),
             "default_time": _THREADS_DEFAULT_TIMES[slot_info["slot"]],
+            "why_it_works": slot_why.get(slot_info["slot"], ""),
         })
 
     return posts
@@ -298,6 +320,37 @@ HOOK: [точная первая строка поста — останавли�
 {blend_block}"""
 
 
+_OUTPUT_FORMAT_THREADS = """\
+Верни 3 поста в формате:
+УТРО
+[текст поста]
+ПОЧЕМУ ЭТО СРАБОТАЕТ: [одно предложение]
+
+ДЕНЬ
+[текст поста]
+ПОЧЕМУ ЭТО СРАБОТАЕТ: [одно предложение]
+
+ВЕЧЕР
+[текст поста]
+ПОЧЕМУ ЭТО СРАБОТАЕТ: [одно предложение]
+
+VISUAL_PROMPT: [на английском, до 25 слов, terracotta/beige/sage palette, soft light, atmospheric lifestyle]
+"""
+
+_OUTPUT_FORMAT_DEFAULT = """\
+Верни строго в формате:
+CAPTION: [полный текст поста, начиная с хука, с хэштегами согласно правилам платформы]
+CTA: [отдельный CTA если ещё не в тексте, иначе пусто]
+VISUAL_PROMPT: [на английском, до 25 слов, terracotta/beige/sage palette, soft light, atmospheric lifestyle]
+"""
+
+
+def _threads_output_format(format_key: str) -> str:
+    if format_key in ("threads", "threads_series"):
+        return _OUTPUT_FORMAT_THREADS
+    return _OUTPUT_FORMAT_DEFAULT
+
+
 def _writer_prompt(topic: str, goal_key: str, format_key: str, angle: str, hook: str, blend_context: dict | None = None) -> str:
     rules = _PLATFORM_RULES_WRITER.get(format_key, _PLATFORM_RULES_WRITER["telegram"])
     blend_block = ""
@@ -333,11 +386,7 @@ def _writer_prompt(topic: str, goal_key: str, format_key: str, angle: str, hook:
 
 {_HUMAN_WRITING_RULES}
 
-Верни строго в формате:
-CAPTION: [полный текст поста, начиная с хука, с хэштегами согласно правилам платформы]
-CTA: [отдельный CTA если ещё не в тексте, иначе пусто]
-VISUAL_PROMPT: [на английском, до 25 слов, terracotta/beige/sage palette, soft light, atmospheric lifestyle]
-"""
+{_threads_output_format(format_key)}"""
 
 
 # ── Agent functions ──────────────────────────────────────────────────────────

@@ -193,6 +193,7 @@ export function createDraftsModule(deps) {
               oninput="document.getElementById('charCount_${post.slot}_${d.draft_id}').textContent=this.value.length"
             >${escapeHtml(cleanSlotText(post.text || ""))}</textarea>
             <div class="threads-char-counter${isOver ? " is-over" : ""}" id="charCount_${post.slot}_${d.draft_id}">${charCount}</div>
+            ${post.why_it_works ? `<div class="threads-slot-annotation"><span class="annotation-label">Почему это сработает:</span> ${escapeHtml(post.why_it_works)}</div>` : ""}
           </div>
           ${!isApproved ? `
           <div class="threads-regen-note">
