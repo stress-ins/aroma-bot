@@ -37,25 +37,39 @@ async def root():
 
 
 @app.get("/start")
-async def oauth_start(url: str = ""):
-    """Intermediate redirect to bypass iOS Universal Links.
+async def oauth_start(url: str = "", platform: str = ""):
+    """Intermediate page to bypass iOS Universal Links.
 
-    Instagram app intercepts instagram.com URLs and can't handle /oauth/authorize.
-    JS redirect from our domain doesn't trigger Universal Links.
+    Instagram app intercepts instagram.com URLs via Universal Links and
+    can't handle /oauth/authorize.  A user-initiated click on our domain
+    followed by JS location.href avoids the interception.
     """
     if not url or not url.startswith("https://"):
         return HTMLResponse("<h1>Missing url parameter</h1>", status_code=400)
     import json
     safe_url = json.dumps(url)
+    label = "Instagram" if "instagram" in url.lower() else "Threads" if "threads" in url.lower() else platform or "платформу"
     return HTMLResponse(
         '<!DOCTYPE html><html><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width,initial-scale=1">'
-        '</head><body style="margin:0;min-height:100vh;display:flex;align-items:center;'
+        '<title>Подключение</title></head>'
+        '<body style="margin:0;min-height:100vh;display:flex;align-items:center;'
         'justify-content:center;background:#1a1a2e;color:#e5e7eb;'
-        'font-family:-apple-system,BlinkMacSystemFont,sans-serif">'
-        '<p style="font-size:18px">Перенаправляю...</p>'
-        f'<script>window.location.replace({safe_url});</script>'
-        '</body></html>'
+        'font-family:-apple-system,BlinkMacSystemFont,sans-serif;text-align:center">'
+        '<div style="padding:40px 24px;max-width:380px">'
+        '<svg width="64" height="64" viewBox="0 0 64 64" style="margin-bottom:20px">'
+        '<circle cx="32" cy="32" r="30" stroke="#c0785c" stroke-width="3" fill="none"/>'
+        '<path d="M20 32l8 8 16-16" stroke="#c0785c" stroke-width="3" fill="none" '
+        'stroke-linecap="round" stroke-linejoin="round"/></svg>'
+        f'<h1 style="font-size:22px;font-weight:700;margin:0;color:#fff">Подключение {label}</h1>'
+        '<p style="font-size:15px;color:#9ca3af;margin:12px 0 24px">Нажмите кнопку ниже для авторизации.</p>'
+        f'<a id="go" href="#" onclick="event.preventDefault();window.location.href={safe_url};return false" '
+        'style="display:inline-block;padding:14px 36px;background:#c0785c;color:#fff;'
+        'border-radius:12px;text-decoration:none;font-weight:600;font-size:16px;'
+        'cursor:pointer">Продолжить</a>'
+        '<p style="font-size:12px;color:#6b7280;margin-top:16px">'
+        'Если авторизация не открывается, скопируйте адрес и вставьте в Safari.</p>'
+        '</div></body></html>'
     )
 
 
