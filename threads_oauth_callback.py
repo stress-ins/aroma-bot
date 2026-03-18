@@ -46,8 +46,8 @@ async def oauth_start(url: str = "", platform: str = ""):
     """
     if not url or not url.startswith("https://"):
         return HTMLResponse("<h1>Missing url parameter</h1>", status_code=400)
-    import json
-    safe_url = json.dumps(url)
+    from html import escape
+    safe_href = escape(url, quote=True)
     label = "Instagram" if "instagram" in url.lower() else "Threads" if "threads" in url.lower() else platform or "платформу"
     return HTMLResponse(
         '<!DOCTYPE html><html><head><meta charset="utf-8">'
@@ -63,12 +63,10 @@ async def oauth_start(url: str = "", platform: str = ""):
         'stroke-linecap="round" stroke-linejoin="round"/></svg>'
         f'<h1 style="font-size:22px;font-weight:700;margin:0;color:#fff">Подключение {label}</h1>'
         '<p style="font-size:15px;color:#9ca3af;margin:12px 0 24px">Нажмите кнопку ниже для авторизации.</p>'
-        f'<a id="go" href="#" onclick="event.preventDefault();window.location.href={safe_url};return false" '
+        f'<a href="{safe_href}" '
         'style="display:inline-block;padding:14px 36px;background:#c0785c;color:#fff;'
-        'border-radius:12px;text-decoration:none;font-weight:600;font-size:16px;'
-        'cursor:pointer">Продолжить</a>'
-        '<p style="font-size:12px;color:#6b7280;margin-top:16px">'
-        'Если авторизация не открывается, скопируйте адрес и вставьте в Safari.</p>'
+        'border-radius:12px;text-decoration:none;font-weight:600;font-size:16px">'
+        'Продолжить</a>'
         '</div></body></html>'
     )
 
