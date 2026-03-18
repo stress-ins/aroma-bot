@@ -793,6 +793,17 @@ body.is-mobile-layout .detail-grid {
 }
 body.is-mobile-layout .detail-top {
   padding: var(--space-3) var(--space-3);
+  border-bottom: none;
+  position: relative;
+}
+body.is-mobile-layout .detail-top::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: var(--space-3);
+  right: var(--space-3);
+  height: 1px;
+  background: var(--border);
 }
 
 .detail-panel {
@@ -2035,14 +2046,28 @@ body.tg-theme-dark .danger-button {
     padding-right: 0;
   }
 
-  /* Sections stretch edge-to-edge, separated by bottom border */
+  /* Sections stretch edge-to-edge, separated by inset bottom border */
   body.is-mobile-layout .detail-grid .section {
     border-radius: 0;
     margin-left: 0;
     margin-right: 0;
     border-left: none;
     border-right: none;
-    border-bottom: 1px solid var(--border);
+    border-bottom: none;
+    position: relative;
+  }
+  body.is-mobile-layout .detail-grid .section::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: var(--space-3);
+    right: var(--space-3);
+    height: 1px;
+    background: var(--border);
+  }
+
+  body.is-mobile-layout .detail-grid .section.is-card::after {
+    display: none;
   }
 
   /* Exception: card-style sections keep inset + rounded corners */
