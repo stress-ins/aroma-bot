@@ -580,7 +580,7 @@ export function createSettingsModule(deps) {
         const currentTeamId = state.accountsTeamId || (teams[0] && teams[0].team_id);
         state.accountsTeamId = currentTeamId;
         switcherEl.innerHTML = `
-          <div class="team-switcher">
+          <div class="accounts-team-switcher">
             ${teams.map((t) => `<button class="team-switcher-chip${t.team_id === currentTeamId ? " active" : ""}" type="button" onclick="switchAccountsTeam('${escapeHtml(t.team_id)}')">${uiIcon("users")}<span>${escapeHtml(t.name)}</span></button>`).join("")}
           </div>
         `;
@@ -619,7 +619,13 @@ export function createSettingsModule(deps) {
         }
       }
     } catch (err) {
-      showUiNotice(`Не удалось получить ссылку для ${platform}`, "error");
+      const detail = err?.detail || "";
+      if (detail.includes("not_configured")) {
+        const label = platform === "instagram" ? "Instagram" : "Threads";
+        showUiNotice(`${label} ещё не настроен. Обратитесь к администратору.`, "error");
+      } else {
+        showUiNotice(`Не удалось получить ссылку для ${platform}`, "error");
+      }
     }
   }
 
