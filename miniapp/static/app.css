@@ -70,7 +70,7 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg:           #1a1512;
+    --bg:           #251e18;
     --surface:      #251e18;
     --surface-2:    #2e2720;
     --surface-3:    #352c24;
@@ -1550,7 +1550,7 @@ body.tg-theme-dark .bottom-tab-bar-inner {
    colors explicitly so cards are readable against a dark shell.              */
 
 body.tg-theme-dark {
-  --bg:           #1a1512;
+  --bg:           #251e18;
   --surface:      #251e18;
   --surface-2:    #2e2720;
   --surface-3:    #352c24;
