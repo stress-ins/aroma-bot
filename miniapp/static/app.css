@@ -4786,3 +4786,120 @@ body.tg-theme-dark .reco-cta-btn { color: #d4845e; }
 .daily-oil-detail-section .daily-oil-detail-reason {
   font-weight: 500;
 }
+
+/* ── Team settings ───────────────────────────────────────────────────────── */
+.team-member-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+.team-member-row:last-child { border-bottom: none; }
+.team-member-id {
+  font-size: 13px;
+  font-family: var(--font-mono, monospace);
+  color: var(--text);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.team-members-list { margin: 8px 0 12px; }
+.invite-link-box {
+  margin: 8px 0;
+  padding: 10px;
+  background: var(--bg-alt, var(--surface-2, #f4f4f5));
+  border-radius: var(--radius, 8px);
+}
+.invite-link-box input[type="text"] {
+  font-size: 12px;
+  font-family: var(--font-mono, monospace);
+}
+
+/* ── Promo section ───────────────────────────────────────────────────────── */
+.promo-plan-badge {
+  font-size: 15px;
+  padding: 6px 0;
+  color: var(--text);
+}
+.promo-success {
+  color: var(--good, #16a34a);
+  font-size: 13px;
+  margin-top: 6px;
+  padding: 8px 10px;
+  background: rgba(22, 163, 74, 0.08);
+  border-radius: var(--radius, 8px);
+}
+.promo-error {
+  color: var(--bad, #dc2626);
+  font-size: 13px;
+  margin-top: 6px;
+  padding: 8px 10px;
+  background: rgba(220, 38, 38, 0.08);
+  border-radius: var(--radius, 8px);
+}
+.promo-gen-form select,
+.promo-gen-form input[type="number"],
+.promo-gen-form input[type="text"] {
+  font-size: 14px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius, 8px);
+  background: var(--surface, #fff);
+  color: var(--text);
+  min-width: 0;
+}
+.promo-gen-codes {
+  margin-top: 8px;
+  padding: 10px;
+  background: var(--bg-alt, var(--surface-2, #f4f4f5));
+  border-radius: var(--radius, 8px);
+}
+.promo-gen-codes code {
+  display: inline-block;
+  padding: 2px 8px;
+  margin: 2px 0;
+  background: var(--surface, #fff);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 13px;
+  user-select: all;
+}
+.promo-table-wrap {
+  margin-top: 12px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.promo-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.promo-table th, .promo-table td {
+  padding: 6px 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.promo-table th {
+  font-weight: 600;
+  color: var(--hint);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.promo-table code {
+  user-select: all;
+  font-size: 12px;
+}
+.chip-remove-btn {
+  background: none;
+  border: none;
+  color: var(--hint);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0 2px;
+  line-height: 1;
+}
+.chip-remove-btn:hover { color: var(--bad, #dc2626); }

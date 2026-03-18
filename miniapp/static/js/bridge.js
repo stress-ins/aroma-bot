@@ -89,6 +89,11 @@ export function registerWindowBridge(deps) {
     blendAdjustWithOil,
     deleteSavedBlend,
     connectPlatform,
+    createNewTeam,
+    createTeamInvite,
+    removeTeamMember,
+    activatePromo,
+    generatePromos,
     openRecommendationsWizard,
     closeRecommendationsWizard,
     recoWizardNext,
@@ -201,6 +206,11 @@ export function registerWindowBridge(deps) {
   window.blendAdjustWithOil = blendAdjustWithOil;
   window.deleteSavedBlend = deleteSavedBlend;
   window.connectPlatform = connectPlatform;
+  window.createNewTeam = createNewTeam;
+  window.createTeamInvite = createTeamInvite;
+  window.removeTeamMember = removeTeamMember;
+  window.activatePromo = activatePromo;
+  window.generatePromos = generatePromos;
   window._selectSchedulerDate = _selectSchedulerDate;
   window._renderThreadsSchedulerDates = _renderThreadsSchedulerDates;
 
@@ -253,7 +263,7 @@ export function registerWindowBridge(deps) {
   };
 
   window.openSettingsSection = async (section) => {
-    const valid = ["keywords", "brand", "accounts", "status"];
+    const valid = ["keywords", "brand", "accounts", "status", "team", "promo"];
     state.settingsSection = valid.includes(section) ? section : "status";
     if (state.tab !== "settings") {
       setMode("content");

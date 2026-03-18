@@ -1547,6 +1547,8 @@ const { renderBrand: renderBrandImpl, loadForbiddenPhrases: loadForbiddenPhrases
   addRewrite, removeRewrite, savePlatformTone, saveUploadPostPrefs,
   saveImageModels,
   connectPlatform,
+  createNewTeam, createTeamInvite, removeTeamMember,
+  activatePromo, generatePromos,
 } = _settingsMod);
 
 ({
@@ -1835,6 +1837,11 @@ registerWindowBridge({
   saveUploadPostPrefs,
   saveImageModels,
   connectPlatform,
+  createNewTeam,
+  createTeamInvite,
+  removeTeamMember,
+  activatePromo,
+  generatePromos,
   setPlanStatusFilter,
   setPlanPlatformFilter,
   setPlanDateFilter,
