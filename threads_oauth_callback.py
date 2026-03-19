@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+import hashlib
+import hmac
 import logging
 import os
 import subprocess
 from pathlib import Path
 
+import httpx
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
 
 from bot.services.social_oauth import (
     OAuthExchangeError,
@@ -118,6 +121,123 @@ async def threads_delete_status():
 @app.get("/healthz")
 async def healthz():
     return JSONResponse({"ok": True})
+
+
+# ---------------------------------------------------------------------------
+# Meta Webhooks — Instagram & Threads real-time events
+# ---------------------------------------------------------------------------
+
+def _verify_meta_signature(body: bytes, signature_header: str, app_secret: str) -> bool:
+    """Validate X-Hub-Signature-256 from Meta webhook payload."""
+    if not signature_header or not app_secret:
+        return False
+    prefix = "sha256="
+    if not signature_header.startswith(prefix):
+        return False
+    expected = hmac.new(
+        app_secret.encode(), body, hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(signature_header[len(prefix):], expected)
+
+
+def _parse_meta_webhook_entries(payload: dict, platform: str) -> list[dict]:
+    """Extract mention-like objects from Meta webhook entry[].changes[]."""
+    items: list[dict] = []
+    for entry in payload.get("entry", []):
+        for change in entry.get("changes", []):
+            value = change.get("value", {})
+            # Each change has a field (e.g. "comments", "mentions") and value
+            field = change.get("field", "")
+            external_id = str(value.get("id") or value.get("comment_id") or value.get("media_id") or "")
+            content = value.get("text") or value.get("message") or value.get("caption") or ""
+            author = value.get("from", {})
+            items.append({
+                "platform": platform,
+                "external_id": external_id,
+                "type": field or "webhook",
+                "author_username": author.get("username", ""),
+                "author_name": author.get("name", ""),
+                "content": str(content),
+            })
+    return items
+
+
+async def _forward_to_ingest(items: list[dict]) -> None:
+    """Forward parsed webhook items to local mentions ingest API."""
+    if not items:
+        return
+    secret = settings.n8n_webhook_secret
+    if not secret:
+        logger.warning("n8n_webhook_secret not set, cannot forward webhook items")
+        return
+    async with httpx.AsyncClient(timeout=10) as client:
+        for item in items:
+            try:
+                resp = await client.post(
+                    "http://127.0.0.1:8091/api/mentions/ingest",
+                    json=item,
+                    headers={"X-Webhook-Secret": secret},
+                )
+                logger.info("Forwarded webhook item %s → %s", item.get("external_id"), resp.status_code)
+            except Exception:
+                logger.exception("Failed to forward webhook item %s", item.get("external_id"))
+
+
+@app.get("/webhooks/instagram")
+async def instagram_webhook_verify(request: Request):
+    """Instagram webhook verification (hub.mode=subscribe)."""
+    mode = request.query_params.get("hub.mode", "")
+    token = request.query_params.get("hub.verify_token", "")
+    challenge = request.query_params.get("hub.challenge", "")
+    if mode == "subscribe" and hmac.compare_digest(token, settings.meta_webhook_verify_token):
+        logger.info("Instagram webhook verified")
+        return PlainTextResponse(challenge)
+    logger.warning("Instagram webhook verification failed: mode=%s", mode)
+    return JSONResponse({"error": "verification_failed"}, status_code=403)
+
+
+@app.post("/webhooks/instagram")
+async def instagram_webhook_handler(request: Request):
+    """Handle Instagram real-time webhook events."""
+    body = await request.body()
+    signature = request.headers.get("x-hub-signature-256", "")
+    if not _verify_meta_signature(body, signature, settings.instagram_app_secret):
+        logger.warning("Instagram webhook: invalid signature")
+        return JSONResponse({"error": "invalid_signature"}, status_code=403)
+    payload = await request.json()
+    items = _parse_meta_webhook_entries(payload, "instagram")
+    # Return 200 quickly — Meta requires response within 5 seconds
+    import asyncio
+    asyncio.create_task(_forward_to_ingest(items))
+    return JSONResponse({"status": "ok"})
+
+
+@app.get("/webhooks/threads")
+async def threads_webhook_verify(request: Request):
+    """Threads webhook verification (hub.mode=subscribe)."""
+    mode = request.query_params.get("hub.mode", "")
+    token = request.query_params.get("hub.verify_token", "")
+    challenge = request.query_params.get("hub.challenge", "")
+    if mode == "subscribe" and hmac.compare_digest(token, settings.meta_webhook_verify_token):
+        logger.info("Threads webhook verified")
+        return PlainTextResponse(challenge)
+    logger.warning("Threads webhook verification failed: mode=%s", mode)
+    return JSONResponse({"error": "verification_failed"}, status_code=403)
+
+
+@app.post("/webhooks/threads")
+async def threads_webhook_handler(request: Request):
+    """Handle Threads real-time webhook events."""
+    body = await request.body()
+    signature = request.headers.get("x-hub-signature-256", "")
+    if not _verify_meta_signature(body, signature, settings.threads_app_secret):
+        logger.warning("Threads webhook: invalid signature")
+        return JSONResponse({"error": "invalid_signature"}, status_code=403)
+    payload = await request.json()
+    items = _parse_meta_webhook_entries(payload, "threads")
+    import asyncio
+    asyncio.create_task(_forward_to_ingest(items))
+    return JSONResponse({"status": "ok"})
 
 
 def _render_oauth_callback_html(service: str, request: Request) -> HTMLResponse:

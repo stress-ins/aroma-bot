@@ -7,12 +7,12 @@
           "interval": [
             {
               "field": "minutes",
-              "minutesInterval": 3
+              "minutesInterval": 15
             }
           ]
         }
       },
-      "name": "Poll Every 3 Min",
+      "name": "Poll Every 15 Min",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.1,
       "position": [250, 300],
@@ -107,7 +107,7 @@
     }
   ],
   "connections": {
-    "Poll Every 3 Min": {
+    "Poll Every 15 Min": {
       "main": [
         [
           {"node": "Fetch Threads", "type": "main", "index": 0},
