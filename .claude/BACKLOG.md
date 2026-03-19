@@ -47,7 +47,7 @@
 
 ## ❓ UNGROOMED
 
-- [ ] **Threads OAuth** — ветка `codex/bot-oauth-connect-flow` (1 коммит). Нужно решение: какой OAuth flow использовать (bot-driven vs Facebook Login vs direct Instagram). Конкурирующие ветки удалены.
+- [x] **Threads OAuth** — ✅ Реализовано: `bot/handlers/social_connect.py` + `bot/services/social_oauth.py` (Threads + Instagram OAuth). Ветка `codex/bot-oauth-connect-flow` устарела.
 
 - [x] **handbook lesson 6 PDF** — ✅ Все изменения уже в main (6 карточек, CSS theory styles, archetype type, тесты). 3 handbook-ветки удалены (2026-03-19).
 
