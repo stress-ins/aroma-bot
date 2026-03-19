@@ -129,6 +129,44 @@ class TestListDrafts:
         data = resp.json()
         assert len(data["items"]) == 2
 
+    async def test_list_with_include_metrics(self, team_with_drafts):
+        team, drafts = team_with_drafts
+        d1 = drafts[0]
+        # Mark d1 as published and add metrics
+        from bot.services.drafts_store import update_draft
+        from bot.services.post_metrics_store import save_metrics
+        await update_draft(d1.draft_id, status="published")
+        await save_metrics(d1.draft_id, "threads", "ext_1", {"views": 100, "likes": 5, "replies": 2})
+
+        from miniapp_server import app
+        client = TestClient(app)
+        resp = client.get(
+            "/api/drafts?include_metrics=true",
+            headers={**HEADERS, "X-Team-Id": team.team_id},
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        published_items = [it for it in data["items"] if it["status"] == "published"]
+        assert len(published_items) == 1
+        assert "metrics_summary" in published_items[0]
+        ms = published_items[0]["metrics_summary"]
+        assert ms["likes"] == 5
+        assert ms["views"] == 100
+
+    async def test_list_without_include_metrics(self, team_with_drafts):
+        """By default metrics_summary is not included."""
+        team, drafts = team_with_drafts
+        from miniapp_server import app
+        client = TestClient(app)
+        resp = client.get(
+            "/api/drafts",
+            headers={**HEADERS, "X-Team-Id": team.team_id},
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        for item in data["items"]:
+            assert "metrics_summary" not in item
+
     async def test_list_empty(self, setup_test_db):
         """List returns empty when no drafts exist (but team is auto-created)."""
         from miniapp_server import app

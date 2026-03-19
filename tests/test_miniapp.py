@@ -1606,7 +1606,7 @@ class TestMiniAppRussianLocale:
         assert "function renderPanelError" in app_js
         assert 'elements.draftList.innerHTML = renderPanelLoader("Загружаю раздел")' in app_js
         assert 'message === "request_timeout"' in app_js
-        assert 'fetchJson(`/api/drafts?${filtersToQueryString()}`, { timeout: 20000 })' in app_js
+        assert 'fetchJson(`/api/drafts?${filtersToQueryString()}&include_metrics=true`, { timeout: 20000 })' in app_js
         assert "window.retryCurrentTab" in app_js
         assert "appState.isBootstrapped()" in app_js
         assert "serialize_draft_summary" in server_py

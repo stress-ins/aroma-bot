@@ -75,6 +75,54 @@ async def get_latest_metrics(draft_id: str) -> list[dict[str, Any]]:
         return [_serialize(m) for m in result.scalars().all()]
 
 
+async def get_latest_metrics_batch(draft_ids: list[str]) -> dict[str, dict[str, Any]]:
+    """Return the latest metrics snapshot per draft, aggregated across platforms.
+
+    Returns a dict keyed by draft_id with a summary: {likes, views, replies, comments}.
+    Only includes drafts that have metrics.
+    """
+    if not draft_ids:
+        return {}
+
+    async with AsyncSessionLocal() as session:
+        # Subquery: max fetched_at per (draft_id, platform)
+        sub = (
+            select(
+                PostMetricsModel.draft_id,
+                PostMetricsModel.platform,
+                func.max(PostMetricsModel.fetched_at).label("max_fetched"),
+            )
+            .filter(PostMetricsModel.draft_id.in_(draft_ids))
+            .group_by(PostMetricsModel.draft_id, PostMetricsModel.platform)
+            .subquery()
+        )
+        query = (
+            select(PostMetricsModel)
+            .join(
+                sub,
+                (PostMetricsModel.draft_id == sub.c.draft_id)
+                & (PostMetricsModel.platform == sub.c.platform)
+                & (PostMetricsModel.fetched_at == sub.c.max_fetched),
+            )
+        )
+        result = await session.execute(query)
+        rows = result.scalars().all()
+
+    # Aggregate per draft_id
+    batch: dict[str, dict[str, Any]] = {}
+    for m in rows:
+        metrics = dict(m.metrics) if m.metrics else {}
+        if m.draft_id not in batch:
+            batch[m.draft_id] = {"likes": 0, "views": 0, "replies": 0, "comments": 0}
+        summary = batch[m.draft_id]
+        summary["likes"] += int(metrics.get("likes", 0) or 0)
+        summary["views"] += int(metrics.get("views", 0) or metrics.get("impressions", 0) or 0)
+        summary["replies"] += int(metrics.get("replies", 0) or 0)
+        summary["comments"] += int(metrics.get("comments", 0) or 0)
+
+    return batch
+
+
 async def get_metrics_history(draft_id: str, platform: str) -> list[dict[str, Any]]:
     """Return all snapshots for a draft+platform, newest first."""
     async with AsyncSessionLocal() as session:
