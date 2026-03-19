@@ -172,3 +172,62 @@ async def remove_monitored_account(
 
     await update_brand_settings(ctx.team_id, **{field: accounts})
     return {"removed": username_clean, "remaining": len(accounts)}
+
+
+# ---------------------------------------------------------------------------
+# Tracked hashtags for trend monitoring
+# ---------------------------------------------------------------------------
+
+_MAX_TRACKED_HASHTAGS = 30
+
+
+class TrackedHashtagPayload(BaseModel):
+    tag: str
+
+
+@router.get("/api/social/tracked-hashtags")
+async def list_tracked_hashtags(
+    ctx: TeamContext = Depends(require_team_role("viewer")),
+):
+    bs = await get_brand_settings(ctx.team_id)
+    return {"items": bs.tracked_hashtags or []}
+
+
+@router.post("/api/social/tracked-hashtags")
+async def add_tracked_hashtag(
+    payload: TrackedHashtagPayload,
+    ctx: TeamContext = Depends(require_team_role("editor")),
+):
+    tag = payload.tag.strip().lstrip("#").lower()
+    if not tag:
+        raise HTTPException(status_code=400, detail="empty_tag")
+
+    bs = await get_brand_settings(ctx.team_id)
+    tags: list = list(bs.tracked_hashtags or [])
+
+    if len(tags) >= _MAX_TRACKED_HASHTAGS:
+        raise HTTPException(status_code=400, detail="max_tags_reached")
+
+    if tag in tags:
+        raise HTTPException(status_code=400, detail="already_tracked")
+
+    tags.append(tag)
+    await update_brand_settings(ctx.team_id, tracked_hashtags=tags)
+    return {"added": tag, "items": tags}
+
+
+@router.delete("/api/social/tracked-hashtags/{tag}")
+async def remove_tracked_hashtag(
+    tag: str,
+    ctx: TeamContext = Depends(require_team_role("editor")),
+):
+    tag_clean = tag.strip().lstrip("#").lower()
+    bs = await get_brand_settings(ctx.team_id)
+    tags: list = list(bs.tracked_hashtags or [])
+
+    if tag_clean not in tags:
+        raise HTTPException(status_code=404, detail="tag_not_found")
+
+    tags.remove(tag_clean)
+    await update_brand_settings(ctx.team_id, tracked_hashtags=tags)
+    return {"removed": tag_clean, "items": tags}

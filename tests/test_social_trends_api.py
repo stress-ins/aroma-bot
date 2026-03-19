@@ -189,6 +189,63 @@ class TestMonitoredAccounts:
         assert resp.json()["detail"] == "already_monitored"
 
 
+class TestTrackedHashtags:
+    async def test_list_tracked_hashtags_empty(self, _seed_team_and_posts):
+        team = _seed_team_and_posts
+        from miniapp_server import app
+        client = TestClient(app)
+        resp = client.get(
+            "/api/social/tracked-hashtags",
+            headers={**HEADERS, "X-Team-Id": team.team_id},
+        )
+        assert resp.status_code == 200
+        assert resp.json()["items"] == []
+
+    async def test_add_and_remove_hashtag(self, _seed_team_and_posts):
+        team = _seed_team_and_posts
+        from miniapp_server import app
+        client = TestClient(app)
+        headers = {**HEADERS, "X-Team-Id": team.team_id}
+
+        # Add
+        resp = client.post(
+            "/api/social/tracked-hashtags",
+            json={"tag": "#ароматерапия"},
+            headers=headers,
+        )
+        assert resp.status_code == 200
+        assert "ароматерапия" in resp.json()["items"]
+
+        # Add another
+        resp = client.post(
+            "/api/social/tracked-hashtags",
+            json={"tag": "эфирныемасла"},
+            headers=headers,
+        )
+        assert resp.status_code == 200
+        assert len(resp.json()["items"]) == 2
+
+        # Remove
+        resp = client.delete(
+            "/api/social/tracked-hashtags/ароматерапия",
+            headers=headers,
+        )
+        assert resp.status_code == 200
+        assert len(resp.json()["items"]) == 1
+        assert "эфирныемасла" in resp.json()["items"]
+
+    async def test_duplicate_rejected(self, _seed_team_and_posts):
+        team = _seed_team_and_posts
+        from miniapp_server import app
+        client = TestClient(app)
+        headers = {**HEADERS, "X-Team-Id": team.team_id}
+
+        client.post("/api/social/tracked-hashtags", json={"tag": "test"}, headers=headers)
+        resp = client.post("/api/social/tracked-hashtags", json={"tag": "test"}, headers=headers)
+        assert resp.status_code == 400
+        assert resp.json()["detail"] == "already_tracked"
+
+
 class TestRefreshEndpoint:
     async def test_refresh_returns_started(self, _seed_team_and_posts):
         team = _seed_team_and_posts

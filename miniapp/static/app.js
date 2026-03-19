@@ -64,15 +64,9 @@ const state = {
 
 const MODE_TABS = {
   content: [
-    { id: "create", label: "Создать" },
-    { id: "inbox", label: "Согласование" },
     { id: "drafts", label: "Черновики" },
-    { id: "plans", label: "Планы" },
     { id: "reels", label: "Рилсы" },
-    { id: "schedule", label: "Расписание" },
-    { id: "keywords", label: "Ключи" },
     { id: "trends", label: "Тренды" },
-    { id: "status", label: "Статус" },
   ],
   handbook: [
     { id: "aromas", label: "Ароматы" },
@@ -103,6 +97,7 @@ let renderCreate, renderCreateTool;
 let renderDraftList, openDraft, openReels, renderDraftDetail, renderEmptyDetail;
 let renderInbox, renderStatus, renderPlans, renderReels, renderReelsDetail, renderKeywords;
 let addRewrite, removeRewrite, savePlatformTone, saveUploadPostPrefs, saveImageModels, connectPlatform, switchAccountsTeam;
+let addTrackedHashtag, removeTrackedHashtag;
 let addKeywordItem, removeKeywordItem, openKeywordTopic;
 let addForbiddenPhrase, removeForbiddenPhrase;
 let createNewTeam, createTeamInvite, removeTeamMember, activatePromo, generatePromos;
@@ -1713,6 +1708,7 @@ const { renderBrand: renderBrandImpl, loadForbiddenPhrases: loadForbiddenPhrases
   addRewrite, removeRewrite, savePlatformTone, saveUploadPostPrefs,
   saveImageModels,
   connectPlatform, switchAccountsTeam,
+  addTrackedHashtag, removeTrackedHashtag,
   createNewTeam, createTeamInvite, removeTeamMember,
   activatePromo, generatePromos,
 } = _settingsMod);
@@ -1908,7 +1904,8 @@ function setMode(m) {
     elements.tabsContainer.addEventListener("scroll", checkScrollEnd, { passive: true });
     requestAnimationFrame(checkScrollEnd);
   }
-  if (!(m === "content" && state.tab === "settings") && !tabs.find(t => t.id === state.tab)) setTab(tabs[0].id);
+  const _contentHidden = ["settings", "create", "inbox", "plans", "schedule", "keywords", "status"];
+  if (!(m === "content" && _contentHidden.includes(state.tab)) && !tabs.find(t => t.id === state.tab)) setTab(tabs[0].id);
   syncMobileNavigation();
 }
 

@@ -154,6 +154,8 @@ class BrandSettingsModel(Base):
     # Monitored social accounts for trend collection
     instagram_accounts: Mapped[list] = mapped_column(MutableList.as_mutable(JSON), default=list)
     threads_accounts: Mapped[list] = mapped_column(MutableList.as_mutable(JSON), default=list)
+    # Tracked hashtags for trend monitoring (e.g. ["ароматерапия", "эфирныемасла"])
+    tracked_hashtags: Mapped[list] = mapped_column(MutableList.as_mutable(JSON), default=list)
     # City for weather context (daily oil, etc.)
     city_name: Mapped[str] = mapped_column(String(100), default="Москва")
     city_lat: Mapped[float] = mapped_column(Float, default=55.7558)

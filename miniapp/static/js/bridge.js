@@ -140,6 +140,8 @@ export function registerWindowBridge(deps) {
     openTrendsPost,
     addMonitoredAccount,
     removeMonitoredAccount,
+    addTrackedHashtag,
+    removeTrackedHashtag,
   } = deps;
 
   window.retryCurrentTab = retryCurrentTab;
@@ -273,6 +275,8 @@ export function registerWindowBridge(deps) {
   window.setMentionsFilter = setMentionsFilter;
   window.moveDraftToTeam = moveDraftToTeam;
   window.switchAccountsTeam = switchAccountsTeam;
+  window.addTrackedHashtag = addTrackedHashtag;
+  window.removeTrackedHashtag = removeTrackedHashtag;
   window._selectSchedulerDate = _selectSchedulerDate;
   window._renderThreadsSchedulerDates = _renderThreadsSchedulerDates;
 

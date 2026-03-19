@@ -6,8 +6,9 @@ def test_mobile_tabs_and_drafts_render_in_russian(page):
     tabs = page.locator(".tab-button").evaluate_all(
         "(nodes) => nodes.map((node) => node.textContent.trim())"
     )
-    assert "Создать" in tabs
     assert "Черновики" in tabs
+    assert "Рилсы" in tabs
+    assert "Тренды" in tabs
 
     page.locator("#btnTabHandbook").click()
     page.wait_for_timeout(100)
@@ -161,8 +162,9 @@ def test_themed_tabs_and_drafts_render(themed_page):
     tabs = themed_page.locator(".tab-button").evaluate_all(
         "(nodes) => nodes.map((node) => node.textContent.trim())"
     )
-    assert "Создать" in tabs
     assert "Черновики" in tabs
+    assert "Рилсы" in tabs
+    assert "Тренды" in tabs
 
     themed_page.locator("#btnTabDrafts").click()
     themed_page.wait_for_timeout(100)
