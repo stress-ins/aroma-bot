@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import asyncio
+import base64
+import json as _json
 import logging
 import time
 from typing import Any
@@ -33,12 +35,20 @@ async def export_to_canva(pptx_bytes: bytes, title: str) -> dict[str, str]:
     access_token = await _get_canva_token()
 
     async with httpx.AsyncClient(timeout=30.0) as client:
-        # Start import job
+        # Start import job — Canva expects octet-stream + Import-Metadata header
+        title_b64 = base64.b64encode(title[:50].encode()).decode()
+        import_metadata = _json.dumps({
+            "title_base64": title_b64,
+            "mime_type": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        })
         resp = await client.post(
             f"{CANVA_API_BASE}/imports",
-            headers={"Authorization": f"Bearer {access_token}"},
-            files={"file": (f"{title}.pptx", pptx_bytes, "application/vnd.openxmlformats-officedocument.presentationml.presentation")},
-            data={"title": title},
+            headers={
+                "Authorization": f"Bearer {access_token}",
+                "Content-Type": "application/octet-stream",
+                "Import-Metadata": import_metadata,
+            },
+            content=pptx_bytes,
         )
         if resp.status_code >= 400:
             raise CanvaAPIError(f"Canva import failed: {resp.status_code} {resp.text[:200]}")
