@@ -23,6 +23,10 @@ export function createMentionsModule(deps) {
     return icons[platform] || "message-circle";
   }
 
+  function platformLabel(platform) {
+    return { telegram: "Telegram", threads: "Threads", instagram: "Instagram" }[platform] || platform;
+  }
+
   function formatTime(isoStr) {
     if (!isoStr) return "";
     const d = new Date(isoStr);
@@ -35,7 +39,7 @@ export function createMentionsModule(deps) {
   }
 
   function statusLabel(status) {
-    return { pending: "Ожидает", replied: "Отвечено", ignored: "Игнорируется" }[status] || status;
+    return { pending: "Ожидает", replied: "Отвечено", ignored: "Игнорируется", all: "Все" }[status] || status;
   }
 
   // ── Load ───────────────────────────────────────────────────────────────────
@@ -74,7 +78,7 @@ export function createMentionsModule(deps) {
           ${platforms.map(p => `
             <button class="filter-chip${platform === p ? " active" : ""}"
               onclick="setMentionsFilter('platform','${p}')">
-              ${p === "all" ? "Все платформы" : p}
+              ${p === "all" ? "Все платформы" : platformLabel(p)}
             </button>`).join("")}
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
@@ -95,7 +99,7 @@ export function createMentionsModule(deps) {
       <div class="mention-card" onclick="openMentionDetail('${m.mention_id}')">
         <div class="mention-meta">
           <span class="mention-platform-badge">
-            <i data-lucide="${platformIcon(m.platform)}"></i> ${m.platform}
+            <i data-lucide="${platformIcon(m.platform)}"></i> ${platformLabel(m.platform)}
           </span>
           <span class="mention-time">${formatTime(m.received_at)}</span>
           <span class="tag-status-${m.status === "pending" ? "warn" : "ok"}">${statusLabel(m.status)}</span>
@@ -150,7 +154,7 @@ export function createMentionsModule(deps) {
       <div class="mention-content">
         <div class="mention-meta">
           <span class="mention-platform-badge">
-            <i data-lucide="${platformIcon(m.platform)}"></i> ${m.platform}
+            <i data-lucide="${platformIcon(m.platform)}"></i> ${platformLabel(m.platform)}
           </span>
           <span class="mention-time">${formatTime(m.received_at)}</span>
           <span class="tag-status-${m.status === "pending" ? "warn" : "ok"}">${statusLabel(m.status)}</span>
