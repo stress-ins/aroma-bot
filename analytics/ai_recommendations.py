@@ -24,7 +24,7 @@ def _format_trends_summary(results: list[SourceResult]) -> str:
 
 
 def _call_claude(trends_text: str) -> str:
-    import anthropic
+    from bot.services.claude_client import HAIKU, call_claude
 
     prompt = f"""Ты — эксперт по контент-маркетингу для wellness-специалиста (ароматерапия, звуковые ванны, поющие чаши, ольфактотерапия).
 
@@ -39,13 +39,10 @@ def _call_claude(trends_text: str) -> str:
 
 Отвечай на русском. Будь конкретным, без воды."""
 
-    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
-    response = client.messages.create(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=1000,
+    return call_claude(
         messages=[{"role": "user", "content": prompt}],
+        max_tokens=1000, model=HAIKU, context="ai_recommendations",
     )
-    return response.content[0].text
 
 
 async def get_ai_recommendations(results: list[SourceResult]) -> SourceResult:

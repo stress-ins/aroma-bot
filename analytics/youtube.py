@@ -123,7 +123,7 @@ def _fetch_youtube(search_terms: list[str], region_code: str = "US",
 def _summarize_videos(videos: list[tuple[str, str]]) -> dict[int, str]:
     """Call Claude once to get Russian summaries for all videos. Returns {index: summary}."""
     try:
-        import anthropic
+        from bot.services.claude_client import HAIKU, call_claude
 
         numbered = "\n".join(
             f"{i}. Название: {title}\nОписание: {desc[:300] or '(нет описания)'}"
@@ -133,14 +133,12 @@ def _summarize_videos(videos: list[tuple[str, str]]) -> dict[int, str]:
             f"Дай краткую выжимку (1-2 предложения на русском) о чём каждое видео.\n"
             f"Ответ строго в формате:\n0. <текст>\n1. <текст>\n...\n\n{numbered}"
         )
-        client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
-        response = client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=600,
+        response_text = call_claude(
             messages=[{"role": "user", "content": prompt}],
+            max_tokens=600, model=HAIKU, context="youtube_summary",
         )
         result: dict[int, str] = {}
-        for line in response.content[0].text.strip().splitlines():
+        for line in response_text.strip().splitlines():
             if ". " in line and line[0].isdigit():
                 idx_str, _, text = line.partition(". ")
                 try:

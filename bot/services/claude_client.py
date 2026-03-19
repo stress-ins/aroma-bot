@@ -120,6 +120,16 @@ def call_claude(
 
             return text
 
+        except anthropic.BadRequestError as exc:
+            # Non-retryable (e.g. "organization disabled") → go straight to fallback
+            last_exc = exc
+            notify_owner_throttled(
+                f"\U0001f4dd <b>Claude API BadRequest</b>\nContext: {context}\n"
+                f"Error: <code>{type(exc).__name__}: {str(exc)[:200]}</code>",
+                dedup_key=f"claude:bad_request:{context}",
+            )
+            break
+
         except anthropic.RateLimitError as exc:
             last_exc = exc
             if attempt < retries - 1:
@@ -139,34 +149,95 @@ def call_claude(
                 dedup_key=f"claude:{context}",
             )
             raise
+    else:
+        notify_owner_throttled(
+            f"\U0001f4dd <b>Claude API: all {retries} attempts exhausted</b>\n"
+            f"Context: {context}\nError: <code>{str(last_exc)[:200]}</code>",
+            dedup_key=f"claude:retry_exhausted:{context}",
+        )
 
-    notify_owner_throttled(
-        f"\U0001f4dd <b>Claude API: all {retries} attempts exhausted</b>\n"
-        f"Context: {context}\nError: <code>{str(last_exc)[:200]}</code>",
-        dedup_key=f"claude:retry_exhausted:{context}",
-    )
-
-    # Fallback to Kie.ai Gemini 2.5 Flash
+    # Fallback chain: Kie.ai Claude → Kie.ai Gemini
     if settings.kie_ai_api_key:
-        logger.warning("Claude API exhausted, falling back to Kie.ai Gemini 2.5 Flash for context=%s", context)
+        # Step 1: Try Kie.ai Claude (same model, different provider)
+        logger.warning("Claude API failed, falling back to Kie.ai Claude for context=%s", context)
+        try:
+            text = _call_kie_claude(
+                messages=messages, max_tokens=max_tokens, system=system,
+                model=model, context=context,
+            )
+            notify_owner_throttled(
+                f"\u26a0\ufe0f <b>Claude fallback \u2192 Kie.ai Claude</b>\nContext: {context}\n"
+                f"Claude error: <code>{str(last_exc)[:150]}</code>",
+                dedup_key=f"claude:fallback_kie_claude:{context}",
+            )
+            return text
+        except Exception as kie_claude_exc:
+            logger.warning("Kie.ai Claude also failed for context=%s: %s", context, kie_claude_exc)
+            notify_owner_throttled(
+                f"\u26a0\ufe0f <b>Kie.ai Claude also failed</b>\nContext: {context}\n"
+                f"Error: <code>{str(kie_claude_exc)[:150]}</code>",
+                dedup_key=f"claude:kie_claude_failed:{context}",
+            )
+
+        # Step 2: Try Kie.ai Gemini 2.5 Flash (different model)
+        logger.warning("Kie.ai Claude failed, falling back to Kie.ai Gemini for context=%s", context)
         try:
             text = _call_kie_gemini(messages=messages, max_tokens=max_tokens, system=system, context=context)
             notify_owner_throttled(
                 f"\u26a0\ufe0f <b>Claude fallback \u2192 Kie.ai Gemini</b>\nContext: {context}\n"
                 f"Claude error: <code>{str(last_exc)[:150]}</code>",
-                dedup_key=f"claude:fallback:{context}",
+                dedup_key=f"claude:fallback_kie_gemini:{context}",
             )
             return text
-        except Exception as fallback_exc:
+        except Exception as gemini_exc:
             logger.exception("Kie.ai Gemini fallback also failed for context=%s", context)
             notify_owner_throttled(
-                f"\U0001f534 <b>Both Claude AND Kie.ai Gemini failed</b>\nContext: {context}\n"
+                f"\U0001f534 <b>All LLM providers failed</b>\nContext: {context}\n"
                 f"Claude: <code>{str(last_exc)[:100]}</code>\n"
-                f"Kie.ai: <code>{str(fallback_exc)[:100]}</code>",
-                dedup_key=f"claude:both_failed:{context}",
+                f"Kie Gemini: <code>{str(gemini_exc)[:100]}</code>",
+                dedup_key=f"claude:all_failed:{context}",
             )
 
     raise last_exc  # type: ignore[misc]
+
+
+def _call_kie_claude(
+    *,
+    messages: list[dict],
+    max_tokens: int,
+    system: str = "",
+    model: str = "claude-haiku-4-5-20251001",
+    context: str = "Kie Claude fallback",
+) -> str:
+    """Fallback: call Claude via Kie.ai Anthropic-compatible API."""
+    client = anthropic.Anthropic(
+        base_url="https://api.kie.ai/claude",
+        api_key=settings.kie_ai_api_key,
+    )
+    kwargs: dict = dict(model=model, max_tokens=max_tokens, messages=messages)
+    if system:
+        kwargs["system"] = system
+
+    response = client.messages.create(**kwargs)
+    text = response.content[0].text.strip()
+
+    # Fire-and-forget cost logging
+    try:
+        usage = response.usage
+        in_tok = getattr(usage, "input_tokens", 0)
+        out_tok = getattr(usage, "output_tokens", 0)
+        cost = _calc_cost(model, in_tok, out_tok)
+        tid = current_telegram_id.get()
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        threading.Thread(
+            target=_log_cost_sync,
+            args=(today, tid, context, f"{model}/kie", in_tok, out_tok, cost),
+            daemon=True,
+        ).start()
+    except Exception:
+        pass
+
+    return text
 
 
 def _call_kie_gemini(
