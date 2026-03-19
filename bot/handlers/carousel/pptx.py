@@ -15,6 +15,7 @@ from bot.handlers.carousel.generation import (
     _FONT_NAME,
     _SLIDE_EMU,
     _find_text_zone,
+    wrap_slide_text,
 )
 
 logger = logging.getLogger(__name__)
@@ -136,11 +137,14 @@ def _build_pptx(slides: list[str], images: list[bytes | None] | None = None) -> 
         tf = txBox.text_frame
         tf.word_wrap = True
 
-        # Only the slide text -- no labels
+        # Pre-wrap text using shared wrapping logic for consistency with preview
+        wrapped_lines = wrap_slide_text(text, max_chars_per_line=32)
+        wrapped_text = "\n".join(wrapped_lines)
+
         p_txt = tf.paragraphs[0]
         p_txt.alignment = PP_ALIGN.LEFT
         r_txt = p_txt.add_run()
-        r_txt.text = text
+        r_txt.text = wrapped_text
         r_txt.font.name = _FONT_NAME
         r_txt.font.size = Pt(24)
         r_txt.font.bold = True

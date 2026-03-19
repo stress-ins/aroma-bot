@@ -226,24 +226,20 @@ def render_preview_png(
         )
     img = Image.alpha_composite(img, gradient)
 
-    # Typography
-    _POPPINS_BOLD   = "/usr/share/fonts/truetype/google-fonts/Poppins-Bold.ttf"
-    _POPPINS_MEDIUM = "/usr/share/fonts/truetype/google-fonts/Poppins-Medium.ttf"
-    FONT_SIZE   = 44
-    LINE_HEIGHT = 60
+    # Typography — use DeldedaOpen to match PPTX output
+    FONT_SIZE   = 36
+    LINE_HEIGHT = 50
     PAD_H       = 32
     PAD_BOTTOM  = 28
 
     try:
-        font = ImageFont.truetype(_POPPINS_BOLD, FONT_SIZE)
+        font = ImageFont.truetype(str(_FONT_PATH), FONT_SIZE)
     except Exception:
         try:
-            font = ImageFont.truetype(_POPPINS_MEDIUM, FONT_SIZE)
+            _POPPINS_BOLD = "/usr/share/fonts/truetype/google-fonts/Poppins-Bold.ttf"
+            font = ImageFont.truetype(_POPPINS_BOLD, FONT_SIZE)
         except Exception:
-            try:
-                font = ImageFont.truetype(str(_FONT_PATH), FONT_SIZE)
-            except Exception:
-                font = ImageFont.load_default()
+            font = ImageFont.load_default()
 
     draw = ImageDraw.Draw(img)
 
