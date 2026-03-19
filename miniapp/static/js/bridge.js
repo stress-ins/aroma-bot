@@ -30,6 +30,8 @@ export function registerWindowBridge(deps) {
     carouselSwiperGoTo,
     downloadCarouselPptx,
     importCarouselPptx,
+    exportToCanva,
+    importFromCanva,
     saveReelsScenario,
     regenerateReelsStoryboard,
     regenerateAllReelsFrames,
@@ -186,6 +188,8 @@ export function registerWindowBridge(deps) {
   window.carouselSwiperGoTo = carouselSwiperGoTo;
   window.downloadCarouselPptx = downloadCarouselPptx;
   window.importCarouselPptx = importCarouselPptx;
+  window.exportToCanva = exportToCanva;
+  window.importFromCanva = importFromCanva;
 
   window.saveReelsScenario = saveReelsScenario;
   window.regenerateReelsStoryboard = regenerateReelsStoryboard;
@@ -350,6 +354,14 @@ export function registerWindowBridge(deps) {
   window._syncCharCount = function(el) {
     const target = document.getElementById(el.dataset.countTarget);
     if (target) target.textContent = el.value.length;
+  };
+
+  window._selectInput = function(el) {
+    el.select();
+  };
+
+  window._scheduleThreadsSeriesFromBtn = function(el) {
+    scheduleThreadsSeries(el.dataset.draftId, el.dataset.date, ["morning", "day", "evening"], el);
   };
 
   // Trends

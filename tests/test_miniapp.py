@@ -1631,9 +1631,10 @@ class TestMiniAppRussianLocale:
         assert "function isEditingDetailForm()" in app_js
         assert "if (!isEditingDetailForm()) renderReelsDetail(reel);" in app_js
         assert "!isEditingDetailForm() && !detailHasFocus && !hasPendingCarouselOperations(draft.draft_id)" in app_js
-        assert "onclick=\"updateDraft('status', {status:'approved'}, this)\"" in app_js
-        assert "onclick=\"updateDraft('status', {status:'rejected'}, this)\"" in app_js
-        assert "onclick=\"deleteDraft('${d.draft_id}', 'drafts', this)\"" in app_js
+        assert 'data-action="updateDraft"' in app_js
+        assert '{"status":"approved"}' in app_js
+        assert '{"status":"rejected"}' in app_js
+        assert 'data-action="deleteDraft"' in app_js
         assert "onclick='saveCarouselSlideText(${JSON.stringify(draftId)}, ${index}, this)'" in app_js
         assert 'regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, this)' in app_js
         assert "onclick='regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, this)'" in app_js
