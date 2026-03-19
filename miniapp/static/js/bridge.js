@@ -341,6 +341,17 @@ export function registerWindowBridge(deps) {
     await loadSettings();
   };
 
+  // Compound input handlers (replace multi-call inline oninput)
+  window._overlayTextareaInput = function(el) {
+    autoResize(el);
+    scheduleFrameOverlaySave(el.dataset.draftId, el.dataset.frameId, el.value);
+  };
+
+  window._syncCharCount = function(el) {
+    const target = document.getElementById(el.dataset.countTarget);
+    if (target) target.textContent = el.value.length;
+  };
+
   // Trends
   window.selectTrendsPlatform = selectTrendsPlatform;
   window.selectTrendsPeriod = selectTrendsPeriod;
@@ -348,4 +359,49 @@ export function registerWindowBridge(deps) {
   window.openTrendsPost = openTrendsPost;
   window.addMonitoredAccount = addMonitoredAccount;
   window.removeMonitoredAccount = removeMonitoredAccount;
+
+  // ── Global event delegation ────────────────────────────────────────────────
+  // Replaces inline onclick/onchange/oninput attributes.
+  // Convention:
+  //   data-action="fnName" data-args='["arg1","arg2",null]'
+  //   null in data-args is replaced with the matched element (replaces `this`).
+  //   data-on-change / data-on-input for change/input events.
+
+  function _resolveArgs(el, raw) {
+    if (!raw) return [];
+    return JSON.parse(raw).map((a) => (a === null ? el : a));
+  }
+
+  document.addEventListener("click", (e) => {
+    const el = e.target.closest("[data-action]");
+    if (!el) return;
+    const fn = window[el.dataset.action];
+    if (typeof fn === "function") fn(..._resolveArgs(el, el.dataset.args));
+  });
+
+  document.addEventListener("change", (e) => {
+    const el = e.target.closest("[data-on-change]");
+    if (!el) return;
+    const fn = window[el.dataset.onChange];
+    if (typeof fn !== "function") return;
+    if (el.dataset.guard === "truthy" && !el.value) return;
+    const args = _resolveArgs(el, el.dataset.args);
+    args.push(el.value, el);
+    fn(...args);
+  });
+
+  document.addEventListener("input", (e) => {
+    const el = e.target.closest("[data-on-input]");
+    if (!el) return;
+    const fn = window[el.dataset.onInput];
+    if (typeof fn !== "function") return;
+    const raw = el.dataset.args;
+    if (raw) {
+      const args = JSON.parse(raw).map((a) => (a === null ? el : a));
+      args.push(el.value);
+      fn(...args);
+    } else {
+      fn(el);
+    }
+  });
 }
