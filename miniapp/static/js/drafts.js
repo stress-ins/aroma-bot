@@ -392,8 +392,7 @@ export function createDraftsModule(deps) {
             <div class="detail-icon-actions">
               <button class="secondary-button" title="Вернуть на доработку" onclick="updateDraft('status', {status:'rejected'}, this)">${uiIcon("reject")}</button>
               <button class="secondary-button" title="Отправить в чат" onclick="sendDraftToChat('${d.draft_id}', this)">${uiIcon("chat")}</button>
-              ${d.kind === "carousel" ? `<button class="secondary-button" title="Скачать презентацию" onclick="downloadCarouselPptx('${d.draft_id}', this)">${uiIcon("download")}</button>` : ""}
-              ${d.kind === "carousel" ? `<button class="secondary-button" title="Импорт из Canva" onclick="importCarouselPptx('${d.draft_id}', this)">${uiIcon("upload")}</button>` : ""}
+              ${d.kind === "carousel" ? `<div class="carousel-actions-wrap"><button class="secondary-button" title="Экспорт / Импорт" onclick="toggleCarouselDropdown('${d.draft_id}', this)">${uiIcon("more-vertical")}</button><div class="carousel-actions-dropdown" id="carouselDropdown_${d.draft_id}" hidden></div></div>` : ""}
               ${d.kind === "carousel" ? `<button class="secondary-button" title="Обновить все слайды" onclick="regenerateCarouselAll('${d.draft_id}', this)">${uiIcon("regenerate")}</button>` : ""}
             </div>
             ${renderMoveButton(d.draft_id)}

@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from bot.services.brand_settings_store import get_brand_settings, update_brand_settings
 from bot.services.mentions_store import get_token, list_tokens
 from bot.services.social_oauth import (
+    build_canva_authorize_url,
     build_instagram_authorize_url,
     build_oauth_state,
     build_threads_authorize_url,
@@ -21,8 +22,9 @@ router = APIRouter()
 
 THREADS_REDIRECT_URI = "https://oauth.aromara.ru/threads/callback"
 INSTAGRAM_REDIRECT_URI = "https://oauth.aromara.ru/instagram/callback"
+CANVA_REDIRECT_URI = "https://oauth.aromara.ru/canva/callback"
 
-_PLATFORMS = ("threads", "instagram")
+_PLATFORMS = ("threads", "instagram", "canva")
 
 
 @router.get("/api/social/status")
@@ -66,6 +68,8 @@ async def social_connect_url(
         raise HTTPException(status_code=400, detail="threads_not_configured")
     if platform == "instagram" and (not settings.instagram_app_id or not settings.instagram_app_secret):
         raise HTTPException(status_code=400, detail="instagram_not_configured")
+    if platform == "canva" and (not settings.canva_client_id or not settings.canva_client_secret):
+        raise HTTPException(status_code=400, detail="canva_not_configured")
 
     user_id = _telegram_user_id_from_init_data(x_telegram_init_data or "") or 0
     chat_id = user_id
@@ -81,6 +85,12 @@ async def social_connect_url(
         url = build_threads_authorize_url(
             client_id=settings.threads_app_id,
             redirect_uri=THREADS_REDIRECT_URI,
+            state=state,
+        )
+    elif platform == "canva":
+        url = build_canva_authorize_url(
+            client_id=settings.canva_client_id,
+            redirect_uri=CANVA_REDIRECT_URI,
             state=state,
         )
     else:

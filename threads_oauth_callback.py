@@ -13,6 +13,7 @@ from bot.services.social_oauth import (
     OAuthTokenBundle,
     OAuthStateError,
     bundle_env_updates,
+    exchange_canva_code,
     exchange_instagram_code,
     exchange_threads_code,
     extract_state_payload_unsafe,
@@ -29,6 +30,7 @@ logger = logging.getLogger(__name__)
 ENV_FILE = Path(os.getenv("AROMA_ENV_FILE", Path(__file__).resolve().parent / ".env"))
 THREADS_REDIRECT_URI = "https://oauth.aromara.ru/threads/callback"
 INSTAGRAM_REDIRECT_URI = "https://oauth.aromara.ru/instagram/callback"
+CANVA_REDIRECT_URI = "https://oauth.aromara.ru/canva/callback"
 
 
 @app.get("/")
@@ -77,6 +79,11 @@ async def threads_callback(request: Request):
 @app.get("/instagram/callback")
 async def instagram_callback(request: Request):
     return await _complete_oauth("instagram", request)
+
+
+@app.get("/canva/callback")
+async def canva_callback(request: Request):
+    return await _complete_oauth("canva", request)
 
 
 @app.get("/threads/deauthorize")
@@ -249,6 +256,13 @@ def _exchange_bundle(service: str, code: str) -> OAuthTokenBundle:
             client_secret=settings.instagram_app_secret,
             redirect_uri=INSTAGRAM_REDIRECT_URI,
         )
+    if service == "canva":
+        return exchange_canva_code(
+            code=code,
+            client_id=settings.canva_client_id,
+            client_secret=settings.canva_client_secret,
+            redirect_uri=CANVA_REDIRECT_URI,
+        )
     raise OAuthExchangeError(f"Unsupported service: {service}")
 
 
@@ -258,6 +272,12 @@ def _notify_success(chat_id: str, bundle: OAuthTokenBundle) -> None:
             "✅ Threads подключён.\n"
             f"Аккаунт: @{bundle.username or 'unknown'}\n"
             f"User ID: {bundle.user_id}"
+        )
+    elif bundle.service == "canva":
+        text = (
+            "✅ Canva подключён.\n"
+            f"User ID: {bundle.user_id}"
+            + (f"\nИмя: {bundle.username}" if bundle.username else "")
         )
     else:
         text = (
