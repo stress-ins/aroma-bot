@@ -2500,8 +2500,8 @@ body.tg-theme-dark .danger-button {
 .secondary-button.is-busy,
 .primary-button.is-busy {
   opacity: 0.88;
-  transform: translateY(-1px) scale(1.01);
-  box-shadow: 0 0 0 3px rgba(var(--brand-rgb), 0.12), 0 10px 24px rgba(var(--brand-rgb), 0.18);
+  transform: none;
+  box-shadow: 0 0 0 2px rgba(var(--brand-rgb), 0.25);
 }
 
 .secondary-button.did-complete,
@@ -5475,6 +5475,8 @@ body.tg-theme-dark .reco-cta-btn { color: #d4845e; }
 .suggest-topics-loading { display: flex; align-items: center; gap: 8px; padding: 12px 14px; font-size: 14px; color: var(--hint); }
 
 /* Canva design picker */
+.canva-picker-hint { font-size: 13px; color: var(--hint); padding: 8px 8px 0; margin: 0; }
+.preview-modal-body.canva-design-grid { overflow-y: auto; max-height: 60vh; -webkit-overflow-scrolling: touch; }
 .canva-design-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; padding: 8px; }
 .canva-design-item {
   display: flex;
