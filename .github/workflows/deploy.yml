@@ -56,7 +56,14 @@ jobs:
 
       - name: Smoke test miniapp
         run: |
-          ssh root@46.32.186.192 'curl -sf http://127.0.0.1:8091/healthz' || echo "miniapp healthz failed (non-blocking)"
+          ssh root@46.32.186.192 '
+            for i in $(seq 1 60); do
+              curl -sf http://127.0.0.1:8091/readyz > /dev/null 2>&1 && echo "miniapp ready" && exit 0
+              sleep 0.5
+            done
+            echo "ERROR: miniapp not ready after 30s"
+            exit 1
+          '
 
       - name: Run one-time data enrichment scripts (idempotent, wave-based)
         run: |

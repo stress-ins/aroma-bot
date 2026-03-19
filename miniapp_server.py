@@ -22,6 +22,8 @@ STARTUP_RECOVERY_LOCK_PATH = Path(
     os.getenv("AROMA_MINIAPP_RECOVERY_LOCK", "/tmp/aroma-miniapp-recovery.lock")
 )
 
+_ready = False
+
 
 def _asset_version() -> str:
     parts: list[str] = []
@@ -47,6 +49,9 @@ def _acquire_startup_recovery_lock():
 @asynccontextmanager
 async def _lifespan(app: FastAPI):  # noqa: ARG001
     """On startup: load brand settings and resume any interrupted generations."""
+    global _ready
+    _ready = False
+
     from bot.services.brand_settings_store import preload_brand_settings
     from bot.services.drafts_store import list_recent_drafts
     from bot.services.carousel_assets import populate_carousel_slide_assets
@@ -54,6 +59,8 @@ async def _lifespan(app: FastAPI):  # noqa: ARG001
     from miniapp.api.generation import complete_carousel_generation, complete_reels_generation
 
     await preload_brand_settings()
+    _ready = True  # ready to serve traffic before recovery
+
     recovery_lock = _acquire_startup_recovery_lock()
     try:
         if recovery_lock is not None:
@@ -75,6 +82,7 @@ async def _lifespan(app: FastAPI):  # noqa: ARG001
     except Exception:
         logger.exception("Startup recovery failed")
     yield
+    _ready = False
     if recovery_lock is not None:
         try:
             fcntl.flock(recovery_lock.fileno(), fcntl.LOCK_UN)
