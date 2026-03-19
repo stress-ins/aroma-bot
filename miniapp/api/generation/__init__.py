@@ -16,6 +16,7 @@ from .plan import generate_blend_construct as generate_blend_construct
 from .reels import complete_reels_generation as complete_reels_generation
 from .reels import complete_reels_regenerate_all as complete_reels_regenerate_all
 from .reels import complete_reels_v2_generate_images as complete_reels_v2_generate_images
+from .reels import complete_reels_lightweight_generation as complete_reels_lightweight_generation
 from .reels import complete_reels_v2_generation as complete_reels_v2_generation
 from .reels import complete_reels_v2_regen_caption as complete_reels_v2_regen_caption
 from .reels import complete_reels_v2_regen_concept as complete_reels_v2_regen_concept
@@ -31,6 +32,7 @@ __all__ = [
     "complete_reels_generation",
     "complete_reels_regenerate_all",
     "complete_reels_v2_generate_images",
+    "complete_reels_lightweight_generation",
     "complete_reels_v2_generation",
     "complete_reels_v2_regen_caption",
     "complete_reels_v2_regen_concept",

@@ -324,6 +324,20 @@ export function createReelsModule(deps) {
     }, "Запущено");
   }
 
+  async function upgradeToFull(draftId, btn) {
+    await withButtonFeedback(btn, "Запускаю...", async () => {
+      const draft = await fetchJson(`/api/reels/${draftId}/upgrade-to-full`, {
+        method: "POST",
+        body: "{}",
+        timeout: 30000,
+      });
+      mergeReelsIntoState(draft);
+      callbacks.renderReels?.();
+      callbacks.renderReelsDetail?.(draft);
+      scheduleReelsRefresh(draft.draft_id);
+    }, "Запущено");
+  }
+
   async function generateReelsImages(draftId, btn) {
     try {
       await withButtonFeedback(btn, "Запускаю...", async () => {
@@ -542,8 +556,9 @@ export function createReelsModule(deps) {
   }
 
   function renderScreen3Edit(r) {
+    const isLightweight = r.lightweight || r.payload?.lightweight;
     const frames = Array.isArray(r.frames) ? r.frames : [];
-    const allFramesReady = frames.length > 0 && frames.every((f) => f?.image_status === "ready");
+    const allFramesReady = !isLightweight && frames.length > 0 && frames.every((f) => f?.image_status === "ready");
     const concept = r.concept || r.payload?.concept || "";
     const scenario = r.scenario || r.payload?.scenario || "";
     const caption = r.caption || r.payload?.caption || "";
@@ -553,23 +568,30 @@ export function createReelsModule(deps) {
         ${renderBackButton()}
         ${reelsStepperMarkup(r.status, false)}
         <div class="detail-top">
-          <p class="eyebrow">🎬 <span>РИЛС</span></p>
+          <p class="eyebrow">🎬 <span>РИЛС${isLightweight ? " · Быстрое планирование" : ""}</span></p>
           <h2 class="detail-title">${escapeHtml(r.topic)}</h2>
           ${concept ? `<p class="detail-summary">${escapeHtml(concept.slice(0, 120))}${concept.length > 120 ? "…" : ""}</p>` : ""}
           <div class="draft-meta">
             ${tagMarkup(statusLabel(r.status || "draft"), statusTone(r.status || "draft"))}
-            ${tagMarkup(`${frames.filter((f) => f?.image_status === "ready").length}/${frames.length} кадров`, "progress")}
+            ${isLightweight ? tagMarkup("Лёгкий режим", "status-neutral") : tagMarkup(`${frames.filter((f) => f?.image_status === "ready").length}/${frames.length} кадров`, "progress")}
             ${tagMarkup(sourceLabel(r.source || "/miniapp"), sourceTone(r.source || "/miniapp"))}
           </div>
         </div>
 
         <div class="actions-row">
-          <button class="primary-button${allFramesReady ? "" : " is-disabled"}" type="button"
-            ${allFramesReady ? "" : "disabled"}
-            data-action="approveReels" data-args='${JSON.stringify([r.draft_id, null])}'>
-            ${actionLabel("approve", "Согласовать")}
-          </button>
-          ${!allFramesReady ? `<span class="field-help" style="margin:0">Сгенерируйте и проверьте все кадры</span>` : ""}
+          ${isLightweight ? `
+            <button class="primary-button" type="button"
+              data-action="upgradeToFull" data-args='${JSON.stringify([r.draft_id, null])}'>
+              ${actionLabel("slides", "Перейти к полной раскадровке")}
+            </button>
+          ` : `
+            <button class="primary-button${allFramesReady ? "" : " is-disabled"}" type="button"
+              ${allFramesReady ? "" : "disabled"}
+              data-action="approveReels" data-args='${JSON.stringify([r.draft_id, null])}'>
+              ${actionLabel("approve", "Согласовать")}
+            </button>
+            ${!allFramesReady ? `<span class="field-help" style="margin:0">Сгенерируйте и проверьте все кадры</span>` : ""}
+          `}
           <button class="danger-button" type="button" data-action="deleteDraft" data-args='${JSON.stringify([r.draft_id, "reels", null])}'>
             ${actionLabel("trash", "Удалить")}
           </button>
@@ -605,7 +627,7 @@ export function createReelsModule(deps) {
           </div>
         </section>
 
-        ${!frames.length && (concept || scenario) ? `
+        ${!isLightweight && !frames.length && (concept || scenario) ? `
           <div class="actions-row" style="justify-content:center;padding:12px 0">
             <button class="primary-button" type="button"
               data-action="regenScenario" data-args='${JSON.stringify([r.draft_id, null])}'>
@@ -614,7 +636,7 @@ export function createReelsModule(deps) {
           </div>
         ` : ""}
 
-        ${frames.length ? `
+        ${!isLightweight && frames.length ? `
           <section class="section">
             <h3>${sectionHeadingIcon("Кадры")}Кадры</h3>
             <div class="actions-row" style="margin-bottom:12px">
@@ -1024,6 +1046,7 @@ export function createReelsModule(deps) {
     regenCaption,
     regenFrameImage,
     regenFrameImageWithPrompt,
+    upgradeToFull,
     generateReelsImages,
     approveReels,
     scheduleFrameOverlaySave,

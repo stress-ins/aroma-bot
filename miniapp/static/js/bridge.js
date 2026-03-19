@@ -124,6 +124,7 @@ export function registerWindowBridge(deps) {
     publishReply,
     ignoreMentionAction,
     setMentionsFilter,
+    upgradeToFull,
     generateReelsImages,
     moveDraftToTeam,
     switchAccountsTeam,
@@ -221,6 +222,7 @@ export function registerWindowBridge(deps) {
   window.copyReelsCaption = copyReelsCaption;
   window.openReelsImageFullscreen = openReelsImageFullscreen;
   window.openReelsPreview = openReelsPreview;
+  window.upgradeToFull = upgradeToFull;
   window.generateReelsImages = generateReelsImages;
   window.publishReels = publishReels;
   window.retryPlatform = retryPlatform;

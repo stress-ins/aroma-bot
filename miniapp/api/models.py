@@ -78,6 +78,7 @@ class CreateReelsV2Payload(BaseModel):
     topic: str = Field(default="")
     goal: str = Field(default="trust")
     emotion: str = Field(default="calm")
+    lightweight: bool = Field(default=False)
     blend_context: BlendContext | None = Field(default=None)
 
 
