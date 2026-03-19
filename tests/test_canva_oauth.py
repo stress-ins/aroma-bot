@@ -11,10 +11,9 @@ from bot.services.social_oauth import (
 
 
 def test_build_canva_authorize_url():
-    url = build_canva_authorize_url(
+    url, code_verifier = build_canva_authorize_url(
         client_id="canva-app-id",
         redirect_uri="https://oauth.aromara.ru/canva/callback",
-        state="xyz789",
     )
     parsed = urlparse(url)
     query = parse_qs(parsed.query)
@@ -24,12 +23,14 @@ def test_build_canva_authorize_url():
     assert query["client_id"] == ["canva-app-id"]
     assert query["redirect_uri"] == ["https://oauth.aromara.ru/canva/callback"]
     assert query["response_type"] == ["code"]
-    assert query["state"] == ["xyz789"]
+    assert query["code_challenge_method"] == ["s256"]
+    assert "code_challenge" in query
+    assert len(code_verifier) > 20
     assert "design:content:read" in query["scope"][0]
 
 
 def test_build_canva_authorize_url_custom_scopes():
-    url = build_canva_authorize_url(
+    url, _ = build_canva_authorize_url(
         client_id="canva-app-id",
         redirect_uri="https://oauth.aromara.ru/canva/callback",
         scopes=("design:content:read",),
@@ -37,6 +38,23 @@ def test_build_canva_authorize_url_custom_scopes():
     parsed = urlparse(url)
     query = parse_qs(parsed.query)
     assert query["scope"] == ["design:content:read"]
+
+
+def test_build_canva_authorize_url_pkce_challenge_is_s256():
+    """Verify code_challenge = base64url(sha256(code_verifier))."""
+    import hashlib
+    from bot.services.social_oauth import _urlsafe_b64encode
+
+    url, code_verifier = build_canva_authorize_url(
+        client_id="test",
+        redirect_uri="https://example.com/callback",
+    )
+    parsed = urlparse(url)
+    query = parse_qs(parsed.query)
+    expected_challenge = _urlsafe_b64encode(
+        hashlib.sha256(code_verifier.encode("ascii")).digest()
+    )
+    assert query["code_challenge"] == [expected_challenge]
 
 
 def test_exchange_canva_code_returns_bundle():
@@ -62,6 +80,7 @@ def test_exchange_canva_code_returns_bundle():
         client_id="canva-app-id",
         client_secret="canva-secret",
         redirect_uri="https://oauth.aromara.ru/canva/callback",
+        code_verifier="test-verifier",
         client=client,
     )
 
@@ -73,13 +92,14 @@ def test_exchange_canva_code_returns_bundle():
     assert bundle.expires_in == 14400
 
 
-def test_exchange_canva_code_uses_basic_auth():
-    """Verify that exchange sends client_id/secret as HTTP Basic Auth."""
-    captured_auth = {}
+def test_exchange_canva_code_sends_code_verifier():
+    """Verify that exchange sends code_verifier in token request body."""
+    captured = {}
 
     def handler(request: httpx.Request) -> httpx.Response:
         if "oauth/token" in str(request.url):
-            captured_auth["header"] = request.headers.get("Authorization", "")
+            captured["body"] = request.content.decode()
+            captured["auth"] = request.headers.get("Authorization", "")
             return httpx.Response(200, json={
                 "access_token": "tok",
                 "expires_in": 3600,
@@ -94,6 +114,8 @@ def test_exchange_canva_code_uses_basic_auth():
         client_id="cid",
         client_secret="csec",
         redirect_uri="https://example.com/callback",
+        code_verifier="my-verifier-123",
         client=client,
     )
-    assert captured_auth["header"].startswith("Basic ")
+    assert captured["auth"].startswith("Basic ")
+    assert "code_verifier=my-verifier-123" in captured["body"]

@@ -74,31 +74,40 @@ async def social_connect_url(
     user_id = _telegram_user_id_from_init_data(x_telegram_init_data or "") or 0
     chat_id = user_id
 
-    state = build_oauth_state(
-        secret=settings.telegram_bot_token,
-        service=platform,
-        chat_id=chat_id,
-        user_id=user_id,
-    )
-
-    if platform == "threads":
-        url = build_threads_authorize_url(
-            client_id=settings.threads_app_id,
-            redirect_uri=THREADS_REDIRECT_URI,
-            state=state,
-        )
-    elif platform == "canva":
-        url = build_canva_authorize_url(
+    if platform == "canva":
+        # Canva requires PKCE — generate code_verifier, embed in state
+        authorize_url, code_verifier = build_canva_authorize_url(
             client_id=settings.canva_client_id,
             redirect_uri=CANVA_REDIRECT_URI,
-            state=state,
         )
+        state = build_oauth_state(
+            secret=settings.telegram_bot_token,
+            service=platform,
+            chat_id=chat_id,
+            user_id=user_id,
+            code_verifier=code_verifier,
+        )
+        from urllib.parse import quote
+        url = f"{authorize_url}&state={quote(state, safe='')}"
     else:
-        url = build_instagram_authorize_url(
-            client_id=settings.instagram_app_id,
-            redirect_uri=INSTAGRAM_REDIRECT_URI,
-            state=state,
+        state = build_oauth_state(
+            secret=settings.telegram_bot_token,
+            service=platform,
+            chat_id=chat_id,
+            user_id=user_id,
         )
+        if platform == "threads":
+            url = build_threads_authorize_url(
+                client_id=settings.threads_app_id,
+                redirect_uri=THREADS_REDIRECT_URI,
+                state=state,
+            )
+        else:
+            url = build_instagram_authorize_url(
+                client_id=settings.instagram_app_id,
+                redirect_uri=INSTAGRAM_REDIRECT_URI,
+                state=state,
+            )
 
     return {"url": url, "platform": platform}
 
