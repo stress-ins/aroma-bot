@@ -90,6 +90,7 @@ def test_overview_lists_use_consistent_card_meta(page):
 
 
 def test_desktop_layout_keeps_split_panels_and_comfortable_controls(desktop_page):
+    desktop_page.wait_for_selector(".content-sub-switcher", timeout=10000)
     desktop_page.locator(".content-sub-switcher").get_by_role("button", name="Черновики").click()
     desktop_page.wait_for_timeout(100)
     layout = desktop_page.evaluate(
