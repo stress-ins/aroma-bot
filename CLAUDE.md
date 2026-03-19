@@ -128,6 +128,24 @@ ssh root@46.32.186.192 'screen -S symptom-reseed -d -m bash -c "cd /opt/aroma &&
 
 ---
 
+## Обработчики событий в HTML-артефактах
+
+- **НИКОГДА** не используй inline-атрибуты `onclick`/`onchange`/`onsubmit`/`oninput` и т.д.:
+  - ❌ `<button onclick="exportToCanva()">`
+  - ❌ `<div onchange="handleChange(event)">`
+- **ВСЕГДА** вешай обработчики через `addEventListener` после DOMContentLoaded:
+  - ✅ `document.getElementById('btn').addEventListener('click', exportToCanva)`
+  - ✅ `document.querySelector('.select').addEventListener('change', handleChange)`
+- **Причина:** inline `onclick` ищет функцию в `window`. Функции внутри `<script type="module">`, IIFE или замыканий — в `window` не попадают.
+- Если HTML генерируется динамически (`innerHTML`), используй **делегирование событий**:
+  ```js
+  container.addEventListener('click', (e) => {
+    if (e.target.matches('.export-btn')) exportToCanva(e.target.dataset.id);
+  });
+  ```
+
+---
+
 ## Архитектура и База Данных
 
 **Хранение данных:**
