@@ -514,22 +514,25 @@ async def run(dry_run: bool = False, force: bool = False, slug_filter: str | Non
         updated += 1
 
     if not dry_run and updated > 0:
+        # Collect updates: slug → (new_payload, updated_at)
+        updates: dict[str, tuple] = {}
+        for en_name, comp_names_ru in COMPLEMENTARY_MAP.items():
+            card_slug = find_card_slug(en_name)
+            if not card_slug or (slug_filter and card_slug != slug_filter):
+                continue
+            src = slug_to_model[card_slug]
+            if src.payload and src.payload.get("complementary_oil_names"):
+                updates[card_slug] = (dict(src.payload), src.updated_at)
+
         async with AsyncSessionLocal() as session:
             result = await session.execute(
                 select(AromaCardModel).where(AromaCardModel.category == "aroma")
             )
-            db_models = {m.slug: m for m in result.scalars().all()}
-            for en_name, comp_names_ru in COMPLEMENTARY_MAP.items():
-                card_slug = find_card_slug(en_name)
-                if not card_slug or (slug_filter and card_slug != slug_filter):
-                    continue
-                m = db_models.get(card_slug)
-                if not m:
-                    continue
-                src = slug_to_model[card_slug]
-                if src.payload != m.payload:
-                    m.payload = src.payload
-                    m.updated_at = src.updated_at
+            for m in result.scalars().all():
+                if m.slug in updates:
+                    new_payload, new_ts = updates[m.slug]
+                    m.payload = new_payload
+                    m.updated_at = new_ts
             await session.commit()
 
     print(f"\nResults: {updated} updated, {skipped} skipped (already filled)")
