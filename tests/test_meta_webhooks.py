@@ -251,3 +251,56 @@ async def test_webhook_creates_mention_via_ingest(miniapp_client):
     )
     assert resp.status_code == 200
     assert resp.json()["status"] == "created"
+
+    # Verify mention is actually in DB
+    from bot.services.mentions_store import find_mention_by_external_id
+    mention = await find_mention_by_external_id("instagram", "mention-e2e-001")
+    assert mention is not None
+    assert mention.content == "Check out @aromara"
+    assert mention.author_username == "fan_user"
+
+
+@pytest.mark.asyncio
+async def test_webhook_handler_awaits_forward(miniapp_client, monkeypatch):
+    """Verify webhook handler awaits _forward_to_ingest (not fire-and-forget)."""
+    forwarded_items: list[dict] = []
+
+    async def fake_forward(items):
+        forwarded_items.extend(items)
+
+    import threads_oauth_callback as mod
+    monkeypatch.setattr(mod, "_forward_to_ingest", fake_forward)
+
+    payload = {
+        "object": "threads",
+        "entry": [
+            {
+                "id": "789",
+                "changes": [
+                    {
+                        "field": "replies",
+                        "value": {
+                            "id": "reply-await-test",
+                            "text": "Testing await",
+                            "from": {"username": "tester", "name": "T"},
+                        },
+                    }
+                ],
+            }
+        ],
+    }
+    body = json.dumps(payload).encode()
+    sig = _sign_payload(body, THREADS_APP_SECRET)
+
+    from httpx import AsyncClient, ASGITransport
+    async with AsyncClient(transport=ASGITransport(app=mod.app), base_url="http://test") as client:
+        resp = await client.post(
+            "/webhooks/threads",
+            content=body,
+            headers={"Content-Type": "application/json", "x-hub-signature-256": sig},
+        )
+
+    assert resp.status_code == 200
+    # Because we await (not create_task), items must be forwarded by the time we get the response
+    assert len(forwarded_items) == 1
+    assert forwarded_items[0]["external_id"] == "reply-await-test"

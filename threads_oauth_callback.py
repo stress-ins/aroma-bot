@@ -165,6 +165,7 @@ def _parse_meta_webhook_entries(payload: dict, platform: str) -> list[dict]:
 async def _forward_to_ingest(items: list[dict]) -> None:
     """Forward parsed webhook items to local mentions ingest API."""
     if not items:
+        logger.info("No items to forward from webhook")
         return
     secret = settings.n8n_webhook_secret
     if not secret:
@@ -178,7 +179,13 @@ async def _forward_to_ingest(items: list[dict]) -> None:
                     json=item,
                     headers={"X-Webhook-Secret": secret},
                 )
-                logger.info("Forwarded webhook item %s → %s", item.get("external_id"), resp.status_code)
+                if resp.status_code >= 400:
+                    logger.error(
+                        "Ingest API returned %s for item %s: %s",
+                        resp.status_code, item.get("external_id"), resp.text,
+                    )
+                else:
+                    logger.info("Forwarded webhook item %s → %s", item.get("external_id"), resp.status_code)
             except Exception:
                 logger.exception("Failed to forward webhook item %s", item.get("external_id"))
 
@@ -205,10 +212,10 @@ async def instagram_webhook_handler(request: Request):
         logger.warning("Instagram webhook: invalid signature")
         return JSONResponse({"error": "invalid_signature"}, status_code=403)
     payload = await request.json()
+    logger.info("Instagram webhook payload: %s", payload)
     items = _parse_meta_webhook_entries(payload, "instagram")
-    # Return 200 quickly — Meta requires response within 5 seconds
-    import asyncio
-    asyncio.create_task(_forward_to_ingest(items))
+    logger.info("Parsed %d items from Instagram webhook", len(items))
+    await _forward_to_ingest(items)
     return JSONResponse({"status": "ok"})
 
 
@@ -234,9 +241,10 @@ async def threads_webhook_handler(request: Request):
         logger.warning("Threads webhook: invalid signature")
         return JSONResponse({"error": "invalid_signature"}, status_code=403)
     payload = await request.json()
+    logger.info("Threads webhook payload: %s", payload)
     items = _parse_meta_webhook_entries(payload, "threads")
-    import asyncio
-    asyncio.create_task(_forward_to_ingest(items))
+    logger.info("Parsed %d items from Threads webhook", len(items))
+    await _forward_to_ingest(items)
     return JSONResponse({"status": "ok"})
 
 
