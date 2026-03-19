@@ -116,6 +116,14 @@ async def healthz():
     return JSONResponse({"ok": True, "service": "miniapp"})
 
 
+@router.get("/readyz")
+async def readyz():
+    from miniapp_server import _ready
+    if not _ready:
+        return JSONResponse({"ok": False, "reason": "starting"}, status_code=503)
+    return JSONResponse({"ok": True})
+
+
 @router.get("/api/preferences/forbidden-phrases")
 async def get_forbidden_phrases(_: None = Depends(_require_auth)):
     return {"items": load_forbidden_phrases()}
