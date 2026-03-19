@@ -2012,7 +2012,7 @@ body.tg-theme-dark .danger-button {
   padding: 10px 12px;
   font-size: 14px;
   line-height: 1.5;
-  background: var(--bg-secondary, #f5f5f5);
+  background: var(--surface-2);
   border-radius: 8px;
   margin-bottom: 6px;
 }
@@ -2022,7 +2022,7 @@ body.tg-theme-dark .danger-button {
   padding: 6px 10px;
   font-size: 12px;
   color: var(--text-secondary);
-  background: var(--bg-secondary, #f5f5f5);
+  background: var(--surface-2);
   border-radius: 6px;
   line-height: 1.4;
 }

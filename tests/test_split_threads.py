@@ -89,4 +89,4 @@ def test_platform_rules_have_hard_limit():
     for key in ("threads_series",):
         rules = WRITER_PLATFORM_RULES[key]
         assert "HARD LIMIT" in rules, f"Writer rules for {key} must have HARD LIMIT"
-        assert "120" in rules
+        assert "80" in rules

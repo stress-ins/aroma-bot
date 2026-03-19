@@ -194,6 +194,7 @@ export function createDraftsModule(deps) {
           </div>
           <div class="threads-slot-body">
             <div class="threads-post-rendered detail-markdown">${renderMarkdown(cleanSlotText(post.text || ""))}</div>
+            ${post.why_it_works ? `<div class="threads-slot-annotation"><span class="annotation-label">Почему это сработает:</span> ${escapeHtml(post.why_it_works)}</div>` : ""}
             ${!isApproved ? `<textarea
               id="slotText_${post.slot}_${d.draft_id}"
               class="threads-post-textarea"
@@ -201,7 +202,6 @@ export function createDraftsModule(deps) {
               oninput="document.getElementById('charCount_${post.slot}_${d.draft_id}').textContent=this.value.length"
             >${escapeHtml(cleanSlotText(post.text || ""))}</textarea>
             <div class="threads-char-counter${isOver ? " is-over" : ""}" id="charCount_${post.slot}_${d.draft_id}">${charCount}</div>` : ""}
-            ${post.why_it_works ? `<div class="threads-slot-annotation"><span class="annotation-label">Почему это сработает:</span> ${escapeHtml(post.why_it_works)}</div>` : ""}
           </div>
           ${!isApproved ? `
           <div class="threads-regen-note">
@@ -326,8 +326,8 @@ export function createDraftsModule(deps) {
                 <div class="threads-post-section" data-slot="${post.slot}">
                   <span class="threads-post-label">${SLOT_ICONS[post.slot] || ""} ${escapeHtml(post.label)}</span>
                   <div class="threads-post-rendered detail-markdown">${renderMarkdown(cleanSlotText(post.text || ""))}</div>
-                  <textarea id="threadsPostText${idx}" class="threads-post-textarea" placeholder="Текст поста">${escapeHtml(cleanSlotText(post.text || ""))}</textarea>
                   ${post.why_it_works ? `<div class="threads-slot-annotation"><span class="annotation-label">Почему это сработает:</span> ${escapeHtml(post.why_it_works)}</div>` : ""}
+                  <textarea id="threadsPostText${idx}" class="threads-post-textarea" placeholder="Текст поста">${escapeHtml(cleanSlotText(post.text || ""))}</textarea>
                   <div class="threads-post-schedule">
                     <label><span>Время</span><input type="time" id="threadsPostTime${idx}" value="${escapeHtml(post.scheduled_time || post.default_time || "")}"></label>
                   </div>

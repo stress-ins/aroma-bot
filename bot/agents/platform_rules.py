@@ -98,8 +98,9 @@ STYLE:
 - Используй списки, переносы строк.
 
 HARD LIMIT — ОБЯЗАТЕЛЬНО:
-- Each post: 5-12 short lines, 40-120 words. НЕ БОЛЬШЕ 120 СЛОВ. Считай слова.
-- Пост, превышающий 120 слов, считается провалом задания.
+- Each post: 5-10 short lines, 40-80 words. НЕ БОЛЬШЕ 80 СЛОВ. Считай слова.
+- Пост, превышающий 80 слов, считается провалом задания.
+- Каждый пост должен быть короче 500 символов.
 
 Structure:
 - Use exactly three sections in this order: УТРО, ДЕНЬ, ВЕЧЕР
@@ -121,7 +122,7 @@ Structure:
 - Личная история, факап, шутка или «мысль на ночь», которая вызывает чувство «жиза».
 - Структура: «Самое странное в моей работе — это...» или «Заметил, что...».
 
-После каждого поста добавь строку: ПОЧЕМУ ЭТО СРАБОТАЕТ: [одно предложение]. Эта строка не идёт в публикацию.
+После каждого поста добавь строку: ПОЧЕМУ ЭТО СРАБОТАЕТ: [одно короткое предложение, максимум 15 слов]. Эта строка не идёт в публикацию.
 
 Forbidden: lectures, complex terms, corporate tone, generic intros, multiple ideas in one post""",
 
@@ -129,7 +130,7 @@ Forbidden: lectures, complex terms, corporate tone, generic intros, multiple ide
 Platform: Threads — один пост из дневной серии.
 This is a SINGLE standalone post, NOT a series. Return exactly ONE post.
 Rules:
-- One post, one idea, 5-12 short lines, 40-120 words, no hashtags, no walls of text
+- One post, one idea, 5-10 short lines, 40-80 words, no hashtags, no walls of text
 - Первая строчка = 80% успеха. Провокационная или очень жизненная.
 - Короткие, рубленые предложения. Минимум эмодзи (1-2 на пост).
 - Do NOT add section labels like УТРО/ДЕНЬ/ВЕЧЕР
@@ -150,7 +151,7 @@ Forbidden: lectures, complex terms, corporate tone, generic intros, multiple ide
 EDITOR_PLATFORM_RULES: dict[str, str] = {
     "threads_series": (
         "Платформа: Threads, серия из 3 постов. Верни 3 поста в порядке: УТРО, ДЕНЬ, ВЕЧЕР. "
-        "ЖЁСТКИЙ ЛИМИТ: каждый пост 5-12 строк, 40-120 слов. Если больше 120 слов — безжалостно сокращай. "
+        "ЖЁСТКИЙ ЛИМИТ: каждый пост 5-10 строк, 40-80 слов. Если больше 80 слов — безжалостно сокращай. "
         "Утро — Hot Take / спорное мнение + открытый вопрос. "
         "День — лаконичный список или мясной совет (для сохранений). "
         "Вечер — личная история, факап или рефлексия (уютный чат). "
