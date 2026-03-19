@@ -930,7 +930,26 @@ async function scheduleThreadsSeries(draftId, date, slots, btn) {
   }, "Запланировано");
 }
 
-async function publishScheduledNow(draftId, kind, btn) {
+async function publishScheduledNow(draftId, kind, slotOrBtn, btn) {
+  // Support old 3-arg calls: publishScheduledNow(id, kind, btn)
+  let slot = slotOrBtn;
+  if (slotOrBtn instanceof HTMLElement) { btn = slotOrBtn; slot = ""; }
+
+  if (kind === "threads_series" && slot) {
+    const confirmed = await confirmAction("Опубликовать этот пост сейчас?");
+    if (!confirmed) return;
+    await withButtonFeedback(btn, "Публикую...", async () => {
+      await fetchJson(`/api/threads-series/${draftId}/slots/${slot}/publish-now`, {
+        method: "POST",
+        body: "{}",
+        timeout: 60000,
+      });
+      showUiNotice("Публикация запущена", "success");
+      await loadPlansFeedImpl();
+    }, "Отправлено");
+    return;
+  }
+
   const confirmed = await confirmAction("Опубликовать сейчас? Запланированное время будет проигнорировано.");
   if (!confirmed) return;
 

@@ -465,7 +465,7 @@ export function createPlansModule(deps) {
         <div class="actions-row">
           ${s === "scheduled" ? `
             <button class="primary-button"
-              onclick="publishScheduledNow('${escapeHtml(draft.draft_id)}', '${escapeHtml(draft.kind)}', this)">
+              onclick="publishScheduledNow('${escapeHtml(draft.draft_id)}', '${escapeHtml(draft.kind)}', '${escapeHtml(slot || "")}', this)">
               ${actionLabel("send", "Опубликовать сейчас")}
             </button>
             <button class="secondary-button"

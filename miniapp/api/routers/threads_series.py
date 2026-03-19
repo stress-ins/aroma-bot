@@ -206,6 +206,31 @@ async def approve_series(draft_id: str, _: None = Depends(_require_auth)):
     return await serialize_draft(saved)
 
 
+@router.post("/api/threads-series/{draft_id}/slots/{slot}/publish-now")
+async def publish_slot_now(
+    draft_id: str, slot: str, _: None = Depends(_require_auth),
+):
+    """Publish a single slot of a threads_series immediately."""
+    from bot.services.publisher import publish_threads_series_slot
+
+    draft = await get_draft(draft_id)
+    _require_threads_series(draft)
+    if draft.status not in ("approved", "scheduled"):
+        raise HTTPException(
+            status_code=400, detail="draft_must_be_approved_or_scheduled",
+        )
+
+    posts = (draft.payload or {}).get("threads_posts", [])
+    slot_post = next((p for p in posts if p["slot"] == slot), None)
+    if not slot_post:
+        raise HTTPException(status_code=404, detail="slot_not_found")
+    if slot_post.get("status") == "published":
+        return {"draft_id": draft_id, "slot": slot, "status": "already_published"}
+
+    result = await publish_threads_series_slot(draft_id, slot)
+    return {"draft_id": draft_id, "slot": slot, "status": "ok", "result": result}
+
+
 @router.post("/api/threads-series/{draft_id}/publish-now")
 async def publish_series_now(draft_id: str, _: None = Depends(_require_auth)):
     """Publish ALL posts of a threads_series immediately with 30s pauses."""
