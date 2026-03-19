@@ -26,9 +26,10 @@ async def generate_blend_construct(body, telegram_id: int | None = None) -> dict
         contraindications=body.contraindications.strip().lower(),
         custom_oils=custom_str,
     )
-    cached = await get_cached(cache_key)
-    if cached:
-        return cached
+    if not getattr(body, "skip_cache", False):
+        cached = await get_cached(cache_key)
+        if cached:
+            return cached
 
     reference_context = await build_reference_context(
         categories=("aroma",), max_items_per_category=20, max_total_chars=3000
