@@ -5,8 +5,11 @@ import json
 
 
 def test_create_tab_uses_guided_empty_state_before_tool_selection(desktop_page):
-    desktop_page.get_by_role("button", name="Создать").click()
-    desktop_page.wait_for_timeout(100)
+    # "Создать" tab removed from strip; navigate via URL param
+    base = desktop_page.url.split("?")[0]
+    desktop_page.goto(f"{base}?tab=create", wait_until="domcontentloaded")
+    desktop_page.wait_for_selector("body.app-ready", timeout=10000)
+    desktop_page.wait_for_timeout(200)
 
     assert desktop_page.locator(".guided-state").is_visible()
     assert desktop_page.get_by_text("Выберите формат для старта").is_visible()

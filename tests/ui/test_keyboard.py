@@ -10,8 +10,11 @@ def test_keyboard_can_open_cards_and_create_tools(desktop_page):
     desktop_page.wait_for_timeout(100)
     assert desktop_page.locator(".detail-title").is_visible()
 
-    desktop_page.get_by_role("button", name="Создать").click()
-    desktop_page.wait_for_timeout(100)
+    # "Создать" tab removed from strip; navigate via URL param
+    base = desktop_page.url.split("?")[0]
+    desktop_page.goto(f"{base}?tab=create", wait_until="domcontentloaded")
+    desktop_page.wait_for_selector("body.app-ready", timeout=10000)
+    desktop_page.wait_for_timeout(200)
     desktop_page.locator(".create-card[data-tool='content']").focus()
     desktop_page.keyboard.press("Enter")
     desktop_page.wait_for_timeout(100)
