@@ -34,7 +34,7 @@ CURRENT = GALLERY / "current"
 BASELINE = GALLERY / "baseline"
 DIFF_DIR = GALLERY / "diff"
 REGISTRY = GALLERY / "registry.json"
-VIEWPORT = {"width": 390, "height": 844}
+VIEWPORT = {"width": 393, "height": 852}
 TIMEOUT = 20000
 
 # 1x1 transparent PNG for image stubs
@@ -51,9 +51,9 @@ def _telegram_stub(dark=False):
         "MainButton:{show:function(){},hide:function(){},setText:function(){},onClick:function(){}},"
         "BackButton:{show:function(){},hide:function(){},onClick:function(){}},"
         f"themeParams:{{}},colorScheme:'{scheme}',"
-        "contentSafeAreaInset:{top:59},"
-        "safeAreaInset:{top:59,bottom:34,left:0,right:0},"
-        "viewportHeight:844,viewportStableHeight:844,"
+        "contentSafeAreaInset:{top:0,bottom:0,left:0,right:0},"
+        "safeAreaInset:{top:0,bottom:0,left:0,right:0},"
+        "viewportHeight:852,viewportStableHeight:852,"
         "platform:'ios',isExpanded:true,"
         "isVersionAtLeast:function(){return true},"
         "setHeaderColor:function(){},setBackgroundColor:function(){},setBottomBarColor:function(){},"
@@ -66,17 +66,14 @@ def _telegram_stub(dark=False):
 _SAFE_AREA_OVERLAY_CSS = """
 body::before {
   content: ''; position: fixed; top: 0; left: 0; right: 0;
-  height: 59px; background: rgba(255,0,0,0.12); z-index: 99999;
+  height: 0px; background: rgba(255,0,0,0.12); z-index: 99999;
   pointer-events: none;
 }
 body::after {
   content: ''; position: fixed; bottom: 0; left: 0; right: 0;
-  height: 34px; background: rgba(255,0,0,0.12); z-index: 99999;
+  height: 0px; background: rgba(255,0,0,0.12); z-index: 99999;
   pointer-events: none;
 }
-body.is-mobile-layout { padding-bottom: calc(100px + 34px) !important; }
-.help-fab { bottom: calc(90px + 34px) !important; }
-.help-popover { bottom: calc(144px + 34px) !important; }
 """
 
 # Timings (ms)
@@ -574,7 +571,7 @@ def make_diffs():
         print(f"  \u26a0  {d['screen_id']}: {d['diff_percent']}% ({d['diff_pixels']} px)")
 
 
-def _capture_scroll_snapshots(page, path_prefix: Path, sid: str, label: str, theme: str, viewport_height: int = 844, scroll_selector: str | None = None):
+def _capture_scroll_snapshots(page, path_prefix: Path, sid: str, label: str, theme: str, viewport_height: int = 852, scroll_selector: str | None = None):
     """Capture multiple viewport-size snapshots by scrolling through the page.
 
     Args:
@@ -649,6 +646,7 @@ def _create_context(browser, *, dark=False, safe_area_overlay=False):
     """Create a browser context with Telegram stub."""
     context = browser.new_context(
         viewport=VIEWPORT,
+        device_scale_factor=3,
         is_mobile=True,
         color_scheme="dark" if dark else "light",
         extra_http_headers={
@@ -713,7 +711,7 @@ def _capture_screens(browser, base_url, screens, *, dark=False, click_results=No
         # Special case: onboarding
         if sid == "onboarding":
             ctx2 = browser.new_context(
-                viewport=VIEWPORT, is_mobile=True,
+                viewport=VIEWPORT, device_scale_factor=3, is_mobile=True,
                 color_scheme="dark" if dark else "light",
                 extra_http_headers={
                     "X-Telegram-Init-Data": "user=%7B%22id%22%3A12345%2C%22username%22%3A%22test%22%7D"

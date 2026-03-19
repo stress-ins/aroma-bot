@@ -73,7 +73,7 @@ mkdir -p docs/screenshots/gallery/diff
 {
   "generated_at": "<ISO datetime>",
   "app_name": "Aromara MiniApp",
-  "viewport": {"width": 390, "height": 844},
+  "viewport": {"width": 393, "height": 852},
   "screens": [ ... ]
 }
 ```
@@ -99,7 +99,7 @@ GALLERY   = Path("docs/screenshots/gallery")
 CURRENT   = GALLERY / "current"
 BASELINE  = GALLERY / "baseline"
 DIFF_DIR  = GALLERY / "diff"
-VIEWPORT  = {"width": 390, "height": 844}
+VIEWPORT  = {"width": 393, "height": 852}
 TIMEOUT   = 8000
 
 # Реалистичные seed-данные (русский текст про ароматерапию)
@@ -398,9 +398,9 @@ Diff-изображений:    N  (diff/)
 
 ## ПРАВИЛА
 
-- **Viewport всегда 390×844** — единый размер для всех скриншотов
+- **Viewport всегда 393×852 @ DPR 3** — единый размер для всех скриншотов (1179×2556 px output)
 - **`full_page=True` ЗАПРЕЩЁН** — даёт нечитаемые вытянутые изображения. Всегда `full_page=False`
-- **Для длинных страниц — scroll-скриншоты:** используй `_capture_scroll_snapshots()` из `make_screenshots.py`. Каждый кадр = ровно viewport 390×844, прокрутка через `scrollTop`
+- **Для длинных страниц — scroll-скриншоты:** используй `_capture_scroll_snapshots()` из `make_screenshots.py`. Каждый кадр = ровно viewport 393×852, прокрутка через `scrollTop`
 - Мокируй Telegram.WebApp через `add_init_script` — не через реальный TG
 - Seed-данные реалистичные: русский текст, реальные даты, ароматерапия
 - Скриншот только после `networkidle` + исчезновения спиннеров
