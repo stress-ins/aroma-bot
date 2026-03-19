@@ -4704,6 +4704,83 @@ body.tg-theme-dark .blend-constructor-cta { color: #d4845e; }
 .blend-adjust-row .field-input { flex: 1; }
 .section-adjust h3 { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--brand); margin: 0 0 4px; }
 
+/* Blend Oil Picker */
+.blend-oil-picker {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--brand-border, rgba(180,92,61,.25));
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.blend-oil-picker-selected {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  width: 100%;
+}
+.blend-oil-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 99px;
+  background: var(--brand-bg, rgba(180,92,61,.08));
+  color: var(--brand);
+  font-size: 12px;
+  font-weight: 600;
+}
+.blend-oil-chip-x {
+  background: none;
+  border: none;
+  color: var(--brand);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0 2px;
+  line-height: 1;
+  opacity: .6;
+}
+.blend-oil-chip-x:hover { opacity: 1; }
+.blend-oil-picker-input-wrap {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+}
+.blend-oil-picker > .secondary-button {
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-size: 12px;
+  padding: 0 12px;
+  height: 36px;
+}
+.blend-oil-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 16px rgba(0,0,0,.15);
+  max-height: 200px;
+  overflow-y: auto;
+}
+.blend-oil-option {
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text);
+}
+.blend-oil-option:hover, .blend-oil-option:focus {
+  background: var(--brand-bg, rgba(180,92,61,.08));
+}
+.blend-oil-option-en {
+  color: var(--hint);
+  font-size: 11px;
+}
+
 /* Saved Blends List */
 .saved-blends-list { display: flex; flex-direction: column; gap: 10px; }
 .saved-blend-card {

@@ -15,6 +15,7 @@ class BlendConstructRequest(BaseModel):
     application: str = "diffuser"  # diffuser | topical | internal | any
     contraindications: str = ""
     custom_oils: list[str] = []
+    exclude_oils: list[str] = []
     skip_cache: bool = False
 
 
