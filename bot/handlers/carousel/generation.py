@@ -279,35 +279,64 @@ def _generate_carousel_sync(topic: str, user_forbidden: list[str] | None = None,
     return [], [], angle, hook
 
 
+# ── Shared text wrapping ──────────────────────────────────────────────────
+
+def wrap_slide_text(text: str, max_chars_per_line: int = 30) -> list[str]:
+    """Word-wrap slide text to a target character width.
+
+    Used by both preview PNG and PPTX to ensure consistent line breaks.
+    """
+    words = text.split()
+    lines: list[str] = []
+    current = ""
+    for word in words:
+        test = f"{current} {word}".strip()
+        if len(test) <= max_chars_per_line:
+            current = test
+        else:
+            if current:
+                lines.append(current)
+            current = word
+    if current:
+        lines.append(current)
+    return lines
+
+
 # ── Image analysis ──────────────────────────────────────────────────────────
 
 def _find_text_zone(img_bytes: bytes) -> tuple[float, float]:
     """Return (top_fraction, height_fraction) for text box placement.
-    Scans 5 horizontal bands; picks the calmest (low variance) + darkest one --
-    low variance means no busy detail to compete with text,
-    dark means white text will be readable.
+
+    Uses a 3×5 grid (3 columns × 5 rows) to find the quietest block with
+    enough space for text overlay. Each cell is scored by variance (low = calm)
+    and brightness (low = dark → white text readable).
     """
     try:
         from PIL import Image as _PIL, ImageStat, ImageFilter
         img = _PIL.open(io.BytesIO(img_bytes)).convert("L").resize((90, 90))
         img = img.filter(ImageFilter.GaussianBlur(2))
         W, H = img.size  # 90, 90
-        n = 5
-        bh = H // n
+        cols, rows = 3, 5
+        cw, rh = W // cols, H // rows
+
         best_score = float("inf")
-        best_band = 3  # safe default: bottom-ish
-        for b in range(n):
-            band = img.crop((0, b * bh, W, (b + 1) * bh))
-            stat = ImageStat.Stat(band)
-            avg = stat.mean[0]       # 0 = black, 255 = white
-            std = stat.stddev[0]     # 0 = uniform, high = busy
-            # Lower score = better: prefer calm (low std) and dark (low avg)
-            score = std * 1.5 + avg * 0.4
-            if score < best_score:
-                best_score = score
-                best_band = b
-        top_frac = best_band / n + 0.01
-        h_frac   = 1 / n + 0.04          # slightly taller than one band
+        best_row, best_col = 3, 0  # safe default: bottom-left
+
+        for r in range(rows):
+            for c in range(cols):
+                block = img.crop((c * cw, r * rh, (c + 1) * cw, (r + 1) * rh))
+                stat = ImageStat.Stat(block)
+                avg = stat.mean[0]
+                std = stat.stddev[0]
+                # Lower score = better: prefer calm (low std) and dark (low avg)
+                score = std * 1.5 + avg * 0.4
+                if score < best_score:
+                    best_score = score
+                    best_row, best_col = r, c
+
+        # Text zone spans full width at the best row
+        top_frac = best_row / rows + 0.01
+        h_frac = 1 / rows + 0.04
         if top_frac + h_frac > 0.97:
             top_frac = 0.97 - h_frac
         return top_frac, h_frac
