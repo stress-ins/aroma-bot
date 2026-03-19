@@ -513,7 +513,7 @@ export function createCarouselModule(deps) {
         const result = await fetchJson(`/api/carousel/${draftId}/canva/export`, {
           method: "POST",
           body: "{}",
-          timeout: 90000,
+          timeout: 150000,
         });
         if (result?.edit_url) {
           const tg = window.Telegram?.WebApp;
@@ -568,6 +568,7 @@ export function createCarouselModule(deps) {
           <h3>Импорт из Canva</h3>
           <button class="secondary-button preview-modal-close" type="button">${uiIcon("x")}</button>
         </div>
+        <p class="canva-picker-hint">Нажмите на дизайн для импорта</p>
         <div class="preview-modal-body canva-design-grid">
           ${designItems}
         </div>
@@ -589,7 +590,7 @@ export function createCarouselModule(deps) {
       const draft = await fetchJson(`/api/carousel/${draftId}/canva/import`, {
         method: "POST",
         body: JSON.stringify({ design_id: designId }),
-        timeout: 90000,
+        timeout: 150000,
       });
       if (modal) { document.body.style.overflow = ""; modal.remove(); }
       mergeDraftIntoState(draft);

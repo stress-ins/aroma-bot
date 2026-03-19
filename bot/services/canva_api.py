@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 CANVA_API_BASE = "https://api.canva.com/rest/v1"
 POLL_INTERVAL = 2
-POLL_TIMEOUT = 60
+POLL_TIMEOUT = 120
 
 
 class CanvaAPIError(RuntimeError):
