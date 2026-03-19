@@ -231,7 +231,7 @@ export function createPlansModule(deps) {
       <div class="plans-calendar-strip" id="plansCalendarStrip">
         ${days.map((day) => `
           <button class="plans-cal-day${day.isToday ? " is-today" : ""}${day.isActive ? " is-active" : ""}"
-            onclick="setPlanDateFilter('${day.dateKey}')"
+            data-action="setPlanDateFilter" data-args='["${day.dateKey}"]'
             title="${day.day} ${day.month}">
             <div class="plans-cal-day-label">${day.label}</div>
             <div class="plans-cal-day-num">${day.day}</div>
@@ -255,7 +255,7 @@ export function createPlansModule(deps) {
       <div class="filter-chips-row">
         ${chips.map((c) => `
           <button class="filter-chip${c.value === active ? " active" : ""}"
-            onclick="setPlanStatusFilter('${c.value}')">
+            data-action="setPlanStatusFilter" data-args='["${c.value}"]'>
             ${escapeHtml(c.label)}
           </button>
         `).join("")}
@@ -276,7 +276,7 @@ export function createPlansModule(deps) {
       <div class="filter-chips-row">
         ${chips.map((c) => `
           <button class="filter-chip${c.value === active ? " active" : ""}"
-            onclick="setPlanPlatformFilter('${c.value}')">
+            data-action="setPlanPlatformFilter" data-args='["${c.value}"]'>
             ${escapeHtml(c.label)}
           </button>
         `).join("")}
@@ -304,7 +304,7 @@ export function createPlansModule(deps) {
 
     return `
       <article class="plan-card plan-card-${escapeHtml(item.status)} interactive-card"
-        onclick="openPlanDetail('${escapeHtml(item.draft_id)}', '${escapeHtml(item.platform)}', '${escapeHtml(item.slot || "")}')">
+        data-action="openPlanDetail" data-args='${JSON.stringify([item.draft_id, item.platform, item.slot || ""])}'>
         <div class="plan-card-top">
           <div class="plan-card-left">
             <div class="plan-card-kind">${icon} ${escapeHtml(badge)}${escapeHtml(slotSuffix)}</div>
@@ -448,7 +448,7 @@ export function createPlansModule(deps) {
             <p style="font-size:13px;color:var(--bad)">${escapeHtml(errorMsg)}</p>
             <div class="actions-row">
               <button class="primary-button"
-                onclick="retryPublication('${escapeHtml(draft.draft_id)}', '${escapeHtml(platform)}', '${escapeHtml(slot || "")}', this)">
+                data-action="retryPublication" data-args='${JSON.stringify([draft.draft_id, platform, slot || "", null])}'>
                 ↺ Повторить публикацию
               </button>
             </div>
@@ -465,16 +465,16 @@ export function createPlansModule(deps) {
         <div class="actions-row">
           ${s === "scheduled" ? `
             <button class="primary-button"
-              onclick="publishScheduledNow('${escapeHtml(draft.draft_id)}', '${escapeHtml(draft.kind)}', '${escapeHtml(slot || "")}', this)">
+              data-action="publishScheduledNow" data-args='${JSON.stringify([draft.draft_id, draft.kind, slot || "", null])}'>
               ${actionLabel("send", "Опубликовать сейчас")}
             </button>
             <button class="secondary-button"
-              onclick="cancelPublishSchedule('${escapeHtml(draft.draft_id)}', this)">
+              data-action="cancelPublishSchedule" data-args='${JSON.stringify([draft.draft_id, null])}'>
               ✗ Отменить
             </button>
           ` : ""}
           <button class="danger-button"
-            onclick="deleteDraft('${escapeHtml(draft.draft_id)}', 'plans', this)">
+            data-action="deleteDraft" data-args='${JSON.stringify([draft.draft_id, "plans", null])}'>
             🗑 Удалить черновик
           </button>
         </div>
@@ -503,8 +503,8 @@ export function createPlansModule(deps) {
 
   function renderPlansSwitcher(active) {
     return `<div class="plans-sub-switcher">
-      <button class="tab-button${active === "publications" ? " active" : ""}" onclick="setPlansSubMode('publications')">Публикации</button>
-      <button class="tab-button${active === "mentions" ? " active" : ""}" onclick="setPlansSubMode('mentions')">Упоминания</button>
+      <button class="tab-button${active === "publications" ? " active" : ""}" data-action="setPlansSubMode" data-args='["publications"]'>Публикации</button>
+      <button class="tab-button${active === "mentions" ? " active" : ""}" data-action="setPlansSubMode" data-args='["mentions"]'>Упоминания</button>
     </div>`;
   }
 
@@ -551,7 +551,7 @@ export function createPlansModule(deps) {
         <div class="plans-feed-body plans-content-plans">
           <div class="plans-day-label">Контент-планы</div>
           ${plans.map((plan) => `
-            <article ${interactiveCardAttrs(`Открыть план ${plan.plan_id}`)} class="plan-card overview-card${plan.plan_id === state.selectedPlan?.plan_id ? " active" : ""} interactive-card" onclick="openPlan('${plan.plan_id}')">
+            <article ${interactiveCardAttrs(`Открыть план ${plan.plan_id}`)} class="plan-card overview-card${plan.plan_id === state.selectedPlan?.plan_id ? " active" : ""} interactive-card" data-action="openPlan" data-args='["${plan.plan_id}"]'>
               <div class="overview-card-top">
                 <div class="draft-kind">${contentKindIcon("plan")}<span>План</span></div>
                 <span class="overview-card-date">${escapeHtml(formatPlanDate(plan.created_at) || plan.plan_id)}</span>
@@ -714,14 +714,14 @@ export function createPlansModule(deps) {
                         ${tagMarkup(planEntryFormatLabel(entry), "source-plan")}
                       </div>
                     </div>
-                    <button class="primary-button" type="button" onclick="generateDraftFromPlan('${p.plan_id}', ${index}, this)">${actionLabel("sparkle", `Создать ${planEntryFormatLabel(entry)}`)}</button>
+                    <button class="primary-button" type="button" data-action="generateDraftFromPlan" data-args='${JSON.stringify([p.plan_id, index, null])}'>${actionLabel("sparkle", `Создать ${planEntryFormatLabel(entry)}`)}</button>
                   </div>
                   ${entry.angle ? `<div class="detail-preview">${escapeHtml(entry.angle)}</div>` : ""}
                   ${entry.goal ? `<div class="detail-preview"><strong>Цель:</strong> ${escapeHtml(entry.goal)}</div>` : ""}
                   ${related.length ? `
                     <div class="actions-row">
                       ${related.map((draft) => `
-                        <button class="secondary-button" type="button" onclick="openPlanRelatedDraft('${escapeHtml(draft.kind)}', '${escapeHtml(draft.draft_id)}')">${actionLabel(draft.kind === "reels" ? "reel" : "eye", `Открыть ${kindLabel(draft.kind)}`)}</button>
+                        <button class="secondary-button" type="button" data-action="openPlanRelatedDraft" data-args='${JSON.stringify([draft.kind, draft.draft_id])}'>${actionLabel(draft.kind === "reels" ? "reel" : "eye", `Открыть ${kindLabel(draft.kind)}`)}</button>
                       `).join("")}
                     </div>
                   ` : ""}
@@ -733,7 +733,7 @@ export function createPlansModule(deps) {
         ${(!p.status || p.status === "draft") ? `
           <div class="actions-row">
             <button class="primary-button" type="button" id="activatePlanBtn"
-              onclick="activatePlan('${escapeHtml(p.plan_id)}', this)">
+              data-action="activatePlan" data-args='${JSON.stringify([p.plan_id, null])}'>
               ${actionLabel("zap", "Активировать план")}
             </button>
           </div>
@@ -752,7 +752,7 @@ export function createPlansModule(deps) {
           <div class="actions-row">
             <p style="color:var(--bad);font-size:13px">${uiIcon("alert-circle")} Ошибка активации</p>
             <button class="primary-button" type="button"
-              onclick="activatePlan('${escapeHtml(p.plan_id)}', this)">
+              data-action="activatePlan" data-args='${JSON.stringify([p.plan_id, null])}'>
               ${actionLabel("zap", "Повторить")}
             </button>
           </div>

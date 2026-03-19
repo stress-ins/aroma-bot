@@ -117,8 +117,8 @@ export function createDraftsModule(deps) {
 
   function renderContentSwitcher(active) {
     return `<div class="content-sub-switcher">
-      <button class="tab-button${active === "drafts" ? " active" : ""}" onclick="setContentSubMode('drafts')">Черновики</button>
-      <button class="tab-button${active === "trends" ? " active" : ""}" onclick="setContentSubMode('trends')">Тренды</button>
+      <button class="tab-button${active === "drafts" ? " active" : ""}" data-action="setContentSubMode" data-args='["drafts"]'>Черновики</button>
+      <button class="tab-button${active === "trends" ? " active" : ""}" data-action="setContentSubMode" data-args='["trends"]'>Тренды</button>
     </div>`;
   }
 
@@ -133,7 +133,7 @@ export function createDraftsModule(deps) {
       action: "openCreateTool()",
     });
     elements.draftList.innerHTML = renderContentSwitcher("drafts") + state.drafts.map((d, idx) => `
-      <article ${interactiveCardAttrs(`Открыть черновик ${d.topic}`)} class="draft-card overview-card${d.draft_id === state.draftId ? " active" : ""}${d.generation_pending ? " is-pending" : ""} interactive-card" onclick="openDraft('${d.draft_id}')">
+      <article ${interactiveCardAttrs(`Открыть черновик ${d.topic}`)} class="draft-card overview-card${d.draft_id === state.draftId ? " active" : ""}${d.generation_pending ? " is-pending" : ""} interactive-card" data-action="openDraft" data-args='${JSON.stringify([d.draft_id])}'>
         <div class="overview-card-top">
           <div class="draft-kind">${contentKindIcon(d.kind)}<span>${escapeHtml(kindLabel(d.kind))}</span></div>
           <span class="overview-card-date">#${d.seq_id || idx + 1} · ${escapeHtml(formatPlanDate(d.created_at) || "Новый черновик")}</span>
@@ -199,7 +199,7 @@ export function createDraftsModule(deps) {
               id="slotText_${post.slot}_${d.draft_id}"
               class="threads-post-textarea"
               placeholder="Текст поста"
-              oninput="document.getElementById('charCount_${post.slot}_${d.draft_id}').textContent=this.value.length"
+              data-on-input="_syncCharCount" data-count-target="charCount_${post.slot}_${d.draft_id}"
             >${escapeHtml(cleanSlotText(post.text || ""))}</textarea>
             <div class="threads-char-counter${isOver ? " is-over" : ""}" id="charCount_${post.slot}_${d.draft_id}">${charCount}</div>` : ""}
           </div>
@@ -208,11 +208,11 @@ export function createDraftsModule(deps) {
             <input class="threads-regen-input" id="regenNote_${post.slot}_${d.draft_id}" type="text" placeholder="Пожелание к перегенерации (необязательно)">
           </div>
           <div class="threads-regen-row">
-            <button class="secondary-button" type="button" onclick="regenSlot('${d.draft_id}','${post.slot}',this)">${actionLabel("regenerate", "Переписать")}</button>
-            <button class="secondary-button" type="button" onclick="showSlotHistory('${d.draft_id}','${post.slot}')">${actionLabel("history", "История")}</button>
+            <button class="secondary-button" type="button" data-action="regenSlot" data-args='${JSON.stringify([d.draft_id, post.slot, null])}'>${actionLabel("regenerate", "Переписать")}</button>
+            <button class="secondary-button" type="button" data-action="showSlotHistory" data-args='${JSON.stringify([d.draft_id, post.slot])}'>${actionLabel("history", "История")}</button>
           </div>
           <div class="actions-row" style="margin-top:4px">
-            <button class="secondary-button" type="button" onclick="saveThreadsSlot('${d.draft_id}','${post.slot}',this)">${actionLabel("approve", "Сохранить слот")}</button>
+            <button class="secondary-button" type="button" data-action="saveThreadsSlot" data-args='${JSON.stringify([d.draft_id, post.slot, null])}'>${actionLabel("approve", "Сохранить слот")}</button>
           </div>
           ` : `
           <div class="slot-status-row">
@@ -227,8 +227,8 @@ export function createDraftsModule(deps) {
       <div id="scheduler_${d.draft_id}" hidden>
         <div class="date-picker-row" id="schedulerDates_${d.draft_id}"></div>
         <div class="actions-row" style="margin-top:8px">
-          <button class="primary-button" id="schedulerSubmit_${d.draft_id}" type="button" data-date="" disabled
-            onclick="scheduleThreadsSeries('${d.draft_id}',this.dataset.date,['morning','day','evening'],this)">
+          <button class="primary-button" id="schedulerSubmit_${d.draft_id}" type="button" data-date="" data-draft-id="${d.draft_id}" disabled
+            data-action="_scheduleThreadsSeriesFromBtn">
             ${actionLabel("approve", "Запланировать публикацию")}
           </button>
         </div>
@@ -253,10 +253,10 @@ export function createDraftsModule(deps) {
             </div>
           </div>
           <div class="actions-row detail-actions">
-            ${!isApproved && posts.length ? `<button class="primary-button" type="button" onclick="approveThreadsSeries('${d.draft_id}',this)">${actionLabel("approve", "Согласовать")}</button>` : ""}
-            ${isApproved && d.status !== "published" ? `<button class="secondary-button" type="button" onclick="openThreadsScheduler('${d.draft_id}')">${actionLabel("calendar", "Выбрать дату публикации")}</button>` : ""}
-            ${isApproved && d.status !== "published" ? `<button class="primary-button" type="button" onclick="publishThreadsSeriesNow('${d.draft_id}',this)">${actionLabel("send", "Опубликовать все сейчас")}</button>` : ""}
-            <button class="secondary-button" onclick="sendDraftToChat('${d.draft_id}',this)">${actionLabel("chat", "В чат")}</button>
+            ${!isApproved && posts.length ? `<button class="primary-button" type="button" data-action="approveThreadsSeries" data-args='${JSON.stringify([d.draft_id, null])}'>${actionLabel("approve", "Согласовать")}</button>` : ""}
+            ${isApproved && d.status !== "published" ? `<button class="secondary-button" type="button" data-action="openThreadsScheduler" data-args='${JSON.stringify([d.draft_id])}'>${actionLabel("calendar", "Выбрать дату публикации")}</button>` : ""}
+            ${isApproved && d.status !== "published" ? `<button class="primary-button" type="button" data-action="publishThreadsSeriesNow" data-args='${JSON.stringify([d.draft_id, null])}'>${actionLabel("send", "Опубликовать все сейчас")}</button>` : ""}
+            <button class="secondary-button" data-action="sendDraftToChat" data-args='${JSON.stringify([d.draft_id, null])}'>${actionLabel("chat", "В чат")}</button>
             ${renderMoveButton(d.draft_id)}
           </div>
           ${schedulerHtml}
@@ -270,12 +270,12 @@ export function createDraftsModule(deps) {
           ${slotsHtml}
           ${!posts.length && !isApproved ? `
           <div class="actions-row" style="margin-top: var(--space-3)">
-            <button class="primary-button" type="button" onclick="regenerateSeriesPosts('${d.draft_id}', this)">${actionLabel("regenerate", "Сгенерировать посты")}</button>
+            <button class="primary-button" type="button" data-action="regenerateSeriesPosts" data-args='${JSON.stringify([d.draft_id, null])}'>${actionLabel("regenerate", "Сгенерировать посты")}</button>
           </div>
           ` : ""}
         </section>
         <div class="actions-row detail-actions-danger">
-          <button class="danger-button" onclick="deleteDraft('${d.draft_id}','drafts',this)">${actionLabel("trash", "Удалить")}</button>
+          <button class="danger-button" data-action="deleteDraft" data-args='${JSON.stringify([d.draft_id, "drafts", null])}'>${actionLabel("trash", "Удалить")}</button>
         </div>
       </div>
     `;
@@ -338,8 +338,8 @@ export function createDraftsModule(deps) {
                 <label><span>Промпт для визуала</span><textarea id="contentVisualPromptField" placeholder="Образ или сцена для визуала">${escapeHtml(p.visual_prompt || "")}</textarea></label>
               </div>
               <div class="actions-row review-actions">
-                <button class="primary-button" type="button" onclick="saveThreadsReviewDraft('${d.draft_id}', this)">${actionLabel("approve", "Сохранить 3 поста")}</button>
-                <button class="secondary-button" type="button" onclick="polishContentDraft('${d.draft_id}', this)">${actionLabel("sparkle", "Уточнить через AI")}</button>
+                <button class="primary-button" type="button" data-action="saveThreadsReviewDraft" data-args='${JSON.stringify([d.draft_id, null])}'>${actionLabel("approve", "Сохранить 3 поста")}</button>
+                <button class="secondary-button" type="button" data-action="polishContentDraft" data-args='${JSON.stringify([d.draft_id, null])}'>${actionLabel("sparkle", "Уточнить через AI")}</button>
               </div>
             ` : `
               <div class="content-review-highlight">
@@ -356,8 +356,8 @@ export function createDraftsModule(deps) {
                 <label><span>Комментарий редактора</span><textarea id="contentEditorNotesField" placeholder="Что усилить или перепроверить">${escapeHtml(p.editor_notes || "")}</textarea></label>
               </div>
               <div class="actions-row review-actions">
-                <button class="primary-button" type="button" onclick="saveContentReviewDraft('${d.draft_id}', this)">${actionLabel("approve", "Сохранить версию")}</button>
-                <button class="secondary-button" type="button" onclick="polishContentDraft('${d.draft_id}', this)">${actionLabel("sparkle", "Уточнить через AI")}</button>
+                <button class="primary-button" type="button" data-action="saveContentReviewDraft" data-args='${JSON.stringify([d.draft_id, null])}'>${actionLabel("approve", "Сохранить версию")}</button>
+                <button class="secondary-button" type="button" data-action="polishContentDraft" data-args='${JSON.stringify([d.draft_id, null])}'>${actionLabel("sparkle", "Уточнить через AI")}</button>
               </div>
             `}
           </div>
@@ -371,9 +371,9 @@ export function createDraftsModule(deps) {
             ${tagMarkup(feedbackLabel(d.feedback), feedbackTone(d.feedback))}
           </div>
           <div class="actions-row">
-            <button class="secondary-button" type="button" onclick="updateDraft('feedback', {feedback:'worked'}, this)">${actionLabel("approve", "Откликнулось")}</button>
-            <button class="secondary-button" type="button" onclick="updateDraft('feedback', {feedback:'missed'}, this)">${actionLabel("reject", "Не дало результата")}</button>
-            <button class="secondary-button" type="button" onclick="updateDraft('feedback', {feedback:''}, this)">${actionLabel("back", "Очистить отметку")}</button>
+            <button class="secondary-button" type="button" data-action="updateDraft" data-args='["feedback",{"feedback":"worked"},null]'>${actionLabel("approve", "Откликнулось")}</button>
+            <button class="secondary-button" type="button" data-action="updateDraft" data-args='["feedback",{"feedback":"missed"},null]'>${actionLabel("reject", "Не дало результата")}</button>
+            <button class="secondary-button" type="button" data-action="updateDraft" data-args='["feedback",{"feedback":""},null]'>${actionLabel("back", "Очистить отметку")}</button>
           </div>
         </section>
       `
@@ -398,17 +398,17 @@ export function createDraftsModule(deps) {
             </div>
           </div>
           <div class="actions-row detail-actions">
-            <button class="primary-button" onclick="updateDraft('status', {status:'approved'}, this)">${actionLabel("approve", "Согласовать")}</button>
+            <button class="primary-button" data-action="updateDraft" data-args='["status",{"status":"approved"},null]'>${actionLabel("approve", "Согласовать")}</button>
             <div class="detail-icon-actions">
-              <button class="secondary-button" title="Вернуть на доработку" onclick="updateDraft('status', {status:'rejected'}, this)">${uiIcon("reject")}</button>
-              ${d.kind === "carousel" ? `<button class="secondary-button" title="Обновить все слайды" onclick="regenerateCarouselAll('${d.draft_id}', this)">${uiIcon("regenerate")}</button>` : ""}
+              <button class="secondary-button" title="Вернуть на доработку" data-action="updateDraft" data-args='["status",{"status":"rejected"},null]'>${uiIcon("reject")}</button>
+              ${d.kind === "carousel" ? `<button class="secondary-button" title="Обновить все слайды" data-action="regenerateCarouselAll" data-args='${JSON.stringify([d.draft_id, null])}'>${uiIcon("regenerate")}</button>` : ""}
             </div>
             ${d.kind === "carousel" ? `
               <div class="carousel-export-row">
-                <button class="secondary-button" onclick="downloadCarouselPptx('${d.draft_id}', this)">${uiIcon("download")}<span>PPTX</span></button>
-                <button class="secondary-button" onclick="importCarouselPptx('${d.draft_id}', this)">${uiIcon("upload")}<span>PPTX</span></button>
-                <button class="secondary-button" onclick="exportToCanva('${d.draft_id}', this)">${uiIcon("arrow-up-right")}<span>Canva</span></button>
-                <button class="secondary-button" onclick="importFromCanva('${d.draft_id}', this)">${uiIcon("arrow-down-left")}<span>Canva</span></button>
+                <button class="secondary-button" data-action="downloadCarouselPptx" data-args='${JSON.stringify([d.draft_id, null])}'>${uiIcon("download")}<span>PPTX</span></button>
+                <button class="secondary-button" data-action="importCarouselPptx" data-args='${JSON.stringify([d.draft_id, null])}'>${uiIcon("upload")}<span>PPTX</span></button>
+                <button class="secondary-button" data-action="exportToCanva" data-args='${JSON.stringify([d.draft_id, null])}'>${uiIcon("arrow-up-right")}<span>Canva</span></button>
+                <button class="secondary-button" data-action="importFromCanva" data-args='${JSON.stringify([d.draft_id, null])}'>${uiIcon("arrow-down-left")}<span>Canva</span></button>
               </div>
             ` : ""}
             ${renderMoveButton(d.draft_id)}
@@ -425,7 +425,7 @@ export function createDraftsModule(deps) {
         ${renderSlides(d.draft_id, p.slides, p.img_prompts, p.slide_images, p.img_prompt_notes, p.slide_image_versions)}
         ${promptSection("Промпт для изображения", p.visual_prompt, "Скопировать промпт", `draft:${d.draft_id}:visual`)}
         <div class="actions-row detail-actions-danger">
-          <button class="danger-button" onclick="deleteDraft('${d.draft_id}', 'drafts', this)">${actionLabel("trash", "Удалить")}</button>
+          <button class="danger-button" data-action="deleteDraft" data-args='${JSON.stringify([d.draft_id, "drafts", null])}'>${actionLabel("trash", "Удалить")}</button>
         </div>
       </div>
     `;
@@ -460,7 +460,7 @@ export function createDraftsModule(deps) {
     const items = data.metrics || [];
     if (!items.length) {
       return `<div class="metrics-empty"><i data-lucide="bar-chart-3"></i><span>Метрики ещё не собраны</span></div>
-        <div class="actions-row"><button class="secondary-button" type="button" onclick="refreshDraftMetrics('${draftId}', this)"><i data-lucide="refresh-cw"></i> Обновить</button></div>`;
+        <div class="actions-row"><button class="secondary-button" type="button" data-action="refreshDraftMetrics" data-args='${JSON.stringify([draftId, null])}'><i data-lucide="refresh-cw"></i> Обновить</button></div>`;
     }
     let html = `<div class="section-heading"><h3><i data-lucide="bar-chart-3"></i> Эффективность</h3></div>`;
     for (const entry of items) {
@@ -481,7 +481,7 @@ export function createDraftsModule(deps) {
       const ts = dt.toLocaleDateString("ru-RU") + " " + dt.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
       html += `<p class="metrics-updated">Последнее обновление: ${ts}</p>`;
     }
-    html += `<div class="actions-row"><button class="secondary-button" type="button" onclick="refreshDraftMetrics('${draftId}', this)"><i data-lucide="refresh-cw"></i> Обновить</button></div>`;
+    html += `<div class="actions-row"><button class="secondary-button" type="button" data-action="refreshDraftMetrics" data-args='${JSON.stringify([draftId, null])}'><i data-lucide="refresh-cw"></i> Обновить</button></div>`;
     return html;
   }
 
@@ -493,7 +493,7 @@ export function createDraftsModule(deps) {
       container.innerHTML = _renderMetricsHTML(draftId, data);
     } catch (_e) {
       container.innerHTML = `<div class="metrics-empty"><i data-lucide="bar-chart-3"></i><span>Метрики ещё не собраны</span></div>
-        <div class="actions-row"><button class="secondary-button" type="button" onclick="refreshDraftMetrics('${draftId}', this)"><i data-lucide="refresh-cw"></i> Обновить</button></div>`;
+        <div class="actions-row"><button class="secondary-button" type="button" data-action="refreshDraftMetrics" data-args='${JSON.stringify([draftId, null])}'><i data-lucide="refresh-cw"></i> Обновить</button></div>`;
     }
     if (window.lucide) lucide.createIcons();
   }
@@ -552,7 +552,7 @@ export function createDraftsModule(deps) {
     const options = otherTeams.map((t) =>
       `<option value="${escapeHtml(t.team_id)}">${escapeHtml(t.name)}</option>`
     ).join("");
-    return `<select class="move-to-team-select" onchange="if(this.value){moveDraftToTeam('${draftId}',this.value,this)}"><option value="">Перенести в...</option>${options}</select>`;
+    return `<select class="move-to-team-select" data-on-change="moveDraftToTeam" data-args='${JSON.stringify([draftId])}' data-guard="truthy"><option value="">Перенести в...</option>${options}</select>`;
   }
 
   return {

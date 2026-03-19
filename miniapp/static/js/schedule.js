@@ -47,7 +47,7 @@ export function createScheduleModule(deps) {
     if (data.scheduled.length) {
       html += `<div class="schedule-group"><h3 class="schedule-group-title">Запланировано</h3>`;
       html += data.scheduled.map(item => `
-        <article ${interactiveCardAttrs(`Открыть ${item.topic}`)} class="draft-card overview-card interactive-card" onclick="openDraft('${item.draft_id}')">
+        <article ${interactiveCardAttrs(`Открыть ${item.topic}`)} class="draft-card overview-card interactive-card" data-action="openDraft" data-args='${JSON.stringify([item.draft_id])}'>
           <div class="overview-card-top">
             <div class="draft-kind">${contentKindIcon(item.kind)}<span>${escapeHtml(kindLabel(item.kind))}</span></div>
             <span class="overview-card-date">${escapeHtml(formatPlanDate(item.scheduled_at) || "")}</span>
@@ -55,7 +55,7 @@ export function createScheduleModule(deps) {
           <h3 class="draft-topic">${escapeHtml(item.topic)}</h3>
           <div class="draft-meta overview-card-footer">
             ${(item.publish_platforms || []).map(p => tagMarkup(p, "status-neutral")).join("")}
-            <button class="tag tag-negative" type="button" onclick="event.stopPropagation(); cancelPublishSchedule('${item.draft_id}', this)">Отмена</button>
+            <button class="tag tag-negative" type="button" data-action="cancelPublishSchedule" data-args='${JSON.stringify([item.draft_id, null])}'>Отмена</button>
           </div>
         </article>
       `).join("");

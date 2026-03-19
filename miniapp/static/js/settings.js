@@ -34,7 +34,7 @@ export function createSettingsModule(deps) {
 
   function settingsMenuRow(icon, color, title, section, badge) {
     const badgeHtml = badge != null ? `<span class="settings-menu-badge">${escapeHtml(String(badge))}</span>` : "";
-    return `<div class="settings-menu-row" onclick="openSettingsSection('${section}')">
+    return `<div class="settings-menu-row" data-action="openSettingsSection" data-args='${JSON.stringify([section])}'>
       <span class="settings-menu-icon" style="background:${color}"><i data-lucide="${icon}"></i></span>
       <span class="settings-menu-text">${escapeHtml(title)}</span>
       ${badgeHtml}
@@ -178,7 +178,7 @@ export function createSettingsModule(deps) {
       const [pattern, replacement] = r;
       return `<span class="keyword-chip rewrite-chip">
         <span>${escapeHtml(pattern)} ${ARROW_SVG} ${escapeHtml(replacement)}</span>
-        <button type="button" aria-label="Удалить замену" onclick='removeRewrite(${JSON.stringify(String(pattern))})'>${CLOSE_SVG}</button>
+        <button type="button" aria-label="Удалить замену" data-action="removeRewrite" data-args='${JSON.stringify([String(pattern)])}'>${CLOSE_SVG}</button>
       </span>`;
     }).join("") || `<span class="plan-entry-hint">Нет авто-замен.</span>`;
   }
@@ -285,7 +285,7 @@ export function createSettingsModule(deps) {
     container.innerHTML = (phrases || []).map((phrase) => `
       <span class="keyword-chip">
         <span>${escapeHtml(phrase)}</span>
-        <button type="button" aria-label="Удалить ${escapeHtml(phrase)}" onclick='removeForbiddenPhrase(${JSON.stringify(String(phrase))})'>${closeSvg}</button>
+        <button type="button" aria-label="Удалить ${escapeHtml(phrase)}" data-action="removeForbiddenPhrase" data-args='${JSON.stringify([String(phrase)])}'>${closeSvg}</button>
       </span>
     `).join("") || `<span class="plan-entry-hint">Нет запрещённых фраз.</span>`;
   }
@@ -415,9 +415,9 @@ export function createSettingsModule(deps) {
 
     // Left panel: keyword topics list
     elements.draftList.innerHTML = `
-      <button class="back-button" type="button" onclick="goBackToSettings()">${uiIcon("arrow-left")}<span>Назад</span></button>
+      <button class="back-button" type="button" data-action="goBackToSettings">${uiIcon("arrow-left")}<span>Назад</span></button>
       ${topics.map((topic) => `
-      <article ${interactiveCardAttrs(`Открыть тему ${topic.name}`)} class="keyword-topic${topic.topic_idx === state.selectedKeywordTopicIdx ? " active" : ""} interactive-card" onclick="openKeywordTopic(${topic.topic_idx})">
+      <article ${interactiveCardAttrs(`Открыть тему ${topic.name}`)} class="keyword-topic${topic.topic_idx === state.selectedKeywordTopicIdx ? " active" : ""} interactive-card" data-action="openKeywordTopic" data-args='${JSON.stringify([topic.topic_idx])}'>
         <h3>${escapeHtml(topic.name)}</h3>
         <div class="draft-meta">
           <span class="tag">${escapeHtml(`${Object.values(topic.fields || {}).reduce((sum, items) => sum + (Array.isArray(items) ? items.length : 0), 0)} ключей`)}</span>
@@ -440,11 +440,11 @@ export function createSettingsModule(deps) {
                   ${items.map((item) => `
                     <span class="keyword-chip">
                       <span>${escapeHtml(item)}</span>
-                      <button type="button" aria-label="Удалить ${escapeHtml(item)}" onclick='removeKeywordItem(${selectedTopic.topic_idx}, ${JSON.stringify(String(field))}, ${JSON.stringify(String(item))}, this)'><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+                      <button type="button" aria-label="Удалить ${escapeHtml(item)}" data-action="removeKeywordItem" data-args='${JSON.stringify([selectedTopic.topic_idx, String(field), String(item), null])}'><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
                     </span>
                   `).join("") || `<span class="plan-entry-hint">Пока пусто.</span>`}
                 </div>
-                <form class="keyword-form" onsubmit='event.preventDefault(); addKeywordItem(${selectedTopic.topic_idx}, ${JSON.stringify(String(field))}, this, this.querySelector("button"));'>
+                <form class="keyword-form" data-on-submit="addKeywordItem" data-args='${JSON.stringify([selectedTopic.topic_idx, String(field)])}'>
                   <input name="word" type="text" placeholder="Добавить значение" />
                   <button class="secondary-button" type="submit">${actionLabel("plus", "Добавить")}</button>
                 </form>
@@ -467,7 +467,7 @@ export function createSettingsModule(deps) {
           <div id="forbiddenPhrasesList" class="chips-list keyword-items"></div>
           <div class="keyword-form keyword-add-row">
             <input id="forbiddenPhraseInput" type="text" placeholder="Добавить фразу…">
-            <button class="secondary-button" type="button" onclick="addForbiddenPhrase()">Добавить</button>
+            <button class="secondary-button" type="button" data-action="addForbiddenPhrase">Добавить</button>
           </div>
         </section>
         <section class="section settings-section">
@@ -479,7 +479,7 @@ export function createSettingsModule(deps) {
               <input id="rewritePatternInput" type="text" placeholder="Было (regex или слово)">
               <input id="rewriteReplacementInput" type="text" placeholder="Стало">
             </div>
-            <button class="secondary-button btn-align-start" type="button" onclick="addRewrite()">Добавить замену</button>
+            <button class="secondary-button btn-align-start" type="button" data-action="addRewrite">Добавить замену</button>
           </div>
         </section>
         <section class="section settings-section">
@@ -494,7 +494,7 @@ export function createSettingsModule(deps) {
               <strong class="platform-label">${uiIcon(key)}<span>${label}</span></strong>
               <textarea id="tone-${key}" class="draft-textarea" rows="2"
                 placeholder="Например: personal, visual, emotional"
-                onblur='savePlatformTone("${key}")'></textarea>
+                data-on-blur="savePlatformTone" data-args='${JSON.stringify([key])}'></textarea>
             </div>
           `).join("")}
         </section>
@@ -503,7 +503,7 @@ export function createSettingsModule(deps) {
           <p class="settings-hint">Выберите AI-модели для генерации изображений в каруселях и рилсах.</p>
           <div class="keyword-field">
             <strong>Карусели (text-to-image)</strong>
-            <select id="imageModelCarousel" class="draft-textarea" onchange="saveImageModels()">
+            <select id="imageModelCarousel" class="draft-textarea" data-on-change="saveImageModels">
               <option value="gpt-image/1.5-text-to-image">GPT Image 1.5</option>
               <option value="google/nano-banana">Nano Banana</option>
             </select>
@@ -516,7 +516,7 @@ export function createSettingsModule(deps) {
           </div>
           <div class="keyword-field">
             <strong>Рилсы (text-to-image)</strong>
-            <select id="imageModelReels" class="draft-textarea" onchange="saveImageModels()">
+            <select id="imageModelReels" class="draft-textarea" data-on-change="saveImageModels">
               <option value="gpt-image/1.5-text-to-image">GPT Image 1.5</option>
               <option value="flux-2/pro-text-to-image">Flux 2 Pro</option>
               <option value="google/nano-banana">Nano Banana</option>
@@ -524,7 +524,7 @@ export function createSettingsModule(deps) {
           </div>
           <div class="keyword-field">
             <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-              <input type="checkbox" id="reelsAutoImages" onchange="saveImageModels()">
+              <input type="checkbox" id="reelsAutoImages" data-on-change="saveImageModels">
               <span>Автогенерация картинок при создании рилса</span>
             </label>
             <p class="settings-hint" style="margin-top:4px">Если выключено, картинки для кадров генерируются по кнопке вручную.</p>
@@ -545,7 +545,7 @@ export function createSettingsModule(deps) {
     elements.draftCount.textContent = `${items.length} источников`;
     const backAction = inSettings ? "goBackToSettings()" : "goBackToList()";
     elements.draftList.innerHTML = `
-      <button class="back-button" type="button" onclick="${backAction}">${uiIcon("arrow-left")}<span>Назад</span></button>
+      <button class="back-button" type="button" data-action="${backAction}">${uiIcon("arrow-left")}<span>Назад</span></button>
       ${items.map((item) => `
       <article class="status-card"><strong>${escapeHtml(item.source)}</strong> <span class="${item.enabled ? "status-good" : "status-bad"}">${item.enabled ? "вкл" : "выкл"}</span></article>
     `).join("")}
@@ -583,7 +583,7 @@ export function createSettingsModule(deps) {
     });
     elements.draftList.innerHTML = `
       ${topics.map((topic) => `
-      <article ${interactiveCardAttrs(`Открыть тему ${topic.name}`)} class="keyword-topic${topic.topic_idx === state.selectedKeywordTopicIdx ? " active" : ""} interactive-card" onclick="openKeywordTopic(${topic.topic_idx})">
+      <article ${interactiveCardAttrs(`Открыть тему ${topic.name}`)} class="keyword-topic${topic.topic_idx === state.selectedKeywordTopicIdx ? " active" : ""} interactive-card" data-action="openKeywordTopic" data-args='${JSON.stringify([topic.topic_idx])}'>
         <h3>${escapeHtml(topic.name)}</h3>
         <div class="draft-meta">
           <span class="tag">${escapeHtml(`${Object.values(topic.fields || {}).reduce((sum, items) => sum + (Array.isArray(items) ? items.length : 0), 0)} ключей`)}</span>
@@ -617,11 +617,11 @@ export function createSettingsModule(deps) {
                   ${items.map((item) => `
                     <span class="keyword-chip">
                       <span>${escapeHtml(item)}</span>
-                      <button type="button" aria-label="Удалить ${escapeHtml(item)}" onclick='removeKeywordItem(${selectedTopic.topic_idx}, ${JSON.stringify(String(field))}, ${JSON.stringify(String(item))}, this)'><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+                      <button type="button" aria-label="Удалить ${escapeHtml(item)}" data-action="removeKeywordItem" data-args='${JSON.stringify([selectedTopic.topic_idx, String(field), String(item), null])}'><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
                     </span>
                   `).join("") || `<span class="plan-entry-hint">Пока пусто.</span>`}
                 </div>
-                <form class="keyword-form" onsubmit='event.preventDefault(); addKeywordItem(${selectedTopic.topic_idx}, ${JSON.stringify(String(field))}, this, this.querySelector("button"));'>
+                <form class="keyword-form" data-on-submit="addKeywordItem" data-args='${JSON.stringify([selectedTopic.topic_idx, String(field)])}'>
                   <input name="word" type="text" placeholder="Добавить значение" />
                   <button class="secondary-button" type="submit">${actionLabel("plus", "Добавить")}</button>
                 </form>
@@ -657,7 +657,7 @@ export function createSettingsModule(deps) {
       const statusMeta = `<span class="account-meta">${uiIcon("check-circle")}<span>Подключено</span>${expiry ? ` · до ${expiry}` : ""}</span>`;
       const btn = readOnly
         ? ""
-        : `<button class="secondary-button account-full-btn" type="button" onclick="connectPlatform('${acc.platform}')">${uiIcon("regenerate")}<span>Переподключить</span></button>`;
+        : `<button class="secondary-button account-full-btn" type="button" data-action="connectPlatform" data-args='${JSON.stringify([acc.platform])}'>${uiIcon("regenerate")}<span>Переподключить</span></button>`;
       return `
         <article class="account-card account-card--vertical">
           <div class="account-card-title">${icon}<strong>${label}</strong></div>
@@ -670,7 +670,7 @@ export function createSettingsModule(deps) {
 
     const btn = readOnly
       ? `<span class="account-meta">Не подключено</span>`
-      : `<button class="primary-button account-full-btn" type="button" onclick="connectPlatform('${acc.platform}')">${uiIcon("link")}<span>Подключить ${label}</span></button>`;
+      : `<button class="primary-button account-full-btn" type="button" data-action="connectPlatform" data-args='${JSON.stringify([acc.platform])}'>${uiIcon("link")}<span>Подключить ${label}</span></button>`;
     return `
       <article class="account-card account-card--vertical">
         <div class="account-card-title">${icon}<strong>${label}</strong></div>
@@ -683,7 +683,7 @@ export function createSettingsModule(deps) {
   async function renderAccounts() {
     elements.listTitle.textContent = "Настройки";
     elements.draftCount.textContent = "Аккаунты";
-    elements.draftList.innerHTML = `<button class="back-button" type="button" onclick="goBackToSettings()">${uiIcon("arrow-left")}<span>Назад</span></button>`;
+    elements.draftList.innerHTML = `<button class="back-button" type="button" data-action="goBackToSettings">${uiIcon("arrow-left")}<span>Назад</span></button>`;
     elements.draftDetail.innerHTML = renderBackButton() + `
       <div class="detail-grid">
         <div class="detail-top">
@@ -711,7 +711,7 @@ export function createSettingsModule(deps) {
         state.accountsTeamId = currentTeamId;
         switcherEl.innerHTML = `
           <div class="accounts-team-switcher">
-            ${teams.map((t) => `<button class="team-switcher-chip${t.team_id === currentTeamId ? " active" : ""}" type="button" onclick="switchAccountsTeam('${escapeHtml(t.team_id)}')">${uiIcon("users")}<span>${escapeHtml(t.name)}</span></button>`).join("")}
+            ${teams.map((t) => `<button class="team-switcher-chip${t.team_id === currentTeamId ? " active" : ""}" type="button" data-action="switchAccountsTeam" data-args='${JSON.stringify([t.team_id])}'>${uiIcon("users")}<span>${escapeHtml(t.name)}</span></button>`).join("")}
           </div>
         `;
       } else if (switcherEl && teams.length === 1) {
@@ -783,7 +783,7 @@ export function createSettingsModule(deps) {
             <li>Пройдите авторизацию в Instagram</li>
           </ol>
           <button class="primary-button account-full-btn" type="button" id="igCopyBtn"
-            onclick="window.__copyIgUrl()">${uiIcon("link")}<span>Скопировать ссылку</span></button>
+            data-action="__copyIgUrl">${uiIcon("link")}<span>Скопировать ссылку</span></button>
           <p id="igCopyStatus" style="font-size:13px;color:var(--good);margin-top:12px;min-height:20px"></p>
         </section>
       </div>
@@ -806,7 +806,7 @@ export function createSettingsModule(deps) {
   async function renderTrackedHashtags() {
     elements.listTitle.textContent = "Настройки";
     elements.draftCount.textContent = "Теги";
-    elements.draftList.innerHTML = `<button class="back-button" type="button" onclick="goBackToSettings()">${uiIcon("arrow-left")}<span>Назад</span></button>`;
+    elements.draftList.innerHTML = `<button class="back-button" type="button" data-action="goBackToSettings">${uiIcon("arrow-left")}<span>Назад</span></button>`;
     elements.draftDetail.innerHTML = renderBackButton() + `
       <div class="detail-grid">
         <div class="detail-top">
@@ -819,7 +819,7 @@ export function createSettingsModule(deps) {
           </div>
           <div class="keyword-add-row" style="margin-top:12px">
             <input id="trackedTagInput" type="text" placeholder="#хештег" class="keyword-input">
-            <button class="primary-button" type="button" onclick="addTrackedHashtag()">${uiIcon("plus")}<span>Добавить</span></button>
+            <button class="primary-button" type="button" data-action="addTrackedHashtag">${uiIcon("plus")}<span>Добавить</span></button>
           </div>
         </section>
         <p class="settings-hint">
@@ -846,7 +846,7 @@ export function createSettingsModule(deps) {
       return;
     }
     container.innerHTML = tags.map((t) =>
-      `<span class="keyword-chip">#${escapeHtml(t)}<button type="button" aria-label="Удалить тег" onclick="removeTrackedHashtag('${escapeHtml(t)}')">${uiIcon("x", 14)}</button></span>`
+      `<span class="keyword-chip">#${escapeHtml(t)}<button type="button" aria-label="Удалить тег" data-action="removeTrackedHashtag" data-args='${JSON.stringify([t])}'>${uiIcon("x", 14)}</button></span>`
     ).join("");
     if (window.lucide) lucide.createIcons();
   }
@@ -886,7 +886,7 @@ export function createSettingsModule(deps) {
   async function renderTeam() {
     elements.listTitle.textContent = "Настройки";
     elements.draftCount.textContent = "Команда";
-    elements.draftList.innerHTML = `<button class="back-button" type="button" onclick="goBackToSettings()">${uiIcon("arrow-left")}<span>Назад</span></button>`;
+    elements.draftList.innerHTML = `<button class="back-button" type="button" data-action="goBackToSettings">${uiIcon("arrow-left")}<span>Назад</span></button>`;
     elements.draftDetail.innerHTML = renderBackButton() + `
       <div class="detail-grid">
         <div class="detail-top">
@@ -911,7 +911,7 @@ export function createSettingsModule(deps) {
           <p class="settings-hint">У вас пока нет команды.</p>
           <div class="keyword-form keyword-add-row">
             <input id="newTeamName" type="text" placeholder="Название команды">
-            <button class="secondary-button" type="button" onclick="createNewTeam()">Создать</button>
+            <button class="secondary-button" type="button" data-action="createNewTeam">Создать</button>
           </div>
         `;
         return;
@@ -926,7 +926,7 @@ export function createSettingsModule(deps) {
         const membersHtml = (detail.members || []).map((m) => {
           const roleLabel = roleLabels[m.role] || m.role;
           const removeBtn = isOwner && m.telegram_id !== detail.created_by
-            ? ` <button class="chip-remove-btn" type="button" onclick="removeTeamMember('${escapeHtml(t.team_id)}', ${m.telegram_id})" title="Удалить">&times;</button>`
+            ? ` <button class="chip-remove-btn" type="button" data-action="removeTeamMember" data-args='${JSON.stringify([t.team_id, m.telegram_id])}' title="Удалить">&times;</button>`
             : "";
           const displayName = m.username ? `@${escapeHtml(m.username)}` : `ID: ${m.telegram_id}`;
           return `
@@ -937,7 +937,7 @@ export function createSettingsModule(deps) {
         }).join("");
 
         const inviteBtn = isOwner
-          ? `<button class="secondary-button" type="button" onclick="createTeamInvite('${escapeHtml(t.team_id)}')">${uiIcon("user-plus")}<span>Пригласить</span></button>`
+          ? `<button class="secondary-button" type="button" data-action="createTeamInvite" data-args='${JSON.stringify([t.team_id])}'>${uiIcon("user-plus")}<span>Пригласить</span></button>`
           : "";
 
         // Connected accounts for this team
@@ -966,7 +966,7 @@ export function createSettingsModule(deps) {
           <h3>Создать новую команду</h3>
           <div class="keyword-form keyword-add-row">
             <input id="newTeamName" type="text" placeholder="Название команды">
-            <button class="secondary-button" type="button" onclick="createNewTeam()">Создать</button>
+            <button class="secondary-button" type="button" data-action="createNewTeam">Создать</button>
           </div>
         </section>
       `;
@@ -1004,8 +1004,8 @@ export function createSettingsModule(deps) {
             <div class="invite-link-box">
               <p class="settings-hint">Отправьте ссылку коллеге в Telegram:</p>
               <div class="keyword-form keyword-add-row">
-                <input type="text" value="${escapeHtml(result.deep_link)}" readonly onclick="this.select()">
-                <button class="secondary-button" type="button" onclick="copyText('${escapeHtml(result.deep_link)}')">Копировать</button>
+                <input type="text" value="${escapeHtml(result.deep_link)}" readonly data-action="_selectInput">
+                <button class="secondary-button" type="button" data-action="copyText" data-args='${JSON.stringify([result.deep_link])}'>Копировать</button>
               </div>
             </div>
           `;
@@ -1034,7 +1034,7 @@ export function createSettingsModule(deps) {
   async function renderPromo() {
     elements.listTitle.textContent = "Настройки";
     elements.draftCount.textContent = "Подписка";
-    elements.draftList.innerHTML = `<button class="back-button" type="button" onclick="goBackToSettings()">${uiIcon("arrow-left")}<span>Назад</span></button>`;
+    elements.draftList.innerHTML = `<button class="back-button" type="button" data-action="goBackToSettings">${uiIcon("arrow-left")}<span>Назад</span></button>`;
 
     // Load user plan to show current subscription
     let planInfo = "";
@@ -1084,7 +1084,7 @@ export function createSettingsModule(deps) {
             </div>
             <div class="keyword-add-row" style="margin-top:8px">
               <input id="promoPrefix" type="text" value="AROMA" placeholder="Префикс">
-              <button class="secondary-button" type="button" onclick="generatePromos()">Создать</button>
+              <button class="secondary-button" type="button" data-action="generatePromos">Создать</button>
             </div>
           </div>
           <div id="promoGenResult"></div>
@@ -1114,7 +1114,7 @@ export function createSettingsModule(deps) {
           <p class="settings-hint">Введите код, чтобы активировать подписку.</p>
           <div class="keyword-form keyword-add-row">
             <input id="promoCodeInput" type="text" placeholder="AROMA-XXXXXX" style="text-transform:uppercase">
-            <button class="secondary-button" type="button" onclick="activatePromo()">Активировать</button>
+            <button class="secondary-button" type="button" data-action="activatePromo">Активировать</button>
           </div>
           <div id="promoActivateResult"></div>
         </section>

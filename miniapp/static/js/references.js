@@ -258,7 +258,7 @@ export function createReferencesModule(deps) {
       }
       // Filter out empty/placeholder slugs that would open nothing
       if (slug && String(slug).trim() !== "") {
-        return `<button class="crossref-chip" onclick='openReference(${JSON.stringify(slug)}, ${JSON.stringify(targetTab)})'>${icon ? `<span class="chip-icon">${icon}</span>` : ''}${escapeHtml(display)}</button>`;
+        return `<button class="crossref-chip" data-action="openReference" data-args='${JSON.stringify([slug, targetTab])}'>${icon ? `<span class="chip-icon">${icon}</span>` : ''}${escapeHtml(display)}</button>`;
       }
       return `<span class="crossref-chip crossref-chip--plain">${icon ? `<span class="chip-icon">${icon}</span>` : ''}${escapeHtml(display)}</span>`;
     }).filter(Boolean).join("");
@@ -331,7 +331,7 @@ export function createReferencesModule(deps) {
       const displayName = (namesRu[i] || lookupNameRu(slugs[i]) || nameEn || "").trim();
       const slug = slugs[i] || findSlugByName(displayName);
       const nameHtml = slug
-        ? `<button class="crossref-chip" onclick='openReference(${JSON.stringify(slug)}, "aromas")'>${escapeHtml(displayName)}</button>`
+        ? `<button class="crossref-chip" data-action="openReference" data-args='${JSON.stringify([slug, "aromas"])}'>${escapeHtml(displayName)}</button>`
         : `<span class="crossref-chip crossref-chip--plain">${escapeHtml(displayName)}</span>`;
       return `<div class="recipe-line">${d} ${unit} ${nameHtml}</div>`;
     });
@@ -346,7 +346,7 @@ export function createReferencesModule(deps) {
     }
     const cutAt = str.lastIndexOf(" ", maxChars) || maxChars;
     const preview = str.slice(0, cutAt);
-    return `<section class="section"><h3>${escapeHtml(title)}</h3><div class="detail-preview exp-section-wrap"><div class="exp-collapsed">${escapeHtml(preview)}… <button class="exp-btn" onclick="expandSection(this)">Читать далее <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button></div><div class="exp-expanded" hidden>${escapeHtml(str)}</div></div></section>`;
+    return `<section class="section"><h3>${escapeHtml(title)}</h3><div class="detail-preview exp-section-wrap"><div class="exp-collapsed">${escapeHtml(preview)}… <button class="exp-btn" data-action="expandSection" data-args='[null]'>Читать далее <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button></div><div class="exp-expanded" hidden>${escapeHtml(str)}</div></div></section>`;
   }
 
   const COUNTRY_FLAGS = {
@@ -573,7 +573,7 @@ export function createReferencesModule(deps) {
     const activeFilter = state.referenceFilter || "";
     const allActive = !activeFilter;
     const chips = [
-      `<button class="filter-chip${allActive ? " active" : ""}" onclick="setReferenceFilter('')">Все</button>`,
+      `<button class="filter-chip${allActive ? " active" : ""}" data-action="setReferenceFilter" data-args='[""]'>Все</button>`,
       ...values.map((v) => {
         let label;
         if (tabId === "aromas") {
@@ -593,7 +593,7 @@ export function createReferencesModule(deps) {
           label = v;
         }
         const isActive = activeFilter === v;
-        return `<button class="filter-chip${isActive ? " active" : ""}" onclick='setReferenceFilter(${JSON.stringify(v)})'>${escapeHtml(label)}</button>`;
+        return `<button class="filter-chip${isActive ? " active" : ""}" data-action="setReferenceFilter" data-args='${JSON.stringify([v])}'>${escapeHtml(label)}</button>`;
       }),
     ];
     return `<div class="filter-chips">${chips.join("")}</div>`;
@@ -628,11 +628,11 @@ export function createReferencesModule(deps) {
     const allActive = !activeFilter && !activeParent;
 
     const parentChips = [
-      `<button class="filter-chip${allActive ? " active" : ""}" onclick="setReferenceFilter('')">Все</button>`,
+      `<button class="filter-chip${allActive ? " active" : ""}" data-action="setReferenceFilter" data-args='[""]'>Все</button>`,
       ...parentGroups.map((p) => {
         const icon = SYMPTOM_PARENT_GROUP_ICONS?.[p] ? SYMPTOM_PARENT_GROUP_ICONS[p] + "\u00a0" : "";
         const isActive = activeParent === p || activeFilter === p;
-        return `<button class="filter-chip${isActive ? " active" : ""}" onclick='setSymptomParentFilter(${JSON.stringify(p)})'>${escapeHtml(icon + toSentenceCase(p))}</button>`;
+        return `<button class="filter-chip${isActive ? " active" : ""}" data-action="setSymptomParentFilter" data-args='${JSON.stringify([p])}'>${escapeHtml(icon + toSentenceCase(p))}</button>`;
       }),
     ];
 
@@ -641,7 +641,7 @@ export function createReferencesModule(deps) {
       const children = [...childrenByParent[activeParent]];
       const childButtons = children.map((c) => {
         const isActive = activeFilter === c;
-        return `<button class="filter-chip filter-chip--child${isActive ? " active" : ""}" onclick='setReferenceFilter(${JSON.stringify(c)})'>${escapeHtml(toSentenceCase(c))}</button>`;
+        return `<button class="filter-chip filter-chip--child${isActive ? " active" : ""}" data-action="setReferenceFilter" data-args='${JSON.stringify([c])}'>${escapeHtml(toSentenceCase(c))}</button>`;
       });
       childChips = `<div class="filter-chips filter-chips--level2">${childButtons.join("")}</div>`;
     }
@@ -740,7 +740,7 @@ export function createReferencesModule(deps) {
     if (dailyOilEl) dailyOilEl.hidden = !!query;
 
     listContainer.innerHTML = filtered.map((item) => `
-      <article ${interactiveCardAttrs(`Открыть карточку ${item.name}`)} class="draft-card overview-card reference-card${state.tab === "concepts" ? " is-theory concept-card" : ""}${item.slug === reference?.slug ? " active" : ""} interactive-card" onclick='openReference(${JSON.stringify(item.slug)}, ${JSON.stringify(state.tab)})'>
+      <article ${interactiveCardAttrs(`Открыть карточку ${item.name}`)} class="draft-card overview-card reference-card${state.tab === "concepts" ? " is-theory concept-card" : ""}${item.slug === reference?.slug ? " active" : ""} interactive-card" data-action="openReference" data-args='${JSON.stringify([item.slug, state.tab])}'>
         <div class="overview-card-top">
           <div class="draft-kind">${!["symptoms", "concepts", "blends"].includes(state.tab) ? `<span class="kind-glyph handbook-glyph" aria-hidden="true">${aromaCardIcon(item, state.tab)}</span>` : ""}${handbookCardBadge(state.tab, item) ? `<span>${state.tab === "concepts" ? `<span class="concept-kind-mark" aria-hidden="true">${escapeHtml(aromaCardIcon(item, state.tab))}</span>` : ""}${escapeHtml(handbookCardBadge(state.tab, item))}</span>` : ""}</div>
           ${(() => { const courseLabel = formatCourseSourceLabel(item.course_source); const dateLabel = courseLabel || (state.tab !== "aromas" ? REFERENCE_SOURCE_TYPE_LABELS[item.source_type] || "" : ""); return dateLabel ? `<span class="overview-card-date">${escapeHtml(dateLabel)}</span>` : ""; })()}
@@ -965,13 +965,13 @@ export function createReferencesModule(deps) {
           <span class="smart-search-icon"><svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="6.5" cy="6.5" r="4.5"/><line x1="10" y1="10" x2="13.5" y2="13.5"/></svg></span>
           <input type="text" class="smart-search-input" id="smartSearchInput"
             placeholder="\u0420\u0430\u0441\u0441\u043b\u0430\u0431\u043b\u0435\u043d\u0438\u0435, \u0442\u0432\u043e\u0440\u0447\u0435\u0441\u0442\u0432\u043e, \u043d\u0430\u0441\u043c\u043e\u0440\u043a, \u0441\u0442\u0440\u0435\u0441\u0441..."
-            oninput="handleSmartSearch(this.value)"
-            onkeydown="if(event.key==='Enter') runSmartSearch(this.value)">
-          <button class="smart-search-clear" id="smartSearchClear" onclick="clearSmartSearch()" hidden>\u2715</button>
+            data-on-input="handleSmartSearch" data-args='[]'
+            data-on-keydown="runSmartSearch" data-keydown-guard="Enter" data-args-keydown='[]'>
+          <button class="smart-search-clear" id="smartSearchClear" data-action="clearSmartSearch" hidden>\u2715</button>
         </div>
-        <button class="blend-constructor-cta" onclick="openBlendConstructor()">\u0421\u043e\u0437\u0434\u0430\u0442\u044c \u0441\u043c\u0435\u0441\u044c \u043f\u043e\u0434 \u0437\u0430\u0434\u0430\u0447\u0443</button>
-        <button class="reco-cta-btn" onclick="openRecommendationsWizard()">Подобрать масло</button>
-        <button class="my-blends-btn" onclick="openSavedBlends()">\u2665 \u0421\u043e\u0445\u0440\u0430\u043d\u0451\u043d\u043d\u043e\u0435</button>
+        <button class="blend-constructor-cta" data-action="openBlendConstructor">\u0421\u043e\u0437\u0434\u0430\u0442\u044c \u0441\u043c\u0435\u0441\u044c \u043f\u043e\u0434 \u0437\u0430\u0434\u0430\u0447\u0443</button>
+        <button class="reco-cta-btn" data-action="openRecommendationsWizard">Подобрать масло</button>
+        <button class="my-blends-btn" data-action="openSavedBlends">\u2665 \u0421\u043e\u0445\u0440\u0430\u043d\u0451\u043d\u043d\u043e\u0435</button>
       </div>`;
   }
 
@@ -1046,7 +1046,7 @@ export function createReferencesModule(deps) {
     elements.draftCount.textContent = `${items.length} \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442\u043e\u0432 \u043f\u043e \u0437\u0430\u043f\u0440\u043e\u0441\u0443 \u00ab${query}\u00bb`;
     if (items.length === 0) {
       listContainer.innerHTML = `<div class="search-empty"><p>\u041d\u0438\u0447\u0435\u0433\u043e \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d\u043e.</p>
-        <button class="blend-constructor-cta" onclick="openBlendConstructor('${escapeHtml(query)}')">\ud83e\uddea \u0421\u043e\u0437\u0434\u0430\u0442\u044c \u0441\u043c\u0435\u0441\u044c \u043f\u043e\u0434 \u044d\u0442\u0443 \u0437\u0430\u0434\u0430\u0447\u0443 \u2197</button></div>`;
+        <button class="blend-constructor-cta" data-action="openBlendConstructor" data-args='${JSON.stringify([query])}'>\ud83e\uddea \u0421\u043e\u0437\u0434\u0430\u0442\u044c \u0441\u043c\u0435\u0441\u044c \u043f\u043e\u0434 \u044d\u0442\u0443 \u0437\u0430\u0434\u0430\u0447\u0443 \u2197</button></div>`;
       return;
     }
     const groupLabels = {aroma: "\u0410\u0440\u043e\u043c\u0430\u0442\u044b", blend: "\u0421\u043c\u0435\u0441\u0438", symptom: "\u0421\u0438\u043c\u043f\u0442\u043e\u043c\u044b"};
@@ -1070,7 +1070,7 @@ export function createReferencesModule(deps) {
     const tabId = item._type + "s";
     const name = item.name_ru || item.name || "";
     return `<article ${interactiveCardAttrs("\u041e\u0442\u043a\u0440\u044b\u0442\u044c " + name)} class="draft-card overview-card interactive-card"
-      onclick='openReference(${JSON.stringify(item.slug)}, ${JSON.stringify(tabId)})'>
+      data-action="openReference" data-args='${JSON.stringify([item.slug, tabId])}'>
       <div class="overview-card-top"><span class="search-type-badge">${typeIcon} ${escapeHtml(typeLabel)}</span></div>
       <h3 class="draft-topic">${escapeHtml(name)}</h3>
       ${item.name_en ? `<div class="reference-name-en">${escapeHtml(item.name_en)}</div>` : ""}
@@ -1159,7 +1159,7 @@ export function createReferencesModule(deps) {
       const oil = await fetchJson("/api/references/daily-oil");
       _dailyOilData = oil;
       el.innerHTML = `
-        <div class="daily-oil-banner" onclick='openDailyOilReference(${JSON.stringify(oil.slug).replace(/'/g, "&#39;")})'>
+        <div class="daily-oil-banner" data-action="openDailyOilReference" data-args='${JSON.stringify([oil.slug])}'>
           <div class="daily-oil-header">
             <i data-lucide="sparkles" class="daily-oil-icon"></i>
             <span class="daily-oil-label">\u041c\u0430\u0441\u043b\u043e \u0434\u043d\u044f</span>

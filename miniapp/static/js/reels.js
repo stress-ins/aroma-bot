@@ -366,7 +366,7 @@ export function createReelsModule(deps) {
                   const openLbl = prompt ? "Открыть редактирование кадра" : "Открыть описание кадра";
                   return `
                 <div class="prompt-disclosure${discOpen ? " is-open" : ""}" data-prompt-key="${escapeHtml(`reels:${draftId}:${index}`)}">
-                  <button class="secondary-button prompt-toggle" type="button" aria-expanded="${discOpen ? "true" : "false"}" data-default-open="${!assetUrl ? "true" : "false"}" data-open-label="${escapeHtml(openLbl)}" data-close-label="Скрыть редактирование кадра" onclick='togglePromptDisclosure(${JSON.stringify(`reels:${draftId}:${index}`)}, this)'>${actionLabel("eye", discOpen ? "Скрыть редактирование кадра" : openLbl)}</button>
+                  <button class="secondary-button prompt-toggle" type="button" aria-expanded="${discOpen ? "true" : "false"}" data-default-open="${!assetUrl ? "true" : "false"}" data-open-label="${escapeHtml(openLbl)}" data-close-label="Скрыть редактирование кадра" data-action="togglePromptDisclosure" data-args='${JSON.stringify([`reels:${draftId}:${index}`, null])}'>${actionLabel("eye", discOpen ? "Скрыть редактирование кадра" : openLbl)}</button>
                   <div class="prompt-card"${discOpen ? "" : " hidden"}>
                     <div class="reels-frame-edit-grid">
                       <label class="prompt-note-field">
@@ -385,22 +385,22 @@ export function createReelsModule(deps) {
                     ${prompt ? `
                       <label class="prompt-note-field">
                         <span>Промпт кадра</span>
-                        <textarea id="reelsFramePrompt${index}" placeholder="Какой кадр нужно сгенерировать и в каком настроении" oninput="handleReelsFramePromptInput('${draftId}', ${index}, this.value)">${escapeHtml(prompt)}</textarea>
+                        <textarea id="reelsFramePrompt${index}" placeholder="Какой кадр нужно сгенерировать и в каком настроении" data-on-input="handleReelsFramePromptInput" data-args='${JSON.stringify([draftId, index])}'>${escapeHtml(prompt)}</textarea>
                       </label>
                       <label class="prompt-note-field">
                         <span>Замечание к кадру</span>
-                        <textarea id="reelsFrameNote${index}" placeholder="Например: теплее, меньше деталей, крупнее объект" oninput="handleReelsFrameNoteInput('${draftId}', ${index}, this.value)">${escapeHtml(note)}</textarea>
+                        <textarea id="reelsFrameNote${index}" placeholder="Например: теплее, меньше деталей, крупнее объект" data-on-input="handleReelsFrameNoteInput" data-args='${JSON.stringify([draftId, index])}'>${escapeHtml(note)}</textarea>
                       </label>
                       <div class="actions-row prompt-actions">
-                        <button class="secondary-button" type="button" onclick="saveReelsFrameFields('${draftId}', ${index}, this)">${actionLabel("text", "Сохранить описание кадра")}</button>
-                        <button class="secondary-button" type="button" onclick="saveReelsFramePrompt('${draftId}', ${index}, this)">${actionLabel("prompt", "Сохранить промпт кадра")}</button>
-                        <button class="secondary-button" type="button" onclick="saveReelsFrameNote('${draftId}', ${index}, this)">${actionLabel("note", "Сохранить замечание")}</button>
-                        <button class="secondary-button" type="button" onclick="regenerateReelsFrame('${draftId}', ${index}, this)">${actionLabel("regenerate", "Обновить кадр")}</button>
-                        <button class="secondary-button" type="button" onclick='copyText(${JSON.stringify(String(prompt))})'>${actionLabel("prompt", "Скопировать промпт кадра")}</button>
+                        <button class="secondary-button" type="button" data-action="saveReelsFrameFields" data-args='${JSON.stringify([draftId, index, null])}'>${actionLabel("text", "Сохранить описание кадра")}</button>
+                        <button class="secondary-button" type="button" data-action="saveReelsFramePrompt" data-args='${JSON.stringify([draftId, index, null])}'>${actionLabel("prompt", "Сохранить промпт кадра")}</button>
+                        <button class="secondary-button" type="button" data-action="saveReelsFrameNote" data-args='${JSON.stringify([draftId, index, null])}'>${actionLabel("note", "Сохранить замечание")}</button>
+                        <button class="secondary-button" type="button" data-action="regenerateReelsFrame" data-args='${JSON.stringify([draftId, index, null])}'>${actionLabel("regenerate", "Обновить кадр")}</button>
+                        <button class="secondary-button" type="button" data-action="copyText" data-args='${JSON.stringify([String(prompt)])}'>${actionLabel("prompt", "Скопировать промпт кадра")}</button>
                       </div>
                     ` : `
                       <div class="actions-row prompt-actions">
-                        <button class="secondary-button" type="button" onclick="saveReelsFrameFields('${draftId}', ${index}, this)">${actionLabel("text", "Сохранить описание кадра")}</button>
+                        <button class="secondary-button" type="button" data-action="saveReelsFrameFields" data-args='${JSON.stringify([draftId, index, null])}'>${actionLabel("text", "Сохранить описание кадра")}</button>
                       </div>
                     `}
                   </div>
@@ -576,14 +576,14 @@ export function createReelsModule(deps) {
         </div>
       `;
     } else if (imageStatus === "ready" && imageUrl) {
-      imageAreaHtml = `<img src="${escapeHtml(imageUrl)}" style="width:100%;height:100%;object-fit:cover;cursor:pointer" alt="Кадр ${n}" data-overlay="${escapeHtml(frame.overlay_text || '')}" data-frame-id="${escapeHtml(frameId)}" data-draft-id="${escapeHtml(draftId)}" onclick="openReelsPreview(this.src, this.dataset.overlay, this.dataset.frameId, this.dataset.draftId)" />`;
+      imageAreaHtml = `<img src="${escapeHtml(imageUrl)}" style="width:100%;height:100%;object-fit:cover;cursor:pointer" alt="Кадр ${n}" data-overlay="${escapeHtml(frame.overlay_text || '')}" data-frame-id="${escapeHtml(frameId)}" data-draft-id="${escapeHtml(draftId)}" data-action="openReelsPreview" data-args='${JSON.stringify([imageUrl, frame.overlay_text || "", frameId, draftId])}' />`;
     } else if (imageStatus === "error") {
       const errorReason = frame.error_message || frame.error || "";
       imageAreaHtml = `
         <div class="reels-frame-v2-image-generating">
           <span style="color:var(--danger);font-size:13px">Ошибка генерации</span>
           ${errorReason ? `<span style="color:var(--hint);font-size:11px;margin-top:4px;text-align:center">${escapeHtml(errorReason)}</span>` : ""}
-          <button class="secondary-button compact" style="margin-top:8px" onclick="regenFrameImage('${escapeHtml(draftId)}', '${escapeHtml(frameId)}', this)">↺ Повторить</button>
+          <button class="secondary-button compact" style="margin-top:8px" data-action="regenFrameImage" data-args='${JSON.stringify([draftId, frameId, null])}'>↺ Повторить</button>
         </div>
       `;
     } else {
@@ -615,13 +615,13 @@ export function createReelsModule(deps) {
         </div>
         ${versionsHtml}
         <div style="padding:8px 12px;border-top:1px solid var(--border)">
-          <button class="secondary-button compact" onclick="regenFrameImage('${escapeHtml(draftId)}', '${escapeHtml(frameId)}', this)">↺ Ещё версия</button>
+          <button class="secondary-button compact" data-action="regenFrameImage" data-args='${JSON.stringify([draftId, frameId, null])}'>↺ Ещё версия</button>
         </div>
         <div class="reels-frame-v2-field">
           <label>
             <span>Надпись на экране</span>
             <textarea class="reels-frame-overlay-text" data-frame-id="${escapeHtml(frameId)}"
-              oninput="autoResize(this); scheduleFrameOverlaySave('${escapeHtml(draftId)}', '${escapeHtml(frameId)}', this.value)"
+              data-on-input="_overlayTextareaInput" data-draft-id="${escapeHtml(draftId)}"
               placeholder="Текст который будет показан зрителю">${escapeHtml(frame.overlay_text || "")}</textarea>
           </label>
         </div>
@@ -629,9 +629,9 @@ export function createReelsModule(deps) {
           <label>
             <span>Промпт для изображения</span>
             <textarea class="reels-frame-image-prompt" data-frame-id="${escapeHtml(frameId)}"
-              oninput="autoResize(this)">${escapeHtml(frame.image_prompt || "")}</textarea>
+              data-on-input="autoResize">${escapeHtml(frame.image_prompt || "")}</textarea>
           </label>
-          <button class="secondary-button compact" style="margin-top:6px" onclick="regenFrameImageWithPrompt('${escapeHtml(draftId)}', '${escapeHtml(frameId)}', this)">↺ Перегенерировать с этим промптом</button>
+          <button class="secondary-button compact" style="margin-top:6px" data-action="regenFrameImageWithPrompt" data-args='${JSON.stringify([draftId, frameId, null])}'>↺ Перегенерировать с этим промптом</button>
         </div>
       </div>
     `;
@@ -725,13 +725,13 @@ export function createReelsModule(deps) {
         <div class="actions-row">
           <button class="primary-button${allFramesReady ? "" : " is-disabled"}" type="button"
             ${allFramesReady ? "" : "disabled"}
-            onclick="approveReels('${r.draft_id}', this)">
+            data-action="approveReels" data-args='${JSON.stringify([r.draft_id, null])}'>
             ${actionLabel("approve", "Согласовать")}
           </button>
-          <button class="danger-button" type="button" onclick="deleteDraft('${r.draft_id}', 'reels', this)">
+          <button class="danger-button" type="button" data-action="deleteDraft" data-args='${JSON.stringify([r.draft_id, "reels", null])}'>
             ${actionLabel("trash", "Удалить")}
           </button>
-          <button class="secondary-button" type="button" onclick="sendDraftToChat('${r.draft_id}', this)">
+          <button class="secondary-button" type="button" data-action="sendDraftToChat" data-args='${JSON.stringify([r.draft_id, null])}'>
             ${actionLabel("chat", "В чат")}
           </button>
         </div>
@@ -740,7 +740,7 @@ export function createReelsModule(deps) {
           <h3>${sectionHeadingIcon("Концепция")}Концепция</h3>
           ${concept ? `<div class="detail-markdown">${renderMarkdown(concept)}</div>` : `<p class="detail-empty">Концепция не задана</p>`}
           <div class="actions-row" style="margin-top:8px">
-            <button class="secondary-button compact" type="button" onclick="regenConcept('${r.draft_id}', this)">↺ Перегенерировать концепцию</button>
+            <button class="secondary-button compact" type="button" data-action="regenConcept" data-args='${JSON.stringify([r.draft_id, null])}'>↺ Перегенерировать концепцию</button>
           </div>
         </section>
 
@@ -748,7 +748,7 @@ export function createReelsModule(deps) {
           <h3>${sectionHeadingIcon("Сценарий")}Сценарий</h3>
           ${scenario ? `<div class="detail-markdown">${renderMarkdown(scenario)}</div>` : `<p class="detail-empty">Сценарий не задан</p>`}
           <div class="actions-row" style="margin-top:8px">
-            <button class="secondary-button compact" type="button" onclick="regenScenario('${r.draft_id}', this)">↺ Перегенерировать сценарий</button>
+            <button class="secondary-button compact" type="button" data-action="regenScenario" data-args='${JSON.stringify([r.draft_id, null])}'>↺ Перегенерировать сценарий</button>
           </div>
         </section>
 
@@ -757,7 +757,7 @@ export function createReelsModule(deps) {
             <h3>${sectionHeadingIcon("Кадры")}Кадры</h3>
             ${frames.some((f) => !f?.image_url && f?.image_status !== "ready") ? `
               <div class="actions-row" style="margin-bottom:12px">
-                <button class="primary-button" type="button" onclick="generateReelsImages('${r.draft_id}', this)">
+                <button class="primary-button" type="button" data-action="generateReelsImages" data-args='${JSON.stringify([r.draft_id, null])}'>
                   ${actionLabel("reel", "Сгенерировать все картинки")}
                 </button>
               </div>
@@ -769,16 +769,16 @@ export function createReelsModule(deps) {
         <section class="section">
           <h3 style="display:flex;align-items:center">
             ${sectionHeadingIcon("Описание")}Описание рилса
-            ${caption ? `<button class="icon-btn" style="margin-left:auto" onclick="copyReelsCaption('${r.draft_id}', this)" title="Скопировать">${uiIcon("copy")}</button>` : ""}
+            ${caption ? `<button class="icon-btn" style="margin-left:auto" data-action="copyReelsCaption" data-args='${JSON.stringify([r.draft_id, null])}' title="Скопировать">${uiIcon("copy")}</button>` : ""}
           </h3>
           ${caption ? `<div class="detail-markdown">${renderMarkdown(caption)}</div>` : `<p class="detail-empty">Описание не задано</p>`}
           <div class="actions-row" style="margin-top:8px">
-            <button class="secondary-button compact" type="button" onclick="regenCaption('${r.draft_id}', this)">↺ Перегенерировать описание</button>
+            <button class="secondary-button compact" type="button" data-action="regenCaption" data-args='${JSON.stringify([r.draft_id, null])}'>↺ Перегенерировать описание</button>
           </div>
         </section>
 
         <div class="actions-row" style="justify-content:center;padding:8px 0">
-          <button class="secondary-button" type="button" onclick="openCreateTool('reels')">
+          <button class="secondary-button" type="button" data-action="openCreateTool" data-args='["reels"]'>
             ${actionLabel("reel", "Создать ещё один рилс")}
           </button>
         </div>
@@ -824,7 +824,7 @@ export function createReelsModule(deps) {
         <div class="reels-upload-zone">
           <div class="reels-upload-title">Загрузить видео</div>
           <div class="reels-upload-hint">Запишите рилс по сценарию и загрузите через Telegram-бот командой /upload</div>
-          <button class="secondary-button" type="button" onclick="sendDraftToChat('${r.draft_id}', this)">
+          <button class="secondary-button" type="button" data-action="sendDraftToChat" data-args='${JSON.stringify([r.draft_id, null])}'>
             ${actionLabel("chat", "Открыть в боте")}
           </button>
         </div>
@@ -866,7 +866,7 @@ export function createReelsModule(deps) {
           </div>
         </div>
         <div class="actions-row">
-          <button class="secondary-button" type="button" onclick="sendDraftToChat('${r.draft_id}', this)">
+          <button class="secondary-button" type="button" data-action="sendDraftToChat" data-args='${JSON.stringify([r.draft_id, null])}'>
             ${actionLabel("chat", "Открыть в боте")}
           </button>
         </div>
@@ -904,7 +904,7 @@ export function createReelsModule(deps) {
                 ${isOk ? "✅ Опубликовано" : isFail ? "❌ Ошибка" : "⏳ В процессе"}
               </span>
               ${isFail ? `
-                <button class="secondary-button compact" onclick="retryPlatform('${escapeHtml(r.draft_id)}', '${escapeHtml(entry.platform)}', this)">Повторить</button>
+                <button class="secondary-button compact" data-action="retryPlatform" data-args='${JSON.stringify([r.draft_id, entry.platform, null])}'>Повторить</button>
               ` : ""}
             </div>
           `;
@@ -951,7 +951,7 @@ export function createReelsModule(deps) {
             </label>
           </div>
           <p class="field-help">Оставьте дату пустой для немедленной публикации.</p>
-          <button class="primary-button" type="button" onclick="publishReels('${escapeHtml(r.draft_id)}', this)">
+          <button class="primary-button" type="button" data-action="publishReels" data-args='${JSON.stringify([r.draft_id, null])}'>
             ${actionLabel("publish", "Опубликовать")}
           </button>
         </section>
@@ -1050,14 +1050,14 @@ export function createReelsModule(deps) {
               ${tagMarkup(sourceLabel(r.source || "/miniapp"), sourceTone(r.source || "/miniapp"))}
             </div>
             <div class="actions-row">
-              <button class="primary-button" type="button" onclick="saveReelsScenario('${r.draft_id}', this)">${actionLabel("text", "Сохранить концепцию и сценарий")}</button>
+              <button class="primary-button" type="button" data-action="saveReelsScenario" data-args='${JSON.stringify([r.draft_id, null])}'>${actionLabel("text", "Сохранить концепцию и сценарий")}</button>
               <div class="detail-icon-actions">
-                <button class="secondary-button" title="Пересобрать раскадровку" type="button" onclick="regenerateReelsStoryboard('${r.draft_id}', this)">${uiIcon("regenerate")}</button>
-                <button class="secondary-button" title="Обновить все кадры" type="button" onclick="regenerateAllReelsFrames('${r.draft_id}', this)">${uiIcon("reel")}</button>
-                <button class="secondary-button" title="Вернуть на доработку" type="button" onclick="updateDraft('status', {status:'rejected'}, this)">${uiIcon("reject")}</button>
-                <button class="secondary-button" title="Отправить в чат" type="button" onclick="sendDraftToChat('${r.draft_id}', this)">${uiIcon("chat")}</button>
+                <button class="secondary-button" title="Пересобрать раскадровку" type="button" data-action="regenerateReelsStoryboard" data-args='${JSON.stringify([r.draft_id, null])}'>${uiIcon("regenerate")}</button>
+                <button class="secondary-button" title="Обновить все кадры" type="button" data-action="regenerateAllReelsFrames" data-args='${JSON.stringify([r.draft_id, null])}'>${uiIcon("reel")}</button>
+                <button class="secondary-button" title="Вернуть на доработку" type="button" data-action="updateDraft" data-args='["status",{"status":"rejected"},null]'>${uiIcon("reject")}</button>
+                <button class="secondary-button" title="Отправить в чат" type="button" data-action="sendDraftToChat" data-args='${JSON.stringify([r.draft_id, null])}'>${uiIcon("chat")}</button>
               </div>
-              <button class="danger-button" type="button" onclick="deleteDraft('${r.draft_id}', 'reels', this)">${actionLabel("trash", "Удалить рилс")}</button>
+              <button class="danger-button" type="button" data-action="deleteDraft" data-args='${JSON.stringify([r.draft_id, "reels", null])}'>${actionLabel("trash", "Удалить рилс")}</button>
             </div>
           </div>
           <section class="section">
@@ -1074,11 +1074,11 @@ export function createReelsModule(deps) {
               <span>Замечания для переработки</span>
               <textarea id="reelsRevisionNoteField" placeholder="Опишите что изменить: тон, акценты, структуру…">${escapeHtml(r.payload?.revision_note || "")}</textarea>
             </label>
-            <button class="secondary-button" type="button" onclick="regenerateReelsStoryboard('${r.draft_id}', this)">${actionLabel("regenerate", "Перегенерировать с учётом замечаний")}</button>
+            <button class="secondary-button" type="button" data-action="regenerateReelsStoryboard" data-args='${JSON.stringify([r.draft_id, null])}'>${actionLabel("regenerate", "Перегенерировать с учётом замечаний")}</button>
           </section>
           ${renderReelsProductionOverview(r)}
           ${generationStateMarkup(r, "reels")}
-          ${r.generation_pending ? `<div class="actions-row" style="padding: 0 var(--space-4)"><button class="secondary-button compact" type="button" onclick="retryCurrentTab()">Обновить вручную</button></div>` : ""}
+          ${r.generation_pending ? `<div class="actions-row" style="padding: 0 var(--space-4)"><button class="secondary-button compact" type="button" data-action="retryCurrentTab">Обновить вручную</button></div>` : ""}
           ${hasFrames ? renderReelsFrames(r.draft_id, frames) : `
             <section class="section section-accent">
               <div class="section-heading">

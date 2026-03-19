@@ -77,14 +77,14 @@ export function createMentionsModule(deps) {
         <div style="display:flex;gap:6px;flex-wrap:wrap">
           ${platforms.map(p => `
             <button class="filter-chip${platform === p ? " active" : ""}"
-              onclick="setMentionsFilter('platform','${p}')">
+              data-action="setMentionsFilter" data-args='["platform","${p}"]'>
               ${p === "all" ? "Все платформы" : platformLabel(p)}
             </button>`).join("")}
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
           ${statuses.map(s => `
             <button class="filter-chip${status === s ? " active" : ""}"
-              onclick="setMentionsFilter('status','${s}')">
+              data-action="setMentionsFilter" data-args='["status","${s}"]'>
               ${statusLabel(s)}
             </button>`).join("")}
         </div>
@@ -96,7 +96,7 @@ export function createMentionsModule(deps) {
     }
 
     const cards = state.mentions.map(m => `
-      <div class="mention-card" onclick="openMentionDetail('${m.mention_id}')">
+      <div class="mention-card" data-action="openMentionDetail" data-args='["${m.mention_id}"]'>
         <div class="mention-meta">
           <span class="mention-platform-badge">
             <i data-lucide="${platformIcon(m.platform)}"></i> ${platformLabel(m.platform)}
@@ -140,7 +140,7 @@ export function createMentionsModule(deps) {
             <div class="reply-length">${r.content.length} символов</div>
             ${!r.published_at ? `
               <button class="btn btn-sm btn-primary"
-                onclick="publishReply('${m.mention_id}','${r.reply_id}',this)">
+                data-action="publishReply" data-args='${JSON.stringify([m.mention_id, r.reply_id, null])}'>
                 Опубликовать
               </button>` : `<span class="tag-status-ok">Опубликовано</span>`}
             ${r.publish_error ? `<div class="error-text">${escapeHtml(r.publish_error)}</div>` : ""}
@@ -148,7 +148,7 @@ export function createMentionsModule(deps) {
       : `<p class="hint-text">Ещё нет ответов. Нажми «Сгенерировать».</p>`;
 
     container.innerHTML = `
-      <button class="btn btn-ghost btn-back" onclick="closeMentionDetail()">
+      <button class="btn btn-ghost btn-back" data-action="closeMentionDetail">
         ← Назад
       </button>
       <div class="mention-content">
@@ -165,11 +165,11 @@ export function createMentionsModule(deps) {
         ${m.url ? `<a href="${escapeHtml(m.url)}" class="mention-link" target="_blank">Открыть оригинал</a>` : ""}
       </div>
       <div class="mention-actions" style="display:flex;gap:8px;margin:12px 0">
-        <button class="btn btn-primary" onclick="generateReplies('${m.mention_id}',this)">
+        <button class="btn btn-primary" data-action="generateReplies" data-args='${JSON.stringify([m.mention_id, null])}'>
           <i data-lucide="sparkles"></i> Сгенерировать ответы
         </button>
         ${m.status === "pending" ? `
-          <button class="btn btn-ghost" onclick="ignoreMentionAction('${m.mention_id}',this)">
+          <button class="btn btn-ghost" data-action="ignoreMentionAction" data-args='${JSON.stringify([m.mention_id, null])}'>
             <i data-lucide="eye-off"></i> Игнорировать
           </button>` : ""}
       </div>

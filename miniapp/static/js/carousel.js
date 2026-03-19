@@ -82,7 +82,7 @@ export function createCarouselModule(deps) {
                 <button
                   class="slide-version-thumb"
                   type="button"
-                  onclick='selectCarouselSlideVersion(${JSON.stringify(draftId)}, ${slideIndex}, ${versionIndex}, this)'
+                  data-action="selectCarouselSlideVersion" data-args='${JSON.stringify([draftId, slideIndex, versionIndex, null])}'
                   aria-label="${isCurrent ? "Текущая версия" : "Сделать текущей"}"
                 >
                   <img src="${escapeHtml(version.url || "")}" alt="Версия ${versionIndex + 1} для слайда ${slideIndex + 1}" />
@@ -92,8 +92,8 @@ export function createCarouselModule(deps) {
                   <span class="meta">${escapeHtml(formatPlanDate(version.generated_at) || "сейчас")}</span>
                 </div>
                 <div class="actions-row slide-version-actions actions-grid-two">
-                  ${isCurrent ? "" : `<button class="secondary-button" type="button" onclick='selectCarouselSlideVersion(${JSON.stringify(draftId)}, ${slideIndex}, ${versionIndex}, this)'>${actionLabel("approve", "Сделать текущей")}</button>`}
-                  ${items.length > 1 ? `<button class="secondary-button" type="button" onclick='deleteCarouselSlideVersion(${JSON.stringify(draftId)}, ${slideIndex}, ${versionIndex}, this)'>${actionLabel("trash", "Удалить")}</button>` : ""}
+                  ${isCurrent ? "" : `<button class="secondary-button" type="button" data-action="selectCarouselSlideVersion" data-args='${JSON.stringify([draftId, slideIndex, versionIndex, null])}'>${actionLabel("approve", "Сделать текущей")}</button>`}
+                  ${items.length > 1 ? `<button class="secondary-button" type="button" data-action="deleteCarouselSlideVersion" data-args='${JSON.stringify([draftId, slideIndex, versionIndex, null])}'>${actionLabel("trash", "Удалить")}</button>` : ""}
                 </div>
               </article>
             `;
@@ -194,7 +194,7 @@ export function createCarouselModule(deps) {
     const idx = Math.min(_swiperIndex, slideItems.length - 1);
 
     const dotsHtml = slideItems.map((_, i) =>
-      `<button class="slides-dot${i === idx ? " is-active" : ""}" type="button" onclick="carouselSwiperGoTo(${i})" aria-label="Слайд ${i + 1}"></button>`
+      `<button class="slides-dot${i === idx ? " is-active" : ""}" type="button" data-action="carouselSwiperGoTo" data-args='${JSON.stringify([i])}' aria-label="Слайд ${i + 1}"></button>`
     ).join("");
 
     const slidesHtml = slideItems.map((slide, index) => {
@@ -204,7 +204,7 @@ export function createCarouselModule(deps) {
       const versions = Array.isArray(versionItems[index]) ? versionItems[index] : [];
       const genFailed = !img?.url && state.selected?.generation_stage === "error" && !state.selected?.generation_pending;
       const imgHtml = img?.url
-        ? `<div class="carousel-slide-image-wrap"><img src="${escapeHtml(img.url)}" alt="Слайд ${index + 1}" style="cursor:pointer" onclick="openImageFullscreen(this.src, 'Слайд ${index + 1}')" /></div>`
+        ? `<div class="carousel-slide-image-wrap"><img src="${escapeHtml(img.url)}" alt="Слайд ${index + 1}" style="cursor:pointer" data-action="openImageFullscreen" data-args='${JSON.stringify([img.url, `Слайд ${index + 1}`])}' /></div>`
         : genFailed
           ? `<div class="carousel-slide-image-wrap"><div class="frame-loading"><div class="frame-loading-inner"><i data-lucide="alert-triangle"></i><span>Не удалось сгенерировать картинку. Нажмите «Новый вариант» чтобы попробовать снова.</span></div></div></div>`
           : `<div class="carousel-slide-image-wrap"><div class="frame-loading"><div class="frame-loading-inner"><span class="button-spinner" aria-hidden="true"></span><span>Изображение ещё готовится</span></div></div></div>`;
@@ -219,24 +219,24 @@ export function createCarouselModule(deps) {
           </label>
           <p class="field-help">После правки нажмите «Сохранить подпись», чтобы обновить этот слайд в черновике.</p>
           <div class="actions-row prompt-actions actions-grid-two">
-            <button class="primary-button" type="button" aria-label="Сохранить текст слайда" onclick='saveCarouselSlideText(${JSON.stringify(draftId)}, ${index}, this)'>${actionLabel("text", "Сохранить подпись")}</button>
-            <button class="secondary-button" type="button" ${!img?.url ? "disabled" : ""} onclick='previewCarouselSlide(${JSON.stringify(draftId)}, ${index}, this)'>${actionLabel("eye", "Предпросмотр")}</button>
+            <button class="primary-button" type="button" aria-label="Сохранить текст слайда" data-action="saveCarouselSlideText" data-args='${JSON.stringify([draftId, index, null])}'>${actionLabel("text", "Сохранить подпись")}</button>
+            <button class="secondary-button" type="button" ${!img?.url ? "disabled" : ""} data-action="previewCarouselSlide" data-args='${JSON.stringify([draftId, index, null])}'>${actionLabel("eye", "Предпросмотр")}</button>
           </div>
           ${prompt ? (() => {
               const discOpen = isPromptDisclosureOpen(`carousel:${draftId}:${index}`, !img?.url);
               return `
             <div class="prompt-disclosure${discOpen ? " is-open" : ""}" data-prompt-key="${escapeHtml(`carousel:${draftId}:${index}`)}">
-              <button class="secondary-button prompt-toggle" type="button" aria-expanded="${discOpen ? "true" : "false"}" data-default-open="${!img?.url ? "true" : "false"}" data-open-label="Показать промпт" data-close-label="Скрыть промпт" onclick='togglePromptDisclosure(${JSON.stringify(`carousel:${draftId}:${index}`)}, this)'>${actionLabel("eye", discOpen ? "Скрыть промпт" : "Показать промпт")}</button>
+              <button class="secondary-button prompt-toggle" type="button" aria-expanded="${discOpen ? "true" : "false"}" data-default-open="${!img?.url ? "true" : "false"}" data-open-label="Показать промпт" data-close-label="Скрыть промпт" data-action="togglePromptDisclosure" data-args='${JSON.stringify([`carousel:${draftId}:${index}`, null])}'>${actionLabel("eye", discOpen ? "Скрыть промпт" : "Показать промпт")}</button>
               <div class="prompt-card"${discOpen ? "" : " hidden"}>
                 <div class="detail-preview prompt-preview">${escapeHtml(prompt)}</div>
                 <label class="prompt-note-field">
                   <span>Замечание к картинке</span>
-                  <textarea id="${slideNoteId(index)}" placeholder="Например: теплее свет, крупнее объект, меньше деталей на фоне" oninput='handleCarouselSlideNoteInput(${JSON.stringify(draftId)}, ${index}, this.value)'>${escapeHtml(note)}</textarea>
+                  <textarea id="${slideNoteId(index)}" placeholder="Например: теплее свет, крупнее объект, меньше деталей на фоне" data-on-input="handleCarouselSlideNoteInput" data-args='${JSON.stringify([draftId, index])}'>${escapeHtml(note)}</textarea>
                 </label>
                 <div class="actions-row prompt-actions actions-grid-two">
-                  <button class="secondary-button" type="button" onclick='copyText(${JSON.stringify(prompt)})'>${actionLabel("prompt", "Скопировать промпт слайда")}</button>
-                  <button class="secondary-button" type="button" onclick='regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, this)'>${actionLabel("regenerate", "Обновить изображение")}</button>
-                  <button class="primary-button" type="button" onclick='regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, this)'>${actionLabel("note", "Обновить по замечанию")}</button>
+                  <button class="secondary-button" type="button" data-action="copyText" data-args='${JSON.stringify([prompt])}'>${actionLabel("prompt", "Скопировать промпт слайда")}</button>
+                  <button class="secondary-button" type="button" data-action="regenerateCarouselSlide" data-args='${JSON.stringify([draftId, index, null])}'>${actionLabel("regenerate", "Обновить изображение")}</button>
+                  <button class="primary-button" type="button" data-action="regenerateCarouselSlide" data-args='${JSON.stringify([draftId, index, null])}'>${actionLabel("note", "Обновить по замечанию")}</button>
                 </div>
               </div>
             </div>
@@ -556,7 +556,7 @@ export function createCarouselModule(deps) {
     modal.className = "preview-modal-backdrop";
 
     const designItems = designs.map((d) => `
-      <button class="canva-design-item" type="button" onclick="selectCanvaDesign('${draftId}', '${escapeHtml(d.design_id)}', this)">
+      <button class="canva-design-item" type="button" data-action="selectCanvaDesign" data-args='${JSON.stringify([draftId, d.design_id, null])}'>
         ${d.thumbnail_url ? `<img src="${escapeHtml(d.thumbnail_url)}" alt="${escapeHtml(d.title)}" class="canva-design-thumb" />` : `<div class="canva-design-thumb canva-design-thumb--empty">${uiIcon("image")}</div>`}
         <span class="canva-design-title">${escapeHtml(d.title || "Без названия")}</span>
       </button>

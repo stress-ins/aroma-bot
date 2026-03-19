@@ -123,27 +123,27 @@ export function createCreateModule(deps) {
 
     elements.draftList.innerHTML = `
       <div class="create-list">
-        <article ${interactiveCardAttrs("Выбрать инструмент Пост для соцсетей")} class="create-card${state.selectedCreateTool === "content" ? " active" : ""} interactive-card" data-tool="content" onclick="renderCreateTool('content')">
+        <article ${interactiveCardAttrs("Выбрать инструмент Пост для соцсетей")} class="create-card${state.selectedCreateTool === "content" ? " active" : ""} interactive-card" data-tool="content" data-action="renderCreateTool" data-args='["content"]'>
           <div class="draft-kind">${contentKindIcon("content")}<span>контент</span></div>
           <h3 class="draft-topic">Пост для соцсетей</h3>
           <div class="draft-preview">Instagram или Telegram.</div>
         </article>
-        <article ${interactiveCardAttrs("Выбрать инструмент Сценарий и раскадровка")} class="create-card${state.selectedCreateTool === "reels" ? " active" : ""} interactive-card" data-tool="reels" onclick="renderCreateTool('reels')">
+        <article ${interactiveCardAttrs("Выбрать инструмент Сценарий и раскадровка")} class="create-card${state.selectedCreateTool === "reels" ? " active" : ""} interactive-card" data-tool="reels" data-action="renderCreateTool" data-args='["reels"]'>
           <div class="draft-kind">${contentKindIcon("reels")}<span>рилсы</span></div>
           <h3 class="draft-topic">Сценарий + раскадровка</h3>
           <div class="draft-preview">Сценарий и 4 кадра визуализации.</div>
         </article>
-        <article ${interactiveCardAttrs("Выбрать инструмент Контент-план")} class="create-card${state.selectedCreateTool === "plan" ? " active" : ""} interactive-card" data-tool="plan" onclick="renderCreateTool('plan')">
+        <article ${interactiveCardAttrs("Выбрать инструмент Контент-план")} class="create-card${state.selectedCreateTool === "plan" ? " active" : ""} interactive-card" data-tool="plan" data-action="renderCreateTool" data-args='["plan"]'>
           <div class="draft-kind">${contentKindIcon("plan")}<span>план</span></div>
           <h3 class="draft-topic">Контент-план</h3>
           <div class="draft-preview">Сбор трендов и план на неделю.</div>
         </article>
-        <article ${interactiveCardAttrs("Выбрать инструмент Карусель")} class="create-card${state.selectedCreateTool === "carousel" ? " active" : ""} interactive-card" data-tool="carousel" onclick="renderCreateTool('carousel')">
+        <article ${interactiveCardAttrs("Выбрать инструмент Карусель")} class="create-card${state.selectedCreateTool === "carousel" ? " active" : ""} interactive-card" data-tool="carousel" data-action="renderCreateTool" data-args='["carousel"]'>
           <div class="draft-kind">${contentKindIcon("carousel")}<span>карусель</span></div>
           <h3 class="draft-topic">Карусель</h3>
           <div class="draft-preview">5 слайдов с промптами для картинок.</div>
         </article>
-        <article ${interactiveCardAttrs("Выбрать инструмент Серия Threads")} class="create-card${state.selectedCreateTool === "threads_series" ? " active" : ""} interactive-card" data-tool="threads_series" onclick="renderCreateTool('threads_series')">
+        <article ${interactiveCardAttrs("Выбрать инструмент Серия Threads")} class="create-card${state.selectedCreateTool === "threads_series" ? " active" : ""} interactive-card" data-tool="threads_series" data-action="renderCreateTool" data-args='["threads_series"]'>
           <div class="draft-kind">${contentKindIcon("threads_series")}<span>серия</span></div>
           <h3 class="draft-topic">Серия Threads</h3>
           <div class="draft-preview">Три поста: утро / день / вечер.</div>
@@ -498,7 +498,7 @@ export function createCreateModule(deps) {
 
     if (data.trending_topics?.length) {
       const items = data.trending_topics.map((t) =>
-        `<button type="button" class="suggest-topic-item" onclick="this.closest('.create-form')?.querySelector('textarea[name=topic]') && (this.closest('.create-form').querySelector('textarea[name=topic]').value = this.textContent)">${escapeHtml(t)}</button>`
+        `<button type="button" class="suggest-topic-item" data-action="_fillTopicFromSuggestion">${escapeHtml(t)}</button>`
       ).join("");
       parts.push(`<div class="trend-suggestions-section"><div class="trend-suggestions-label">Популярные темы</div>${items}</div>`);
     }
@@ -510,7 +510,7 @@ export function createCreateModule(deps) {
 
     if (data.hooks?.length && platform === "threads") {
       const items = data.hooks.map((h) =>
-        `<button type="button" class="suggest-topic-item" onclick="this.closest('.create-form')?.querySelector('textarea[name=topic]') && (this.closest('.create-form').querySelector('textarea[name=topic]').value = this.textContent)">"${escapeHtml(h)}"</button>`
+        `<button type="button" class="suggest-topic-item" data-action="_fillTopicFromSuggestion">"${escapeHtml(h)}"</button>`
       ).join("");
       parts.push(`<div class="trend-suggestions-section"><div class="trend-suggestions-label">Зацепки (хуки)</div>${items}</div>`);
     }

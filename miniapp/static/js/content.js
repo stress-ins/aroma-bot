@@ -158,7 +158,7 @@ export function createContentModule(deps) {
       body: "Здесь появятся материалы, ожидающие согласования.",
     });
     elements.draftList.innerHTML = state.inbox.map((item) => `
-      <article ${interactiveCardAttrs(`Открыть материал на согласовании ${item.topic}`)} class="draft-card overview-card${item.draft_id === state.draftId ? " active" : ""} interactive-card" onclick="openDraft('${item.draft_id}')">
+      <article ${interactiveCardAttrs(`Открыть материал на согласовании ${item.topic}`)} class="draft-card overview-card${item.draft_id === state.draftId ? " active" : ""} interactive-card" data-action="openDraft" data-args='${JSON.stringify([item.draft_id])}'>
         <div class="overview-card-top">
           <div class="draft-kind">${contentKindIcon(item.kind)}<span>${escapeHtml(kindLabel(item.kind))}</span></div>
           <span class="overview-card-date">${escapeHtml(formatPlanDate(item.created_at) || "На проверке")}</span>
@@ -184,9 +184,9 @@ export function createContentModule(deps) {
       actionLabel: "Открыть создание",
       action: "openCreateTool()",
     });
-    const createBtn = `<button class="reels-create-fab" onclick="openCreateTool('reels')" title="Создать рилс"><i data-lucide="plus" style="width:20px;height:20px"></i></button>`;
+    const createBtn = `<button class="reels-create-fab" data-action="openCreateTool" data-args='["reels"]' title="Создать рилс"><i data-lucide="plus" style="width:20px;height:20px"></i></button>`;
     elements.draftList.innerHTML = (state.reels.length > 0 ? createBtn : "") + state.reels.map((reel, idx) => `
-      <article ${interactiveCardAttrs(`Открыть рилс ${reel.topic}`)} class="reels-card overview-card${reel.draft_id === state.selectedReels?.draft_id ? " active" : ""} interactive-card" onclick="openReels('${reel.draft_id}')">
+      <article ${interactiveCardAttrs(`Открыть рилс ${reel.topic}`)} class="reels-card overview-card${reel.draft_id === state.selectedReels?.draft_id ? " active" : ""} interactive-card" data-action="openReels" data-args='${JSON.stringify([reel.draft_id])}'>
         <div class="overview-card-top">
           <div class="draft-kind">${contentKindIcon("reels")}<span>Рилс</span></div>
           <span class="overview-card-date">#${idx + 1} · ${escapeHtml(formatPlanDate(reel.created_at) || "Видео")}</span>
