@@ -314,7 +314,8 @@ export function createBlendConstructorModule(deps) {
     </div>`;
     fetchJson("/api/blend-constructor/construct", {
       method: "POST",
-      body: JSON.stringify(req),
+      timeout: 60000,
+      body: JSON.stringify({...req, skip_cache: true}),
     }).then(result => {
       renderBlendResult(result);
     }).catch(() => {
@@ -328,16 +329,21 @@ export function createBlendConstructorModule(deps) {
     const oil = input?.value.trim();
     if (!oil || !_blendState?.origRequest) return;
     const req = _blendState.origRequest;
-    if (btn) { btn.disabled = true; btn.textContent = "\u041f\u0435\u0440\u0435\u0441\u0442\u0440\u0430\u0438\u0432\u0430\u044e..."; }
+    const prevResult = _blendState.result;
+    elements.draftDetail.innerHTML = `<div class="detail-grid">
+      ${renderBackButton()}
+      ${renderDetailLoader("\u041f\u0435\u0440\u0435\u0441\u0442\u0440\u0430\u0438\u0432\u0430\u044e \u0441\u043c\u0435\u0441\u044c", "\u0414\u043e\u0431\u0430\u0432\u043b\u044f\u044e \u043c\u0430\u0441\u043b\u043e \u0438 \u043f\u0435\u0440\u0435\u0441\u0447\u0438\u0442\u044b\u0432\u0430\u044e \u0440\u0435\u0446\u0435\u043f\u0442.")}
+    </div>`;
     fetchJson("/api/blend-constructor/adjust", {
       method: "POST",
+      timeout: 60000,
       body: JSON.stringify({...req, custom_oils: [oil]}),
     }).then(result => {
       _blendState.origRequest = {...req, custom_oils: [oil]};
       renderBlendResult(result);
     }).catch(() => {
+      if (prevResult) renderBlendResult(prevResult);
       showUiNotice("\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043f\u0435\u0440\u0435\u0441\u0442\u0440\u043e\u0438\u0442\u044c \u0441\u043c\u0435\u0441\u044c", "error");
-      if (btn) { btn.disabled = false; btn.textContent = "\u041f\u0435\u0440\u0435\u0441\u0442\u0440\u043e\u0438\u0442\u044c"; }
     });
   }
 
