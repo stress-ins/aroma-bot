@@ -76,6 +76,10 @@ body::after {
 }
 """
 
+# Forbidden zone Y boundaries (viewport coordinates)
+ZONE_TOP_BOTTOM = 55       # TG header bottom edge (TG_HEADER_HEIGHT)
+ZONE_BOTTOM_TOP = 852 - 34  # Home indicator top edge (viewport_h - HOME_INDICATOR_H = 818)
+
 # Timings (ms)
 DOM_RENDER = 100
 API_ROUNDTRIP = 500
@@ -587,16 +591,89 @@ def _capture_scroll_snapshots(page, path_prefix: Path, sid: str, label: str, the
     if total_height <= viewport_height:
         return  # Nothing extra to capture
     num_frames = math.ceil(total_height / viewport_height)
+    frame_positions = [i * viewport_height for i in range(num_frames)]
     for i in range(num_frames):
         if scroll_selector:
-            page.evaluate(f"document.querySelector('{scroll_selector}').scrollTop = {i * viewport_height}")
+            page.evaluate(f"document.querySelector('{scroll_selector}').scrollTop = {frame_positions[i]}")
         else:
-            page.evaluate(f"window.scrollTo(0, {i * viewport_height})")
+            page.evaluate(f"window.scrollTo(0, {frame_positions[i]})")
         page.wait_for_timeout(150)
         take_screenshot(
             page, path_prefix / f"{sid}_scroll_{i}.png",
             f"[{theme}] {label} (scroll {i+1}/{num_frames})"
         )
+
+    # --- Zone-boundary pass ---
+    # Reset scroll
+    if scroll_selector:
+        page.evaluate(f"document.querySelector('{scroll_selector}').scrollTop = 0")
+    else:
+        page.evaluate("window.scrollTo(0, 0)")
+    page.wait_for_timeout(100)
+
+    # Query interactive elements and compute zone-boundary scroll positions
+    _interactive_sel = "button, a[href], input, select, [role='button'], [onclick], [data-action]"
+    js_get_elements = f"""
+    (() => {{
+        const container = {f"document.querySelector('{scroll_selector}')" if scroll_selector else "null"};
+        const scrollTop = container ? container.scrollTop : window.scrollY;
+        const root = container || document.body;
+        const els = root.querySelectorAll("{_interactive_sel}");
+        const results = [];
+        for (const el of els) {{
+            const rect = el.getBoundingClientRect();
+            if (rect.width === 0 || rect.height === 0) continue;
+            const containerRect = container ? container.getBoundingClientRect() : {{ top: 0 }};
+            const absTop = rect.top - containerRect.top + (container ? container.scrollTop : window.scrollY);
+            const absBottom = rect.bottom - containerRect.top + (container ? container.scrollTop : window.scrollY);
+            results.push({{ absTop, absBottom }});
+        }}
+        return results;
+    }})()
+    """
+    try:
+        elements = page.evaluate(js_get_elements)
+    except Exception:
+        elements = []
+
+    # Calculate zone-boundary scroll positions
+    zone_positions = set()
+    for el in elements:
+        # Scroll position where element top enters header zone
+        pos_header = el["absTop"] - ZONE_TOP_BOTTOM
+        if 0 <= pos_header <= total_height - viewport_height:
+            zone_positions.add(pos_header)
+        # Scroll position where element bottom enters home indicator zone
+        pos_home = el["absBottom"] - ZONE_BOTTOM_TOP
+        if 0 <= pos_home <= total_height - viewport_height:
+            zone_positions.add(pos_home)
+
+    # Deduplicate within 20px tolerance
+    deduplicated = []
+    for pos in sorted(zone_positions):
+        if not deduplicated or abs(pos - deduplicated[-1]) > 20:
+            deduplicated.append(pos)
+
+    # Filter out positions already captured by frame loop (within 20px)
+    filtered = []
+    for pos in deduplicated:
+        if not any(abs(pos - fp) <= 20 for fp in frame_positions):
+            filtered.append(pos)
+
+    # Cap at 20 zone captures
+    filtered = filtered[:20]
+
+    for idx, pos in enumerate(filtered):
+        if scroll_selector:
+            page.evaluate(f"document.querySelector('{scroll_selector}').scrollTop = {pos}")
+        else:
+            page.evaluate(f"window.scrollTo(0, {pos})")
+        page.wait_for_timeout(150)
+        take_screenshot(
+            page, path_prefix / f"{sid}_zone_{idx}.png",
+            f"[{theme}] {label} (zone {idx})"
+        )
+
     # Scroll back to top
     if scroll_selector:
         page.evaluate(f"document.querySelector('{scroll_selector}').scrollTop = 0")
@@ -941,6 +1018,7 @@ def run():
     light_count = len([f for f in CURRENT.glob("*.png") if not f.name.startswith("dark_")])
     dark_count = len([f for f in CURRENT.glob("*.png") if f.name.startswith("dark_")])
     full_count = len([f for f in CURRENT.glob("*_scroll_*.png")])
+    zone_count = len([f for f in CURRENT.glob("*_zone_*.png")])
     regressions = 0
     try:
         with open(GALLERY / "diff_report.json") as f:
@@ -957,6 +1035,7 @@ Screenshots total:      {total_screenshots}
   Light theme:          {light_count}
   Dark theme:           {dark_count}
   Scroll snapshots:     {full_count}
+  Zone captures:        {zone_count}
 Baseline:               {total_baseline}
 Clicks tested:          {ok_count} ok / {err_count} errors
 Regressions:            {regressions} screens
