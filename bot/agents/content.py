@@ -461,7 +461,12 @@ def _generate_writer_sync(
             raw2 = _call_claude(critique_prompt, max_tokens=token_limit)
             draft2 = parse_content_draft(raw2)
             if draft2.caption:
+                pre_edit2 = draft2.caption
                 draft2.caption = edit_post_sync(draft2.caption, topic, platform=format_key)
+                if format_key == "threads_series":
+                    check2 = split_threads_posts(draft2.caption)
+                    if not any(p.get("text") for p in check2):
+                        draft2.caption = pre_edit2
                 draft2.angle = angle
                 draft2.hook = hook
                 draft = draft2
