@@ -2199,6 +2199,10 @@ body.tg-theme-dark .danger-button {
     overflow: hidden;
     height: var(--tg-viewport-stable-height, 100dvh);
   }
+  /* When keyboard is open, constrain to visual viewport so scrollIntoView works */
+  body.is-mobile-layout.is-detail-view.is-keyboard-open {
+    height: var(--vv-height, 100dvh);
+  }
   body.is-mobile-layout.is-detail-view .shell {
     height: 100%;
     min-height: 0;   /* override base min-height: viewport */

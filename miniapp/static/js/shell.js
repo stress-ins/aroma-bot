@@ -287,6 +287,7 @@ export function createShellModule(deps) {
       // Keyboard is open when visual viewport is meaningfully smaller than layout viewport
       const keyboardVisible = window.innerHeight - viewport.height > 80;
       document.body.classList.toggle("is-keyboard-open", keyboardVisible);
+      document.body.style.setProperty("--vv-height", viewport.height + "px");
       // Only scroll-assist when viewport height actually changed (keyboard open/close),
       // not on minor scroll reflows that cause oscillation
       const heightDelta = Math.abs(viewport.height - lastViewportH);
@@ -466,6 +467,15 @@ export function createShellModule(deps) {
           setTab(rememberedHandbookTab);
           void safeLoadCurrentTab("Не удалось загрузить справочник");
           if (elements.listPanel) elements.listPanel.scrollTop = 0;
+          return;
+        }
+
+        // Settings sub-screen: re-clicking the tab resets to main menu
+        if (state.tab === targetTab && targetTab === "settings" && state.settingsInDetail) {
+          state.settingsInDetail = false;
+          state.settingsSection = null;
+          state.mobileView = "list";
+          void safeLoadCurrentTab("Не удалось загрузить настройки");
           return;
         }
 

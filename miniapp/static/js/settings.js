@@ -47,13 +47,14 @@ export function createSettingsModule(deps) {
     elements.draftCount.textContent = "";
 
     // Fetch badge data in parallel
-    const [planRes, teamsRes, socialRes, statusRes, adminRes, hashtagsRes] = await Promise.allSettled([
+    const [planRes, teamsRes, socialRes, statusRes, adminRes, hashtagsRes, monitoredRes] = await Promise.allSettled([
       fetchJson("/api/user/plan"),
       fetchJson("/api/teams"),
       fetchJson("/api/social/status"),
       fetchJson("/api/status"),
       fetchJson("/api/admin/promos"),
       fetchJson("/api/social/tracked-hashtags"),
+      fetchJson("/api/social/monitored-accounts"),
     ]);
 
     const teamCount = teamsRes.status === "fulfilled" ? (teamsRes.value?.items || []).reduce((n, t) => n + (t.member_count || 1), 0) : null;
@@ -61,6 +62,9 @@ export function createSettingsModule(deps) {
     const enabledCount = statusRes.status === "fulfilled" ? (statusRes.value?.items || []).filter((i) => i.enabled).length : null;
     const isAdmin = adminRes.status === "fulfilled";
     const hashtagCount = hashtagsRes.status === "fulfilled" ? (hashtagsRes.value?.items || []).length : null;
+    const monitoredCount = monitoredRes.status === "fulfilled"
+      ? ((monitoredRes.value?.instagram || []).length + (monitoredRes.value?.threads || []).length) || null
+      : null;
 
     let html = `<div class="settings-menu">`;
 
@@ -87,6 +91,7 @@ export function createSettingsModule(deps) {
         ${settingsMenuRow("palette", "#FF9500", "Бренд и ключи", "brand", null)}
         ${settingsMenuRow("link", "#34C759", "Аккаунты", "accounts", connectedCount)}
         ${settingsMenuRow("hash", "#5856D6", "Теги для мониторинга", "hashtags", hashtagCount)}
+        ${settingsMenuRow("eye", "#00C7BE", "Аккаунты на мониторинг", "monitored", monitoredCount)}
       </div>
     </div>`;
 
@@ -386,6 +391,10 @@ export function createSettingsModule(deps) {
       }
       if (state.settingsSection === "hashtags") {
         renderTrackedHashtags();
+        return;
+      }
+      if (state.settingsSection === "monitored") {
+        renderMonitoredAccounts();
         return;
       }
       if (state.settingsSection === "status") {
@@ -881,6 +890,123 @@ export function createSettingsModule(deps) {
     }
   }
 
+  // ── Monitored accounts ──────────────────────────────────────────────────
+
+  function extractUsername(input) {
+    const trimmed = input.trim();
+    const urlPatterns = [
+      /(?:instagram\.com|instagr\.am)\/([a-zA-Z0-9_.]+)/,
+      /threads\.net\/@?([a-zA-Z0-9_.]+)/,
+    ];
+    for (const pat of urlPatterns) {
+      const m = trimmed.match(pat);
+      if (m) return m[1];
+    }
+    return trimmed.replace(/^@/, "");
+  }
+
+  async function renderMonitoredAccounts() {
+    elements.listTitle.textContent = "Настройки";
+    elements.draftCount.textContent = "Мониторинг";
+    elements.draftList.innerHTML = `<button class="back-button" type="button" data-action="goBackToSettings">${uiIcon("arrow-left")}<span>Назад</span></button>`;
+    elements.draftDetail.innerHTML = renderBackButton() + `
+      <div class="detail-grid">
+        <div class="detail-top">
+          <p class="eyebrow">${uiIcon("eye")}<span>Настройки</span></p>
+          <h2 class="detail-title">Аккаунты на мониторинг</h2>
+        </div>
+        <section class="section">
+          <h3>${uiIcon("camera")}<span>Instagram</span></h3>
+          <div id="monitoredInstagramList" class="keyword-chips">
+            <span class="plan-entry-hint">Загрузка…</span>
+          </div>
+          <div class="keyword-add-row" style="margin-top:12px">
+            <input id="monitoredInstagramInput" type="text" placeholder="@username или ссылка" class="keyword-input">
+            <button class="primary-button" type="button" data-action="addMonitoredAccountFromSettings" data-args='["instagram"]'>${uiIcon("plus")}<span>Добавить</span></button>
+          </div>
+        </section>
+        <section class="section">
+          <h3>${uiIcon("message-circle")}<span>Threads</span></h3>
+          <div id="monitoredThreadsList" class="keyword-chips">
+            <span class="plan-entry-hint">Загрузка…</span>
+          </div>
+          <div class="keyword-add-row" style="margin-top:12px">
+            <input id="monitoredThreadsInput" type="text" placeholder="@username или ссылка" class="keyword-input">
+            <button class="primary-button" type="button" data-action="addMonitoredAccountFromSettings" data-args='["threads"]'>${uiIcon("plus")}<span>Добавить</span></button>
+          </div>
+        </section>
+        <p class="settings-hint">
+          Укажите аккаунты конкурентов для отслеживания трендов. Лимит: 20 аккаунтов на платформу.
+          Можно вставить ссылку на профиль — username будет извлечён автоматически.
+        </p>
+      </div>
+    `;
+    enterDetailView();
+
+    try {
+      const data = await fetchJson("/api/social/monitored-accounts");
+      _renderMonitoredChips("instagram", data.instagram || []);
+      _renderMonitoredChips("threads", data.threads || []);
+    } catch (_err) {
+      for (const id of ["monitoredInstagramList", "monitoredThreadsList"]) {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = `<span class="plan-entry-hint">Не удалось загрузить аккаунты.</span>`;
+      }
+    }
+  }
+
+  function _renderMonitoredChips(platform, accounts) {
+    const containerId = platform === "instagram" ? "monitoredInstagramList" : "monitoredThreadsList";
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    if (!accounts.length) {
+      container.innerHTML = `<span class="plan-entry-hint">Нет отслеживаемых аккаунтов.</span>`;
+      return;
+    }
+    container.innerHTML = accounts.map((a) => {
+      const username = a.username || a;
+      return `<span class="keyword-chip">@${escapeHtml(username)}<button type="button" aria-label="Удалить" data-action="removeMonitoredAccountFromSettings" data-args='${JSON.stringify([platform, username])}'>${uiIcon("x", 14)}</button></span>`;
+    }).join("");
+    if (window.lucide) lucide.createIcons();
+  }
+
+  async function addMonitoredAccountFromSettings(platform) {
+    const inputId = platform === "instagram" ? "monitoredInstagramInput" : "monitoredThreadsInput";
+    const input = document.getElementById(inputId);
+    const raw = String(input?.value || "").trim();
+    if (!raw) { input?.focus(); return; }
+    const username = extractUsername(raw);
+    if (!username) { input?.focus(); return; }
+    try {
+      await fetchJson("/api/social/monitored-accounts", {
+        method: "POST",
+        body: JSON.stringify({ platform, username }),
+      });
+      if (input) input.value = "";
+      showUiNotice(`@${username} добавлен`, "success");
+      const data = await fetchJson("/api/social/monitored-accounts");
+      _renderMonitoredChips("instagram", data.instagram || []);
+      _renderMonitoredChips("threads", data.threads || []);
+    } catch (err) {
+      const detail = err?.detail || "";
+      if (detail === "already_tracked") showUiNotice("Аккаунт уже отслеживается", "error");
+      else if (detail === "max_accounts_reached") showUiNotice("Достигнут лимит аккаунтов (20)", "error");
+      else showUiNotice("Не удалось добавить аккаунт", "error");
+    }
+  }
+
+  async function removeMonitoredAccountFromSettings(platform, username) {
+    try {
+      await fetchJson(`/api/social/monitored-accounts/${platform}/${encodeURIComponent(username)}`, { method: "DELETE" });
+      showUiNotice(`@${username} удалён`, "success");
+      const data = await fetchJson("/api/social/monitored-accounts");
+      _renderMonitoredChips("instagram", data.instagram || []);
+      _renderMonitoredChips("threads", data.threads || []);
+    } catch (_err) {
+      showUiNotice("Не удалось удалить аккаунт", "error");
+    }
+  }
+
   // ── Team management ──────────────────────────────────────────────────────
 
   async function renderTeam() {
@@ -1197,6 +1323,9 @@ export function createSettingsModule(deps) {
     renderTrackedHashtags,
     addTrackedHashtag,
     removeTrackedHashtag,
+    renderMonitoredAccounts,
+    addMonitoredAccountFromSettings,
+    removeMonitoredAccountFromSettings,
     renderTeam,
     createNewTeam,
     createTeamInvite,
