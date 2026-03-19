@@ -306,6 +306,11 @@ def _create_page(browser, miniapp_server, *, viewport, is_mobile, dark=False):
     except Error:
         page.evaluate("document.body.classList.add('app-ready')")
         page.wait_for_timeout(200)
+    # Wait for bridge registration (module scripts are deferred)
+    try:
+        page.wait_for_function("typeof window.goBackToList === 'function'", timeout=5000)
+    except Error:
+        pass
     # Zero out Telegram content inset — in tests there is no TG chrome above
     page.evaluate("document.documentElement.style.setProperty('--tg-content-inset-top', '0px')")
     if dark:
