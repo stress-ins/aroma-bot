@@ -273,6 +273,8 @@ _TELEGRAM_JS_STUB = (
     "MainButton:{show:function(){},hide:function(){},setText:function(){},onClick:function(){}},"
     "BackButton:{show:function(){},hide:function(){},onClick:function(){}},"
     "themeParams:{},colorScheme:'light',isExpanded:true,"
+    "contentSafeAreaInset:{top:0,bottom:0,left:0,right:0},"
+    "safeAreaInset:{top:0,bottom:0,left:0,right:0},"
     "setHeaderColor:function(){},setBackgroundColor:function(){},"
     "onEvent:function(){},offEvent:function(){},sendData:function(){},openLink:function(){},"
     "HapticFeedback:{impactOccurred:function(){},notificationOccurred:function(){},selectionChanged:function(){}}}};"
@@ -283,6 +285,7 @@ def _create_page(browser, miniapp_server, *, viewport, is_mobile, dark=False):
     """Create a fresh browser context + page. Returns (context, page)."""
     context = browser.new_context(
         viewport=viewport,
+        device_scale_factor=3,
         is_mobile=is_mobile,
         color_scheme="dark" if dark else "light",
         extra_http_headers={"X-Telegram-Init-Data": "user=%7B%22id%22%3A12345%2C%22username%22%3A%22test%22%7D"},
@@ -290,6 +293,7 @@ def _create_page(browser, miniapp_server, *, viewport, is_mobile, dark=False):
     page = context.new_page()
     page.on("console", lambda msg: print(f"\nBROWSER [{msg.type}]: {msg.text}"))
     page.on("pageerror", lambda err: print(f"\nBROWSER ERROR: {err}"))
+    context.add_init_script(_TELEGRAM_JS_STUB)
     context.add_init_script("localStorage.setItem('aroma_onboarded', '1')")
     if dark:
         context.add_init_script(
@@ -302,6 +306,8 @@ def _create_page(browser, miniapp_server, *, viewport, is_mobile, dark=False):
     except Error:
         page.evaluate("document.body.classList.add('app-ready')")
         page.wait_for_timeout(200)
+    # Zero out Telegram content inset — in tests there is no TG chrome above
+    page.evaluate("document.documentElement.style.setProperty('--tg-content-inset-top', '0px')")
     if dark:
         page.evaluate("document.body.classList.add('tg-theme-dark')")
         page.wait_for_timeout(50)
@@ -312,7 +318,7 @@ def _create_page(browser, miniapp_server, *, viewport, is_mobile, dark=False):
 def page(browser, miniapp_server):
     context, pg = _create_page(
         browser, miniapp_server,
-        viewport={"width": 390, "height": 844}, is_mobile=True,
+        viewport={"width": 393, "height": 852}, is_mobile=True,
     )
     yield pg
     context.close()
@@ -323,7 +329,7 @@ def dark_page(browser, miniapp_server):
     """Mobile page with dark theme (tg-theme-dark) applied from the start."""
     context, pg = _create_page(
         browser, miniapp_server,
-        viewport={"width": 390, "height": 844}, is_mobile=True, dark=True,
+        viewport={"width": 393, "height": 852}, is_mobile=True, dark=True,
     )
     yield pg
     context.close()
@@ -335,7 +341,7 @@ def themed_page(request, browser, miniapp_server):
     dark = request.param == "dark"
     context, pg = _create_page(
         browser, miniapp_server,
-        viewport={"width": 390, "height": 844}, is_mobile=True, dark=dark,
+        viewport={"width": 393, "height": 852}, is_mobile=True, dark=dark,
     )
     yield pg
     context.close()

@@ -78,7 +78,7 @@ def assert_scroll_snapshots(
     import math
 
     vp = page.viewport_size
-    viewport_height = vp["height"] if vp else 844
+    viewport_height = vp["height"] if vp else 852
 
     total_height = page.evaluate(
         f"document.querySelector('{scroll_selector}')?.scrollHeight || 0"
