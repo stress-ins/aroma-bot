@@ -62,6 +62,53 @@ def prepare_visual_state(page) -> None:
     page.wait_for_timeout(DOM_RENDER)
 
 
+def assert_scroll_snapshots(
+    page,
+    snapshot_prefix: str,
+    *,
+    scroll_selector: str = "#detailPanel",
+    max_diff_ratio: float = 0.0025,
+) -> None:
+    """Capture viewport-size scroll snapshots of a scrollable container.
+
+    For long detail screens that exceed the viewport height.
+    Produces: {prefix}_scroll_0.png, {prefix}_scroll_1.png, ...
+    Always uses full_page=False — only the viewport is captured.
+    """
+    import math
+
+    vp = page.viewport_size
+    viewport_height = vp["height"] if vp else 844
+
+    total_height = page.evaluate(
+        f"document.querySelector('{scroll_selector}')?.scrollHeight || 0"
+    )
+    if total_height <= viewport_height:
+        prepare_visual_state(page)
+        assert_visual_snapshot(
+            page.locator(scroll_selector), f"{snapshot_prefix}_scroll_0.png",
+            max_diff_ratio=max_diff_ratio,
+        )
+        return
+
+    num_frames = math.ceil(total_height / viewport_height)
+    prepare_visual_state(page)
+
+    for i in range(num_frames):
+        page.evaluate(
+            f"document.querySelector('{scroll_selector}').scrollTop = {i * viewport_height}"
+        )
+        page.wait_for_timeout(DOM_RENDER)
+        assert_visual_snapshot(
+            page.locator(".shell"), f"{snapshot_prefix}_scroll_{i}.png",
+            max_diff_ratio=max_diff_ratio,
+        )
+
+    # Scroll back to top
+    page.evaluate(f"document.querySelector('{scroll_selector}').scrollTop = 0")
+    page.wait_for_timeout(DOM_RENDER)
+
+
 def assert_visual_snapshot(locator, snapshot_name: str, *, max_diff_ratio: float = 0.0025) -> None:
     expected_path = _SNAPSHOT_DIR / snapshot_name
     actual_bytes = locator.screenshot(animations="disabled")

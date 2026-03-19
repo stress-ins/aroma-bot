@@ -34,7 +34,7 @@ CURRENT = GALLERY / "current"
 BASELINE = GALLERY / "baseline"
 DIFF_DIR = GALLERY / "diff"
 REGISTRY = GALLERY / "registry.json"
-VIEWPORT = {"width": 393, "height": 852}
+VIEWPORT = {"width": 390, "height": 844}
 TIMEOUT = 20000
 
 # 1x1 transparent PNG for image stubs
@@ -499,8 +499,8 @@ def navigate_to_screen(page, base_url: str, screen: dict) -> bool:
     return True
 
 
-def take_screenshot(page, path: Path, name: str, *, full_page: bool = False) -> Path:
-    """Take screenshot after stabilization."""
+def take_screenshot(page, path: Path, name: str) -> Path:
+    """Take a viewport-only screenshot (full_page is never used)."""
     # Wait for spinners to disappear
     try:
         page.locator(".loading, .spinner, .panel-loader").first.wait_for(
@@ -520,7 +520,7 @@ def take_screenshot(page, path: Path, name: str, *, full_page: bool = False) -> 
     page.wait_for_timeout(150)
 
     path.parent.mkdir(parents=True, exist_ok=True)
-    page.screenshot(path=str(path), full_page=full_page)
+    page.screenshot(path=str(path), full_page=False)
     print(f"  \U0001f4f8 {name} -> {path.name}")
     return path
 
@@ -574,7 +574,7 @@ def make_diffs():
         print(f"  \u26a0  {d['screen_id']}: {d['diff_percent']}% ({d['diff_pixels']} px)")
 
 
-def _capture_scroll_snapshots(page, path_prefix: Path, sid: str, label: str, theme: str, viewport_height: int = 852, scroll_selector: str | None = None):
+def _capture_scroll_snapshots(page, path_prefix: Path, sid: str, label: str, theme: str, viewport_height: int = 844, scroll_selector: str | None = None):
     """Capture multiple viewport-size snapshots by scrolling through the page.
 
     Args:
