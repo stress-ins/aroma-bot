@@ -270,6 +270,116 @@ COMPLEMENTARY_MAP: dict[str, list[str]] = {
         "Розовое дерево", "Пачули", "Ель", "Мирт", "Сосна", "Лаванда",
         "Кипарис", "Мандарин",
     ],
+    # --- Oils not in base.pdf — data from aromatherapy references ---
+    "Benzoin": [
+        "Ладан", "Мирра", "Сандал", "Роза", "Жасмин", "Апельсин",
+        "Лимон", "Бергамот", "Кипарис", "Можжевельник", "Корица",
+    ],
+    "Blue Spruce": [
+        "Кедр", "Сосна", "Ладан", "Лаванда", "Розмарин", "Апельсин",
+        "Бергамот", "Грейпфрут", "Кипарис", "Можжевельник",
+    ],
+    "Fragonia": [
+        "Чайное дерево", "Эвкалипт", "Лаванда", "Лимон", "Бергамот",
+        "Герань", "Розмарин", "Мята перечная",
+    ],
+    "Ho Wood": [
+        "Роза", "Лаванда", "Герань", "Иланг-иланг", "Бергамот",
+        "Ладан", "Сандал", "Нероли", "Жасмин", "Пачули",
+    ],
+    "Kunzea": [
+        "Чайное дерево", "Эвкалипт", "Лаванда", "Розмарин",
+        "Лемонграсс", "Мята перечная", "Сосна", "Кипарис",
+    ],
+    "Pink Pepper": [
+        "Бергамот", "Грейпфрут", "Лимон", "Герань", "Роза",
+        "Ладан", "Сандал", "Пачули", "Ветивер", "Имбирь",
+    ],
+    "Spruce": [
+        "Кедр", "Сосна", "Ладан", "Лаванда", "Розмарин", "Бергамот",
+        "Кипарис", "Можжевельник", "Эвкалипт", "Мирра",
+    ],
+    "Black Pepper": [
+        "Можжевельник", "Бергамот", "Лаванда", "Мирра", "Ладан",
+        "Сандал", "Герань", "Гвоздика", "Имбирь", "Лимон",
+        "Пачули", "Розмарин", "Шалфей", "Фенхель",
+    ],
+    "Cypress": [
+        "Бергамот", "Лаванда", "Можжевельник", "Лимон", "Апельсин",
+        "Сосна", "Розмарин", "Сандал", "Шалфей мускатный",
+    ],
+    "Jasmine": [
+        "Вербена", "Лимон", "Лиметт", "Черный перец", "Кедр",
+        "Левзея", "Майоран", "Мята перечная", "Нероли",
+        "Петитгрейн", "Роза", "Сандал", "Лемонграсс",
+    ],
+    "Neroli": [
+        "Роза", "Лаванда", "Жасмин", "Бергамот", "Сандал",
+        "Герань", "Ладан", "Апельсин", "Лимон", "Пачули",
+        "Петитгрейн", "Иланг-иланг",
+    ],
+    "Tangerine": [
+        "Пачули", "Бергамот", "Ветивер", "Иланг-иланг", "Гвоздика",
+        "Корица", "Майоран", "Базилик", "Ель", "Мелисса",
+        "Мята перечная",
+    ],
+    "Vetiver": [
+        "Апельсин", "Мандарин", "Грейпфрут", "Лимон", "Лайм",
+        "Жасмин", "Роза", "Сандал", "Герань", "Лаванда", "Корица",
+        "Пачули", "Розовое дерево", "Шалфей мускатный",
+    ],
+    "Wintergreen": [
+        "Иланг-иланг", "Мята перечная", "Тимьян", "Душица",
+    ],
+    "Ylang Ylang": [
+        "Бергамот", "Жасмин", "Лаванда", "Роза", "Сандал",
+        "Ветивер", "Грейпфрут", "Мандарин", "Герань", "Нероли",
+        "Лимон", "Пачули", "Ладан",
+    ],
+}
+
+
+# ---------------------------------------------------------------------------
+# Override mappings for names that don't resolve automatically
+# ---------------------------------------------------------------------------
+EN_NAME_OVERRIDES: dict[str, str] = {
+    "Balsam Fir Idaho": "balsam-fir",
+    "Cinnamon Bark": "cinnamon",
+    "Eucalyptus Blue": "eucaliptus-blue",
+    "Northern Lights Black Spruce": "black-spruce",
+    "Sacred Frankincense": "frankincense",
+    "Tangerine": "mandarin",
+}
+
+EN_SKIP = {"Dill", "Eucalyptus Radiata", "Sage"}
+
+RU_NAME_OVERRIDES: dict[str, str | None] = {
+    "валериана": "valerian",
+    "душица": "oregano",
+    "лиметт": "lime",
+    "мускатный орех": "nutmeg",
+    "найоли": None,
+    "розовое дерево": None,
+    "чабрец": "thyme",
+    "шалфей мускатный": "clary-sage",
+    "шалфей": "clary-sage",
+    "анис": None,
+    "вербена": None,
+    "кардамон": None,
+    "кориандр": None,
+    "укроп": None,
+    "тимьян": "thyme",
+    "левзея": None,
+    "элеми": None,
+    "тмин": None,
+    "орегано": "oregano",
+    "лавр благородный": "laurus-nobilis",
+    "эвкалипт": "eucalyptus-globulus",
+    "кассия": "cassia",
+    "бессмертник": "helichrysum",
+    "иссоп": None,
+    "пихта": None,
+    "ель": None,
 }
 
 
@@ -317,6 +427,12 @@ async def run(dry_run: bool = False, force: bool = False, slug_filter: str | Non
 
     def find_card_slug(en_name: str) -> str | None:
         """Find aroma card slug by English name from COMPLEMENTARY_MAP key."""
+        if en_name in EN_SKIP:
+            return None
+        if en_name in EN_NAME_OVERRIDES:
+            override_slug = EN_NAME_OVERRIDES[en_name]
+            if override_slug in slug_to_model:
+                return override_slug
         norm = _normalize(en_name)
         # Direct match by EN name
         if norm in name_en_to_slug:
@@ -334,6 +450,12 @@ async def run(dry_run: bool = False, force: bool = False, slug_filter: str | Non
     def resolve_complementary_slug(ru_name: str) -> str | None:
         """Resolve a Russian oil name to a slug."""
         norm = _normalize(ru_name)
+        if norm in RU_NAME_OVERRIDES:
+            override_slug = RU_NAME_OVERRIDES[norm]
+            if override_slug is None:
+                return None
+            if override_slug in slug_to_model:
+                return override_slug
         if norm in name_ru_to_slug:
             return name_ru_to_slug[norm]
         # Try partial/fuzzy: check if any known name starts with or contains
@@ -372,7 +494,7 @@ async def run(dry_run: bool = False, force: bool = False, slug_filter: str | Non
             if resolved_slug and resolved_slug != card_slug:  # don't link to self
                 valid_names.append(ru_name)
                 valid_slugs.append(resolved_slug)
-            else:
+            elif resolved_slug is None and _normalize(ru_name) not in RU_NAME_OVERRIDES:
                 unresolved_names.add(ru_name)
 
         if not valid_names:
