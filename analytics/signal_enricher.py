@@ -178,13 +178,8 @@ def _classify_lifecycle_heuristic(
 async def _classify_lifecycle_with_llm(
     keyword: str, velocity: float, history_days: int
 ) -> str | None:
-    """Try to classify with Claude Haiku. Returns None if unavailable."""
+    """Try to classify with Claude Haiku via call_claude(). Returns None if unavailable."""
     try:
-        from config import settings
-
-        if not settings.anthropic_api_key:
-            return None
-
         # Get score history
         cutoff = datetime.now(timezone.utc) - timedelta(days=history_days)
         async with AsyncSessionLocal() as session:
@@ -205,25 +200,22 @@ async def _classify_lifecycle_with_llm(
             f"{r.collected_at.strftime('%Y-%m-%d')}: {r.score_raw:.1f}" for r in rows
         )
 
-        import anthropic
+        import asyncio
+        from bot.services.claude_client import HAIKU, call_claude
 
-        client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
-        response = client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=50,
-            messages=[
-                {
-                    "role": "user",
-                    "content": (
-                        f'Classify the trend lifecycle stage for keyword "{keyword}".\n'
-                        f"Velocity (7d change): {velocity:.2f}\n"
-                        f"Score history (last {history_days} days):\n{history_text}\n\n"
-                        "Reply with exactly one word: emerging, growing, peaking, declining, or evergreen."
-                    ),
-                }
-            ],
+        prompt = (
+            f'Classify the trend lifecycle stage for keyword "{keyword}".\n'
+            f"Velocity (7d change): {velocity:.2f}\n"
+            f"Score history (last {history_days} days):\n{history_text}\n\n"
+            "Reply with exactly one word: emerging, growing, peaking, declining, or evergreen."
         )
-        result = response.content[0].text.strip().lower()
+        result = await asyncio.get_event_loop().run_in_executor(
+            None, lambda: call_claude(
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=50, model=HAIKU, context="signal_enricher",
+            ),
+        )
+        result = result.strip().lower()
         valid = {"emerging", "growing", "peaking", "declining", "evergreen"}
         return result if result in valid else None
     except Exception:
@@ -237,30 +229,22 @@ async def analyze_sentiment(keyword: str, sample_texts: list[str]) -> str:
         return "neutral"
 
     try:
-        from config import settings
-
-        if not settings.anthropic_api_key:
-            return "neutral"
-
-        import anthropic
+        import asyncio
+        from bot.services.claude_client import HAIKU, call_claude
 
         combined = "\n---\n".join(sample_texts[:5])  # Limit to 5 samples
-        client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
-        response = client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=20,
-            messages=[
-                {
-                    "role": "user",
-                    "content": (
-                        f'What is the overall sentiment about "{keyword}" in these texts?\n\n'
-                        f"{combined}\n\n"
-                        "Reply with exactly one word: positive, neutral, or negative."
-                    ),
-                }
-            ],
+        prompt = (
+            f'What is the overall sentiment about "{keyword}" in these texts?\n\n'
+            f"{combined}\n\n"
+            "Reply with exactly one word: positive, neutral, or negative."
         )
-        result = response.content[0].text.strip().lower()
+        result = await asyncio.get_event_loop().run_in_executor(
+            None, lambda: call_claude(
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=20, model=HAIKU, context="signal_enricher_sentiment",
+            ),
+        )
+        result = result.strip().lower()
         valid = {"positive", "neutral", "negative"}
         return result if result in valid else "neutral"
     except Exception:
