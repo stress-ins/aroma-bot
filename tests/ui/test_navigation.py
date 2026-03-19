@@ -7,7 +7,6 @@ def test_mobile_tabs_and_drafts_render_in_russian(page):
         "(nodes) => nodes.map((node) => node.textContent.trim())"
     )
     assert "Черновики" in tabs
-    assert "Рилсы" in tabs
     assert "Тренды" in tabs
 
     page.locator("#btnTabHandbook").click()
@@ -91,7 +90,8 @@ def test_overview_lists_use_consistent_card_meta(page):
 
 
 def test_desktop_layout_keeps_split_panels_and_comfortable_controls(desktop_page):
-    desktop_page.get_by_role("button", name="Черновики").click()
+    desktop_page.wait_for_selector(".content-sub-switcher", timeout=10000)
+    desktop_page.locator(".content-sub-switcher").get_by_role("button", name="Черновики").click()
     desktop_page.wait_for_timeout(100)
     layout = desktop_page.evaluate(
         """
@@ -163,7 +163,6 @@ def test_themed_tabs_and_drafts_render(themed_page):
         "(nodes) => nodes.map((node) => node.textContent.trim())"
     )
     assert "Черновики" in tabs
-    assert "Рилсы" in tabs
     assert "Тренды" in tabs
 
     themed_page.locator("#btnTabDrafts").click()

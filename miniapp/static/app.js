@@ -56,6 +56,7 @@ const state = {
   userRole: "assistant", // "expert" | "assistant" | "publisher"
   _fromContext: null,
   plansSubMode: "publications",
+  contentSubMode: "drafts",
   mentions: [],
   mentionsFilter: { platform: "all", status: "pending" },
   activeTeamId: localStorage.getItem("activeTeamId") || null,
@@ -63,11 +64,6 @@ const state = {
 };
 
 const MODE_TABS = {
-  content: [
-    { id: "drafts", label: "Черновики" },
-    { id: "reels", label: "Рилсы" },
-    { id: "trends", label: "Тренды" },
-  ],
   handbook: [
     { id: "aromas", label: "Ароматы" },
     { id: "blends", label: "Смеси" },
@@ -1404,6 +1400,16 @@ function setPlansSubMode(mode) {
   renderPlans();
 }
 
+function setContentSubMode(mode) {
+  state.contentSubMode = mode;
+  if (mode === "drafts") {
+    setTab("drafts");
+  } else {
+    setTab("trends");
+  }
+  void safeLoadCurrentTab("Не удалось загрузить раздел");
+}
+
 function openMentionDetail(mentionId) { mentionsModule.openMentionDetail(mentionId); }
 function closeMentionDetail() { mentionsModule.closeMentionDetail(); }
 function generateReplies(mentionId, btn) { return mentionsModule.generateReplies(mentionId, btn); }
@@ -1910,15 +1916,15 @@ function setMode(m) {
     elements.tabsContainer.addEventListener("scroll", checkScrollEnd, { passive: true });
     requestAnimationFrame(checkScrollEnd);
   }
-  const _contentHidden = ["settings", "create", "inbox", "plans", "schedule", "keywords", "status"];
-  if (!(m === "content" && _contentHidden.includes(state.tab)) && !tabs.find(t => t.id === state.tab)) setTab(tabs[0].id);
+  const _contentHidden = ["settings", "create", "inbox", "plans", "schedule", "keywords", "status", "drafts", "trends"];
+  if (!(m === "content" && _contentHidden.includes(state.tab)) && tabs.length > 0 && !tabs.find(t => t.id === state.tab)) setTab(tabs[0].id);
   syncMobileNavigation();
 }
 
 const SECTION_TITLES = {
-  drafts: "Черновики", reels: "Рилсы", plans: "Планы",
+  drafts: "Контент", plans: "Планы",
   create: "Создать", settings: "Настройки",
-  trends: "Тренды", schedule: "Расписание", inbox: "Согласование",
+  trends: "Контент", schedule: "Расписание", inbox: "Согласование",
   keywords: "Ключи", status: "Статус",
   aromas: "Ароматы", concepts: "Концепции", practices: "Практики", sounds: "Звуки",
   blends: "Смеси", symptoms: "Симптомы",
@@ -2085,6 +2091,7 @@ registerWindowBridge({
   goBackToList,
   renderReferences,
   setPlansSubMode,
+  setContentSubMode,
   openMentionDetail,
   closeMentionDetail,
   generateReplies,
