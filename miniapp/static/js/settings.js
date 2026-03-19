@@ -66,7 +66,7 @@ export function createSettingsModule(deps) {
     html += `<div class="settings-menu-group">
       <div class="settings-menu-group-header">Подписка</div>
       <div class="settings-menu-list">
-        ${settingsMenuRow("ticket", "#AF52DE", "Промокод", "promo", isAdmin ? "admin" : null)}
+        ${settingsMenuRow("ticket", "#AF52DE", "Подписка", "promo", isAdmin ? "admin" : null)}
       </div>
     </div>`;
 
@@ -958,7 +958,7 @@ export function createSettingsModule(deps) {
 
   async function renderPromo() {
     elements.listTitle.textContent = "Настройки";
-    elements.draftCount.textContent = "Промокод";
+    elements.draftCount.textContent = "Подписка";
     elements.draftList.innerHTML = `<button class="back-button" type="button" onclick="goBackToSettings()">${uiIcon("arrow-left")}<span>Назад</span></button>`;
 
     // Load user plan to show current subscription
@@ -1031,7 +1031,7 @@ export function createSettingsModule(deps) {
       <div class="detail-grid">
         <div class="detail-top">
           <p class="eyebrow">${uiIcon("ticket")}<span>Настройки</span></p>
-          <h2 class="detail-title">Промокод</h2>
+          <h2 class="detail-title">Подписка</h2>
         </div>
         ${planInfo}
         <section class="section settings-section">
