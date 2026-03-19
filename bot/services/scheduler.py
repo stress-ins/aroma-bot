@@ -285,6 +285,8 @@ async def run_loop(app: Application) -> None:
     last_enrichment_hour: int | None = None
     last_social_trends_hour: int | None = None
     last_status_check_minute: int | None = None
+    last_mentions_poll_minute: int | None = None
+    last_token_check_date: date | None = None
     logger.info(
         "Scheduler loop started (digest at %s %s, post check every %ds)",
         settings.daily_digest_time,
@@ -374,6 +376,34 @@ async def run_loop(app: Application) -> None:
                     await _collect_social_trends()
                 except Exception as exc:
                     logger.error("Social trends collection failed: %s", exc)
+
+            # Mentions poll every 5 minutes
+            if (
+                now.minute % 5 == 0
+                and last_mentions_poll_minute != now.minute
+            ):
+                last_mentions_poll_minute = now.minute
+                try:
+                    from bot.services.mentions_poller import poll_all_teams
+                    results = await poll_all_teams()
+                    total_saved = sum(s for _, s in results.values())
+                    if total_saved:
+                        logger.info("Mentions poll: saved %d new", total_saved)
+                except Exception as exc:
+                    logger.error("Mentions poll failed: %s", exc)
+
+            # Daily token expiry check at 04:00 UTC
+            if (
+                now.hour == 4
+                and now.minute == 0
+                and last_token_check_date != now.date()
+            ):
+                last_token_check_date = now.date()
+                try:
+                    from bot.services.mentions_poller import check_expiring_tokens
+                    await check_expiring_tokens()
+                except Exception as exc:
+                    logger.error("Token expiry check failed: %s", exc)
 
             # Status monitor every 5 minutes
             if (

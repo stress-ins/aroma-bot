@@ -204,69 +204,15 @@ async def _publish_reply_to_platform(mention, content: str) -> None:
 async def poll_threads_endpoint(_: None = Depends(_require_auth)):
     """Manually poll Threads API for new mentions and replies."""
     from config import settings
-    from bot.services.threads_api import ThreadsClient
+    from bot.services.mentions_poller import poll_threads_mentions
 
     token_row = await get_token("threads")
     access_token = token_row.access_token if token_row else settings.threads_access_token
     if not access_token:
         raise HTTPException(status_code=400, detail="no_threads_token")
 
-    client = ThreadsClient(access_token=access_token)
-
-    raw_items: list[dict] = []
-    try:
-        raw_items.extend(client.get_mentions())
-    except Exception:
-        logger.warning("poll-threads: get_mentions failed", exc_info=True)
-    try:
-        raw_items.extend(client.get_threads())
-    except Exception:
-        logger.warning("poll-threads: get_threads failed", exc_info=True)
-
-    saved = 0
-    for item in raw_items:
-        ext_id = item.get("id", "")
-        if not ext_id:
-            continue
-        existing = await find_mention_by_external_id("threads", ext_id)
-        if existing:
-            continue
-        await save_mention(
-            platform="threads",
-            external_id=ext_id,
-            type=item.get("media_type", "TEXT"),
-            author_username=item.get("username", ""),
-            author_name="",
-            content=item.get("text", ""),
-            url=item.get("permalink", ""),
-            context_post=None,
-        )
-        saved += 1
-
-        # Also ingest replies for this thread
-        try:
-            replies = client.get_replies(ext_id)
-            for r in replies:
-                r_id = r.get("id", "")
-                if not r_id:
-                    continue
-                if await find_mention_by_external_id("threads", r_id):
-                    continue
-                await save_mention(
-                    platform="threads",
-                    external_id=r_id,
-                    type="REPLY",
-                    author_username=r.get("username", ""),
-                    author_name="",
-                    content=r.get("text", ""),
-                    url=r.get("permalink", ""),
-                    context_post=item.get("text", "")[:200],
-                )
-                saved += 1
-        except Exception:
-            logger.warning("poll-threads: get_replies failed for %s", ext_id, exc_info=True)
-
-    return {"polled": len(raw_items), "saved": saved}
+    polled, saved = await poll_threads_mentions(access_token)
+    return {"polled": polled, "saved": saved}
 
 
 @router.patch("/api/mentions/{mention_id}/ignore")
