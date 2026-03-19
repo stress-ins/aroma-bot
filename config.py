@@ -91,6 +91,9 @@ class Settings(BaseSettings):
     n8n_webhook_secret: str = ""
     admin_telegram_chat_id: str = ""
 
+    # Meta Webhooks (Instagram & Threads real-time)
+    meta_webhook_verify_token: str = ""
+
     # Admin
     admin_telegram_id: int = 62912125
     telegram_bot_username: str = "Stress_ins_bot"
