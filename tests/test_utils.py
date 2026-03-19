@@ -294,7 +294,7 @@ class TestOAuthCallbacks:
         monkeypatch.setattr(
             oauth_callback_module,
             "_exchange_bundle",
-            lambda _service, _code: oauth_callback_module.OAuthTokenBundle(
+            lambda _service, _code, **_kw: oauth_callback_module.OAuthTokenBundle(
                 service="threads",
                 short_lived_token="short",
                 access_token="long",
@@ -330,7 +330,7 @@ class TestOAuthCallbacks:
         monkeypatch.setattr(
             oauth_callback_module,
             "_exchange_bundle",
-            lambda _service, _code: oauth_callback_module.OAuthTokenBundle(
+            lambda _service, _code, **_kw: oauth_callback_module.OAuthTokenBundle(
                 service="instagram",
                 short_lived_token="short",
                 access_token="long",

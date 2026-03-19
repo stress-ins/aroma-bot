@@ -37,10 +37,17 @@ CANVA_AUTHORIZE_URL = "https://www.canva.com/api/oauth/authorize"
 CANVA_TOKEN_URL = "https://api.canva.com/rest/v1/oauth/token"
 CANVA_ME_URL = "https://api.canva.com/rest/v1/users/me"
 CANVA_DEFAULT_SCOPES = (
+    "profile:read",
     "design:content:read",
     "design:content:write",
+    "design:meta:read",
     "asset:read",
     "asset:write",
+    "brandtemplate:meta:read",
+    "brandtemplate:content:read",
+    "brandtemplate:content:write",
+    "comment:read",
+    "comment:write",
 )
 
 
@@ -69,6 +76,7 @@ class OAuthConnectState:
     chat_id: str
     user_id: str
     issued_at: int
+    code_verifier: str = ""
 
 
 def build_threads_authorize_url(
@@ -256,22 +264,35 @@ def exchange_instagram_code(
         return _work(session)
 
 
+def _generate_pkce_pair() -> tuple[str, str]:
+    """Generate PKCE code_verifier and code_challenge (S256)."""
+    import os
+    code_verifier = _urlsafe_b64encode(os.urandom(32))
+    digest = hashlib.sha256(code_verifier.encode("ascii")).digest()
+    code_challenge = _urlsafe_b64encode(digest)
+    return code_verifier, code_challenge
+
+
 def build_canva_authorize_url(
     *,
     client_id: str,
     redirect_uri: str,
-    state: str = "",
     scopes: tuple[str, ...] = CANVA_DEFAULT_SCOPES,
-) -> str:
+) -> tuple[str, str]:
+    """Build Canva OAuth authorize URL with PKCE.
+
+    Returns (authorize_url, code_verifier).
+    """
+    code_verifier, code_challenge = _generate_pkce_pair()
     params = {
         "client_id": client_id,
         "redirect_uri": redirect_uri,
         "response_type": "code",
         "scope": " ".join(scopes),
+        "code_challenge_method": "s256",
+        "code_challenge": code_challenge,
     }
-    if state:
-        params["state"] = state
-    return f"{CANVA_AUTHORIZE_URL}?{urlencode(params)}"
+    return f"{CANVA_AUTHORIZE_URL}?{urlencode(params)}", code_verifier
 
 
 def exchange_canva_code(
@@ -280,6 +301,7 @@ def exchange_canva_code(
     client_id: str,
     client_secret: str,
     redirect_uri: str,
+    code_verifier: str,
     client: httpx.Client | None = None,
 ) -> OAuthTokenBundle:
     def _work(session: httpx.Client) -> OAuthTokenBundle:
@@ -289,6 +311,7 @@ def exchange_canva_code(
                 "grant_type": "authorization_code",
                 "code": code,
                 "redirect_uri": redirect_uri,
+                "code_verifier": code_verifier,
             },
             auth=(client_id, client_secret),
         )
@@ -350,13 +373,15 @@ def update_env_file(env_path: str | Path, updates: dict[str, str]) -> None:
     path.write_text(output, encoding="utf-8")
 
 
-def build_oauth_state(*, secret: str, service: str, chat_id: int | str, user_id: int | str) -> str:
-    payload = {
+def build_oauth_state(*, secret: str, service: str, chat_id: int | str, user_id: int | str, code_verifier: str = "") -> str:
+    payload: dict[str, Any] = {
         "service": service,
         "chat_id": str(chat_id),
         "user_id": str(user_id),
         "issued_at": int(time.time()),
     }
+    if code_verifier:
+        payload["code_verifier"] = code_verifier
     body = json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")
     signature = hmac.new(secret.encode("utf-8"), body, hashlib.sha256).digest()
     return _urlsafe_b64encode(body) + "." + _urlsafe_b64encode(signature)
@@ -391,7 +416,8 @@ def parse_oauth_state(*, state: str, secret: str, max_age_seconds: int = 3600) -
     if not service or not chat_id or not user_id:
         raise OAuthStateError("OAuth state is incomplete")
 
-    return OAuthConnectState(service=service, chat_id=chat_id, user_id=user_id, issued_at=issued_at)
+    code_verifier = str(payload.get("code_verifier", "")).strip()
+    return OAuthConnectState(service=service, chat_id=chat_id, user_id=user_id, issued_at=issued_at, code_verifier=code_verifier)
 
 
 def extract_state_payload_unsafe(state: str) -> dict:

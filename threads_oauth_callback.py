@@ -199,8 +199,12 @@ async def _complete_oauth(service: str, request: Request) -> HTMLResponse:
         if chat_id:
             logger.info("Extracted chat_id=%s from unsigned state payload", chat_id)
 
+    # Extract code_verifier for PKCE (Canva)
+    _raw_state = extract_state_payload_unsafe(state)
+    code_verifier = str(_raw_state.get("code_verifier", "")).strip()
+
     try:
-        bundle = _exchange_bundle(service, code)
+        bundle = _exchange_bundle(service, code, code_verifier=code_verifier)
         update_env_file(ENV_FILE, bundle_env_updates(bundle))
         await _save_token_to_db(service, bundle)
         _restart_aroma_bot()
@@ -241,7 +245,7 @@ async def _save_token_to_db(service: str, bundle: OAuthTokenBundle) -> None:
         logger.exception("Failed to save %s token to DB", service)
 
 
-def _exchange_bundle(service: str, code: str) -> OAuthTokenBundle:
+def _exchange_bundle(service: str, code: str, *, code_verifier: str = "") -> OAuthTokenBundle:
     if service == "threads":
         return exchange_threads_code(
             code=code,
@@ -262,6 +266,7 @@ def _exchange_bundle(service: str, code: str) -> OAuthTokenBundle:
             client_id=settings.canva_client_id,
             client_secret=settings.canva_client_secret,
             redirect_uri=CANVA_REDIRECT_URI,
+            code_verifier=code_verifier,
         )
     raise OAuthExchangeError(f"Unsupported service: {service}")
 
