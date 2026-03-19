@@ -34,7 +34,8 @@ async def generate_blend_construct(body, telegram_id: int | None = None) -> dict
             return cached
 
     reference_context = await build_reference_context(
-        categories=("aroma",), max_items_per_category=20, max_total_chars=3000
+        categories=("aroma",), max_items_per_category=20, max_total_chars=3000,
+        shuffle=True,
     )
 
     loop = asyncio.get_running_loop()

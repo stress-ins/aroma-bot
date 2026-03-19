@@ -1,4 +1,4 @@
-"""Reels: storyboard, frames, regeneration."""
+"""Reels: V2 storyboard, frames, regeneration."""
 from __future__ import annotations
 
 import json
@@ -12,70 +12,30 @@ def test_reels_tab_opens_storyboard_without_empty_state(page):
     assert not page.locator("#emptyState").is_visible()
     assert page.locator(".detail-title").inner_text().strip() == "Вечерний ароматический ритуал"
 
-    page.get_by_text("Открыть редактирование кадра").first.click()
-    page.wait_for_timeout(100)
-    assert page.get_by_role("button", name="Скопировать промпт кадра").is_visible()
-    assert page.locator(".frame-image").count() == 1
+    # V2 renders frames directly — check frame card
+    assert page.locator(".reels-frame-v2").count() >= 1
 
 
-def test_reels_detail_shows_production_overview_and_frame_status(page):
+def test_reels_detail_shows_v2_concept_scenario_and_frames(page):
     open_reels_detail_from_drafts(page)
 
-    assert page.get_by_text("План рилса").is_visible()
-    assert page.get_by_text("Shot 1").is_visible()
-    assert page.get_by_text("Кадр готов").first.is_visible()
-    assert page.get_by_text("Открыть редактирование кадра").first.is_visible()
+    assert page.get_by_text("Вечернее переключение через ароматический ритуал").first.is_visible()
+    assert page.get_by_text("Перегенерировать концепцию").is_visible()
+    assert page.get_by_text("Перегенерировать сценарий").is_visible()
+    assert page.locator(".reels-frame-v2").count() >= 1
 
 
-def test_reels_detail_falls_back_to_payload_storyboard(page):
-    def _fulfill_reel(route):
-        if not route.request.url.endswith("/api/reels/reels001"):
-            route.continue_()
-            return
-        payload = {
-            "draft_id": "reels001",
-            "kind": "reels",
-            "topic": "Вечерний ароматический ритуал",
-            "source": "/miniapp",
-            "status": "draft",
-            "feedback": "",
-            "created_at": "2026-03-11T18:00:00+00:00",
-            "preview": "Рилс с fallback-раскадровкой.",
-            "images_ready": 1,
-            "frame_count": 0,
-            "frames": [],
-            "payload": {
-                "concept": "Вечернее переключение",
-                "scenario": "Короткий сценарий",
-                "storyboard": [
-                    {
-                        "timecode": "0-3 сек",
-                        "scene": "**Текст на экране:** Попробуй сегодня",
-                        "angle": "Крупный план",
-                        "current_asset": {
-                            "url": "/generated/reels_assets/reels001/frame_1.png",
-                            "filename": "frame_1.png",
-                        },
-                    }
-                ],
-            },
-        }
-        route.fulfill(status=200, content_type="application/json", body=json.dumps(payload, ensure_ascii=False))
+def test_reels_detail_shows_v2_stepper(page):
+    open_reels_detail_from_drafts(page)
 
-    page.route("**/api/reels/reels001", _fulfill_reel)
-    page.locator("#btnTabDrafts").click()
-    page.wait_for_timeout(100)
-    page.get_by_text("Вечерний ароматический ритуал").first.click()
-    page.wait_for_timeout(100)
-
-    assert page.locator(".storyboard-frame").count() == 1
-    assert page.get_by_text("Попробуй сегодня").first.is_visible()
+    assert page.locator(".reels-stepper").count() >= 1
+    assert page.locator(".reels-step").count() >= 3
 
 
 def test_drafts_reels_card_routes_into_storyboard_detail_with_mocked_api(page):
     reels_detail = {
         "draft_id": "reels001",
-        "kind": "reels",
+        "kind": "reels_v2",
         "topic": "Вечерний ароматический ритуал",
         "source": "/miniapp",
         "status": "draft",
@@ -84,22 +44,23 @@ def test_drafts_reels_card_routes_into_storyboard_detail_with_mocked_api(page):
         "preview": "Рилс с раскадровкой.",
         "images_ready": 1,
         "frame_count": 1,
+        "concept": "Вечернее переключение",
+        "scenario": "Короткий сценарий",
+        "caption": "Попробуй вечерний ритуал",
         "frames": [
             {
+                "id": "f1",
+                "frame_id": "f1",
                 "timecode": "0-3 сек",
-                "scene": "Камера идет по флакону и ладони",
-                "angle": "Крупный план",
-                "gemini_prompt": "close-up bottle and hand, warm evening light",
-                "current_asset": {
-                    "url": "/generated/reels_assets/reels001/frame_1.png",
-                    "filename": "frame_1.png",
-                },
+                "overlay_text": "Камера идет по флакону и ладони",
+                "image_prompt": "close-up bottle and hand, warm evening light",
+                "image_status": "ready",
+                "image_url": "/generated/reels_assets/reels001/frame_1.png",
             }
         ],
         "payload": {
             "concept": "Вечернее переключение",
             "scenario": "Короткий сценарий",
-            "storyboard": [],
         },
     }
 
@@ -123,22 +84,12 @@ def test_drafts_reels_card_routes_into_storyboard_detail_with_mocked_api(page):
     page.get_by_text("Вечерний ароматический ритуал").first.click()
     page.wait_for_timeout(100)
 
-    assert page.locator(".storyboard-frame").count() == 1
+    assert page.locator(".reels-frame-v2").count() == 1
     assert page.get_by_text("Камера идет по флакону и ладони").first.is_visible()
-    assert not page.get_by_text("Превью").is_visible()
 
 
 def test_reels_and_plans_render_markdown_in_detail_views(page):
-    open_reels_detail_from_drafts(page)
-
-    frame_markup = page.locator(".reels-frame-section-value").first.evaluate(
-        "(node) => ({ html: node.innerHTML, text: node.textContent })"
-    )
-    assert "<strong>" in frame_markup["html"]
-    assert "<h4>" in frame_markup["html"]
-    assert "**Текст на экране:**" not in frame_markup["text"]
-    assert "## Сцена" not in frame_markup["text"]
-
+    """Plans still render markdown correctly; reels use V2 inline layout."""
     page.locator("#btnTabPlans").click()
     page.wait_for_timeout(100)
     page.locator(".plan-card").first.click()
@@ -155,7 +106,7 @@ def test_reels_and_plans_render_markdown_in_detail_views(page):
 def test_reels_storyboard_regenerate_enters_pending_images_state(page):
     pending_reel = {
         "draft_id": "reels001",
-        "kind": "reels",
+        "kind": "reels_v2",
         "topic": "Вечерний ароматический ритуал",
         "source": "/miniapp",
         "status": "draft",
@@ -169,8 +120,6 @@ def test_reels_storyboard_regenerate_enters_pending_images_state(page):
         "generation_stage": "images",
         "generation_message": "Генерирую кадры для рилса.",
         "frames": [],
-        "shot_list": [],
-        "production_notes": {"required": [], "optional": []},
         "payload": {},
     }
 
@@ -186,15 +135,13 @@ def test_reels_storyboard_regenerate_enters_pending_images_state(page):
 
     page.route("**/*", handle_route)
     open_reels_detail_from_drafts(page)
-    page.get_by_role("button", name="Пересобрать раскадровку").click()
-    page.wait_for_timeout(100)
 
+    # V2 Screen2 shows generating state with skeleton bars
     assert page.get_by_text("Генерирую кадры для рилса.").count() >= 1
-    assert page.get_by_text("0/4 кадров").count() >= 1
 
 
 def test_themed_reels_detail_renders(themed_page):
-    """Reels storyboard renders in both themes."""
+    """Reels V2 detail renders in both themes."""
     open_reels_detail_from_drafts(themed_page)
     assert themed_page.locator(".detail-title").inner_text().strip() == "Вечерний ароматический ритуал"
-    assert themed_page.locator(".storyboard-frame").count() >= 1
+    assert themed_page.locator(".reels-frame-v2").count() >= 1

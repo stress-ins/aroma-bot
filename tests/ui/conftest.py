@@ -73,19 +73,19 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
     asset_file.write_bytes(_PNG_1X1)
 
     reels_payload = {
+        "concept": "Вечернее переключение через ароматический ритуал",
         "scenario": "Короткий сценарий рилса про вечернее переключение.",
+        "caption": "Попробуй простой ритуал сегодня вечером.",
         "images_ready": 1,
-        "storyboard": [
+        "frames": [
             {
+                "id": "f1",
+                "frame_id": "f1",
                 "timecode": "0-3 сек",
-                "scene": "**Текст на экране:** Попробуй сегодня\n\n## Сцена\nРуки закрывают ноутбук",
-                "angle": "Крупный план",
-                "gemini_prompt": "warm evening desk, close-up hands closing laptop",
-                "current_asset": {
-                    "url": f"/generated/reels_assets/{draft_id}/frame_1.png",
-                    "filename": "frame_1.png",
-                    "generated_at": "2026-03-11T18:00:00+00:00",
-                },
+                "overlay_text": "Попробуй сегодня",
+                "image_prompt": "warm evening desk, close-up hands closing laptop",
+                "image_status": "ready",
+                "image_url": f"/generated/reels_assets/{draft_id}/frame_1.png",
             }
         ],
     }
@@ -131,7 +131,7 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
     now = "2026-03-11T18:00:00+00:00"
     cursor.execute(
         "INSERT INTO drafts (draft_id, kind, topic, source, status, feedback, payload, publish_platforms, external_ids, revision_notes, error, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, '[]', '{}', '', '', ?)",
-        (draft_id, "reels", "Вечерний ароматический ритуал", "/miniapp", "draft", "", json.dumps(reels_payload), now),
+        (draft_id, "reels_v2", "Вечерний ароматический ритуал", "/miniapp", "draft", "", json.dumps(reels_payload), now),
     )
     cursor.execute(
         "INSERT INTO drafts (draft_id, kind, topic, source, status, feedback, payload, publish_platforms, external_ids, revision_notes, error, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, '[]', '{}', '', '', ?)",

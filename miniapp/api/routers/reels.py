@@ -377,6 +377,19 @@ async def reels_frames_regenerate_all(
     return serialized
 
 
+@router.patch("/api/reels/{draft_id}/force-edit")
+async def reels_force_edit(
+    draft_id: str,
+    _: None = Depends(_require_auth),
+):
+    """Force a stuck-generating reel into draft/edit mode."""
+    await set_generation_state(draft_id, pending=False, stage="", message="")
+    draft = await serialize_reels_draft(draft_id)
+    if not draft:
+        raise HTTPException(status_code=404, detail="reels_not_found")
+    return draft
+
+
 @router.post("/api/reels/{draft_id}/frames/{frame_index}/fields")
 async def reels_frame_fields(
     draft_id: str,
