@@ -507,69 +507,7 @@ export function createCarouselModule(deps) {
     window.open(downloadUrl, "_blank", "noopener,noreferrer");
   }
 
-  // ── Carousel dropdown (PPTX + Canva) ────────────────────────────────────────
-
-  let _activeDropdownId = "";
-
-  function _closeAllDropdowns() {
-    document.querySelectorAll(".carousel-actions-dropdown").forEach((el) => {
-      el.hidden = true;
-    });
-    _activeDropdownId = "";
-  }
-
-  // Close dropdown on outside click
-  document.addEventListener("click", (e) => {
-    if (_activeDropdownId && !e.target.closest(".carousel-actions-wrap")) {
-      _closeAllDropdowns();
-    }
-  });
-
-  async function toggleCarouselDropdown(draftId, button) {
-    const dropdownId = `carouselDropdown_${draftId}`;
-    const dropdown = document.getElementById(dropdownId);
-    if (!dropdown) return;
-
-    if (!dropdown.hidden) {
-      dropdown.hidden = true;
-      _activeDropdownId = "";
-      return;
-    }
-
-    _closeAllDropdowns();
-
-    // Check Canva status
-    let canvaConnected = false;
-    try {
-      const status = await fetchJson(`/api/carousel/${draftId}/canva/status`);
-      canvaConnected = status?.connected || false;
-    } catch (_) { /* ignore */ }
-
-    const disabledAttr = canvaConnected ? "" : "disabled";
-    const canvaHint = canvaConnected ? "" : ' title="Подключите Canva в Настройки → Аккаунты"';
-
-    dropdown.innerHTML = `
-      <button class="carousel-dropdown-item" type="button" onclick="downloadCarouselPptx('${draftId}', this); toggleCarouselDropdown('${draftId}')">
-        ${uiIcon("download")}<span>Скачать PPTX</span>
-      </button>
-      <button class="carousel-dropdown-item" type="button" onclick="importCarouselPptx('${draftId}', this); toggleCarouselDropdown('${draftId}')">
-        ${uiIcon("upload")}<span>Импорт PPTX</span>
-      </button>
-      <div class="carousel-dropdown-divider"></div>
-      <button class="carousel-dropdown-item" type="button" ${disabledAttr}${canvaHint} onclick="exportToCanva('${draftId}', this)">
-        ${uiIcon("arrow-up-right")}<span>Экспорт в Canva</span>
-      </button>
-      <button class="carousel-dropdown-item" type="button" ${disabledAttr}${canvaHint} onclick="importFromCanva('${draftId}', this)">
-        ${uiIcon("arrow-down-left")}<span>Импорт из Canva</span>
-      </button>
-    `;
-    dropdown.hidden = false;
-    _activeDropdownId = dropdownId;
-    if (window.lucide) lucide.createIcons();
-  }
-
   async function exportToCanva(draftId, button) {
-    _closeAllDropdowns();
     try {
       await withButtonFeedback(button, "Экспорт...", async () => {
         const result = await fetchJson(`/api/carousel/${draftId}/canva/export`, {
@@ -592,7 +530,6 @@ export function createCarouselModule(deps) {
   }
 
   async function importFromCanva(draftId, button) {
-    _closeAllDropdowns();
     try {
       // Fetch designs list
       const data = await fetchJson(`/api/carousel/${draftId}/canva/designs`);
@@ -682,7 +619,6 @@ export function createCarouselModule(deps) {
     carouselSwiperGoTo,
     downloadCarouselPptx,
     importCarouselPptx,
-    toggleCarouselDropdown,
     exportToCanva,
     importFromCanva,
     selectCanvaDesign,
