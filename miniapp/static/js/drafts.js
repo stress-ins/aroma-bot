@@ -114,8 +114,15 @@ export function createDraftsModule(deps) {
     }, "Готово");
   }
 
+  function renderContentSwitcher(active) {
+    return `<div class="content-sub-switcher">
+      <button class="tab-button${active === "drafts" ? " active" : ""}" onclick="setContentSubMode('drafts')">Черновики</button>
+      <button class="tab-button${active === "trends" ? " active" : ""}" onclick="setContentSubMode('trends')">Тренды</button>
+    </div>`;
+  }
+
   function renderDraftList() {
-    elements.listTitle.textContent = "Черновики";
+    elements.listTitle.textContent = "Контент";
     elements.draftCount.textContent = `${state.drafts.length} шт`;
     setEmptyState(state.drafts.length > 0, {
       eyebrow: "Черновики",
@@ -124,7 +131,7 @@ export function createDraftsModule(deps) {
       actionLabel: "Открыть создание",
       action: "openCreateTool()",
     });
-    elements.draftList.innerHTML = state.drafts.map((d, idx) => `
+    elements.draftList.innerHTML = renderContentSwitcher("drafts") + state.drafts.map((d, idx) => `
       <article ${interactiveCardAttrs(`Открыть черновик ${d.topic}`)} class="draft-card overview-card${d.draft_id === state.draftId ? " active" : ""}${d.generation_pending ? " is-pending" : ""} interactive-card" onclick="openDraft('${d.draft_id}')">
         <div class="overview-card-top">
           <div class="draft-kind">${contentKindIcon(d.kind)}<span>${escapeHtml(kindLabel(d.kind))}</span></div>

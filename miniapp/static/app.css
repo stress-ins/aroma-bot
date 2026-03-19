@@ -4342,6 +4342,19 @@ body.is-mobile-layout .detail-icon-actions button {
   background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 600;
 }
 
+/* ── Content sub-mode switcher ─────────────────────────────────────────── */
+.content-sub-switcher {
+  display: flex; gap: 6px; padding: 8px 0 4px;
+}
+.content-sub-switcher .tab-button {
+  flex: 1; padding: 7px 10px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); background: var(--surface-2);
+  color: var(--muted); font-size: 13px; cursor: pointer; transition: all var(--duration-fast);
+}
+.content-sub-switcher .tab-button.active {
+  background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 600;
+}
+
 /* ═══════════════════════════════════════
    SECTION: Mentions
    ═══════════════════════════════════════ */
