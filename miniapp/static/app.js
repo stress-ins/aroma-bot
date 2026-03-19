@@ -1686,6 +1686,7 @@ const {
   setEmptyState,
   enterDetailView,
   syncMobileNavigation,
+  renderMarkdown,
   callbacks: {
     renderDraftList: (...args) => renderDraftList(...args),
     renderDraftDetail: (...args) => renderDraftDetail(...args),
