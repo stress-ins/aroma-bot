@@ -163,7 +163,7 @@ export function createSessionModule(deps) {
   }
 
   async function loadDrafts() {
-    const data = await fetchJson(`/api/drafts?${filtersToQueryString()}`, { timeout: 20000 });
+    const data = await fetchJson(`/api/drafts?${filtersToQueryString()}&include_metrics=true`, { timeout: 20000 });
     state.drafts = data.items || [];
     renderDraftList();
     const preferredId = state.draftId || "";

@@ -44,6 +44,15 @@ export function createDraftsModule(deps) {
 
   const cleanSlotText = (t) => t ? t.replace(/^[-*_]{3,}\s*$/gm, '').replace(/\n{3,}/g, '\n\n').trim() : '';
 
+  function _metricsBadge(ms) {
+    const parts = [];
+    if (ms.likes) parts.push(`<i data-lucide="heart" style="width:12px;height:12px"></i> ${ms.likes}`);
+    if (ms.comments) parts.push(`<i data-lucide="message-circle" style="width:12px;height:12px"></i> ${ms.comments}`);
+    if (ms.views) parts.push(`<i data-lucide="eye" style="width:12px;height:12px"></i> ${ms.views}`);
+    if (!parts.length) return "";
+    return `<span class="tag metrics-badge">${parts.join(" ")}</span>`;
+  }
+
   function fullPreview(d) {
     const p = d.payload || {};
     if (d.kind === "carousel" && Array.isArray(p.slides) && p.slides.length) {
@@ -144,6 +153,7 @@ export function createDraftsModule(deps) {
           ${tagMarkup(statusLabel(d.status), statusTone(d.status))}
           ${d.generation_pending && draftGenerationLabel(d) ? tagMarkup(draftGenerationLabel(d), "pending") : ""}
           ${tagMarkup(sourceLabel(d.source), sourceTone(d.source))}
+          ${d.metrics_summary ? _metricsBadge(d.metrics_summary) : ""}
         </div>
       </article>
     `).join("");

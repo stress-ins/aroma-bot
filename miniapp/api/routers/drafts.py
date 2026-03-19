@@ -7,6 +7,7 @@ from bot.services.drafts_store import delete_draft, get_draft, list_recent_draft
 from bot.services.draft_revisions_store import create_revision, get_revision, list_revisions
 from bot.services.miniapp_content_review import polish_content_review_draft, update_content_review_draft
 from bot.services.miniapp_presenter import filter_drafts, serialize_draft, serialize_draft_summary
+from bot.services.post_metrics_store import get_latest_metrics_batch
 from config import settings
 from ..auth import TeamContext, _require_auth, _resolve_team_context
 from ..models import DraftContentPayload, DraftFeedbackPayload, DraftMovePayload, DraftStatusPayload
@@ -34,6 +35,7 @@ async def drafts(
     status: str = "",
     feedback: str = "",
     query: str = "",
+    include_metrics: bool = Query(default=False),
     ctx: TeamContext = Depends(_resolve_team_context),
 ):
     records = await list_recent_drafts(
@@ -41,7 +43,17 @@ async def drafts(
         kind=kind or None, status=status or None, feedback=feedback or None,
     )
     filtered = await filter_drafts(records, query=query)
-    return {"items": [await serialize_draft_summary(record) for record in filtered[:limit]], "total": len(filtered)}
+    items = [await serialize_draft_summary(record) for record in filtered[:limit]]
+
+    if include_metrics:
+        published_ids = [it["draft_id"] for it in items if it.get("status") == "published"]
+        if published_ids:
+            metrics_batch = await get_latest_metrics_batch(published_ids)
+            for it in items:
+                if it["draft_id"] in metrics_batch:
+                    it["metrics_summary"] = metrics_batch[it["draft_id"]]
+
+    return {"items": items, "total": len(filtered)}
 
 
 @router.get("/api/drafts/{draft_id}")

@@ -158,7 +158,7 @@ class TestThreadsPrompts:
     def test_load_drafts_keeps_list_alive_if_detail_open_fails(self):
         source = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
 
-        assert 'const data = await fetchJson(`/api/drafts?${filtersToQueryString()}`, { timeout: 20000 });' in source
+        assert 'const data = await fetchJson(`/api/drafts?${filtersToQueryString()}&include_metrics=true`, { timeout: 20000 });' in source
         assert 'await openDraft(preferredId);' in source
         assert 'console.error("miniapp failed to open preferred draft", error);' in source
         assert 'renderDetailError("Не удалось открыть карточку", message, `openDraft(\'${preferredId}\')`)' in source
