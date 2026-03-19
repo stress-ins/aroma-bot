@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from uuid import uuid4
 
 from bot.agents.reels_agent import (
@@ -16,6 +17,8 @@ from bot.services.miniapp_references import build_reference_context
 from bot.services.reels_assets import populate_frame_assets, populate_reels_frame_assets
 
 from ._common import _run_generation_task, set_generation_state
+
+logger = logging.getLogger(__name__)
 
 
 async def complete_reels_generation(draft_id: str, topic: str) -> None:
@@ -91,9 +94,23 @@ async def complete_reels_v2_generation(
     try:
         loop = asyncio.get_running_loop()
 
+        logger.info("reels_v2 generation started: draft_id=%s topic=%s", draft_id, topic)
         draft_obj = await loop.run_in_executor(
             None, generate_reels_v2_draft_sync, topic, goal, emotion, blend_context
         )
+
+        if not getattr(draft_obj, "concept", None):
+            logger.error("reels_v2 generation returned empty concept: draft_id=%s", draft_id)
+            await set_generation_state(
+                draft_id,
+                pending=False,
+                stage="error",
+                message="Генерация вернула пустую концепцию. Попробуйте ещё раз.",
+                error="empty concept from generate_reels_v2_draft_sync",
+            )
+            return
+
+        logger.info("reels_v2 concept ready: draft_id=%s concept_len=%d", draft_id, len(draft_obj.concept))
         await set_generation_state(
             draft_id,
             pending=True,
@@ -168,9 +185,11 @@ async def complete_reels_v2_generation(
             payload["generation_message"] = ""
             await update_draft(draft_id, payload=payload, status="draft")
 
+        logger.info("reels_v2 generation complete: draft_id=%s", draft_id)
         await set_generation_state(draft_id, pending=False)
 
     except Exception as exc:
+        logger.exception("reels_v2 generation failed: draft_id=%s", draft_id)
         await set_generation_state(
             draft_id,
             pending=False,
@@ -217,6 +236,18 @@ async def complete_reels_v2_regen_concept_only(
         draft_obj = await loop.run_in_executor(
             None, generate_reels_v2_draft_sync, topic, goal, emotion, blend_context
         )
+
+        if not getattr(draft_obj, "concept", None):
+            logger.error("regen_concept_only returned empty concept: draft_id=%s", draft_id)
+            await set_generation_state(
+                draft_id,
+                pending=False,
+                stage="error",
+                message="Генерация вернула пустую концепцию. Попробуйте ещё раз.",
+                error="empty concept from generate_reels_v2_draft_sync",
+            )
+            return
+
         draft = await get_draft(draft_id)
         if not draft:
             return
@@ -305,9 +336,23 @@ async def complete_reels_v2_regen_concept(
     try:
         loop = asyncio.get_running_loop()
 
+        logger.info("reels_v2 generation started: draft_id=%s topic=%s", draft_id, topic)
         draft_obj = await loop.run_in_executor(
             None, generate_reels_v2_draft_sync, topic, goal, emotion, blend_context
         )
+
+        if not getattr(draft_obj, "concept", None):
+            logger.error("reels_v2 generation returned empty concept: draft_id=%s", draft_id)
+            await set_generation_state(
+                draft_id,
+                pending=False,
+                stage="error",
+                message="Генерация вернула пустую концепцию. Попробуйте ещё раз.",
+                error="empty concept from generate_reels_v2_draft_sync",
+            )
+            return
+
+        logger.info("reels_v2 concept ready: draft_id=%s concept_len=%d", draft_id, len(draft_obj.concept))
         await set_generation_state(
             draft_id,
             pending=True,

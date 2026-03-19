@@ -30,7 +30,7 @@ export function createCoreModule(deps) {
       <div class="detail-loader-card${extraClass ? ` ${escapeHtml(extraClass)}` : ""}" aria-live="polite">
         <div class="brand-loader" aria-hidden="true">
           <span class="brand-loader-ring"></span>
-          <span class="brand-loader-letter">A</span>
+          <span class="brand-loader-letter"><i data-lucide="sparkles"></i></span>
         </div>
         <div class="detail-loader-copy">
           <strong>${escapeHtml(label)}</strong>
@@ -45,7 +45,7 @@ export function createCoreModule(deps) {
       <div class="detail-loader-card panel-loader-card" aria-live="polite">
         <div class="brand-loader" aria-hidden="true">
           <span class="brand-loader-ring"></span>
-          <span class="brand-loader-letter">A</span>
+          <span class="brand-loader-letter"><i data-lucide="sparkles"></i></span>
         </div>
         <div class="detail-loader-copy">
           <strong>${escapeHtml(label)}</strong>
