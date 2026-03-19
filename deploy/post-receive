@@ -19,14 +19,14 @@ systemctl restart aroma-bot
 systemctl restart threads-oauth
 echo '=== threads-oauth restarted ==='
 if systemctl is-enabled aroma-miniapp &>/dev/null; then
-    systemctl restart aroma-miniapp
-    # Wait for readyz (max 30s)
+    systemctl reload aroma-miniapp
+    # Wait for new workers to be ready (max 30s)
     for i in $(seq 1 60); do
         curl -sf http://127.0.0.1:8091/readyz > /dev/null 2>&1 && break
         sleep 0.5
     done
     if curl -sf http://127.0.0.1:8091/readyz > /dev/null 2>&1; then
-        echo '=== aroma-miniapp ready ==='
+        echo '=== aroma-miniapp reloaded (zero-downtime) ==='
     else
         echo 'WARNING: aroma-miniapp not ready after 30s'
     fi
