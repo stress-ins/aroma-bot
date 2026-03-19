@@ -90,7 +90,6 @@ export function createContentModule(deps) {
         generation_message: "Собираю сценарий и раскадровку для рилса.",
       },
     };
-    setTab("reels");
     state.reels = [
       state.selectedReels,
       ...state.reels.filter((item) => item.draft_id !== draftId),
@@ -141,7 +140,6 @@ export function createContentModule(deps) {
       await new Promise((resolve) => window.setTimeout(resolve, 1500));
     }
     state.pendingCreateRecovery = null;
-    setTab("reels");
     await loadReels();
     renderReels();
     if (showUiNotice) showUiNotice("Генерация продолжается в фоне — рилс появится в списке", "info");

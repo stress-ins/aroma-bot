@@ -23,7 +23,7 @@ export function createBlendConstructorModule(deps) {
     try {
       const items = await fetchJson("/api/references/aroma");
       _oilsCatalog = (items || []).map(o => ({ slug: o.slug, name: o.name, name_en: o.name_en }));
-    } catch { _oilsCatalog = []; }
+    } catch { _oilsCatalog = null; return []; }
     return _oilsCatalog;
   }
 
@@ -396,7 +396,6 @@ export function createBlendConstructorModule(deps) {
     const prevResult = _blendState.result;
     // Collect oils that user toggled off — tell LLM to exclude them
     const excludeOils = (_blendState.oils || [])
-      .filter(o => !o.active)
       .map(o => o.name_ru);
     elements.draftDetail.innerHTML = `<div class="detail-grid">
       ${renderBackButton()}

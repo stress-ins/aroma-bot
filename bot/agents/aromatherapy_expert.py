@@ -146,7 +146,8 @@ def construct_blend_sync(
         custom_oils_block += f"\nМасла которые ЗАПРЕЩЕНО использовать: {exclude_str}"
         custom_oils_require += (
             f"\n- ЗАПРЕЩЕНО использовать масла: {exclude_str} "
-            f"— не включай их ни в каком виде, подбери замены"
+            f"— не включай их ни в каком виде"
+            f"\n- Подбери СОВЕРШЕННО ДРУГИЕ масла, не повторяй предыдущий состав"
         )
 
     prompt = _CONSTRUCT_BLEND_PROMPT.format(

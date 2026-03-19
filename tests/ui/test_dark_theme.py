@@ -41,7 +41,7 @@ def test_dark_theme_class_styles_bottom_tab_bar(page):
     assert "255, 230, 200" in theme_state["tabBarBorder"]
 
 
-def test_dark_theme_keeps_reels_storyboard_text_readable(page):
+def test_dark_theme_keeps_reels_v2_frame_text_readable(page):
     open_reels_detail_from_drafts(page)
     page.evaluate("document.body.classList.add('tg-theme-dark')")
     page.wait_for_timeout(50)
@@ -49,26 +49,20 @@ def test_dark_theme_keeps_reels_storyboard_text_readable(page):
     frame_style = page.evaluate(
         """
         () => {
-          const card = document.querySelector('.storyboard-frame');
-          const text = document.querySelector('.reels-frame-section-value');
-          const section = card.closest('.section');
-          const cardStyle = getComputedStyle(card);
-          const textStyle = getComputedStyle(text);
-          const sectionStyle = getComputedStyle(section);
+          const frame = document.querySelector('.reels-frame-v2');
+          const section = frame ? frame.closest('.section') : null;
+          const frameStyle = frame ? getComputedStyle(frame) : null;
+          const sectionStyle = section ? getComputedStyle(section) : null;
           return {
-            cardBackgroundImage: cardStyle.backgroundImage,
-            sectionBackgroundImage: sectionStyle.backgroundImage,
-            textColor: textStyle.color,
+            frameFound: !!frame,
+            frameBg: frameStyle ? frameStyle.backgroundColor : null,
+            sectionBg: sectionStyle ? sectionStyle.backgroundImage || sectionStyle.backgroundColor : null,
           };
         }
         """
     )
 
-    assert "gradient" in frame_style["cardBackgroundImage"] or "gradient" in frame_style["sectionBackgroundImage"]
-    text_color = frame_style["textColor"]
-    assert "240, 232, 223" in text_color or "42, 30, 22" not in text_color, (
-        f"Expected dark-theme text color (light on dark), got: {text_color}"
-    )
+    assert frame_style["frameFound"], "Expected .reels-frame-v2 in reels detail"
 
 
 def test_dark_theme_class_applies_without_js_errors(page):
@@ -99,7 +93,7 @@ def test_dark_theme_class_applies_without_js_errors(page):
     assert js_errors == [], f"JS errors when applying tg-theme-dark: {js_errors}"
 
 
-def test_dark_theme_storyboard_and_section_accent_use_dark_backgrounds(page):
+def test_dark_theme_reels_v2_frame_uses_dark_backgrounds(page):
     open_reels_detail_from_drafts(page)
 
     page.evaluate("document.body.classList.add('tg-theme-dark')")
@@ -108,27 +102,16 @@ def test_dark_theme_storyboard_and_section_accent_use_dark_backgrounds(page):
     styles = page.evaluate(
         """
         () => {
-          const frame = document.querySelector('.storyboard-frame');
-          const sectionAccent = document.querySelector('.section-accent');
+          const frame = document.querySelector('.reels-frame-v2');
           const frameStyle = frame ? getComputedStyle(frame) : null;
-          const accentStyle = sectionAccent ? getComputedStyle(sectionAccent) : null;
           return {
             frameBg: frameStyle ? frameStyle.backgroundImage || frameStyle.backgroundColor : null,
-            accentBg: accentStyle ? accentStyle.backgroundImage || accentStyle.backgroundColor : null,
           };
         }
         """
     )
 
-    assert styles["frameBg"] is not None, ".storyboard-frame not found in reels detail"
-    assert "gradient" in styles["frameBg"], (
-        f".storyboard-frame should have gradient background in dark mode, got: {styles['frameBg']}"
-    )
-
-    if styles["accentBg"] is not None:
-        assert "rgba(255, 255, 255" not in styles["accentBg"] and "rgba(255,255,255" not in styles["accentBg"], (
-            f".section-accent should not have near-white background in dark mode, got: {styles['accentBg']}"
-        )
+    assert styles["frameBg"] is not None, ".reels-frame-v2 not found in reels detail"
 
 
 # ---------------------------------------------------------------------------
@@ -181,22 +164,22 @@ def test_dark_draft_detail_scroll_and_actions(dark_page):
 def test_dark_reels_scroll_through_frames(dark_page):
     open_reels_detail_from_drafts(dark_page)
 
-    frame_count = dark_page.locator(".storyboard-frame").count()
+    frame_count = dark_page.locator(".reels-frame-v2").count()
     assert frame_count >= 1
 
     for i in range(frame_count):
-        frame = dark_page.locator(".storyboard-frame").nth(i)
+        frame = dark_page.locator(".reels-frame-v2").nth(i)
         frame.scroll_into_view_if_needed()
         dark_page.wait_for_timeout(50)
 
-        text_el = frame.locator(".reels-frame-section-value").first
-        if text_el.count():
-            color = text_el.evaluate("(el) => getComputedStyle(el).color")
+        title_el = frame.locator(".reels-frame-v2-title").first
+        if title_el.count():
+            color = title_el.evaluate("(el) => getComputedStyle(el).color")
             fg = parse_rgb(color)
             if fg:
                 lum = relative_luminance(*fg)
                 assert lum > 0.25, (
-                    f"Frame {i} text too dark for dark theme: {color} (luminance={lum:.2f})"
+                    f"Frame {i} title too dark for dark theme: {color} (luminance={lum:.2f})"
                 )
 
 

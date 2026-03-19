@@ -59,22 +59,6 @@ export function createReelsModule(deps) {
     return `<div class="slide-status is-empty">${uiIcon("image")}<span>Кадр еще не подготовлен</span></div>`;
   }
 
-  function normalizedReelsFrames(reel = {}) {
-    if (Array.isArray(reel.frames) && reel.frames.length) return reel.frames;
-    const payloadStoryboard = reel.payload?.storyboard;
-    return Array.isArray(payloadStoryboard) ? payloadStoryboard : [];
-  }
-
-  function reelsFrameCount(reel = {}) {
-    return normalizedReelsFrames(reel).length || Number(reel.frame_count || 0);
-  }
-
-  function reelsReadyCount(reel = {}) {
-    const payloadReady = Number(reel.images_ready || 0);
-    const derivedReady = normalizedReelsFrames(reel).filter((frame) => frame?.current_asset?.url).length;
-    return Math.max(payloadReady, derivedReady);
-  }
-
   function renderReelsFrameNarrative(frame = {}) {
     const sections = [
       { label: "Видеоряд", value: frame.scene || "" },
@@ -93,74 +77,6 @@ export function createReelsModule(deps) {
           </div>
         `).join("")}
       </div>
-    `;
-  }
-
-  function renderReelsProductionOverview(reel = {}) {
-    const shotList = Array.isArray(reel.shot_list) ? reel.shot_list : [];
-    const productionNotes = reel.production_notes && typeof reel.production_notes === "object"
-      ? reel.production_notes
-      : { required: [], optional: [] };
-    const requiredNotes = Array.isArray(productionNotes.required) ? productionNotes.required : [];
-    const optionalNotes = Array.isArray(productionNotes.optional) ? productionNotes.optional : [];
-    const readyFrames = reelsReadyCount(reel);
-    const totalFrames = reelsFrameCount(reel);
-
-    const payloadStoryboard = Array.isArray(reel.payload?.storyboard) ? reel.payload.storyboard : [];
-    if (!shotList.length && !requiredNotes.length && !optionalNotes.length && !totalFrames && !payloadStoryboard.length) return "";
-
-    return `
-      <section class="section section-accent">
-        <div class="section-heading">
-          <h3>${uiIcon("slides")}План рилса</h3>
-          <p>${totalFrames ? `Готово ${readyFrames} из ${totalFrames} кадров. Карточка обновляется по мере генерации.` : "Собираем раскадровку и production notes."}</p>
-        </div>
-        ${shotList.length ? `
-          <div class="reels-overview-grid">
-            ${shotList.map((shot) => `
-              <article class="reels-overview-card">
-                <strong>${escapeHtml(shot.title || `Shot ${Number(shot.frame_index || 0) + 1}`)}</strong>
-                <div class="draft-meta">
-                  ${shot.timecode ? tagMarkup(shot.timecode, "status-neutral") : ""}
-                  ${shot.asset_ready ? tagMarkup("кадр готов", "status-positive") : tagMarkup("в очереди", "progress")}
-                </div>
-                ${shot.action ? `<div class="detail-preview">${escapeHtml(shot.action)}</div>` : ""}
-              </article>
-            `).join("")}
-          </div>
-        ` : ""}
-        ${!shotList.length && payloadStoryboard.length ? `
-          <div class="reels-storyboard-list">
-            ${payloadStoryboard.map((frame, i) => `
-              <div class="reels-storyboard-item">
-                <strong>Кадр ${i + 1}${frame.timecode ? " · " + escapeHtml(frame.timecode) : ""}</strong>
-                ${frame.scene ? `<div class="detail-preview">${escapeHtml(frame.scene)}</div>` : ""}
-                ${frame.angle ? `<div class="reels-storyboard-meta">${escapeHtml(frame.angle)}</div>` : ""}
-              </div>
-            `).join("")}
-          </div>
-        ` : ""}
-        ${requiredNotes.length || optionalNotes.length ? `
-          <div class="reels-production-notes">
-            ${requiredNotes.length ? `
-              <div class="reels-production-column">
-                <span class="reels-production-title">Обязательно</span>
-                <ul>
-                  ${requiredNotes.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
-                </ul>
-              </div>
-            ` : ""}
-            ${optionalNotes.length ? `
-              <div class="reels-production-column">
-                <span class="reels-production-title">Опционально</span>
-                <ul>
-                  ${optionalNotes.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
-                </ul>
-              </div>
-            ` : ""}
-          </div>
-        ` : ""}
-      </section>
     `;
   }
 
@@ -334,87 +250,6 @@ export function createReelsModule(deps) {
     }
   }
 
-  function renderReelsFrames(draftId, frames = []) {
-    const frameItems = Array.isArray(frames) ? frames : [];
-    if (!frameItems.length) return "";
-    const readyCount = frameItems.filter((frame) => frame?.current_asset?.url).length;
-    const header = readyCount > 0
-      ? `Кадры и промпты <span class="meta">${readyCount} / ${frameItems.length} готовы</span>`
-      : "Кадры и промпты";
-    const swipeHint = frameItems.length > 1 ? `<span class="storyboard-swipe-hint"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>свайп<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>` : "";
-    const dotIndicator = frameItems.length > 1 ? `<div class="storyboard-dots">${frameItems.map((_, i) => `<span class="storyboard-dot" data-idx="${i}"></span>`).join("")}</div>` : "";
-    return `
-      <section class="section">
-        <h3>${sectionHeadingIcon("Кадры и промпты")}${header}${swipeHint}</h3>
-        ${dotIndicator}
-        <div class="storyboard">
-          ${frameItems.map((frame, index) => {
-            const prompt = bufferedReelsPrompt(draftId, index, frame.gemini_prompt || "");
-            const note = bufferedReelsNote(draftId, index, frame.review_note || "");
-            const assetUrl = frame.current_asset?.url || "";
-            const isRegenerating = regenInProgressKeys.has(frameDraftKey(draftId, index));
-            return `
-              <article class="storyboard-frame">
-                <strong>Кадр ${index + 1}${frame.timecode ? ` • ${escapeHtml(frame.timecode)}` : ""}</strong>
-                ${reelsFrameStatusMarkup(frame, isRegenerating)}
-                ${renderReelsFrameNarrative(frame)}
-                ${assetUrl
-                  ? `<img class="frame-image" src="${escapeHtml(assetUrl)}" alt="Кадр ${index + 1}" />`
-                  : `<div class="frame-loading">Картинка ещё не готова. Карточка обновится автоматически, как только кадр будет сгенерирован.</div>`}
-                ${(() => {
-                  const discOpen = isPromptDisclosureOpen(`reels:${draftId}:${index}`, !assetUrl);
-                  const openLbl = prompt ? "Открыть редактирование кадра" : "Открыть описание кадра";
-                  return `
-                <div class="prompt-disclosure${discOpen ? " is-open" : ""}" data-prompt-key="${escapeHtml(`reels:${draftId}:${index}`)}">
-                  <button class="secondary-button prompt-toggle" type="button" aria-expanded="${discOpen ? "true" : "false"}" data-default-open="${!assetUrl ? "true" : "false"}" data-open-label="${escapeHtml(openLbl)}" data-close-label="Скрыть редактирование кадра" data-action="togglePromptDisclosure" data-args='${JSON.stringify([`reels:${draftId}:${index}`, null])}'>${actionLabel("eye", discOpen ? "Скрыть редактирование кадра" : openLbl)}</button>
-                  <div class="prompt-card"${discOpen ? "" : " hidden"}>
-                    <div class="reels-frame-edit-grid">
-                      <label class="prompt-note-field">
-                        <span>Текст / действие кадра</span>
-                        <textarea id="reelsFrameScene${index}" placeholder="Что происходит в кадре">${escapeHtml(frame.scene || "")}</textarea>
-                      </label>
-                      <label class="prompt-note-field">
-                        <span>Ракурс</span>
-                        <input id="reelsFrameAngle${index}" type="text" placeholder="Например: макро, фронтальный, средний план" value="${escapeHtml(frame.angle || "")}" />
-                      </label>
-                      <label class="prompt-note-field">
-                        <span>Таймкод</span>
-                        <input id="reelsFrameTimecode${index}" type="text" placeholder="Например: 0-3 сек" value="${escapeHtml(frame.timecode || "")}" />
-                      </label>
-                    </div>
-                    ${prompt ? `
-                      <label class="prompt-note-field">
-                        <span>Промпт кадра</span>
-                        <textarea id="reelsFramePrompt${index}" placeholder="Какой кадр нужно сгенерировать и в каком настроении" data-on-input="handleReelsFramePromptInput" data-args='${JSON.stringify([draftId, index])}'>${escapeHtml(prompt)}</textarea>
-                      </label>
-                      <label class="prompt-note-field">
-                        <span>Замечание к кадру</span>
-                        <textarea id="reelsFrameNote${index}" placeholder="Например: теплее, меньше деталей, крупнее объект" data-on-input="handleReelsFrameNoteInput" data-args='${JSON.stringify([draftId, index])}'>${escapeHtml(note)}</textarea>
-                      </label>
-                      <div class="actions-row prompt-actions">
-                        <button class="secondary-button" type="button" data-action="saveReelsFrameFields" data-args='${JSON.stringify([draftId, index, null])}'>${actionLabel("text", "Сохранить описание кадра")}</button>
-                        <button class="secondary-button" type="button" data-action="saveReelsFramePrompt" data-args='${JSON.stringify([draftId, index, null])}'>${actionLabel("prompt", "Сохранить промпт кадра")}</button>
-                        <button class="secondary-button" type="button" data-action="saveReelsFrameNote" data-args='${JSON.stringify([draftId, index, null])}'>${actionLabel("note", "Сохранить замечание")}</button>
-                        <button class="secondary-button" type="button" data-action="regenerateReelsFrame" data-args='${JSON.stringify([draftId, index, null])}'>${actionLabel("regenerate", "Обновить кадр")}</button>
-                        <button class="secondary-button" type="button" data-action="copyText" data-args='${JSON.stringify([String(prompt)])}'>${actionLabel("prompt", "Скопировать промпт кадра")}</button>
-                      </div>
-                    ` : `
-                      <div class="actions-row prompt-actions">
-                        <button class="secondary-button" type="button" data-action="saveReelsFrameFields" data-args='${JSON.stringify([draftId, index, null])}'>${actionLabel("text", "Сохранить описание кадра")}</button>
-                      </div>
-                    `}
-                  </div>
-                </div>
-                `;
-                })()}
-              </article>
-            `;
-          }).join("")}
-        </div>
-      </section>
-    `;
-  }
-
   // ── V2 utilities ────────────────────────────────────────────────────────
 
   function autoResize(el) {
@@ -570,7 +405,7 @@ export function createReelsModule(deps) {
         <div class="reels-frame-v2-image-generating">
           <div class="brand-loader">
             <span class="brand-loader-ring"></span>
-            <span class="brand-loader-letter"><i data-lucide="sparkles"></i></span>
+            <span class="brand-loader-letter">А</span>
           </div>
           <span style="font-size:12px;color:var(--hint);margin-top:8px">Генерирую...</span>
         </div>
@@ -681,7 +516,7 @@ export function createReelsModule(deps) {
         </div>
         <div class="brand-loader">
           <span class="brand-loader-ring"></span>
-          <span class="brand-loader-letter"><i data-lucide="sparkles"></i></span>
+          <span class="brand-loader-letter">А</span>
         </div>
         <div class="detail-loader-copy">
           <strong>${escapeHtml(r.generation_message || "Генерирую концепцию и сценарий")}</strong>
@@ -695,6 +530,12 @@ export function createReelsModule(deps) {
         <div class="reels-skeleton-section">
           <div class="reels-skeleton-bar" style="width:80%"></div>
           <div class="reels-skeleton-bar" style="width:55%"></div>
+        </div>
+        <div class="actions-row" style="justify-content:center;padding:12px 0">
+          <button class="secondary-button compact" type="button"
+            data-action="forceEditReels" data-args='${JSON.stringify([r.draft_id, null])}'>
+            Перейти к редактированию
+          </button>
         </div>
       </div>
     `;
@@ -753,6 +594,17 @@ export function createReelsModule(deps) {
           </div>
         </section>
 
+        <section class="section">
+          <h3>${sectionHeadingIcon("Замечания")}Замечания для переработки</h3>
+          <label class="prompt-note-field">
+            <textarea id="reelsRevisionNoteField" placeholder="Опишите что изменить: тон, акценты, структуру…">${escapeHtml(r.payload?.revision_note || "")}</textarea>
+          </label>
+          <div class="actions-row" style="margin-top:8px">
+            <button class="secondary-button compact" type="button" data-action="saveReelsScenario" data-args='${JSON.stringify([r.draft_id, null])}'>Сохранить замечания</button>
+            <button class="secondary-button compact" type="button" data-action="regenerateReelsStoryboard" data-args='${JSON.stringify([r.draft_id, null])}'>↺ Перегенерировать с учётом замечаний</button>
+          </div>
+        </section>
+
         ${!frames.length && (concept || scenario) ? `
           <div class="actions-row" style="justify-content:center;padding:12px 0">
             <button class="primary-button" type="button"
@@ -765,13 +617,14 @@ export function createReelsModule(deps) {
         ${frames.length ? `
           <section class="section">
             <h3>${sectionHeadingIcon("Кадры")}Кадры</h3>
-            ${frames.some((f) => !f?.image_url && f?.image_status !== "ready") ? `
-              <div class="actions-row" style="margin-bottom:12px">
+            <div class="actions-row" style="margin-bottom:12px">
+              ${frames.some((f) => !f?.image_url && f?.image_status !== "ready") ? `
                 <button class="primary-button" type="button" data-action="generateReelsImages" data-args='${JSON.stringify([r.draft_id, null])}'>
                   ${actionLabel("reel", "Сгенерировать все картинки")}
                 </button>
-              </div>
-            ` : ""}
+              ` : ""}
+              <button class="secondary-button compact" type="button" data-action="regenerateReelsStoryboard" data-args='${JSON.stringify([r.draft_id, null])}'>↺ Перегенерировать раскадровку</button>
+            </div>
             ${frames.map((frame, i) => renderFrameV2(frame, r.draft_id, i + 1)).join("")}
           </section>
         ` : ""}
@@ -1032,71 +885,6 @@ export function createReelsModule(deps) {
   // ── Main render dispatcher ─────────────────────────────────────────────
 
   function renderReelsDetail(r) {
-    // Detect v2 reels by kind or v2-specific frame fields
-    const isV2 = r.kind === "reels_v2" || (
-      Array.isArray(r.frames) && r.frames.length > 0 && r.frames[0] &&
-      ("image_status" in r.frames[0] || "overlay_text" in r.frames[0])
-    );
-
-    if (!isV2) {
-      // V1 rendering path (original logic)
-      const frames = normalizedReelsFrames(r);
-      const hasFrames = frames.length > 0;
-      return `
-        <div class="detail-grid">
-          ${renderBackButton()}
-          <div class="detail-top">
-            <p class="eyebrow">${uiIcon("reel")}<span>Рилсы${sourceLabel(r.source || "/miniapp") ? " • " + escapeHtml(sourceLabel(r.source || "/miniapp")) : ""}</span></p>
-            <h2 class="detail-title">${escapeHtml(r.topic)}</h2>
-            <div class="draft-meta">
-              ${tagMarkup(statusLabel(r.status || "draft"), statusTone(r.status || "draft"))}
-              ${r.generation_pending && draftGenerationLabel({ ...r, kind: "reels" }) ? tagMarkup(draftGenerationLabel({ ...r, kind: "reels" }), "pending") : ""}
-              ${tagMarkup(`${reelsReadyCount(r)}/${reelsFrameCount(r)} кадров`, "progress")}
-              ${tagMarkup(sourceLabel(r.source || "/miniapp"), sourceTone(r.source || "/miniapp"))}
-            </div>
-            <div class="actions-row">
-              <button class="primary-button" type="button" data-action="saveReelsScenario" data-args='${JSON.stringify([r.draft_id, null])}'>${actionLabel("text", "Сохранить концепцию и сценарий")}</button>
-              <div class="detail-icon-actions">
-                <button class="secondary-button" title="Пересобрать раскадровку" type="button" data-action="regenerateReelsStoryboard" data-args='${JSON.stringify([r.draft_id, null])}'>${uiIcon("regenerate")}</button>
-                <button class="secondary-button" title="Обновить все кадры" type="button" data-action="regenerateAllReelsFrames" data-args='${JSON.stringify([r.draft_id, null])}'>${uiIcon("reel")}</button>
-                <button class="secondary-button" title="Вернуть на доработку" type="button" data-action="updateDraft" data-args='["status",{"status":"rejected"},null]'>${uiIcon("reject")}</button>
-                <button class="secondary-button" title="Отправить в чат" type="button" data-action="sendDraftToChat" data-args='${JSON.stringify([r.draft_id, null])}'>${uiIcon("chat")}</button>
-              </div>
-              <button class="danger-button" type="button" data-action="deleteDraft" data-args='${JSON.stringify([r.draft_id, "reels", null])}'>${actionLabel("trash", "Удалить рилс")}</button>
-            </div>
-          </div>
-          <section class="section">
-            <h3>${sectionHeadingIcon("Сценарий")}Концепция и сценарий</h3>
-            <label class="prompt-note-field">
-              <span>Концепция</span>
-              <textarea id="reelsConceptField" placeholder="Коротко: идея, настроение, обещание результата">${escapeHtml(r.payload?.concept || "")}</textarea>
-            </label>
-            <label class="prompt-note-field">
-              <span>Сценарий</span>
-              <textarea id="reelsScenarioField" placeholder="Соберите полный сценарий с переходами между кадрами">${escapeHtml(r.payload?.scenario || "")}</textarea>
-            </label>
-            <label class="prompt-note-field">
-              <span>Замечания для переработки</span>
-              <textarea id="reelsRevisionNoteField" placeholder="Опишите что изменить: тон, акценты, структуру…">${escapeHtml(r.payload?.revision_note || "")}</textarea>
-            </label>
-            <button class="secondary-button" type="button" data-action="regenerateReelsStoryboard" data-args='${JSON.stringify([r.draft_id, null])}'>${actionLabel("regenerate", "Перегенерировать с учётом замечаний")}</button>
-          </section>
-          ${renderReelsProductionOverview(r)}
-          ${generationStateMarkup(r, "reels")}
-          ${r.generation_pending ? `<div class="actions-row" style="padding: 0 var(--space-4)"><button class="secondary-button compact" type="button" data-action="retryCurrentTab">Обновить вручную</button></div>` : ""}
-          ${hasFrames ? renderReelsFrames(r.draft_id, frames) : `
-            <section class="section section-accent">
-              <div class="section-heading">
-                <h3>${uiIcon("slides")}Кадры и промпты</h3>
-                <p>${escapeHtml(r.generation_message || "Подготавливаю раскадровку и кадры для рилса.")}</p>
-              </div>
-              ${renderDetailLoader("Собираю раскадровку", r.generation_message || "Подождите ещё немного, и здесь появятся кадры.", "detail-loader-card-compact")}
-            </section>
-          `}
-        </div>
-      `;
-    }
-
     // V2 routing by status and generation_pending
     if (r.generation_pending === true) {
       return renderScreen2Generating(r);
@@ -1126,6 +914,18 @@ export function createReelsModule(deps) {
 
     // Default: "draft" (Screen 3 — Edit)
     return renderScreen3Edit(r);
+  }
+
+  async function forceEditReels(draftId, btn) {
+    await withButtonFeedback(btn, "Переключаю...", async () => {
+      const draft = await fetchJson(`/api/reels/${draftId}/force-edit`, {
+        method: "PATCH",
+        body: "{}",
+      });
+      mergeReelsIntoState(draft);
+      callbacks.renderReels?.();
+      callbacks.renderReelsDetail?.(draft);
+    }, "Готово");
   }
 
   async function copyReelsCaption(draftId, btn) {
@@ -1236,6 +1036,7 @@ export function createReelsModule(deps) {
     canEditReels,
     canApproveReels,
     canPublishReels,
+    forceEditReels,
     // Feature: copy caption + fullscreen image
     copyReelsCaption,
     openReelsImageFullscreen,

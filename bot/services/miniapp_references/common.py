@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import random
 import re
 from datetime import datetime, timezone
 from pathlib import Path
@@ -600,6 +601,7 @@ async def build_reference_context(
     categories: tuple[str, ...] | None = None,
     max_items_per_category: int = 6,
     max_total_chars: int = 1800,
+    shuffle: bool = False,
 ) -> str:
     await seed_reference_cards_if_empty()
     category_order = tuple(categories or REFERENCE_CONTEXT_TITLES.keys())
@@ -612,7 +614,10 @@ async def build_reference_context(
         models = result.scalars().all()
 
     grouped: dict[str, list[str]] = {category: [] for category in allowed_categories}
-    for model in sorted(models, key=lambda item: (str(item.category or ""), _normalize(item.name))):
+    sorted_models = sorted(models, key=lambda item: (str(item.category or ""), _normalize(item.name)))
+    if shuffle:
+        random.shuffle(sorted_models)
+    for model in sorted_models:
         category = str(model.category or "")
         if category not in grouped or len(grouped[category]) >= max_items_per_category:
             continue

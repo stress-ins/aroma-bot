@@ -86,7 +86,7 @@ def test_overview_lists_use_consistent_card_meta(page):
     page.wait_for_timeout(100)
     page.get_by_text("Вечерний ароматический ритуал").first.click()
     page.wait_for_timeout(100)
-    assert page.locator(".storyboard-frame").count() >= 1
+    assert page.locator(".reels-frame-v2").count() >= 1
 
 
 def test_desktop_layout_keeps_split_panels_and_comfortable_controls(desktop_page):

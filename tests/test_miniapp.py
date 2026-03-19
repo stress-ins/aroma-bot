@@ -1233,7 +1233,6 @@ class TestMiniAppRussianLocale:
     def test_content_detail_supports_prompt_copy_actions(self):
         app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
 
-        assert "Скопировать промпт кадра" in app_js
         assert "Скопировать промпт слайда" in app_js
         assert "function copyText" in app_js
         assert "function togglePromptDisclosure" in app_js
@@ -1389,8 +1388,9 @@ class TestMiniAppRussianLocale:
 
         # reels.js must declare isPromptDisclosureOpen in deps destructuring
         assert "isPromptDisclosureOpen," in reels_js
-        # reels.js must call isPromptDisclosureOpen for its disclosure key
-        assert "isPromptDisclosureOpen(`reels:" in reels_js
+        # reels.js: V1 prompt disclosure was removed; V2 uses inline frame editing
+        # Just verify the dep is still declared (may be used by future frame editors)
+        assert "isPromptDisclosureOpen" in reels_js
 
         # app.js must pass isPromptDisclosureOpen to both module factories
         app_js = Path("miniapp/static/app.js").read_text(encoding="utf-8")
@@ -1402,7 +1402,7 @@ class TestMiniAppRussianLocale:
     def test_reels_opened_from_drafts_route_into_storyboard_detail(self):
         drafts_js = _miniapp_static_text("js", "drafts.js")
 
-        assert 'if (d?.kind === "reels" && callbacks.openReels)' in drafts_js
+        assert 'kind === "reels"' in drafts_js and 'kind === "reels_v2"' in drafts_js
         assert "await callbacks.openReels(d.draft_id);" in drafts_js
 
     def test_carousel_detail_uses_actions_instead_of_raw_json(self):
@@ -1440,25 +1440,18 @@ class TestMiniAppRussianLocale:
             p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/api").rglob("*.py"))
         )
 
-        assert "Сохранить концепцию и сценарий" in app_js
-        assert "Пересобрать раскадровку" in app_js
-        assert "Обновить все кадры" in app_js
-        assert "Сохранить описание кадра" in app_js
-        assert "Сохранить промпт кадра" in app_js
-        assert "Сохранить замечание" in app_js
-        assert "Обновить кадр" in app_js
-        assert "handleReelsFrameNoteInput" in app_js
-        assert "handleReelsFramePromptInput" in app_js
+        # V2 reels editing actions
+        assert "Перегенерировать концепцию" in app_js
+        assert "Перегенерировать сценарий" in app_js
+        assert "Перегенерировать раскадровку" in app_js
+        assert "Согласовать" in app_js
+        assert "Перейти к редактированию" in app_js
+        assert "Сохранить замечания" in app_js
         assert "/api/reels/{draft_id}/scenario" in server_py
         assert "/api/reels/{draft_id}/storyboard/regenerate" in server_py
         assert "/api/reels/{draft_id}/frames/regenerate-all" in server_py
         assert "/api/reels/{draft_id}/frames/{frame_index}/fields" in server_py
-        assert "Сохранить концепцию и сценарий" in app_js
-        assert "Пересобрать раскадровку" in app_js
-        assert "Обновить все кадры" in app_js
-        assert "Сохранить описание кадра" in app_js
-        assert "Сохранить промпт кадра" in app_js
-        assert "Обновить кадр" in app_js
+        assert "/api/reels/{draft_id}/force-edit" in server_py
 
     def test_content_review_detail_supports_editing_polish_and_feedback(self):
         app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
@@ -1499,7 +1492,7 @@ class TestMiniAppRussianLocale:
         assert "Промпт для визуала" in app_js
         assert "Согласовать" in app_js
         assert "Вернуть на доработку" in app_js
-        assert "Отправить в чат" in app_js
+        assert "В чат" in app_js
         assert "deleteDraft" in app_js
 
     def test_keywords_detail_supports_editing_and_ui_notices(self):

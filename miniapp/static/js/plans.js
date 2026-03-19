@@ -670,7 +670,6 @@ export function createPlansModule(deps) {
   async function openPlanRelatedDraft(kind, draftId) {
     if (!draftId) return;
     if (kind === "reels") {
-      setTab("reels");
       await loadReels();
       await openReels(draftId);
       return;

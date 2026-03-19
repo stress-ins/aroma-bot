@@ -160,7 +160,7 @@ export function createDraftsModule(deps) {
     elements.draftDetail.innerHTML = `${renderBackButton()}${renderDetailLoader("Открываю черновик")}`;
     enterDetailView();
     const d = await fetchJson(`/api/drafts/${id}`, { timeout: 20000 });
-    if (d?.kind === "reels" && callbacks.openReels) {
+    if ((d?.kind === "reels" || d?.kind === "reels_v2") && callbacks.openReels) {
       await callbacks.openReels(d.draft_id);
       return;
     }
