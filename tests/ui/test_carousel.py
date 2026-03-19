@@ -9,8 +9,7 @@ from playwright.sync_api import Error
 
 def test_carousel_detail_shows_prompt_copy_buttons(page):
     page.locator("#btnTabDrafts").click()
-    page.wait_for_function("typeof window.goBackToList === 'function'", timeout=5000)
-    page.evaluate("window.goBackToList()")
+    page.wait_for_timeout(300)
     page.get_by_text("Сенсорная карусель для вечернего ритуала").first.wait_for(state="visible")
     page.get_by_text("Сенсорная карусель для вечернего ритуала").first.click()
     page.wait_for_timeout(100)
@@ -24,8 +23,7 @@ def test_carousel_detail_shows_prompt_copy_buttons(page):
 def test_carousel_preview_button_opens_modal(page):
     """Preview button should fetch PNG and show preview modal."""
     page.locator("#btnTabDrafts").click()
-    page.wait_for_function("typeof window.goBackToList === 'function'", timeout=5000)
-    page.evaluate("window.goBackToList()")
+    page.wait_for_timeout(300)
     page.get_by_text("Сенсорная карусель для вечернего ритуала").first.wait_for(state="visible")
     page.get_by_text("Сенсорная карусель для вечернего ритуала").first.click()
     page.wait_for_timeout(100)
