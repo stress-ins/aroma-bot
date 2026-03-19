@@ -36,6 +36,7 @@ INSTAGRAM_DEFAULT_SCOPES = (
 CANVA_AUTHORIZE_URL = "https://www.canva.com/api/oauth/authorize"
 CANVA_TOKEN_URL = "https://api.canva.com/rest/v1/oauth/token"
 CANVA_ME_URL = "https://api.canva.com/rest/v1/users/me"
+CANVA_PROFILE_URL = "https://api.canva.com/rest/v1/users/me/profile"
 CANVA_DEFAULT_SCOPES = (
     "profile:read",
     "design:content:read",
@@ -325,16 +326,25 @@ def exchange_canva_code(
             headers={"Authorization": f"Bearer {access_token}"},
         )
         profile_payload = _parse_json_response(profile_response, "Canva profile lookup")
-        # Canva returns {"team_user": {"user_id": "...", "team_id": "..."}}
+        # Canva /users/me returns {"team_user": {"user_id": "...", "team_id": "..."}}
         team_user = profile_payload.get("team_user") or {}
         user_id = str(
             team_user.get("user_id", "")
             or profile_payload.get("id", "")
         ).strip()
-        display_name = str(
-            team_user.get("display_name", "")
-            or profile_payload.get("display_name", "")
-        ).strip()
+        # /users/me doesn't return display_name — fetch from /users/me/profile
+        display_name = ""
+        try:
+            name_response = session.get(
+                CANVA_PROFILE_URL,
+                headers={"Authorization": f"Bearer {access_token}"},
+            )
+            name_payload = _parse_json_response(name_response, "Canva profile name")
+            display_name = str(
+                (name_payload.get("profile") or {}).get("display_name", "")
+            ).strip()
+        except Exception:
+            pass
         # Fallback: extract user_id from access_token JWT sub claim
         if not user_id:
             try:

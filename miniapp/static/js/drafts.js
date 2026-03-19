@@ -164,38 +164,6 @@ export function createDraftsModule(deps) {
   }
 
   function renderThreadsSeriesDetail(d) {
-    if (d.generation_pending && d.generation_stage !== "error") {
-      var pendingMsg = d.generation_message || "Создаю три поста: утро, день, вечер. Займёт 15–30 секунд.";
-      elements.draftDetail.innerHTML = [
-        '<div class="detail-grid detail-grid-pending">',
-        renderBackButton(),
-        '<div class="detail-top">',
-        '<p class="eyebrow">' + contentKindIcon(d.kind) + "<span>" + escapeHtml(kindLabel(d.kind)) + "</span></p>",
-        '<h2 class="detail-title">' + escapeHtml(d.topic || "Создаём черновик") + "</h2>",
-        '<div class="draft-meta">',
-        tagMarkup("Черновик", "status-neutral"),
-        tagMarkup("Ещё генерируется", "pending"),
-        "</div></div>",
-        renderDetailLoader("Генерирую серию", pendingMsg, "detail-loader-card-compact"),
-        "</div>",
-      ].join("");
-      syncMobileNavigation();
-      window.setTimeout(function () {
-        if (state.draftId === d.draft_id) {
-          fetchJson("/api/drafts/" + d.draft_id, { timeout: 15000 }).then(function (fresh) {
-            if (state.draftId === fresh.draft_id) {
-              state.selected = fresh;
-              state.drafts = state.drafts.map(function (item) {
-                return item.draft_id === fresh.draft_id ? Object.assign({}, item, fresh) : item;
-              });
-              callbacks.renderDraftList();
-              callbacks.renderDraftDetail(fresh);
-            }
-          }).catch(function () {});
-        }
-      }, 4000);
-      return;
-    }
     const p = d.payload || {};
     const posts = Array.isArray(p.threads_posts) ? p.threads_posts : [];
     const isApproved = d.status === "approved" || d.status === "scheduled" || d.status === "published";
@@ -289,7 +257,7 @@ export function createDraftsModule(deps) {
         <section class="section section-primary">
           <div class="section-heading">
             <h3>${uiIcon("text")}Посты серии</h3>
-            <p>${isApproved ? "Серия согласована. Запланируйте публикацию." : posts.length ? "Отредактируйте каждый пост, затем согласуйте серию." : (d.generation_stage === "error" ? (d.generation_message || "Не удалось сгенерировать посты.") : "Посты не были сгенерированы.") + " Попробуйте заново."}</p>
+            <p>${isApproved ? "Серия согласована. Запланируйте публикацию." : posts.length ? "Отредактируйте каждый пост, затем согласуйте серию." : "Посты не были сгенерированы. Попробуйте заново."}</p>
           </div>
           ${slotsHtml}
           ${!posts.length && !isApproved ? `
@@ -424,7 +392,12 @@ export function createDraftsModule(deps) {
             <div class="detail-icon-actions">
               <button class="secondary-button" title="Вернуть на доработку" onclick="updateDraft('status', {status:'rejected'}, this)">${uiIcon("reject")}</button>
               <button class="secondary-button" title="Отправить в чат" onclick="sendDraftToChat('${d.draft_id}', this)">${uiIcon("chat")}</button>
-              ${d.kind === "carousel" ? `<button class="secondary-button" title="Скачать PPTX" onclick="downloadCarouselPptx('${d.draft_id}', this)">${uiIcon("download")}</button><button class="secondary-button" title="Импорт PPTX" onclick="importCarouselPptx('${d.draft_id}', this)">${uiIcon("upload")}</button><button class="secondary-button" title="Экспорт в Canva" onclick="exportToCanva('${d.draft_id}', this)">${uiIcon("arrow-up-right")}</button><button class="secondary-button" title="Импорт из Canva" onclick="importFromCanva('${d.draft_id}', this)">${uiIcon("arrow-down-left")}</button>` : ""}
+              ${d.kind === "carousel" ? `
+                <button class="secondary-button" title="Скачать PPTX" onclick="downloadCarouselPptx('${d.draft_id}', this)">${uiIcon("download")}</button>
+                <button class="secondary-button" title="Импорт PPTX" onclick="importCarouselPptx('${d.draft_id}', this)">${uiIcon("upload")}</button>
+                <button class="secondary-button" title="Экспорт в Canva" onclick="exportToCanva('${d.draft_id}', this)">${uiIcon("arrow-up-right")}</button>
+                <button class="secondary-button" title="Импорт из Canva" onclick="importFromCanva('${d.draft_id}', this)">${uiIcon("arrow-down-left")}</button>
+              ` : ""}
               ${d.kind === "carousel" ? `<button class="secondary-button" title="Обновить все слайды" onclick="regenerateCarouselAll('${d.draft_id}', this)">${uiIcon("regenerate")}</button>` : ""}
             </div>
             ${renderMoveButton(d.draft_id)}
