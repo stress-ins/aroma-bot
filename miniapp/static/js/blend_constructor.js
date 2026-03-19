@@ -190,6 +190,7 @@ export function createBlendConstructorModule(deps) {
           <button class="primary-button" id="blendSaveBtn" type="button" data-action="blendSaveCurrentBlend" data-args='[null]'>\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c \u0441\u043c\u0435\u0441\u044c</button>
           <button class="secondary-button" type="button" data-action="blendCreateContent">\u0421\u043e\u0437\u0434\u0430\u0442\u044c \u043a\u043e\u043d\u0442\u0435\u043d\u0442</button>
         </div>
+        <button class="secondary-button" type="button" style="width:100%" data-action="blendOfWeek" data-args='[null]'>\u2728 \u0421\u043c\u0435\u0441\u044c \u043d\u0435\u0434\u0435\u043b\u0438 (\u043a\u0430\u0440\u0443\u0441\u0435\u043b\u044c + \u043f\u043e\u0441\u0442)</button>
         <div id="blendContentPicker" hidden style="margin-top:6px">
           <p class="field-help" style="margin-bottom:6px">\u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u0444\u043e\u0440\u043c\u0430\u0442:</p>
           <div class="chip-list">
@@ -352,6 +353,31 @@ export function createBlendConstructorModule(deps) {
     });
   }
 
+  async function blendOfWeek(btn) {
+    if (!_blendState?.result) return;
+    const r = _blendState.result;
+    const req = _blendState.origRequest || {};
+    const bc = {
+      title: r.title, brief: req.brief || "",
+      oils: (_blendState.oils || r.oils).filter(o => o.active !== false).map(o => ({
+        name_ru: o.name_ru, name_en: o.name_en || "", drops: o.displayDrops || o.drops, role: o.role || "",
+      })),
+      total_drops: r.total_drops, profile: r.profile || {},
+      expert_note: r.expert_note || "", application_guide: r.application_guide || "",
+      tags: r.tags || [],
+    };
+    await withButtonFeedback(btn, "Создаю...", async () => {
+      const result = await fetchJson("/api/blend-constructor/blend-of-week", {
+        method: "POST",
+        body: JSON.stringify(bc),
+        timeout: 30000,
+      });
+      showUiNotice(`Создано 2 черновика: карусель и пост`, "success");
+      // Navigate to drafts tab
+      if (typeof window.setTab === "function") window.setTab("drafts");
+    }, "Готово");
+  }
+
   function blendCreateContent() {
     const picker = document.getElementById("blendContentPicker");
     if (picker) picker.hidden = !picker.hidden;
@@ -497,6 +523,7 @@ export function createBlendConstructorModule(deps) {
     submitBlendConstructor,
     blendSaveCurrentBlend,
     blendCreateContent,
+    blendOfWeek,
     blendLaunchContent,
     blendRegenerate,
     blendAdjustWithOil,

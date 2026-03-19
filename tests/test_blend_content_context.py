@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from bot.agents.blend_content_context import (
     build_blend_carousel_narrative,
+    build_blend_of_week_topic,
     build_blend_reels_concept,
     build_blend_strategist_block,
     build_blend_writer_block,
@@ -122,3 +123,23 @@ class TestMoodToVisualDirective:
     def test_balanced(self):
         result = mood_to_visual_directive({"focus": 25, "energy": 25, "creativity": 25, "calm": 25})
         assert "terracotta" in result  # fallback brand palette
+
+
+class TestBuildBlendOfWeekTopic:
+    def test_basic_topic(self):
+        topic = build_blend_of_week_topic(_SAMPLE_BC)
+        assert "Смесь для концентрации" in topic
+        assert "Розмарин" in topic
+        assert "Мята" in topic
+        assert "концентрации" in topic  # dominant is focus
+
+    def test_calm_dominant(self):
+        bc = {**_SAMPLE_BC, "profile": {"focus": 5, "energy": 5, "creativity": 5, "calm": 85}}
+        topic = build_blend_of_week_topic(bc)
+        assert "спокойствия" in topic
+
+    def test_empty_profile(self):
+        bc = {"title": "Тест", "oils": [], "profile": {}}
+        topic = build_blend_of_week_topic(bc)
+        assert "Тест" in topic
+        assert "баланса" in topic
