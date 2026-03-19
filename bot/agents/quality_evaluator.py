@@ -82,6 +82,19 @@ def _call_claude(prompt: str, system: str = "") -> str:
     )
 
 
+def _recalc_overall(scores: dict) -> None:
+    """Recalculate overall score and passed flag."""
+    scores["overall"] = round(
+        scores["hook_strength"] * 0.25
+        + scores["coherence"] * 0.20
+        + scores["cta_clarity"] * 0.15
+        + scores["brand_fit"] * 0.20
+        + scores["humanness"] * 0.20,
+        3,
+    )
+    scores["passed"] = scores["overall"] >= _THRESHOLD
+
+
 def _self_audit(scores: dict, text: str) -> dict:
     """Cross-check evaluator scores against hard rules (AI marker detection)."""
     from bot.services.humanizer import detect_ai_markers
@@ -92,16 +105,51 @@ def _self_audit(scores: dict, text: str) -> dict:
         marker_names = ", ".join(markers[:5])
         audit_note = f" Self-audit: AI markers detected ({marker_names}), humanness adjusted."
         scores["critique"] = scores.get("critique", "") + audit_note
-        # Recalculate overall
-        scores["overall"] = round(
-            scores["hook_strength"] * 0.25
-            + scores["coherence"] * 0.20
-            + scores["cta_clarity"] * 0.15
-            + scores["brand_fit"] * 0.20
-            + scores["humanness"] * 0.20,
-            3,
-        )
-        scores["passed"] = scores["overall"] >= _THRESHOLD
+        _recalc_overall(scores)
+    return scores
+
+
+import re as _re
+
+_ANALYSIS_MARKERS = _re.compile(
+    r"^#{1,3}\s|"                         # markdown headers
+    r"^\*\*\d+\.\s|"                      # **1. numbered bold items
+    r"(?:Разбор|Анализ|Что здесь)\b|"     # analysis headers
+    r"(?:Почему это работает|Что здесь сильного)",
+    _re.MULTILINE,
+)
+
+_MARKDOWN_MARKERS = _re.compile(
+    r"^#{1,6}\s|"                         # # headers
+    r"\*\*[^*]+\*\*|"                     # **bold**
+    r"^>\s|"                              # > blockquotes
+    r"^```",                              # code fences
+    _re.MULTILINE,
+)
+
+
+def _format_audit(scores: dict, text: str, platform: str) -> dict:
+    """Check for format violations: markdown, analysis instead of post, word limits."""
+    issues: list[str] = []
+
+    # Detect analysis/review content instead of actual post
+    if _ANALYSIS_MARKERS.search(text):
+        issues.append("Text looks like analysis/review, not a social media post")
+        scores["coherence"] = min(scores.get("coherence", 0.5), 0.3)
+        scores["brand_fit"] = min(scores.get("brand_fit", 0.5), 0.3)
+
+    # Detect markdown formatting (forbidden in social media posts)
+    if platform != "telegram":  # telegram allows **bold**
+        md_count = len(_MARKDOWN_MARKERS.findall(text))
+        if md_count >= 2:
+            issues.append(f"Markdown formatting detected ({md_count} instances)")
+            scores["humanness"] = min(scores.get("humanness", 0.5), 0.4)
+
+    if issues:
+        audit_note = " Format audit: " + "; ".join(issues) + "."
+        scores["critique"] = scores.get("critique", "") + audit_note
+        _recalc_overall(scores)
+
     return scores
 
 
@@ -138,6 +186,7 @@ def _evaluate_sync(text: str, platform: str, topic: str) -> ContentScore:
             "passed": overall >= _THRESHOLD,
         }
         scores = _self_audit(scores, text)
+        scores = _format_audit(scores, text, platform)
         return ContentScore(**scores)
     except Exception as exc:
         logger.warning("QualityEvaluator parse error: %s", exc)

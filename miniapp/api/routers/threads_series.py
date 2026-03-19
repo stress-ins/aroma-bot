@@ -135,9 +135,17 @@ async def _regen_slot_text(topic: str, goal_key: str, slot: str, note: str | Non
 
 В конце добавь строку: ПОЧЕМУ ЭТО СРАБОТАЕТ: [одно предложение]
 Верни только текст поста, без меток УТРО/ДЕНЬ/ВЕЧЕР.
+
+ЗАПРЕЩЕНО:
+- Возвращать разбор, анализ, комментарии или объяснения вместо поста.
+- Использовать markdown: # заголовки, **жирный**, > цитаты, нумерованные списки.
+- Писать что-либо кроме готового текста поста + строки ПОЧЕМУ ЭТО СРАБОТАЕТ.
 """
         raw = _call_claude(prompt, max_tokens=400)
         edited = edit_post_sync(raw, topic, platform="threads_slot")
+        # Strip any markdown formatting that slipped through
+        from bot.agents.content import _strip_markdown_formatting
+        edited = _strip_markdown_formatting(edited)
         text, why = _extract_why_it_works(edited)
         return text, why
 
