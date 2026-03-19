@@ -18,6 +18,10 @@ import db.session
 import bot.services.drafts_store
 import bot.services.plans_store
 import bot.services.miniapp_references
+import bot.services.miniapp_references.common
+import bot.services.miniapp_references.aroma
+import bot.services.miniapp_references.blend
+import bot.services.miniapp_references.symptom
 import bot.services.draft_revisions_store
 import bot.services.kb_context_builder
 
@@ -66,6 +70,10 @@ async def prod_db(monkeypatch, tmp_path):
     monkeypatch.setattr(bot.services.drafts_store, "AsyncSessionLocal", session_factory)
     monkeypatch.setattr(bot.services.plans_store, "AsyncSessionLocal", session_factory)
     monkeypatch.setattr(bot.services.miniapp_references, "AsyncSessionLocal", session_factory)
+    monkeypatch.setattr(bot.services.miniapp_references.common, "AsyncSessionLocal", session_factory)
+    monkeypatch.setattr(bot.services.miniapp_references.aroma, "AsyncSessionLocal", session_factory)
+    monkeypatch.setattr(bot.services.miniapp_references.blend, "AsyncSessionLocal", session_factory)
+    monkeypatch.setattr(bot.services.miniapp_references.symptom, "AsyncSessionLocal", session_factory)
     monkeypatch.setattr(bot.services.draft_revisions_store, "AsyncSessionLocal", session_factory)
     monkeypatch.setattr(bot.services.kb_context_builder, "AsyncSessionLocal", session_factory)
 

@@ -944,16 +944,23 @@ class TestHandbookPdfImport:
             session.add(blend_card)
             await session.commit()
 
+        import bot.services.miniapp_references.common as _refs_common
         async def _noop(): pass
         orig_session = refs.AsyncSessionLocal
         orig_seed = refs.seed_reference_cards_if_empty
+        orig_common_session = _refs_common.AsyncSessionLocal
+        orig_common_seed = _refs_common.seed_reference_cards_if_empty
         try:
             refs.AsyncSessionLocal = TestSession
             refs.seed_reference_cards_if_empty = _noop
+            _refs_common.AsyncSessionLocal = TestSession
+            _refs_common.seed_reference_cards_if_empty = _noop
             items = await refs.list_reference_cards("blend")
         finally:
             refs.AsyncSessionLocal = orig_session
             refs.seed_reference_cards_if_empty = orig_seed
+            _refs_common.AsyncSessionLocal = orig_common_session
+            _refs_common.seed_reference_cards_if_empty = orig_common_seed
 
         assert len(items) == 1
         assert items[0]["slug"] == "blend-grounding"
@@ -988,16 +995,27 @@ class TestHandbookPdfImport:
             session.add(blend_card)
             await session.commit()
 
+        import bot.services.miniapp_references.common as _refs_common
+        import bot.services.miniapp_references.blend as _refs_blend
         async def _noop(): pass
         orig_session = refs.AsyncSessionLocal
         orig_seed = refs.seed_reference_cards_if_empty
+        orig_common_session = _refs_common.AsyncSessionLocal
+        orig_common_seed = _refs_common.seed_reference_cards_if_empty
+        orig_blend_session = _refs_blend.AsyncSessionLocal
         try:
             refs.AsyncSessionLocal = TestSession
             refs.seed_reference_cards_if_empty = _noop
+            _refs_common.AsyncSessionLocal = TestSession
+            _refs_common.seed_reference_cards_if_empty = _noop
+            _refs_blend.AsyncSessionLocal = TestSession
             card = await refs.get_reference_card("blend", "blend-grounding")
         finally:
             refs.AsyncSessionLocal = orig_session
             refs.seed_reference_cards_if_empty = orig_seed
+            _refs_common.AsyncSessionLocal = orig_common_session
+            _refs_common.seed_reference_cards_if_empty = orig_common_seed
+            _refs_blend.AsyncSessionLocal = orig_blend_session
 
         assert card is not None
         assert card["slug"] == "blend-grounding"
@@ -1017,7 +1035,7 @@ class TestHandbookPdfImport:
         assert "related_symptom_parent_groups" in refs_js
 
     def test_aroma_crossref_blend_names_use_name_ru(self):
-        backend = Path("bot/services/miniapp_references.py").read_text(encoding="utf-8")
+        backend = Path("bot/services/miniapp_references/aroma.py").read_text(encoding="utf-8")
         # blends_containing_names must use name_ru, not raw blend.name
         assert "name_ru or blend.name" in backend
 

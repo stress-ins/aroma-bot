@@ -154,7 +154,7 @@ def test_payload_image_url_returns_stored_if_file_exists(tmp_path):
     fake_file = fake_dir / "lavender.jpg"
     fake_file.write_bytes(b"FAKEIMG")
 
-    with patch("bot.services.miniapp_references.REFERENCE_IMAGES_DIR", tmp_path):
+    with patch("bot.services.miniapp_references.common.REFERENCE_IMAGES_DIR", tmp_path):
         result = _payload_image_url({"image_url": "/reference-images/aromas/lavender.jpg"})
 
     assert result == "/reference-images/aromas/lavender.jpg"
@@ -164,7 +164,7 @@ def test_payload_image_url_returns_none_if_file_missing(tmp_path):
     """_payload_image_url returns None if referenced file doesn't exist."""
     from bot.services.miniapp_references import _payload_image_url
 
-    with patch("bot.services.miniapp_references.REFERENCE_IMAGES_DIR", tmp_path):
+    with patch("bot.services.miniapp_references.common.REFERENCE_IMAGES_DIR", tmp_path):
         result = _payload_image_url({"image_url": "/reference-images/aromas/missing.jpg"})
 
     assert result is None
