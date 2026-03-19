@@ -23,6 +23,7 @@ export function createTrendsModule(deps) {
   let trendsPeriod = 7;
   let trendsData = null;
   let trendsCompare = null;
+  let monitoredAccounts = { instagram: [], threads: [] };
 
   const WEEKDAY_LABELS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 
@@ -34,12 +35,23 @@ export function createTrendsModule(deps) {
     syncMobileNavigation();
 
     try {
+      const [trendsResult, accountsResult] = await Promise.allSettled([
+        trendsPlatform === "compare"
+          ? fetchJson(`/api/trends/compare?period=${trendsPeriod}`)
+          : fetchJson(`/api/trends/${trendsPlatform}?period=${trendsPeriod}`),
+        fetchJson("/api/social/monitored-accounts"),
+      ]);
+
       if (trendsPlatform === "compare") {
-        trendsCompare = await fetchJson(`/api/trends/compare?period=${trendsPeriod}`);
+        trendsCompare = trendsResult.status === "fulfilled" ? trendsResult.value : null;
         trendsData = null;
       } else {
-        trendsData = await fetchJson(`/api/trends/${trendsPlatform}?period=${trendsPeriod}`);
+        trendsData = trendsResult.status === "fulfilled" ? trendsResult.value : null;
         trendsCompare = null;
+      }
+
+      if (accountsResult.status === "fulfilled") {
+        monitoredAccounts = accountsResult.value || { instagram: [], threads: [] };
       }
     } catch (err) {
       trendsData = null;
@@ -103,6 +115,7 @@ export function createTrendsModule(deps) {
         </div>
       </div>
       ${summary}
+      ${renderMonitoredAccountsSection()}
     `;
   }
 
@@ -411,6 +424,89 @@ export function createTrendsModule(deps) {
     return `<div class="detail-loader"><div class="loader"></div> Загрузка трендов…</div>`;
   }
 
+  // ── Monitored accounts section ─────────────────────────────────────────
+
+  function renderMonitoredAccountsSection() {
+    const igAccounts = monitoredAccounts.instagram || [];
+    const thAccounts = monitoredAccounts.threads || [];
+
+    const renderAccountChips = (accounts, platform) => {
+      if (accounts.length === 0) return `<span class="plan-entry-hint">Нет аккаунтов</span>`;
+      return accounts.map((a) => {
+        const username = a.username || a;
+        return `<span class="keyword-chip">
+          <span>@${escapeHtml(username)}</span>
+          <button type="button" aria-label="Удалить" onclick="removeMonitoredAccount('${platform}', '${escapeHtml(username)}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+        </span>`;
+      }).join("");
+    };
+
+    return `
+      <div class="trends-monitored-section">
+        <div class="detail-section-title" style="margin-top:16px">${uiIcon("at-sign", 16)} Отслеживаемые аккаунты</div>
+        <div class="trends-monitored-group">
+          <strong class="trends-monitored-label">${uiIcon("instagram", 14)} Instagram</strong>
+          <div class="keyword-items">${renderAccountChips(igAccounts, "instagram")}</div>
+        </div>
+        <div class="trends-monitored-group">
+          <strong class="trends-monitored-label">${uiIcon("at-sign", 14)} Threads</strong>
+          <div class="keyword-items">${renderAccountChips(thAccounts, "threads")}</div>
+        </div>
+        <div class="keyword-form keyword-add-row" style="margin-top:8px">
+          <select id="monitoredPlatformSelect" class="trends-platform-select">
+            <option value="instagram">Instagram</option>
+            <option value="threads">Threads</option>
+          </select>
+          <input id="monitoredUsernameInput" type="text" placeholder="@username">
+          <button class="secondary-button" type="button" onclick="addMonitoredAccount()">Добавить</button>
+        </div>
+      </div>
+    `;
+  }
+
+  async function addMonitoredAccount() {
+    const platformEl = document.getElementById("monitoredPlatformSelect");
+    const usernameEl = document.getElementById("monitoredUsernameInput");
+    const platform = platformEl?.value || "instagram";
+    const username = String(usernameEl?.value || "").trim().replace(/^@/, "");
+    if (!username) { usernameEl?.focus(); return; }
+    try {
+      await fetchJson("/api/social/monitored-accounts", {
+        method: "POST",
+        body: JSON.stringify({ platform, username }),
+      });
+      if (usernameEl) usernameEl.value = "";
+      showUiNotice("Аккаунт добавлен", "success");
+      // Reload accounts
+      try {
+        monitoredAccounts = await fetchJson("/api/social/monitored-accounts");
+      } catch (_) { /* ignore */ }
+      elements.draftList.innerHTML = renderTrendsListPanel();
+      if (window.lucide) lucide.createIcons();
+    } catch (err) {
+      const detail = err?.detail || "";
+      if (detail === "already_monitored") showUiNotice("Аккаунт уже добавлен", "warning");
+      else if (detail === "max_accounts_reached") showUiNotice("Достигнут лимит аккаунтов", "error");
+      else showUiNotice("Не удалось добавить аккаунт", "error");
+    }
+  }
+
+  async function removeMonitoredAccount(platform, username) {
+    try {
+      await fetchJson(`/api/social/monitored-accounts/${platform}/${encodeURIComponent(username)}`, {
+        method: "DELETE",
+      });
+      showUiNotice("Аккаунт удалён", "success");
+      try {
+        monitoredAccounts = await fetchJson("/api/social/monitored-accounts");
+      } catch (_) { /* ignore */ }
+      elements.draftList.innerHTML = renderTrendsListPanel();
+      if (window.lucide) lucide.createIcons();
+    } catch (_err) {
+      showUiNotice("Не удалось удалить аккаунт", "error");
+    }
+  }
+
   // ── Actions ──────────────────────────────────────────────────────────
 
   function selectTrendsPlatform(platform) {
@@ -425,7 +521,7 @@ export function createTrendsModule(deps) {
 
   async function refreshTrends(btn) {
     if (btn) {
-      await withButtonFeedback(btn, async () => {
+      await withButtonFeedback(btn, "Обновление…", async () => {
         try {
           await fetchJson("/api/trends/refresh", { method: "POST" });
           showUiNotice("Сбор данных запущен. Обновите через пару минут.");
@@ -437,7 +533,7 @@ export function createTrendsModule(deps) {
             showUiNotice("Не удалось запустить обновление.");
           }
         }
-      });
+      }, "Готово");
     }
   }
 
@@ -478,5 +574,7 @@ export function createTrendsModule(deps) {
     selectTrendsPeriod,
     refreshTrends,
     openTrendsPost,
+    addMonitoredAccount,
+    removeMonitoredAccount,
   };
 }

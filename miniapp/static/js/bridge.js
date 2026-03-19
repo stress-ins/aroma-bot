@@ -138,6 +138,8 @@ export function registerWindowBridge(deps) {
     selectTrendsPeriod,
     refreshTrends,
     openTrendsPost,
+    addMonitoredAccount,
+    removeMonitoredAccount,
   } = deps;
 
   window.retryCurrentTab = retryCurrentTab;
@@ -338,4 +340,6 @@ export function registerWindowBridge(deps) {
   window.selectTrendsPeriod = selectTrendsPeriod;
   window.refreshTrends = refreshTrends;
   window.openTrendsPost = openTrendsPost;
+  window.addMonitoredAccount = addMonitoredAccount;
+  window.removeMonitoredAccount = removeMonitoredAccount;
 }
