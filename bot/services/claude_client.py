@@ -219,7 +219,10 @@ def _call_kie_claude(
         kwargs["system"] = system
 
     response = client.messages.create(**kwargs)
-    text = response.content[0].text.strip()
+    blocks = response.content if response.content else []
+    text = (blocks[0].text or "").strip() if blocks and hasattr(blocks[0], "text") else ""
+    if not text:
+        raise ValueError(f"Kie.ai Claude returned empty/null content (blocks={len(blocks)})")
 
     # Fire-and-forget cost logging
     try:
@@ -271,7 +274,11 @@ def _call_kie_gemini(
     )
     resp.raise_for_status()
     data = resp.json()
-    text = data["choices"][0]["message"]["content"].strip()
+    choices = data.get("choices") or []
+    if not choices:
+        raise ValueError(f"Kie.ai Gemini returned no choices: {data}")
+    content = (choices[0].get("message") or {}).get("content")
+    text = (content or "").strip()
     if not text:
         raise ValueError("Kie.ai Gemini returned empty response")
 
