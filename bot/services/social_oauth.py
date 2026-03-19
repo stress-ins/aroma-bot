@@ -22,6 +22,8 @@ THREADS_DEFAULT_SCOPES = (
     "threads_content_publish",
     "threads_manage_replies",
     "threads_manage_insights",
+    "threads_read_replies",
+    "threads_manage_mentions",
 )
 
 INSTAGRAM_AUTHORIZE_URL = "https://www.instagram.com/oauth/authorize"
