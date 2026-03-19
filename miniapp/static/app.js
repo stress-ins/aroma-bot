@@ -664,6 +664,8 @@ function uiIcon(name) {
     "arrow-up-right": "arrow-up-right",
     "arrow-down-left": "arrow-down-left",
     "pen-tool": "pen-tool",
+    compass:    "compass",
+    lightbulb:  "lightbulb",
   };
   return `<span class="ui-icon ui-icon-${escapeHtml(name)}">${icon(LUCIDE_MAP[name] || "square-terminal", 16)}</span>`;
 }
@@ -1728,13 +1730,14 @@ const { renderBrand: renderBrandImpl, loadForbiddenPhrases: loadForbiddenPhrases
   activatePromo, generatePromos,
 } = _settingsMod);
 
-let selectTrendsPlatform, selectTrendsPeriod, refreshTrends, openTrendsPost, addMonitoredAccount, removeMonitoredAccount;
+let selectTrendsPlatform, selectTrendsPeriod, refreshTrends, openTrendsPost, createFromInsight, addMonitoredAccount, removeMonitoredAccount;
 ({
   loadTrends,
   selectTrendsPlatform,
   selectTrendsPeriod,
   refreshTrends,
   openTrendsPost,
+  createFromInsight,
   addMonitoredAccount,
   removeMonitoredAccount,
 } = createTrendsModule({
@@ -2134,6 +2137,7 @@ registerWindowBridge({
   selectTrendsPeriod,
   refreshTrends,
   openTrendsPost,
+  createFromInsight,
   addMonitoredAccount,
   removeMonitoredAccount,
   addMonitoredAccountFromSettings,

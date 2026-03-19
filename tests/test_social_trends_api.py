@@ -136,6 +136,45 @@ class TestSuggestionsEndpoint:
         assert data["platform"] == "instagram"
 
 
+    async def test_suggestions_include_insights(self, _seed_team_and_posts):
+        team = _seed_team_and_posts
+        from miniapp_server import app
+        client = TestClient(app)
+        resp = client.get(
+            "/api/trends/suggestions?platform=instagram",
+            headers={**HEADERS, "X-Team-Id": team.team_id},
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "insights" in data
+        insights = data["insights"]
+        assert len(insights) > 0
+        ins = insights[0]
+        assert "topic" in ins
+        assert "engagement_score" in ins
+        assert isinstance(ins["engagement_score"], int)
+        assert "author_username" in ins
+        assert "suggested_format" in ins
+        assert ins["suggested_format"] in ("carousel", "reels", "threads_series", "content")
+        assert "hashtags" in ins
+
+    async def test_suggestions_threads_insights(self, _seed_team_and_posts):
+        team = _seed_team_and_posts
+        from miniapp_server import app
+        client = TestClient(app)
+        resp = client.get(
+            "/api/trends/suggestions?platform=threads",
+            headers={**HEADERS, "X-Team-Id": team.team_id},
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        insights = data.get("insights", [])
+        assert len(insights) > 0
+        # Threads posts should suggest threads_series format
+        formats = {ins["suggested_format"] for ins in insights}
+        assert "threads_series" in formats
+
+
 class TestMonitoredAccounts:
     async def test_list_monitored_accounts(self, _seed_team_and_posts):
         team = _seed_team_and_posts
