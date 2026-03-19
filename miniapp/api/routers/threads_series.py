@@ -190,7 +190,7 @@ async def regenerate_posts(draft_id: str, _: None = Depends(_require_auth)):
         new_payload["series_summary"] = p["series_summary"]
 
     new_posts = new_payload.get("threads_posts", [])
-    if not new_posts:
+    if not any(p.get("text") for p in new_posts):
         raise HTTPException(status_code=502, detail="generation_produced_no_posts")
 
     saved = await update_draft(draft_id, payload=new_payload)
