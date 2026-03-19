@@ -10,10 +10,10 @@ from pathlib import Path
 import pytest
 
 # Skip entire module if ffmpeg is not available
-pytestmark = pytest.mark.skipif(
-    not shutil.which("ffmpeg"),
-    reason="FFmpeg not installed",
-)
+pytestmark = [
+    pytest.mark.skipif(not shutil.which("ffmpeg"), reason="FFmpeg not installed"),
+    pytest.mark.slow,
+]
 
 
 def _make_solid_image(path: Path, color: tuple[int, int, int], size: tuple[int, int] = (1080, 1920)) -> Path:
