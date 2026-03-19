@@ -403,7 +403,7 @@ def test_enrich_passport_script_exists_and_has_dry_run():
 
 def test_list_reference_cards_uses_name_ru_for_all_categories():
     """list_reference_cards must use name_ru for all categories, not only blend."""
-    src = (ROOT / "bot" / "services" / "miniapp_references.py").read_text(encoding="utf-8")
+    src = (ROOT / "bot" / "services" / "miniapp_references" / "common.py").read_text(encoding="utf-8")
     # Extract only the list_reference_cards function block
     start = src.find("async def list_reference_cards(")
     end = src.find("\nasync def ", start + 1)

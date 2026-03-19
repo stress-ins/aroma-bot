@@ -6,6 +6,10 @@ import db.session
 import bot.services.drafts_store
 import bot.services.plans_store
 import bot.services.miniapp_references
+import bot.services.miniapp_references.common
+import bot.services.miniapp_references.aroma
+import bot.services.miniapp_references.blend
+import bot.services.miniapp_references.symptom
 import bot.services.draft_revisions_store
 import bot.services.kb_context_builder
 import bot.services.post_metrics_store
@@ -42,6 +46,10 @@ async def setup_test_db(monkeypatch):
     monkeypatch.setattr(bot.services.drafts_store, "AsyncSessionLocal", AsyncSessionLocal)
     monkeypatch.setattr(bot.services.plans_store, "AsyncSessionLocal", AsyncSessionLocal)
     monkeypatch.setattr(bot.services.miniapp_references, "AsyncSessionLocal", AsyncSessionLocal)
+    monkeypatch.setattr(bot.services.miniapp_references.common, "AsyncSessionLocal", AsyncSessionLocal)
+    monkeypatch.setattr(bot.services.miniapp_references.aroma, "AsyncSessionLocal", AsyncSessionLocal)
+    monkeypatch.setattr(bot.services.miniapp_references.blend, "AsyncSessionLocal", AsyncSessionLocal)
+    monkeypatch.setattr(bot.services.miniapp_references.symptom, "AsyncSessionLocal", AsyncSessionLocal)
     monkeypatch.setattr(bot.services.draft_revisions_store, "AsyncSessionLocal", AsyncSessionLocal)
     monkeypatch.setattr(bot.services.kb_context_builder, "AsyncSessionLocal", AsyncSessionLocal)
     monkeypatch.setattr(bot.services.post_metrics_store, "AsyncSessionLocal", AsyncSessionLocal)

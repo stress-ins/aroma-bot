@@ -560,8 +560,11 @@ class TestMiniAppApi:
         async def _noop_seed():
             return None
 
+        import bot.services.miniapp_references.common as _refs_common
         monkeypatch.setattr(references, "AsyncSessionLocal", lambda: _FakeSessionContext())
         monkeypatch.setattr(references, "seed_reference_cards_if_empty", _noop_seed)
+        monkeypatch.setattr(_refs_common, "AsyncSessionLocal", lambda: _FakeSessionContext())
+        monkeypatch.setattr(_refs_common, "seed_reference_cards_if_empty", _noop_seed)
 
         from bot.services.miniapp_references import build_reference_context
         result = await build_reference_context(max_items_per_category=4, max_total_chars=1000)
@@ -611,8 +614,11 @@ class TestMiniAppApi:
         async def _noop_seed():
             return None
 
+        import bot.services.miniapp_references.common as _refs_common
         monkeypatch.setattr(references, "AsyncSessionLocal", lambda: _FakeSessionContext())
         monkeypatch.setattr(references, "seed_reference_cards_if_empty", _noop_seed)
+        monkeypatch.setattr(_refs_common, "AsyncSessionLocal", lambda: _FakeSessionContext())
+        monkeypatch.setattr(_refs_common, "seed_reference_cards_if_empty", _noop_seed)
 
         from bot.services.miniapp_references import build_reference_context
         result = await build_reference_context(max_items_per_category=2, max_total_chars=220)
@@ -1087,6 +1093,9 @@ class TestMiniAppRussianLocale:
         extra_seed_file.write_text("[]", encoding="utf-8")
         monkeypatch.setattr(miniapp_references, "SEED_FILE", seed_file)
         monkeypatch.setattr(miniapp_references, "EXTRA_SEED_FILE", extra_seed_file)
+        import bot.services.miniapp_references.common as _refs_common
+        monkeypatch.setattr(_refs_common, "SEED_FILE", seed_file)
+        monkeypatch.setattr(_refs_common, "EXTRA_SEED_FILE", extra_seed_file)
 
         await seed_reference_cards_if_empty()
         updated = await miniapp_references.update_reference_card(
