@@ -2182,12 +2182,6 @@ body.tg-theme-dark .danger-button {
   body.is-mobile-layout.is-detail-view .back-button.visible {
     top: 0;
     padding-top: calc(6px + var(--tg-content-inset-top, env(safe-area-inset-top, 0px)));
-    width: 100%;
-    box-sizing: border-box;
-    border-radius: 0;
-    border-left: none;
-    border-right: none;
-    border-top: none;
   }
 
   body.is-mobile-layout.is-detail-view .detail-panel {
@@ -4032,16 +4026,19 @@ body[data-tab="settings"] .topbar-copy .team-switcher {
   display: none;
 }
 
-/* In content mode on mobile, top tab strip is redundant (bottom bar handles it) */
+/* In content mode on mobile, show tab strip for sub-navigation (Trends/Schedule/etc.) */
 body.is-mobile-layout[data-mode="content"] .tabs {
-  display: none;
+  display: flex;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  flex-wrap: nowrap;
+  overscroll-behavior-x: contain;
 }
+body.is-mobile-layout[data-mode="content"] .tabs::-webkit-scrollbar { display: none; }
 
-/* In content mode, hide the entire toolbar container when it has no useful content
-   (filters only appear on drafts/inbox; toolbar collapses on all other tabs)    */
-body.is-mobile-layout[data-mode="content"]:not([data-tab="drafts"]):not([data-tab="inbox"]) .toolbar {
-  display: none;
-}
+/* Toolbar filters are hidden via JS (filtersContainer.hidden) on non-drafts/inbox tabs.
+   Keep toolbar visible so it can host the tab strip. */
 
 /* In mobile detail view, filters are irrelevant — hide the toolbar */
 body.is-mobile-layout.is-detail-view .toolbar {
