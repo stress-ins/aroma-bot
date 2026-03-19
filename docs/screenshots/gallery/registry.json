@@ -124,7 +124,7 @@
       "scrollable": true,
       "steps": [
         {"action": "goto", "url": "?tab=drafts"},
-        {"action": "evaluate", "js": "document.querySelector('[data-filter=\"scheduled\"]')?.click()"},
+        {"action": "evaluate", "js": "const el=document.getElementById('statusFilter');if(el){el.value='scheduled';el.dispatchEvent(new Event('change',{bubbles:true}))}"},
         {"action": "click", "selector": ".draft-card:has-text('Утренний ритуал')", "wait": ".detail-title"}
       ]
     },
@@ -136,7 +136,7 @@
       "scrollable": true,
       "steps": [
         {"action": "goto", "url": "?tab=drafts"},
-        {"action": "evaluate", "js": "document.querySelector('[data-filter=\"published\"]')?.click()"},
+        {"action": "evaluate", "js": "const el=document.getElementById('statusFilter');if(el){el.value='published';el.dispatchEvent(new Event('change',{bubbles:true}))}"},
         {"action": "click", "selector": ".draft-card:has-text('Вечерняя медитация')", "wait": ".detail-title"}
       ]
     },
@@ -483,8 +483,7 @@
       "steps": [
         {"action": "click", "selector": "#btnTabHandbook"},
         {"action": "click", "selector": "button.tab-button:has-text('Ароматы')"},
-        {"action": "evaluate", "js": "document.querySelector('.search-input, input[placeholder*=\"Поиск\"], input[placeholder*=\"поиск\"]').value = 'Расслабление'"},
-        {"action": "evaluate", "js": "document.querySelector('.search-input, input[placeholder*=\"Поиск\"], input[placeholder*=\"поиск\"]').dispatchEvent(new Event('input', {bubbles:true}))"}
+        {"action": "evaluate", "js": "const el=document.getElementById('smartSearchInput');if(el){el.value='Расслабление';el.dispatchEvent(new Event('input',{bubbles:true}))}"}
       ]
     },
     {
@@ -495,8 +494,7 @@
       "steps": [
         {"action": "click", "selector": "#btnTabHandbook"},
         {"action": "click", "selector": "button.tab-button:has-text('Ароматы')"},
-        {"action": "evaluate", "js": "document.querySelector('.search-input, input[placeholder*=\"Поиск\"], input[placeholder*=\"поиск\"]').value = 'xyzнесуществующее'"},
-        {"action": "evaluate", "js": "document.querySelector('.search-input, input[placeholder*=\"Поиск\"], input[placeholder*=\"поиск\"]').dispatchEvent(new Event('input', {bubbles:true}))"}
+        {"action": "evaluate", "js": "const el=document.getElementById('smartSearchInput');if(el){el.value='xyzнесуществующее';el.dispatchEvent(new Event('input',{bubbles:true}))}"}
       ]
     },
     {
@@ -517,7 +515,7 @@
       "mode": "content",
       "steps": [
         {"action": "goto", "url": "?tab=drafts"},
-        {"action": "evaluate", "js": "document.querySelector('select[data-filter-kind], .filter-kind select')?.value && (document.querySelector('select[data-filter-kind], .filter-kind select').value = 'reels', document.querySelector('select[data-filter-kind], .filter-kind select').dispatchEvent(new Event('change', {bubbles:true}))) || document.querySelector('[data-filter=\"reels\"]')?.click()"}
+        {"action": "evaluate", "js": "const el=document.getElementById('kindFilter');if(el){el.value='reels';el.dispatchEvent(new Event('change',{bubbles:true}))}"}
       ]
     },
     {
@@ -527,7 +525,7 @@
       "mode": "content",
       "steps": [
         {"action": "goto", "url": "?tab=drafts"},
-        {"action": "evaluate", "js": "document.querySelector('select[data-filter-status], .filter-status select')?.value && (document.querySelector('select[data-filter-status], .filter-status select').value = 'approved', document.querySelector('select[data-filter-status], .filter-status select').dispatchEvent(new Event('change', {bubbles:true}))) || document.querySelector('[data-filter=\"approved\"]')?.click()"}
+        {"action": "evaluate", "js": "const el=document.getElementById('statusFilter');if(el){el.value='approved';el.dispatchEvent(new Event('change',{bubbles:true}))}"}
       ]
     },
     {
