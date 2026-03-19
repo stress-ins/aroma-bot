@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, patch, MagicMock
 
 import pytest
@@ -9,6 +10,8 @@ from bot.services.canva_api import (
     export_to_canva,
     export_canva_design,
     list_canva_designs,
+    _get_canva_token,
+    _try_refresh_canva_token,
     _poll_job,
 )
 
@@ -177,3 +180,83 @@ async def test_export_canva_design_success(mock_canva_token):
         await mock_client.aclose()
 
     assert result == b"pptx-file-content"
+
+
+@pytest.mark.asyncio
+async def test_get_canva_token_auto_refreshes_when_expired():
+    """When access_token is expired and refresh_token is available, auto-refresh kicks in."""
+    expired_token = MagicMock()
+    expired_token.access_token = "old-token"
+    expired_token.refresh_token = "canva-refresh-tok"
+    expired_token.expires_at = datetime.now(timezone.utc) - timedelta(hours=1)
+
+    with patch("bot.services.canva_api.get_token", new_callable=AsyncMock, return_value=expired_token), \
+         patch("bot.services.canva_api._try_refresh_canva_token", new_callable=AsyncMock, return_value="new-fresh-token"):
+        token = await _get_canva_token()
+    assert token == "new-fresh-token"
+
+
+@pytest.mark.asyncio
+async def test_get_canva_token_expired_no_refresh_raises():
+    """When token expired and refresh fails, raise a clear error."""
+    expired_token = MagicMock()
+    expired_token.access_token = "old-token"
+    expired_token.refresh_token = ""
+    expired_token.expires_at = datetime.now(timezone.utc) - timedelta(hours=1)
+
+    with patch("bot.services.canva_api.get_token", new_callable=AsyncMock, return_value=expired_token), \
+         patch("bot.services.canva_api._try_refresh_canva_token", new_callable=AsyncMock, return_value=None):
+        with pytest.raises(CanvaAPIError, match="истёк"):
+            await _get_canva_token()
+
+
+@pytest.mark.asyncio
+async def test_try_refresh_canva_token_success():
+    """_try_refresh_canva_token calls refresh_canva_token and persists result."""
+    token_record = MagicMock()
+    token_record.refresh_token = "rt-123"
+
+    refresh_result = {"access_token": "new-at", "refresh_token": "new-rt", "expires_in": 14400}
+
+    with patch("bot.services.canva_api.settings") as mock_settings, \
+         patch("bot.services.social_oauth.refresh_canva_token", return_value=refresh_result) as mock_refresh, \
+         patch("bot.services.canva_api.upsert_token", new_callable=AsyncMock) as mock_upsert:
+        mock_settings.canva_client_id = "cid"
+        mock_settings.canva_client_secret = "csec"
+
+        result = await _try_refresh_canva_token(token_record)
+
+    assert result == "new-at"
+    mock_refresh.assert_called_once_with(refresh_token="rt-123", client_id="cid", client_secret="csec")
+    mock_upsert.assert_called_once()
+    call_kwargs = mock_upsert.call_args
+    assert call_kwargs.kwargs["refresh_token"] == "new-rt"
+
+
+def test_refresh_canva_token_function():
+    """Test refresh_canva_token from social_oauth."""
+    import httpx
+    from bot.services.social_oauth import refresh_canva_token
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert "oauth/token" in str(request.url)
+        assert request.headers.get("Authorization", "").startswith("Basic ")
+        body = request.content.decode()
+        assert "grant_type=refresh_token" in body
+        assert "refresh_token=old-rt" in body
+        return httpx.Response(200, json={
+            "access_token": "new-access",
+            "refresh_token": "new-refresh",
+            "expires_in": 14400,
+        })
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    result = refresh_canva_token(
+        refresh_token="old-rt",
+        client_id="cid",
+        client_secret="csec",
+        client=client,
+    )
+    assert result["access_token"] == "new-access"
+    assert result["refresh_token"] == "new-refresh"
+    assert result["expires_in"] == 14400

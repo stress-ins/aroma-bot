@@ -215,6 +215,7 @@ async def upsert_token(
     platform: str,
     access_token: str,
     expires_at: datetime | None = None,
+    refresh_token: str = "",
 ) -> PlatformTokenModel:
     async with AsyncSessionLocal() as session:
         result = await session.execute(
@@ -224,11 +225,14 @@ async def upsert_token(
         if model:
             model.access_token = access_token
             model.expires_at = expires_at
+            if refresh_token:
+                model.refresh_token = refresh_token
             model.updated_at = datetime.now(timezone.utc)
         else:
             model = PlatformTokenModel(
                 platform=platform,
                 access_token=access_token,
+                refresh_token=refresh_token,
                 expires_at=expires_at,
                 updated_at=datetime.now(timezone.utc),
             )

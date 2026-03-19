@@ -315,6 +315,7 @@ class PlatformTokenModel(Base):
     platform: Mapped[str] = mapped_column(String(32), index=True)
     team_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("teams.team_id"), nullable=True, index=True)
     access_token: Mapped[str] = mapped_column(String(1024), default="")
+    refresh_token: Mapped[str] = mapped_column(String(1024), default="")
     expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, default=None)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,

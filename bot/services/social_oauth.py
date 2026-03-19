@@ -376,6 +376,39 @@ def exchange_canva_code(
         return _work(session)
 
 
+def refresh_canva_token(
+    *,
+    refresh_token: str,
+    client_id: str,
+    client_secret: str,
+    client: httpx.Client | None = None,
+) -> dict[str, str | int]:
+    """Refresh a Canva access token. Returns dict with access_token, refresh_token, expires_in."""
+    def _work(session: httpx.Client) -> dict[str, str | int]:
+        resp = session.post(
+            CANVA_TOKEN_URL,
+            data={
+                "grant_type": "refresh_token",
+                "refresh_token": refresh_token,
+            },
+            auth=(client_id, client_secret),
+        )
+        payload = _parse_json_response(resp, "Canva token refresh")
+        new_access = str(payload.get("access_token", "")).strip()
+        if not new_access:
+            raise OAuthExchangeError("Canva refresh did not return access_token")
+        return {
+            "access_token": new_access,
+            "refresh_token": str(payload.get("refresh_token", "")).strip(),
+            "expires_in": _coerce_int(payload.get("expires_in")) or 0,
+        }
+
+    if client is not None:
+        return _work(client)
+    with httpx.Client(timeout=30.0) as session:
+        return _work(session)
+
+
 def update_env_file(env_path: str | Path, updates: dict[str, str]) -> None:
     path = Path(env_path)
     existing_lines = path.read_text(encoding="utf-8").splitlines() if path.exists() else []

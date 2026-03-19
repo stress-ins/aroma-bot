@@ -363,7 +363,12 @@ async def _save_token_to_db(service: str, bundle: OAuthTokenBundle) -> None:
         expires_at = None
         if bundle.expires_in:
             expires_at = datetime.now(timezone.utc) + timedelta(seconds=bundle.expires_in)
-        await upsert_token(platform=service, access_token=bundle.access_token, expires_at=expires_at)
+        await upsert_token(
+            platform=service,
+            access_token=bundle.access_token,
+            expires_at=expires_at,
+            refresh_token=bundle.metadata.get("refresh_token", ""),
+        )
         if bundle.user_id:
             await upsert_token(platform=f"{service}_user_id", access_token=str(bundle.user_id))
         if bundle.username:
