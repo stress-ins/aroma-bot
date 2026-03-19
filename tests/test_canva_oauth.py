@@ -69,8 +69,7 @@ def test_exchange_canva_code_returns_bundle():
         if "/users/me" in str(request.url):
             assert "Bearer canva-access-token" in request.headers.get("Authorization", "")
             return httpx.Response(200, json={
-                "id": "canva-user-123",
-                "display_name": "Test Designer",
+                "team_user": {"user_id": "canva-user-123", "team_id": "team-456"},
             })
         raise AssertionError(f"Unexpected request: {request.method} {request.url}")
 
@@ -87,7 +86,7 @@ def test_exchange_canva_code_returns_bundle():
     assert bundle.service == "canva"
     assert bundle.access_token == "canva-access-token"
     assert bundle.user_id == "canva-user-123"
-    assert bundle.username == "Test Designer"
+    assert bundle.username == ""
     assert bundle.metadata["refresh_token"] == "canva-refresh-token"
     assert bundle.expires_in == 14400
 
