@@ -365,7 +365,8 @@
       "steps": [
         {"action": "click", "selector": "#btnTabHandbook"},
         {"action": "click", "selector": "button.tab-button:has-text('Смеси')"},
-        {"action": "click", "selector": ".reference-card:has-text('Grounding')", "wait": ".reference-detail"}
+        {"action": "click", "selector": ".reference-card:has-text('Вечерний релакс')", "wait": ".reference-detail"},
+        {"action": "evaluate", "js": "window.scrollTo(0, 300)"}
       ]
     },
     {
@@ -377,7 +378,8 @@
       "steps": [
         {"action": "click", "selector": "#btnTabHandbook"},
         {"action": "click", "selector": "button.tab-button:has-text('Симптомы')"},
-        {"action": "click", "selector": ".reference-card:has-text('Стресс')", "wait": ".reference-detail"}
+        {"action": "click", "selector": ".reference-card:has-text('Стресс')", "wait": ".reference-detail"},
+        {"action": "evaluate", "js": "window.scrollTo(0, 300)"}
       ]
     },
     {
