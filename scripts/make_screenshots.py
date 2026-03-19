@@ -280,6 +280,11 @@ def _seed_database(db_path: Path, assets_dir: Path, *, ignore_conflicts: bool = 
     gong_payload = {
         "description": "Гонг — один из древнейших инструментов звукового целительства. Вибрации гонга воздействуют на все тело, помогая войти в глубокое медитативное состояние.",
         "volatility": "20-60 минут (сессия)",
+        "audio_url": "/static/audio/gong_sample.mp3",
+        "duration_seconds": 180,
+        "frequency_range": "80-800 Hz",
+        "therapeutic_properties": "Глубокая релаксация, снятие мышечного напряжения, медитативное состояние",
+        "applications": "Звуковая ванна: 30-60 минут. Медитация: 15-20 минут. Перед сном: 10 минут.",
     }
 
     cards = [

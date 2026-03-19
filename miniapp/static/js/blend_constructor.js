@@ -218,7 +218,7 @@ export function createBlendConstructorModule(deps) {
           <h3>${escapeHtml(b.title)}</h3>
           ${b.brief ? `<p class="field-help">${escapeHtml(b.brief)}</p>` : ""}
           <div class="draft-meta">${(b.tags || []).map(t => tagMarkup(t, "brand")).join("")}</div>
-          <div class="saved-blend-oils">${(b.oils || []).map(o => `${escapeHtml(o.name_ru)} ${o.drops}\u043a.`).join(" \u00b7 ")}</div>
+          <div class="saved-blend-oils">${(b.oils || []).map(o => `${escapeHtml(o.name_ru || o.name || o.name_en || '')} ${o.drops}\u043a.`).join(" \u00b7 ")}</div>
           <button class="danger-button" style="margin-top:6px" onclick="deleteSavedBlend('${escapeHtml(b.id || b._id)}',this)">\u0423\u0434\u0430\u043b\u0438\u0442\u044c</button>
         </div>`).join("");
     } catch {

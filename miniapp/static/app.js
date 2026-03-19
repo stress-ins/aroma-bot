@@ -272,6 +272,7 @@ const RU_STATUS_LABELS = {
 const RU_FEEDBACK_LABELS = {
   worked: "Сработало",
   missed: "Не сработало",
+  approved: "Одобрено",
 };
 
 const HANDBOOK_CATEGORY_META = {
