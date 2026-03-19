@@ -16,6 +16,16 @@ export function createBlendConstructorModule(deps) {
   /* ── Blend Constructor ── */
 
   let _blendState = null;
+  let _oilsCatalog = null;  // cached list from /api/references/aroma
+
+  async function _loadOilsCatalog() {
+    if (_oilsCatalog) return _oilsCatalog;
+    try {
+      const items = await fetchJson("/api/references/aroma");
+      _oilsCatalog = (items || []).map(o => ({ slug: o.slug, name: o.name, name_en: o.name_en }));
+    } catch { _oilsCatalog = []; }
+    return _oilsCatalog;
+  }
 
   function openBlendConstructor(prefill = "") {
     enterDetailView();
@@ -152,6 +162,14 @@ export function createBlendConstructorModule(deps) {
         <h3>\ud83d\udccb \u0420\u0435\u0446\u0435\u043f\u0442 \u00b7 <span id="blendTotalDrops">${totalDrops}</span> \u043a\u0430\u043f. <span class="section-hint">\u043d\u0430\u0436\u043c\u0438\u0442\u0435 \u2713 \u0447\u0442\u043e\u0431\u044b \u0443\u0431\u0440\u0430\u0442\u044c \u043c\u0430\u0441\u043b\u043e</span></h3>
         <div id="blendOilsList">${renderOils()}</div>
         <div class="blend-total-row"><span>\u0418\u0442\u043e\u0433\u043e:</span><span id="blendTotalLabel">${totalDrops} \u043a\u0430\u043f. \u00b7 10 \u043c\u043b \u0431\u0430\u0437\u044b</span></div>
+        <div class="blend-oil-picker" id="blendOilPicker">
+          <div class="blend-oil-picker-selected" id="blendSelectedOils"></div>
+          <div class="blend-oil-picker-input-wrap">
+            <input type="text" id="blendOilSearch" class="field-input" placeholder="\u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c \u043c\u0430\u0441\u043b\u043e\u2026" autocomplete="off">
+            <div class="blend-oil-dropdown" id="blendOilDropdown" hidden></div>
+          </div>
+          <button class="secondary-button" id="blendAdjustBtn" type="button" data-action="blendAdjustWithOil" data-args='[null]' disabled>\u041f\u0435\u0440\u0435\u0441\u0442\u0440\u043e\u0438\u0442\u044c</button>
+        </div>
       </section>
       <div class="field-help blend-warn" id="blendWarn" hidden></div>
       <section class="section"><h3>\u041f\u0440\u043e\u0444\u0438\u043b\u044c \u0441\u043c\u0435\u0441\u0438</h3><div id="blendProfileBars">${renderProfileBars(p)}</div></section>
@@ -166,16 +184,8 @@ export function createBlendConstructorModule(deps) {
         ${result.restrictions?.length ? `<div class="blend-restrictions">${result.restrictions.map(r => `<div class="blend-restriction-row"><span class="chip chip-bad">${escapeHtml(r.condition)}</span><span>\u0438\u0441\u043a\u043b\u044e\u0447\u0438\u0442\u044c ${(r.oils_to_exclude || []).join(", ")}</span></div>`).join("")}</div>` : ""}
       </div>
       ${result.incompatible_oils?.length ? `<section class="section section-warning"><h3>\u26a0\ufe0f \u041d\u0435 \u0434\u043e\u0431\u0430\u0432\u043b\u044f\u0442\u044c \u0432 \u044d\u0442\u0443 \u0441\u043c\u0435\u0441\u044c</h3>${result.incompatible_oils.map(o => `<div class="incompat-row"><span class="chip chip-bad">${escapeHtml(o.name_ru)}</span><span>${escapeHtml(o.reason)}</span></div>`).join("")}</section>` : ""}
-      <section class="section section-adjust">
-        <h3>\u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c \u0441\u0432\u043e\u0451 \u043c\u0430\u0441\u043b\u043e</h3>
-        <p class="field-help">\u0423\u043a\u0430\u0436\u0438\u0442\u0435 \u043c\u0430\u0441\u043b\u043e \u2014 \u0418\u0418 \u043f\u0435\u0440\u0435\u0441\u0442\u0440\u043e\u0438\u0442 \u0441\u043c\u0435\u0441\u044c \u0441 \u0435\u0433\u043e \u0443\u0447\u0451\u0442\u043e\u043c</p>
-        <div class="blend-adjust-row">
-          <input type="text" id="blendCustomOilInput" class="field-input" placeholder="\u041d\u0430\u043f\u0440\u0438\u043c\u0435\u0440: \u041b\u0430\u0432\u0430\u043d\u0434\u0430">
-          <button class="secondary-button" id="blendAdjustBtn" type="button" data-action="blendAdjustWithOil" data-args='[null]'>\u041f\u0435\u0440\u0435\u0441\u0442\u0440\u043e\u0438\u0442\u044c</button>
-        </div>
-        <button class="secondary-button" id="blendRegenBtn" type="button" style="margin-top:8px;width:100%" data-action="blendRegenerate" data-args='[null]'>\u041f\u0435\u0440\u0435\u0433\u0435\u043d\u0435\u0440\u0438\u0440\u043e\u0432\u0430\u0442\u044c \u0441\u043c\u0435\u0441\u044c</button>
-      </section>
       <div class="blend-actions-stack">
+        <button class="secondary-button" id="blendRegenBtn" type="button" style="width:100%" data-action="blendRegenerate" data-args='[null]'>\u041f\u0435\u0440\u0435\u0433\u0435\u043d\u0435\u0440\u0438\u0440\u043e\u0432\u0430\u0442\u044c \u0441\u043c\u0435\u0441\u044c</button>
         <div class="actions-grid-two">
           <button class="primary-button" id="blendSaveBtn" type="button" data-action="blendSaveCurrentBlend" data-args='[null]'>\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c \u0441\u043c\u0435\u0441\u044c</button>
           <button class="secondary-button" type="button" data-action="blendCreateContent">\u0421\u043e\u0437\u0434\u0430\u0442\u044c \u043a\u043e\u043d\u0442\u0435\u043d\u0442</button>
@@ -194,6 +204,80 @@ export function createBlendConstructorModule(deps) {
         </div>
       </div>
     </div>`;
+    _initOilPicker(blendState);
+  }
+
+  /* ── Oil Picker (search from DB) ── */
+
+  function _initOilPicker(blendState) {
+    const searchInput = document.getElementById("blendOilSearch");
+    const dropdown = document.getElementById("blendOilDropdown");
+    const selectedContainer = document.getElementById("blendSelectedOils");
+    const adjustBtn = document.getElementById("blendAdjustBtn");
+    if (!searchInput || !dropdown) return;
+
+    const selectedOils = [];  // [{name, slug}]
+
+    function renderSelected() {
+      if (!selectedContainer) return;
+      selectedContainer.innerHTML = selectedOils.map((o, i) =>
+        `<span class="blend-oil-chip">${escapeHtml(o.name)} <button class="blend-oil-chip-x" data-idx="${i}">&times;</button></span>`
+      ).join("");
+      selectedContainer.querySelectorAll(".blend-oil-chip-x").forEach(btn => {
+        btn.addEventListener("click", () => {
+          selectedOils.splice(Number(btn.dataset.idx), 1);
+          renderSelected();
+        });
+      });
+      if (adjustBtn) adjustBtn.disabled = selectedOils.length === 0;
+    }
+
+    function showDropdown(items) {
+      if (!items.length) { dropdown.hidden = true; return; }
+      // Exclude oils already in blend + already selected
+      const existingNames = new Set((blendState.oils || []).map(o => o.name_ru?.toLowerCase()));
+      const selectedNames = new Set(selectedOils.map(o => o.name.toLowerCase()));
+      const filtered = items.filter(o => !existingNames.has(o.name.toLowerCase()) && !selectedNames.has(o.name.toLowerCase()));
+      if (!filtered.length) { dropdown.hidden = true; return; }
+      dropdown.innerHTML = filtered.slice(0, 8).map(o =>
+        `<div class="blend-oil-option" data-slug="${escapeHtml(o.slug)}" data-name="${escapeHtml(o.name)}">${escapeHtml(o.name)}${o.name_en ? ` <span class="blend-oil-option-en">${escapeHtml(o.name_en)}</span>` : ""}</div>`
+      ).join("");
+      dropdown.hidden = false;
+      dropdown.querySelectorAll(".blend-oil-option").forEach(opt => {
+        opt.addEventListener("click", () => {
+          selectedOils.push({ name: opt.dataset.name, slug: opt.dataset.slug });
+          searchInput.value = "";
+          dropdown.hidden = true;
+          renderSelected();
+        });
+      });
+    }
+
+    let _debounce = null;
+    searchInput.addEventListener("input", () => {
+      clearTimeout(_debounce);
+      const q = searchInput.value.trim().toLowerCase();
+      if (!q) { dropdown.hidden = true; return; }
+      _debounce = setTimeout(async () => {
+        const catalog = await _loadOilsCatalog();
+        const matches = catalog.filter(o =>
+          o.name.toLowerCase().includes(q) ||
+          (o.name_en || "").toLowerCase().includes(q)
+        );
+        showDropdown(matches);
+      }, 150);
+    });
+
+    searchInput.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") dropdown.hidden = true;
+    });
+
+    // Close dropdown on click outside
+    document.addEventListener("click", (e) => {
+      if (!e.target.closest("#blendOilPicker")) dropdown.hidden = true;
+    }, { once: false });
+
+    renderSelected();
   }
 
   async function openSavedBlends() {
@@ -308,6 +392,10 @@ export function createBlendConstructorModule(deps) {
     if (!_blendState?.origRequest) return;
     const req = _blendState.origRequest;
     const prevResult = _blendState.result;
+    // Collect oils that user toggled off — tell LLM to exclude them
+    const excludeOils = (_blendState.oils || [])
+      .filter(o => !o.active)
+      .map(o => o.name_ru);
     elements.draftDetail.innerHTML = `<div class="detail-grid">
       ${renderBackButton()}
       ${renderDetailLoader("\u041f\u0435\u0440\u0435\u0433\u0435\u043d\u0435\u0440\u0438\u0440\u0443\u044e \u0441\u043c\u0435\u0441\u044c", "\u0421\u043e\u0441\u0442\u0430\u0432\u043b\u044f\u044e \u043d\u043e\u0432\u044b\u0439 \u0432\u0430\u0440\u0438\u0430\u043d\u0442 \u0440\u0435\u0446\u0435\u043f\u0442\u0430 \u0441 \u0442\u0435\u043c\u0438 \u0436\u0435 \u043f\u0430\u0440\u0430\u043c\u0435\u0442\u0440\u0430\u043c\u0438.")}
@@ -315,7 +403,7 @@ export function createBlendConstructorModule(deps) {
     fetchJson("/api/blend-constructor/construct", {
       method: "POST",
       timeout: 60000,
-      body: JSON.stringify({...req, skip_cache: true}),
+      body: JSON.stringify({...req, skip_cache: true, exclude_oils: excludeOils}),
     }).then(result => {
       renderBlendResult(result);
     }).catch(() => {
@@ -325,21 +413,23 @@ export function createBlendConstructorModule(deps) {
   }
 
   function blendAdjustWithOil(btn) {
-    const input = document.getElementById("blendCustomOilInput");
-    const oil = input?.value.trim();
-    if (!oil || !_blendState?.origRequest) return;
+    // Collect oils from the picker chips
+    const chips = document.querySelectorAll("#blendSelectedOils .blend-oil-chip");
+    const oils = [...chips].map(c => c.textContent.replace(/\s*\u00d7\s*$/, "").trim()).filter(Boolean);
+    if (!oils.length || !_blendState?.origRequest) return;
     const req = _blendState.origRequest;
     const prevResult = _blendState.result;
+    const loaderSub = "\u0414\u043e\u0431\u0430\u0432\u043b\u044f\u044e " + (oils.length > 1 ? oils.length + " \u043c\u0430\u0441\u0435\u043b" : "\u043c\u0430\u0441\u043b\u043e") + " \u0438 \u043f\u0435\u0440\u0435\u0441\u0447\u0438\u0442\u044b\u0432\u0430\u044e \u0440\u0435\u0446\u0435\u043f\u0442.";
     elements.draftDetail.innerHTML = `<div class="detail-grid">
       ${renderBackButton()}
-      ${renderDetailLoader("\u041f\u0435\u0440\u0435\u0441\u0442\u0440\u0430\u0438\u0432\u0430\u044e \u0441\u043c\u0435\u0441\u044c", "\u0414\u043e\u0431\u0430\u0432\u043b\u044f\u044e \u043c\u0430\u0441\u043b\u043e \u0438 \u043f\u0435\u0440\u0435\u0441\u0447\u0438\u0442\u044b\u0432\u0430\u044e \u0440\u0435\u0446\u0435\u043f\u0442.")}
+      ${renderDetailLoader("\u041f\u0435\u0440\u0435\u0441\u0442\u0440\u0430\u0438\u0432\u0430\u044e \u0441\u043c\u0435\u0441\u044c", loaderSub)}
     </div>`;
     fetchJson("/api/blend-constructor/adjust", {
       method: "POST",
       timeout: 60000,
-      body: JSON.stringify({...req, custom_oils: [oil]}),
+      body: JSON.stringify({...req, custom_oils: oils}),
     }).then(result => {
-      _blendState.origRequest = {...req, custom_oils: [oil]};
+      _blendState.origRequest = {...req, custom_oils: oils};
       renderBlendResult(result);
     }).catch(() => {
       if (prevResult) renderBlendResult(prevResult);

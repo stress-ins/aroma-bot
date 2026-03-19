@@ -17,6 +17,7 @@ async def generate_blend_construct(body, telegram_id: int | None = None) -> dict
     # Check cache
     effects_str = ",".join(sorted(body.effects)) if body.effects else ""
     custom_str = ",".join(sorted(body.custom_oils)) if body.custom_oils else ""
+    exclude_str = ",".join(sorted(body.exclude_oils)) if getattr(body, "exclude_oils", None) else ""
     cache_key = make_cache_key(
         "blend",
         brief=body.brief.lower().strip(),
@@ -25,6 +26,7 @@ async def generate_blend_construct(body, telegram_id: int | None = None) -> dict
         application=body.application,
         contraindications=body.contraindications.strip().lower(),
         custom_oils=custom_str,
+        exclude_oils=exclude_str,
     )
     if not getattr(body, "skip_cache", False):
         cached = await get_cached(cache_key)
@@ -37,16 +39,19 @@ async def generate_blend_construct(body, telegram_id: int | None = None) -> dict
 
     loop = asyncio.get_running_loop()
 
+    exclude_oils = getattr(body, "exclude_oils", None) or None
     expert_task = loop.run_in_executor(
         None,
-        construct_blend_sync,
-        body.brief,
-        body.effects,
-        body.speed,
-        body.application,
-        body.contraindications,
-        reference_context,
-        body.custom_oils or None,
+        lambda: construct_blend_sync(
+            body.brief,
+            body.effects,
+            body.speed,
+            body.application,
+            body.contraindications,
+            reference_context,
+            custom_oils=body.custom_oils or None,
+            exclude_oils=exclude_oils,
+        ),
     )
     doctor_task = loop.run_in_executor(
         None,

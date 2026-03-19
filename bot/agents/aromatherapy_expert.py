@@ -127,6 +127,7 @@ def construct_blend_sync(
     contraindications: str,
     reference_context: str,
     custom_oils: list[str] | None = None,
+    exclude_oils: list[str] | None = None,
 ) -> dict:
     """Synchronous blend construction via aromatherapy expert agent."""
     from bot.services.claude_client import SONNET, call_claude
@@ -139,6 +140,13 @@ def construct_blend_sync(
         custom_oils_require = (
             f"\n- ОБЯЗАТЕЛЬНО включи в состав: {oils_str} "
             f"— подбери им подходящую роль и дозировку"
+        )
+    if exclude_oils:
+        exclude_str = ", ".join(exclude_oils)
+        custom_oils_block += f"\nМасла которые ЗАПРЕЩЕНО использовать: {exclude_str}"
+        custom_oils_require += (
+            f"\n- ЗАПРЕЩЕНО использовать масла: {exclude_str} "
+            f"— не включай их ни в каком виде, подбери замены"
         )
 
     prompt = _CONSTRUCT_BLEND_PROMPT.format(
