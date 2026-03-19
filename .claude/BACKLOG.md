@@ -1,5 +1,5 @@
 # Backlog — Aroma Trends Bot
-> Обновлено: 2026-03-17
+> Обновлено: 2026-03-19
 > Правила: добавляй баги сразу | при закрытии — переноси в DONE.md с датой
 
 ---
@@ -49,7 +49,7 @@
 
 - [ ] **Threads OAuth** — ветка `codex/bot-oauth-connect-flow` (1 коммит). Нужно решение: какой OAuth flow использовать (bot-driven vs Facebook Login vs direct Instagram). Конкурирующие ветки удалены.
 
-- [ ] **handbook lesson 6 PDF** — две реализации: `codex/handbook-lesson-6-pdf` (5 коммитов: данные + UI polish + тесты) и `feature/handbook-lesson-6` (1 коммит: данные benzoin, winged breathing, practices). Нужно выбрать одну и смержить.
+- [x] **handbook lesson 6 PDF** — ✅ Все изменения уже в main (6 карточек, CSS theory styles, archetype type, тесты). 3 handbook-ветки удалены (2026-03-19).
 
 - [x] **miniapp-accessibility-pass** — ✅ Все изменения (interactive-card focus, keyboard activation, ARIA attrs) уже в main. Ветка удалена.
 
