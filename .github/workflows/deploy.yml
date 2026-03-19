@@ -65,31 +65,27 @@ jobs:
             exit 1
           '
 
-      - name: Run one-time data enrichment scripts (idempotent, wave-based)
+      - name: Run cleanup scripts (no AI, safe every deploy)
         run: |
           ssh root@46.32.186.192 'cd /opt/aroma && \
-            MARKER=/opt/aroma/.enrichment_done && \
-            if [ -f "$MARKER" ]; then echo "Enrichment already done, skipping"; exit 0; fi && \
-            echo "=== Wave 1: cleanup (sequential, foundational) ===" && \
+            echo "=== Cleanup (sequential, foundational) ===" && \
             .venv/bin/python scripts/cleanup_duplicates.py 2>&1 | tail -3 && \
             .venv/bin/python scripts/cleanup_blend_ingredients.py 2>&1 | tail -3 && \
-            echo "=== Wave 2: naming (parallel, independent) ===" && \
+            echo "Cleanup complete."' || echo "Cleanup step failed (non-blocking)"
+
+      - name: Fill complementary oils from PDF data (no AI, idempotent)
+        run: |
+          ssh root@46.32.186.192 'cd /opt/aroma && \
+            .venv/bin/python scripts/fill_complementary_oils_from_pdf.py --force 2>&1 | tail -5' \
+            || echo "Complementary oils step failed (non-blocking)"
+
+      - name: Run AI enrichment scripts (idempotent, skip if already done)
+        run: |
+          ssh root@46.32.186.192 'cd /opt/aroma && \
+            echo "=== AI enrichment (skips already-filled cards, zero cost if all filled) ===" && \
+            .venv/bin/python scripts/enrich_name_en.py 2>&1 | tail -3 && \
             .venv/bin/python scripts/generate_name_ru.py 2>&1 | tail -3 & \
-            .venv/bin/python scripts/enrich_name_en.py 2>&1 | tail -3 & \
-            wait && \
-            echo "=== Wave 3: summaries (parallel, independent) ===" && \
             .venv/bin/python scripts/summarize_aroma_fields.py --card-summary 2>&1 | tail -3 & \
             .venv/bin/python scripts/generate_symptom_descriptions.py 2>&1 | tail -3 & \
             wait && \
-            touch "$MARKER" && \
-            echo "Enrichment complete."' || echo "Enrichment step failed (non-blocking)"
-
-      - name: Fill complementary oils from PDF data (one-time)
-        run: |
-          ssh root@46.32.186.192 'cd /opt/aroma && \
-            MARKER=/opt/aroma/.complementary_oils_done && \
-            if [ -f "$MARKER" ]; then echo "Complementary oils already filled, skipping"; exit 0; fi && \
-            echo "Filling complementary oils from PDF..." && \
-            .venv/bin/python scripts/fill_complementary_oils_from_pdf.py --force 2>&1 | tail -5 && \
-            touch "$MARKER" && \
-            echo "Complementary oils fill complete."' || echo "Complementary oils step failed (non-blocking)"
+            echo "AI enrichment complete."' || echo "AI enrichment step failed (non-blocking)"
