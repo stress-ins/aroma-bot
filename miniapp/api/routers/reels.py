@@ -23,9 +23,11 @@ from bot.services.miniapp_reels import (
 from bot.services.reels_assets import regenerate_reels_frame_asset
 from ..auth import _require_auth, require_tier
 from ..deps import require_draft
+from bot.services.drafts_store import get_draft as _get_draft, update_draft as _update_draft
 from ..generation import (
     complete_reels_regenerate_all,
     complete_reels_v2_generate_images,
+    complete_reels_v2_generation,
     complete_reels_v2_regen_caption,
     complete_reels_v2_regen_concept_only,
     complete_reels_v2_regen_frame,
@@ -145,6 +147,30 @@ async def reels_generate_images(
     if not draft:
         raise HTTPException(status_code=404, detail="reels_not_found")
     return draft
+
+
+@router.post("/api/reels/{draft_id}/upgrade-to-full", dependencies=[Depends(require_tier("expert"))])
+async def reels_upgrade_to_full(
+    draft_id: str,
+    background_tasks: BackgroundTasks,
+    _: None = Depends(_require_auth),
+):
+    """Upgrade lightweight reels to full mode: generate frames + images."""
+    draft = await _get_draft(draft_id)
+    if not draft:
+        raise HTTPException(status_code=404, detail="reels_not_found")
+    payload = dict(draft.payload or {})
+    if not payload.get("lightweight"):
+        raise HTTPException(status_code=400, detail="not_lightweight")
+    payload["lightweight"] = False
+    await _update_draft(draft_id, payload=payload)
+    topic = draft.topic
+    goal = str(payload.get("goal", "trust"))
+    emotion = str(payload.get("emotion", "calm"))
+    bc = payload.get("blend_context")
+    await set_generation_state(draft_id, pending=True, stage="frames", message="Переход к полной раскадровке.")
+    background_tasks.add_task(complete_reels_v2_generation, draft_id, topic, goal, emotion, bc)
+    return await serialize_reels_draft(draft_id)
 
 
 @router.get("/api/reels/{draft_id}/frame-versions/{frame_id}")

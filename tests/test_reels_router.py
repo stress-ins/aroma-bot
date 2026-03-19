@@ -492,3 +492,35 @@ class TestFrameRegenerate:
             resp = client.post("/api/reels/r01/frames/0/regenerate")
         assert resp.status_code == 503
         assert resp.json()["detail"] == "reels_frame_regenerate_failed"
+
+
+# ---------------------------------------------------------------------------
+# Upgrade to full
+# ---------------------------------------------------------------------------
+
+class TestUpgradeToFull:
+    def test_upgrade_lightweight_to_full(self, client):
+        lightweight_draft = MagicMock()
+        lightweight_draft.payload = {"goal": "trust", "emotion": "calm", "lightweight": True}
+        lightweight_draft.topic = "test topic"
+        with (
+            patch("miniapp.api.routers.reels._get_draft", new_callable=AsyncMock, return_value=lightweight_draft),
+            patch("miniapp.api.routers.reels._update_draft", new_callable=AsyncMock),
+            patch("miniapp.api.routers.reels.set_generation_state", new_callable=AsyncMock),
+            patch("miniapp.api.routers.reels.serialize_reels_draft", new_callable=AsyncMock, return_value=SAMPLE_DRAFT),
+        ):
+            resp = client.post("/api/reels/r01/upgrade-to-full")
+        assert resp.status_code == 200
+
+    def test_upgrade_not_lightweight(self, client):
+        normal_draft = MagicMock()
+        normal_draft.payload = {"goal": "trust", "emotion": "calm"}
+        with patch("miniapp.api.routers.reels._get_draft", new_callable=AsyncMock, return_value=normal_draft):
+            resp = client.post("/api/reels/r01/upgrade-to-full")
+        assert resp.status_code == 400
+        assert resp.json()["detail"] == "not_lightweight"
+
+    def test_upgrade_not_found(self, client):
+        with patch("miniapp.api.routers.reels._get_draft", new_callable=AsyncMock, return_value=None):
+            resp = client.post("/api/reels/nonexistent/upgrade-to-full")
+        assert resp.status_code == 404

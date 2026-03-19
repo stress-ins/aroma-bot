@@ -5497,6 +5497,16 @@ body.tg-theme-dark .reco-cta-btn { color: #d4845e; }
 
 
 /* ── Suggest topic button + dropdown ────────────────────────────────── */
+/* Lightweight toggle */
+.lightweight-toggle {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  padding: 10px 14px; margin: 8px 0; border-radius: 10px;
+  background: var(--surface); border: 1px solid var(--border);
+  cursor: pointer; font-size: 14px;
+}
+.lightweight-toggle input[type="checkbox"] { margin: 0; }
+.lightweight-toggle .field-help { flex-basis: 100%; font-size: 12px; }
+
 .suggest-topic-btn {
   display: inline-flex;
   align-items: center;
