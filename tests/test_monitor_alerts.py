@@ -56,7 +56,11 @@ class TestClaudeClientNotifies:
             with (
                 patch("bot.handlers.monitor.notify_owner") as mock_owner,
                 patch("bot.handlers.monitor._recent_alerts", {}),
+                patch("bot.services.claude_client.settings") as mock_settings,
             ):
+                mock_settings.anthropic_api_key = "fake"
+                mock_settings.replicate_api_key = ""
+                mock_settings.kie_ai_api_key = ""
                 with pytest.raises(RuntimeError, match="test API error"):
                     cc_mod.call_claude(
                         messages=[{"role": "user", "content": "hi"}],

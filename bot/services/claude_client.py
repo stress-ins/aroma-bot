@@ -143,12 +143,13 @@ def call_claude(
             continue
 
         except Exception as exc:
+            last_exc = exc
             notify_owner_throttled(
                 f"\U0001f4dd <b>Claude API error</b>\nContext: {context}\n"
                 f"Error: <code>{type(exc).__name__}: {str(exc)[:200]}</code>",
                 dedup_key=f"claude:{context}",
             )
-            raise
+            break
     else:
         notify_owner_throttled(
             f"\U0001f4dd <b>Claude API: all {retries} attempts exhausted</b>\n"
@@ -228,17 +229,23 @@ def _call_replicate_claude(
     if system:
         payload["input"]["system"] = system
 
-    resp = httpx.post(
-        "https://api.replicate.com/v1/models/anthropic/claude-4.5-haiku/predictions",
-        headers={
-            "Authorization": f"Token {settings.replicate_api_key}",
-            "Content-Type": "application/json",
-            "Prefer": "wait=60",
-        },
-        json=payload,
-        timeout=65.0,
-    )
-    resp.raise_for_status()
+    for _attempt in range(3):
+        resp = httpx.post(
+            "https://api.replicate.com/v1/models/anthropic/claude-4.5-haiku/predictions",
+            headers={
+                "Authorization": f"Token {settings.replicate_api_key}",
+                "Content-Type": "application/json",
+                "Prefer": "wait=60",
+            },
+            json=payload,
+            timeout=65.0,
+        )
+        if resp.status_code == 429 and _attempt < 2:
+            logger.warning("Replicate 429, retrying in 10s (attempt %d/3)", _attempt + 1)
+            time.sleep(10)
+            continue
+        resp.raise_for_status()
+        break
     data = resp.json()
 
     if data.get("status") != "succeeded":
