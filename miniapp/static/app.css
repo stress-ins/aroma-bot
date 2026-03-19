@@ -2008,6 +2008,15 @@ body.tg-theme-dark .danger-button {
   font-weight: 600;
 }
 
+.threads-post-rendered {
+  padding: 10px 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  background: var(--bg-secondary, #f5f5f5);
+  border-radius: 8px;
+  margin-bottom: 6px;
+}
+
 .threads-slot-annotation {
   margin-top: 6px;
   padding: 6px 10px;

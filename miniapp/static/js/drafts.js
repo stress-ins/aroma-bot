@@ -324,7 +324,9 @@ export function createDraftsModule(deps) {
               ${threadsPosts.map((post, idx) => `
                 <div class="threads-post-section" data-slot="${post.slot}">
                   <span class="threads-post-label">${SLOT_ICONS[post.slot] || ""} ${escapeHtml(post.label)}</span>
+                  <div class="threads-post-rendered detail-markdown">${renderMarkdown(cleanSlotText(post.text || ""))}</div>
                   <textarea id="threadsPostText${idx}" class="threads-post-textarea" placeholder="Текст поста">${escapeHtml(cleanSlotText(post.text || ""))}</textarea>
+                  ${post.why_it_works ? `<div class="threads-slot-annotation"><span class="annotation-label">Почему это сработает:</span> ${escapeHtml(post.why_it_works)}</div>` : ""}
                   <div class="threads-post-schedule">
                     <label><span>Время</span><input type="time" id="threadsPostTime${idx}" value="${escapeHtml(post.scheduled_time || post.default_time || "")}"></label>
                   </div>
