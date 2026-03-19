@@ -33,6 +33,16 @@ INSTAGRAM_DEFAULT_SCOPES = (
     "instagram_business_content_publish",
 )
 
+CANVA_AUTHORIZE_URL = "https://www.canva.com/api/oauth/authorize"
+CANVA_TOKEN_URL = "https://api.canva.com/rest/v1/oauth/token"
+CANVA_ME_URL = "https://api.canva.com/rest/v1/users/me"
+CANVA_DEFAULT_SCOPES = (
+    "design:content:read",
+    "design:content:write",
+    "asset:read",
+    "asset:write",
+)
+
 
 class OAuthExchangeError(RuntimeError):
     pass
@@ -246,6 +256,75 @@ def exchange_instagram_code(
         return _work(session)
 
 
+def build_canva_authorize_url(
+    *,
+    client_id: str,
+    redirect_uri: str,
+    state: str = "",
+    scopes: tuple[str, ...] = CANVA_DEFAULT_SCOPES,
+) -> str:
+    params = {
+        "client_id": client_id,
+        "redirect_uri": redirect_uri,
+        "response_type": "code",
+        "scope": " ".join(scopes),
+    }
+    if state:
+        params["state"] = state
+    return f"{CANVA_AUTHORIZE_URL}?{urlencode(params)}"
+
+
+def exchange_canva_code(
+    *,
+    code: str,
+    client_id: str,
+    client_secret: str,
+    redirect_uri: str,
+    client: httpx.Client | None = None,
+) -> OAuthTokenBundle:
+    def _work(session: httpx.Client) -> OAuthTokenBundle:
+        token_response = session.post(
+            CANVA_TOKEN_URL,
+            data={
+                "grant_type": "authorization_code",
+                "code": code,
+                "redirect_uri": redirect_uri,
+            },
+            auth=(client_id, client_secret),
+        )
+        token_payload = _parse_json_response(token_response, "Canva code exchange")
+        access_token = str(token_payload.get("access_token", "")).strip()
+        if not access_token:
+            raise OAuthExchangeError("Canva code exchange did not return access_token")
+
+        profile_response = session.get(
+            CANVA_ME_URL,
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+        profile_payload = _parse_json_response(profile_response, "Canva profile lookup")
+        user_id = str(profile_payload.get("id", "")).strip()
+        display_name = str(profile_payload.get("display_name", "")).strip()
+        if not user_id:
+            raise OAuthExchangeError("Canva profile lookup did not return user id")
+
+        return OAuthTokenBundle(
+            service="canva",
+            short_lived_token=access_token,
+            access_token=access_token,
+            expires_in=_coerce_int(token_payload.get("expires_in")),
+            user_id=user_id,
+            username=display_name,
+            metadata={
+                "refresh_token": str(token_payload.get("refresh_token", "")).strip(),
+            },
+        )
+
+    if client is not None:
+        return _work(client)
+    with httpx.Client(timeout=30.0) as session:
+        return _work(session)
+
+
 def update_env_file(env_path: str | Path, updates: dict[str, str]) -> None:
     path = Path(env_path)
     existing_lines = path.read_text(encoding="utf-8").splitlines() if path.exists() else []
@@ -339,6 +418,10 @@ def bundle_env_updates(bundle: OAuthTokenBundle) -> dict[str, str]:
         return {
             "INSTAGRAM_ACCESS_TOKEN": bundle.access_token,
             "INSTAGRAM_USER_ID": bundle.user_id,
+        }
+    if bundle.service == "canva":
+        return {
+            "CANVA_CLIENT_ID": bundle.metadata.get("refresh_token", ""),
         }
     raise OAuthExchangeError(f"Unsupported service: {bundle.service}")
 

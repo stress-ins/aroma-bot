@@ -644,8 +644,10 @@ export function createSettingsModule(deps) {
   }
 
   function accountCardHtml(acc, opts = {}) {
-    const icon = uiIcon(acc.platform === "threads" ? "message-circle" : "camera");
-    const label = acc.platform === "threads" ? "Threads" : "Instagram";
+    const platformIcons = { threads: "message-circle", instagram: "camera", canva: "pen-tool" };
+    const platformLabels = { threads: "Threads", instagram: "Instagram", canva: "Canva" };
+    const icon = uiIcon(platformIcons[acc.platform] || "link");
+    const label = platformLabels[acc.platform] || acc.platform;
     const connected = acc.connected;
     const expiry = formatExpiry(acc.expires_at);
     const readOnly = opts.readOnly || false;

@@ -70,6 +70,10 @@ class Settings(BaseSettings):
     carousel_forbidden_phrases: str = ""
     carousel_forbidden_visual_motifs: str = ""
 
+    # Canva Connect API
+    canva_client_id: str = ""
+    canva_client_secret: str = ""
+
     # Upload-Post (cross-platform publishing)
     upload_post_api_key: str = ""
     upload_post_user: str = ""

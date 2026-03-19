@@ -664,6 +664,10 @@ function uiIcon(name) {
     clock:      "clock",
     "file-text": "file-text",
     "layout-grid": "layout-grid",
+    "more-vertical": "more-vertical",
+    "arrow-up-right": "arrow-up-right",
+    "arrow-down-left": "arrow-down-left",
+    "pen-tool": "pen-tool",
   };
   return `<span class="ui-icon ui-icon-${escapeHtml(name)}">${icon(LUCIDE_MAP[name] || "square-terminal", 16)}</span>`;
 }
@@ -1305,6 +1309,10 @@ const {
   carouselSwiperGoTo,
   downloadCarouselPptx,
   importCarouselPptx,
+  toggleCarouselDropdown,
+  exportToCanva,
+  importFromCanva,
+  selectCanvaDesign,
 } = createCarouselModule({
   state,
   carouselNoteSaveTimers,
@@ -2011,6 +2019,10 @@ registerWindowBridge({
   carouselSwiperGoTo,
   downloadCarouselPptx,
   importCarouselPptx,
+  toggleCarouselDropdown,
+  exportToCanva,
+  importFromCanva,
+  selectCanvaDesign,
   saveReelsScenario,
   regenerateReelsStoryboard,
   regenerateAllReelsFrames,

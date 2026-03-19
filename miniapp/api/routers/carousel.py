@@ -4,6 +4,7 @@ import asyncio
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, UploadFile, File
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 
 from bot.services.carousel_assets import (
     delete_carousel_slide_version,
@@ -322,6 +323,121 @@ async def carousel_pptx_import(
 
     await update_draft(draft_id, payload=payload)
     await create_revision(draft_id, payload, author="canva_import", note="PPTX import from Canva")
+
+    refreshed = await get_draft(draft_id)
+    if not refreshed:
+        raise HTTPException(status_code=404, detail="carousel_not_found")
+    return await serialize_draft(refreshed)
+
+
+# ── Canva integration ─────────────────────────────────────────────────────────
+
+
+class CanvaImportPayload(BaseModel):
+    design_id: str
+
+
+@router.get("/api/carousel/{draft_id}/canva/status")
+async def carousel_canva_status(draft_id: str, _: None = Depends(_require_auth)):
+    """Check if Canva is connected (has a valid token)."""
+    from bot.services.mentions_store import get_token as _get_token
+    token = await _get_token("canva")
+    return {"connected": bool(token and token.access_token)}
+
+
+@router.post("/api/carousel/{draft_id}/canva/export")
+async def carousel_canva_export(draft_id: str, _: None = Depends(_require_auth)):
+    """Generate PPTX from carousel draft and upload to Canva."""
+    from bot.services.canva_api import export_to_canva, CanvaAPIError
+
+    draft = await get_draft(draft_id)
+    if not draft or draft.kind != "carousel":
+        raise HTTPException(status_code=404, detail="carousel_not_found")
+
+    slides = list(draft.payload.get("slides", []))
+    images = load_carousel_slide_images(draft_id, list(draft.payload.get("slide_images", [])))
+    placement_data = draft.payload.get("placement_data")
+
+    if placement_data:
+        from bot.agents.carousel_export_agent import build_pptx_from_placement
+        pptx_bytes = await asyncio.get_running_loop().run_in_executor(
+            None, build_pptx_from_placement, slides, images or [], placement_data,
+        )
+    else:
+        pptx_bytes = await asyncio.get_running_loop().run_in_executor(None, _build_pptx, slides, images or None)
+
+    title = draft.payload.get("angle", "") or f"Carousel {draft_id[:8]}"
+    try:
+        result = await export_to_canva(pptx_bytes, title)
+    except CanvaAPIError as exc:
+        raise HTTPException(status_code=502, detail=str(exc))
+
+    return result
+
+
+@router.get("/api/carousel/{draft_id}/canva/designs")
+async def carousel_canva_designs(draft_id: str, _: None = Depends(_require_auth)):
+    """List Canva designs for the picker."""
+    from bot.services.canva_api import list_canva_designs, CanvaAPIError
+
+    try:
+        designs = await list_canva_designs(limit=20)
+    except CanvaAPIError as exc:
+        raise HTTPException(status_code=502, detail=str(exc))
+    return {"designs": designs}
+
+
+@router.post("/api/carousel/{draft_id}/canva/import")
+async def carousel_canva_import(
+    draft_id: str,
+    body: CanvaImportPayload,
+    _: None = Depends(_require_auth),
+):
+    """Export a design from Canva as PPTX, extract images, update draft."""
+    from bot.services.canva_api import export_canva_design, CanvaAPIError
+
+    draft = await get_draft(draft_id)
+    if not draft or draft.kind != "carousel":
+        raise HTTPException(status_code=404, detail="carousel_not_found")
+
+    try:
+        pptx_bytes = await export_canva_design(body.design_id)
+    except CanvaAPIError as exc:
+        raise HTTPException(status_code=502, detail=str(exc))
+
+    if not pptx_bytes:
+        raise HTTPException(status_code=400, detail="empty_export")
+
+    loop = asyncio.get_running_loop()
+    images = await loop.run_in_executor(None, extract_images_from_pptx, pptx_bytes)
+    if not images or all(img is None for img in images):
+        raise HTTPException(status_code=400, detail="no_images_found_in_pptx")
+
+    img_prompts: list[str] = list(draft.payload.get("img_prompts", []))
+    slide_images: list[dict | None] = list(draft.payload.get("slide_images", []))
+    slide_versions: list[list] = list(draft.payload.get("slide_image_versions", []))
+
+    while len(slide_images) < len(images):
+        slide_images.append(None)
+    while len(slide_versions) < len(images):
+        slide_versions.append([])
+
+    for i, img_bytes in enumerate(images):
+        if img_bytes is None:
+            continue
+        prompt = img_prompts[i] if i < len(img_prompts) else "canva_import"
+        version = save_carousel_slide_asset(draft_id, i, img_bytes, prompt=f"canva_import: {prompt}")
+        slide_images[i] = version
+        if i < len(slide_versions):
+            slide_versions[i].append(version)
+
+    payload = dict(draft.payload)
+    payload["slide_images"] = slide_images
+    payload["slide_image_versions"] = slide_versions
+    payload["images_ready"] = sum(1 for img in slide_images if img)
+
+    await update_draft(draft_id, payload=payload)
+    await create_revision(draft_id, payload, author="canva_import", note=f"Canva design import: {body.design_id}")
 
     refreshed = await get_draft(draft_id)
     if not refreshed:

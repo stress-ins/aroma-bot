@@ -1407,7 +1407,7 @@ class TestMiniAppRussianLocale:
         assert "Обновить по замечанию" in app_js
         assert "Сохранить текст слайда" in app_js
         assert "Подпись слайда" in app_js
-        assert "Скачать презентацию" in app_js
+        assert "Скачать PPTX" in app_js
         assert "Показать промпт" in app_js
         assert "Скопировать промпт слайда" in app_js
         assert "generationStateMarkup" in app_js

@@ -507,6 +507,163 @@ export function createCarouselModule(deps) {
     window.open(downloadUrl, "_blank", "noopener,noreferrer");
   }
 
+  // ── Carousel dropdown (PPTX + Canva) ────────────────────────────────────────
+
+  let _activeDropdownId = "";
+
+  function _closeAllDropdowns() {
+    document.querySelectorAll(".carousel-actions-dropdown").forEach((el) => {
+      el.hidden = true;
+    });
+    _activeDropdownId = "";
+  }
+
+  // Close dropdown on outside click
+  document.addEventListener("click", (e) => {
+    if (_activeDropdownId && !e.target.closest(".carousel-actions-wrap")) {
+      _closeAllDropdowns();
+    }
+  });
+
+  async function toggleCarouselDropdown(draftId, button) {
+    const dropdownId = `carouselDropdown_${draftId}`;
+    const dropdown = document.getElementById(dropdownId);
+    if (!dropdown) return;
+
+    if (!dropdown.hidden) {
+      dropdown.hidden = true;
+      _activeDropdownId = "";
+      return;
+    }
+
+    _closeAllDropdowns();
+
+    // Check Canva status
+    let canvaConnected = false;
+    try {
+      const status = await fetchJson(`/api/carousel/${draftId}/canva/status`);
+      canvaConnected = status?.connected || false;
+    } catch (_) { /* ignore */ }
+
+    const disabledAttr = canvaConnected ? "" : "disabled";
+    const canvaHint = canvaConnected ? "" : ' title="Подключите Canva в Настройки → Аккаунты"';
+
+    dropdown.innerHTML = `
+      <button class="carousel-dropdown-item" type="button" onclick="downloadCarouselPptx('${draftId}', this); toggleCarouselDropdown('${draftId}')">
+        ${uiIcon("download")}<span>Скачать PPTX</span>
+      </button>
+      <button class="carousel-dropdown-item" type="button" onclick="importCarouselPptx('${draftId}', this); toggleCarouselDropdown('${draftId}')">
+        ${uiIcon("upload")}<span>Импорт PPTX</span>
+      </button>
+      <div class="carousel-dropdown-divider"></div>
+      <button class="carousel-dropdown-item" type="button" ${disabledAttr}${canvaHint} onclick="exportToCanva('${draftId}', this)">
+        ${uiIcon("arrow-up-right")}<span>Экспорт в Canva</span>
+      </button>
+      <button class="carousel-dropdown-item" type="button" ${disabledAttr}${canvaHint} onclick="importFromCanva('${draftId}', this)">
+        ${uiIcon("arrow-down-left")}<span>Импорт из Canva</span>
+      </button>
+    `;
+    dropdown.hidden = false;
+    _activeDropdownId = dropdownId;
+    if (window.lucide) lucide.createIcons();
+  }
+
+  async function exportToCanva(draftId, button) {
+    _closeAllDropdowns();
+    try {
+      await withButtonFeedback(button, "Экспорт...", async () => {
+        const result = await fetchJson(`/api/carousel/${draftId}/canva/export`, {
+          method: "POST",
+          body: "{}",
+          timeout: 90000,
+        });
+        if (result?.edit_url) {
+          const tg = window.Telegram?.WebApp;
+          if (tg?.openLink) {
+            tg.openLink(result.edit_url);
+          } else {
+            window.open(result.edit_url, "_blank", "noopener,noreferrer");
+          }
+        }
+      }, "Экспортировано");
+    } catch (error) {
+      showRequestError("Не удалось экспортировать в Canva", error);
+    }
+  }
+
+  async function importFromCanva(draftId, button) {
+    _closeAllDropdowns();
+    try {
+      // Fetch designs list
+      const data = await fetchJson(`/api/carousel/${draftId}/canva/designs`);
+      const designs = data?.designs || [];
+
+      if (!designs.length) {
+        showRequestError("В Canva нет дизайнов для импорта", new Error("empty"));
+        return;
+      }
+
+      // Show design picker modal
+      _showCanvaDesignPicker(draftId, designs);
+    } catch (error) {
+      showRequestError("Не удалось загрузить дизайны из Canva", error);
+    }
+  }
+
+  function _showCanvaDesignPicker(draftId, designs) {
+    const existing = document.getElementById("canvaDesignPicker");
+    if (existing) existing.remove();
+
+    const modal = document.createElement("div");
+    modal.id = "canvaDesignPicker";
+    modal.className = "preview-modal-backdrop";
+
+    const designItems = designs.map((d) => `
+      <button class="canva-design-item" type="button" onclick="selectCanvaDesign('${draftId}', '${escapeHtml(d.design_id)}', this)">
+        ${d.thumbnail_url ? `<img src="${escapeHtml(d.thumbnail_url)}" alt="${escapeHtml(d.title)}" class="canva-design-thumb" />` : `<div class="canva-design-thumb canva-design-thumb--empty">${uiIcon("image")}</div>`}
+        <span class="canva-design-title">${escapeHtml(d.title || "Без названия")}</span>
+      </button>
+    `).join("");
+
+    modal.innerHTML = `
+      <div class="preview-modal" role="dialog" aria-modal="true" aria-label="Выберите дизайн из Canva">
+        <div class="preview-modal-header">
+          <h3>Импорт из Canva</h3>
+          <button class="secondary-button preview-modal-close" type="button">${uiIcon("x")}</button>
+        </div>
+        <div class="preview-modal-body canva-design-grid">
+          ${designItems}
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    document.body.style.overflow = "hidden";
+    if (window.lucide) lucide.createIcons();
+
+    const cleanup = () => { document.body.style.overflow = ""; modal.remove(); };
+    modal.querySelector(".preview-modal-close").addEventListener("click", cleanup);
+    modal.addEventListener("click", (e) => { if (e.target === modal) cleanup(); });
+  }
+
+  async function selectCanvaDesign(draftId, designId, button) {
+    const modal = document.getElementById("canvaDesignPicker");
+    try {
+      if (button instanceof HTMLElement) button.textContent = "Импорт...";
+      const draft = await fetchJson(`/api/carousel/${draftId}/canva/import`, {
+        method: "POST",
+        body: JSON.stringify({ design_id: designId }),
+        timeout: 90000,
+      });
+      if (modal) { document.body.style.overflow = ""; modal.remove(); }
+      mergeDraftIntoState(draft);
+      renderDraftList();
+      if (isCurrentDraftDetail(draft.draft_id)) renderDraftDetail(draft);
+    } catch (error) {
+      if (modal) { document.body.style.overflow = ""; modal.remove(); }
+      showRequestError("Не удалось импортировать дизайн из Canva", error);
+    }
+  }
+
   return {
     slideNoteId,
     slideTextId,
@@ -525,5 +682,9 @@ export function createCarouselModule(deps) {
     carouselSwiperGoTo,
     downloadCarouselPptx,
     importCarouselPptx,
+    toggleCarouselDropdown,
+    exportToCanva,
+    importFromCanva,
+    selectCanvaDesign,
   };
 }
