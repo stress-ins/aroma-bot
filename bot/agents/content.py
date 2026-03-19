@@ -297,145 +297,34 @@ def make_single_image_prompt(base: str, text: str, with_text: bool) -> str:
     return f"{base}, visual theme: {text[:90]}, clean minimal background, negative space for text, no typography"
 
 
-# ── Prompts ──────────────────────────────────────────────────────────────────
+# ── Prompts (delegated to bot.agents.prompts.content_prompts) ────────────────
+
+from bot.agents.prompts.content_prompts import (
+    OUTPUT_FORMAT_DEFAULT as _OUTPUT_FORMAT_DEFAULT,  # noqa: F401
+    OUTPUT_FORMAT_THREADS as _OUTPUT_FORMAT_THREADS,  # noqa: F401
+    threads_output_format as _threads_output_format,
+    topics_prompt as _topics_prompt_impl,
+    custom_topics_prompt as _custom_topics_prompt_impl,
+    strategist_prompt as _strategist_prompt_impl,
+    suggest_topics_prompt as _suggest_topics_prompt_impl,
+    writer_prompt as _writer_prompt_impl,
+)
+
 
 def _topics_prompt(trends_text: str, goal_key: str, format_key: str) -> str:
-    return f"""\
-{get_brand_context()}
-Роль: ты Content Strategist.
-Цель контента: {GOAL_GUIDANCE[goal_key]}
-Формат: {FORMAT_LABELS[format_key]}.
-
-Ниже сигналы из трендов:
-{trends_text}
-
-Сгенерируй 10 тем.
-Требования:
-- Каждая тема должна быть привязана к состоянию, ощущению в теле, ритуалу восстановления или практическому применению.
-- Подходящие углы: стресс, перегрузка, сон, заземление, сенсорные ритуалы, корпоративный wellbeing, аромат как якорь состояния, гонг как способ замедления.
-- Избегай пустых общих формулировок и слишком мистического языка.
-- Формулируй так, чтобы тема подходила под выбранную цель.
-
-Верни строго нумерованный список без пояснений:
-1. ...
-10. ...
-"""
+    return _topics_prompt_impl(trends_text, goal_key, format_key, GOAL_GUIDANCE, FORMAT_LABELS)
 
 
 def _custom_topics_prompt(user_brief: str, goal_key: str, format_key: str) -> str:
-    return f"""\
-{get_brand_context()}
-Роль: ты Content Strategist.
-Цель контента: {GOAL_GUIDANCE[goal_key]}
-Формат: {FORMAT_LABELS[format_key]}.
-
-Ниже пользовательское направление для контента:
-{user_brief[:2000]}
-
-Сгенерируй 10 тем.
-Требования:
-- Сохраняй связь с нишей: регуляция нервной системы, сенсорные практики, ароматерапия, медитации, гонг.
-- Раскрой пользовательский запрос через конкретные углы, состояния, жизненные ситуации или сценарии применения.
-- Избегай пустых и общих названий.
-- Формулируй так, чтобы тема подходила под выбранную цель и формат.
-
-Верни строго нумерованный список без пояснений:
-1. ...
-10. ...
-"""
+    return _custom_topics_prompt_impl(user_brief, goal_key, format_key, GOAL_GUIDANCE, FORMAT_LABELS)
 
 
 def _strategist_prompt(topic: str, goal_key: str, format_key: str, blend_context: dict | None = None) -> str:
-    blend_block = ""
-    if blend_context:
-        from bot.agents.blend_content_context import build_blend_strategist_block
-        blend_block = (
-            "\nКонтекст смеси:\n" + build_blend_strategist_block(blend_context) + "\n"
-            "Угол должен раскрывать воздействие смеси через её профиль.\n"
-        )
-    return f"""\
-{get_brand_context()}
-Роль: ты Content Strategist. Твоя задача — найти угол и первую строку.
-
-Тема: {topic}
-Цель: {GOAL_GUIDANCE[goal_key]}
-Формат: {FORMAT_LABELS[format_key]}
-
-Ответь строго в формате (два поля, на русском):
-ANGLE: [1-2 предложения — почему эта тема резонирует СЕЙЧАС с этой аудиторией и под эту цель]
-HOOK: [точная первая строка поста — останавливает скролл, без приветствий, без "Сегодня хочу поделиться"]
-
-Пунктуация: тире (— –) → запятая. Запрещено: "важно отметить", "данный", "осуществляется", "в рамках", markdown-форматирование.
-{blend_block}"""
-
-
-_OUTPUT_FORMAT_THREADS = """\
-Верни 3 поста в формате:
-УТРО
-[текст поста]
-ПОЧЕМУ ЭТО СРАБОТАЕТ: [одно предложение]
-
-ДЕНЬ
-[текст поста]
-ПОЧЕМУ ЭТО СРАБОТАЕТ: [одно предложение]
-
-ВЕЧЕР
-[текст поста]
-ПОЧЕМУ ЭТО СРАБОТАЕТ: [одно предложение]
-
-VISUAL_PROMPT: [на английском, до 25 слов, terracotta/beige/sage palette, soft light, atmospheric lifestyle]
-"""
-
-_OUTPUT_FORMAT_DEFAULT = """\
-Верни строго в формате:
-CAPTION: [полный текст поста, начиная с хука, с хэштегами согласно правилам платформы]
-CTA: [отдельный CTA если ещё не в тексте, иначе пусто]
-VISUAL_PROMPT: [на английском, до 25 слов, terracotta/beige/sage palette, soft light, atmospheric lifestyle]
-"""
-
-
-def _threads_output_format(format_key: str) -> str:
-    if format_key == "threads_series":
-        return _OUTPUT_FORMAT_THREADS
-    return _OUTPUT_FORMAT_DEFAULT
+    return _strategist_prompt_impl(topic, goal_key, format_key, GOAL_GUIDANCE, FORMAT_LABELS, blend_context=blend_context)
 
 
 def _writer_prompt(topic: str, goal_key: str, format_key: str, angle: str, hook: str, blend_context: dict | None = None) -> str:
-    rules = _PLATFORM_RULES_WRITER.get(format_key, _PLATFORM_RULES_WRITER["telegram"])
-    blend_block = ""
-    if blend_context:
-        from bot.agents.blend_content_context import build_blend_writer_block
-        blend_block = (
-            "\nКонтекст смеси:\n" + build_blend_writer_block(blend_context) + "\n"
-            "Правила для текста о смеси:\n"
-            "- Начни с состояния, к которому ведёт смесь\n"
-            "- Упомяни 1-2 масла с ролью и свойством\n"
-            "- Объясни синергию\n"
-            "- Включи способ применения\n"
-            "- Это рассказ, не рецепт\n"
-        )
-    return f"""\
-{get_brand_context()}
-Роль: ты Platform Writer. Ты получил угол и хук от стратега. Напиши готовый пост.
-
-Тема: {topic}
-Цель: {GOAL_GUIDANCE[goal_key]}
-Стратегический угол: {angle}
-Первая строка (хук): {hook}
-{blend_block}
-{rules}
-
-Дополнительные правила письма:
-- Пиши так, как это реально сказал бы живой человек в заметке или посте, а не копирайтер в презентации.
-- Одна мысль должна естественно вести к следующей. Без резких обрывов, пафосных формул и "умных" коротких тезисов.
-- Не используй вычурные или слишком жёсткие фразы ради эффекта. Если фраза звучит как слоган, перепиши проще.
-- Никаких литературных метафор. Используй слова из обычной речи, не из художественной прозы. Плохо: "плечи в камне", "тело как свинец", "душа не отпускает". Хорошо: "плечи не расслабляются", "не можешь уснуть", "голова не отключается".
-- Дай один конкретный жизненный момент или наблюдение, чтобы текст стоял на земле.
-- Предпочитай простые слова и нормальный человеческий ритм. Не пиши так, будто текст старается впечатлить.
-
-{_HUMAN_WRITING_RULES}
-
-{_threads_output_format(format_key)}"""
+    return _writer_prompt_impl(topic, goal_key, format_key, angle, hook, GOAL_GUIDANCE, blend_context=blend_context)
 
 
 # ── Agent functions ──────────────────────────────────────────────────────────
@@ -453,27 +342,7 @@ def _call_claude(prompt: str, max_tokens: int, system: str = "") -> str:
 
 
 def _suggest_topics_prompt(goal_key: str, format_key: str, exclude_topics: list[str]) -> str:
-    exclude_block = ""
-    if exclude_topics:
-        items = "\n".join(f"- {t}" for t in exclude_topics[:30])
-        exclude_block = f"\n\nНЕ повторяй темы похожие на:\n{items}\n"
-    return f"""\
-{get_brand_context()}
-Роль: ты Content Strategist.
-Цель контента: {GOAL_GUIDANCE.get(goal_key, GOAL_GUIDANCE["trust"])}
-Формат: {FORMAT_LABELS.get(format_key, format_key)}.
-
-Сгенерируй 5 тем для контента.
-Требования:
-- Каждая тема должна быть привязана к состоянию, ощущению в теле, ритуалу восстановления или практическому применению.
-- Подходящие углы: стресс, перегрузка, сон, заземление, сенсорные ритуалы, корпоративный wellbeing, аромат как якорь состояния, гонг как способ замедления.
-- Избегай пустых общих формулировок и слишком мистического языка.
-- Формулируй так, чтобы тема подходила под выбранную цель.
-{exclude_block}
-Верни строго нумерованный список без пояснений:
-1. ...
-5. ...
-"""
+    return _suggest_topics_prompt_impl(goal_key, format_key, exclude_topics, GOAL_GUIDANCE, FORMAT_LABELS)
 
 
 def _suggest_topics_sync(goal_key: str, format_key: str, exclude_topics: list[str]) -> list[str]:
