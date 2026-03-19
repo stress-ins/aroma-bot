@@ -30,6 +30,11 @@ jobs:
           scp deploy/aroma-miniapp.service root@46.32.186.192:/etc/systemd/system/aroma-miniapp.service
           ssh root@46.32.186.192 'systemctl daemon-reload'
 
+      - name: Update nginx config
+        run: |
+          scp deploy/nginx-miniapp.conf root@46.32.186.192:/etc/nginx/sites-enabled/miniapp
+          ssh root@46.32.186.192 'nginx -t && systemctl reload nginx'
+
       - name: Push to VPS bare repo
         run: |
           git remote add vps ssh://root@46.32.186.192/opt/aroma.git

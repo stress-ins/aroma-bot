@@ -233,7 +233,16 @@ def _call_replicate_claude(
         raise ValueError(f"Replicate prediction status: {data.get('status')}, error: {data.get('error')}")
 
     output = data.get("output", [])
-    text = ("".join(output) if isinstance(output, list) else str(output or "")).strip()
+    if isinstance(output, list):
+        flat = []
+        for item in output:
+            if isinstance(item, list):
+                flat.extend(str(s) for s in item)
+            else:
+                flat.append(str(item))
+        text = "".join(flat).strip()
+    else:
+        text = str(output or "").strip()
     if not text:
         raise ValueError("Replicate Claude returned empty output")
 
