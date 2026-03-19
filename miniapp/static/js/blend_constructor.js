@@ -419,9 +419,10 @@ export function createBlendConstructorModule(deps) {
     if (!oils.length || !_blendState?.origRequest) return;
     const req = _blendState.origRequest;
     const prevResult = _blendState.result;
+    const loaderSub = "\u0414\u043e\u0431\u0430\u0432\u043b\u044f\u044e " + (oils.length > 1 ? oils.length + " \u043c\u0430\u0441\u0435\u043b" : "\u043c\u0430\u0441\u043b\u043e") + " \u0438 \u043f\u0435\u0440\u0435\u0441\u0447\u0438\u0442\u044b\u0432\u0430\u044e \u0440\u0435\u0446\u0435\u043f\u0442.";
     elements.draftDetail.innerHTML = `<div class="detail-grid">
       ${renderBackButton()}
-      ${renderDetailLoader("\u041f\u0435\u0440\u0435\u0441\u0442\u0440\u0430\u0438\u0432\u0430\u044e \u0441\u043c\u0435\u0441\u044c", "\u0414\u043e\u0431\u0430\u0432\u043b\u044f\u044e ${oils.length > 1 ? oils.length + " \u043c\u0430\u0441\u0435\u043b" : "\u043c\u0430\u0441\u043b\u043e"} \u0438 \u043f\u0435\u0440\u0435\u0441\u0447\u0438\u0442\u044b\u0432\u0430\u044e \u0440\u0435\u0446\u0435\u043f\u0442.")}
+      ${renderDetailLoader("\u041f\u0435\u0440\u0435\u0441\u0442\u0440\u0430\u0438\u0432\u0430\u044e \u0441\u043c\u0435\u0441\u044c", loaderSub)}
     </div>`;
     fetchJson("/api/blend-constructor/adjust", {
       method: "POST",
