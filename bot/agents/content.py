@@ -433,7 +433,13 @@ def _generate_writer_sync(
 
     # Step 3: Editor pass
     if draft.caption:
+        pre_edit = draft.caption
         draft.caption = edit_post_sync(draft.caption, topic, platform=format_key)
+        # If editor destroyed threads markers, fall back to pre-edit caption
+        if format_key == "threads_series":
+            check_posts = split_threads_posts(draft.caption)
+            if not any(p.get("text") for p in check_posts):
+                draft.caption = pre_edit
 
     # Step 4: Quality evaluation with retry
     from bot.agents.quality_evaluator import _evaluate_sync

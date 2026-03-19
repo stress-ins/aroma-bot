@@ -95,7 +95,7 @@ def edit_post_sync(raw: str, topic: str, platform: str = "default", user_forbidd
     # Apply policy enforcement (soft rewrites + forbidden phrase detection)
     policy_result = enforce_policy(result, platform)
     cleaned = humanize(policy_result.text, platform)
-    humanized = humanize_llm(cleaned, platform)
+    humanized = humanize_llm(cleaned, platform) if platform != "threads_series" else cleaned
 
     # Brand Guardian validation pass
     from bot.agents.brand_guardian import audit_brand_sync

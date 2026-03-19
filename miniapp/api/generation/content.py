@@ -62,6 +62,8 @@ async def complete_threads_series_generation(
         ts_payload.pop("generation_error", None)
         await update_draft(draft_id, payload=ts_payload, status="draft")
     except Exception as exc:
+        import logging
+        logging.getLogger(__name__).error("threads_series generation failed for %s: %s", draft_id, exc)
         await set_generation_state(
             draft_id,
             pending=False,
