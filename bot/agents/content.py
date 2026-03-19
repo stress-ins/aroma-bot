@@ -242,6 +242,25 @@ def trim_threads_posts(caption: str, topic: str) -> str:
     return "\n".join(parts).strip()
 
 
+def _strip_markdown_formatting(text: str) -> str:
+    """Remove markdown formatting from social post text (headers, bold, blockquotes)."""
+    import re
+    # Remove headers (# ## ###)
+    text = re.sub(r"^#{1,6}\s+", "", text, flags=re.MULTILINE)
+    # Remove bold/italic markers
+    text = re.sub(r"\*\*(.+?)\*\*", r"\1", text)
+    text = re.sub(r"__(.+?)__", r"\1", text)
+    text = re.sub(r"\*(.+?)\*", r"\1", text)
+    text = re.sub(r"_(.+?)_", r"\1", text)
+    # Remove blockquote markers
+    text = re.sub(r"^>\s?", "", text, flags=re.MULTILINE)
+    # Remove code fences
+    text = re.sub(r"```[\s\S]*?```", "", text)
+    # Remove inline code
+    text = re.sub(r"`(.+?)`", r"\1", text)
+    return text.strip()
+
+
 def _has_structured_content(draft: ContentDraft) -> bool:
     return any([
         draft.angle, draft.hook, draft.caption,
@@ -407,6 +426,10 @@ def _generate_writer_sync(
     # parse_content_draft won't capture the text, but split_threads_posts needs it in caption.
     if format_key == "threads_series" and not draft.caption and raw.strip():
         draft.caption = raw.strip()
+
+    # Strip markdown formatting from caption (forbidden in social posts)
+    if draft.caption:
+        draft.caption = _strip_markdown_formatting(draft.caption)
 
     # Step 3: Editor pass
     if draft.caption:
