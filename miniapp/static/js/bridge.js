@@ -30,6 +30,9 @@ export function registerWindowBridge(deps) {
     carouselSwiperGoTo,
     downloadCarouselPptx,
     importCarouselPptx,
+    exportToCanva,
+    importFromCanva,
+    selectCanvaDesign,
     saveReelsScenario,
     regenerateReelsStoryboard,
     regenerateAllReelsFrames,
@@ -186,6 +189,9 @@ export function registerWindowBridge(deps) {
   window.carouselSwiperGoTo = carouselSwiperGoTo;
   window.downloadCarouselPptx = downloadCarouselPptx;
   window.importCarouselPptx = importCarouselPptx;
+  window.exportToCanva = exportToCanva;
+  window.importFromCanva = importFromCanva;
+  window.selectCanvaDesign = selectCanvaDesign;
 
   window.saveReelsScenario = saveReelsScenario;
   window.regenerateReelsStoryboard = regenerateReelsStoryboard;
