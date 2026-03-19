@@ -64,6 +64,15 @@ export function createTrendsModule(deps) {
     if (window.lucide) lucide.createIcons();
   }
 
+  // ── Content sub-switcher ────────────────────────────────────────────
+
+  function renderContentSwitcher(active) {
+    return `<div class="content-sub-switcher">
+      <button class="tab-button${active === "drafts" ? " active" : ""}" onclick="setContentSubMode('drafts')">Черновики</button>
+      <button class="tab-button${active === "trends" ? " active" : ""}" onclick="setContentSubMode('trends')">Тренды</button>
+    </div>`;
+  }
+
   // ── List Panel (platform selector + filters) ─────────────────────────
 
   function renderTrendsListPanel() {
@@ -107,6 +116,7 @@ export function createTrendsModule(deps) {
     }
 
     return `
+      ${renderContentSwitcher("trends")}
       <div class="trends-controls">
         <div class="trends-platform-tabs">${platformTabs}</div>
         <div class="trends-period-row">

@@ -38,7 +38,6 @@ export function createRuntimeModule(deps) {
     if (state.tab === "create") return renderCreate();
     if (state.tab === "inbox") return loadInbox();
     if (state.tab === "plans") return loadPlans();
-    if (state.tab === "reels") return loadReels();
     if (state.tab === "schedule") return loadSchedule();
     if (deps.HANDBOOK_CATEGORY_META[state.tab]) return loadReferences(state.tab);
     if (state.tab === "settings") return loadSettings();
