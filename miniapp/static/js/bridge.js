@@ -142,6 +142,7 @@ export function registerWindowBridge(deps) {
     selectTrendsPeriod,
     refreshTrends,
     openTrendsPost,
+    createFromInsight,
     addMonitoredAccount,
     removeMonitoredAccount,
     addMonitoredAccountFromSettings,
@@ -393,6 +394,7 @@ export function registerWindowBridge(deps) {
   window.selectTrendsPeriod = selectTrendsPeriod;
   window.refreshTrends = refreshTrends;
   window.openTrendsPost = openTrendsPost;
+  window.createFromInsight = createFromInsight;
   window.addMonitoredAccount = addMonitoredAccount;
   window.removeMonitoredAccount = removeMonitoredAccount;
   window.addMonitoredAccountFromSettings = addMonitoredAccountFromSettings;

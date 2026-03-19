@@ -48,12 +48,16 @@ export function createTrendsModule(deps) {
     syncMobileNavigation();
 
     try {
-      const [trendsResult, accountsResult] = await Promise.allSettled([
+      const promises = [
         trendsPlatform === "compare"
           ? fetchJson(`/api/trends/compare?period=${trendsPeriod}`)
           : fetchJson(`/api/trends/${trendsPlatform}?period=${trendsPeriod}`),
         fetchJson("/api/social/monitored-accounts"),
-      ]);
+      ];
+      if (trendsPlatform !== "compare") {
+        promises.push(fetchJson(`/api/trends/suggestions?platform=${trendsPlatform}`));
+      }
+      const [trendsResult, accountsResult, suggestionsResult] = await Promise.allSettled(promises);
 
       if (trendsPlatform === "compare") {
         trendsCompare = trendsResult.status === "fulfilled" ? trendsResult.value : null;
@@ -66,9 +70,15 @@ export function createTrendsModule(deps) {
       if (accountsResult.status === "fulfilled") {
         monitoredAccounts = accountsResult.value || { instagram: [], threads: [] };
       }
+      if (suggestionsResult && suggestionsResult.status === "fulfilled") {
+        suggestionsData = suggestionsResult.value;
+      } else {
+        suggestionsData = null;
+      }
     } catch (err) {
       trendsData = null;
       trendsCompare = null;
+      suggestionsData = null;
     }
 
     elements.draftList.innerHTML = renderTrendsListPanel();
@@ -203,6 +213,97 @@ export function createTrendsModule(deps) {
       </div>`;
   }
 
+  // ── Insight cards from suggestions ────────────────────────────────
+
+  let suggestionsData = null;
+
+  async function loadSuggestions() {
+    try {
+      suggestionsData = await fetchJson(`/api/trends/suggestions?platform=${trendsPlatform}`);
+    } catch (_) {
+      suggestionsData = null;
+    }
+  }
+
+  function renderInsightCards() {
+    if (!suggestionsData || !suggestionsData.insights || !suggestionsData.insights.length) return "";
+    const FORMAT_ICONS = { carousel: "layout-grid", reels: "video", threads_series: "at-sign", content: "file-text" };
+    const FORMAT_LABELS = { carousel: "Карусель", reels: "Рилс", threads_series: "Серия Threads", content: "Пост" };
+
+    const cards = suggestionsData.insights.map((ins, i) => `
+      <div class="insight-card">
+        <div class="insight-card-header">
+          <span class="insight-card-author">@${escapeHtml(ins.author_username || "—")}</span>
+          <span class="insight-card-engagement">${actionLabel("heart", ins.engagement_score)}</span>
+        </div>
+        <div class="insight-card-topic">${escapeHtml(ins.topic)}</div>
+        ${ins.hashtags.length ? `<div class="insight-card-tags">${ins.hashtags.map(t => `<span class="trends-tagcloud-chip" style="font-size:0.75rem">#${escapeHtml(t)}</span>`).join(" ")}</div>` : ""}
+        <div class="insight-card-footer">
+          <span class="insight-card-format">${uiIcon(FORMAT_ICONS[ins.suggested_format] || "file-text", 14)} ${escapeHtml(FORMAT_LABELS[ins.suggested_format] || "Пост")}</span>
+          <button class="secondary-button" type="button" data-action="createFromInsight" data-args='${JSON.stringify([ins.topic, ins.hashtags, ins.suggested_format])}'>
+            ${uiIcon("plus", 14)} Создать контент
+          </button>
+        </div>
+      </div>
+    `).join("");
+
+    return `
+      <div class="detail-section">
+        <div class="detail-section-title">${uiIcon("lightbulb", 16)} Идеи из трендов</div>
+        ${cards}
+      </div>`;
+  }
+
+  function createFromInsight(topic, hashtags, format) {
+    sessionStorage.setItem("trend_create_context", JSON.stringify({ topic, hashtags, source: "trends" }));
+    if (typeof window.openCreateTool === "function") {
+      window.openCreateTool(format || "content");
+    }
+    // Pre-fill topic after form renders
+    setTimeout(() => {
+      const topicField = document.querySelector(".create-form textarea[name='topic']");
+      if (topicField && topic) {
+        topicField.value = topic;
+        topicField.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+    }, 100);
+  }
+
+  function renderEmptyGuide() {
+    return `
+      <div class="trends-empty-guide">
+        <div class="detail-section">
+          <div class="detail-section-title">${uiIcon("compass", 16)} Как начать</div>
+          <div class="trends-guide-steps">
+            <div class="trends-guide-step">
+              <span class="trends-guide-step-num">1</span>
+              <div>
+                <strong>Добавьте аккаунты для мониторинга</strong>
+                <p>Укажите конкурентов или источники вдохновения ниже в секции «Отслеживаемые аккаунты».</p>
+              </div>
+            </div>
+            <div class="trends-guide-step">
+              <span class="trends-guide-step-num">2</span>
+              <div>
+                <strong>Подключите Instagram/Threads API</strong>
+                <p>Перейдите в <button class="link-button" data-action="openSettingsSection" data-args='["tokens"]'>настройки токенов</button> для авторизации.</p>
+              </div>
+            </div>
+            <div class="trends-guide-step">
+              <span class="trends-guide-step-num">3</span>
+              <div>
+                <strong>Данные обновляются каждые 6 часов</strong>
+                <p>Или нажмите «Обновить» вручную.</p>
+                <button class="secondary-button" type="button" data-action="refreshTrends" data-args='[null]'>
+                  ${uiIcon("refresh-cw", 14)} Обновить сейчас
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }
+
   // ── Detail Panel ────────────────────────────────────────────────────
 
   function renderTrendsDetail() {
@@ -248,10 +349,12 @@ export function createTrendsModule(deps) {
     }
 
     if (sections.length === 0) {
-      return renderGuidedState("bar-chart-3", "Нет данных", "Данные появятся после первого сбора.");
+      return renderEmptyGuide();
     }
 
-    return `<div class="trends-detail-content">${sections.join("")}</div>`;
+    // Prepend insight cards before analytics
+    const insightsHtml = renderInsightCards();
+    return `<div class="trends-detail-content">${insightsHtml}${sections.join("")}</div>`;
   }
 
   function renderCompareDetail() {
@@ -600,5 +703,6 @@ export function createTrendsModule(deps) {
     openTrendsPost,
     addMonitoredAccount,
     removeMonitoredAccount,
+    createFromInsight,
   };
 }

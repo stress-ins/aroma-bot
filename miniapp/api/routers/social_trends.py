@@ -151,15 +151,40 @@ async def trends_suggestions(
     hashtags = await get_hashtag_stats(ctx.team_id, platform, period, limit=10)
     best_times = await get_best_posting_times(ctx.team_id, platform, period)
 
-    # Extract topics from top posts
-    topics = []
+    # Build insight cards from top posts
+    insights = []
     for p in top_posts:
         text = p.get("text", "")
-        if text:
-            # Take first meaningful line as topic
-            line = text.split("\n")[0].strip()
-            if line and len(line) > 10:
-                topics.append(line[:120])
+        if not text:
+            continue
+        first_line = text.split("\n")[0].strip()
+        if not first_line or len(first_line) < 10:
+            continue
+        engagement = (
+            (p.get("like_count") or 0)
+            + (p.get("comment_count") or 0)
+            + (p.get("share_count") or 0)
+            + (p.get("reply_count") or 0)
+        )
+        media_type = p.get("media_type", "")
+        if media_type in ("IMAGE", "CAROUSEL_ALBUM"):
+            suggested_format = "carousel"
+        elif media_type == "VIDEO":
+            suggested_format = "reels"
+        elif media_type == "TEXT_POST":
+            suggested_format = "threads_series"
+        else:
+            suggested_format = "content"
+        insights.append({
+            "topic": first_line[:120],
+            "engagement_score": engagement,
+            "author_username": p.get("author_username", ""),
+            "suggested_format": suggested_format,
+            "hashtags": p.get("hashtags", [])[:5],
+            "preview": text[:200],
+        })
+
+    topics = [ins["topic"] for ins in insights[:5]]
 
     # Hooks (first lines of highest engagement posts, mostly for Threads)
     hooks = []
@@ -177,6 +202,7 @@ async def trends_suggestions(
         "hooks": hooks[:5],
         "best_times": best_times[:3],
         "platform": platform,
+        "insights": insights[:5],
     }
 
 
