@@ -226,6 +226,11 @@ export function createCreateModule(deps) {
             <p class="field-help">Опишите через сцену, состояние или ощущение — так легче получить рабочий сценарий.</p>
             <button type="button" class="suggest-topic-btn">${uiIcon("zap")}<span>Предложи тему</span></button>
             <div class="suggest-topics-dropdown" hidden></div>
+            <label class="lightweight-toggle">
+              <input type="checkbox" name="lightweight">
+              <span>Быстрое планирование</span>
+              <span class="field-help" style="margin:0">Только концепция + сценарий + описание. Без раскадровки и картинок.</span>
+            </label>
             <button class="primary-button" type="submit" disabled>Создать рилс</button>
           </form>
         </section>
@@ -339,6 +344,7 @@ export function createCreateModule(deps) {
     if (reelsForm) bindTopicForm(reelsForm, { pendingText: "Создаю...", onSubmit: async (topic) => {
       const goal = reelsForm.querySelector("select[name='goal']")?.value || "trust";
       const emotion = reelsForm.querySelector("select[name='emotion']")?.value || "calm";
+      const lightweight = reelsForm.querySelector("input[name='lightweight']")?.checked || false;
       const bcRaw = sessionStorage.getItem("blend_create_context");
       let blend_context = null;
       if (bcRaw) { try { blend_context = JSON.parse(bcRaw); } catch(_e) {} }
@@ -347,7 +353,7 @@ export function createCreateModule(deps) {
         const reel = await fetchJson("/api/generate/reels", {
           method: "POST",
           timeout: 45000,
-          body: JSON.stringify({ topic, goal, emotion, blend_context }),
+          body: JSON.stringify({ topic, goal, emotion, lightweight, blend_context }),
         });
         sessionStorage.removeItem("blend_create_context");
         finalizePendingReelsCreation(reel);

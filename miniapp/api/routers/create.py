@@ -13,7 +13,7 @@ from bot.services.miniapp_presenter import serialize_draft
 from bot.services.miniapp_reels import serialize_reels_draft
 from config import settings
 from ..auth import TeamContext, _check_content_limit, _require_auth, _resolve_team_context, require_tier
-from ..generation import complete_carousel_generation, complete_content_generation, complete_reels_v2_generation, complete_threads_series_generation
+from ..generation import complete_carousel_generation, complete_content_generation, complete_reels_lightweight_generation, complete_reels_v2_generation, complete_threads_series_generation
 from ..models import CreateCarouselPayload, CreateContentPayload, CreateReelsV2Payload, SuggestTopicsRequest, ThreadsSeriesCreateRequest
 
 router = APIRouter()
@@ -129,6 +129,7 @@ async def generate_reels(
     emotion = payload.emotion.strip().lower() or "calm"
 
     bc = _extract_blend_context(payload)
+    lightweight = payload.lightweight
     reels_payload: dict = {
         "goal": goal,
         "emotion": emotion,
@@ -146,6 +147,8 @@ async def generate_reels(
         "generation_stage": "concept",
         "generation_message": "Собираю концепцию рилса.",
     }
+    if lightweight:
+        reels_payload["lightweight"] = True
     if bc:
         reels_payload["blend_context"] = bc
     saved = await save_draft(
@@ -156,7 +159,10 @@ async def generate_reels(
         team_id=ctx.team_id,
         created_by=ctx.telegram_id,
     )
-    background_tasks.add_task(complete_reels_v2_generation, saved.draft_id, topic, goal, emotion, bc)
+    if lightweight:
+        background_tasks.add_task(complete_reels_lightweight_generation, saved.draft_id, topic, goal, emotion, bc)
+    else:
+        background_tasks.add_task(complete_reels_v2_generation, saved.draft_id, topic, goal, emotion, bc)
     draft = await serialize_reels_draft(saved.draft_id)
     if not draft:
         raise HTTPException(status_code=500, detail="reels_not_saved")
