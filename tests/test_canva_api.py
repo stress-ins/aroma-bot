@@ -27,6 +27,9 @@ async def test_export_to_canva_success(mock_canva_token):
 
     async def mock_handler(request):
         if request.method == "POST" and "/imports" in str(request.url):
+            assert request.headers["Content-Type"] == "application/octet-stream"
+            assert "Import-Metadata" in request.headers
+            assert request.content == b"fake-pptx-bytes"
             return httpx.Response(200, json={"job": {"id": "job-123", "status": "in_progress"}})
         if request.method == "GET" and "/imports/job-123" in str(request.url):
             return httpx.Response(200, json={
