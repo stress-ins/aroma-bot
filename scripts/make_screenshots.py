@@ -576,8 +576,8 @@ def make_diffs():
 
 FILTER_SCREENS = [
     {"base_url_param": "?tab=drafts", "sid": "drafts", "filters": [
-        {"label": "scheduled", "js": "document.querySelector('[data-filter=\"scheduled\"]')?.click()"},
-        {"label": "published", "js": "document.querySelector('[data-filter=\"published\"]')?.click()"},
+        {"label": "scheduled", "js": "const el=document.getElementById('statusFilter');if(el){el.value='scheduled';el.dispatchEvent(new Event('change',{bubbles:true}))}"},
+        {"label": "published", "js": "const el=document.getElementById('statusFilter');if(el){el.value='published';el.dispatchEvent(new Event('change',{bubbles:true}))}"},
     ]},
 ]
 
