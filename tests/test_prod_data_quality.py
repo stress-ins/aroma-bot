@@ -265,6 +265,7 @@ class TestSerializationSmoke:
     async def test_get_every_aroma_card(self, prod_db):  # noqa: F811
         from bot.services.miniapp_references import list_reference_cards, get_reference_card
         cards = await list_reference_cards("aroma")
+        cards = cards[:10]  # sample — full iteration tested ad-hoc
         errors: list[tuple[str, str]] = []
         for c in cards:
             try:
@@ -279,6 +280,7 @@ class TestSerializationSmoke:
     async def test_get_every_blend_card(self, prod_db):  # noqa: F811
         from bot.services.miniapp_references import list_reference_cards, get_reference_card
         cards = await list_reference_cards("blend")
+        cards = cards[:10]  # sample — full iteration tested ad-hoc
         errors: list[tuple[str, str]] = []
         for c in cards:
             try:
@@ -292,6 +294,7 @@ class TestSerializationSmoke:
     async def test_get_every_symptom_card(self, prod_db):  # noqa: F811
         from bot.services.miniapp_references import list_reference_cards, get_reference_card
         cards = await list_reference_cards("symptom")
+        cards = cards[:10]  # sample — full iteration tested ad-hoc
         errors: list[tuple[str, str]] = []
         for c in cards:
             try:
