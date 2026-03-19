@@ -312,7 +312,7 @@ def _create_page(browser, miniapp_server, *, viewport, is_mobile, dark=False):
 def page(browser, miniapp_server):
     context, pg = _create_page(
         browser, miniapp_server,
-        viewport={"width": 430, "height": 932}, is_mobile=True,
+        viewport={"width": 393, "height": 852}, is_mobile=True,
     )
     yield pg
     context.close()
@@ -323,7 +323,7 @@ def dark_page(browser, miniapp_server):
     """Mobile page with dark theme (tg-theme-dark) applied from the start."""
     context, pg = _create_page(
         browser, miniapp_server,
-        viewport={"width": 430, "height": 932}, is_mobile=True, dark=True,
+        viewport={"width": 393, "height": 852}, is_mobile=True, dark=True,
     )
     yield pg
     context.close()
@@ -335,7 +335,7 @@ def themed_page(request, browser, miniapp_server):
     dark = request.param == "dark"
     context, pg = _create_page(
         browser, miniapp_server,
-        viewport={"width": 430, "height": 932}, is_mobile=True, dark=dark,
+        viewport={"width": 393, "height": 852}, is_mobile=True, dark=dark,
     )
     yield pg
     context.close()
