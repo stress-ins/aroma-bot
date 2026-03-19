@@ -156,9 +156,29 @@ def call_claude(
             dedup_key=f"claude:retry_exhausted:{context}",
         )
 
-    # Fallback: Kie.ai Gemini (Kie.ai Claude endpoint is broken — returns empty content)
+    # Fallback chain: Replicate Claude → Kie.ai Gemini
+    fallback_exc: Exception | None = None
+
+    # Step 1: Replicate Claude (same model quality)
+    if settings.replicate_api_key:
+        logger.warning("Claude API failed, falling back to Replicate Claude for context=%s", context)
+        try:
+            text = _call_replicate_claude(
+                messages=messages, max_tokens=max_tokens, system=system, context=context,
+            )
+            notify_owner_throttled(
+                f"\u26a0\ufe0f <b>Claude fallback \u2192 Replicate Claude</b>\nContext: {context}\n"
+                f"Claude error: <code>{str(last_exc)[:150]}</code>",
+                dedup_key=f"claude:fallback_replicate:{context}",
+            )
+            return text
+        except Exception as rep_exc:
+            fallback_exc = rep_exc
+            logger.warning("Replicate Claude also failed for context=%s: %s", context, rep_exc)
+
+    # Step 2: Kie.ai Gemini
     if settings.kie_ai_api_key:
-        logger.warning("Claude API failed, falling back to Kie.ai Gemini for context=%s", context)
+        logger.warning("Falling back to Kie.ai Gemini for context=%s", context)
         try:
             text = _call_kie_gemini(messages=messages, max_tokens=max_tokens, system=system, context=context)
             notify_owner_throttled(
@@ -168,15 +188,80 @@ def call_claude(
             )
             return text
         except Exception as gemini_exc:
+            fallback_exc = gemini_exc
             logger.exception("Kie.ai Gemini fallback also failed for context=%s", context)
-            notify_owner_throttled(
-                f"\U0001f534 <b>All LLM providers failed</b>\nContext: {context}\n"
-                f"Claude: <code>{str(last_exc)[:100]}</code>\n"
-                f"Kie Gemini: <code>{str(gemini_exc)[:100]}</code>",
-                dedup_key=f"claude:all_failed:{context}",
-            )
+
+    # All providers failed
+    if fallback_exc:
+        notify_owner_throttled(
+            f"\U0001f534 <b>All LLM providers failed</b>\nContext: {context}\n"
+            f"Claude: <code>{str(last_exc)[:100]}</code>\n"
+            f"Last fallback: <code>{str(fallback_exc)[:100]}</code>",
+            dedup_key=f"claude:all_failed:{context}",
+        )
 
     raise last_exc  # type: ignore[misc]
+
+
+def _call_replicate_claude(
+    *,
+    messages: list[dict],
+    max_tokens: int,
+    system: str = "",
+    context: str = "Replicate Claude fallback",
+) -> str:
+    """Fallback: call Claude Haiku via Replicate prediction API."""
+    import httpx
+
+    # Build prompt from messages (Replicate uses prompt, not messages format)
+    parts: list[str] = []
+    for msg in messages:
+        parts.append(msg["content"])
+    prompt = "\n\n".join(parts)
+
+    payload: dict = {
+        "input": {
+            "prompt": prompt,
+            "max_tokens": max(max_tokens, 1024),  # Replicate minimum is 1024
+        },
+    }
+    if system:
+        payload["input"]["system"] = system
+
+    resp = httpx.post(
+        "https://api.replicate.com/v1/models/anthropic/claude-4.5-haiku/predictions",
+        headers={
+            "Authorization": f"Token {settings.replicate_api_key}",
+            "Content-Type": "application/json",
+            "Prefer": "wait=60",
+        },
+        json=payload,
+        timeout=65.0,
+    )
+    resp.raise_for_status()
+    data = resp.json()
+
+    if data.get("status") != "succeeded":
+        raise ValueError(f"Replicate prediction status: {data.get('status')}, error: {data.get('error')}")
+
+    output = data.get("output", [])
+    text = ("".join(output) if isinstance(output, list) else str(output or "")).strip()
+    if not text:
+        raise ValueError("Replicate Claude returned empty output")
+
+    # Fire-and-forget cost logging
+    try:
+        tid = current_telegram_id.get()
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        threading.Thread(
+            target=_log_cost_sync,
+            args=(today, tid, context, "claude-haiku-4.5/replicate", 0, 0, 0.0),
+            daemon=True,
+        ).start()
+    except Exception:
+        pass
+
+    return text
 
 
 def _call_kie_claude(
