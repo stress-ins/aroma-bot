@@ -835,14 +835,14 @@ body.app-ready .splash {
 .brand-loader-letter {
   position: relative;
   z-index: 1;
-  font-size: 28px;
-  font-weight: 800;
   color: var(--brand);
-  letter-spacing: 0;
   line-height: 1;
-  margin-top: -2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   animation: brand-loader-pulse 1.4s ease-in-out infinite;
 }
+.brand-loader-letter svg { width: 24px; height: 24px; }
 
 @keyframes brand-loader-spin {
   from { transform: rotate(0deg); }
@@ -3511,7 +3511,7 @@ body.tg-theme-dark .concept-card {
 .reels-step::before { content: ""; position: absolute; top: 6px; left: 0; right: 50%; height: 2px; background: var(--border); }
 .reels-step::after { content: ""; position: absolute; top: 6px; left: 50%; right: 0; height: 2px; background: var(--border); }
 .reels-step:first-child::before, .reels-step:last-child::after { display: none; }
-.reels-step.done::before, .reels-step.done::after, .reels-step.active::before { background: var(--accent); }
+.reels-step.done::before, .reels-step.done::after, .reels-step.active::before { background: var(--accent); opacity: 0.45; }
 .reels-step-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--surface-2); border: 2px solid var(--border); position: relative; z-index: 1; transition: all 0.2s; }
 .reels-step.done .reels-step-dot { background: var(--accent); border-color: var(--accent); }
 .reels-step.active .reels-step-dot { background: var(--bg); border-color: var(--accent); box-shadow: 0 0 0 3px rgba(200, 160, 100, 0.25); }

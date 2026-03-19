@@ -570,7 +570,7 @@ export function createReelsModule(deps) {
         <div class="reels-frame-v2-image-generating">
           <div class="brand-loader">
             <span class="brand-loader-ring"></span>
-            <span class="brand-loader-letter">A</span>
+            <span class="brand-loader-letter"><i data-lucide="sparkles"></i></span>
           </div>
           <span style="font-size:12px;color:var(--hint);margin-top:8px">Генерирую...</span>
         </div>
@@ -681,7 +681,7 @@ export function createReelsModule(deps) {
         </div>
         <div class="brand-loader">
           <span class="brand-loader-ring"></span>
-          <span class="brand-loader-letter">A</span>
+          <span class="brand-loader-letter"><i data-lucide="sparkles"></i></span>
         </div>
         <div class="detail-loader-copy">
           <strong>${escapeHtml(r.generation_message || "Генерирую концепцию и сценарий")}</strong>
@@ -728,6 +728,7 @@ export function createReelsModule(deps) {
             data-action="approveReels" data-args='${JSON.stringify([r.draft_id, null])}'>
             ${actionLabel("approve", "Согласовать")}
           </button>
+          ${!allFramesReady ? `<span class="field-help" style="margin:0">Сгенерируйте и проверьте все кадры</span>` : ""}
           <button class="danger-button" type="button" data-action="deleteDraft" data-args='${JSON.stringify([r.draft_id, "reels", null])}'>
             ${actionLabel("trash", "Удалить")}
           </button>
@@ -751,6 +752,15 @@ export function createReelsModule(deps) {
             <button class="secondary-button compact" type="button" data-action="regenScenario" data-args='${JSON.stringify([r.draft_id, null])}'>↺ Перегенерировать сценарий</button>
           </div>
         </section>
+
+        ${!frames.length && (concept || scenario) ? `
+          <div class="actions-row" style="justify-content:center;padding:12px 0">
+            <button class="primary-button" type="button"
+              data-action="regenScenario" data-args='${JSON.stringify([r.draft_id, null])}'>
+              ${actionLabel("slides", "Сгенерировать раскадровку")}
+            </button>
+          </div>
+        ` : ""}
 
         ${frames.length ? `
           <section class="section">
@@ -777,11 +787,6 @@ export function createReelsModule(deps) {
           </div>
         </section>
 
-        <div class="actions-row" style="justify-content:center;padding:8px 0">
-          <button class="secondary-button" type="button" data-action="openCreateTool" data-args='["reels"]'>
-            ${actionLabel("reel", "Создать ещё один рилс")}
-          </button>
-        </div>
       </div>
     `;
   }
