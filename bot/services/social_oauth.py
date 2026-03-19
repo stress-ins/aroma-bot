@@ -446,9 +446,7 @@ def bundle_env_updates(bundle: OAuthTokenBundle) -> dict[str, str]:
             "INSTAGRAM_USER_ID": bundle.user_id,
         }
     if bundle.service == "canva":
-        return {
-            "CANVA_CLIENT_ID": bundle.metadata.get("refresh_token", ""),
-        }
+        return {}
     raise OAuthExchangeError(f"Unsupported service: {bundle.service}")
 
 
