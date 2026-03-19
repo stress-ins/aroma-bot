@@ -47,18 +47,20 @@ export function createSettingsModule(deps) {
     elements.draftCount.textContent = "";
 
     // Fetch badge data in parallel
-    const [planRes, teamsRes, socialRes, statusRes, adminRes] = await Promise.allSettled([
+    const [planRes, teamsRes, socialRes, statusRes, adminRes, hashtagsRes] = await Promise.allSettled([
       fetchJson("/api/user/plan"),
       fetchJson("/api/teams"),
       fetchJson("/api/social/status"),
       fetchJson("/api/status"),
       fetchJson("/api/admin/promos"),
+      fetchJson("/api/social/tracked-hashtags"),
     ]);
 
     const teamCount = teamsRes.status === "fulfilled" ? (teamsRes.value?.items || []).reduce((n, t) => n + (t.member_count || 1), 0) : null;
     const connectedCount = socialRes.status === "fulfilled" ? (socialRes.value?.accounts || []).filter((a) => a.connected).length : null;
     const enabledCount = statusRes.status === "fulfilled" ? (statusRes.value?.items || []).filter((i) => i.enabled).length : null;
     const isAdmin = adminRes.status === "fulfilled";
+    const hashtagCount = hashtagsRes.status === "fulfilled" ? (hashtagsRes.value?.items || []).length : null;
 
     let html = `<div class="settings-menu">`;
 
@@ -83,6 +85,8 @@ export function createSettingsModule(deps) {
       <div class="settings-menu-group-header">Контент</div>
       <div class="settings-menu-list">
         ${settingsMenuRow("palette", "#FF9500", "Бренд и ключи", "brand", null)}
+        ${settingsMenuRow("link", "#34C759", "Аккаунты", "accounts", connectedCount)}
+        ${settingsMenuRow("hash", "#5856D6", "Теги для мониторинга", "hashtags", hashtagCount)}
       </div>
     </div>`;
 
@@ -374,6 +378,14 @@ export function createSettingsModule(deps) {
       }
       if (state.settingsSection === "promo") {
         renderPromo();
+        return;
+      }
+      if (state.settingsSection === "accounts") {
+        renderAccounts();
+        return;
+      }
+      if (state.settingsSection === "hashtags") {
+        renderTrackedHashtags();
         return;
       }
       if (state.settingsSection === "status") {
@@ -787,6 +799,86 @@ export function createSettingsModule(deps) {
     if (window.lucide) lucide.createIcons();
   }
 
+  // ── Tracked hashtags ─────────────────────────────────────────────────────
+
+  async function renderTrackedHashtags() {
+    elements.listTitle.textContent = "Настройки";
+    elements.draftCount.textContent = "Теги";
+    elements.draftList.innerHTML = `<button class="back-button" type="button" onclick="goBackToSettings()">${uiIcon("arrow-left")}<span>Назад</span></button>`;
+    elements.draftDetail.innerHTML = renderBackButton() + `
+      <div class="detail-grid">
+        <div class="detail-top">
+          <p class="eyebrow">${uiIcon("hash")}<span>Настройки</span></p>
+          <h2 class="detail-title">Теги для мониторинга</h2>
+        </div>
+        <section class="section">
+          <div id="trackedTagsList" class="keyword-chips">
+            <span class="plan-entry-hint">Загрузка…</span>
+          </div>
+          <div class="keyword-add-row" style="margin-top:12px">
+            <input id="trackedTagInput" type="text" placeholder="#хештег" class="keyword-input">
+            <button class="primary-button" type="button" onclick="addTrackedHashtag()">${uiIcon("plus")}<span>Добавить</span></button>
+          </div>
+        </section>
+        <p class="settings-hint">
+          Укажите хештеги, по которым будет отслеживаться активность конкурентов и тренды. Лимит: 30 тегов.
+        </p>
+      </div>
+    `;
+    enterDetailView();
+
+    try {
+      const data = await fetchJson("/api/social/tracked-hashtags");
+      _renderTagChips(data.items || []);
+    } catch (_err) {
+      const el = document.getElementById("trackedTagsList");
+      if (el) el.innerHTML = `<span class="plan-entry-hint">Не удалось загрузить теги.</span>`;
+    }
+  }
+
+  function _renderTagChips(tags) {
+    const container = document.getElementById("trackedTagsList");
+    if (!container) return;
+    if (!tags.length) {
+      container.innerHTML = `<span class="plan-entry-hint">Нет отслеживаемых тегов.</span>`;
+      return;
+    }
+    container.innerHTML = tags.map((t) =>
+      `<span class="keyword-chip">#${escapeHtml(t)}<button type="button" aria-label="Удалить тег" onclick="removeTrackedHashtag('${escapeHtml(t)}')">${uiIcon("x", 14)}</button></span>`
+    ).join("");
+    if (window.lucide) lucide.createIcons();
+  }
+
+  async function addTrackedHashtag() {
+    const input = document.getElementById("trackedTagInput");
+    const tag = (input?.value || "").trim().replace(/^#/, "");
+    if (!tag) { input?.focus(); return; }
+    try {
+      const data = await fetchJson("/api/social/tracked-hashtags", {
+        method: "POST",
+        body: JSON.stringify({ tag }),
+      });
+      if (input) input.value = "";
+      _renderTagChips(data.items || []);
+      showUiNotice(`#${tag} добавлен`, "success");
+    } catch (err) {
+      const detail = err?.detail || "";
+      if (detail === "already_tracked") showUiNotice("Тег уже отслеживается", "error");
+      else if (detail === "max_tags_reached") showUiNotice("Достигнут лимит тегов (30)", "error");
+      else showUiNotice("Не удалось добавить тег", "error");
+    }
+  }
+
+  async function removeTrackedHashtag(tag) {
+    try {
+      const data = await fetchJson(`/api/social/tracked-hashtags/${encodeURIComponent(tag)}`, { method: "DELETE" });
+      _renderTagChips(data.items || []);
+      showUiNotice(`#${tag} удалён`, "success");
+    } catch (_err) {
+      showUiNotice("Не удалось удалить тег", "error");
+    }
+  }
+
   // ── Team management ──────────────────────────────────────────────────────
 
   async function renderTeam() {
@@ -1100,6 +1192,9 @@ export function createSettingsModule(deps) {
     renderAccounts,
     connectPlatform,
     switchAccountsTeam,
+    renderTrackedHashtags,
+    addTrackedHashtag,
+    removeTrackedHashtag,
     renderTeam,
     createNewTeam,
     createTeamInvite,
