@@ -94,6 +94,33 @@ def test_bad_request_raises_immediately():
             call_claude(messages=[{"role": "user", "content": "hi"}], max_tokens=100, retries=3)
 
 
+def test_replicate_nested_list_output():
+    """Replicate sometimes returns nested lists [['chunk1'], ['chunk2']] — must flatten."""
+    fake_resp = MagicMock()
+    fake_resp.status_code = 200
+    fake_resp.raise_for_status = MagicMock()
+    fake_resp.json.return_value = {
+        "status": "succeeded",
+        "output": [["Hello "], ["world"]],
+    }
+
+    with (
+        patch("httpx.post", return_value=fake_resp),
+        patch(f"{_MODULE}.settings") as s,
+        patch(f"{_MODULE}._log_cost_sync"),
+        patch(f"{_MODULE}.current_telegram_id", MagicMock(get=MagicMock(return_value=0))),
+    ):
+        s.replicate_api_key = "r8_test"
+        from bot.services.claude_client import _call_replicate_claude
+
+        result = _call_replicate_claude(
+            messages=[{"role": "user", "content": "hi"}],
+            max_tokens=100,
+            context="test",
+        )
+        assert result == "Hello world"
+
+
 def test_no_fallback_without_keys():
     """When no keys at all → raise immediately."""
     with (
