@@ -66,6 +66,10 @@ def test_exchange_canva_code_returns_bundle():
                 "expires_in": 14400,
                 "token_type": "bearer",
             })
+        if "/users/me/profile" in str(request.url):
+            return httpx.Response(200, json={
+                "profile": {"display_name": "canva-user"},
+            })
         if "/users/me" in str(request.url):
             assert "Bearer canva-access-token" in request.headers.get("Authorization", "")
             return httpx.Response(200, json={
@@ -86,7 +90,7 @@ def test_exchange_canva_code_returns_bundle():
     assert bundle.service == "canva"
     assert bundle.access_token == "canva-access-token"
     assert bundle.user_id == "canva-user-123"
-    assert bundle.username == ""
+    assert bundle.username == "canva-user"
     assert bundle.metadata["refresh_token"] == "canva-refresh-token"
     assert bundle.expires_in == 14400
 
@@ -103,8 +107,10 @@ def test_exchange_canva_code_sends_code_verifier():
                 "access_token": "tok",
                 "expires_in": 3600,
             })
+        if "/users/me/profile" in str(request.url):
+            return httpx.Response(200, json={"profile": {"display_name": "X"}})
         if "/users/me" in str(request.url):
-            return httpx.Response(200, json={"id": "u1", "display_name": "X"})
+            return httpx.Response(200, json={"id": "u1"})
         return httpx.Response(404)
 
     client = httpx.Client(transport=httpx.MockTransport(handler))
