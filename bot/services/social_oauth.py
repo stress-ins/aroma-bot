@@ -325,10 +325,24 @@ def exchange_canva_code(
             headers={"Authorization": f"Bearer {access_token}"},
         )
         profile_payload = _parse_json_response(profile_response, "Canva profile lookup")
-        user_id = str(profile_payload.get("id", "")).strip()
-        display_name = str(profile_payload.get("display_name", "")).strip()
+        # Canva may nest profile under a key like "profile" or "user"
+        profile = (
+            profile_payload.get("profile")
+            or profile_payload.get("user")
+            or profile_payload
+        )
+        user_id = str(profile.get("id", "") or profile_payload.get("id", "")).strip()
+        display_name = str(profile.get("display_name", "") or profile_payload.get("display_name", "")).strip()
+        # Fallback: extract user ID from access_token JWT sub claim
         if not user_id:
-            raise OAuthExchangeError("Canva profile lookup did not return user id")
+            try:
+                jwt_body = access_token.split(".")[1]
+                claims = json.loads(_urlsafe_b64decode(jwt_body).decode("utf-8"))
+                user_id = str(claims.get("sub", "")).strip()
+            except Exception:
+                pass
+        if not user_id:
+            raise OAuthExchangeError(f"Canva profile lookup did not return user id. Response: {profile_payload}")
 
         return OAuthTokenBundle(
             service="canva",
