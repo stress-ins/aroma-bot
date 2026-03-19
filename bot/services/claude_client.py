@@ -156,31 +156,9 @@ def call_claude(
             dedup_key=f"claude:retry_exhausted:{context}",
         )
 
-    # Fallback chain: Kie.ai Claude → Kie.ai Gemini
+    # Fallback: Kie.ai Gemini (Kie.ai Claude endpoint is broken — returns empty content)
     if settings.kie_ai_api_key:
-        # Step 1: Try Kie.ai Claude (same model, different provider)
-        logger.warning("Claude API failed, falling back to Kie.ai Claude for context=%s", context)
-        try:
-            text = _call_kie_claude(
-                messages=messages, max_tokens=max_tokens, system=system,
-                model=model, context=context,
-            )
-            notify_owner_throttled(
-                f"\u26a0\ufe0f <b>Claude fallback \u2192 Kie.ai Claude</b>\nContext: {context}\n"
-                f"Claude error: <code>{str(last_exc)[:150]}</code>",
-                dedup_key=f"claude:fallback_kie_claude:{context}",
-            )
-            return text
-        except Exception as kie_claude_exc:
-            logger.warning("Kie.ai Claude also failed for context=%s: %s", context, kie_claude_exc)
-            notify_owner_throttled(
-                f"\u26a0\ufe0f <b>Kie.ai Claude also failed</b>\nContext: {context}\n"
-                f"Error: <code>{str(kie_claude_exc)[:150]}</code>",
-                dedup_key=f"claude:kie_claude_failed:{context}",
-            )
-
-        # Step 2: Try Kie.ai Gemini 2.5 Flash (different model)
-        logger.warning("Kie.ai Claude failed, falling back to Kie.ai Gemini for context=%s", context)
+        logger.warning("Claude API failed, falling back to Kie.ai Gemini for context=%s", context)
         try:
             text = _call_kie_gemini(messages=messages, max_tokens=max_tokens, system=system, context=context)
             notify_owner_throttled(
