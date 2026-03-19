@@ -199,6 +199,82 @@ async def complete_reels_v2_generation(
         )
 
 
+async def complete_reels_lightweight_generation(
+    draft_id: str,
+    topic: str,
+    goal: str = "trust",
+    emotion: str = "calm",
+    blend_context: dict | None = None,
+) -> None:
+    """Lightweight mode: concept + scenario + caption + text shot list. No frames/images."""
+    try:
+        loop = asyncio.get_running_loop()
+        logger.info("reels_lightweight generation started: draft_id=%s topic=%s", draft_id, topic)
+
+        draft_obj = await loop.run_in_executor(
+            None, generate_reels_v2_draft_sync, topic, goal, emotion, blend_context
+        )
+
+        if not getattr(draft_obj, "concept", None):
+            await set_generation_state(
+                draft_id, pending=False, stage="error",
+                message="Генерация вернула пустую концепцию. Попробуйте ещё раз.",
+                error="empty concept",
+            )
+            return
+
+        await set_generation_state(
+            draft_id, pending=True, stage="caption",
+            message="Пишу описание для публикации.",
+        )
+
+        caption = await loop.run_in_executor(
+            None, generate_reels_v2_caption_sync,
+            topic, draft_obj.concept, draft_obj.scenario,
+        )
+
+        # Build simplified shot list from scenario
+        scenario_lines = [
+            ln.strip() for ln in (draft_obj.scenario or "").split("\n") if ln.strip()
+        ]
+        production_notes = {
+            "required": scenario_lines[:6],
+            "optional": [],
+        }
+
+        draft = await get_draft(draft_id)
+        if not draft:
+            return
+        payload = dict(draft.payload or {})
+        payload.update({
+            "concept": draft_obj.concept,
+            "hook": draft_obj.hook,
+            "scenario": draft_obj.scenario,
+            "caption": caption,
+            "music_mood": draft_obj.music_mood,
+            "lightweight": True,
+            "production_notes": production_notes,
+            "frames": [],
+            "images_ready": 0,
+            "generation_pending": False,
+            "generation_stage": "",
+            "generation_message": "",
+        })
+        if blend_context:
+            payload["blend_context"] = blend_context
+        await update_draft(draft_id, payload=payload, status="draft")
+        await set_generation_state(draft_id, pending=False)
+        logger.info("reels_lightweight generation complete: draft_id=%s", draft_id)
+
+    except Exception as exc:
+        logger.exception("reels_lightweight generation failed: draft_id=%s", draft_id)
+        await set_generation_state(
+            draft_id, pending=False, stage="error",
+            message="Не удалось закончить генерацию рилса. Попробуйте ещё раз.",
+            error=str(exc),
+        )
+
+
 async def complete_reels_v2_generate_images(draft_id: str) -> None:
     """Generate images for all v2 frames (manual trigger)."""
     await _run_generation_task(
