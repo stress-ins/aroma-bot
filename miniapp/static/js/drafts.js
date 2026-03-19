@@ -190,6 +190,11 @@ export function createDraftsModule(deps) {
     const GOAL_LABELS = { trust: "Доверие", authority: "Экспертность", engagement: "Вовлечённость", sales: "Продажи" };
     const EMOTION_LABELS = { calm: "Спокойная", inspiration: "Вдохновляющая", curiosity: "Любопытство", trust: "Доверие", joy: "Радость" };
 
+    const sourceBadges = [
+      p.trend_source ? tagMarkup("На основе тренда", "status-neutral") : "",
+      p.handbook_source ? tagMarkup("Из справочника", "status-neutral") : "",
+    ].filter(Boolean).join(" ");
+
     const slotsHtml = posts.map((post) => {
       const icon = SLOT_ICONS[post.slot] || "";
       const name = SLOT_NAMES[post.slot] || post.slot;
@@ -260,6 +265,7 @@ export function createDraftsModule(deps) {
               ${tagMarkup(statusLabel(d.status), statusTone(d.status))}
               ${p.goal ? tagMarkup(GOAL_LABELS[p.goal] || p.goal, "status-neutral") : ""}
               ${p.emotion ? tagMarkup(EMOTION_LABELS[p.emotion] || p.emotion, "status-neutral") : ""}
+              ${sourceBadges}
             </div>
           </div>
           <div class="actions-row detail-actions">
