@@ -19,6 +19,19 @@ export function createTrendsModule(deps) {
     enterDetailView,
   } = deps;
 
+  function _extractUsername(input) {
+    const trimmed = input.trim();
+    const urlPatterns = [
+      /(?:instagram\.com|instagr\.am)\/([a-zA-Z0-9_.]+)/,
+      /threads\.net\/@?([a-zA-Z0-9_.]+)/,
+    ];
+    for (const pat of urlPatterns) {
+      const m = trimmed.match(pat);
+      if (m) return m[1];
+    }
+    return trimmed.replace(/^@/, "");
+  }
+
   let trendsPlatform = "instagram";
   let trendsPeriod = 7;
   let trendsData = null;
@@ -478,7 +491,8 @@ export function createTrendsModule(deps) {
     const platformEl = document.getElementById("monitoredPlatformSelect");
     const usernameEl = document.getElementById("monitoredUsernameInput");
     const platform = platformEl?.value || "instagram";
-    const username = String(usernameEl?.value || "").trim().replace(/^@/, "");
+    const raw = String(usernameEl?.value || "").trim();
+    const username = _extractUsername(raw);
     if (!username) { usernameEl?.focus(); return; }
     try {
       await fetchJson("/api/social/monitored-accounts", {

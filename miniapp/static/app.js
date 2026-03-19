@@ -94,6 +94,7 @@ let renderDraftList, openDraft, openReels, renderDraftDetail, renderEmptyDetail;
 let renderInbox, renderStatus, renderPlans, renderReels, renderReelsDetail, renderKeywords;
 let addRewrite, removeRewrite, savePlatformTone, saveUploadPostPrefs, saveImageModels, connectPlatform, switchAccountsTeam;
 let addTrackedHashtag, removeTrackedHashtag;
+let addMonitoredAccountFromSettings, removeMonitoredAccountFromSettings;
 let addKeywordItem, removeKeywordItem, openKeywordTopic;
 let addForbiddenPhrase, removeForbiddenPhrase;
 let createNewTeam, createTeamInvite, removeTeamMember, activatePromo, generatePromos;
@@ -1722,6 +1723,7 @@ const { renderBrand: renderBrandImpl, loadForbiddenPhrases: loadForbiddenPhrases
   saveImageModels,
   connectPlatform, switchAccountsTeam,
   addTrackedHashtag, removeTrackedHashtag,
+  addMonitoredAccountFromSettings, removeMonitoredAccountFromSettings,
   createNewTeam, createTeamInvite, removeTeamMember,
   activatePromo, generatePromos,
 } = _settingsMod);
@@ -2134,6 +2136,8 @@ registerWindowBridge({
   openTrendsPost,
   addMonitoredAccount,
   removeMonitoredAccount,
+  addMonitoredAccountFromSettings,
+  removeMonitoredAccountFromSettings,
 });
 
 reelsCallbacks.renderReels = renderReels;

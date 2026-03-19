@@ -144,6 +144,8 @@ export function registerWindowBridge(deps) {
     openTrendsPost,
     addMonitoredAccount,
     removeMonitoredAccount,
+    addMonitoredAccountFromSettings,
+    removeMonitoredAccountFromSettings,
     addTrackedHashtag,
     removeTrackedHashtag,
   } = deps;
@@ -337,7 +339,7 @@ export function registerWindowBridge(deps) {
   };
 
   window.openSettingsSection = async (section) => {
-    const valid = ["keywords", "brand", "accounts", "status", "team", "promo"];
+    const valid = ["keywords", "brand", "accounts", "status", "team", "promo", "monitored", "hashtags"];
     state.settingsSection = valid.includes(section) ? section : "status";
     state.settingsInDetail = true;
     if (state.tab !== "settings") {
@@ -393,6 +395,8 @@ export function registerWindowBridge(deps) {
   window.openTrendsPost = openTrendsPost;
   window.addMonitoredAccount = addMonitoredAccount;
   window.removeMonitoredAccount = removeMonitoredAccount;
+  window.addMonitoredAccountFromSettings = addMonitoredAccountFromSettings;
+  window.removeMonitoredAccountFromSettings = removeMonitoredAccountFromSettings;
 
   // ── Global event delegation ────────────────────────────────────────────────
   // Replaces inline onclick/onchange/oninput/onkeydown attributes.
