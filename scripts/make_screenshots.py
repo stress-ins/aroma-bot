@@ -763,7 +763,7 @@ def _capture_screens(browser, base_url, screens, *, dark=False, click_results=No
 
         nav_failures = 0
 
-        # Viewport screenshot
+        # Viewport screenshot (clean)
         try:
             take_screenshot(page, CURRENT / f"{prefix}{sid}.png", f"[{theme}] {label}")
         except Exception as e:
@@ -773,6 +773,14 @@ def _capture_screens(browser, base_url, screens, *, dark=False, click_results=No
             except Exception:
                 pass
             continue
+
+        # Dual screenshot: overlay forbidden zones
+        if safe_area_overlay:
+            try:
+                page.add_style_tag(content=_SAFE_AREA_OVERLAY_CSS)
+                take_screenshot(page, CURRENT / f"{prefix}{sid}_zones.png", f"[{theme}] {label} (zones)")
+            except Exception:
+                pass
 
         # Scroll snapshots for scrollable screens
         if scrollable:
