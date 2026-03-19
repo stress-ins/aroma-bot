@@ -216,7 +216,9 @@ export function createBlendConstructorModule(deps) {
     const adjustBtn = document.getElementById("blendAdjustBtn");
     if (!searchInput || !dropdown) return;
 
-    const selectedOils = [];  // [{name, slug}]
+    // Store on blendState so blendAdjustWithOil can read it
+    blendState._pickerOils = [];
+    const selectedOils = blendState._pickerOils;
 
     function renderSelected() {
       if (!selectedContainer) return;
@@ -413,9 +415,7 @@ export function createBlendConstructorModule(deps) {
   }
 
   function blendAdjustWithOil(btn) {
-    // Collect oils from the picker chips
-    const chips = document.querySelectorAll("#blendSelectedOils .blend-oil-chip");
-    const oils = [...chips].map(c => c.textContent.replace(/\s*\u00d7\s*$/, "").trim()).filter(Boolean);
+    const oils = (_blendState?._pickerOils || []).map(o => o.name);
     if (!oils.length || !_blendState?.origRequest) return;
     const req = _blendState.origRequest;
     const prevResult = _blendState.result;
