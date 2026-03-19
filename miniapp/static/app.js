@@ -1717,13 +1717,15 @@ const { renderBrand: renderBrandImpl, loadForbiddenPhrases: loadForbiddenPhrases
   activatePromo, generatePromos,
 } = _settingsMod);
 
-let selectTrendsPlatform, selectTrendsPeriod, refreshTrends, openTrendsPost;
+let selectTrendsPlatform, selectTrendsPeriod, refreshTrends, openTrendsPost, addMonitoredAccount, removeMonitoredAccount;
 ({
   loadTrends,
   selectTrendsPlatform,
   selectTrendsPeriod,
   refreshTrends,
   openTrendsPost,
+  addMonitoredAccount,
+  removeMonitoredAccount,
 } = createTrendsModule({
   state,
   elements,
@@ -1895,6 +1897,17 @@ function setMode(m) {
       void safeLoadCurrentTab("Не удалось загрузить вкладку");
     });
   });
+  // Scroll indicator: detect when tabs are scrolled to the end
+  const tabsWrapper = elements.tabsContainer.closest(".tabs-wrapper");
+  if (tabsWrapper) {
+    const checkScrollEnd = () => {
+      const el = elements.tabsContainer;
+      const atEnd = el.scrollWidth - el.scrollLeft - el.clientWidth < 8;
+      tabsWrapper.classList.toggle("scrolled-end", atEnd);
+    };
+    elements.tabsContainer.addEventListener("scroll", checkScrollEnd, { passive: true });
+    requestAnimationFrame(checkScrollEnd);
+  }
   if (!(m === "content" && state.tab === "settings") && !tabs.find(t => t.id === state.tab)) setTab(tabs[0].id);
   syncMobileNavigation();
 }
@@ -1902,6 +1915,8 @@ function setMode(m) {
 const SECTION_TITLES = {
   drafts: "Черновики", reels: "Рилсы", plans: "Планы",
   create: "Создать", settings: "Настройки",
+  trends: "Тренды", schedule: "Расписание", inbox: "Согласование",
+  keywords: "Ключи", status: "Статус",
   aromas: "Ароматы", concepts: "Концепции", practices: "Практики", sounds: "Звуки",
   blends: "Смеси", symptoms: "Симптомы",
 };
@@ -1932,7 +1947,11 @@ function setTab(t) {
   history.replaceState({}, "", `${window.location.pathname}?${p.toString()}`);
 
   syncMobileNavigation();
-  elements.tabsContainer.querySelectorAll(".tab-button").forEach(b => b.classList.toggle("active", b.dataset.tab === t));
+  elements.tabsContainer.querySelectorAll(".tab-button").forEach(b => {
+    const isActive = b.dataset.tab === t;
+    b.classList.toggle("active", isActive);
+    if (isActive) b.scrollIntoView({ inline: "center", behavior: "smooth", block: "nearest" });
+  });
   elements.filtersContainer.hidden = !["drafts", "inbox"].includes(t);
   
   // Clear panels immediately to prevent showing tools/content from previous tab
@@ -2098,6 +2117,8 @@ registerWindowBridge({
   selectTrendsPeriod,
   refreshTrends,
   openTrendsPost,
+  addMonitoredAccount,
+  removeMonitoredAccount,
 });
 
 reelsCallbacks.renderReels = renderReels;

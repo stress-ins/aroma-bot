@@ -75,7 +75,6 @@ export function createSettingsModule(deps) {
       <div class="settings-menu-group-header">Управление</div>
       <div class="settings-menu-list">
         ${settingsMenuRow("users", "#007AFF", "Команда", "team", teamCount)}
-        ${settingsMenuRow("link", "#34C759", "Аккаунты", "accounts", connectedCount != null ? connectedCount : null)}
       </div>
     </div>`;
 
@@ -369,10 +368,6 @@ export function createSettingsModule(deps) {
         renderBrandAndKeywords();
         return;
       }
-      if (state.settingsSection === "accounts") {
-        renderAccounts();
-        return;
-      }
       if (state.settingsSection === "team") {
         renderTeam();
         return;
@@ -476,20 +471,6 @@ export function createSettingsModule(deps) {
           </div>
         </section>
         <section class="section settings-section">
-          <h3>Публикация (Upload-Post)</h3>
-          <p class="settings-hint">Credentials для публикации через upload-post.com. API-ключ не отображается после сохранения.</p>
-          <div class="keyword-field">
-            <strong>API Key</strong>
-            <input id="uploadPostApiKey" type="password" placeholder="Введите API-ключ…" class="draft-textarea">
-            <span id="uploadPostKeyStatus" class="plan-entry-hint"></span>
-          </div>
-          <div class="keyword-field">
-            <strong>Username</strong>
-            <input id="uploadPostUser" type="text" placeholder="Имя пользователя upload-post" class="draft-textarea">
-          </div>
-          <button class="secondary-button" type="button" onclick="saveUploadPostPrefs()">Сохранить</button>
-        </section>
-        <section class="section settings-section">
           <h3>Тон по платформам</h3>
           <p class="settings-hint">Описание стиля для AI-редактора. Сохраняется при потере фокуса.</p>
           ${[
@@ -541,7 +522,6 @@ export function createSettingsModule(deps) {
       </div>
     `;
     void loadPolicy();
-    void loadUploadPostPrefs();
     void loadImageModels();
     enterDetailView();
   }
@@ -551,8 +531,9 @@ export function createSettingsModule(deps) {
     const inSettings = state.tab === "settings";
     elements.listTitle.textContent = inSettings ? "Настройки" : "Статус";
     elements.draftCount.textContent = `${items.length} источников`;
+    const backAction = inSettings ? "goBackToSettings()" : "goBackToList()";
     elements.draftList.innerHTML = `
-      ${inSettings ? `<button class="back-button" type="button" onclick="goBackToSettings()">${uiIcon("arrow-left")}<span>Назад</span></button>` : ""}
+      <button class="back-button" type="button" onclick="${backAction}">${uiIcon("arrow-left")}<span>Назад</span></button>
       ${items.map((item) => `
       <article class="status-card"><strong>${escapeHtml(item.source)}</strong> <span class="${item.enabled ? "status-good" : "status-bad"}">${item.enabled ? "вкл" : "выкл"}</span></article>
     `).join("")}

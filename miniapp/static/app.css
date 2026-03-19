@@ -269,6 +269,32 @@ textarea,
   margin-top: 0;
 }
 
+.tabs-wrapper {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+.tabs-wrapper::after {
+  content: "›";
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--muted);
+  background: linear-gradient(to right, transparent, var(--bg) 40%);
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 0.2s;
+}
+.tabs-wrapper.scrolled-end::after {
+  opacity: 0;
+}
 .tabs {
   display: flex;
   gap: var(--space-2);
@@ -281,10 +307,6 @@ textarea,
   min-width: 0;
 }
 .tabs::-webkit-scrollbar { display: none; }
-.tabs {
-  -webkit-mask-image: linear-gradient(to right, black calc(100% - 24px), transparent);
-  mask-image: linear-gradient(to right, black calc(100% - 24px), transparent);
-}
 
 .tab-button {
   display: inline-flex;
@@ -2160,6 +2182,12 @@ body.tg-theme-dark .danger-button {
   body.is-mobile-layout.is-detail-view .back-button.visible {
     top: 0;
     padding-top: calc(6px + var(--tg-content-inset-top, env(safe-area-inset-top, 0px)));
+    width: 100%;
+    box-sizing: border-box;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    border-top: none;
   }
 
   body.is-mobile-layout.is-detail-view .detail-panel {
@@ -5339,6 +5367,16 @@ body.tg-theme-dark .reco-cta-btn { color: #d4845e; }
   color: var(--hint); cursor: pointer;
 }
 .trends-refresh-btn:hover { border-color: var(--brand-border); color: var(--brand); }
+
+/* Monitored accounts section in trends */
+.trends-monitored-section { padding: 0 14px 12px; }
+.trends-monitored-group { margin-bottom: 8px; }
+.trends-monitored-label { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--hint); margin-bottom: 4px; }
+.trends-platform-select {
+  padding: 6px 8px; border-radius: 8px; font-size: 13px;
+  background: var(--surface, #f7f7f7); border: 1px solid var(--border, #e0e0e0);
+  color: var(--text); min-width: 100px;
+}
 
 .trends-detail-content { padding: 0 14px 20px; }
 

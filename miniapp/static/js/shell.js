@@ -79,6 +79,9 @@ export function createShellModule(deps) {
     // Settings sub-sections need a full reset, not just a view toggle
     if (state.tab === "settings" && state.settingsInDetail && typeof window.goBackToSettings === "function") {
       window.Telegram?.WebApp?.BackButton?.hide();
+      // Clear swipe state before navigating
+      elements.detailPanel.classList.remove("swipe-back-exit", "swipe-back-armed", "swipe-back-cancel");
+      elements.detailPanel.style.removeProperty("--swipe-offset");
       window.goBackToSettings();
       return;
     }
@@ -411,6 +414,15 @@ export function createShellModule(deps) {
         elements.detailPanel.style.setProperty("--swipe-offset", `${Math.min(dx, 96)}px`);
       }
     }, { passive: true });
+    const resetSwipeState = () => {
+      swipeStart = null;
+      elements.detailPanel.classList.remove("swipe-back-armed");
+      elements.detailPanel.classList.add("swipe-back-cancel");
+      elements.detailPanel.style.removeProperty("--swipe-offset");
+      setTimeout(() => {
+        elements.detailPanel.classList.remove("swipe-back-cancel");
+      }, 200);
+    };
     elements.detailPanel.addEventListener("touchend", (event) => {
       if (!swipeStart || state.mobileView !== "detail" || hasActiveTextSelection()) return;
       const touch = event.changedTouches[0];
@@ -421,12 +433,10 @@ export function createShellModule(deps) {
         goBackToList(true);
         return;
       }
-      elements.detailPanel.classList.remove("swipe-back-armed");
-      elements.detailPanel.classList.add("swipe-back-cancel");
-      elements.detailPanel.style.removeProperty("--swipe-offset");
-      setTimeout(() => {
-        elements.detailPanel.classList.remove("swipe-back-cancel");
-      }, 200);
+      resetSwipeState();
+    }, { passive: true });
+    elements.detailPanel.addEventListener("touchcancel", () => {
+      if (swipeStart) resetSwipeState();
     }, { passive: true });
   }
 
