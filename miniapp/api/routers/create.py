@@ -114,7 +114,7 @@ async def generate_threads_series(
         team_id=ctx.team_id,
         created_by=ctx.telegram_id,
     )
-    background_tasks.add_task(complete_threads_series_generation, saved.draft_id, topic, goal_key, emotion, bc)
+    background_tasks.add_task(complete_threads_series_generation, saved.draft_id, topic, goal_key, emotion, bc, team_id=ctx.team_id)
     return await serialize_draft(saved)
 
 
