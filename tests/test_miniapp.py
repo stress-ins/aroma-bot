@@ -1416,7 +1416,7 @@ class TestMiniAppRussianLocale:
         assert "Обновить по замечанию" in app_js
         assert "Сохранить текст слайда" in app_js
         assert "Подпись слайда" in app_js
-        assert "Скачать PPTX" in app_js
+        assert "downloadCarouselPptx" in app_js
         assert "Показать промпт" in app_js
         assert "Скопировать промпт слайда" in app_js
         assert "generationStateMarkup" in app_js
@@ -1632,7 +1632,7 @@ class TestMiniAppRussianLocale:
         assert "if (!isEditingDetailForm()) renderReelsDetail(reel);" in app_js
         assert "!isEditingDetailForm() && !detailHasFocus && !hasPendingCarouselOperations(draft.draft_id)" in app_js
         assert "onclick=\"updateDraft('status', {status:'approved'}, this)\"" in app_js
-        assert "onclick=\"sendDraftToChat('${d.draft_id}', this)\"" in app_js
+        assert "onclick=\"updateDraft('status', {status:'rejected'}, this)\"" in app_js
         assert "onclick=\"deleteDraft('${d.draft_id}', 'drafts', this)\"" in app_js
         assert "onclick='saveCarouselSlideText(${JSON.stringify(draftId)}, ${index}, this)'" in app_js
         assert 'regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, this)' in app_js

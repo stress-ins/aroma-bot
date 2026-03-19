@@ -391,15 +391,16 @@ export function createDraftsModule(deps) {
             <button class="primary-button" onclick="updateDraft('status', {status:'approved'}, this)">${actionLabel("approve", "Согласовать")}</button>
             <div class="detail-icon-actions">
               <button class="secondary-button" title="Вернуть на доработку" onclick="updateDraft('status', {status:'rejected'}, this)">${uiIcon("reject")}</button>
-              <button class="secondary-button" title="Отправить в чат" onclick="sendDraftToChat('${d.draft_id}', this)">${uiIcon("chat")}</button>
-              ${d.kind === "carousel" ? `
-                <button class="secondary-button" title="Скачать PPTX" onclick="downloadCarouselPptx('${d.draft_id}', this)">${uiIcon("download")}</button>
-                <button class="secondary-button" title="Импорт PPTX" onclick="importCarouselPptx('${d.draft_id}', this)">${uiIcon("upload")}</button>
-                <button class="secondary-button" title="Экспорт в Canva" onclick="exportToCanva('${d.draft_id}', this)">${uiIcon("arrow-up-right")}</button>
-                <button class="secondary-button" title="Импорт из Canva" onclick="importFromCanva('${d.draft_id}', this)">${uiIcon("arrow-down-left")}</button>
-              ` : ""}
               ${d.kind === "carousel" ? `<button class="secondary-button" title="Обновить все слайды" onclick="regenerateCarouselAll('${d.draft_id}', this)">${uiIcon("regenerate")}</button>` : ""}
             </div>
+            ${d.kind === "carousel" ? `
+              <div class="carousel-export-row">
+                <button class="secondary-button" onclick="downloadCarouselPptx('${d.draft_id}', this)">${uiIcon("download")}<span>PPTX</span></button>
+                <button class="secondary-button" onclick="importCarouselPptx('${d.draft_id}', this)">${uiIcon("upload")}<span>PPTX</span></button>
+                <button class="secondary-button" onclick="exportToCanva('${d.draft_id}', this)">${uiIcon("arrow-up-right")}<span>Canva</span></button>
+                <button class="secondary-button" onclick="importFromCanva('${d.draft_id}', this)">${uiIcon("arrow-down-left")}<span>Canva</span></button>
+              </div>
+            ` : ""}
             ${renderMoveButton(d.draft_id)}
           </div>
         </div>
