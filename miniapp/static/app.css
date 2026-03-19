@@ -2220,7 +2220,10 @@ body.tg-theme-dark .danger-button {
 
   /* Edge-to-edge sections — no padding */
   body.is-mobile-layout .detail-grid > .detail-hero,
-  body.is-mobile-layout .detail-grid > .aroma-image {
+  body.is-mobile-layout .detail-grid > .aroma-image,
+  body.is-mobile-layout .detail-grid > .blend-expert-card,
+  body.is-mobile-layout .detail-grid > .blend-actions-stack,
+  body.is-mobile-layout .detail-grid > .blend-warn {
     padding-left: 0;
     padding-right: 0;
   }
