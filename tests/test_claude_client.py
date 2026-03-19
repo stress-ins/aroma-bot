@@ -1,4 +1,4 @@
-"""Tests: Claude client fallback chain (direct to Kie.ai Gemini)."""
+"""Tests: Claude client fallback chain (Replicate Claude → Kie.ai Gemini)."""
 from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
@@ -9,130 +9,110 @@ import pytest
 
 _MODULE = "bot.services.claude_client"
 
+_RATE_LIMIT = anthropic.RateLimitError(
+    message="rate limited", response=MagicMock(status_code=429), body=None,
+)
+_BAD_REQUEST = anthropic.BadRequestError(
+    message="This organization has been disabled",
+    response=MagicMock(status_code=400), body=None,
+)
 
-def test_claude_fallback_to_kie_gemini():
-    """When Claude retries exhausted → fallback directly to Kie.ai Gemini."""
+
+def _make_client(exc):
+    client = MagicMock()
+    client.messages.create.side_effect = exc
+    return client
+
+
+def test_fallback_to_replicate_claude():
+    """When Claude fails → try Replicate Claude first."""
     with (
-        patch(f"{_MODULE}._get_client") as mock_client_fn,
-        patch(f"{_MODULE}.settings") as mock_settings,
-        patch("bot.handlers.monitor.notify_owner_throttled", return_value=None) as mock_notify,
-        patch(f"{_MODULE}._call_kie_gemini", return_value="gemini response") as mock_kie_gemini,
+        patch(f"{_MODULE}._get_client", return_value=_make_client(_RATE_LIMIT)),
+        patch(f"{_MODULE}.settings") as s,
+        patch("bot.handlers.monitor.notify_owner_throttled") as notify,
+        patch(f"{_MODULE}._call_replicate_claude", return_value="replicate ok") as rep,
+        patch(f"{_MODULE}._call_kie_gemini") as gem,
     ):
-        mock_settings.kie_ai_api_key = "test-key"
-        mock_settings.anthropic_api_key = "test"
-
-        client = MagicMock()
-        client.messages.create.side_effect = anthropic.RateLimitError(
-            message="rate limited",
-            response=MagicMock(status_code=429),
-            body=None,
-        )
-        mock_client_fn.return_value = client
-
+        s.kie_ai_api_key = "k"
+        s.replicate_api_key = "r"
+        s.anthropic_api_key = "a"
         from bot.services.claude_client import call_claude
 
-        result = call_claude(
-            messages=[{"role": "user", "content": "hello"}],
-            max_tokens=100,
-            context="test-fallback",
-            retries=1,
-        )
-
-        assert result == "gemini response"
-        mock_kie_gemini.assert_called_once()
-        assert any("kie.ai gemini" in str(c).lower() for c in mock_notify.call_args_list)
+        assert call_claude(messages=[{"role": "user", "content": "hi"}], max_tokens=100, retries=1) == "replicate ok"
+        rep.assert_called_once()
+        gem.assert_not_called()
+        assert any("replicate" in str(c).lower() for c in notify.call_args_list)
 
 
-def test_bad_request_error_triggers_fallback():
-    """BadRequestError (e.g. org disabled) → skip retries, go straight to Gemini fallback."""
+def test_replicate_fails_then_gemini():
+    """When Claude and Replicate fail → fall through to Kie.ai Gemini."""
     with (
-        patch(f"{_MODULE}._get_client") as mock_client_fn,
-        patch(f"{_MODULE}.settings") as mock_settings,
-        patch("bot.handlers.monitor.notify_owner_throttled", return_value=None),
-        patch(f"{_MODULE}._call_kie_gemini", return_value="gemini response") as mock_kie_gemini,
-    ):
-        mock_settings.kie_ai_api_key = "test-key"
-        mock_settings.anthropic_api_key = "test"
-
-        client = MagicMock()
-        client.messages.create.side_effect = anthropic.BadRequestError(
-            message="This organization has been disabled",
-            response=MagicMock(status_code=400),
-            body=None,
-        )
-        mock_client_fn.return_value = client
-
-        from bot.services.claude_client import call_claude
-
-        result = call_claude(
-            messages=[{"role": "user", "content": "hello"}],
-            max_tokens=100,
-            context="test-bad-request",
-            retries=3,
-        )
-
-        assert result == "gemini response"
-        assert client.messages.create.call_count == 1
-        mock_kie_gemini.assert_called_once()
-
-
-def test_claude_and_gemini_both_fail():
-    """When Claude and Kie.ai Gemini both fail → raise original exception."""
-    with (
-        patch(f"{_MODULE}._get_client") as mock_client_fn,
-        patch(f"{_MODULE}.settings") as mock_settings,
+        patch(f"{_MODULE}._get_client", return_value=_make_client(_RATE_LIMIT)),
+        patch(f"{_MODULE}.settings") as s,
         patch("bot.handlers.monitor.notify_owner_throttled"),
-        patch(f"{_MODULE}._call_kie_gemini", side_effect=ValueError("kie gemini failed")),
+        patch(f"{_MODULE}._call_replicate_claude", side_effect=ValueError("replicate down")),
+        patch(f"{_MODULE}._call_kie_gemini", return_value="gemini ok") as gem,
     ):
-        mock_settings.kie_ai_api_key = "test-key"
-        mock_settings.anthropic_api_key = "test"
+        s.kie_ai_api_key = "k"
+        s.replicate_api_key = "r"
+        s.anthropic_api_key = "a"
+        from bot.services.claude_client import call_claude
 
-        client = MagicMock()
-        client.messages.create.side_effect = anthropic.RateLimitError(
-            message="rate limited",
-            response=MagicMock(status_code=429),
-            body=None,
-        )
-        mock_client_fn.return_value = client
+        assert call_claude(messages=[{"role": "user", "content": "hi"}], max_tokens=100, retries=1) == "gemini ok"
+        gem.assert_called_once()
 
+
+def test_bad_request_skips_retries():
+    """BadRequestError → skip retries, go straight to fallback chain."""
+    with (
+        patch(f"{_MODULE}._get_client", return_value=_make_client(_BAD_REQUEST)) as cf,
+        patch(f"{_MODULE}.settings") as s,
+        patch("bot.handlers.monitor.notify_owner_throttled"),
+        patch(f"{_MODULE}._call_replicate_claude", return_value="rep ok") as rep,
+    ):
+        s.kie_ai_api_key = "k"
+        s.replicate_api_key = "r"
+        s.anthropic_api_key = "a"
+        from bot.services.claude_client import call_claude
+
+        assert call_claude(messages=[{"role": "user", "content": "hi"}], max_tokens=100, retries=3) == "rep ok"
+        assert cf.return_value.messages.create.call_count == 1
+        rep.assert_called_once()
+
+
+def test_all_providers_fail():
+    """When all providers fail → raise original Claude exception."""
+    with (
+        patch(f"{_MODULE}._get_client", return_value=_make_client(_RATE_LIMIT)),
+        patch(f"{_MODULE}.settings") as s,
+        patch("bot.handlers.monitor.notify_owner_throttled"),
+        patch(f"{_MODULE}._call_replicate_claude", side_effect=ValueError("nope")),
+        patch(f"{_MODULE}._call_kie_gemini", side_effect=ValueError("nope")),
+    ):
+        s.kie_ai_api_key = "k"
+        s.replicate_api_key = "r"
+        s.anthropic_api_key = "a"
         from bot.services.claude_client import call_claude
 
         with pytest.raises(anthropic.RateLimitError):
-            call_claude(
-                messages=[{"role": "user", "content": "hello"}],
-                max_tokens=100,
-                context="test-all-fail",
-                retries=1,
-            )
+            call_claude(messages=[{"role": "user", "content": "hi"}], max_tokens=100, retries=1)
 
 
-def test_no_fallback_without_kie_key():
-    """When kie_ai_api_key is empty → no fallback, raise immediately."""
+def test_no_fallback_without_keys():
+    """When no fallback keys → raise immediately."""
     with (
-        patch(f"{_MODULE}._get_client") as mock_client_fn,
-        patch(f"{_MODULE}.settings") as mock_settings,
+        patch(f"{_MODULE}._get_client", return_value=_make_client(_RATE_LIMIT)),
+        patch(f"{_MODULE}.settings") as s,
         patch("bot.handlers.monitor.notify_owner_throttled"),
-        patch(f"{_MODULE}._call_kie_gemini") as mock_kie_gemini,
+        patch(f"{_MODULE}._call_replicate_claude") as rep,
+        patch(f"{_MODULE}._call_kie_gemini") as gem,
     ):
-        mock_settings.kie_ai_api_key = ""
-        mock_settings.anthropic_api_key = "test"
-
-        client = MagicMock()
-        client.messages.create.side_effect = anthropic.RateLimitError(
-            message="rate limited",
-            response=MagicMock(status_code=429),
-            body=None,
-        )
-        mock_client_fn.return_value = client
-
+        s.kie_ai_api_key = ""
+        s.replicate_api_key = ""
+        s.anthropic_api_key = "a"
         from bot.services.claude_client import call_claude
 
         with pytest.raises(anthropic.RateLimitError):
-            call_claude(
-                messages=[{"role": "user", "content": "hello"}],
-                max_tokens=100,
-                context="test-no-key",
-                retries=1,
-            )
-
-        mock_kie_gemini.assert_not_called()
+            call_claude(messages=[{"role": "user", "content": "hi"}], max_tokens=100, retries=1)
+        rep.assert_not_called()
+        gem.assert_not_called()
