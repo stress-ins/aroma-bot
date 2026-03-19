@@ -91,6 +91,16 @@ def call_claude(
     """Claude wrapper with retry, rate-limit handling and notify_owner."""
     from bot.handlers.monitor import notify_owner_throttled
 
+    # Skip direct Claude API when Replicate is configured (cost optimization)
+    if settings.replicate_api_key:
+        try:
+            text = _call_replicate_claude(
+                messages=messages, max_tokens=max_tokens, system=system, context=context,
+            )
+            return text
+        except Exception as rep_exc:
+            logger.warning("Replicate Claude failed for context=%s: %s, falling back to direct Claude", context, rep_exc)
+
     client = _get_client()
     kwargs: dict = dict(model=model, max_tokens=max_tokens, messages=messages)
     if system:

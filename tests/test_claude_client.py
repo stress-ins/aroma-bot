@@ -25,11 +25,11 @@ def _make_client(exc):
 
 
 def test_fallback_to_replicate_claude():
-    """When Claude fails → try Replicate Claude first."""
+    """When replicate_api_key set → Replicate is tried first (before Claude API)."""
     with (
         patch(f"{_MODULE}._get_client", return_value=_make_client(_RATE_LIMIT)),
         patch(f"{_MODULE}.settings") as s,
-        patch("bot.handlers.monitor.notify_owner_throttled") as notify,
+        patch("bot.handlers.monitor.notify_owner_throttled"),
         patch(f"{_MODULE}._call_replicate_claude", return_value="replicate ok") as rep,
         patch(f"{_MODULE}._call_kie_gemini") as gem,
     ):
@@ -41,7 +41,6 @@ def test_fallback_to_replicate_claude():
         assert call_claude(messages=[{"role": "user", "content": "hi"}], max_tokens=100, retries=1) == "replicate ok"
         rep.assert_called_once()
         gem.assert_not_called()
-        assert any("replicate" in str(c).lower() for c in notify.call_args_list)
 
 
 def test_replicate_fails_then_gemini():
@@ -63,7 +62,9 @@ def test_replicate_fails_then_gemini():
 
 
 def test_bad_request_skips_retries():
-    """BadRequestError → skip retries, go straight to fallback chain."""
+    """BadRequestError → skip retries, go straight to fallback chain.
+    With replicate_api_key set, Replicate is tried first (before Claude API).
+    """
     with (
         patch(f"{_MODULE}._get_client", return_value=_make_client(_BAD_REQUEST)) as cf,
         patch(f"{_MODULE}.settings") as s,
@@ -76,7 +77,8 @@ def test_bad_request_skips_retries():
         from bot.services.claude_client import call_claude
 
         assert call_claude(messages=[{"role": "user", "content": "hi"}], max_tokens=100, retries=3) == "rep ok"
-        assert cf.return_value.messages.create.call_count == 1
+        # Replicate is tried first when key is set, Claude API not called
+        assert cf.return_value.messages.create.call_count == 0
         rep.assert_called_once()
 
 

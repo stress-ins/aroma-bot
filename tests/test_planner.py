@@ -59,8 +59,8 @@ class TestThreadsPrompts:
 
         rules = _PLATFORM_RULES_WRITER["threads_series"]
         assert "3 posts" in rules
-        assert "5-12 short lines" in rules
-        assert "40-120 words" in rules
+        assert "5-10 short lines" in rules
+        assert "40-80 words" in rules
         assert "no hashtags" in rules
 
     def test_legacy_threads_prompt_uses_new_daily_pack_format(self):

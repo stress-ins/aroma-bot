@@ -569,8 +569,8 @@ class TestCreativeTeamConstants:
     def test_platform_rules_has_threads_series(self):
         assert "threads_series" in _PLATFORM_RULES
         assert "УТРО, ДЕНЬ, ВЕЧЕР" in _PLATFORM_RULES["threads_series"]
-        assert "5-12" in _PLATFORM_RULES["threads_series"]
-        assert "40-120" in _PLATFORM_RULES["threads_series"]
+        assert "5-10" in _PLATFORM_RULES["threads_series"]
+        assert "40-80" in _PLATFORM_RULES["threads_series"]
 
     def test_platform_rules_has_instagram(self):
         assert "instagram" in _PLATFORM_RULES
