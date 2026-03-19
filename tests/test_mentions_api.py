@@ -67,6 +67,33 @@ async def test_ingest_mention(client):
 
 
 @pytest.mark.asyncio
+async def test_ingest_mention_deduplication(client):
+    """Two ingests with the same platform + external_id should produce only one mention."""
+    payload = {
+        "platform": "threads",
+        "external_id": "dedup-001",
+        "type": "mention",
+        "author_username": "user1",
+        "author_name": "User One",
+        "content": "Hello from threads",
+    }
+    resp1 = await client.post("/api/mentions/ingest", json=payload, headers=WEBHOOK_HEADERS)
+    assert resp1.status_code == 200
+    assert resp1.json()["status"] == "created"
+    mention_id_1 = resp1.json()["mention_id"]
+
+    resp2 = await client.post("/api/mentions/ingest", json=payload, headers=WEBHOOK_HEADERS)
+    assert resp2.status_code == 200
+    assert resp2.json()["status"] == "duplicate"
+    assert resp2.json()["mention_id"] == mention_id_1
+
+    # Verify only one mention exists
+    resp3 = await client.get("/api/mentions?platform=threads&status=pending", headers=AUTH_HEADERS)
+    matching = [m for m in resp3.json()["items"] if m["external_id"] == "dedup-001"]
+    assert len(matching) == 1
+
+
+@pytest.mark.asyncio
 async def test_ingest_mention_unauthorized(client):
     resp = await client.post(
         "/api/mentions/ingest",

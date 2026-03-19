@@ -13,6 +13,20 @@ from db.models import MentionModel, MentionReplyModel, PlatformTokenModel
 logger = logging.getLogger(__name__)
 
 
+async def find_mention_by_external_id(platform: str, external_id: str) -> MentionModel | None:
+    """Find an existing mention by platform + external_id (for deduplication)."""
+    if not external_id:
+        return None
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(
+            select(MentionModel).filter(
+                MentionModel.platform == platform,
+                MentionModel.external_id == external_id,
+            )
+        )
+        return result.scalar_one_or_none()
+
+
 async def save_mention(
     platform: str,
     external_id: str,
@@ -23,8 +37,17 @@ async def save_mention(
     url: str = "",
     context_post: str = "",
     team_id: str | None = None,
-) -> str:
-    """Save a new mention and return its mention_id."""
+) -> tuple[str, bool]:
+    """Save a new mention and return (mention_id, created).
+
+    If a mention with the same platform + external_id already exists,
+    returns the existing mention_id and created=False (deduplication).
+    """
+    # Deduplicate by platform + external_id
+    existing = await find_mention_by_external_id(platform, external_id)
+    if existing is not None:
+        return existing.mention_id, False
+
     mention_id = str(uuid4())
     async with AsyncSessionLocal() as session:
         model = MentionModel(
@@ -44,7 +67,7 @@ async def save_mention(
             model.team_id = team_id
         session.add(model)
         await session.commit()
-    return mention_id
+    return mention_id, True
 
 
 async def get_mention(mention_id: str) -> MentionModel | None:

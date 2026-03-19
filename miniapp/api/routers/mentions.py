@@ -80,8 +80,8 @@ async def get_mention_endpoint(mention_id: str, _: None = Depends(_require_auth)
 
 @router.post("/api/mentions/ingest")
 async def ingest_mention(payload: MentionIngestPayload, _: None = Depends(_require_webhook_auth)):
-    """Called by n8n to ingest a new mention from Telegram/Threads/Instagram."""
-    mention_id = await save_mention(
+    """Called by n8n / Meta webhooks to ingest a new mention from Telegram/Threads/Instagram."""
+    mention_id, created = await save_mention(
         platform=payload.platform,
         external_id=payload.external_id,
         type=payload.type,
@@ -91,6 +91,8 @@ async def ingest_mention(payload: MentionIngestPayload, _: None = Depends(_requi
         url=payload.url,
         context_post=payload.context_post,
     )
+    if not created:
+        return {"mention_id": mention_id, "status": "duplicate"}
     # Fire-and-forget: notify admin via Telegram (if admin_telegram_chat_id configured)
     asyncio.create_task(_notify_admin(mention_id, payload))
     return {"mention_id": mention_id, "status": "created"}
