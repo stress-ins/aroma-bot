@@ -1,6 +1,6 @@
 """Blend Constructor — AI-powered blend creation with expert + doctor review."""
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel
 
 from ..auth import TeamContext, _require_auth, _resolve_team_context, _resolve_telegram_id
@@ -125,6 +125,69 @@ async def remove_saved_blend(
     if not deleted:
         raise HTTPException(status_code=404, detail="saved_blend_not_found")
     return {"deleted": saved_id}
+
+
+class BlendOfWeekRequest(BaseModel):
+    title: str = ""
+    brief: str = ""
+    oils: list = []
+    total_drops: int = 0
+    profile: dict = {}
+    expert_note: str = ""
+    application_guide: str = ""
+    tags: list = []
+
+
+@router.post("/api/blend-constructor/blend-of-week")
+async def blend_of_week(
+    body: BlendOfWeekRequest,
+    background_tasks: BackgroundTasks,
+    ctx: TeamContext = Depends(_resolve_team_context),
+):
+    """Create two drafts from a blend: carousel + threads post."""
+    from bot.agents.blend_content_context import build_blend_carousel_narrative, build_blend_of_week_topic
+    from bot.services.drafts_store import save_draft
+    from bot.services.miniapp_presenter import serialize_draft
+    from ..generation import complete_carousel_generation, complete_content_generation
+
+    bc = body.model_dump()
+    topic = build_blend_of_week_topic(bc)
+
+    # 1. Create carousel draft
+    carousel_payload = {
+        "generation_pending": True,
+        "generation_stage": "content",
+        "generation_message": "Собираю карусель для смеси недели.",
+        "blend_context": bc,
+    }
+    carousel_draft = await save_draft(
+        kind="carousel", topic=topic, source="/miniapp",
+        payload=carousel_payload, team_id=ctx.team_id, created_by=ctx.telegram_id,
+    )
+    background_tasks.add_task(
+        complete_carousel_generation, carousel_draft.draft_id, topic, blend_context=bc,
+    )
+
+    # 2. Create threads/content draft
+    content_payload = {
+        "generation_pending": True,
+        "generation_stage": "content",
+        "generation_message": "Собираю пост для смеси недели.",
+        "blend_context": bc,
+    }
+    content_draft = await save_draft(
+        kind="instagram", topic=topic, source="/miniapp",
+        payload=content_payload, team_id=ctx.team_id, created_by=ctx.telegram_id,
+    )
+    background_tasks.add_task(
+        complete_content_generation, content_draft.draft_id, topic, "trust", "instagram", blend_context=bc,
+    )
+
+    return {
+        "carousel_draft_id": carousel_draft.draft_id,
+        "content_draft_id": content_draft.draft_id,
+        "topic": topic,
+    }
 
 
 @router.get("/api/blend-constructor/shared/{saved_id}")

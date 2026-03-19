@@ -175,6 +175,29 @@ def mood_to_visual_directive(profile: dict) -> str:
     )
 
 
+def build_blend_of_week_topic(bc: dict) -> str:
+    """Generate a topic string for 'Blend of the Week' content.
+
+    Combines blend title, dominant trait, and key oils into a compelling topic.
+    """
+    title = bc.get("title", "Смесь недели")
+    profile = bc.get("profile", {})
+    oils = bc.get("oils", [])
+    oil_names = [o.get("name_ru", "") for o in oils if o.get("name_ru")]
+
+    dominant = max(profile, key=lambda k: profile.get(k, 0), default="") if profile else ""
+    trait_labels = {
+        "focus": "для концентрации и ясности",
+        "energy": "для бодрости и тонуса",
+        "creativity": "для вдохновения",
+        "calm": "для спокойствия и расслабления",
+    }
+    trait = trait_labels.get(dominant, "для баланса")
+
+    oils_str = " + ".join(oil_names[:3]) if oil_names else "ароматические масла"
+    return f"Смесь недели «{title}»: {oils_str} {trait}"
+
+
 async def fetch_oil_properties(oil_names: list[str]) -> list[dict]:
     """Lookup AromaCard data for blend oils from the reference database."""
     from bot.services.miniapp_references import list_reference_cards
