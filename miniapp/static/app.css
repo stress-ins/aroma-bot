@@ -123,6 +123,27 @@ textarea,
   touch-action: manipulation;
 }
 
+button,
+a,
+[role="button"],
+[role="tab"],
+label,
+select,
+.tab-button,
+.mode-button,
+.back-button,
+.bottom-tab-btn,
+.meta-chip,
+.tag,
+.draft-card,
+.plan-card,
+.reference-card,
+.settings-menu-row {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
 /* ═══════════════════════════════════════
    SECTION: Layout
    ═══════════════════════════════════════ */
@@ -323,7 +344,6 @@ textarea,
   cursor: pointer;
   color: var(--muted);
   transition: background 0.15s, color 0.15s, border-color 0.15s;
-  -webkit-tap-highlight-color: transparent;
 }
 
 .tabs > .tab-button:first-child {
@@ -2190,7 +2210,7 @@ body.tg-theme-dark .danger-button {
     align-self: stretch;
     min-height: 0;
     padding-top: 0;
-    padding-bottom: 0;
+    padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
     padding-left: 8px;
     padding-right: 8px;
     overflow-y: auto;
@@ -4150,6 +4170,18 @@ body.is-mobile-layout .detail-icon-actions button {
   flex: none;
 }
 
+.carousel-export-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+  width: 100%;
+  margin-top: var(--space-2);
+}
+.carousel-export-row button {
+  min-height: 40px;
+  font-size: 13px;
+}
+
 .code-block {
   position: relative;
   background: var(--surface-2);
@@ -4297,7 +4329,7 @@ body.is-mobile-layout .detail-icon-actions button {
 .plans-day-group { margin-bottom: 4px; }
 .plans-day-label { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--hint); padding: 16px 0 8px; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
 
-.plan-card { border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px; background: linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%); margin-bottom: 8px; cursor: pointer; transition: border-color var(--duration-fast), transform var(--duration-medium) var(--ease-standard); -webkit-user-select: none; user-select: none; }
+.plan-card { border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px; background: linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%); margin-bottom: 8px; cursor: pointer; transition: border-color var(--duration-fast), transform var(--duration-medium) var(--ease-standard); }
 .plan-card:hover { border-color: var(--brand-border); transform: translateY(-1px); }
 .plan-card.plan-card-error { border-color: rgba(176,58,46,.25); background: rgba(176,58,46,.04); }
 .plan-card.plan-card-published { opacity: 0.75; }
@@ -4339,6 +4371,19 @@ body.is-mobile-layout .detail-icon-actions button {
   color: var(--muted); font-size: 13px; cursor: pointer; transition: all var(--duration-fast);
 }
 .plans-sub-switcher .tab-button.active {
+  background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 600;
+}
+
+/* ── Content sub-mode switcher ─────────────────────────────────────────── */
+.content-sub-switcher {
+  display: flex; gap: 6px; padding: 8px 0 4px;
+}
+.content-sub-switcher .tab-button {
+  flex: 1; padding: 7px 10px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); background: var(--surface-2);
+  color: var(--muted); font-size: 13px; cursor: pointer; transition: all var(--duration-fast);
+}
+.content-sub-switcher .tab-button.active {
   background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 600;
 }
 
@@ -4452,7 +4497,6 @@ body.is-mobile-layout .detail-icon-actions button {
   box-shadow: 0 2px 8px rgba(0,0,0,0.12);
   display: flex; align-items: center; justify-content: center;
   cursor: pointer; color: var(--hint);
-  -webkit-tap-highlight-color: transparent;
 }
 .help-fab:active { box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
 .help-popover {
@@ -5246,7 +5290,6 @@ body.tg-theme-dark .reco-cta-btn { color: #d4845e; }
   gap: 12px;
   padding: 10px 14px;
   cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
   transition: background var(--duration-fast) ease;
   border-bottom: 0.5px solid var(--border);
 }
