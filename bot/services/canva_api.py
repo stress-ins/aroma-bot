@@ -59,11 +59,13 @@ async def _get_canva_token() -> str:
     if not token or not token.access_token:
         raise CanvaAPIError("Canva не подключён. Подключите в Настройки → Аккаунты.")
     # Auto-refresh if expired
-    if token.expires_at and token.expires_at <= datetime.now(timezone.utc):
-        new_token = await _try_refresh_canva_token(token)
-        if new_token:
-            return new_token
-        raise CanvaAPIError("Токен Canva истёк. Переподключите Canva в Настройки → Аккаунты.")
+    if token.expires_at:
+        exp = token.expires_at if token.expires_at.tzinfo else token.expires_at.replace(tzinfo=timezone.utc)
+        if exp <= datetime.now(timezone.utc):
+            new_token = await _try_refresh_canva_token(token)
+            if new_token:
+                return new_token
+            raise CanvaAPIError("Токен Canva истёк. Переподключите Canva в Настройки → Аккаунты.")
     return token.access_token
 
 
