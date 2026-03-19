@@ -574,6 +574,25 @@ def make_diffs():
         print(f"  \u26a0  {d['screen_id']}: {d['diff_percent']}% ({d['diff_pixels']} px)")
 
 
+def _capture_scroll_snapshots(page, path_prefix: Path, sid: str, label: str, theme: str, viewport_height: int = 844):
+    """Capture multiple viewport-size snapshots by scrolling through the page."""
+    import math
+    total_height = page.evaluate("document.body.scrollHeight")
+    if total_height <= viewport_height:
+        return  # Nothing extra to capture
+    num_frames = math.ceil(total_height / viewport_height)
+    for i in range(num_frames):
+        page.evaluate(f"window.scrollTo(0, {i * viewport_height})")
+        page.wait_for_timeout(150)
+        take_screenshot(
+            page, path_prefix / f"{sid}_scroll_{i}.png",
+            f"[{theme}] {label} (scroll {i+1}/{num_frames})"
+        )
+    # Scroll back to top
+    page.evaluate("window.scrollTo(0, 0)")
+    page.wait_for_timeout(100)
+
+
 FILTER_SCREENS = [
     {"base_url_param": "?tab=drafts", "sid": "drafts", "filters": [
         {"label": "scheduled", "js": "const el=document.getElementById('statusFilter');if(el){el.value='scheduled';el.dispatchEvent(new Event('change',{bubbles:true}))}"},
@@ -697,7 +716,26 @@ def _capture_screens(browser, base_url, screens, *, dark=False, click_results=No
             if dark:
                 pg2.evaluate("document.body.classList.add('tg-theme-dark')")
                 pg2.wait_for_timeout(50)
+            # Capture first slide
             take_screenshot(pg2, CURRENT / f"{prefix}{sid}.png", f"[{theme}] {label}")
+            # Capture additional onboarding slides
+            slide_idx = 1
+            while True:
+                try:
+                    btn = pg2.locator(".onboarding-btn-next, .onboarding-next, button:has-text('Далее')")
+                    if btn.count() == 0 or not btn.first.is_visible():
+                        break
+                    btn.first.click()
+                    pg2.wait_for_timeout(500)
+                    take_screenshot(
+                        pg2, CURRENT / f"{prefix}{sid}_slide_{slide_idx}.png",
+                        f"[{theme}] {label} (slide {slide_idx + 1})"
+                    )
+                    slide_idx += 1
+                    if slide_idx > 10:  # safety limit
+                        break
+                except Exception:
+                    break
             ctx2.close()
             _fresh_page()
             continue
@@ -736,13 +774,10 @@ def _capture_screens(browser, base_url, screens, *, dark=False, click_results=No
                 pass
             continue
 
-        # Full-page scrolled screenshot for scrollable screens
+        # Scroll snapshots for scrollable screens
         if scrollable:
             try:
-                take_screenshot(
-                    page, CURRENT / f"{prefix}{sid}_full.png",
-                    f"[{theme}] {label} (full)", full_page=True
-                )
+                _capture_scroll_snapshots(page, CURRENT, f"{prefix}{sid}", label, theme, VIEWPORT["height"])
             except Exception:
                 pass
 
@@ -881,7 +916,7 @@ def run():
     total_diff = len(list(DIFF_DIR.glob("*.png")))
     light_count = len([f for f in CURRENT.glob("*.png") if not f.name.startswith("dark_")])
     dark_count = len([f for f in CURRENT.glob("*.png") if f.name.startswith("dark_")])
-    full_count = len([f for f in CURRENT.glob("*_full.png")])
+    full_count = len([f for f in CURRENT.glob("*_scroll_*.png")])
     regressions = 0
     try:
         with open(GALLERY / "diff_report.json") as f:
@@ -897,7 +932,7 @@ Screens in registry:    {len(screens)}
 Screenshots total:      {total_screenshots}
   Light theme:          {light_count}
   Dark theme:           {dark_count}
-  Full-page scrolled:   {full_count}
+  Scroll snapshots:     {full_count}
 Baseline:               {total_baseline}
 Clicks tested:          {ok_count} ok / {err_count} errors
 Regressions:            {regressions} screens
