@@ -1906,9 +1906,10 @@ function setMode(m) {
       void safeLoadCurrentTab("Не удалось загрузить вкладку");
     });
   });
-  // Scroll indicator: detect when tabs are scrolled to the end
+  // Hide tabs wrapper when no tabs (content mode has no pill tabs)
   const tabsWrapper = elements.tabsContainer.closest(".tabs-wrapper");
-  if (tabsWrapper) {
+  if (tabsWrapper) tabsWrapper.hidden = tabs.length === 0;
+  if (tabsWrapper && tabs.length > 0) {
     const checkScrollEnd = () => {
       const el = elements.tabsContainer;
       const atEnd = el.scrollWidth - el.scrollLeft - el.clientWidth < 8;
