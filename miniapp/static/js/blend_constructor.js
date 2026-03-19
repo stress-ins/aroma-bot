@@ -27,22 +27,22 @@ export function createBlendConstructorModule(deps) {
       <p class="eyebrow">\u041a\u041e\u041d\u0421\u0422\u0420\u0423\u041a\u0422\u041e\u0420 \u0421\u041c\u0415\u0421\u0418</p>
       <h2 class="detail-title">\u041e\u043f\u0438\u0448\u0438\u0442\u0435 \u0437\u0430\u0434\u0430\u0447\u0443</h2>
       <section class="section"><label class="field-label">\u0427\u0442\u043e \u043d\u0443\u0436\u043d\u043e \u043e\u0442 \u0441\u043c\u0435\u0441\u0438?
-        <textarea id="blendBrief" class="field-textarea" placeholder="\u041d\u0430\u043f\u0440\u0438\u043c\u0435\u0440: \u0441\u043c\u0435\u0441\u044c \u0434\u043b\u044f \u043a\u043e\u043d\u0446\u0435\u043d\u0442\u0440\u0430\u0446\u0438\u0438 \u0438 \u0442\u0432\u043e\u0440\u0447\u0435\u0441\u0442\u0432\u0430" oninput="updateConstructBtn()">${escapeHtml(prefill)}</textarea>
+        <textarea id="blendBrief" class="field-textarea" placeholder="\u041d\u0430\u043f\u0440\u0438\u043c\u0435\u0440: \u0441\u043c\u0435\u0441\u044c \u0434\u043b\u044f \u043a\u043e\u043d\u0446\u0435\u043d\u0442\u0440\u0430\u0446\u0438\u0438 \u0438 \u0442\u0432\u043e\u0440\u0447\u0435\u0441\u0442\u0432\u0430" data-on-input="updateConstructBtn">${escapeHtml(prefill)}</textarea>
       </label></section>
       <section class="section"><h3>\u0416\u0435\u043b\u0430\u0435\u043c\u044b\u0439 \u044d\u0444\u0444\u0435\u043a\u0442</h3>
-        <div class="chip-list">${effects.map(e => `<button class="chip chip-selectable" data-effect="${e}" onclick="toggleEffect(this)">${e}</button>`).join("")}</div>
+        <div class="chip-list">${effects.map(e => `<button class="chip chip-selectable" data-effect="${e}" data-action="toggleEffect" data-args='[null]'>${e}</button>`).join("")}</div>
         <input type="text" id="blendCustomEffect" class="field-input" style="margin-top:8px" placeholder="\u0421\u0432\u043e\u0439 \u044d\u0444\u0444\u0435\u043a\u0442, \u043d\u0430\u043f\u0440\u0438\u043c\u0435\u0440: \u0431\u043e\u0434\u0440\u043e\u0441\u0442\u044c \u0441 \u0443\u0442\u0440\u0430">
       </section>
       <section class="section"><h3>\u0421\u043a\u043e\u0440\u043e\u0441\u0442\u044c \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044f</h3>
-        <div class="radio-row">${speeds.map(([l,v]) => `<button class="chip chip-selectable ${v==="medium"?"is-selected":""}" data-speed="${v}" onclick="selectSpeed(this)">${l}</button>`).join("")}</div>
+        <div class="radio-row">${speeds.map(([l,v]) => `<button class="chip chip-selectable ${v==="medium"?"is-selected":""}" data-speed="${v}" data-action="selectSpeed" data-args='[null]'>${l}</button>`).join("")}</div>
       </section>
       <section class="section"><h3>\u0421\u043f\u043e\u0441\u043e\u0431 \u043f\u0440\u0438\u043c\u0435\u043d\u0435\u043d\u0438\u044f</h3>
-        <div class="radio-row">${apps.map(([l,v]) => `<button class="chip chip-selectable ${v==="any"?"is-selected":""}" data-app="${v}" onclick="selectApp(this)">${l}</button>`).join("")}</div>
+        <div class="radio-row">${apps.map(([l,v]) => `<button class="chip chip-selectable ${v==="any"?"is-selected":""}" data-app="${v}" data-action="selectApp" data-args='[null]'>${l}</button>`).join("")}</div>
       </section>
       <section class="section"><label class="field-label">\u041f\u0440\u043e\u0442\u0438\u0432\u043e\u043f\u043e\u043a\u0430\u0437\u0430\u043d\u0438\u044f (\u043d\u0435\u043e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u043e)
         <input type="text" id="blendContra" placeholder="\u0411\u0435\u0440\u0435\u043c\u0435\u043d\u043d\u043e\u0441\u0442\u044c, \u0430\u043b\u043b\u0435\u0440\u0433\u0438\u044f, \u0434\u0435\u0442\u0438..." class="field-input">
       </label></section>
-      <button class="primary-button" id="constructBtn" onclick="submitBlendConstructor(this)" ${!prefill ? "disabled" : ""}>\u041f\u043e\u0434\u043e\u0431\u0440\u0430\u0442\u044c \u0441\u043c\u0435\u0441\u044c</button>
+      <button class="primary-button" id="constructBtn" data-action="submitBlendConstructor" data-args='[null]' ${!prefill ? "disabled" : ""}>\u041f\u043e\u0434\u043e\u0431\u0440\u0430\u0442\u044c \u0441\u043c\u0435\u0441\u044c</button>
     </div>`;
   }
 
@@ -107,7 +107,7 @@ export function createBlendConstructorModule(deps) {
         const changed = o.active && d !== o._origDrops;
         const id = o.db_id || o.name_ru;
         return `<div class="oil-edit-row ${o.active ? "" : "is-removed"}">
-          <button class="oil-edit-toggle ${o.active ? "is-on" : "is-off"}" onclick="blendToggleOil('${escapeHtml(id)}')">${o.active ? "\u2713" : "\u2715"}</button>
+          <button class="oil-edit-toggle ${o.active ? "is-on" : "is-off"}" data-action="blendToggleOil" data-args='${JSON.stringify([id])}'>${o.active ? "\u2713" : "\u2715"}</button>
           <span class="oil-edit-name">${escapeHtml(o.name_ru)}</span>
           <span class="oil-edit-drops ${changed ? "is-recalculated" : ""}">${o.active ? d + " \u043a\u0430\u043f." : "\u2014"}</span>
           <span class="oil-edit-role">${escapeHtml(o.role)}</span>
@@ -171,26 +171,26 @@ export function createBlendConstructorModule(deps) {
         <p class="field-help">\u0423\u043a\u0430\u0436\u0438\u0442\u0435 \u043c\u0430\u0441\u043b\u043e \u2014 \u0418\u0418 \u043f\u0435\u0440\u0435\u0441\u0442\u0440\u043e\u0438\u0442 \u0441\u043c\u0435\u0441\u044c \u0441 \u0435\u0433\u043e \u0443\u0447\u0451\u0442\u043e\u043c</p>
         <div class="blend-adjust-row">
           <input type="text" id="blendCustomOilInput" class="field-input" placeholder="\u041d\u0430\u043f\u0440\u0438\u043c\u0435\u0440: \u041b\u0430\u0432\u0430\u043d\u0434\u0430">
-          <button class="secondary-button" id="blendAdjustBtn" type="button" onclick="blendAdjustWithOil(this)">\u041f\u0435\u0440\u0435\u0441\u0442\u0440\u043e\u0438\u0442\u044c</button>
+          <button class="secondary-button" id="blendAdjustBtn" type="button" data-action="blendAdjustWithOil" data-args='[null]'>\u041f\u0435\u0440\u0435\u0441\u0442\u0440\u043e\u0438\u0442\u044c</button>
         </div>
-        <button class="secondary-button" id="blendRegenBtn" type="button" style="margin-top:8px;width:100%" onclick="blendRegenerate(this)">\u041f\u0435\u0440\u0435\u0433\u0435\u043d\u0435\u0440\u0438\u0440\u043e\u0432\u0430\u0442\u044c \u0441\u043c\u0435\u0441\u044c</button>
+        <button class="secondary-button" id="blendRegenBtn" type="button" style="margin-top:8px;width:100%" data-action="blendRegenerate" data-args='[null]'>\u041f\u0435\u0440\u0435\u0433\u0435\u043d\u0435\u0440\u0438\u0440\u043e\u0432\u0430\u0442\u044c \u0441\u043c\u0435\u0441\u044c</button>
       </section>
       <div class="blend-actions-stack">
         <div class="actions-grid-two">
-          <button class="primary-button" id="blendSaveBtn" type="button" onclick="blendSaveCurrentBlend(this)">\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c \u0441\u043c\u0435\u0441\u044c</button>
-          <button class="secondary-button" type="button" onclick="blendCreateContent()">\u0421\u043e\u0437\u0434\u0430\u0442\u044c \u043a\u043e\u043d\u0442\u0435\u043d\u0442</button>
+          <button class="primary-button" id="blendSaveBtn" type="button" data-action="blendSaveCurrentBlend" data-args='[null]'>\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c \u0441\u043c\u0435\u0441\u044c</button>
+          <button class="secondary-button" type="button" data-action="blendCreateContent">\u0421\u043e\u0437\u0434\u0430\u0442\u044c \u043a\u043e\u043d\u0442\u0435\u043d\u0442</button>
         </div>
         <div id="blendContentPicker" hidden style="margin-top:6px">
           <p class="field-help" style="margin-bottom:6px">\u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u0444\u043e\u0440\u043c\u0430\u0442:</p>
           <div class="chip-list">
-            <button class="chip chip-selectable" onclick="blendLaunchContent('content')">\u041f\u043e\u0441\u0442</button>
-            <button class="chip chip-selectable" onclick="blendLaunchContent('threads_series')">\u0421\u0435\u0440\u0438\u044f Threads</button>
-            <button class="chip chip-selectable" onclick="blendLaunchContent('carousel')">\u041a\u0430\u0440\u0443\u0441\u0435\u043b\u044c</button>
+            <button class="chip chip-selectable" data-action="blendLaunchContent" data-args='["content"]'>\u041f\u043e\u0441\u0442</button>
+            <button class="chip chip-selectable" data-action="blendLaunchContent" data-args='["threads_series"]'>\u0421\u0435\u0440\u0438\u044f Threads</button>
+            <button class="chip chip-selectable" data-action="blendLaunchContent" data-args='["carousel"]'>\u041a\u0430\u0440\u0443\u0441\u0435\u043b\u044c</button>
           </div>
         </div>
         <div class="actions-grid-two">
-          <button class="secondary-button" onclick="openBlendConstructor()">\u041d\u043e\u0432\u0430\u044f \u0441\u043c\u0435\u0441\u044c</button>
-          <button class="secondary-button" onclick="clearSmartSearch()">\u041a \u0431\u0430\u0437\u0435</button>
+          <button class="secondary-button" data-action="openBlendConstructor">\u041d\u043e\u0432\u0430\u044f \u0441\u043c\u0435\u0441\u044c</button>
+          <button class="secondary-button" data-action="clearSmartSearch">\u041a \u0431\u0430\u0437\u0435</button>
         </div>
       </div>
     </div>`;
@@ -202,7 +202,7 @@ export function createBlendConstructorModule(deps) {
       ${renderBackButton()}
       <p class="eyebrow">\u0421\u041e\u0425\u0420\u0410\u041d\u0401\u041d\u041d\u042b\u0415 \u0421\u041c\u0415\u0421\u0418</p>
       <div id="savedBlendsList" class="saved-blends-list"><p class="field-help">\u0417\u0430\u0433\u0440\u0443\u0437\u043a\u0430...</p></div>
-      <button class="primary-button" onclick="openBlendConstructor()">\u041d\u043e\u0432\u0430\u044f \u0441\u043c\u0435\u0441\u044c</button>
+      <button class="primary-button" data-action="openBlendConstructor">\u041d\u043e\u0432\u0430\u044f \u0441\u043c\u0435\u0441\u044c</button>
     </div>`;
     try {
       const data = await fetchJson("/api/blend-constructor/saved");
@@ -219,7 +219,7 @@ export function createBlendConstructorModule(deps) {
           ${b.brief ? `<p class="field-help">${escapeHtml(b.brief)}</p>` : ""}
           <div class="draft-meta">${(b.tags || []).map(t => tagMarkup(t, "brand")).join("")}</div>
           <div class="saved-blend-oils">${(b.oils || []).map(o => `${escapeHtml(o.name_ru || o.name || o.name_en || '')} ${o.drops}\u043a.`).join(" \u00b7 ")}</div>
-          <button class="danger-button" style="margin-top:6px" onclick="deleteSavedBlend('${escapeHtml(b.id || b._id)}',this)">\u0423\u0434\u0430\u043b\u0438\u0442\u044c</button>
+          <button class="danger-button" style="margin-top:6px" data-action="deleteSavedBlend" data-args='${JSON.stringify([b.id || b._id, null])}'>\u0423\u0434\u0430\u043b\u0438\u0442\u044c</button>
         </div>`).join("");
     } catch {
       const el = document.getElementById("savedBlendsList");

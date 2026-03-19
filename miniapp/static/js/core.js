@@ -63,7 +63,7 @@ export function createCoreModule(deps) {
           <h2>${escapeHtml(title)}</h2>
           <p>${escapeHtml(message)}</p>
         </div>
-        <button class="secondary-button" type="button" onclick="retryCurrentTab()">Повторить</button>
+        <button class="secondary-button" type="button" data-action="retryCurrentTab">Повторить</button>
       </div>
     `;
   }
@@ -83,7 +83,7 @@ export function createCoreModule(deps) {
           <h3>${escapeHtml(title || "Пока ничего не выбрано")}</h3>
           ${body ? `<p>${escapeHtml(body)}</p>` : ""}
         </div>
-        ${actionLabel && action ? `<div class="guided-state-actions"><button class="secondary-button" type="button" onclick="${action}">${escapeHtml(actionLabel)}</button></div>` : ""}
+        ${actionLabel && action ? `<div class="guided-state-actions"><button class="secondary-button" type="button" data-action="${action}">${escapeHtml(actionLabel)}</button></div>` : ""}
       </div>
     `;
   }
@@ -115,7 +115,7 @@ export function createCoreModule(deps) {
             <h2>${escapeHtml(title)}</h2>
             <p>${escapeHtml(message)}</p>
           </div>
-          <button class="secondary-button" type="button" onclick="${retryAction}">Повторить</button>
+          <button class="secondary-button" type="button" data-action="${retryAction}">Повторить</button>
         </div>
       </div>
     `;

@@ -68,8 +68,8 @@ export function createTrendsModule(deps) {
 
   function renderContentSwitcher(active) {
     return `<div class="content-sub-switcher">
-      <button class="tab-button${active === "drafts" ? " active" : ""}" onclick="setContentSubMode('drafts')">Черновики</button>
-      <button class="tab-button${active === "trends" ? " active" : ""}" onclick="setContentSubMode('trends')">Тренды</button>
+      <button class="tab-button${active === "drafts" ? " active" : ""}" data-action="setContentSubMode" data-args='["drafts"]'>Черновики</button>
+      <button class="tab-button${active === "trends" ? " active" : ""}" data-action="setContentSubMode" data-args='["trends"]'>Тренды</button>
     </div>`;
   }
 
@@ -86,7 +86,7 @@ export function createTrendsModule(deps) {
       .map(
         (p) => `
       <button class="trends-platform-btn ${p.id === trendsPlatform ? "active" : ""}"
-              onclick="selectTrendsPlatform('${p.id}')">
+              data-action="selectTrendsPlatform" data-args='["${p.id}"]'>
         ${uiIcon(p.icon, 16)} ${escapeHtml(p.label)}
       </button>`
       )
@@ -97,14 +97,14 @@ export function createTrendsModule(deps) {
       .map(
         (d) => `
       <button class="trends-period-btn ${d === trendsPeriod ? "active" : ""}"
-              onclick="selectTrendsPeriod(${d})">
+              data-action="selectTrendsPeriod" data-args='[${d}]'>
         ${d}д
       </button>`
       )
       .join("");
 
     const refreshBtn = `<button class="trends-refresh-btn" id="trendsRefreshBtn"
-                                onclick="refreshTrends(this)">
+                                data-action="refreshTrends" data-args='[null]'>
       ${uiIcon("refresh-cw", 14)} Обновить
     </button>`;
 
@@ -137,7 +137,7 @@ export function createTrendsModule(deps) {
         "bar-chart-3",
         "Нет данных",
         "Добавьте конкурентов в настройках бренда и дождитесь сбора данных.",
-        `<button class="btn btn-secondary" onclick="setTab('settings'); state.settingsSection='accounts'; loadSettings()">
+        `<button class="btn btn-secondary" data-action="openSettingsSection" data-args='["accounts"]'>
           ${uiIcon("plus", 16)} Добавить аккаунты
         </button>`
       );
@@ -149,7 +149,7 @@ export function createTrendsModule(deps) {
         const eng = (p.like_count || 0) + (p.comment_count || 0) + (p.share_count || 0) + (p.reply_count || 0);
         const preview = escapeHtml((p.text || "").substring(0, 80));
         return `
-        <div class="draft-card" onclick="openTrendsPost(${i})">
+        <div class="draft-card" data-action="openTrendsPost" data-args='[${i}]'>
           <div class="draft-card-header">
             <span class="draft-card-topic">${escapeHtml(p.author_username || "")}</span>
             <span class="draft-card-date">${actionLabel("heart", eng)}</span>
@@ -446,7 +446,7 @@ export function createTrendsModule(deps) {
         const username = a.username || a;
         return `<span class="keyword-chip">
           <span>@${escapeHtml(username)}</span>
-          <button type="button" aria-label="Удалить" onclick="removeMonitoredAccount('${platform}', '${escapeHtml(username)}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+          <button type="button" aria-label="Удалить" data-action="removeMonitoredAccount" data-args='${JSON.stringify([platform, username])}'><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
         </span>`;
       }).join("");
     };
@@ -468,7 +468,7 @@ export function createTrendsModule(deps) {
             <option value="threads">Threads</option>
           </select>
           <input id="monitoredUsernameInput" type="text" placeholder="@username">
-          <button class="secondary-button" type="button" onclick="addMonitoredAccount()">Добавить</button>
+          <button class="secondary-button" type="button" data-action="addMonitoredAccount">Добавить</button>
         </div>
       </div>
     `;

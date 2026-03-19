@@ -32,6 +32,7 @@ export function registerWindowBridge(deps) {
     importCarouselPptx,
     exportToCanva,
     importFromCanva,
+    selectCanvaDesign,
     saveReelsScenario,
     regenerateReelsStoryboard,
     regenerateAllReelsFrames,
@@ -190,6 +191,7 @@ export function registerWindowBridge(deps) {
   window.importCarouselPptx = importCarouselPptx;
   window.exportToCanva = exportToCanva;
   window.importFromCanva = importFromCanva;
+  window.selectCanvaDesign = selectCanvaDesign;
 
   window.saveReelsScenario = saveReelsScenario;
   window.regenerateReelsStoryboard = regenerateReelsStoryboard;
@@ -364,6 +366,26 @@ export function registerWindowBridge(deps) {
     scheduleThreadsSeries(el.dataset.draftId, el.dataset.date, ["morning", "day", "evening"], el);
   };
 
+  window._copyCodeBlock = function(el) {
+    const pre = el.previousElementSibling;
+    if (!pre) return;
+    navigator.clipboard.writeText(pre.textContent).then(() => {
+      el.innerHTML = '<i data-lucide="check" style="width:13px;height:13px"></i>';
+      if (window.lucide) lucide.createIcons();
+      setTimeout(() => { el.textContent = "Копировать"; }, 1200);
+    });
+  };
+
+  window._closeSlotHistory = function(el) {
+    const overlay = el.closest(".slot-history-overlay");
+    if (overlay) overlay.remove();
+  };
+
+  window._fillTopicFromSuggestion = function(el) {
+    const textarea = el.closest(".create-form")?.querySelector("textarea[name=topic]");
+    if (textarea) textarea.value = el.textContent;
+  };
+
   // Trends
   window.selectTrendsPlatform = selectTrendsPlatform;
   window.selectTrendsPeriod = selectTrendsPeriod;
@@ -373,11 +395,13 @@ export function registerWindowBridge(deps) {
   window.removeMonitoredAccount = removeMonitoredAccount;
 
   // ── Global event delegation ────────────────────────────────────────────────
-  // Replaces inline onclick/onchange/oninput attributes.
+  // Replaces inline onclick/onchange/oninput/onkeydown attributes.
   // Convention:
   //   data-action="fnName" data-args='["arg1","arg2",null]'
   //   null in data-args is replaced with the matched element (replaces `this`).
   //   data-on-change / data-on-input for change/input events.
+  //   data-on-keydown="fnName" data-keydown-guard="Enter" data-args-keydown='[]'
+  //     for keydown; guard = required key name (optional).
 
   function _resolveArgs(el, raw) {
     if (!raw) return [];
@@ -414,6 +438,42 @@ export function registerWindowBridge(deps) {
       fn(...args);
     } else {
       fn(el);
+    }
+  });
+
+  document.addEventListener("submit", (e) => {
+    const el = e.target.closest("[data-on-submit]");
+    if (!el) return;
+    e.preventDefault();
+    const fn = window[el.dataset.onSubmit];
+    if (typeof fn !== "function") return;
+    const args = _resolveArgs(el, el.dataset.args);
+    args.push(el, el.querySelector("button"));
+    fn(...args);
+  });
+
+  document.addEventListener("blur", (e) => {
+    const el = e.target.closest("[data-on-blur]");
+    if (!el) return;
+    const fn = window[el.dataset.onBlur];
+    if (typeof fn !== "function") return;
+    fn(..._resolveArgs(el, el.dataset.args));
+  }, true);
+
+  document.addEventListener("keydown", (e) => {
+    const el = e.target.closest("[data-on-keydown]");
+    if (!el) return;
+    const guard = el.dataset.keydownGuard;
+    if (guard && e.key !== guard) return;
+    const fn = window[el.dataset.onKeydown];
+    if (typeof fn !== "function") return;
+    const raw = el.dataset.argsKeydown;
+    if (raw) {
+      const args = JSON.parse(raw).map((a) => (a === null ? el : a));
+      args.push(el.value);
+      fn(...args);
+    } else {
+      fn(el.value, el);
     }
   });
 }

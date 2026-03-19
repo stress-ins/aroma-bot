@@ -444,7 +444,7 @@ export function createSettingsModule(deps) {
                     </span>
                   `).join("") || `<span class="plan-entry-hint">Пока пусто.</span>`}
                 </div>
-                <form class="keyword-form" onsubmit='event.preventDefault(); addKeywordItem(${selectedTopic.topic_idx}, ${JSON.stringify(String(field))}, this, this.querySelector("button"));'>
+                <form class="keyword-form" data-on-submit="addKeywordItem" data-args='${JSON.stringify([selectedTopic.topic_idx, String(field)])}'>
                   <input name="word" type="text" placeholder="Добавить значение" />
                   <button class="secondary-button" type="submit">${actionLabel("plus", "Добавить")}</button>
                 </form>
@@ -494,7 +494,7 @@ export function createSettingsModule(deps) {
               <strong class="platform-label">${uiIcon(key)}<span>${label}</span></strong>
               <textarea id="tone-${key}" class="draft-textarea" rows="2"
                 placeholder="Например: personal, visual, emotional"
-                onblur='savePlatformTone("${key}")'></textarea>
+                data-on-blur="savePlatformTone" data-args='${JSON.stringify([key])}'></textarea>
             </div>
           `).join("")}
         </section>
@@ -621,7 +621,7 @@ export function createSettingsModule(deps) {
                     </span>
                   `).join("") || `<span class="plan-entry-hint">Пока пусто.</span>`}
                 </div>
-                <form class="keyword-form" onsubmit='event.preventDefault(); addKeywordItem(${selectedTopic.topic_idx}, ${JSON.stringify(String(field))}, this, this.querySelector("button"));'>
+                <form class="keyword-form" data-on-submit="addKeywordItem" data-args='${JSON.stringify([selectedTopic.topic_idx, String(field)])}'>
                   <input name="word" type="text" placeholder="Добавить значение" />
                   <button class="secondary-button" type="submit">${actionLabel("plus", "Добавить")}</button>
                 </form>

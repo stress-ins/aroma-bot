@@ -548,7 +548,7 @@ function renderMarkdown(value) {
   for (const key of Object.keys(fenceMap)) {
     const escaped = escapeHtml(fenceMap[key]);
     const raw = fenceMap[key];
-    const block = `<div class="code-block"><pre>${escaped}</pre><button class="copy-btn" onclick="navigator.clipboard.writeText(this.previousElementSibling.textContent).then(()=>{this.innerHTML='${icon("check", 13)}';setTimeout(()=>this.textContent='Копировать',1200)})">Копировать</button></div>`;
+    const block = `<div class="code-block"><pre>${escaped}</pre><button class="copy-btn" data-action="_copyCodeBlock">Копировать</button></div>`;
     result = result.replace(escapeHtml(key), block).replace(key, block);
   }
 
@@ -755,7 +755,7 @@ function promptDisclosureMarkup(rawKey, bodyMarkup, {
         data-default-open="${defaultOpen ? "true" : "false"}"
         data-open-label="${escapeHtml(openLabel)}"
         data-close-label="${escapeHtml(closeLabel)}"
-        onclick='togglePromptDisclosure(${JSON.stringify(key)}, this)'
+        data-action="togglePromptDisclosure" data-args='${JSON.stringify([key, null])}'
       >${actionLabel("eye", isOpen ? closeLabel : openLabel)}</button>
       <div class="prompt-card"${isOpen ? "" : " hidden"}>${bodyMarkup}</div>
     </div>
@@ -794,7 +794,7 @@ function promptSection(title, prompt, copyLabel = "Скопировать про
       ${promptDisclosureMarkup(disclosureKey, `
         <div class="detail-preview prompt-preview">${escapeHtml(prompt)}</div>
         <div class="actions-row prompt-actions">
-          <button class="secondary-button" type="button" onclick='copyText(${JSON.stringify(String(prompt))})'>${actionLabel("prompt", copyLabel)}</button>
+          <button class="secondary-button" type="button" data-action="copyText" data-args='${JSON.stringify([String(prompt)])}'>${actionLabel("prompt", copyLabel)}</button>
         </div>
       `)}
     </section>
@@ -898,7 +898,7 @@ async function showSlotHistory(draftId, slot) {
   } else {
     const notice = document.createElement("div");
     notice.className = "slot-history-overlay";
-    notice.innerHTML = `<div class="slot-history-modal"><h3>История ${escapeHtml(label)}</h3>${listHtml}<button class="primary-button" onclick="this.closest('.slot-history-overlay').remove()">Закрыть</button></div>`;
+    notice.innerHTML = `<div class="slot-history-modal"><h3>История ${escapeHtml(label)}</h3>${listHtml}<button class="primary-button" data-action="_closeSlotHistory">Закрыть</button></div>`;
     document.body.appendChild(notice);
   }
 }
@@ -1025,7 +1025,7 @@ function _renderThreadsSchedulerDates(draftId) {
     d.setDate(today.getDate() + i);
     const iso = d.toISOString().slice(0, 10);
     const label = i === 0 ? "Сегодня" : i === 1 ? "Завтра" : d.toLocaleDateString("ru", { weekday: "short", day: "numeric", month: "short" });
-    return `<button class="date-picker-btn" type="button" data-date="${iso}" onclick="_selectSchedulerDate('${draftId}', '${iso}', this)">${escapeHtml(label)}</button>`;
+    return `<button class="date-picker-btn" type="button" data-date="${iso}" data-action="_selectSchedulerDate" data-args='${JSON.stringify([draftId, iso, null])}'>${escapeHtml(label)}</button>`;
   }).join("");
   container.innerHTML = buttons;
 }

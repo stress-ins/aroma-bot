@@ -1635,9 +1635,8 @@ class TestMiniAppRussianLocale:
         assert '{"status":"approved"}' in app_js
         assert '{"status":"rejected"}' in app_js
         assert 'data-action="deleteDraft"' in app_js
-        assert "onclick='saveCarouselSlideText(${JSON.stringify(draftId)}, ${index}, this)'" in app_js
-        assert 'regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, this)' in app_js
-        assert "onclick='regenerateCarouselSlide(${JSON.stringify(draftId)}, ${index}, this)'" in app_js
+        assert 'data-action="saveCarouselSlideText"' in app_js
+        assert 'data-action="regenerateCarouselSlide"' in app_js
         assert ".secondary-button.is-busy" in app_css
         assert ".secondary-button.did-complete" in app_css
         assert ".secondary-button.did-error" in app_css

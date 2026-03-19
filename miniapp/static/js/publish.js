@@ -39,13 +39,13 @@ export function createPublishModule(deps) {
               </label>
             </div>
             <div class="actions-row">
-              <button class="primary-button" type="button" onclick="publishDraft('${draftId}', false, this)">Опубликовать сейчас</button>
-              <button class="secondary-button" type="button" onclick="publishDraft('${draftId}', true, this)">Запланировать</button>
+              <button class="primary-button" type="button" data-action="publishDraft" data-args='${JSON.stringify([draftId, false, null])}'>Опубликовать сейчас</button>
+              <button class="secondary-button" type="button" data-action="publishDraft" data-args='${JSON.stringify([draftId, true, null])}'>Запланировать</button>
             </div>
           ` : ""}
           ${isScheduled ? `
             <div class="actions-row">
-              <button class="danger-button" type="button" onclick="cancelPublishSchedule('${draftId}', this)">Отменить публикацию</button>
+              <button class="danger-button" type="button" data-action="cancelPublishSchedule" data-args='${JSON.stringify([draftId, null])}'>Отменить публикацию</button>
             </div>
           ` : ""}
           <div id="publishStatusContainer"></div>

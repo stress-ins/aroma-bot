@@ -44,7 +44,7 @@ export function createTeamsModule(deps) {
     const membersHtml = (team.members || []).map((m) => {
       const roleLabel = { owner: "Владелец", editor: "Редактор", viewer: "Читатель" }[m.role] || m.role;
       const actions = isOwner && m.telegram_id !== team.created_by
-        ? `<button class="btn-sm" onclick="window.__teams.removeMember('${escapeHtml(team.team_id)}', ${m.telegram_id})">
+        ? `<button class="btn-sm" data-action="__teams_removeMember" data-args='${JSON.stringify([team.team_id, m.telegram_id])}'>
             ${icon("user-minus", 14)}
           </button>`
         : "";
@@ -57,7 +57,7 @@ export function createTeamsModule(deps) {
     }).join("");
 
     const inviteBtn = isOwner
-      ? `<button class="btn btn-primary" onclick="window.__teams.showInvite('${escapeHtml(team.team_id)}')">
+      ? `<button class="btn btn-primary" data-action="__teams_showInvite" data-args='${JSON.stringify([team.team_id])}'>
           ${icon("user-plus", 16)} Пригласить
         </button>`
       : "";
@@ -97,7 +97,7 @@ export function createTeamsModule(deps) {
       `<option value="${escapeHtml(t.team_id)}"${t.team_id === activeTeamId ? " selected" : ""}>${escapeHtml(t.name)}</option>`
     ).join("");
     return `
-      <select class="team-switcher" onchange="window.__teams.switchTeam(this.value)">
+      <select class="team-switcher" data-on-change="__teams_switchTeam">
         ${options}
       </select>`;
   }
@@ -142,6 +142,9 @@ export function createTeamsModule(deps) {
 
   // Expose for inline onclick handlers
   window.__teams = { showInvite, removeMember, switchTeam };
+  window.__teams_removeMember = removeMember;
+  window.__teams_showInvite = showInvite;
+  window.__teams_switchTeam = switchTeam;
 
   return {
     loadTeams,
