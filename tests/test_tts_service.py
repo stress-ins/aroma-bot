@@ -80,6 +80,7 @@ except ImportError:
     edge_tts_available = False
 
 
+@pytest.mark.slow
 @pytest.mark.asyncio
 @pytest.mark.skipif(not edge_tts_available, reason="edge-tts not installed")
 async def test_generate_single_audio(tmp_path):
@@ -92,6 +93,7 @@ async def test_generate_single_audio(tmp_path):
     assert result.stat().st_size > 0
 
 
+@pytest.mark.slow
 @pytest.mark.asyncio
 @pytest.mark.skipif(not edge_tts_available, reason="edge-tts not installed")
 async def test_generate_voiceover_single_segment(tmp_path):
@@ -106,6 +108,7 @@ async def test_generate_voiceover_single_segment(tmp_path):
     assert result.stat().st_size > 0
 
 
+@pytest.mark.slow
 @pytest.mark.asyncio
 @pytest.mark.skipif(not edge_tts_available, reason="edge-tts not installed")
 async def test_generate_voiceover_multi_segment(tmp_path):
@@ -126,6 +129,7 @@ async def test_generate_voiceover_multi_segment(tmp_path):
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.slow
 @pytest.mark.asyncio
 @pytest.mark.skipif(not edge_tts_available, reason="edge-tts not installed")
 async def test_list_available_voices():
