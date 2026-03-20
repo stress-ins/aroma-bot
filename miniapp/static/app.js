@@ -599,6 +599,8 @@ function uiIcon(name) {
     close:      "x",
     "x":        "x",
     trash:      "trash-2",
+    delete:     "trash-2",
+    undo:       "undo-2",
     back:       "chevron-left",
     gear:       "settings-2",
     eye:        "eye",
@@ -1069,8 +1071,10 @@ async function deleteDraft(draftId, kind = "drafts", button) {
   }
   if (kind === "reels") {
     state.reels = state.reels.filter((item) => item.draft_id !== draftId);
+    state.drafts = state.drafts.filter((item) => item.draft_id !== draftId);
     if (state.selectedReels?.draft_id === draftId) state.selectedReels = null;
-    renderReels();
+    renderEmptyDetail();
+    renderDraftList();
   } else {
     state.drafts = state.drafts.filter((item) => item.draft_id !== draftId);
     if (state.draftId === draftId) {

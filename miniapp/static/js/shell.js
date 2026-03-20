@@ -531,6 +531,7 @@ export function createShellModule(deps) {
         if (state.mode !== "content") {
           setMode("content");
         }
+        state.mobileView = "list";
         setTab(targetTab);
         void safeLoadCurrentTab("Не удалось загрузить вкладку");
         if (elements.listPanel) elements.listPanel.scrollTop = 0;
