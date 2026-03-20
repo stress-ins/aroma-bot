@@ -5787,3 +5787,21 @@ details[open] > .trend-suggestions-toggle::before { transform: rotate(90deg); }
 .trend-suggestions-body { padding: 0 14px 12px; }
 .trend-suggestions-section { margin-bottom: 10px; }
 .trend-suggestions-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--hint); margin-bottom: 4px; }
+
+/* ── Touch targets for small icon-only buttons (Task 19) ────────────────── */
+.keyword-chip button,
+.keyword-form button,
+.smart-search-clear,
+.rewrite-chip button {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+/* ── Onboarding tooltip z-index and positioning fix (Task 20) ───────────── */
+.onboarding-overlay {
+  z-index: 9500;
+}
+.onboarding-slide {
+  position: relative;
+  z-index: 9501;
+}

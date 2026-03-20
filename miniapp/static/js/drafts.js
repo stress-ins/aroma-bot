@@ -226,7 +226,7 @@ export function createDraftsModule(deps) {
               placeholder="Текст поста"
               data-on-input="_syncCharCount" data-count-target="charCount_${post.slot}_${d.draft_id}"
             >${escapeHtml(cleanSlotText(post.text || ""))}</textarea>
-            <div class="threads-char-counter${isOver ? " is-over" : ""}" id="charCount_${post.slot}_${d.draft_id}">${charCount}</div>
+            <div class="threads-char-counter${isOver ? " is-over" : ""}" id="charCount_${post.slot}_${d.draft_id}">${charCount} / 500</div>
             ${post.why_it_works ? `<div class="threads-slot-annotation"><span class="annotation-label">Почему это сработает:</span> ${escapeHtml(post.why_it_works)}</div>` : ""}` : `<div class="threads-post-rendered detail-markdown">${renderMarkdown(cleanSlotText(post.text || ""))}</div>
             ${post.why_it_works ? `<div class="threads-slot-annotation"><span class="annotation-label">Почему это сработает:</span> ${escapeHtml(post.why_it_works)}</div>` : ""}`}
           </div>

@@ -129,14 +129,14 @@ export function createBlendConstructorModule(deps) {
         .filter(([, k]) => (p[k] || 0) > 0)
         .map(([lbl, k]) => `<div class="profile-bar-row"><div class="profile-bar-label"><span>${lbl}</span><span>${p[k]}%</span></div><div class="profile-bar"><div class="profile-bar-fill" style="width:${p[k]}%"></div></div></div>`).join("");
     }
-    window.blendToggleOil = (oilId) => {
+    function blendToggleOil(oilId) {
       const oil = blendState.oils.find(o => (o.db_id || o.name_ru) === oilId);
       if (!oil) return;
       if (oil.active && blendState.oils.filter(o => o.active).length <= 1) return;
       oil.active = !oil.active;
       recalcDrops();
       rerender();
-    };
+    }
     function rerender() {
       const active = blendState.oils.filter(o => o.active);
       const total = active.reduce((s, o) => s + (o.displayDrops || o.drops), 0);
@@ -181,7 +181,7 @@ export function createBlendConstructorModule(deps) {
       <div class="blend-expert-card blend-expert-doctor">
         <div class="blend-expert-header"><span class="blend-expert-icon">\u2695\ufe0f</span><div><div class="blend-expert-name">\u041c\u0435\u0434\u0438\u0446\u0438\u043d\u0441\u043a\u0430\u044f \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0430</div></div><span class="blend-safety-badge" style="color:${safetyColor}">${safetyLabel}</span></div>
         <p class="blend-expert-text">${escapeHtml(result.doctor_note)}</p>
-        ${result.restrictions?.length ? `<div class="blend-restrictions">${result.restrictions.map(r => `<div class="blend-restriction-row"><span class="chip chip-bad">${escapeHtml(r.condition)}</span><span>\u0438\u0441\u043a\u043b\u044e\u0447\u0438\u0442\u044c ${(r.oils_to_exclude || []).join(", ")}</span></div>`).join("")}</div>` : ""}
+        ${result.restrictions?.length ? `<div class="blend-restrictions">${result.restrictions.map(r => `<div class="blend-restriction-row"><span class="chip chip-bad">${escapeHtml(r.condition)}</span><span>\u0438\u0441\u043a\u043b\u044e\u0447\u0438\u0442\u044c ${escapeHtml((r.oils_to_exclude || []).join(", "))}</span></div>`).join("")}</div>` : ""}
       </div>
       ${result.incompatible_oils?.length ? `<section class="section section-warning"><h3>\u26a0\ufe0f \u041d\u0435 \u0434\u043e\u0431\u0430\u0432\u043b\u044f\u0442\u044c \u0432 \u044d\u0442\u0443 \u0441\u043c\u0435\u0441\u044c</h3>${result.incompatible_oils.map(o => `<div class="incompat-row"><span class="chip chip-bad">${escapeHtml(o.name_ru)}</span><span>${escapeHtml(o.reason)}</span></div>`).join("")}</section>` : ""}
       <div class="blend-actions-stack">
@@ -314,6 +314,7 @@ export function createBlendConstructorModule(deps) {
   }
 
   async function deleteSavedBlend(id, btn) {
+    if (!confirm("\u0423\u0434\u0430\u043b\u0438\u0442\u044c \u0441\u043e\u0445\u0440\u0430\u043d\u0451\u043d\u043d\u0443\u044e \u0441\u043c\u0435\u0441\u044c?")) return;
     if (btn) { btn.disabled = true; btn.textContent = "\u0423\u0434\u0430\u043b\u044f\u044e..."; }
     try {
       await fetchJson(`/api/blend-constructor/saved/${id}`, { method: "DELETE" });
@@ -571,6 +572,7 @@ export function createBlendConstructorModule(deps) {
   }
 
   async function deleteSavedBlendFromDetail(id, btn) {
+    if (!confirm("\u0423\u0434\u0430\u043b\u0438\u0442\u044c \u0441\u043e\u0445\u0440\u0430\u043d\u0451\u043d\u043d\u0443\u044e \u0441\u043c\u0435\u0441\u044c?")) return;
     if (btn) { btn.disabled = true; btn.textContent = "\u0423\u0434\u0430\u043b\u044f\u044e..."; }
     try {
       await fetchJson(`/api/blend-constructor/saved/${id}`, { method: "DELETE" });
@@ -637,6 +639,7 @@ export function createBlendConstructorModule(deps) {
     savedBlendLaunchContent,
     deleteSavedBlend,
     deleteSavedBlendFromDetail,
+    blendToggleOil,
     shareBlend,
     openSharedBlend,
   };

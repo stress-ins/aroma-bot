@@ -68,6 +68,10 @@ export function createPublishModule(deps) {
       showUiNotice("Выберите хотя бы одну платформу", "error");
       return;
     }
+    if (!withSchedule) {
+      const ok = confirm("Опубликовать сейчас?");
+      if (!ok) return;
+    }
     const body = { platforms };
     if (withSchedule) {
       const dt = document.getElementById("pubScheduleAt")?.value;
