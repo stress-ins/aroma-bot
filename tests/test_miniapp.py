@@ -1070,6 +1070,85 @@ class TestMiniAppRussianLocale:
         assert card["blends_containing_names"] == ["Тестовая смесь А"]
         assert card["blends_containing_slugs"] == ["test-blend-a"]
 
+    async def test_symptom_cross_refs_filters_garbage_and_resolves_aliases(self):
+        """_enrich_symptom_cross_refs drops unresolvable/garbage entries and resolves aliases."""
+        from bot.services.miniapp_references.symptom import _enrich_symptom_cross_refs, _is_garbage_name
+        from datetime import datetime, timezone
+        from sqlalchemy import select
+        from db.session import AsyncSessionLocal
+        from db.models import AromaCardModel
+
+        now = datetime.now(timezone.utc)
+        async with AsyncSessionLocal() as session:
+            # Ensure we have an aroma card for frankincense to test alias resolution
+            existing = await session.execute(
+                select(AromaCardModel).where(
+                    AromaCardModel.slug == "frankincense",
+                    AromaCardModel.category == "aroma",
+                )
+            )
+            if not existing.scalar_one_or_none():
+                session.add(AromaCardModel(
+                    category="aroma",
+                    slug="frankincense",
+                    name="Frankincense",
+                    source_type="resin",
+                    aliases=[],
+                    payload={"name_ru": "Ладан"},
+                    created_at=now,
+                    updated_at=now,
+                ))
+            # Add a blend card to test blend redirection
+            existing_blend = await session.execute(
+                select(AromaCardModel).where(
+                    AromaCardModel.slug == "valor",
+                    AromaCardModel.category == "blend",
+                )
+            )
+            if not existing_blend.scalar_one_or_none():
+                session.add(AromaCardModel(
+                    category="blend",
+                    slug="valor",
+                    name="Valor",
+                    source_type="blend",
+                    aliases=[],
+                    payload={"name_ru": "Вэлор"},
+                    created_at=now,
+                    updated_at=now,
+                ))
+            await session.commit()
+
+        serialized: dict[str, object] = {
+            "recommended_oil_names": [
+                "Sacred Frankincense",       # alias → frankincense
+                "РЕКОМЕНДАЦИИ",              # garbage header
+                "wk",                        # too short
+                "(Священный ладан)",         # starts with (
+                "Valor",                     # blend, not oil
+                "Dorado Azul",               # no card in DB → dropped
+                "Frankincense",              # direct match
+            ],
+            "recommended_oil_slugs": [],     # no pre-resolved slugs
+            "recommended_blend_names": [],
+            "recommended_blend_slugs": [],
+        }
+
+        result = await _enrich_symptom_cross_refs(serialized)
+
+        # Only Frankincense should remain (Sacred Frankincense and Frankincense deduplicate)
+        assert result["recommended_oil_slugs"] == ["frankincense"]
+        assert result["recommended_oil_names"] == ["Ладан"]
+        # Valor should have been redirected to blend list
+        assert "valor" in result["recommended_blend_slugs"]
+
+        # Verify garbage filter directly
+        assert _is_garbage_name("wk") is True
+        assert _is_garbage_name("РЕКОМЕНДАЦИИ по применению") is True
+        assert _is_garbage_name("(Священный ладан)") is True
+        assert _is_garbage_name("Иланг-иланг)") is True
+        assert _is_garbage_name("Lavender") is False
+        assert _is_garbage_name("Tea Tree") is False
+
     async def test_seed_does_not_overwrite_manual_reference_edits(self, monkeypatch, tmp_path):
         seed_file = tmp_path / "seed.json"
         extra_seed_file = tmp_path / "extra.json"
