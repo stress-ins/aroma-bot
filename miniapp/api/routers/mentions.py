@@ -178,13 +178,15 @@ async def _publish_reply_to_platform(mention, content: str) -> None:
     from config import settings
 
     if mention.platform == "threads":
-        from bot.services.threads_api import post_reply as threads_post_reply
+        from bot.services.threads_api import ThreadsClient
+        token_row = await get_token("threads")
+        if not token_row:
+            raise ValueError("Threads token not configured")
+        client = ThreadsClient(token_row.access_token)
         if mention.external_id:
-            await threads_post_reply(mention.external_id, content)
+            await asyncio.to_thread(client.publish_text_post, content, reply_to_id=mention.external_id)
         else:
-            # Post as standalone if no parent
-            from bot.services.threads_api import post_thread
-            await post_thread(content)
+            await asyncio.to_thread(client.publish_text_post, content)
     elif mention.platform == "instagram":
         # Instagram reply — post as comment (requires external_id = media_id)
         import httpx
