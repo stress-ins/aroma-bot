@@ -65,6 +65,17 @@ export function createShellModule(deps) {
   }
 
   function goBackToList(animated = false) {
+    if (state._recoWizardOpen) {
+      window.Telegram?.WebApp?.BackButton?.hide();
+      elements.detailPanel.classList.remove("swipe-back-exit", "swipe-back-armed", "swipe-back-cancel");
+      elements.detailPanel.style.removeProperty("--swipe-offset");
+      if (state._recoWizardStep > 0) {
+        window.recoWizardBack?.();
+      } else {
+        window.closeRecommendationsWizard?.();
+      }
+      return;
+    }
     if (state._fromContext) {
       // Guard: stale context from a different tab should not redirect cross-tab
       if (state._fromContext.tab !== state.tab) {
@@ -118,10 +129,13 @@ export function createShellModule(deps) {
     if (typeof window._currentTabRefresh === "function") window._currentTabRefresh();
   }
 
-  function renderBackButton() {
+  function renderBackButton(customAction) {
     const isMobile = window.matchMedia("(max-width: 760px)").matches;
     syncBottomTabBar();
     if (!isMobile) return "";
+    if (customAction) {
+      return `<button class="back-button visible" data-action="${customAction}">${uiIcon("back")}<span>Назад</span></button>`;
+    }
     return `<button class="back-button visible" data-action="goBackToList" data-args='[true]'>${uiIcon("back")}<span>Назад к списку</span></button>`;
   }
 
