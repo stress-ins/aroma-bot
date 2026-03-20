@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""Recover lost KIE-generated images and bind them to reels_v2 frames.
+"""Recover lost KIE-generated images and bind them to draft slides/frames.
 
 Fetches all completed tasks from KIE Playground API, extracts prompts,
-matches them to frames in reels_v2 drafts by image_prompt, downloads
-the best (newest) image per unique prompt, and saves it as a frame asset.
+matches them to:
+  - carousel drafts (img_prompts → slide_images)
+  - reels_v2 drafts (image_prompt → image_url)
+Downloads the best (newest) image per unique prompt and saves as asset.
 
 Usage:
     .venv/bin/python scripts/recover_kie_tasks.py --dry-run
@@ -26,6 +28,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from bot.services.drafts_store import list_recent_drafts, update_draft
 from bot.services.reels_assets import save_frame_asset
+from bot.services.carousel_assets import save_carousel_slide_asset
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -178,95 +181,144 @@ def download_image(url: str) -> bytes | None:
         return None
 
 
+def _download_best_image(
+    prompt: str,
+    kie_entries: list[tuple[str, int, str]],
+    image_cache: dict[str, bytes],
+) -> bytes | None:
+    """Download best available image for a prompt, with cache."""
+    if prompt in image_cache:
+        return image_cache[prompt]
+    for url, _, tid in kie_entries:
+        img_bytes = download_image(url)
+        if img_bytes:
+            image_cache[prompt] = img_bytes
+            return img_bytes
+        logger.warning("  Failed to download from task %s, trying next...", tid)
+    return None
+
+
 async def match_and_recover(
     prompt_map: dict[str, list[tuple[str, int, str]]],
     dry_run: bool = False,
 ) -> None:
-    """Match KIE prompts to reels_v2 frames and recover images."""
-    drafts = await list_recent_drafts(limit=500, kind="reels_v2")
-    logger.info("Found %d reels_v2 drafts in DB", len(drafts))
+    """Match KIE prompts to carousel slides and reels_v2 frames, recover images."""
+    image_cache: dict[str, bytes] = {}
+    recovered = 0
+    failed = 0
 
-    # Collect all frames that need images, grouped by prompt
-    frames_needing_images: dict[str, list[tuple[str, int, dict, dict]]] = {}
-    # {prompt: [(draft_id, frame_idx, frame, draft_payload), ...]}
+    # --- Carousel drafts ---
+    carousel_drafts = await list_recent_drafts(limit=500, kind="carousel")
+    logger.info("Found %d carousel drafts in DB", len(carousel_drafts))
 
-    for draft in drafts:
+    for draft in carousel_drafts:
+        img_prompts: list[str] = draft.payload.get("img_prompts", [])
+        if not img_prompts:
+            continue
+
+        raw_images = draft.payload.get("slide_images", [])
+        slide_images: list[dict | None] = list(raw_images) if isinstance(raw_images, list) else []
+        while len(slide_images) < len(img_prompts):
+            slide_images.append(None)
+
+        raw_versions = draft.payload.get("slide_image_versions", [])
+        slide_versions: list[list[dict]] = []
+        if isinstance(raw_versions, list):
+            for item in raw_versions:
+                slide_versions.append(list(item) if isinstance(item, list) else [])
+        while len(slide_versions) < len(img_prompts):
+            slide_versions.append([])
+
+        changed = False
+        for idx, prompt in enumerate(img_prompts):
+            # Skip slides that already have images
+            if slide_images[idx] and isinstance(slide_images[idx], dict) and slide_images[idx].get("url"):
+                continue
+
+            prompt_stripped = prompt.strip()
+            if not prompt_stripped or prompt_stripped not in prompt_map:
+                continue
+
+            kie_entries = prompt_map[prompt_stripped]
+            logger.info(
+                "Carousel %s slide %d: %d KIE results. Prompt: %.50s...",
+                draft.draft_id[:8], idx, len(kie_entries), prompt_stripped[:50],
+            )
+
+            if dry_run:
+                logger.info("  [DRY-RUN] Would recover slide %d of draft %s", idx, draft.draft_id[:8])
+                recovered += 1
+                continue
+
+            img_bytes = _download_best_image(prompt_stripped, kie_entries, image_cache)
+            if not img_bytes:
+                logger.error("  All downloads failed for carousel slide %d", idx)
+                failed += 1
+                continue
+
+            asset = save_carousel_slide_asset(draft.draft_id, idx, img_bytes, prompt=prompt_stripped)
+            slide_images[idx] = asset
+            slide_versions[idx].append(asset)
+            changed = True
+            recovered += 1
+            logger.info("  Recovered carousel slide %d → %s", idx, asset["url"])
+
+        if changed and not dry_run:
+            payload = dict(draft.payload)
+            payload["slide_images"] = slide_images
+            payload["slide_image_versions"] = slide_versions
+            payload["images_ready"] = sum(1 for img in slide_images if isinstance(img, dict) and img.get("url"))
+            payload["generation_pending"] = False
+            updated = await update_draft(draft.draft_id, payload=payload)
+            if updated:
+                logger.info("  Draft %s updated (%d/%d images ready)",
+                            draft.draft_id[:8], payload["images_ready"], len(img_prompts))
+            else:
+                logger.error("  Failed to update draft %s", draft.draft_id[:8])
+
+    # --- Reels V2 drafts ---
+    reels_drafts = await list_recent_drafts(limit=500, kind="reels_v2")
+    logger.info("Found %d reels_v2 drafts in DB", len(reels_drafts))
+
+    draft_updates: dict[str, dict] = {}
+
+    for draft in reels_drafts:
         frames = draft.payload.get("frames", [])
         if not isinstance(frames, list):
             continue
         for idx, frame in enumerate(frames):
             if not isinstance(frame, dict):
                 continue
-            # Skip frames that already have images
             status = frame.get("image_status", "")
             url = str(frame.get("image_url", "")).strip()
             if status == "ready" and url:
                 continue
 
             prompt = frame.get("image_prompt", "").strip()
-            if prompt and prompt in prompt_map:
-                frames_needing_images.setdefault(prompt, []).append(
-                    (draft.draft_id, idx, frame, draft.payload)
-                )
+            if not prompt or prompt not in prompt_map:
+                continue
 
-    if not frames_needing_images:
-        logger.info("No frames found that need recovery (all already have images or no prompt match)")
-        return
-
-    logger.info(
-        "Found %d unique prompts matching %d frames across drafts",
-        len(frames_needing_images),
-        sum(len(v) for v in frames_needing_images.values()),
-    )
-
-    # For each matching prompt, download the best image once and apply to all matching frames
-    recovered = 0
-    failed = 0
-    # Cache downloaded images by prompt to avoid re-downloading
-    image_cache: dict[str, bytes] = {}
-
-    # Group frames by draft_id for batch updates
-    draft_updates: dict[str, dict] = {}  # draft_id → payload
-
-    for prompt, frame_entries in frames_needing_images.items():
-        kie_entries = prompt_map[prompt]
-        best_url, best_time, best_task_id = kie_entries[0]
-
-        logger.info(
-            "Prompt (%.60s...): %d KIE results, %d frames to update. Best task: %s",
-            prompt[:60], len(kie_entries), len(frame_entries), best_task_id,
-        )
-
-        if dry_run:
-            for draft_id, idx, frame, _ in frame_entries:
-                fid = frame.get("id", "?")[:8]
-                logger.info("  [DRY-RUN] Would recover frame %s (draft %s, idx %d)", fid, draft_id[:8], idx)
-            recovered += len(frame_entries)
-            continue
-
-        # Download image (try best first, then fallbacks)
-        img_bytes = None
-        for url, _, tid in kie_entries:
-            if prompt in image_cache:
-                img_bytes = image_cache[prompt]
-                break
-            img_bytes = download_image(url)
-            if img_bytes:
-                image_cache[prompt] = img_bytes
-                break
-            logger.warning("  Failed to download from task %s, trying next...", tid)
-
-        if not img_bytes:
-            logger.error("  All download attempts failed for prompt: %.60s...", prompt[:60])
-            failed += len(frame_entries)
-            continue
-
-        # Apply to all matching frames
-        for draft_id, idx, frame, payload in frame_entries:
+            kie_entries = prompt_map[prompt]
             fid = str(frame.get("id", ""))
-            asset = save_frame_asset(draft_id, fid, img_bytes, prompt=prompt)
 
-            # Build updated frame
+            logger.info(
+                "ReelsV2 %s frame %s: %d KIE results. Prompt: %.50s...",
+                draft.draft_id[:8], fid[:8], len(kie_entries), prompt[:50],
+            )
+
+            if dry_run:
+                logger.info("  [DRY-RUN] Would recover frame %s (draft %s, idx %d)", fid[:8], draft.draft_id[:8], idx)
+                recovered += 1
+                continue
+
+            img_bytes = _download_best_image(prompt, kie_entries, image_cache)
+            if not img_bytes:
+                logger.error("  All downloads failed for frame %s", fid[:8])
+                failed += 1
+                continue
+
+            asset = save_frame_asset(draft.draft_id, fid, img_bytes, prompt=prompt)
+
             versions = list(frame.get("image_versions", [])) if isinstance(frame.get("image_versions"), list) else []
             old_url = frame.get("image_url", "")
             if old_url:
@@ -279,25 +331,20 @@ async def match_and_recover(
             frame.pop("error_message", None)
             frame.pop("placement_data", None)
 
-            # Track draft for batch update
-            if draft_id not in draft_updates:
-                # Load fresh payload copy
-                draft_updates[draft_id] = dict(payload)
+            if draft.draft_id not in draft_updates:
+                draft_updates[draft.draft_id] = dict(draft.payload)
 
-            # Update the frame in the payload
-            frames_list = draft_updates[draft_id].get("frames", [])
+            frames_list = draft_updates[draft.draft_id].get("frames", [])
             if idx < len(frames_list):
                 frames_list[idx] = frame
-            draft_updates[draft_id]["frames"] = frames_list
+            draft_updates[draft.draft_id]["frames"] = frames_list
 
-            logger.info("  Recovered frame %s (draft %s, idx %d) → %s", fid[:8], draft_id[:8], idx, asset["url"])
+            logger.info("  Recovered frame %s → %s", fid[:8], asset["url"])
             recovered += 1
 
-    # Persist all draft updates
     if not dry_run and draft_updates:
-        logger.info("Persisting updates to %d drafts...", len(draft_updates))
+        logger.info("Persisting updates to %d reels_v2 drafts...", len(draft_updates))
         for draft_id, payload in draft_updates.items():
-            # Recount images_ready
             frames_list = payload.get("frames", [])
             images_ready = sum(
                 1 for f in frames_list
@@ -314,7 +361,7 @@ async def match_and_recover(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Recover KIE images and bind to reels_v2 frames")
+    parser = argparse.ArgumentParser(description="Recover KIE images and bind to carousel/reels_v2 drafts")
     parser.add_argument("--dry-run", action="store_true", help="Show matches without downloading/saving")
     args = parser.parse_args()
 
@@ -333,7 +380,7 @@ def main() -> None:
     for prompt, entries in prompt_map.items():
         logger.info("  Prompt (%.60s...): %d generations", prompt[:60], len(entries))
 
-    logger.info("Step 2: Matching prompts to reels_v2 frames in DB...")
+    logger.info("Step 2: Matching prompts to carousel slides and reels_v2 frames in DB...")
     asyncio.run(match_and_recover(prompt_map, dry_run=args.dry_run))
 
 
