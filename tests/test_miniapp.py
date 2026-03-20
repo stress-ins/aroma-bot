@@ -1091,24 +1091,31 @@ class TestMiniAppRussianLocale:
 
         now = datetime.now(timezone.utc)
         async with AsyncSessionLocal() as session:
-            # Ensure we have an aroma card for frankincense to test alias resolution
-            existing = await session.execute(
-                select(AromaCardModel).where(
-                    AromaCardModel.slug == "frankincense",
-                    AromaCardModel.category == "aroma",
+            # Ensure we have aroma cards for alias resolution tests
+            for slug, name, name_ru in [
+                ("sacred-frankincense", "Sacred Frankincense", "Священный ладан"),
+                ("frankincense", "Frankincense", "Ладан"),
+                ("basil", "Basil", "Базилик"),
+                ("cypress", "Cypress", "Кипарис"),
+                ("myrrh", "Myrrh", "Мирра"),
+            ]:
+                existing = await session.execute(
+                    select(AromaCardModel).where(
+                        AromaCardModel.slug == slug,
+                        AromaCardModel.category == "aroma",
+                    )
                 )
-            )
-            if not existing.scalar_one_or_none():
-                session.add(AromaCardModel(
-                    category="aroma",
-                    slug="frankincense",
-                    name="Frankincense",
-                    source_type="resin",
-                    aliases=[],
-                    payload={"name_ru": "Ладан"},
-                    created_at=now,
-                    updated_at=now,
-                ))
+                if not existing.scalar_one_or_none():
+                    session.add(AromaCardModel(
+                        category="aroma",
+                        slug=slug,
+                        name=name,
+                        source_type="resin",
+                        aliases=[],
+                        payload={"name_ru": name_ru},
+                        created_at=now,
+                        updated_at=now,
+                    ))
             # Add a blend card to test blend redirection
             existing_blend = await session.execute(
                 select(AromaCardModel).where(
@@ -1131,13 +1138,18 @@ class TestMiniAppRussianLocale:
 
         serialized: dict[str, object] = {
             "recommended_oil_names": [
-                "Sacred Frankincense",       # alias → frankincense
+                "Sacred Frankincense",       # alias → sacred-frankincense
                 "РЕКОМЕНДАЦИИ",              # garbage header
                 "wk",                        # too short
                 "(Священный ладан)",         # starts with (
                 "Valor",                     # blend, not oil
                 "Dorado Azul",               # no card in DB → dropped
                 "Frankincense",              # direct match
+                "Basil",                     # new alias → basil
+                "Cypress",                   # new alias → cypress
+                "Мирра",                     # Russian alias → myrrh
+                "wk Copaiba",                # OCR prefix → garbage
+                "чк Clove",                  # OCR prefix → garbage
             ],
             "recommended_oil_slugs": [],     # no pre-resolved slugs
             "recommended_blend_names": [],
@@ -1146,11 +1158,17 @@ class TestMiniAppRussianLocale:
 
         result = await _enrich_symptom_cross_refs(serialized)
 
-        # Only Frankincense should remain (Sacred Frankincense and Frankincense deduplicate)
-        assert result["recommended_oil_slugs"] == ["frankincense"]
-        assert result["recommended_oil_names"] == ["Ладан"]
+        # Sacred Frankincense now maps to its own card, Frankincense separate
+        assert "sacred-frankincense" in result["recommended_oil_slugs"]
+        assert "frankincense" in result["recommended_oil_slugs"]
+        # New aliases should resolve
+        assert "basil" in result["recommended_oil_slugs"]
+        assert "cypress" in result["recommended_oil_slugs"]
+        assert "myrrh" in result["recommended_oil_slugs"]
         # Valor should have been redirected to blend list
         assert "valor" in result["recommended_blend_slugs"]
+        # OCR garbage should not appear
+        assert all(s not in result["recommended_oil_names"] for s in ["wk Copaiba", "чк Clove"])
 
         # Verify garbage filter directly
         assert _is_garbage_name("wk") is True
@@ -1159,6 +1177,18 @@ class TestMiniAppRussianLocale:
         assert _is_garbage_name("Иланг-иланг)") is True
         assert _is_garbage_name("Lavender") is False
         assert _is_garbage_name("Tea Tree") is False
+        # New OCR prefix patterns
+        assert _is_garbage_name("wk Copaiba") is True
+        assert _is_garbage_name("чк Clove") is True
+        assert _is_garbage_name("^k Fennel") is True
+        assert _is_garbage_name("k Cistus") is True
+        assert _is_garbage_name("i Rosemary") is True
+        assert _is_garbage_name("~ Lavender") is True
+        # Russian sentences (long, starts lowercase)
+        assert _is_garbage_name("применять наружно на область грудной клетки") is True
+        # Short valid names should pass
+        assert _is_garbage_name("Dill") is False
+        assert _is_garbage_name("Basil") is False
 
     async def test_seed_does_not_overwrite_manual_reference_edits(self, monkeypatch, tmp_path):
         seed_file = tmp_path / "seed.json"
