@@ -1,8 +1,13 @@
 from __future__ import annotations
 
+import logging
+
+from telegram import BotCommand, BotCommandScopeAllPrivateChats, BotCommandScopeChat
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler
 
 from config import settings
+
+logger = logging.getLogger(__name__)
 from bot.handlers.commands import start, trends, status, help_cmd, open_mini_app, yt_thumbs_callback
 from bot.handlers.errors import error_handler
 from bot.handlers.keywords import build_keywords_handler
@@ -20,6 +25,49 @@ from bot.handlers.subscription import build_subscription_handlers
 from bot.handlers.admin import build_admin_handlers
 
 
+USER_COMMANDS = [
+    BotCommand("trends", "Аналитика трендов (RU + EN)"),
+    BotCommand("content", "Создать контент: цель → формат → тема → материал"),
+    BotCommand("threads", "Пост для Threads + картинка"),
+    BotCommand("carousel", "Карусель из 5 слайдов"),
+    BotCommand("reels", "Сценарий для Reels"),
+    BotCommand("adapt", "Адаптация поста под платформу"),
+    BotCommand("plan", "Контент-план на неделю"),
+    BotCommand("drafts", "Последние черновики"),
+    BotCommand("keywords", "Ключевые слова"),
+    BotCommand("app", "Открыть Mini App"),
+    BotCommand("status", "Активные источники данных"),
+    BotCommand("help", "Список команд"),
+]
+
+ADMIN_EXTRA_COMMANDS = [
+    BotCommand("admin_users", "Управление пользователями"),
+    BotCommand("admin_set", "Настройки бота"),
+    BotCommand("costs", "Статистика расходов API"),
+]
+
+
+async def _post_init(application: Application) -> None:
+    bot = application.bot
+
+    await bot.set_my_commands(USER_COMMANDS, scope=BotCommandScopeAllPrivateChats())
+
+    admin_id = settings.admin_telegram_id
+    await bot.set_my_commands(
+        USER_COMMANDS + ADMIN_EXTRA_COMMANDS,
+        scope=BotCommandScopeChat(chat_id=admin_id),
+    )
+
+    await bot.set_my_short_description(
+        "Тренды ароматерапии, контент для соцсетей, AI-помощник",
+    )
+    await bot.set_my_description(
+        "Слежу за трендами ароматерапии, генерирую контент для соцсетей, "
+        "помогаю с Threads, Reels, каруселями и контент-планами.",
+    )
+    logger.info("Bot commands and descriptions registered")
+
+
 def build_application() -> Application:
     app = (
         Application.builder()
@@ -27,6 +75,7 @@ def build_application() -> Application:
         .connect_timeout(30)
         .read_timeout(60)
         .write_timeout(60)
+        .post_init(_post_init)
         .build()
     )
 
