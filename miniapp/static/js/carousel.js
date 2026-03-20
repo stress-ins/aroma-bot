@@ -469,6 +469,16 @@ export function createCarouselModule(deps) {
   }
 
   async function previewCarouselSlide(draftId, slideIndex, button) {
+    // If Canva-imported, show the image directly (it already has text from Canva)
+    const draft = state.selected;
+    if (draft?.payload?.canva_design_id) {
+      const imgs = draft.payload.slide_images || [];
+      const img = imgs[slideIndex];
+      if (img?.url) {
+        showPreviewModal(img.url, `Слайд ${slideIndex + 1} — Canva`);
+        return;
+      }
+    }
     try {
       await withButtonFeedback(button, "Генерирую...", async () => {
         const previewUrl = `/api/carousel/${draftId}/slides/${slideIndex}/preview${authQueryString()}`;
@@ -606,20 +616,15 @@ export function createCarouselModule(deps) {
 
   async function selectCanvaDesign(draftId, designId, button) {
     const modal = document.getElementById("canvaDesignPicker");
-    // Disable all design items, show spinner on selected
-    if (modal) {
-      modal.querySelectorAll(".canva-design-item").forEach(b => { b.disabled = true; });
-    }
-    if (button instanceof HTMLElement) {
-      button.classList.add("is-busy");
-    }
+    // Close modal immediately — import runs in background
+    if (modal) { document.body.style.overflow = ""; modal.remove(); }
+    showUiNotice("Импортирую дизайн из Canva…", "info");
     try {
       const draft = await fetchJson(`/api/carousel/${draftId}/canva/import`, {
         method: "POST",
         body: JSON.stringify({ design_id: designId }),
         timeout: 150000,
       });
-      if (modal) { document.body.style.overflow = ""; modal.remove(); }
       mergeDraftIntoState(draft);
       renderDraftList();
       if (isCurrentDraftDetail(draft.draft_id)) {
@@ -630,13 +635,8 @@ export function createCarouselModule(deps) {
         });
       }
       const readyCount = (draft.payload?.slide_images || []).filter(Boolean).length;
-      showUiNotice(`Импорт из Canva завершён: ${readyCount} слайдов готово к публикации`, "success");
+      showUiNotice(`Импорт из Canva завершён: ${readyCount} слайдов`, "success");
     } catch (error) {
-      // Re-enable buttons on error instead of closing modal
-      if (modal) {
-        modal.querySelectorAll(".canva-design-item").forEach(b => { b.disabled = false; });
-        if (button instanceof HTMLElement) button.classList.remove("is-busy");
-      }
       showRequestError("Не удалось импортировать дизайн из Canva", error);
     }
   }

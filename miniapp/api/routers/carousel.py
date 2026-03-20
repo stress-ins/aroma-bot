@@ -368,7 +368,7 @@ async def carousel_canva_export(draft_id: str, _: None = Depends(_require_auth))
 
     first_slide = (draft.payload.get("slides") or [None])[0]
     heading = ((first_slide.get("heading", "") if isinstance(first_slide, dict) else "") or draft.payload.get("angle", "") or draft.topic or "").strip()
-    title = f"#{draft.id} {heading}" if heading else f"Carousel #{draft.id}"
+    title = f"#{draft.draft_id} {heading}" if heading else f"Carousel #{draft.draft_id}"
     try:
         result = await export_to_canva(pptx_bytes, title)
     except CanvaAPIError as exc:
