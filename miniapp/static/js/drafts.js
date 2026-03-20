@@ -43,7 +43,7 @@ export function createDraftsModule(deps) {
     callbacks,
   } = deps;
 
-  const cleanSlotText = (t) => t ? t.replace(/^[-*_]{3,}\s*$/gm, '').replace(/\n{3,}/g, '\n\n').trim() : '';
+  const cleanSlotText = (t) => t ? t.replace(/\((?:Hot Take|Thread|Байт на обсуждение|Список|Туториал|Рефлексия|Шутка|Факап|Личная история)\)\s*/gi, '').replace(/^[-*_]{3,}\s*$/gm, '').replace(/\n{3,}/g, '\n\n').trim() : '';
 
   function _metricsBadge(ms) {
     const parts = [];

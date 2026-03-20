@@ -141,6 +141,7 @@ async def _regen_slot_text(topic: str, goal_key: str, slot: str, note: str | Non
 - Возвращать разбор, анализ, комментарии или объяснения вместо поста.
 - Использовать markdown: # заголовки, **жирный**, > цитаты, нумерованные списки.
 - Писать что-либо кроме готового текста поста + строки ПОЧЕМУ ЭТО СРАБОТАЕТ.
+- НЕ включай в текст метки формата в скобках, такие как (Hot Take), (Thread), (Байт на обсуждение), (Список), (Туториал), (Рефлексия), (Шутка), (Факап), (Личная история).
 """
         raw = _call_claude(prompt, max_tokens=400)
         edited = edit_post_sync(raw, topic, platform="threads_slot")
@@ -148,6 +149,8 @@ async def _regen_slot_text(topic: str, goal_key: str, slot: str, note: str | Non
         from bot.agents.content import _strip_markdown_formatting
         edited = _strip_markdown_formatting(edited)
         text, why = _extract_why_it_works(edited)
+        from bot.agents.content import _strip_format_labels
+        text = _strip_format_labels(text)
         return text, why
 
     return await loop.run_in_executor(_executor, _sync)
