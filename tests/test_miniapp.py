@@ -1138,6 +1138,31 @@ class TestMiniAppRussianLocale:
         assert card["resource_values"]["minus"] == "Минус seed v2"
         assert card["nps_effect"] == "Новый НПС из seed."
 
+    def test_merge_seed_preserves_complementary_oil_fields(self):
+        """_merge_seed_into_existing must keep complementary_oil_names/slugs from DB."""
+        from bot.services.miniapp_references.common import _merge_seed_into_existing
+
+        existing_payload = {
+            "category": "oil",
+            "slug": "lavender",
+            "name": "Лаванда",
+            "complementary_oil_names": ["Мята", "Розмарин"],
+            "complementary_oil_slugs": ["mint", "rosemary"],
+            "name_en": "Lavender",
+        }
+        seed_payload = {
+            "category": "oil",
+            "slug": "lavender",
+            "name": "Лаванда обновлённая",
+        }
+
+        merged = _merge_seed_into_existing(existing_payload, seed_payload)
+        assert merged["complementary_oil_names"] == ["Мята", "Розмарин"]
+        assert merged["complementary_oil_slugs"] == ["mint", "rosemary"]
+        assert merged["name_en"] == "Lavender"
+        # seed name should win (not an enrichment field)
+        assert merged["name"] == "Лаванда обновлённая"
+
     def test_viewport_disables_double_tap_zoom(self):
         index_html = Path("miniapp/index.html").read_text(encoding="utf-8")
 

@@ -49,6 +49,7 @@ _ENRICHMENT_FIELDS = (
     "name_en", "name_ru", "description_short",
     "health_effects", "mind_effect", "spiritual_emotional",
     "conditions_for_use", "chakras",
+    "complementary_oil_names", "complementary_oil_slugs",
 )
 SHARED_IMAGE_OVERRIDES = {
     ("practice", "breath"): "nature.jpg",
