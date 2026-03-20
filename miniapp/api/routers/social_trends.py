@@ -218,26 +218,49 @@ async def _run_team_collection(team_id: str) -> None:
 
     try:
         settings = await get_brand_settings(team_id)
+        brand_hashtags = settings.tracked_hashtags or []
+        if not brand_hashtags:
+            brand_hashtags = ["ароматерапия", "эфирныемасла", "аромамасла"]
+
+        # Determine own username from settings (first account or brand name)
+        own_ig_username = ""
+        own_th_username = ""
+        ig_accounts = settings.instagram_accounts or []
+        th_accounts = settings.threads_accounts or []
+        if ig_accounts:
+            own_ig_username = (ig_accounts[0].get("username") or "").lstrip("@")
+        if th_accounts:
+            own_th_username = (th_accounts[0].get("username") or "").lstrip("@")
 
         # Instagram
-        ig_accounts = settings.instagram_accounts or []
-        if ig_accounts:
-            ig_token = await get_token_for_team("instagram", team_id)
-            ig_uid = await get_token_for_team("instagram_user_id", team_id)
-            if ig_token and ig_uid:
-                from analytics.instagram_trends import InstagramTrendsCollector
-                collector = InstagramTrendsCollector(team_id, ig_token.access_token, ig_uid.access_token)
+        ig_token = await get_token_for_team("instagram", team_id)
+        ig_uid = await get_token_for_team("instagram_user_id", team_id)
+        if ig_token and ig_uid:
+            from analytics.instagram_trends import InstagramTrendsCollector
+
+            collector = InstagramTrendsCollector(
+                team_id, ig_token.access_token, ig_uid.access_token,
+                own_username=own_ig_username,
+            )
+            if ig_accounts:
                 await collector.collect_from_accounts(ig_accounts)
+            # Hashtag collection
+            await collector.collect_from_hashtags(brand_hashtags)
 
         # Threads
-        th_accounts = settings.threads_accounts or []
-        if th_accounts:
-            th_token = await get_token_for_team("threads", team_id)
-            th_uid = await get_token_for_team("threads_user_id", team_id)
-            if th_token and th_uid:
-                from analytics.threads_trends_api import ThreadsTrendsCollector
-                collector = ThreadsTrendsCollector(team_id, th_token.access_token, th_uid.access_token)
-                await collector.collect_from_accounts(th_accounts)
+        th_token = await get_token_for_team("threads", team_id)
+        th_uid = await get_token_for_team("threads_user_id", team_id)
+        if th_token and th_uid:
+            from analytics.threads_trends_api import ThreadsTrendsCollector
+
+            collector = ThreadsTrendsCollector(
+                team_id, th_token.access_token, th_uid.access_token,
+            )
+            await collector.collect_from_accounts(
+                th_accounts, own_username=own_th_username,
+            )
+            # Keyword tagging for Threads posts
+            await collector.tag_posts_by_keywords(brand_hashtags)
 
         logger.info("Manual refresh complete for team %s", team_id)
     except Exception as exc:

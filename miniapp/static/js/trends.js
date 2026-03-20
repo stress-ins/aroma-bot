@@ -37,6 +37,7 @@ export function createTrendsModule(deps) {
   let trendsData = null;
   let trendsCompare = null;
   let monitoredAccounts = { instagram: [], threads: [] };
+  let trackedHashtags = [];
 
   const WEEKDAY_LABELS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 
@@ -54,11 +55,12 @@ export function createTrendsModule(deps) {
           ? fetchJson(`/api/trends/compare?period=${trendsPeriod}`)
           : fetchJson(`/api/trends/${trendsPlatform}?period=${trendsPeriod}`),
         fetchJson("/api/social/monitored-accounts"),
+        fetchJson("/api/social/tracked-hashtags"),
       ];
       if (trendsPlatform !== "compare") {
         promises.push(fetchJson(`/api/trends/suggestions?platform=${trendsPlatform}`));
       }
-      const [trendsResult, accountsResult, suggestionsResult] = await Promise.allSettled(promises);
+      const [trendsResult, accountsResult, hashtagsResult, suggestionsResult] = await Promise.allSettled(promises);
 
       if (trendsPlatform === "compare") {
         trendsCompare = trendsResult.status === "fulfilled" ? trendsResult.value : null;
@@ -70,6 +72,9 @@ export function createTrendsModule(deps) {
 
       if (accountsResult.status === "fulfilled") {
         monitoredAccounts = accountsResult.value || { instagram: [], threads: [] };
+      }
+      if (hashtagsResult.status === "fulfilled") {
+        trackedHashtags = (hashtagsResult.value || {}).items || [];
       }
       if (suggestionsResult && suggestionsResult.status === "fulfilled") {
         suggestionsData = suggestionsResult.value;
@@ -147,6 +152,8 @@ export function createTrendsModule(deps) {
         </div>
       </div>
       ${summary}
+      ${renderMonitoredAccountsSection()}
+      ${renderTrackedHashtagsSection()}
     `;
   }
 
@@ -609,6 +616,67 @@ export function createTrendsModule(deps) {
     `;
   }
 
+  function renderTrackedHashtagsSection() {
+    const chips = trackedHashtags.length === 0
+      ? `<span class="plan-entry-hint">Нет хештегов</span>`
+      : trackedHashtags.map((tag) => `
+          <span class="keyword-chip">
+            <span>#${escapeHtml(tag)}</span>
+            <button type="button" aria-label="Удалить" data-action="removeTrackedHashtag" data-args='${JSON.stringify([tag])}'><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+          </span>`).join("");
+
+    return `
+      <div class="trends-monitored-section" style="margin-top:12px">
+        <div class="detail-section-title">${uiIcon("hash", 16)} Отслеживаемые хештеги и ключевые слова</div>
+        <div class="keyword-items">${chips}</div>
+        <div class="keyword-form keyword-add-row" style="margin-top:8px">
+          <input id="trackedHashtagInput" type="text" placeholder="#хештег или ключевое слово">
+          <button class="secondary-button" type="button" data-action="addTrackedHashtag">Добавить</button>
+        </div>
+      </div>`;
+  }
+
+  async function addTrackedHashtag() {
+    const inputEl = document.getElementById("trackedHashtagInput");
+    const raw = String(inputEl?.value || "").trim().replace(/^#/, "");
+    if (!raw) { inputEl?.focus(); return; }
+    try {
+      await fetchJson("/api/social/tracked-hashtags", {
+        method: "POST",
+        body: JSON.stringify({ tag: raw }),
+      });
+      if (inputEl) inputEl.value = "";
+      showUiNotice("Хештег добавлен", "success");
+      try {
+        const res = await fetchJson("/api/social/tracked-hashtags");
+        trackedHashtags = (res || {}).items || [];
+      } catch (_) { /* ignore */ }
+      elements.draftList.innerHTML = renderTrendsListPanel();
+      if (window.lucide) lucide.createIcons();
+    } catch (err) {
+      const detail = err?.detail || "";
+      if (detail === "already_tracked") showUiNotice("Хештег уже добавлен", "warning");
+      else showUiNotice("Не удалось добавить хештег", "error");
+    }
+  }
+
+  async function removeTrackedHashtag(tag) {
+    try {
+      await fetchJson(`/api/social/tracked-hashtags/${encodeURIComponent(tag)}`, {
+        method: "DELETE",
+      });
+      showUiNotice("Хештег удалён", "success");
+      try {
+        const res = await fetchJson("/api/social/tracked-hashtags");
+        trackedHashtags = (res || {}).items || [];
+      } catch (_) { /* ignore */ }
+      elements.draftList.innerHTML = renderTrendsListPanel();
+      if (window.lucide) lucide.createIcons();
+    } catch (_err) {
+      showUiNotice("Не удалось удалить хештег", "error");
+    }
+  }
+
   async function addMonitoredAccount() {
     const platformEl = document.getElementById("monitoredPlatformSelect");
     const usernameEl = document.getElementById("monitoredUsernameInput");
@@ -724,6 +792,8 @@ export function createTrendsModule(deps) {
     openTrendsPost,
     addMonitoredAccount,
     removeMonitoredAccount,
+    addTrackedHashtag,
+    removeTrackedHashtag,
     createFromInsight,
   };
 }
