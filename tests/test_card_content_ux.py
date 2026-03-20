@@ -189,6 +189,59 @@ async def test_complementary_oil_slugs_resolved():
     assert slugs[2] == ""  # unknown name → empty string, not crash
 
 
+@pytest.mark.asyncio
+async def test_complementary_oil_slugs_prefer_stored():
+    """Stored slugs from payload take priority over name-based resolution."""
+    from bot.services.miniapp_references import _enrich_aroma_cross_refs
+    from scripts.import_oil_pdfs import _upsert_card
+
+    await _upsert_card(
+        slug="peppermint-stored-test",
+        name="Peppermint Stored",
+        source_type="herb",
+        aliases=[],
+        payload={"description": "тест", "name_ru": "Мята Тест"},
+    )
+
+    # Card has both names and pre-resolved slugs in payload
+    serialized = {
+        "slug": "rosemary-stored-test",
+        "complementary_oil_names": ["Мята Тест", "Несуществующее"],
+        "complementary_oil_slugs": ["peppermint-stored-test", "manual-slug"],
+    }
+    result = await _enrich_aroma_cross_refs(serialized)
+
+    slugs = result["complementary_oil_slugs"]
+    # Stored slug used as-is (not re-resolved)
+    assert slugs[0] == "peppermint-stored-test"
+    # Stored slug preserved even if name is unknown
+    assert slugs[1] == "manual-slug"
+
+
+@pytest.mark.asyncio
+async def test_complementary_oil_slugs_russian_name_resolution():
+    """name_ru from payload is indexed in the lookup, enabling Russian name resolution."""
+    from bot.services.miniapp_references import _enrich_aroma_cross_refs
+    from scripts.import_oil_pdfs import _upsert_card
+
+    await _upsert_card(
+        slug="chamomile-ru-test",
+        name="Chamomile Test",
+        source_type="flower",
+        aliases=[],
+        payload={"description": "тест", "name_ru": "Ромашка Тест"},
+    )
+
+    # Card references by Russian name, no stored slugs
+    serialized = {
+        "slug": "ylang-ru-test",
+        "complementary_oil_names": ["Ромашка Тест"],
+    }
+    result = await _enrich_aroma_cross_refs(serialized)
+
+    assert result["complementary_oil_slugs"][0] == "chamomile-ru-test"
+
+
 # ---------------------------------------------------------------------------
 # Test 6: renderCollapsibleSection — long text triggers collapse
 # ---------------------------------------------------------------------------
