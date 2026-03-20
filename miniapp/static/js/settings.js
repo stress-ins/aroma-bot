@@ -1017,7 +1017,7 @@ export function createSettingsModule(deps) {
 
   async function removeMonitoredAccountFromSettings(platform, username) {
     try {
-      await fetchJson(`/api/social/monitored-accounts/${platform}/${encodeURIComponent(username)}`, { method: "DELETE" });
+      await fetchJson(`/api/social/monitored-accounts/${platform}?username=${encodeURIComponent(username)}`, { method: "DELETE" });
       showUiNotice(`@${username} удалён`, "success");
       const data = await fetchJson("/api/social/monitored-accounts");
       _renderMonitoredChips("instagram", data.instagram || []);
