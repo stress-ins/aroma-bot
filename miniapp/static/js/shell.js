@@ -7,6 +7,7 @@ export function createShellModule(deps) {
     setTab,
     safeLoadCurrentTab,
     HANDBOOK_CATEGORY_META,
+    initScrollFade,
   } = deps;
 
   let swipeStart = null;
@@ -45,6 +46,7 @@ export function createShellModule(deps) {
     if (state.mobileView === "detail") {
       elements.listPanel.classList.add("hidden-mobile");
       elements.detailPanel.classList.remove("hidden-mobile");
+      if (initScrollFade) initScrollFade(elements.detailPanel);
     } else {
       elements.listPanel.classList.remove("hidden-mobile");
       elements.detailPanel.classList.add("hidden-mobile");

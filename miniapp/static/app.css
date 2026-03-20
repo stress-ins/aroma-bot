@@ -66,6 +66,10 @@
 
   /* ── Touch target minimum ──────────────────────────────────────────────── */
   --touch-min: 44px;
+
+  /* ── RGB channel tokens (for rgba fade masks) ────────────────────────── */
+  --bg-rgb:      245, 240, 232;
+  --surface-rgb: 255, 255, 255;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -81,6 +85,9 @@
     --brand-bg:     rgba(var(--brand-rgb), 0.18);
     --brand-border: rgba(var(--brand-rgb), 0.40);
     --sage-bg:      rgba(93, 110, 58, 0.18);
+
+    --bg-rgb:      37, 30, 24;
+    --surface-rgb: 37, 30, 24;
   }
 }
 
@@ -627,6 +634,14 @@ body.app-ready .splash {
   pointer-events: none;
 }
 
+/* ── List panel scroll layout ──────────────────────────────────────────── */
+.list-panel {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 180px);
+  overflow: hidden;
+}
+
 .panel-header {
   display: flex;
   align-items: baseline;
@@ -636,6 +651,13 @@ body.app-ready .splash {
   padding-bottom: var(--space-2);
   border-bottom: 1px solid var(--border);
   margin-bottom: var(--space-3);
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: rgba(var(--surface-rgb), 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  flex-shrink: 0;
 }
 
 .panel-header h2 {
@@ -650,8 +672,17 @@ body.app-ready .splash {
    ═══════════════════════════════════════ */
 
 /* ── Draft list ──────────────────────────────────────────────────────────── */
-.draft-list { display: flex; flex-direction: column; gap: var(--space-2); }
-.create-list { display: flex; flex-direction: column; gap: var(--space-2); }
+.draft-list, .create-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.draft-list::-webkit-scrollbar,
+.create-list::-webkit-scrollbar { display: none; }
 
 .draft-card {
   border: 1px solid var(--border);
@@ -2475,6 +2506,10 @@ body.tg-theme-dark .danger-button {
 
   body.is-mobile-layout .list-panel:has(.guided-state) {
     flex: 0 1 auto;
+  }
+
+  body.is-mobile-layout .list-panel {
+    max-height: calc(var(--tg-viewport-stable-height, 100dvh) - 160px);
   }
 
   .list-panel {
@@ -6099,3 +6134,77 @@ details[open] > .trend-suggestions-toggle::before { transform: rotate(90deg); }
   font-size: 12px;
   opacity: 0.6;
 }
+
+/* ═══════════════════════════════════════
+   SECTION: Scroll Fade Masks
+   ═══════════════════════════════════════ */
+
+/* ── List panel fade masks ─────────────────────────────────────────────── */
+.draft-list::before,
+.draft-list::after,
+.create-list::before,
+.create-list::after {
+  content: '';
+  display: block;
+  position: sticky;
+  left: 0;
+  right: 0;
+  height: 24px;
+  flex-shrink: 0;
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+
+.draft-list::before, .create-list::before {
+  top: 0;
+  background: linear-gradient(to bottom,
+    rgba(var(--surface-rgb), 1) 0%,
+    rgba(var(--surface-rgb), 0) 100%);
+}
+
+.draft-list::after, .create-list::after {
+  bottom: 0;
+  background: linear-gradient(to top,
+    rgba(var(--surface-rgb), 1) 0%,
+    rgba(var(--surface-rgb), 0) 100%);
+}
+
+/* JS toggles these classes based on scroll position */
+.draft-list.has-scroll-top::before,
+.create-list.has-scroll-top::before { opacity: 1; }
+.draft-list.has-scroll-bottom::after,
+.create-list.has-scroll-bottom::after { opacity: 1; }
+
+/* ── Mobile detail panel fade masks ────────────────────────────────────── */
+body.is-mobile-layout.is-detail-view .detail-panel::before,
+body.is-mobile-layout.is-detail-view .detail-panel::after {
+  content: '';
+  display: block;
+  position: sticky;
+  left: 0;
+  right: 0;
+  height: 20px;
+  pointer-events: none;
+  z-index: 5;
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+
+body.is-mobile-layout.is-detail-view .detail-panel::before {
+  top: 0;
+  background: linear-gradient(to bottom,
+    rgba(var(--bg-rgb), 1) 0%,
+    rgba(var(--bg-rgb), 0) 100%);
+}
+
+body.is-mobile-layout.is-detail-view .detail-panel::after {
+  bottom: 0;
+  background: linear-gradient(to top,
+    rgba(var(--bg-rgb), 1) 0%,
+    rgba(var(--bg-rgb), 0) 100%);
+}
+
+body.is-mobile-layout.is-detail-view .detail-panel.has-scroll-top::before { opacity: 1; }
+body.is-mobile-layout.is-detail-view .detail-panel.has-scroll-bottom::after { opacity: 1; }

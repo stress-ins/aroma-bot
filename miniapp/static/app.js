@@ -106,6 +106,22 @@ let publishDraft, cancelPublishSchedule, loadPublishStatus;
 let openPendingReelsCreation, finalizePendingReelsCreation, recoverPendingReelsCreation;
 let refreshReelsDetail;
 
+function initScrollFade(container) {
+  if (!container || container._scrollFadeInit) return;
+  container._scrollFadeInit = true;
+
+  const update = () => {
+    const { scrollTop, scrollHeight, clientHeight } = container;
+    container.classList.toggle('has-scroll-top', scrollTop > 8);
+    container.classList.toggle('has-scroll-bottom', scrollTop + clientHeight < scrollHeight - 8);
+  };
+
+  container.addEventListener('scroll', update, { passive: true });
+  if (window.ResizeObserver) new ResizeObserver(update).observe(container);
+  new MutationObserver(update).observe(container, { childList: true, subtree: true });
+  update();
+}
+
 const elements = {
   tabsContainer: document.getElementById("tabsContainer"),
   filtersContainer: document.getElementById("filtersContainer"),
@@ -1197,6 +1213,7 @@ const {
   setTab,
   safeLoadCurrentTab: (...args) => safeLoadCurrentTab(...args),
   HANDBOOK_CATEGORY_META,
+  initScrollFade,
 });
 
 const coreCallbacks = {
@@ -2202,7 +2219,10 @@ reelsCallbacks.renderReelsDetail = renderReelsDetail;
 function refreshIcons() { if (window.lucide) lucide.createIcons(); }
 
 bootstrap()
-  .then(() => refreshIcons())
+  .then(() => {
+    refreshIcons();
+    initScrollFade(elements.draftList);
+  })
   .catch((err) => {
     console.error("bootstrap failed", err);
     document.body.classList.add("app-ready");
