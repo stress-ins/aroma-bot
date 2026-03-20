@@ -889,6 +889,9 @@ body.app-ready .splash {
   flex-wrap: wrap;
   gap: 10px;
 }
+.guided-state-actions .secondary-button {
+  min-height: 44px;
+}
 
 .detail-loader-card {
   display: grid;
@@ -1762,7 +1765,7 @@ body.tg-theme-dark .bottom-tab-bar-inner {
 
   body { padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
 
-  .layout { grid-template-columns: 280px 1fr; }
+  .layout { grid-template-columns: 300px 1fr; }
 
   .mode-selector { max-width: 320px; }
 }
@@ -1772,6 +1775,17 @@ body.tg-theme-dark .bottom-tab-bar-inner {
     background: var(--surface);
     border-color: rgba(255, 230, 200, 0.12);
     box-shadow: none;
+  }
+
+  .detail-panel::after {
+    content: "";
+    display: block;
+    height: calc(80px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .slides-grid .slides-swiper-track,
+  .slides-grid .slides-grid-track {
+    grid-template-columns: 1fr;
   }
 }
 

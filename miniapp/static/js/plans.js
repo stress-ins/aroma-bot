@@ -574,7 +574,7 @@ export function createPlansModule(deps) {
       elements.draftDetail.innerHTML = `${renderBackButton()}<div class="detail-empty">${renderGuidedState({
         eyebrow: "Публикации",
         title: "Выберите публикацию",
-        body: "Нажмите на карточку чтобы просмотреть детали публикации.",
+        body: "Нажмите на карточку чтобы просмотреть детали, отредактировать и отправить на публикацию.",
       })}</div>`;
     }
     syncMobileNavigation();
