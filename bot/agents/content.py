@@ -139,6 +139,21 @@ _THREADS_SLOTS = [
 _THREADS_DEFAULT_TIMES = {"morning": "09:00", "day": "13:00", "evening": "19:00"}
 
 
+_FORMAT_LABELS_RE = None
+
+
+def _strip_format_labels(text: str) -> str:
+    """Remove parenthetical format labels like (Hot Take) that leak from slot descriptions."""
+    import re
+    global _FORMAT_LABELS_RE
+    if _FORMAT_LABELS_RE is None:
+        _FORMAT_LABELS_RE = re.compile(
+            r"\((?:Hot Take|Thread|Байт на обсуждение|Список|Туториал|Рефлексия|Шутка|Факап|Личная история)\)\s*",
+            re.IGNORECASE,
+        )
+    return _FORMAT_LABELS_RE.sub("", text)
+
+
 def _extract_why_it_works(text: str) -> tuple[str, str]:
     """Extract 'ПОЧЕМУ ЭТО СРАБОТАЕТ:' annotation from post text.
 
@@ -184,7 +199,7 @@ def split_threads_posts(caption: str) -> list[dict[str, str]]:
         for s in _THREADS_SLOTS:
             if s["marker"] == marker:
                 cleaned, why = _extract_why_it_works(raw_text)
-                slot_texts[s["slot"]] = cleaned
+                slot_texts[s["slot"]] = _strip_format_labels(cleaned)
                 slot_why[s["slot"]] = why
                 break
         i += 2
@@ -199,7 +214,7 @@ def split_threads_posts(caption: str) -> list[dict[str, str]]:
         for idx, slot_info in enumerate(_THREADS_SLOTS):
             if idx < len(chunks):
                 cleaned, why = _extract_why_it_works(chunks[idx])
-                slot_texts[slot_info["slot"]] = cleaned
+                slot_texts[slot_info["slot"]] = _strip_format_labels(cleaned)
                 slot_why[slot_info["slot"]] = why
 
     for slot_info in _THREADS_SLOTS:

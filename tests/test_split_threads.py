@@ -1,5 +1,5 @@
-"""Tests for split_threads_posts and _extract_why_it_works."""
-from bot.agents.content import split_threads_posts, _extract_why_it_works, _THREADS_MAX_WORDS
+"""Tests for split_threads_posts, _extract_why_it_works, and _strip_format_labels."""
+from bot.agents.content import split_threads_posts, _extract_why_it_works, _strip_format_labels, _THREADS_MAX_WORDS
 
 
 def test_extract_why_it_works_present():
@@ -82,6 +82,44 @@ def test_split_threads_default_times():
 
 def test_threads_max_words_limit_is_120():
     assert _THREADS_MAX_WORDS == 120
+
+
+def test_strip_format_labels_hot_take():
+    result = _strip_format_labels("(Hot Take)\n\nАроматерапия не лечит...")
+    assert "(Hot Take)" not in result
+    assert "Ароматерапия не лечит..." in result
+
+
+def test_strip_format_labels_multiple():
+    text = "(Thread) Some text (Список) more text"
+    result = _strip_format_labels(text)
+    assert "(Thread)" not in result
+    assert "(Список)" not in result
+    assert "Some text" in result
+
+
+def test_strip_format_labels_preserves_normal_parens():
+    text = "Ароматерапия (и звукотерапия) помогает"
+    assert _strip_format_labels(text) == text
+
+
+def test_split_threads_strips_format_labels():
+    caption = """УТРО
+(Hot Take)
+
+Ароматерапия не лечит...
+ПОЧЕМУ ЭТО СРАБОТАЕТ: Провоцирует дискуссию.
+
+ДЕНЬ
+(Список) Три масла на каждый день.
+
+ВЕЧЕР
+Вечерний пост."""
+    posts = split_threads_posts(caption)
+    assert "(Hot Take)" not in posts[0]["text"]
+    assert "Ароматерапия не лечит..." in posts[0]["text"]
+    assert "(Список)" not in posts[1]["text"]
+    assert "Три масла на каждый день." in posts[1]["text"]
 
 
 def test_platform_rules_have_hard_limit():

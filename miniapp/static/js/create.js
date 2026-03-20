@@ -379,7 +379,6 @@ export function createCreateModule(deps) {
         });
         sessionStorage.removeItem("blend_create_context");
         finalizePendingReelsCreation(reel);
-        await openReels(reel.draft_id);
       } catch (error) {
         if (error?.message === "request_timeout") {
           await recoverPendingReelsCreation(topic, pending.draft_id);
