@@ -185,23 +185,19 @@ export function createBlendConstructorModule(deps) {
       </div>
       ${result.incompatible_oils?.length ? `<section class="section section-warning"><h3>\u26a0\ufe0f \u041d\u0435 \u0434\u043e\u0431\u0430\u0432\u043b\u044f\u0442\u044c \u0432 \u044d\u0442\u0443 \u0441\u043c\u0435\u0441\u044c</h3>${result.incompatible_oils.map(o => `<div class="incompat-row"><span class="chip chip-bad">${escapeHtml(o.name_ru)}</span><span>${escapeHtml(o.reason)}</span></div>`).join("")}</section>` : ""}
       <div class="blend-actions-stack">
-        <button class="secondary-button" id="blendRegenBtn" type="button" style="width:100%" data-action="blendRegenerate" data-args='[null]'>\u041f\u0435\u0440\u0435\u0433\u0435\u043d\u0435\u0440\u0438\u0440\u043e\u0432\u0430\u0442\u044c \u0441\u043c\u0435\u0441\u044c</button>
+        <button class="primary-button" id="blendSaveBtn" type="button" style="width:100%" data-action="blendSaveCurrentBlend" data-args='[null]'>\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c \u0441\u043c\u0435\u0441\u044c</button>
         <div class="actions-grid-two">
-          <button class="primary-button" id="blendSaveBtn" type="button" data-action="blendSaveCurrentBlend" data-args='[null]'>\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c \u0441\u043c\u0435\u0441\u044c</button>
+          <button class="secondary-button" id="blendRegenBtn" type="button" data-action="blendRegenerate" data-args='[null]'>\u041f\u0435\u0440\u0435\u0433\u0435\u043d\u0435\u0440\u0438\u0440\u043e\u0432\u0430\u0442\u044c</button>
           <button class="secondary-button" type="button" data-action="blendCreateContent">\u0421\u043e\u0437\u0434\u0430\u0442\u044c \u043a\u043e\u043d\u0442\u0435\u043d\u0442</button>
         </div>
-        <button class="secondary-button" type="button" style="width:100%" data-action="blendOfWeek" data-args='[null]'>\u2728 \u0421\u043c\u0435\u0441\u044c \u043d\u0435\u0434\u0435\u043b\u0438 (\u043a\u0430\u0440\u0443\u0441\u0435\u043b\u044c + \u043f\u043e\u0441\u0442)</button>
         <div id="blendContentPicker" hidden style="margin-top:6px">
           <p class="field-help" style="margin-bottom:6px">\u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u0444\u043e\u0440\u043c\u0430\u0442:</p>
           <div class="chip-list">
             <button class="chip chip-selectable" data-action="blendLaunchContent" data-args='["content"]'>\u041f\u043e\u0441\u0442</button>
             <button class="chip chip-selectable" data-action="blendLaunchContent" data-args='["threads_series"]'>\u0421\u0435\u0440\u0438\u044f Threads</button>
             <button class="chip chip-selectable" data-action="blendLaunchContent" data-args='["carousel"]'>\u041a\u0430\u0440\u0443\u0441\u0435\u043b\u044c</button>
+            <button class="chip chip-selectable" data-action="blendOfWeek" data-args='[null]'>\u2728 \u0421\u043c\u0435\u0441\u044c \u043d\u0435\u0434\u0435\u043b\u0438</button>
           </div>
-        </div>
-        <div class="actions-grid-two">
-          <button class="secondary-button" data-action="openBlendConstructor">\u041d\u043e\u0432\u0430\u044f \u0441\u043c\u0435\u0441\u044c</button>
-          <button class="secondary-button" data-action="clearSmartSearch">\u041a \u0431\u0430\u0437\u0435</button>
         </div>
       </div>
     </div>`;

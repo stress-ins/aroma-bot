@@ -268,6 +268,8 @@ export function createSettingsModule(deps) {
     }
   }
 
+  // NOTE: GET → PUT has a theoretical race if two platforms are saved
+  // concurrently, but blur-triggered saves are sequential in practice.
   async function savePlatformTone(platform) {
     const el = document.getElementById(`tone-${platform}`);
     const value = String(el?.value || "").trim();
