@@ -5668,12 +5668,15 @@ body.tg-theme-dark .reco-cta-btn { color: #d4845e; }
 /* Canva design picker */
 .canva-picker-hint { font-size: 13px; color: var(--hint); padding: 8px 8px 0; margin: 0; }
 .preview-modal:has(.canva-design-grid) { overflow: visible; }
-.preview-modal-body.canva-design-grid { overflow-y: auto; max-height: 60vh; -webkit-overflow-scrolling: touch; }
+.preview-modal-body.canva-design-grid { overflow-y: auto; max-height: 60vh; -webkit-overflow-scrolling: touch; line-height: normal; }
 @media (max-width: 760px) {
   .preview-modal .preview-modal-body.canva-design-grid {
     overflow-y: auto;
-    align-items: stretch;
-    display: block;
+    display: grid;
+    align-content: start;
+    max-height: none;
+    flex: 1;
+    line-height: normal;
   }
 }
 .canva-design-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; padding: 8px; }
