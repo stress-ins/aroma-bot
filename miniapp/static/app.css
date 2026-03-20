@@ -1735,6 +1735,37 @@ body.tg-theme-dark .bottom-tab-bar-inner {
 }
 
 /* ═══════════════════════════════════════
+   SECTION: Tablet (761–1024px) — iPad
+   Show bottom tab bar + narrower list panel
+   ═══════════════════════════════════════ */
+@media (min-width: 761px) and (max-width: 1024px) {
+  .bottom-tab-bar {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    display: block;
+    padding: 10px 10px calc(10px + env(safe-area-inset-bottom, 0px));
+    z-index: 30;
+    pointer-events: none;
+    background: transparent;
+  }
+  .bottom-tab-bar .bottom-tab-bar-inner { pointer-events: auto; }
+
+  body { padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
+
+  .layout { grid-template-columns: 280px 1fr; }
+
+  .mode-selector { max-width: 320px; }
+}
+
+@media (min-width: 761px) and (max-width: 1024px) {
+  body.tg-theme-dark .bottom-tab-bar-inner {
+    background: var(--surface);
+    border-color: rgba(255, 230, 200, 0.12);
+    box-shadow: none;
+  }
+}
+
+/* ═══════════════════════════════════════
    SECTION: Dark Theme Overrides
    ═══════════════════════════════════════ */
 

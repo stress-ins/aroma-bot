@@ -372,6 +372,28 @@ def themed_page(request, browser, miniapp_server):
 
 
 @pytest.fixture()
+def ipad_page(browser, miniapp_server):
+    """iPad Pro 11" viewport (834x1194) with touch enabled."""
+    context, pg = _create_page(
+        browser, miniapp_server,
+        viewport={"width": 834, "height": 1194}, is_mobile=True,
+    )
+    yield pg
+    context.close()
+
+
+@pytest.fixture()
+def ipad_dark_page(browser, miniapp_server):
+    """iPad Pro 11" viewport with dark theme."""
+    context, pg = _create_page(
+        browser, miniapp_server,
+        viewport={"width": 834, "height": 1194}, is_mobile=True, dark=True,
+    )
+    yield pg
+    context.close()
+
+
+@pytest.fixture()
 def desktop_page(browser, miniapp_server):
     context, pg = _create_page(
         browser, miniapp_server,
@@ -446,7 +468,7 @@ def check_forbidden_zones(request):
 
     # Only run for tests that use a page fixture
     page = None
-    for fixture_name in ("page", "dark_page", "themed_page", "desktop_page"):
+    for fixture_name in ("page", "dark_page", "themed_page", "ipad_page", "ipad_dark_page", "desktop_page"):
         if fixture_name in request.fixturenames:
             try:
                 page = request.getfixturevalue(fixture_name)
