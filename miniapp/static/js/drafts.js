@@ -53,6 +53,17 @@ export function createDraftsModule(deps) {
     return `<span class="tag metrics-badge">${parts.join(" ")}</span>`;
   }
 
+  function _canvaHeroPreview(p) {
+    if (!p.canva_design_id) return "";
+    const imgs = (p.slide_images || []).filter(Boolean);
+    if (!imgs.length) return "";
+    const thumbs = imgs.slice(0, 5).map((img, i) =>
+      `<img src="${escapeHtml(img.url)}" alt="Слайд ${i + 1}" class="canva-hero-thumb" data-action="openImageFullscreen" data-args='${JSON.stringify([img.url, `Слайд ${i + 1}`])}' />`
+    ).join("");
+    const extra = imgs.length > 5 ? `<span class="canva-hero-extra">+${imgs.length - 5}</span>` : "";
+    return `<div class="canva-hero-strip">${thumbs}${extra}</div>`;
+  }
+
   function fullPreview(d) {
     const p = d.payload || {};
     if (d.kind === "carousel" && Array.isArray(p.slides) && p.slides.length) {
@@ -151,6 +162,7 @@ export function createDraftsModule(deps) {
         <div class="draft-preview">${escapeHtml(stripMarkdown(d.preview || "Без превью"))}</div>
         <div class="draft-meta overview-card-footer">
           ${tagMarkup(statusLabel(d.status), statusTone(d.status))}
+          ${d.payload?.canva_design_id ? tagMarkup("Canva", "status-positive") : ""}
           ${d.generation_pending && draftGenerationLabel(d) ? tagMarkup(draftGenerationLabel(d), "pending") : ""}
           ${tagMarkup(sourceLabel(d.source), sourceTone(d.source))}
           ${d.metrics_summary ? _metricsBadge(d.metrics_summary) : ""}
@@ -407,11 +419,13 @@ export function createDraftsModule(deps) {
               ${d.updated_at && d.updated_at !== d.created_at ? `<span class="meta-chip meta-chip--muted">изм. ${escapeHtml(formatPlanDate(d.updated_at))}</span>` : ""}
               ${d.created_by_username ? `<span class="meta-chip meta-chip--muted">@${escapeHtml(d.created_by_username)}</span>` : ""}
               ${tagMarkup(statusLabel(d.status), statusTone(d.status))}
+              ${p.canva_design_id ? tagMarkup("Canva", "status-positive") : ""}
               ${d.generation_pending && draftGenerationLabel(d) ? tagMarkup(draftGenerationLabel(d), "pending") : ""}
               ${isContentReviewKind(d.kind) ? tagMarkup(feedbackLabel(d.feedback), feedbackTone(d.feedback)) : ""}
               ${tagMarkup(sourceLabel(d.source), sourceTone(d.source))}
             </div>
           </div>
+          ${_canvaHeroPreview(p)}
           <div class="actions-row detail-actions">
             <button class="primary-button" data-action="updateDraft" data-args='["status",{"status":"approved"},null]'>${actionLabel("approve", "Согласовать")}</button>
             <div class="detail-icon-actions">

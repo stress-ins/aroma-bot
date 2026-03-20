@@ -10,6 +10,7 @@ export function createCarouselModule(deps) {
     fetchJson,
     withButtonFeedback,
     showRequestError,
+    showUiNotice,
     confirmAction,
     authQueryString,
     isCurrentDraftDetail,
@@ -595,7 +596,15 @@ export function createCarouselModule(deps) {
       if (modal) { document.body.style.overflow = ""; modal.remove(); }
       mergeDraftIntoState(draft);
       renderDraftList();
-      if (isCurrentDraftDetail(draft.draft_id)) renderDraftDetail(draft);
+      if (isCurrentDraftDetail(draft.draft_id)) {
+        renderDraftDetail(draft);
+        requestAnimationFrame(() => {
+          const slidesSection = document.querySelector(".slides-swiper");
+          if (slidesSection) slidesSection.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+      }
+      const readyCount = (draft.payload?.slide_images || []).filter(Boolean).length;
+      showUiNotice(`Импорт из Canva завершён: ${readyCount} слайдов готово к публикации`, "success");
     } catch (error) {
       if (modal) { document.body.style.overflow = ""; modal.remove(); }
       showRequestError("Не удалось импортировать дизайн из Canva", error);

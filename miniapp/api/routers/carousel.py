@@ -437,8 +437,9 @@ async def carousel_canva_import(
     payload["slide_images"] = slide_images
     payload["slide_image_versions"] = slide_versions
     payload["images_ready"] = sum(1 for img in slide_images if img)
+    payload["canva_design_id"] = body.design_id
 
-    await update_draft(draft_id, payload=payload)
+    await update_draft(draft_id, payload=payload, status="approved")
     await create_revision(draft_id, payload, author="canva_import", note=f"Canva design import: {body.design_id}")
 
     refreshed = await get_draft(draft_id)
