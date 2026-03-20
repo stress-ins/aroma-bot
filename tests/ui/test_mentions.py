@@ -73,11 +73,13 @@ def test_mentions_published_reply_state(dark_page):
     assert page.locator("button", has_text="Опубликовать").count() == 0, \
         "Publish buttons must be hidden after a reply is published"
 
-    # Generate and Ignore buttons should be hidden (status is replied, not pending)
-    assert page.locator("button", has_text="Сгенерировать").count() == 0, \
-        "Generate button must be hidden when status is not pending"
-    assert page.locator("button", has_text="Игнорировать").count() == 0, \
-        "Ignore button must be hidden when status is not pending"
+    # Generate and Ignore buttons should be disabled (status is replied)
+    gen_btn = page.locator("button", has_text="Сгенерировать")
+    assert gen_btn.count() == 1, "Generate button must be visible but disabled when replied"
+    assert gen_btn.is_disabled(), "Generate button must be disabled when status is replied"
+    ign_btn = page.locator("button", has_text="Игнорировать")
+    assert ign_btn.count() == 1, "Ignore button must be visible but disabled when replied"
+    assert ign_btn.is_disabled(), "Ignore button must be disabled when status is replied"
 
 
 def test_mentions_detail_back_navigation(dark_page):

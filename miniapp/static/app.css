@@ -4594,6 +4594,17 @@ body.is-mobile-layout .detail-icon-actions button {
   color: var(--good); padding: 2px 8px; border-radius: 20px;
 }
 
+.mention-card--dim { opacity: 0.65; }
+
+.primary-button:disabled,
+.secondary-button:disabled {
+  opacity: 0.45;
+  pointer-events: none;
+  filter: grayscale(0.5);
+}
+
+.reply-publish-error { margin-top: 6px; }
+
 /* ── Token management ────────────────────────────────────────────────────── */
 .token-row {
   display: flex; align-items: center; gap: 10px;

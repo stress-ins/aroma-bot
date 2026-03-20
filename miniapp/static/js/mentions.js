@@ -99,18 +99,25 @@ export function createMentionsModule(deps) {
       return;
     }
 
-    const cards = state.mentions.map(m => `
-      <div class="mention-card" data-action="openMentionDetail" data-args='["${m.mention_id}"]'>
+    const cards = state.mentions.map(m => {
+      const statusClass = m.status === "pending" ? "tag-status-warn"
+        : m.status === "replied" ? "tag-status-ok"
+        : "tag-status-neutral";
+      const dimClass = m.status !== "pending" ? " mention-card--dim" : "";
+      const checkIcon = m.status === "replied" ? `<i data-lucide="check" style="width:12px;height:12px"></i> ` : "";
+      return `
+      <div class="mention-card${dimClass}" data-action="openMentionDetail" data-args='["${m.mention_id}"]'>
         <div class="mention-meta">
           <span class="mention-platform-badge">
             <i data-lucide="${platformIcon(m.platform)}"></i> ${platformLabel(m.platform)}
           </span>
           <span class="mention-time">${formatTime(m.received_at)}</span>
-          <span class="tag-status-${m.status === "pending" ? "warn" : "ok"}">${statusLabel(m.status)}</span>
+          <span class="${statusClass}">${checkIcon}${statusLabel(m.status)}</span>
         </div>
         <div class="mention-author">@${escapeHtml(m.author_username || m.author_name || "аноним")}</div>
         <div class="mention-preview">${escapeHtml(m.content.substring(0, 120))}${m.content.length > 120 ? "…" : ""}</div>
-      </div>`).join("");
+      </div>`;
+    }).join("");
 
     container.innerHTML = filterBar + `<div class="mention-list">${cards}</div>`;
     if (window.lucide) lucide.createIcons();
@@ -145,22 +152,39 @@ export function createMentionsModule(deps) {
     if (!m) return;
     const container = elements.draftDetail || document.getElementById("draftDetail");
 
-    const hasPublished = m.replies && m.replies.some(r => r.published_at);
+    const hasPublished = m.replies && m.replies.some(r => r.published_at && !r.publish_error);
     const repliesHtml = m.replies && m.replies.length
-      ? m.replies.map(r => `
+      ? m.replies.map(r => {
+          const isPublished = r.published_at && !r.publish_error;
+          const hasError = !!r.publish_error;
+          let statusHtml = "";
+          if (isPublished) {
+            statusHtml = `<span class="tag-status-ok"><i data-lucide="check"></i> Опубликовано · ${toneLabel(r.tone)}</span>`;
+          } else if (hasError) {
+            statusHtml = `
+              <div class="reply-publish-error">
+                <span class="tag-status-warn"><i data-lucide="alert-triangle" style="width:12px;height:12px"></i> Ошибка публикации</span>
+                <div style="color:var(--danger);font-size:12px;margin-top:4px">${escapeHtml(r.publish_error)}</div>
+                <button class="secondary-button compact" style="margin-top:6px"
+                  data-action="publishReply" data-args='${JSON.stringify([m.mention_id, r.reply_id, null])}'>
+                  <i data-lucide="refresh-cw"></i> Повторить
+                </button>
+              </div>`;
+          } else if (!hasPublished) {
+            statusHtml = `
+              <button class="primary-button compact"
+                data-action="publishReply" data-args='${JSON.stringify([m.mention_id, r.reply_id, null])}'>
+                Опубликовать
+              </button>`;
+          }
+          return `
           <div class="reply-option${r.selected ? " is-selected" : ""}">
             <div class="reply-tone-badge">${toneLabel(r.tone)}</div>
             <div class="reply-text">${escapeHtml(r.content)}</div>
             <div class="reply-length">${r.content.length} символов</div>
-            ${r.published_at
-              ? `<span class="tag-status-ok"><i data-lucide="check"></i> Опубликовано · ${toneLabel(r.tone)}</span>`
-              : !hasPublished ? `
-              <button class="primary-button compact"
-                data-action="publishReply" data-args='${JSON.stringify([m.mention_id, r.reply_id, null])}'>
-                Опубликовать
-              </button>` : ""}
-            ${r.publish_error ? `<div style="color:var(--danger);font-size:12px">${escapeHtml(r.publish_error)}</div>` : ""}
-          </div>`).join("")
+            ${statusHtml}
+          </div>`;
+        }).join("")
       : `<p class="field-help">Ещё нет ответов. Нажми «Сгенерировать».</p>`;
 
     container.innerHTML = `
@@ -178,12 +202,14 @@ export function createMentionsModule(deps) {
         <div class="mention-content-text">${escapeHtml(m.content)}</div>
         ${m.url ? `<a href="${escapeHtml(m.url)}" class="mention-link" target="_blank">Открыть оригинал</a>` : ""}
       </div>
-      ${m.status === "pending" ? `
+      ${m.status !== "ignored" ? `
       <div class="mention-actions" style="display:flex;gap:8px;margin:12px 0">
-        <button class="primary-button" data-action="generateReplies" data-args='${JSON.stringify([m.mention_id, null])}'>
+        <button class="primary-button" data-action="generateReplies" data-args='${JSON.stringify([m.mention_id, null])}'
+          ${m.status === "replied" ? "disabled" : ""}>
           <i data-lucide="sparkles"></i> Сгенерировать ответы
         </button>
-        <button class="secondary-button" data-action="ignoreMentionAction" data-args='${JSON.stringify([m.mention_id, null])}'>
+        <button class="secondary-button" data-action="ignoreMentionAction" data-args='${JSON.stringify([m.mention_id, null])}'
+          ${m.status === "replied" ? "disabled" : ""}>
           <i data-lucide="eye-off"></i> Игнорировать
         </button>
       </div>` : ""}
