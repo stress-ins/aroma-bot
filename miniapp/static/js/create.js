@@ -392,23 +392,21 @@ export function createCreateModule(deps) {
     if (planForm) {
       planForm.addEventListener("submit", async (event) => {
         event.preventDefault();
-        const button = planForm.querySelector("button");
-        button.disabled = true;
-        button.textContent = "Собираю...";
-        planForm.classList.remove("did-error");
+
+        setTab("plans");
+        elements.draftDetail.innerHTML = renderDetailLoader("Собираю план…");
+        enterDetailView();
+
         try {
           const plan = await fetchJson("/api/generate/plan", { method: "POST", body: JSON.stringify({}) });
           state.selectedPlan = plan;
-          setTab("plans");
           await loadPlans();
           renderPlanDetail(plan);
           enterDetailView();
         } catch (err) {
-          planForm.classList.add("did-error");
+          elements.draftDetail.innerHTML = renderBackButton() +
+            `<div class="detail-empty"><p>Не удалось собрать план</p></div>`;
           throw err;
-        } finally {
-          button.disabled = false;
-          button.textContent = "Собрать план на неделю";
         }
       });
     }
