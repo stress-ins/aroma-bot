@@ -165,7 +165,8 @@ async def mark_reply_published(reply_id: str, error: str = "") -> None:
         )
         reply = result.scalar_one_or_none()
         if reply:
-            reply.published_at = datetime.now(timezone.utc)
+            if not error:
+                reply.published_at = datetime.now(timezone.utc)
             reply.publish_error = error
             await session.commit()
 
