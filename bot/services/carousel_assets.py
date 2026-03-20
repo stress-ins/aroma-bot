@@ -171,6 +171,9 @@ async def populate_carousel_slide_assets(draft_id: str) -> None:
                 aspect_ratio="4:5",
                 log_context=f"carousel slide {i + 1}/{len(img_prompts)}",
                 model=_get_carousel_model(),
+                draft_id=draft_id,
+                content_type="carousel_slide",
+                slot_key=str(i),
             )
             if result.image_bytes:
                 version = save_carousel_slide_asset(draft_id, i, result.image_bytes, prompt=prompt)
@@ -247,6 +250,9 @@ async def regenerate_carousel_slide_asset(
             image_urls=image_urls,
             log_context=f"carousel slide regenerate {slide_index + 1}/{len(img_prompts)}",
             model=regen_model,
+            draft_id=draft_id,
+            content_type="carousel_slide",
+            slot_key=str(slide_index),
         )
     except Exception:
         logger.exception("carousel_assets: regenerate failed on slide %d for draft %s", slide_index + 1, draft_id)
@@ -303,6 +309,9 @@ async def regenerate_all_carousel_slide_assets(draft_id: str) -> dict[str, objec
                 image_urls=image_urls,
                 log_context=f"carousel slide regenerate all {index + 1}/{len(img_prompts)}",
                 model=regen_model,
+                draft_id=draft_id,
+                content_type="carousel_slide",
+                slot_key=str(index),
             )
         except Exception:
             logger.exception("carousel_assets: regenerate-all failed on slide %d for draft %s", index + 1, draft_id)

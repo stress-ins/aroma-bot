@@ -475,6 +475,25 @@ class LlmCacheModel(Base):
     expires_at: Mapped[datetime] = mapped_column(DateTime)
 
 
+class KieTaskModel(Base):
+    """Tracks KIE.ai image generation tasks for webhook callback delivery."""
+    __tablename__ = "kie_tasks"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    task_id: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    status: Mapped[str] = mapped_column(String(16), default="pending", index=True)  # pending/success/failed/expired
+    draft_id: Mapped[str | None] = mapped_column(String(32), nullable=True, index=True)
+    content_type: Mapped[str] = mapped_column(String(32), default="")  # carousel_slide/reels_frame/reels_v2_frame/telegram/content
+    slot_key: Mapped[str] = mapped_column(String(64), default="")  # slide_index or frame_id
+    prompt: Mapped[str] = mapped_column(String(4000), default="")
+    aspect_ratio: Mapped[str] = mapped_column(String(8), default="1:1")
+    model: Mapped[str] = mapped_column(String(100), default="")
+    image_url: Mapped[str] = mapped_column(String(1024), default="")
+    error_message: Mapped[str] = mapped_column(String(1000), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, default=None)
+
+
 class CollectorHealth(Base):
     __tablename__ = "collector_health"
 
