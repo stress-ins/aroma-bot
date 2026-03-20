@@ -274,6 +274,7 @@ export function createTrendsModule(deps) {
       <div class="trends-empty-guide">
         <div class="detail-section">
           <div class="detail-section-title">${uiIcon("compass", 16)} Как начать</div>
+          <p class="trends-guide-intro">Тренды помогут понять, какой контент работает у конкурентов, и создавать свой на основе данных.</p>
           <div class="trends-guide-steps">
             <div class="trends-guide-step">
               <span class="trends-guide-step-num">1</span>
@@ -294,11 +295,16 @@ export function createTrendsModule(deps) {
               <div>
                 <strong>Данные обновляются каждые 6 часов</strong>
                 <p>Или нажмите «Обновить» вручную.</p>
-                <button class="secondary-button" type="button" data-action="refreshTrends" data-args='[null]'>
-                  ${uiIcon("refresh-cw", 14)} Обновить сейчас
-                </button>
               </div>
             </div>
+          </div>
+          <div class="trends-guide-cta">
+            <button class="primary-button" type="button" data-action="openSettingsSection" data-args='["monitored"]'>
+              ${uiIcon("settings", 14)} Настроить источники
+            </button>
+            <button class="secondary-button" type="button" data-action="refreshTrends" data-args='[null]'>
+              ${uiIcon("refresh-cw", 14)} Обновить сейчас
+            </button>
           </div>
         </div>
       </div>`;

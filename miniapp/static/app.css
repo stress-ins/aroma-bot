@@ -3934,6 +3934,14 @@ body.tg-theme-dark .concept-card {
   object-fit: cover;
   display: block;
 }
+/* Hide broken images gracefully (Task 29) */
+.carousel-slide-image-wrap img[src=""],
+.carousel-slide-image-wrap img:not([src]) {
+  display: none;
+}
+.carousel-slide-image-wrap img.is-broken {
+  display: none;
+}
 .carousel-slide-image-wrap .frame-loading {
   margin-top: 0;
   height: 100%;
@@ -5747,6 +5755,8 @@ body.tg-theme-dark .reco-cta-btn { color: #d4845e; }
 }
 .trends-guide-step strong { display: block; font-size: 14px; margin-bottom: 4px; }
 .trends-guide-step p { font-size: 13px; color: var(--text-secondary); margin: 0 0 6px; }
+.trends-guide-intro { font-size: 14px; color: var(--text-secondary); margin: 8px 0 4px; line-height: 1.5; }
+.trends-guide-cta { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
 .link-button {
   background: none; border: none; color: var(--brand); cursor: pointer;
   text-decoration: underline; font-size: inherit; padding: 0;
@@ -5795,6 +5805,23 @@ details[open] > .trend-suggestions-toggle::before { transform: rotate(90deg); }
 .rewrite-chip button {
   min-width: 44px;
   min-height: 44px;
+}
+
+/* ── Chevron affordance for interactive cards (Task 31) ─────────────────── */
+.interactive-card {
+  position: relative;
+}
+.interactive-card::after {
+  content: "";
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 10px;
+  background: var(--hint);
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+  opacity: 0.4;
 }
 
 /* ── Onboarding tooltip z-index and positioning fix (Task 20) ───────────── */

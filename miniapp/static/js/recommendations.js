@@ -18,7 +18,7 @@ export function createRecommendationsModule(deps) {
     const isLast = _wizardStep === steps.length - 1;
     const canProceed = _wizardStep === 0 ? !!_wizardData.mood : _wizardStep === 1 ? !!_wizardData.goal : true;
     const dots = Array.from({length:5},(_,i) => '<div class="reco-progress-dot' + (i <= _wizardStep ? " active" : "") + '"></div>').join("");
-    const navBtn = isLast ? '<button class="reco-submit-btn" data-action="submitRecommendations"' + (!canProceed ? " disabled" : "") + '>Подобрать масла</button>' : '<button class="reco-next-btn" data-action="recoWizardNext"' + (!canProceed ? " disabled" : "") + '>Далее</button>';
+    const navBtn = isLast ? '<button class="reco-submit-btn primary-button" data-action="submitRecommendations"' + (!canProceed ? " disabled" : "") + '>Подобрать масла</button>' : '<button class="reco-next-btn primary-button" data-action="recoWizardNext"' + (!canProceed ? " disabled" : "") + '>Далее</button>';
     elements.draftDetail.innerHTML = renderBackButton(_wizardStep > 0 ? "recoWizardBack" : "closeRecommendationsWizard") + '<div class="reco-wizard"><div class="reco-progress">' + dots + '</div><h2 class="reco-step-title">' + titles[_wizardStep] + '</h2><div class="reco-step">' + stepContent + '</div><div class="reco-nav">' + navBtn + '</div></div>';
     if (window.lucide) lucide.createIcons();
   }

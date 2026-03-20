@@ -666,6 +666,7 @@ function uiIcon(name) {
     "pen-tool": "pen-tool",
     compass:    "compass",
     lightbulb:  "lightbulb",
+    settings:   "settings",
   };
   return `<span class="ui-icon ui-icon-${escapeHtml(name)}">${icon(LUCIDE_MAP[name] || "square-terminal", 16)}</span>`;
 }

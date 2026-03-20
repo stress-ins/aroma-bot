@@ -253,7 +253,13 @@ export function createCarouselModule(deps) {
     const dId = draftId;
     requestAnimationFrame(() => {
       const el = document.querySelector(".slides-swiper");
-      if (el) initSwiper(el, total, dId);
+      if (el) {
+        initSwiper(el, total, dId);
+        // Broken image fallback via delegation (Task 29)
+        el.addEventListener("error", (e) => {
+          if (e.target.tagName === "IMG") e.target.classList.add("is-broken");
+        }, true);
+      }
       if (window.lucide) lucide.createIcons();
     });
 
