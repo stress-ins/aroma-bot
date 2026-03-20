@@ -60,6 +60,7 @@ export function createShellModule(deps) {
       elements.detailPanel.classList.remove("swipe-back-exit");
       elements.detailPanel.style.removeProperty("--swipe-offset");
       syncMobileNavigation();
+      if (typeof window._currentTabRefresh === "function") window._currentTabRefresh();
     }, 180);
   }
 
@@ -94,6 +95,8 @@ export function createShellModule(deps) {
     elements.detailPanel.classList.remove("swipe-back-exit", "swipe-back-armed", "swipe-back-cancel");
     elements.detailPanel.style.removeProperty("--swipe-offset");
     syncMobileNavigation();
+    // Re-render current list to ensure content is visible after back-navigation
+    if (typeof window._currentTabRefresh === "function") window._currentTabRefresh();
   }
 
   function renderBackButton() {

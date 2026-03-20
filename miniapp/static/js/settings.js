@@ -46,16 +46,25 @@ export function createSettingsModule(deps) {
     elements.listTitle.textContent = "Настройки";
     elements.draftCount.textContent = "";
 
-    // Fetch badge data in parallel
-    const [planRes, teamsRes, socialRes, statusRes, adminRes, hashtagsRes, monitoredRes] = await Promise.allSettled([
-      fetchJson("/api/user/plan"),
-      fetchJson("/api/teams"),
-      fetchJson("/api/social/status"),
-      fetchJson("/api/status"),
-      fetchJson("/api/admin/promos"),
-      fetchJson("/api/social/tracked-hashtags"),
-      fetchJson("/api/social/monitored-accounts"),
-    ]);
+    let planRes, teamsRes, socialRes, statusRes, adminRes, hashtagsRes, monitoredRes;
+    try {
+      [planRes, teamsRes, socialRes, statusRes, adminRes, hashtagsRes, monitoredRes] = await Promise.allSettled([
+        fetchJson("/api/user/plan"),
+        fetchJson("/api/teams"),
+        fetchJson("/api/social/status"),
+        fetchJson("/api/status"),
+        fetchJson("/api/admin/promos"),
+        fetchJson("/api/social/tracked-hashtags"),
+        fetchJson("/api/social/monitored-accounts"),
+      ]);
+    } catch (_err) {
+      elements.draftList.innerHTML = `<div class="detail-empty">${renderGuidedState({
+        eyebrow: "",
+        title: "Не удалось загрузить настройки",
+        body: "Проверьте подключение к интернету и попробуйте ещё раз.",
+      })}</div>`;
+      return;
+    }
 
     const teamCount = teamsRes.status === "fulfilled" ? (teamsRes.value?.items || []).reduce((n, t) => n + (t.member_count || 1), 0) : null;
     const connectedCount = socialRes.status === "fulfilled" ? (socialRes.value?.accounts || []).filter((a) => a.connected).length : null;
@@ -107,7 +116,7 @@ export function createSettingsModule(deps) {
     elements.draftList.innerHTML = html;
 
     elements.draftDetail.innerHTML = `<div class="detail-empty">${renderGuidedState({
-      eyebrow: "Настройки",
+      eyebrow: "",
       title: "Выберите раздел",
       body: "Нажмите на пункт меню слева, чтобы перейти к настройкам.",
     })}</div>`;
@@ -661,9 +670,17 @@ export function createSettingsModule(deps) {
     const expiry = formatExpiry(acc.expires_at);
     const readOnly = opts.readOnly || false;
 
+    const now = new Date();
+    const expiryDate = acc.expires_at ? new Date(acc.expires_at) : null;
+    const daysLeft = expiryDate ? Math.ceil((expiryDate - now) / 86400000) : null;
+    const expiryBadge = daysLeft === null ? ""
+      : daysLeft <= 0 ? ` <span class="tag-status-error">Истёк</span>`
+      : daysLeft <= 7 ? ` <span class="tag-status-warn">Через ${daysLeft} дн</span>`
+      : "";
+
     if (connected) {
       const usernameRow = acc.username ? `<span class="account-username">@${escapeHtml(acc.username)}</span>` : "";
-      const statusMeta = `<span class="account-meta">${uiIcon("check-circle")}<span>Подключено</span>${expiry ? ` · до ${expiry}` : ""}</span>`;
+      const statusMeta = `<span class="account-meta">${uiIcon("check-circle")}<span>Подключено</span>${expiry ? ` · до ${expiry}` : ""}${expiryBadge}</span>`;
       const btn = readOnly
         ? ""
         : `<button class="secondary-button account-full-btn" type="button" data-action="connectPlatform" data-args='${JSON.stringify([acc.platform])}'>${uiIcon("regenerate")}<span>Переподключить</span></button>`;

@@ -427,7 +427,15 @@ export function createDraftsModule(deps) {
           </div>
           ${_canvaHeroPreview(p)}
           <div class="actions-row detail-actions">
-            <button class="primary-button" data-action="updateDraft" data-args='["status",{"status":"approved"},null]'>${actionLabel("approve", "Согласовать")}</button>
+            ${(() => {
+              if (d.kind === "carousel") {
+                const readyCount = (p.slide_images || []).filter(Boolean).length;
+                const slideCount = (p.slides || []).length;
+                const allSlidesReady = slideCount > 0 && readyCount >= slideCount && !d.generation_pending;
+                return `<button class="primary-button${allSlidesReady ? "" : " is-disabled"}" ${allSlidesReady ? "" : "disabled"} data-action="updateDraft" data-args='["status",{"status":"approved"},null]'>${actionLabel("approve", "Согласовать")}</button>${!allSlidesReady && slideCount > 0 ? `<span class="field-help">Готово ${readyCount} из ${slideCount} слайдов</span>` : ""}`;
+              }
+              return `<button class="primary-button" data-action="updateDraft" data-args='["status",{"status":"approved"},null]'>${actionLabel("approve", "Согласовать")}</button>`;
+            })()}
             <div class="detail-icon-actions">
               <button class="secondary-button" title="Вернуть на доработку" data-action="updateDraft" data-args='["status",{"status":"rejected"},null]'>${uiIcon("reject")}</button>
               ${d.kind === "carousel" ? `<button class="secondary-button" title="Обновить все слайды" data-action="regenerateCarouselAll" data-args='${JSON.stringify([d.draft_id, null])}'>${uiIcon("regenerate")}</button>` : ""}
