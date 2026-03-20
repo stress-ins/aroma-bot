@@ -159,12 +159,21 @@ def _extract_why_it_works(text: str) -> tuple[str, str]:
 
 def split_threads_posts(caption: str) -> list[dict[str, str]]:
     """Split a threads caption containing УТРО/ДЕНЬ/ВЕЧЕР sections into 3 posts."""
+    import logging
     import re
+
+    _logger = logging.getLogger(__name__)
 
     posts: list[dict[str, str]] = []
     markers = [s["marker"] for s in _THREADS_SLOTS]
+    # Expanded regex: handle emoji prefixes, numbering, hashtags, brackets
+    # e.g. "🌅 УТРО", "1. УТРО", "#УТРО", "[УТРО]", "**УТРО**"
     pattern = "|".join(re.escape(m) for m in markers)
-    parts = re.split(rf"(?:^|\n)\s*(?:\*\*)?({pattern})(?:\*\*)?[:\s]*\n?", caption, flags=re.IGNORECASE)
+    parts = re.split(
+        rf"(?:^|\n)\s*(?:[\U0001f300-\U0001faff\u2600-\u27bf]\s*)?(?:\d+[\.\)]\s*)?(?:#)?(?:\[)?(?:\*\*)?({pattern})(?:\*\*)?(?:\])?[:\s]*\n?",
+        caption,
+        flags=re.IGNORECASE,
+    )
 
     slot_texts: dict[str, str] = {}
     slot_why: dict[str, str] = {}
@@ -179,6 +188,19 @@ def split_threads_posts(caption: str) -> list[dict[str, str]]:
                 slot_why[s["slot"]] = why
                 break
         i += 2
+
+    # Fallback: if regex didn't find markers but text is non-empty, split by double newline
+    has_content = any(slot_texts.get(s["slot"]) for s in _THREADS_SLOTS)
+    if not has_content and caption.strip():
+        _logger.warning("split_threads_posts: markers not found, using double-newline fallback")
+        chunks = re.split(r"\n\s*\n", caption.strip())
+        # Filter out very short chunks (likely artifacts)
+        chunks = [c.strip() for c in chunks if len(c.strip()) > 20]
+        for idx, slot_info in enumerate(_THREADS_SLOTS):
+            if idx < len(chunks):
+                cleaned, why = _extract_why_it_works(chunks[idx])
+                slot_texts[slot_info["slot"]] = cleaned
+                slot_why[slot_info["slot"]] = why
 
     for slot_info in _THREADS_SLOTS:
         posts.append({
