@@ -65,6 +65,7 @@ export function createReferencesModule(deps) {
   /* ── Smart Search state ── */
   const _searchCache = {};
   let _smartSearchDebounce = null;
+  let _filtersExpanded = false;
 
   function currentHandbookMeta() {
     return HANDBOOK_CATEGORY_META[state.tab] || HANDBOOK_CATEGORY_META.aromas;
@@ -596,6 +597,13 @@ export function createReferencesModule(deps) {
         return `<button class="filter-chip${isActive ? " active" : ""}" data-action="setReferenceFilter" data-args='${JSON.stringify([v])}'>${escapeHtml(label)}</button>`;
       }),
     ];
+    if (!_filtersExpanded && values.length > 0) {
+      const toggleLabel = `Ещё ${values.length}`;
+      return `<div class="filter-chips filter-chips-collapsed">${chips[0]}<button class="filter-chip filter-toggle" data-action="toggleReferenceFilters" data-args='[]'>${escapeHtml(toggleLabel)}</button></div>`;
+    }
+    if (_filtersExpanded && values.length > 0) {
+      return `<div class="filter-chips">${chips.join("")}<button class="filter-chip filter-toggle" data-action="toggleReferenceFilters" data-args='[]'>Свернуть</button></div>`;
+    }
     return `<div class="filter-chips">${chips.join("")}</div>`;
   }
 
@@ -945,6 +953,9 @@ export function createReferencesModule(deps) {
           ${renderStructuredList("Меры предосторожности", reference.precautions)}
           ${aromaSection("Материалы курса", reference.course_notes)}
           ${renderCollapsibleSection("Исторические сведения", reference.history, 280)}
+          <div class="actions-row" style="margin-top:var(--space-3)">
+            <button class="secondary-button" type="button" data-action="createContentFromOil" data-args='${JSON.stringify([reference.name])}'><i data-lucide="plus" style="width:16px;height:16px"></i><span>Создать контент</span></button>
+          </div>
         </div>
       `;
     }
@@ -1081,6 +1092,26 @@ export function createReferencesModule(deps) {
     </article>`;
   }
 
+  function toggleReferenceFilters() {
+    _filtersExpanded = !_filtersExpanded;
+    renderReferences();
+  }
+
+  function createContentFromOil(oilName) {
+    if (typeof window.openCreateTool === "function") window.openCreateTool("content");
+    let attempts = 0;
+    const tryFill = () => {
+      attempts++;
+      const selectors = ["[data-create-content] [name=topic]", "#createForm textarea"];
+      for (const sel of selectors) {
+        const ta = document.querySelector(sel);
+        if (ta && !ta.value) { ta.value = oilName; ta.dispatchEvent(new Event("input")); return; }
+      }
+      if (attempts < 15) setTimeout(tryFill, 80);
+    };
+    setTimeout(tryFill, 80);
+  }
+
   function clearSmartSearch() {
     const input = document.getElementById("smartSearchInput");
     if (input) input.value = "";
@@ -1192,5 +1223,7 @@ export function createReferencesModule(deps) {
     handleSmartSearch,
     runSmartSearch,
     clearSmartSearch,
+    createContentFromOil,
+    toggleReferenceFilters,
   };
 }

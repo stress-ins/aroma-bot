@@ -108,6 +108,7 @@ export function createCarouselModule(deps) {
   let _swiperIndex = 0;
   let _swiperDraftId = "";
   let _swiperCaptionTimer = 0;
+  let _slidesViewMode = "swiper"; // "swiper" | "grid"
 
   function _swiperSaveCaption(draftId, fromIndex) {
     const textField = document.getElementById(slideTextId(fromIndex));
@@ -191,6 +192,14 @@ export function createCarouselModule(deps) {
       ? `Слайды карусели <span class="meta">${readyCount} / ${slideItems.length} с картинкой</span>`
       : "Слайды карусели";
 
+    const isGrid = _slidesViewMode === "grid";
+    const viewToggle = `
+      <div class="slides-view-toggle">
+        <button class="slides-view-btn${!isGrid ? " is-active" : ""}" type="button" data-action="setSlidesViewMode" data-args='["swiper"]'>${uiIcon("list")} Лента</button>
+        <button class="slides-view-btn${isGrid ? " is-active" : ""}" type="button" data-action="setSlidesViewMode" data-args='["grid"]'>${uiIcon("grid")} Сетка</button>
+      </div>
+    `;
+
     if (draftId !== _swiperDraftId) { _swiperIndex = 0; _swiperDraftId = draftId; }
     const idx = Math.min(_swiperIndex, slideItems.length - 1);
 
@@ -266,14 +275,22 @@ export function createCarouselModule(deps) {
     return `
       <section class="section">
         <h3>${uiIcon("slides")}${header}</h3>
-        <div class="slides-swiper">
-          <div class="slides-swiper-track" style="transform:translateX(-${idx * 100}%)">
+        ${viewToggle}
+        <div class="slides-swiper${isGrid ? " slides-grid" : ""}">
+          <div class="slides-swiper-track${isGrid ? " slides-grid-track" : ""}" style="${isGrid ? "" : `transform:translateX(-${idx * 100}%)`}">
             ${slidesHtml}
           </div>
         </div>
-        <div class="slides-dots">${dotsHtml}</div>
+        ${isGrid ? "" : `<div class="slides-dots">${dotsHtml}</div>`}
       </section>
     `;
+  }
+
+  function setSlidesViewMode(mode) {
+    _slidesViewMode = mode === "grid" ? "grid" : "swiper";
+    if (state.selected?.draft_id && isCurrentDraftDetail(state.selected.draft_id)) {
+      renderDraftDetail(state.selected);
+    }
   }
 
   function carouselSwiperGoTo(index) {
@@ -625,6 +642,7 @@ export function createCarouselModule(deps) {
     setCarouselSlideOperation,
     hasPendingCarouselOperations,
     renderSlides,
+    setSlidesViewMode,
     saveCarouselSlideText,
     handleCarouselSlideNoteInput,
     regenerateCarouselSlide,

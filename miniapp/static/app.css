@@ -5832,3 +5832,82 @@ details[open] > .trend-suggestions-toggle::before { transform: rotate(90deg); }
   position: relative;
   z-index: 9501;
 }
+
+/* ── Slides grid view (Task 36) ────────────────────────────────────────── */
+.slides-view-toggle {
+  display: flex;
+  gap: 4px;
+  margin-bottom: var(--space-3);
+}
+.slides-view-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  font-family: var(--font-ui);
+  transition: background var(--duration-fast), color var(--duration-fast);
+}
+.slides-view-btn.is-active {
+  background: var(--brand);
+  color: #fff;
+  border-color: var(--brand);
+}
+.slides-grid {
+  overflow: visible !important;
+}
+.slides-grid .slides-swiper-track,
+.slides-grid .slides-grid-track {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  transform: none !important;
+  transition: none;
+}
+.slides-grid .slide {
+  flex: unset !important;
+  width: auto !important;
+  min-width: 0;
+}
+.slides-grid .slide .carousel-slide-image-wrap img {
+  aspect-ratio: 4/5;
+  object-fit: cover;
+  width: 100%;
+}
+
+/* ── Generation progress bar (Task 37) ─────────────────────────────────── */
+.gen-progress {
+  height: 6px;
+  background: var(--card-bg, var(--surface-2));
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 8px;
+  position: relative;
+}
+.gen-progress-bar {
+  height: 100%;
+  background: var(--brand);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+.gen-progress-label {
+  position: absolute;
+  right: 0;
+  top: -18px;
+  font-size: 11px;
+  color: var(--hint);
+}
+
+/* ── Collapsible filter chips (Task 43) ────────────────────────────────── */
+.filter-chips-collapsed .filter-chip:not(:first-child):not(.filter-toggle) {
+  display: none;
+}
+.filter-toggle {
+  font-size: 12px;
+  opacity: 0.6;
+}
