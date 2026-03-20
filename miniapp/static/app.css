@@ -713,7 +713,7 @@ body.app-ready .splash {
 
 .overview-card-top {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
 }
@@ -749,7 +749,6 @@ body.app-ready .splash {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--brand);
-  margin-bottom: 8px;
   line-height: 1;
 }
 
@@ -895,7 +894,8 @@ body.app-ready .splash {
   display: grid;
   place-items: center;
   gap: 14px;
-  min-height: 220px;
+  flex: 1;
+  min-height: max(220px, 50vh);
   text-align: center;
   color: var(--muted);
 }
@@ -3246,7 +3246,7 @@ body.tg-theme-dark .concept-card {
 .slides-swiper {
   position: relative;
   overflow: hidden;
-  touch-action: pan-x;
+  touch-action: pan-x pan-y;
   -webkit-user-select: none;
   user-select: none;
 }
@@ -4030,6 +4030,25 @@ body.tg-theme-dark .concept-card {
 }
 .carousel-slide-image-wrap img.is-broken {
   display: none;
+}
+.carousel-slide-regenerating {
+  position: relative;
+}
+.carousel-slide-regenerating img {
+  opacity: 0.4;
+  filter: blur(2px);
+  transition: opacity 0.3s, filter 0.3s;
+}
+.carousel-slide-loading-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.carousel-slide-loading-overlay .button-spinner {
+  width: 32px;
+  height: 32px;
 }
 .carousel-slide-image-wrap .frame-loading {
   margin-top: 0;

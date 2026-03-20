@@ -615,7 +615,7 @@ function uiIcon(name) {
     minus:      "minus",
     history:    "clock",
     passport:   "file-text",
-    reel:       "play",
+    reel:       "clapperboard",
     image:      "image",
     download:   "download",
     upload:     "upload",
@@ -672,6 +672,8 @@ function uiIcon(name) {
     settings:   "settings",
     grid:       "layout-grid",
     list:       "rows-3",
+    "chevron-down": "chevron-down",
+    "chevron-up": "chevron-up",
   };
   return `<span class="ui-icon ui-icon-${escapeHtml(name)}">${icon(LUCIDE_MAP[name] || "square-terminal", 16)}</span>`;
 }
@@ -720,9 +722,9 @@ function contentKindIcon(kind) {
   const iconMap = {
     content:        "note",
     threads:        "note",
-    threads_series: "note",
+    threads_series: "threads",
     plan:           "plan",
-    reels:          "play",
+    reels:          "reel",
     carousel:       "layers",
     instagram:      "instagram",
     telegram:       "telegram",
@@ -765,7 +767,7 @@ function promptDisclosureMarkup(rawKey, bodyMarkup, {
         data-open-label="${escapeHtml(openLabel)}"
         data-close-label="${escapeHtml(closeLabel)}"
         data-action="togglePromptDisclosure" data-args='${JSON.stringify([key, null])}'
-      >${actionLabel("eye", isOpen ? closeLabel : openLabel)}</button>
+      >${actionLabel(isOpen ? "chevron-up" : "chevron-down", isOpen ? closeLabel : openLabel)}</button>
       <div class="prompt-card"${isOpen ? "" : " hidden"}>${bodyMarkup}</div>
     </div>
   `;
@@ -788,7 +790,7 @@ function togglePromptDisclosure(rawKey = "", button) {
     const openLabel = button.dataset.openLabel || "Показать промпт";
     const closeLabel = button.dataset.closeLabel || "Скрыть промпт";
     button.setAttribute("aria-expanded", nextOpen ? "true" : "false");
-    button.innerHTML = actionLabel("eye", nextOpen ? closeLabel : openLabel);
+    button.innerHTML = actionLabel(nextOpen ? "chevron-up" : "chevron-down", nextOpen ? closeLabel : openLabel);
   }
 }
 
@@ -803,7 +805,7 @@ function promptSection(title, prompt, copyLabel = "Скопировать про
       ${promptDisclosureMarkup(disclosureKey, `
         <div class="detail-preview prompt-preview">${escapeHtml(prompt)}</div>
         <div class="actions-row prompt-actions">
-          <button class="secondary-button" type="button" data-action="copyText" data-args='${JSON.stringify([String(prompt)])}'>${actionLabel("prompt", copyLabel)}</button>
+          <button class="secondary-button" type="button" data-action="copyText" data-args='${JSON.stringify([String(prompt)])}'>${actionLabel("copy", copyLabel)}</button>
         </div>
       `)}
     </section>

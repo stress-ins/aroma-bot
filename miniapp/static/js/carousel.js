@@ -213,7 +213,10 @@ export function createCarouselModule(deps) {
       const note = bufferedCarouselNote(draftId, index, String(noteItems[index] || ""));
       const versions = Array.isArray(versionItems[index]) ? versionItems[index] : [];
       const genFailed = !img?.url && state.selected?.generation_stage === "error" && !state.selected?.generation_pending;
-      const imgHtml = img?.url
+      const slideOp = carouselSlideOperation(draftId, index);
+      const imgHtml = slideOp && img?.url
+        ? `<div class="carousel-slide-image-wrap carousel-slide-regenerating"><img src="${escapeHtml(img.url)}" alt="Слайд ${index + 1}" /><div class="carousel-slide-loading-overlay"><span class="button-spinner" aria-hidden="true"></span></div></div>`
+        : img?.url
         ? `<div class="carousel-slide-image-wrap"><img src="${escapeHtml(img.url)}" alt="Слайд ${index + 1}" style="cursor:pointer" data-action="openImageFullscreen" data-args='${JSON.stringify([img.url, `Слайд ${index + 1}`])}' /></div>`
         : genFailed
           ? `<div class="carousel-slide-image-wrap"><div class="frame-loading"><div class="frame-loading-inner"><i data-lucide="alert-triangle"></i><span>Не удалось сгенерировать картинку. Нажмите «Новый вариант» чтобы попробовать снова.</span></div></div></div>`
@@ -236,7 +239,7 @@ export function createCarouselModule(deps) {
               const discOpen = isPromptDisclosureOpen(`carousel:${draftId}:${index}`, !img?.url);
               return `
             <div class="prompt-disclosure${discOpen ? " is-open" : ""}" data-prompt-key="${escapeHtml(`carousel:${draftId}:${index}`)}">
-              <button class="secondary-button prompt-toggle" type="button" aria-expanded="${discOpen ? "true" : "false"}" data-default-open="${!img?.url ? "true" : "false"}" data-open-label="Показать промпт" data-close-label="Скрыть промпт" data-action="togglePromptDisclosure" data-args='${JSON.stringify([`carousel:${draftId}:${index}`, null])}'>${actionLabel("eye", discOpen ? "Скрыть промпт" : "Показать промпт")}</button>
+              <button class="secondary-button prompt-toggle" type="button" aria-expanded="${discOpen ? "true" : "false"}" data-default-open="${!img?.url ? "true" : "false"}" data-open-label="Показать промпт" data-close-label="Скрыть промпт" data-action="togglePromptDisclosure" data-args='${JSON.stringify([`carousel:${draftId}:${index}`, null])}'>${actionLabel(discOpen ? "chevron-up" : "chevron-down", discOpen ? "Скрыть промпт" : "Показать промпт")}</button>
               <div class="prompt-card"${discOpen ? "" : " hidden"}>
                 <div class="detail-preview prompt-preview">${escapeHtml(prompt)}</div>
                 <label class="prompt-note-field">
@@ -244,7 +247,7 @@ export function createCarouselModule(deps) {
                   <textarea id="${slideNoteId(index)}" placeholder="Например: теплее свет, крупнее объект, меньше деталей на фоне" data-on-input="handleCarouselSlideNoteInput" data-args='${JSON.stringify([draftId, index])}'>${escapeHtml(note)}</textarea>
                 </label>
                 <div class="actions-row prompt-actions actions-grid-two">
-                  <button class="secondary-button" type="button" data-action="copyText" data-args='${JSON.stringify([prompt])}'>${actionLabel("prompt", "Скопировать промпт слайда")}</button>
+                  <button class="secondary-button" type="button" data-action="copyText" data-args='${JSON.stringify([prompt])}'>${actionLabel("copy", "Скопировать промпт слайда")}</button>
                   <button class="secondary-button" type="button" data-action="regenerateCarouselSlide" data-args='${JSON.stringify([draftId, index, null])}'>${actionLabel("regenerate", "Обновить изображение")}</button>
                   <button class="primary-button" type="button" data-action="regenerateCarouselSlide" data-args='${JSON.stringify([draftId, index, null])}'>${actionLabel("note", "Обновить по замечанию")}</button>
                 </div>
