@@ -30,6 +30,16 @@ _CORRECTIONS_LOG = Path(__file__).parent.parent.parent / "data" / "placement_cor
 
 # ── 1. Analyze text placement via Claude Vision ───────────────────────────────
 
+def _zone_brightness(img_bytes: bytes, top_frac: float, h_frac: float) -> float:
+    """Return mean brightness (0-255) of a horizontal strip of the image."""
+    from PIL import Image, ImageStat
+    img = Image.open(io.BytesIO(img_bytes)).convert("L")
+    w, h = img.size
+    y0 = int(h * top_frac)
+    y1 = int(h * min(top_frac + h_frac, 1.0))
+    return ImageStat.Stat(img.crop((0, y0, w, y1))).mean[0]
+
+
 def analyze_text_placement(
     img_bytes: bytes,
     slide_index: int,
@@ -37,21 +47,30 @@ def analyze_text_placement(
 ) -> dict:
     """Use Claude Vision to find optimal text zone on a slide image.
 
-    Returns dict with keys: top, left, width, height, text_color, role, source.
+    Returns dict with keys: top, left, width, height, text_color, text_align, role, source.
     """
     from bot.handlers.carousel import _find_text_zone
 
     role = SLIDE_ROLES[slide_index] if slide_index < len(SLIDE_ROLES) else "unknown"
+    preferred = ROLE_PLACEMENT_PREFS.get(role)
 
-    # TEMP: Vision API disabled — use heuristic only (re-enable when Gemini vision is verified)
-    logger.info("Vision API disabled, using heuristic for slide %d", slide_index)
-    top_frac, h_frac = _find_text_zone(img_bytes)
+    logger.info("Using heuristic for slide %d (role=%s, preferred=%s)", slide_index, role, preferred)
+    top_frac, h_frac = _find_text_zone(img_bytes, preferred_zone=preferred)
+
+    # Determine text_color from zone brightness
+    brightness = _zone_brightness(img_bytes, top_frac, h_frac)
+    text_color = "dark" if brightness > 160 else "light"
+
+    # Determine text alignment by role
+    text_align = "center" if role in ("hook", "cta") else "left"
+
     placement = {
         "top": top_frac,
         "left": 0.08,
         "width": 0.84,
         "height": h_frac,
-        "text_color": "light",
+        "text_color": text_color,
+        "text_align": text_align,
         "role": role,
         "source": "heuristic",
     }
@@ -115,18 +134,46 @@ def render_preview_png(
     box_right  = box_left + box_w
     box_bottom = box_top  + box_h
 
-    # Bottom gradient fade for text readability (no full scrim)
-    grad_top = max(0, box_top - 40)
-    gradient = Image.new("RGBA", img.size, (0, 0, 0, 0))
-    grad_draw = ImageDraw.Draw(gradient)
-    grad_h = box_bottom - grad_top
-    for i in range(grad_h):
-        alpha = int(160 * (i / grad_h) ** 1.5)
-        grad_draw.line(
-            [(0, grad_top + i), (w, grad_top + i)],
-            fill=(0, 0, 0, min(alpha, 160)),
-        )
-    img = Image.alpha_composite(img, gradient)
+    # Adaptive gradient for text readability
+    top_frac = placement.get("top", 0.58)
+    text_color_key = placement.get("text_color", "light")
+    text_align = placement.get("text_align", "left")
+
+    if text_color_key != "dark":
+        # Only apply gradient when text is light (zone is dark enough for white text)
+        gradient = Image.new("RGBA", img.size, (0, 0, 0, 0))
+        grad_draw = ImageDraw.Draw(gradient)
+
+        if top_frac < 0.33:
+            # Top-down gradient (text at top)
+            grad_bottom = min(h, box_bottom + 40)
+            grad_h = grad_bottom
+            for i in range(grad_h):
+                progress = 1.0 - (i / grad_h)
+                alpha = int(160 * progress ** 1.5)
+                grad_draw.line([(0, i), (w, i)], fill=(0, 0, 0, min(alpha, 160)))
+        elif top_frac > 0.55:
+            # Bottom-up gradient (text at bottom — original behavior)
+            grad_top = max(0, box_top - 40)
+            grad_h = box_bottom - grad_top
+            for i in range(grad_h):
+                alpha = int(160 * (i / grad_h) ** 1.5)
+                grad_draw.line(
+                    [(0, grad_top + i), (w, grad_top + i)],
+                    fill=(0, 0, 0, min(alpha, 160)),
+                )
+        else:
+            # Center vignette band (text in middle)
+            band_top = max(0, box_top - 60)
+            band_bottom = min(h, box_bottom + 60)
+            band_center = (band_top + band_bottom) / 2
+            band_half = (band_bottom - band_top) / 2
+            for i in range(band_top, band_bottom):
+                dist = abs(i - band_center) / band_half
+                alpha = int(140 * (1.0 - dist ** 1.2))
+                grad_draw.line([(0, i), (w, i)], fill=(0, 0, 0, max(0, min(alpha, 140))))
+
+        img = Image.alpha_composite(img, gradient)
 
     # Typography — use DeldedaOpen to match PPTX output
     FONT_SIZE   = 36
@@ -156,11 +203,20 @@ def render_preview_png(
     y = max(y, box_top + 16)
 
     for line in lines:
-        x = box_left + PAD_H
         if y + FONT_SIZE > box_bottom:
             break
+        if text_align == "center":
+            try:
+                line_w = draw.textlength(line, font=font)
+            except AttributeError:
+                bbox = draw.textbbox((0, 0), line, font=font)
+                line_w = bbox[2] - bbox[0]
+            x = box_left + (box_w - int(line_w)) // 2
+        else:
+            x = box_left + PAD_H
+        stroke_fill = (0, 0, 0, 200) if text_color_key != "dark" else (255, 255, 255, 120)
         draw.text((x, y), line, font=font, fill=text_color,
-                  stroke_width=5, stroke_fill=(0, 0, 0, 200))
+                  stroke_width=5, stroke_fill=stroke_fill)
         y += LINE_HEIGHT
 
     result = img.convert("RGB")

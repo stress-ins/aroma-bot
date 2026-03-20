@@ -305,13 +305,18 @@ def wrap_slide_text(text: str, max_chars_per_line: int = 30) -> list[str]:
 
 # ── Image analysis ──────────────────────────────────────────────────────────
 
-def _find_text_zone(img_bytes: bytes) -> tuple[float, float]:
+def _find_text_zone(img_bytes: bytes, preferred_zone: str | None = None) -> tuple[float, float]:
     """Return (top_fraction, height_fraction) for text box placement.
 
     Uses a 3×5 grid (3 columns × 5 rows) to find the quietest block with
     enough space for text overlay. Each cell is scored by variance (low = calm)
     and brightness (low = dark → white text readable).
+
+    If *preferred_zone* is given, adds a distance penalty so the algorithm
+    is biased towards the preferred vertical region.
     """
+    _ZONE_CENTERS = {"top": 0.5, "center": 2, "bottom": 3.5, "bottom-center": 3}
+
     try:
         from PIL import Image as _PIL, ImageStat, ImageFilter
         img = _PIL.open(io.BytesIO(img_bytes)).convert("L").resize((90, 90))
@@ -319,6 +324,8 @@ def _find_text_zone(img_bytes: bytes) -> tuple[float, float]:
         W, H = img.size  # 90, 90
         cols, rows = 3, 5
         cw, rh = W // cols, H // rows
+
+        zone_center = _ZONE_CENTERS.get(preferred_zone) if preferred_zone else None
 
         best_score = float("inf")
         best_row, best_col = 3, 0  # safe default: bottom-left
@@ -331,6 +338,9 @@ def _find_text_zone(img_bytes: bytes) -> tuple[float, float]:
                 std = stat.stddev[0]
                 # Lower score = better: prefer calm (low std) and dark (low avg)
                 score = std * 1.5 + avg * 0.4
+                # Bias towards preferred zone when specified
+                if zone_center is not None:
+                    score += abs(r - zone_center) * 25
                 if score < best_score:
                     best_score = score
                     best_row, best_col = r, c
