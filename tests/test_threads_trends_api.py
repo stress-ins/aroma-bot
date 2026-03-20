@@ -117,7 +117,7 @@ class TestCollectFromAccounts:
         with patch("httpx.AsyncClient.get", side_effect=mock_get):
             collector = ThreadsTrendsCollector(TEAM, "tok", "uid")
             count = await collector.collect_from_accounts([
-                {"username": "user1"},
+                {"username": "user1", "threads_user_id": "ext_uid_1"},
             ])
 
         assert count == 6
