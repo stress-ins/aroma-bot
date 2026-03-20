@@ -847,6 +847,7 @@ class TestMentionsButtonClasses:
         assert "btn btn-ghost" not in mentions_js, "should use ghost-button/secondary-button, not btn btn-ghost"
         assert "btn-sm" not in mentions_js, "should use compact, not btn-sm"
         assert "closeMentionDetail" in mentions_js
+        assert "showUiNotice" in mentions_js, "mentions module must use showUiNotice for feedback"
 
 
 class TestMiniAppBridge:

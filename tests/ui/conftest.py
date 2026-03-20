@@ -184,6 +184,15 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
         "INSERT INTO mentions (mention_id, platform, external_id, type, author_username, author_name, content, url, context_post, received_at, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         ("mention001", "threads", "ext001", "mention", "aroma_user", "Aroma User", "Подскажите, какое масло лучше для вечернего расслабления?", "https://threads.net/t/123", "", now, "pending"),
     )
+    # Mention with a published reply — for testing published state UI
+    cursor.execute(
+        "INSERT INTO mentions (mention_id, platform, external_id, type, author_username, author_name, content, url, context_post, received_at, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        ("mention002", "instagram", "ext002", "mention", "wellness_fan", "Wellness Fan", "Спасибо за рекомендацию лаванды!", "https://instagram.com/p/456", "", now, "replied"),
+    )
+    cursor.execute(
+        "INSERT INTO mention_replies (reply_id, mention_id, tone, content, selected, generated_at, published_at, publish_error) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        ("reply001", "mention002", "warm", "Рады, что помогли! Лаванда — отличный выбор для вечернего расслабления.", 1, now, now, ""),
+    )
     cursor.execute(
         "INSERT INTO plans (plan_id, raw_text, entries, status, created_at) VALUES (?, ?, ?, 'draft', ?)",
         (

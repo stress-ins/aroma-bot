@@ -1393,6 +1393,7 @@ const mentionsModule = createMentionsModule({
   fetchJson,
   escapeHtml,
   withButtonFeedback,
+  showUiNotice,
 });
 
 window.mentionsModule = mentionsModule;
