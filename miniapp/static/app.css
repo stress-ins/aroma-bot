@@ -4231,8 +4231,9 @@ body.is-mobile-layout[data-mode="handbook"] .tabs {
 }
 body.is-mobile-layout[data-mode="handbook"] .tabs::-webkit-scrollbar { display: none; }
 
-/* Toolbar must stack below the sticky topbar on mobile handbook, not overlap it */
-body.is-mobile-layout[data-mode="handbook"] .toolbar {
+/* Toolbar must stack below the sticky topbar on mobile, not overlap it */
+body.is-mobile-layout[data-mode="handbook"] .toolbar,
+body.is-mobile-layout[data-mode="content"] .toolbar {
   top: calc(var(--tg-content-inset-top, env(safe-area-inset-top, 0px)) + 48px);
   z-index: 9;
 }
