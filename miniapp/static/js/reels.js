@@ -370,6 +370,18 @@ export function createReelsModule(deps) {
     }, "Запущено");
   }
 
+  async function recoverFrameImage(draftId, frameId, btn) {
+    await withButtonFeedback(btn, "Восстанавливаю...", async () => {
+      const draft = await fetchJson(`/api/reels/${draftId}/frames/${frameId}/recover`, {
+        method: "POST",
+        timeout: 30000,
+      });
+      mergeReelsIntoState(draft);
+      callbacks.renderReels?.();
+      callbacks.renderReelsDetail?.(draft);
+    }, "Восстановлено");
+  }
+
   async function regenFrameImageWithPrompt(draftId, frameId, btn) {
     const textarea = document.querySelector(`.reels-frame-image-prompt[data-frame-id="${frameId}"]`);
     const prompt = String(textarea?.value || "").trim();
@@ -428,11 +440,15 @@ export function createReelsModule(deps) {
       imageAreaHtml = `<img src="${escapeHtml(imageUrl)}" style="width:100%;height:100%;object-fit:cover;cursor:pointer" alt="Кадр ${n}" data-overlay="${escapeHtml(frame.overlay_text || '')}" data-frame-id="${escapeHtml(frameId)}" data-draft-id="${escapeHtml(draftId)}" data-action="openReelsPreview" data-args='${JSON.stringify([imageUrl, frame.overlay_text || "", frameId, draftId])}' />`;
     } else if (imageStatus === "error") {
       const errorReason = frame.error_message || frame.error || "";
+      const hasKieTask = !!frame.kie_task_id;
       imageAreaHtml = `
         <div class="reels-frame-v2-image-generating">
           <span style="color:var(--danger);font-size:13px">Ошибка генерации</span>
           ${errorReason ? `<span style="color:var(--hint);font-size:11px;margin-top:4px;text-align:center">${escapeHtml(errorReason)}</span>` : ""}
-          <button class="secondary-button compact" style="margin-top:8px" data-action="regenFrameImage" data-args='${JSON.stringify([draftId, frameId, null])}'>↺ Повторить</button>
+          <div style="display:flex;gap:6px;margin-top:8px">
+            ${hasKieTask ? `<button class="secondary-button compact" data-action="recoverFrameImage" data-args='${JSON.stringify([draftId, frameId])}'>Восстановить</button>` : ""}
+            <button class="secondary-button compact" data-action="regenFrameImage" data-args='${JSON.stringify([draftId, frameId, null])}'>↺ Повторить</button>
+          </div>
         </div>
       `;
     } else {

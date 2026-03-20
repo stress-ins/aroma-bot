@@ -96,7 +96,7 @@ class TestImageGenNotifies:
 
             result = generate_gemini_image_sync("test prompt", log_context="test image")
 
-        assert result is None
+        assert result.image_bytes is None
         assert mock_owner.call_count >= 1
         call_text = mock_owner.call_args[0][0]
         assert "Image gen failed" in call_text

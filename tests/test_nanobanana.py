@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 import httpx
 import pytest
 
-from bot.services.gemini_images import generate_gemini_image_sync
+from bot.services.gemini_images import ImageGenResult, generate_gemini_image_sync
 
 
 def _make_settings(kie_key="test-kie-key", nano_key=""):
@@ -65,8 +65,9 @@ class TestKieSubmitAndPollSuccess:
              patch(_CLIENT_PATH, side_effect=_mock_client(responses)), \
              patch(_SLEEP_PATH):
             result = generate_gemini_image_sync("test prompt")
-        assert result is not None
-        assert len(result) > 100
+        assert result.image_bytes is not None
+        assert len(result.image_bytes) > 100
+        assert result.kie_task_id == "kie-123"
 
 
 class TestKieSubmitFailFallsBackToNano:
@@ -83,7 +84,7 @@ class TestKieSubmitFailFallsBackToNano:
              patch(_SLEEP_PATH), \
              patch("bot.services.gemini_images._notify_image_failure"):
             result = generate_gemini_image_sync("test prompt")
-        assert result is not None
+        assert result.image_bytes is not None
 
 
 class TestKiePollTimeout:
@@ -96,7 +97,7 @@ class TestKiePollTimeout:
              patch("bot.services.gemini_images._POLL_MAX_ATTEMPTS", 3), \
              patch("bot.services.gemini_images._notify_image_failure"):
             result = generate_gemini_image_sync("test prompt")
-        assert result is None
+        assert result.image_bytes is None
 
 
 class TestKiePollFailState:
@@ -110,7 +111,7 @@ class TestKiePollFailState:
              patch(_SLEEP_PATH), \
              patch("bot.services.gemini_images._notify_image_failure"):
             result = generate_gemini_image_sync("test prompt")
-        assert result is None
+        assert result.image_bytes is None
 
 
 class TestRetryOn429:
@@ -126,14 +127,14 @@ class TestRetryOn429:
              patch(_CLIENT_PATH, side_effect=_mock_client(responses)), \
              patch(_SLEEP_PATH):
             result = generate_gemini_image_sync("test prompt")
-        assert result is not None
+        assert result.image_bytes is not None
 
 
 class TestNoApiKey:
     def test_no_key(self):
         with patch(_SETTINGS_PATH, _make_settings(kie_key="", nano_key="")):
             result = generate_gemini_image_sync("test prompt")
-        assert result is None
+        assert result.image_bytes is None
 
 
 class TestImageToImage:
@@ -161,6 +162,24 @@ class TestImageToImage:
         assert captured.get("input", {}).get("image_input") == ["https://example.com/photo.jpg"]
 
 
+class TestKieSnakeCaseResultUrls:
+    """Test that snake_case result_urls from gpt-image models are parsed correctly."""
+    def test_snake_case_result_urls(self):
+        # gpt-image models return {"data": {"result_urls": [...]}, "code": 200} inside resultJson
+        inner_result = json.dumps({"data": {"result_urls": ["https://cdn.example.com/gpt-img.png"]}, "code": 200})
+        responses = [
+            _make_response(json_data={"code": 200, "data": {"taskId": "kie-gpt-1"}}),
+            _make_response(json_data={"code": 200, "data": {"state": "success", "resultJson": inner_result}}),
+            _make_response(content=b"\x89PNG" + b"\x00" * 200),
+        ]
+        with patch(_SETTINGS_PATH, _make_settings()), \
+             patch(_CLIENT_PATH, side_effect=_mock_client(responses)), \
+             patch(_SLEEP_PATH):
+            result = generate_gemini_image_sync("test prompt", model="gpt-image/1.5-text-to-image")
+        assert result.image_bytes is not None
+        assert result.kie_task_id == "kie-gpt-1"
+
+
 class TestNanoBananaOnlySuccess:
     def test_nano_only(self):
         responses = [
@@ -172,4 +191,4 @@ class TestNanoBananaOnlySuccess:
              patch(_CLIENT_PATH, side_effect=_mock_client(responses)), \
              patch(_SLEEP_PATH):
             result = generate_gemini_image_sync("test prompt")
-        assert result is not None
+        assert result.image_bytes is not None

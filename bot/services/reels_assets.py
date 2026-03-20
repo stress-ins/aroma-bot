@@ -7,7 +7,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from bot.services.drafts_store import get_draft, update_draft
-from bot.services.gemini_images import generate_gemini_image_sync
+from bot.services.gemini_images import ImageGenResult, generate_gemini_image_sync, recover_kie_task_sync
 
 
 def _get_reels_model() -> str:
@@ -93,15 +93,18 @@ async def populate_reels_frame_assets(
         if should_generate:
             current_prompt = str(frame.get("gemini_prompt", "")).strip()
             if current_prompt:
-                image = generate_gemini_image_sync(current_prompt, aspect_ratio="9:16", log_context=f"MiniApp reels frame {idx + 1}", model=_get_reels_model())
-                if image:
-                    asset = save_reels_frame_asset(draft_id, idx, image, prompt=current_prompt)
+                result = generate_gemini_image_sync(current_prompt, aspect_ratio="9:16", log_context=f"MiniApp reels frame {idx + 1}", model=_get_reels_model())
+                if result.kie_task_id:
+                    frame["kie_task_id"] = result.kie_task_id
+                if result.image_bytes:
+                    asset = save_reels_frame_asset(draft_id, idx, result.image_bytes, prompt=current_prompt)
                     revisions = list(frame.get("asset_revisions", [])) if isinstance(frame.get("asset_revisions"), list) else []
                     current_asset = frame.get("current_asset")
                     if isinstance(current_asset, dict) and current_asset.get("url"):
                         revisions.append(dict(current_asset))
                     frame["current_asset"] = asset
                     frame["asset_revisions"] = revisions[-5:]
+                    frame.pop("kie_task_id", None)
                     generated_any = True
                     updated_storyboard.append(frame)
                     if not await persist_progress():
@@ -188,14 +191,16 @@ async def populate_frame_assets(
         if should_generate:
             current_prompt = str(frame.get("image_prompt", "")).strip()
             if current_prompt:
-                image = generate_gemini_image_sync(
+                result = generate_gemini_image_sync(
                     current_prompt,
                     aspect_ratio="9:16",
                     log_context=f"ReelsV2 frame {fid[:8]}",
                     model=_get_reels_model(),
                 )
-                if image:
-                    asset = save_frame_asset(draft_id, fid, image, prompt=current_prompt)
+                if result.kie_task_id:
+                    frame["kie_task_id"] = result.kie_task_id
+                if result.image_bytes:
+                    asset = save_frame_asset(draft_id, fid, result.image_bytes, prompt=current_prompt)
                     versions = list(frame.get("image_versions", [])) if isinstance(frame.get("image_versions"), list) else []
                     if has_url:
                         versions.append({"url": frame["image_url"], "prompt": frame.get("image_prompt", "")})
@@ -203,9 +208,11 @@ async def populate_frame_assets(
                     frame["image_status"] = "ready"
                     frame["image_versions"] = versions[-5:]
                     frame.pop("placement_data", None)
+                    frame.pop("kie_task_id", None)
                     images_ready += 1
                 else:
-                    frame["image_status"] = "failed"
+                    frame["image_status"] = "error"
+                    frame["error_message"] = result.error or "Генерация не вернула изображение"
                     logger.warning("ReelsV2 frame %s image generation failed for draft %s", fid, draft_id)
             else:
                 frame["image_status"] = "pending"
@@ -260,3 +267,61 @@ async def regenerate_frame_asset(
         frame_ids=[frame_id],
         overwrite_existing=True,
     )
+
+
+async def recover_frame_asset(draft_id: str, frame_id: str) -> dict[str, object] | None:
+    """Recover a frame image by re-polling its kie_task_id."""
+    draft = await get_draft(draft_id)
+    if not draft or draft.kind != "reels_v2":
+        return None
+
+    frames_raw = draft.payload.get("frames", [])
+    if not isinstance(frames_raw, list):
+        return None
+
+    target_frame = None
+    target_idx = -1
+    for idx, item in enumerate(frames_raw):
+        if isinstance(item, dict) and str(item.get("id", "")) == frame_id:
+            target_frame = dict(item)
+            target_idx = idx
+            break
+
+    if target_frame is None:
+        return None
+
+    kie_task_id = target_frame.get("kie_task_id")
+    if not kie_task_id:
+        return None
+
+    result = recover_kie_task_sync(kie_task_id)
+    if not result.image_bytes:
+        return None
+
+    asset = save_frame_asset(draft_id, frame_id, result.image_bytes, prompt=target_frame.get("image_prompt", ""))
+    versions = list(target_frame.get("image_versions", [])) if isinstance(target_frame.get("image_versions"), list) else []
+    old_url = target_frame.get("image_url", "")
+    if old_url:
+        versions.append({"url": old_url, "prompt": target_frame.get("image_prompt", "")})
+    target_frame["image_url"] = asset["url"]
+    target_frame["image_status"] = "ready"
+    target_frame["image_versions"] = versions[-5:]
+    target_frame.pop("kie_task_id", None)
+    target_frame.pop("error_message", None)
+    target_frame.pop("placement_data", None)
+
+    updated_frames = []
+    for idx, item in enumerate(frames_raw):
+        if idx == target_idx:
+            updated_frames.append(target_frame)
+        else:
+            updated_frames.append(dict(item) if isinstance(item, dict) else {})
+
+    payload = dict(draft.payload)
+    payload["frames"] = updated_frames
+    images_ready = sum(1 for f in updated_frames if isinstance(f, dict) and bool(str(f.get("image_url", "")).strip()))
+    payload["images_ready"] = images_ready
+    updated = await update_draft(draft_id, payload=payload, status="draft")
+    if not updated:
+        return None
+    return payload

@@ -533,4 +533,4 @@ async def generate_content_draft(topic: str, goal_key: str, format_key: str, ble
 
 
 def generate_image_bytes(prompt: str) -> bytes | None:
-    return generate_gemini_image_sync(prompt, log_context="Gemini content image")
+    return generate_gemini_image_sync(prompt, log_context="Gemini content image").image_bytes

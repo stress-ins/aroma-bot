@@ -102,7 +102,7 @@ def _generate_image(name: str, description: str, category: str = "aroma") -> byt
 
     template = _CATEGORY_PROMPTS.get(category, _CATEGORY_PROMPTS["aroma"])
     prompt = template.format(name=name, description=description) + "No text overlays. Square format."
-    return generate_gemini_image_sync(prompt, log_context=f"missing-img:{name}")
+    return generate_gemini_image_sync(prompt, log_context=f"missing-img:{name}").image_bytes
 
 
 async def _upsert_image_url(slug: str, image_url: str) -> None:

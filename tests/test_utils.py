@@ -528,10 +528,11 @@ class TestDraftStore:
 
     async def test_regenerate_reels_frame_asset_updates_current_asset(self, monkeypatch, tmp_path):
         monkeypatch.setattr(reels_assets_module, "ASSETS_DIR", tmp_path / "reels_assets")
+        from bot.services.gemini_images import ImageGenResult
         monkeypatch.setattr(
             reels_assets_module,
             "generate_gemini_image_sync",
-            lambda prompt, **kwargs: b"fake-image-bytes",
+            lambda prompt, **kwargs: ImageGenResult(image_bytes=b"fake-image-bytes"),
         )
         draft = await save_draft(
             kind="reels",
