@@ -31,10 +31,11 @@ _MAX_AGE_DAYS = 30
 class InstagramTrendsCollector:
     """Collects posts from monitored Instagram accounts for a single team."""
 
-    def __init__(self, team_id: str, access_token: str, ig_user_id: str):
+    def __init__(self, team_id: str, access_token: str, ig_user_id: str, own_username: str = ""):
         self.team_id = team_id
         self._token = access_token
         self._user_id = ig_user_id
+        self._own_username = own_username.lower().lstrip("@")
         self._request_count = 0
 
     async def collect_from_accounts(self, accounts: list[dict]) -> int:
@@ -60,7 +61,45 @@ class InstagramTrendsCollector:
     async def _collect_account(
         self, client: httpx.AsyncClient, username: str, cutoff: datetime
     ) -> int:
-        """Fetch posts for a single account via business_discovery."""
+        """Fetch posts for a single account. Uses /me/media for own account,
+        business_discovery for others (graceful fallback on permission error)."""
+        if self._own_username and username.lower() == self._own_username:
+            return await self._collect_own_media(client, username, cutoff)
+
+        try:
+            return await self._collect_via_business_discovery(client, username, cutoff)
+        except RuntimeError as exc:
+            # business_discovery requires instagram_business_manage permission;
+            # instagram_business_basic doesn't support it — skip gracefully
+            logger.warning(
+                "IG trends: business_discovery unavailable for @%s (team=%s): %s — skipping",
+                username, self.team_id, exc,
+            )
+            return 0
+
+    async def _collect_own_media(
+        self, client: httpx.AsyncClient, username: str, cutoff: datetime
+    ) -> int:
+        """Fetch own account posts via GET /{user_id}/media (instagram_business_basic)."""
+        await self._rate_check()
+        resp = await client.get(
+            f"{GRAPH_URL}/{self._user_id}/media",
+            params={
+                "fields": "id,media_type,media_product_type,thumbnail_url,permalink,caption,like_count,comments_count,timestamp",
+                "limit": _MAX_POSTS_PER_ACCOUNT,
+                "access_token": self._token,
+            },
+        )
+        self._request_count += 1
+        _raise_for_error(resp, f"IG own media @{username}")
+
+        media_data = resp.json().get("data", [])
+        return await self._save_posts(media_data, username, cutoff)
+
+    async def _collect_via_business_discovery(
+        self, client: httpx.AsyncClient, username: str, cutoff: datetime
+    ) -> int:
+        """Fetch posts for another account via business_discovery."""
         await self._rate_check()
         resp = await client.get(
             f"{GRAPH_URL}/{self._user_id}",
@@ -81,7 +120,12 @@ class InstagramTrendsCollector:
         data = resp.json()
         discovery = data.get("business_discovery", {})
         media_data = discovery.get("media", {}).get("data", [])
+        return await self._save_posts(media_data, username, cutoff)
 
+    async def _save_posts(
+        self, media_data: list[dict], username: str, cutoff: datetime
+    ) -> int:
+        """Upsert posts from a media data list."""
         count = 0
         for post in media_data:
             posted_at = _parse_timestamp(post.get("timestamp"))

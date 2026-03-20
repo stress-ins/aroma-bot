@@ -32,27 +32,94 @@ class ThreadsTrendsCollector:
         self._user_id = threads_user_id
         self._request_count = 0
 
-    async def collect_from_accounts(self, accounts: list[dict]) -> int:
-        """Collect recent posts from monitored Threads accounts."""
+    async def collect_from_accounts(
+        self, accounts: list[dict], own_username: str = ""
+    ) -> int:
+        """Collect recent posts from monitored Threads accounts.
+        Always collects own account first via self._user_id."""
         total = 0
         cutoff = datetime.now(timezone.utc) - timedelta(days=_MAX_AGE_DAYS)
+        collected_usernames: set[str] = set()
 
         async with httpx.AsyncClient(timeout=30) as client:
+            # Always collect own account first
+            own_un = own_username.lower().lstrip("@")
+            if own_un:
+                try:
+                    count = await self._collect_user_threads(
+                        client, self._user_id, own_un, cutoff,
+                    )
+                    total += count
+                    collected_usernames.add(own_un)
+                except Exception as exc:
+                    logger.warning(
+                        "Threads trends: failed own @%s for team %s: %s",
+                        own_un, self.team_id, exc,
+                    )
+
             for account in accounts:
                 username = account.get("username", "").lstrip("@")
                 threads_user_id = account.get("threads_user_id")
                 if not username and not threads_user_id:
                     continue
+                if username.lower() in collected_usernames:
+                    continue  # already collected as own
+                if not threads_user_id:
+                    # Can only read other accounts with their OAuth token
+                    logger.info(
+                        "Threads trends: skipping @%s — no threads_user_id (team=%s)",
+                        username, self.team_id,
+                    )
+                    continue
                 try:
-                    uid = threads_user_id or self._user_id
-                    count = await self._collect_user_threads(client, uid, username, cutoff)
+                    count = await self._collect_user_threads(
+                        client, threads_user_id, username, cutoff,
+                    )
                     total += count
+                    collected_usernames.add(username.lower())
                 except Exception as exc:
                     logger.warning(
                         "Threads trends: failed @%s for team %s: %s",
                         username, self.team_id, exc,
                     )
         return total
+
+    async def tag_posts_by_keywords(self, keywords: list[str]) -> int:
+        """Post-hoc tag collected posts that match keywords. Returns count of tagged posts."""
+        if not keywords:
+            return 0
+
+        from bot.services.social_trends_store import list_social_posts
+
+        posts = await list_social_posts(self.team_id, "threads", limit=200)
+        tagged = 0
+        kw_lower = [k.lower().lstrip("#") for k in keywords if k.strip()]
+
+        for post in posts:
+            text_lower = (post.get("text") or "").lower()
+            for kw in kw_lower:
+                if kw in text_lower:
+                    # Re-upsert with keyword source_type so it appears in keyword results
+                    await upsert_social_post(
+                        team_id=self.team_id,
+                        platform="threads",
+                        post_id=str(post["post_id"]) + f"_kw_{kw}",
+                        source_type="keyword",
+                        source_value=kw,
+                        author_username=post.get("author_username", ""),
+                        text=post.get("text", ""),
+                        permalink=post.get("permalink", ""),
+                        media_type=post.get("media_type", ""),
+                        like_count=post.get("like_count", 0),
+                        reply_count=post.get("reply_count", 0),
+                        share_count=post.get("share_count", 0),
+                        comment_count=post.get("comment_count", 0),
+                        posted_at=_parse_timestamp(post.get("posted_at")) if isinstance(post.get("posted_at"), str) else post.get("posted_at"),
+                    )
+                    tagged += 1
+                    break  # one tag per post
+        logger.info("Threads trends: tagged %d posts by keywords (team=%s)", tagged, self.team_id)
+        return tagged
 
     async def _collect_user_threads(
         self,

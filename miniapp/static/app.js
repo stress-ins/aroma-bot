@@ -1798,6 +1798,8 @@ let selectTrendsPlatform, selectTrendsPeriod, refreshTrends, openTrendsPost, cre
   createFromInsight,
   addMonitoredAccount,
   removeMonitoredAccount,
+  addTrackedHashtag,
+  removeTrackedHashtag,
 } = createTrendsModule({
   state,
   elements,
