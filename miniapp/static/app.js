@@ -1572,6 +1572,7 @@ const {
 
 const {
   openBlendConstructor,
+  addRecoOilToBlend,
   toggleEffect,
   selectSpeed,
   selectApp,
@@ -2141,6 +2142,7 @@ registerWindowBridge({
   createContentFromOil,
   toggleReferenceFilters,
   openBlendConstructor,
+  addRecoOilToBlend,
   toggleEffect,
   selectSpeed,
   selectApp,

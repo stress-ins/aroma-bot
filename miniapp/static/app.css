@@ -4698,7 +4698,7 @@ body.is-mobile-layout .detail-icon-actions button {
 /* ── Smart Search Hero ── */
 .smart-search-hero { padding: 12px; background: var(--surface); border: 1px solid var(--brand-border); border-radius: var(--radius-lg); margin-bottom: 12px; }
 .smart-search-bar { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1.5px solid var(--brand-border); border-radius: 12px; padding: 10px 14px; margin-bottom: 10px; transition: border-color var(--duration-fast), box-shadow var(--duration-fast); }
-.smart-search-bar:focus-within { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(180,92,61,.12); }
+.smart-search-bar:focus-within { border-color: var(--brand); outline: 2px solid rgba(180,92,61,.15); outline-offset: 1px; }
 .smart-search-icon { font-size: 14px; color: var(--hint); flex-shrink: 0; line-height: 0; }
 .smart-search-input { flex: 1; background: none; border: none; outline: none; font-size: 14px; color: var(--text); }
 .smart-search-input::placeholder { color: var(--hint); font-size: 13px; }

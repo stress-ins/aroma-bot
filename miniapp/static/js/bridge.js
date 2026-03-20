@@ -90,6 +90,7 @@ export function registerWindowBridge(deps) {
     createContentFromOil,
     toggleReferenceFilters,
     openBlendConstructor,
+    addRecoOilToBlend,
     toggleEffect,
     selectSpeed,
     selectApp,
@@ -276,6 +277,7 @@ export function registerWindowBridge(deps) {
   window.createContentFromOil = createContentFromOil;
   window.toggleReferenceFilters = toggleReferenceFilters;
   window.openBlendConstructor = openBlendConstructor;
+  window.addRecoOilToBlend = addRecoOilToBlend;
   window.toggleEffect = toggleEffect;
   window.selectSpeed = selectSpeed;
   window.selectApp = selectApp;
