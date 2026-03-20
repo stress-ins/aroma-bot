@@ -3,7 +3,7 @@ from __future__ import annotations
 
 
 def test_mobile_tabs_and_drafts_render_in_russian(page):
-    tabs = page.locator(".tab-button").evaluate_all(
+    tabs = page.locator(".header-tab").evaluate_all(
         "(nodes) => nodes.map((node) => node.textContent.trim())"
     )
     assert "Черновики" in tabs
@@ -90,8 +90,8 @@ def test_overview_lists_use_consistent_card_meta(page):
 
 
 def test_desktop_layout_keeps_split_panels_and_comfortable_controls(desktop_page):
-    desktop_page.wait_for_selector(".content-sub-switcher", timeout=10000)
-    desktop_page.locator(".content-sub-switcher").get_by_role("button", name="Черновики").click()
+    desktop_page.wait_for_selector(".header-tabs", timeout=10000)
+    desktop_page.locator(".header-tabs").get_by_role("button", name="Черновики").click()
     desktop_page.wait_for_timeout(100)
     layout = desktop_page.evaluate(
         """
@@ -159,7 +159,7 @@ def test_mobile_swipe_back_from_left_edge_works_over_interactive_controls(page):
 
 def test_themed_tabs_and_drafts_render(themed_page):
     """Tab labels and draft cards render correctly in both themes."""
-    tabs = themed_page.locator(".tab-button").evaluate_all(
+    tabs = themed_page.locator(".header-tab").evaluate_all(
         "(nodes) => nodes.map((node) => node.textContent.trim())"
     )
     assert "Черновики" in tabs

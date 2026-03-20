@@ -3,7 +3,7 @@ from __future__ import annotations
 
 
 def test_keyboard_can_open_cards_and_create_tools(desktop_page):
-    desktop_page.wait_for_selector(".content-sub-switcher", timeout=10000)
+    desktop_page.wait_for_selector(".header-tabs", timeout=10000)
     desktop_page.get_by_role("button", name="Черновики").click()
     desktop_page.wait_for_timeout(100)
     desktop_page.locator(".draft-card").first.focus()

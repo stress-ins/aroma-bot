@@ -644,9 +644,7 @@ body.app-ready .splash {
 
 .panel-header {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  flex-wrap: wrap;
+  align-items: center;
   gap: var(--space-2) var(--space-3);
   padding-bottom: var(--space-2);
   border-bottom: 1px solid var(--border);
@@ -658,6 +656,41 @@ body.app-ready .splash {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   flex-shrink: 0;
+}
+.panel-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+/* ── Header tabs (compact sub-switcher) ────────────────────────────────── */
+.header-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.07);
+  border-radius: 20px;
+  padding: 3px;
+  flex-shrink: 0;
+}
+.header-tabs:empty { display: none; }
+
+.header-tab {
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--duration-fast);
+}
+.header-tab.active {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text);
 }
 
 .panel-header h2 {
@@ -4582,7 +4615,7 @@ body.is-mobile-layout .detail-icon-actions button {
 
 /* ── Plans Feed ────────────────────────────────────────────────────────────── */
 
-.plans-sticky-header { padding: var(--space-3) var(--space-4) 0; }
+.plans-sticky-header { padding: 0 var(--space-4); }
 
 .plans-calendar-strip { display: flex; gap: 5px; overflow-x: auto; scrollbar-width: none; padding-bottom: 4px; margin-bottom: 10px; }
 .plans-calendar-strip::-webkit-scrollbar { display: none; }
@@ -4638,31 +4671,6 @@ body.is-mobile-layout .detail-icon-actions button {
   border-radius: var(--radius-sm); border: 1px solid var(--border); margin-top: 12px;
 }
 
-/* ── Plans sub-mode switcher ─────────────────────────────────────────────── */
-.plans-sub-switcher {
-  display: flex; gap: 6px; padding: 8px 0 4px;
-}
-.plans-sub-switcher .tab-button {
-  flex: 1; padding: 7px 10px; border-radius: var(--radius-sm);
-  border: 1px solid var(--border); background: var(--surface-2);
-  color: var(--muted); font-size: 13px; cursor: pointer; transition: all var(--duration-fast);
-}
-.plans-sub-switcher .tab-button.active {
-  background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 600;
-}
-
-/* ── Content sub-mode switcher ─────────────────────────────────────────── */
-.content-sub-switcher {
-  display: flex; gap: 6px; padding: 8px 0 4px;
-}
-.content-sub-switcher .tab-button {
-  flex: 1; padding: 7px 10px; border-radius: var(--radius-sm);
-  border: 1px solid var(--border); background: var(--surface-2);
-  color: var(--muted); font-size: 13px; cursor: pointer; transition: all var(--duration-fast);
-}
-.content-sub-switcher .tab-button.active {
-  background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 600;
-}
 
 /* ═══════════════════════════════════════
    SECTION: Mentions

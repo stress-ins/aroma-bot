@@ -43,6 +43,7 @@ export function createTrendsModule(deps) {
   // ── Loaders ──────────────────────────────────────────────────────────
 
   async function loadTrends() {
+    elements.headerTabs.innerHTML = renderContentSwitcher("trends");
     elements.draftList.innerHTML = renderTrendsListPanel();
     elements.draftDetail.innerHTML = renderDetailLoader();
     syncMobileNavigation();
@@ -81,6 +82,7 @@ export function createTrendsModule(deps) {
       suggestionsData = null;
     }
 
+    elements.headerTabs.innerHTML = renderContentSwitcher("trends");
     elements.draftList.innerHTML = renderTrendsListPanel();
     elements.draftDetail.innerHTML = renderTrendsDetail();
     syncMobileNavigation();
@@ -90,10 +92,8 @@ export function createTrendsModule(deps) {
   // ── Content sub-switcher ────────────────────────────────────────────
 
   function renderContentSwitcher(active) {
-    return `<div class="content-sub-switcher">
-      <button class="tab-button${active === "drafts" ? " active" : ""}" data-action="setContentSubMode" data-args='["drafts"]'>Черновики</button>
-      <button class="tab-button${active === "trends" ? " active" : ""}" data-action="setContentSubMode" data-args='["trends"]'>Тренды</button>
-    </div>`;
+    return `<button class="header-tab${active === "drafts" ? " active" : ""}" data-action="setContentSubMode" data-args='["drafts"]'>Черновики</button>
+      <button class="header-tab${active === "trends" ? " active" : ""}" data-action="setContentSubMode" data-args='["trends"]'>Тренды</button>`;
   }
 
   // ── List Panel (platform selector + filters) ─────────────────────────
@@ -139,7 +139,6 @@ export function createTrendsModule(deps) {
     }
 
     return `
-      ${renderContentSwitcher("trends")}
       <div class="trends-controls">
         <div class="trends-platform-tabs">${platformTabs}</div>
         <div class="trends-period-row">
@@ -628,6 +627,7 @@ export function createTrendsModule(deps) {
       try {
         monitoredAccounts = await fetchJson("/api/social/monitored-accounts");
       } catch (_) { /* ignore */ }
+      elements.headerTabs.innerHTML = renderContentSwitcher("trends");
       elements.draftList.innerHTML = renderTrendsListPanel();
       if (window.lucide) lucide.createIcons();
     } catch (err) {
@@ -647,6 +647,7 @@ export function createTrendsModule(deps) {
       try {
         monitoredAccounts = await fetchJson("/api/social/monitored-accounts");
       } catch (_) { /* ignore */ }
+      elements.headerTabs.innerHTML = renderContentSwitcher("trends");
       elements.draftList.innerHTML = renderTrendsListPanel();
       if (window.lucide) lucide.createIcons();
     } catch (_err) {
