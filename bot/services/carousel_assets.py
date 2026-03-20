@@ -13,7 +13,7 @@ from uuid import uuid4
 
 from config import settings
 from bot.services.drafts_store import get_draft, update_draft
-from bot.services.gemini_images import generate_gemini_image_sync
+from bot.services.gemini_images import ImageGenResult, generate_gemini_image_sync
 
 
 def _get_carousel_model() -> str:
@@ -166,14 +166,14 @@ async def populate_carousel_slide_assets(draft_id: str) -> None:
         if slide_images[i]:
             continue  # already generated
         try:
-            image_bytes = generate_gemini_image_sync(
+            result = generate_gemini_image_sync(
                 prompt or _FALLBACK_PROMPT,
                 aspect_ratio="4:5",
                 log_context=f"carousel slide {i + 1}/{len(img_prompts)}",
                 model=_get_carousel_model(),
             )
-            if image_bytes:
-                version = save_carousel_slide_asset(draft_id, i, image_bytes, prompt=prompt)
+            if result.image_bytes:
+                version = save_carousel_slide_asset(draft_id, i, result.image_bytes, prompt=prompt)
                 slide_images[i] = version
                 slide_versions[i].append(version)
                 changed = True
@@ -241,7 +241,7 @@ async def regenerate_carousel_slide_asset(
     )
 
     try:
-        image_bytes = generate_gemini_image_sync(
+        result = generate_gemini_image_sync(
             final_prompt,
             aspect_ratio="4:5",
             image_urls=image_urls,
@@ -252,10 +252,10 @@ async def regenerate_carousel_slide_asset(
         logger.exception("carousel_assets: regenerate failed on slide %d for draft %s", slide_index + 1, draft_id)
         return None
 
-    if not image_bytes:
+    if not result.image_bytes:
         return None
 
-    version = save_carousel_slide_asset(draft_id, slide_index, image_bytes, prompt=final_prompt)
+    version = save_carousel_slide_asset(draft_id, slide_index, result.image_bytes, prompt=final_prompt)
     slide_images[slide_index] = version
     slide_versions[slide_index].append(version)
     payload = dict(draft.payload)
@@ -297,7 +297,7 @@ async def regenerate_all_carousel_slide_assets(draft_id: str) -> dict[str, objec
             final_prompt = _prompt_with_note(prompt, notes[index])
 
         try:
-            image_bytes = generate_gemini_image_sync(
+            result = generate_gemini_image_sync(
                 final_prompt,
                 aspect_ratio="4:5",
                 image_urls=image_urls,
@@ -307,9 +307,9 @@ async def regenerate_all_carousel_slide_assets(draft_id: str) -> dict[str, objec
         except Exception:
             logger.exception("carousel_assets: regenerate-all failed on slide %d for draft %s", index + 1, draft_id)
             continue
-        if not image_bytes:
+        if not result.image_bytes:
             continue
-        version = save_carousel_slide_asset(draft_id, index, image_bytes, prompt=final_prompt)
+        version = save_carousel_slide_asset(draft_id, index, result.image_bytes, prompt=final_prompt)
         slide_images[index] = version
         slide_versions[index].append(version)
         changed = True

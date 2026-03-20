@@ -3,12 +3,22 @@ from __future__ import annotations
 import json
 import logging
 import time
+from dataclasses import dataclass, field
 
 import httpx
 
 from config import settings
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class ImageGenResult:
+    """Structured result from image generation."""
+    image_bytes: bytes | None = None
+    kie_task_id: str | None = None
+    error: str | None = None
+    image_url: str | None = None
 
 
 def _notify_image_failure(log_context: str, error: str) -> None:
@@ -96,7 +106,7 @@ def _kie_submit(
     payload: dict[str, object] = {
         "model": model or _KIE_MODEL,
         "type": task_type,
-        "callBackUrl": "https://example.com/noop",
+        "callBackUrl": "",
         "input": input_block,
     }
 
@@ -160,7 +170,13 @@ def _kie_poll(task_id: str, headers: dict[str, str], log_context: str) -> str | 
                     result_obj = json.loads(result_json_raw) if isinstance(result_json_raw, str) else result_json_raw
                 except (json.JSONDecodeError, TypeError):
                     result_obj = {}
-                urls = result_obj.get("resultUrls", []) if isinstance(result_obj, dict) else []
+                urls = []
+                if isinstance(result_obj, dict):
+                    urls = result_obj.get("resultUrls", [])
+                    if not urls:
+                        inner_data = result_obj.get("data", {})
+                        if isinstance(inner_data, dict):
+                            urls = inner_data.get("result_urls", []) or inner_data.get("resultUrls", [])
                 if urls:
                     return urls[0]
                 # Fallback: check known URL fields
@@ -204,7 +220,7 @@ def _nano_generate(
     payload = {
         "prompt": prompt,
         "type": "TEXTTOIAMGE",
-        "callBackUrl": "https://example.com/noop",
+        "callBackUrl": "",
         "aspectRatio": aspect_ratio,
         "resolution": "1K",
         "outputFormat": "png",
@@ -307,46 +323,103 @@ def generate_gemini_image_sync(
     image_urls: list[str] | None = None,
     log_context: str = "image",
     model: str | None = None,
-) -> bytes | None:
+) -> ImageGenResult:
     """Generate an image. Uses Kie.ai (primary) with NanoBanana fallback.
 
-    Args:
-        prompt: Text description for the image.
-        aspect_ratio: e.g. "1:1", "4:5", "9:16".
-        image_urls: Optional list of source image URLs for image-to-image editing.
-        log_context: Label for logs/alerts.
-        model: Kie.ai model ID override (e.g. "gpt-image/1.5-text-to-image").
+    Returns ImageGenResult with image_bytes and kie_task_id (if applicable).
     """
     kie_key = settings.kie_ai_api_key
     nano_key = settings.nana_banana_api_key
     if not kie_key and not nano_key:
         logger.warning("%s: no image API key configured", log_context)
-        return None
+        return ImageGenResult(error="no image API key configured")
 
     ar = aspect_ratio or "1:1"
 
     # --- Primary: Kie.ai ---
+    kie_task_id: str | None = None
     if kie_key:
         headers = {"Authorization": f"Bearer {kie_key}", "Content-Type": "application/json"}
-        task_id = _kie_submit(prompt, headers, ar, image_urls, log_context, model=model)
-        if task_id:
-            logger.info("%s: Kie submitted taskId=%s", log_context, task_id)
-            image_url = _kie_poll(task_id, headers, log_context)
+        kie_task_id = _kie_submit(prompt, headers, ar, image_urls, log_context, model=model)
+        if kie_task_id:
+            logger.info("%s: Kie submitted taskId=%s", log_context, kie_task_id)
+            image_url = _kie_poll(kie_task_id, headers, log_context)
             if image_url:
-                result = _download_image(image_url, log_context)
-                if result:
-                    return result
+                img_bytes = _download_image(image_url, log_context)
+                if img_bytes:
+                    return ImageGenResult(image_bytes=img_bytes, kie_task_id=kie_task_id, image_url=image_url)
         logger.warning("%s: Kie.ai failed, trying NanoBanana fallback", log_context)
 
     # --- Fallback: NanoBanana direct API ---
     if nano_key:
         headers = {"Authorization": f"Bearer {nano_key}", "Content-Type": "application/json"}
-        result = _nano_generate(prompt, headers, ar, log_context)
-        if result:
-            return result
+        img_bytes = _nano_generate(prompt, headers, ar, log_context)
+        if img_bytes:
+            return ImageGenResult(image_bytes=img_bytes)
 
     _notify_image_failure(log_context, "all providers failed")
-    return None
+    return ImageGenResult(kie_task_id=kie_task_id, error="all providers failed")
+
+
+def recover_kie_task_sync(task_id: str) -> ImageGenResult:
+    """Re-poll a KIE task by ID and download the result if available."""
+    kie_key = settings.kie_ai_api_key
+    if not kie_key:
+        return ImageGenResult(kie_task_id=task_id, error="no KIE API key configured")
+
+    headers = {"Authorization": f"Bearer {kie_key}", "Content-Type": "application/json"}
+    log_context = f"recover:{task_id[:8]}"
+
+    try:
+        with httpx.Client(timeout=_POLL_TIMEOUT) as client:
+            resp = client.get(
+                f"{_KIE_BASE_URL}/recordInfo",
+                headers=headers,
+                params={"taskId": task_id},
+            )
+        resp.raise_for_status()
+        data = resp.json()
+        inner = data.get("data", {}) if isinstance(data.get("data"), dict) else {}
+        state = inner.get("state") or data.get("state", "")
+
+        if state != "success":
+            return ImageGenResult(kie_task_id=task_id, error=f"task state: {state}")
+
+        result_json_raw = inner.get("resultJson") or data.get("resultJson", "")
+        try:
+            result_obj = json.loads(result_json_raw) if isinstance(result_json_raw, str) else result_json_raw
+        except (json.JSONDecodeError, TypeError):
+            result_obj = {}
+
+        urls: list[str] = []
+        if isinstance(result_obj, dict):
+            urls = result_obj.get("resultUrls", [])
+            if not urls:
+                inner_data = result_obj.get("data", {})
+                if isinstance(inner_data, dict):
+                    urls = inner_data.get("result_urls", []) or inner_data.get("resultUrls", [])
+
+        if not urls:
+            for src in (inner, data):
+                for key in ("resultImageUrl", "resultImage", "imageUrl", "url"):
+                    if src.get(key):
+                        urls = [src[key]]
+                        break
+                if urls:
+                    break
+
+        if not urls:
+            return ImageGenResult(kie_task_id=task_id, error="success but no image URL in response")
+
+        image_url = urls[0]
+        img_bytes = _download_image(image_url, log_context)
+        if img_bytes:
+            return ImageGenResult(image_bytes=img_bytes, kie_task_id=task_id, image_url=image_url)
+        return ImageGenResult(kie_task_id=task_id, error="download failed", image_url=image_url)
+
+    except Exception as exc:
+        logger.warning("recover %s error: %s", task_id, str(exc)[:200])
+        return ImageGenResult(kie_task_id=task_id, error=str(exc)[:200])
 
 
 def _download_image(url: str, log_context: str) -> bytes | None:

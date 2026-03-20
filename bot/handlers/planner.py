@@ -436,7 +436,7 @@ async def _generate_reels_from_plan(
 
     images: list[bytes] = []
     for frame in frames[:4]:
-        image = await loop.run_in_executor(
+        result = await loop.run_in_executor(
             _executor,
             lambda prompt=frame.gemini_prompt: generate_gemini_image_sync(
                 prompt,
@@ -444,8 +444,8 @@ async def _generate_reels_from_plan(
                 log_context="Gemini plan reels",
             ),
         )
-        if image:
-            images.append(image)
+        if result.image_bytes:
+            images.append(result.image_bytes)
 
     payload = {
         "day_label": entry.day_label,

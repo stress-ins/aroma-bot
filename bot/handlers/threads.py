@@ -137,7 +137,7 @@ def _claude_post_and_prompt(topic: str) -> tuple[str, str]:
 
 
 def _gemini_image(prompt: str) -> bytes | None:
-    return generate_gemini_image_sync(prompt, log_context="Gemini image")
+    return generate_gemini_image_sync(prompt, log_context="Gemini image").image_bytes
 
 
 def _topics_keyboard(topics: list[str]) -> InlineKeyboardMarkup:

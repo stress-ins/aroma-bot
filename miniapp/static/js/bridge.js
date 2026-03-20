@@ -49,6 +49,7 @@ export function registerWindowBridge(deps) {
     regenCaption,
     regenFrameImage,
     regenFrameImageWithPrompt,
+    recoverFrameImage,
     approveReels,
     forceEditReels,
     scheduleFrameOverlaySave,
@@ -223,6 +224,7 @@ export function registerWindowBridge(deps) {
   window.regenCaption = regenCaption;
   window.regenFrameImage = regenFrameImage;
   window.regenFrameImageWithPrompt = regenFrameImageWithPrompt;
+  window.recoverFrameImage = recoverFrameImage;
   window.approveReels = approveReels;
   window.forceEditReels = forceEditReels;
   window.scheduleFrameOverlaySave = scheduleFrameOverlaySave;

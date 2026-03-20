@@ -409,7 +409,7 @@ def _qa_image_sync(
 # ── Gemini ──────────────────────────────────────────────────────────────────
 
 def _gemini_slide(prompt: str, key_index: int = 0) -> bytes | None:
-    return generate_gemini_image_sync(prompt, log_context="Gemini carousel")
+    return generate_gemini_image_sync(prompt, log_context="Gemini carousel").image_bytes
 
 
 def _regen_slide_text_sync(topic: str, slides: list[str], idx: int) -> str:

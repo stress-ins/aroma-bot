@@ -20,7 +20,7 @@ from bot.services.miniapp_reels import (
     update_reels_frame_prompt,
     update_reels_scenario,
 )
-from bot.services.reels_assets import regenerate_reels_frame_asset
+from bot.services.reels_assets import recover_frame_asset, regenerate_reels_frame_asset
 from ..auth import _require_auth, require_tier
 from ..deps import require_draft
 from bot.services.drafts_store import get_draft as _get_draft, update_draft as _update_draft
@@ -352,6 +352,22 @@ async def reels_frame_regenerate(
     regen_payload = await regenerate_reels_frame_asset(draft_id, frame_index)
     if not regen_payload:
         raise HTTPException(status_code=503, detail="reels_frame_regenerate_failed")
+    draft = await serialize_reels_draft(draft_id)
+    if not draft:
+        raise HTTPException(status_code=404, detail="reels_not_found")
+    return draft
+
+
+@router.post("/api/reels/{draft_id}/frames/{frame_id}/recover")
+async def reels_frame_recover(
+    draft_id: str,
+    frame_id: str,
+    _: None = Depends(_require_auth),
+):
+    """Recover a frame image by re-polling its KIE task ID."""
+    result = await recover_frame_asset(draft_id, frame_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="recovery_failed")
     draft = await serialize_reels_draft(draft_id)
     if not draft:
         raise HTTPException(status_code=404, detail="reels_not_found")

@@ -41,7 +41,7 @@ async def test_regen_without_note_uses_text2img():
     with (
         patch(f"{_MODULE}.get_draft", new_callable=AsyncMock, return_value=draft),
         patch(f"{_MODULE}.update_draft", new_callable=AsyncMock, return_value=draft),
-        patch(f"{_MODULE}.generate_gemini_image_sync", return_value=b"fake-png") as mock_gen,
+        patch(f"{_MODULE}.generate_gemini_image_sync", return_value=MagicMock(image_bytes=b"fake-png")) as mock_gen,
         patch(f"{_MODULE}.save_carousel_slide_asset", return_value={"url": "/new.png"}),
         patch(f"{_MODULE}.optimize_image_prompt", side_effect=lambda p, **kw: p) if False else
         patch("bot.agents.image_prompt_router.optimize_image_prompt", side_effect=lambda p, **kw: p),
@@ -66,7 +66,7 @@ async def test_regen_with_note_uses_img2img():
     with (
         patch(f"{_MODULE}.get_draft", new_callable=AsyncMock, return_value=draft),
         patch(f"{_MODULE}.update_draft", new_callable=AsyncMock, return_value=draft),
-        patch(f"{_MODULE}.generate_gemini_image_sync", return_value=b"fake-png") as mock_gen,
+        patch(f"{_MODULE}.generate_gemini_image_sync", return_value=MagicMock(image_bytes=b"fake-png")) as mock_gen,
         patch(f"{_MODULE}.save_carousel_slide_asset", return_value={"url": "/new.png"}),
         patch("bot.agents.image_prompt_router.optimize_image_prompt", side_effect=lambda p, **kw: p),
         patch(f"{_MODULE}.settings") as mock_settings,
@@ -92,7 +92,7 @@ async def test_regenerate_all_always_text2img():
     with (
         patch(f"{_MODULE}.get_draft", new_callable=AsyncMock, return_value=draft),
         patch(f"{_MODULE}.update_draft", new_callable=AsyncMock, return_value=draft),
-        patch(f"{_MODULE}.generate_gemini_image_sync", return_value=b"fake-png") as mock_gen,
+        patch(f"{_MODULE}.generate_gemini_image_sync", return_value=MagicMock(image_bytes=b"fake-png")) as mock_gen,
         patch(f"{_MODULE}.save_carousel_slide_asset", return_value={"url": "/new.png"}),
         patch("bot.agents.image_prompt_router.optimize_image_prompt", side_effect=lambda p, **kw: p),
         patch(f"{_MODULE}.settings") as mock_settings,
