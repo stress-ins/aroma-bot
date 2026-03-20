@@ -311,6 +311,9 @@ export function createDraftsModule(deps) {
       </div>
     `;
     syncMobileNavigation();
+    if (d.generation_pending || (!posts.length && !isApproved)) {
+      scheduleDraftRefresh(d.draft_id);
+    }
   }
 
   function renderDraftDetail(d) {

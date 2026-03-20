@@ -124,6 +124,7 @@ export function createSessionModule(deps) {
     timers.setDraftRefresh(window.setTimeout(async () => {
       try {
         const draft = await fetchJson(`/api/drafts/${draftId}`, { timeout: 10000 });
+        const posts = Array.isArray(draft.payload?.threads_posts) ? draft.payload.threads_posts : [];
         state.drafts = state.drafts.map(item =>
           item.draft_id === draft.draft_id ? { ...item, ...draft } : item
         );
@@ -132,10 +133,12 @@ export function createSessionModule(deps) {
           renderDraftList();
           if (!isEditingDetailForm()) renderDraftDetail(draft);
         }
-        if (draft.generation_pending) {
+        if (draft.generation_pending || (draft.kind === "threads_series" && !posts.length)) {
           scheduleDraftRefresh(draftId, attempts - 1);
         }
-      } catch (_error) {
+      } catch (error) {
+        const msg = String(error?.message || "");
+        if (msg.includes("401") || msg.includes("403")) return;
         scheduleDraftRefresh(draftId, attempts - 1);
       }
     }, 4000));
