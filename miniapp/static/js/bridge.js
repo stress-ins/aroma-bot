@@ -28,6 +28,7 @@ export function registerWindowBridge(deps) {
     handleCarouselSlideNoteInput,
     previewCarouselSlide,
     carouselSwiperGoTo,
+    setSlidesViewMode,
     downloadCarouselPptx,
     importCarouselPptx,
     exportToCanva,
@@ -85,6 +86,8 @@ export function registerWindowBridge(deps) {
     handleSmartSearch,
     runSmartSearch,
     clearSmartSearch,
+    createContentFromOil,
+    toggleReferenceFilters,
     openBlendConstructor,
     toggleEffect,
     selectSpeed,
@@ -197,6 +200,7 @@ export function registerWindowBridge(deps) {
   window.handleCarouselSlideNoteInput = handleCarouselSlideNoteInput;
   window.previewCarouselSlide = previewCarouselSlide;
   window.carouselSwiperGoTo = carouselSwiperGoTo;
+  window.setSlidesViewMode = setSlidesViewMode;
   window.downloadCarouselPptx = downloadCarouselPptx;
   window.importCarouselPptx = importCarouselPptx;
   window.exportToCanva = exportToCanva;
@@ -267,6 +271,8 @@ export function registerWindowBridge(deps) {
   window.handleSmartSearch = handleSmartSearch;
   window.runSmartSearch = runSmartSearch;
   window.clearSmartSearch = clearSmartSearch;
+  window.createContentFromOil = createContentFromOil;
+  window.toggleReferenceFilters = toggleReferenceFilters;
   window.openBlendConstructor = openBlendConstructor;
   window.toggleEffect = toggleEffect;
   window.selectSpeed = selectSpeed;

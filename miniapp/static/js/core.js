@@ -178,11 +178,16 @@ export function createCoreModule(deps) {
     const title = kind === "reels"
       ? (stage === "scenario" ? "Собираю сценарий и раскадровку" : stage === "images" ? "Генерирую кадры" : "Собираю рилс")
       : (stage === "slides" ? "Собираю структуру карусели" : stage === "images" ? "Генерирую картинки" : "Собираю карточку");
+    const total = Number(item.slides_count || item.storyboard_count || 0);
+    const ready = Number(item.images_ready || 0);
+    const pct = total > 0 ? Math.round((ready / total) * 100) : 0;
+    const progressBar = total > 0 ? `<div class="gen-progress"><div class="gen-progress-bar" style="width:${pct}%"></div><span class="gen-progress-label">${ready}/${total}</span></div>` : "";
     return `
       <section class="section section-accent">
         <div class="section-heading">
           <h3>${uiIcon("sparkle")}${escapeHtml(title)}</h3>
           <p>${escapeHtml(message || "Подождите ещё немного, мы обновим карточку автоматически.")}</p>
+          ${progressBar}
         </div>
         ${renderDetailLoader(title, message || "Подождите ещё немного, данные догружаются.", "detail-loader-card-compact")}
       </section>

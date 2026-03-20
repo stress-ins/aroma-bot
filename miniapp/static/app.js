@@ -667,6 +667,8 @@ function uiIcon(name) {
     compass:    "compass",
     lightbulb:  "lightbulb",
     settings:   "settings",
+    grid:       "layout-grid",
+    list:       "rows-3",
   };
   return `<span class="ui-icon ui-icon-${escapeHtml(name)}">${icon(LUCIDE_MAP[name] || "square-terminal", 16)}</span>`;
 }
@@ -1315,6 +1317,7 @@ const {
   deleteCarouselSlideVersion,
   previewCarouselSlide,
   carouselSwiperGoTo,
+  setSlidesViewMode,
   downloadCarouselPptx,
   importCarouselPptx,
   exportToCanva,
@@ -1530,6 +1533,8 @@ const {
   handleSmartSearch,
   runSmartSearch,
   clearSmartSearch,
+  createContentFromOil,
+  toggleReferenceFilters,
 } = createReferencesModule({
   state,
   elements,
@@ -2049,6 +2054,7 @@ registerWindowBridge({
   handleCarouselSlideNoteInput,
   previewCarouselSlide,
   carouselSwiperGoTo,
+  setSlidesViewMode,
   downloadCarouselPptx,
   importCarouselPptx,
   exportToCanva,
@@ -2130,6 +2136,8 @@ registerWindowBridge({
   handleSmartSearch,
   runSmartSearch,
   clearSmartSearch,
+  createContentFromOil,
+  toggleReferenceFilters,
   openBlendConstructor,
   toggleEffect,
   selectSpeed,
