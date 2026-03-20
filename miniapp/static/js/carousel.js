@@ -532,40 +532,37 @@ export function createCarouselModule(deps) {
   }
 
   async function exportToCanva(draftId, button) {
-    try {
-      await withButtonFeedback(button, "Экспорт...", async () => {
-        const result = await fetchJson(`/api/carousel/${draftId}/canva/export`, {
-          method: "POST",
-          body: "{}",
-          timeout: 150000,
-        });
-        if (result?.edit_url) {
-          const tg = window.Telegram?.WebApp;
-          if (tg?.openLink) {
-            tg.openLink(result.edit_url);
-          } else {
-            window.open(result.edit_url, "_blank", "noopener,noreferrer");
-          }
+    await withButtonFeedback(button, "Экспорт...", async () => {
+      const result = await fetchJson(`/api/carousel/${draftId}/canva/export`, {
+        method: "POST",
+        body: "{}",
+        timeout: 150000,
+      });
+      if (result?.edit_url) {
+        const tg = window.Telegram?.WebApp;
+        if (tg?.openLink) {
+          tg.openLink(result.edit_url);
+        } else {
+          window.open(result.edit_url, "_blank", "noopener,noreferrer");
         }
-      }, "Экспортировано");
-    } catch (error) {
-      showRequestError("Не удалось экспортировать в Canva", error);
-    }
+      }
+    }, "Экспортировано");
   }
 
   async function importFromCanva(draftId, button) {
     try {
-      // Fetch designs list
-      const data = await fetchJson(`/api/carousel/${draftId}/canva/designs`);
-      const designs = data?.designs || [];
+      await withButtonFeedback(button, "Загрузка…", async () => {
+        const data = await fetchJson(`/api/carousel/${draftId}/canva/designs`);
+        const designs = data?.designs || [];
 
-      if (!designs.length) {
-        showRequestError("В Canva нет дизайнов для импорта", new Error("empty"));
-        return;
-      }
+        if (!designs.length) {
+          showUiNotice("В Canva нет дизайнов для импорта", "error");
+          return;
+        }
 
-      // Show design picker modal
-      _showCanvaDesignPicker(draftId, designs);
+        // Show design picker modal
+        _showCanvaDesignPicker(draftId, designs);
+      }, "Canva");
     } catch (error) {
       showRequestError("Не удалось загрузить дизайны из Canva", error);
     }
@@ -609,8 +606,14 @@ export function createCarouselModule(deps) {
 
   async function selectCanvaDesign(draftId, designId, button) {
     const modal = document.getElementById("canvaDesignPicker");
+    // Disable all design items, show spinner on selected
+    if (modal) {
+      modal.querySelectorAll(".canva-design-item").forEach(b => { b.disabled = true; });
+    }
+    if (button instanceof HTMLElement) {
+      button.classList.add("is-busy");
+    }
     try {
-      if (button instanceof HTMLElement) button.textContent = "Импорт...";
       const draft = await fetchJson(`/api/carousel/${draftId}/canva/import`, {
         method: "POST",
         body: JSON.stringify({ design_id: designId }),
@@ -629,7 +632,11 @@ export function createCarouselModule(deps) {
       const readyCount = (draft.payload?.slide_images || []).filter(Boolean).length;
       showUiNotice(`Импорт из Canva завершён: ${readyCount} слайдов готово к публикации`, "success");
     } catch (error) {
-      if (modal) { document.body.style.overflow = ""; modal.remove(); }
+      // Re-enable buttons on error instead of closing modal
+      if (modal) {
+        modal.querySelectorAll(".canva-design-item").forEach(b => { b.disabled = false; });
+        if (button instanceof HTMLElement) button.classList.remove("is-busy");
+      }
       showRequestError("Не удалось импортировать дизайн из Canva", error);
     }
   }

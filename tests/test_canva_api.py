@@ -118,10 +118,15 @@ async def test_poll_job_timeout():
     transport = httpx.MockTransport(mock_handler)
     client = httpx.AsyncClient(transport=transport)
 
-    with patch("bot.services.canva_api.POLL_TIMEOUT", 0.1), \
+    with patch("bot.services.canva_api.httpx") as mock_httpx, \
+         patch("bot.services.canva_api.POLL_TIMEOUT", 0.1), \
          patch("bot.services.canva_api.POLL_INTERVAL", 0.05):
+        ctx = AsyncMock()
+        ctx.__aenter__ = AsyncMock(return_value=client)
+        ctx.__aexit__ = AsyncMock(return_value=False)
+        mock_httpx.AsyncClient.return_value = ctx
         with pytest.raises(CanvaAPIError, match="timed out"):
-            await _poll_job(client, "token", "https://api.canva.com/rest/v1/imports/j1")
+            await _poll_job("token", "https://api.canva.com/rest/v1/imports/j1")
 
     await client.aclose()
 
@@ -139,9 +144,14 @@ async def test_poll_job_failed():
     transport = httpx.MockTransport(mock_handler)
     client = httpx.AsyncClient(transport=transport)
 
-    with patch("bot.services.canva_api.POLL_INTERVAL", 0.01):
+    with patch("bot.services.canva_api.httpx") as mock_httpx, \
+         patch("bot.services.canva_api.POLL_INTERVAL", 0.01):
+        ctx = AsyncMock()
+        ctx.__aenter__ = AsyncMock(return_value=client)
+        ctx.__aexit__ = AsyncMock(return_value=False)
+        mock_httpx.AsyncClient.return_value = ctx
         with pytest.raises(CanvaAPIError, match="Invalid file format"):
-            await _poll_job(client, "token", "https://api.canva.com/rest/v1/exports/j2")
+            await _poll_job("token", "https://api.canva.com/rest/v1/exports/j2")
 
     await client.aclose()
 

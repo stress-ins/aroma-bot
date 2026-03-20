@@ -20,6 +20,11 @@ CANVA_API_BASE = "https://api.canva.com/rest/v1"
 POLL_INTERVAL = 2
 POLL_TIMEOUT = 120
 
+UPLOAD_TIMEOUT = httpx.Timeout(connect=10.0, read=30.0, write=60.0, pool=10.0)
+POLL_TIMEOUT_CFG = httpx.Timeout(connect=10.0, read=15.0, write=10.0, pool=10.0)
+DOWNLOAD_TIMEOUT = httpx.Timeout(connect=10.0, read=60.0, write=10.0, pool=10.0)
+LIST_TIMEOUT = httpx.Timeout(connect=10.0, read=15.0, write=10.0, pool=10.0)
+
 
 class CanvaAPIError(RuntimeError):
     pass
@@ -95,7 +100,7 @@ async def export_to_canva(pptx_bytes: bytes, title: str) -> dict[str, str]:
     """Upload PPTX to Canva as a new design. Returns {design_id, edit_url}."""
     access_token = await _get_canva_token()
 
-    async with httpx.AsyncClient(timeout=30.0) as client:
+    async with httpx.AsyncClient(timeout=UPLOAD_TIMEOUT) as client:
         # Start import job — Canva expects octet-stream + Import-Metadata header
         title_b64 = base64.b64encode(title[:50].encode()).decode()
         import_metadata = _json.dumps({
@@ -109,6 +114,7 @@ async def export_to_canva(pptx_bytes: bytes, title: str) -> dict[str, str]:
             content=pptx_bytes,
         )
         if resp.status_code >= 400:
+            logger.error("Canva import failed: %s %s", resp.status_code, resp.text[:200])
             raise CanvaAPIError(f"Canva import failed: {resp.status_code} {resp.text[:200]}")
         job = resp.json()
         job_id = job.get("job", {}).get("id") or job.get("id", "")
@@ -117,7 +123,9 @@ async def export_to_canva(pptx_bytes: bytes, title: str) -> dict[str, str]:
 
         # Poll until done — use token from the response Authorization header (may be refreshed)
         poll_token = resp.request.headers.get("Authorization", "").removeprefix("Bearer ") or access_token
-        result = await _poll_job(client, poll_token, f"{CANVA_API_BASE}/imports/{job_id}")
+
+    # Poll in separate client to avoid sharing session timeout
+    result = await _poll_job(poll_token, f"{CANVA_API_BASE}/imports/{job_id}")
 
     design_id = result.get("design", {}).get("id", "")
     edit_url = result.get("design", {}).get("urls", {}).get("edit_url", "")
@@ -128,7 +136,7 @@ async def export_canva_design(design_id: str) -> bytes:
     """Export a Canva design as PPTX bytes."""
     access_token = await _get_canva_token()
 
-    async with httpx.AsyncClient(timeout=30.0) as client:
+    async with httpx.AsyncClient(timeout=UPLOAD_TIMEOUT) as client:
         resp = await _request_with_retry(
             client, "POST", f"{CANVA_API_BASE}/exports",
             access_token,
@@ -136,6 +144,7 @@ async def export_canva_design(design_id: str) -> bytes:
             json={"design_id": design_id, "format": {"type": "pptx"}},
         )
         if resp.status_code >= 400:
+            logger.error("Canva export failed: %s %s", resp.status_code, resp.text[:200])
             raise CanvaAPIError(f"Canva export failed: {resp.status_code} {resp.text[:200]}")
         job = resp.json()
         job_id = job.get("job", {}).get("id") or job.get("id", "")
@@ -143,7 +152,9 @@ async def export_canva_design(design_id: str) -> bytes:
             raise CanvaAPIError(f"Canva export did not return job id: {job}")
 
         poll_token = resp.request.headers.get("Authorization", "").removeprefix("Bearer ") or access_token
-        result = await _poll_job(client, poll_token, f"{CANVA_API_BASE}/exports/{job_id}")
+
+    # Poll in separate client to avoid sharing session timeout
+    result = await _poll_job(poll_token, f"{CANVA_API_BASE}/exports/{job_id}")
 
     download_url = ""
     urls = result.get("urls", [])
@@ -155,9 +166,10 @@ async def export_canva_design(design_id: str) -> bytes:
     if not download_url:
         raise CanvaAPIError("Canva export completed but no download URL returned")
 
-    async with httpx.AsyncClient(timeout=60.0) as client:
+    async with httpx.AsyncClient(timeout=DOWNLOAD_TIMEOUT) as client:
         dl_resp = await client.get(download_url)
         if dl_resp.status_code >= 400:
+            logger.error("Failed to download exported file: %s", dl_resp.status_code)
             raise CanvaAPIError(f"Failed to download exported file: {dl_resp.status_code}")
         return dl_resp.content
 
@@ -166,13 +178,14 @@ async def list_canva_designs(limit: int = 20) -> list[dict[str, Any]]:
     """List recent Canva designs."""
     access_token = await _get_canva_token()
 
-    async with httpx.AsyncClient(timeout=15.0) as client:
+    async with httpx.AsyncClient(timeout=LIST_TIMEOUT) as client:
         resp = await _request_with_retry(
             client, "GET", f"{CANVA_API_BASE}/designs",
             access_token,
             params={"limit": min(limit, 50)},
         )
         if resp.status_code >= 400:
+            logger.error("Canva list designs failed: %s %s", resp.status_code, resp.text[:200])
             raise CanvaAPIError(f"Canva list designs failed: {resp.status_code} {resp.text[:200]}")
         data = resp.json()
 
@@ -187,8 +200,8 @@ async def list_canva_designs(limit: int = 20) -> list[dict[str, Any]]:
     ]
 
 
-async def _poll_job(client: httpx.AsyncClient, access_token: str, url: str) -> dict[str, Any]:
-    """Poll a Canva async job until completion."""
+async def _poll_job(access_token: str, url: str) -> dict[str, Any]:
+    """Poll a Canva async job until completion. Creates its own client per request."""
     start = time.monotonic()
     while True:
         elapsed = time.monotonic() - start
@@ -196,8 +209,10 @@ async def _poll_job(client: httpx.AsyncClient, access_token: str, url: str) -> d
             raise CanvaAPIError(f"Canva job timed out after {POLL_TIMEOUT}s")
 
         await asyncio.sleep(POLL_INTERVAL)
-        resp = await client.get(url, headers={"Authorization": f"Bearer {access_token}"})
+        async with httpx.AsyncClient(timeout=POLL_TIMEOUT_CFG) as client:
+            resp = await client.get(url, headers={"Authorization": f"Bearer {access_token}"})
         if resp.status_code >= 400:
+            logger.error("Canva job poll failed: %s %s", resp.status_code, resp.text[:200])
             raise CanvaAPIError(f"Canva job poll failed: {resp.status_code} {resp.text[:200]}")
 
         data = resp.json()
@@ -208,4 +223,5 @@ async def _poll_job(client: httpx.AsyncClient, access_token: str, url: str) -> d
             return job
         if status in ("failed", "error"):
             error_msg = job.get("error", {}).get("message", "Unknown error") if isinstance(job.get("error"), dict) else str(job.get("error", "Unknown error"))
+            logger.error("Canva job failed: %s", error_msg)
             raise CanvaAPIError(f"Canva job failed: {error_msg}")
