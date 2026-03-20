@@ -171,6 +171,22 @@ export function createCreateModule(deps) {
       card.classList.toggle("active", card.dataset.tool === toolId);
     });
 
+    let blendBannerHtml = "";
+    const _blendTools = ["content", "carousel", "threads_series", "reels"];
+    if (_blendTools.includes(toolId)) {
+      try {
+        const bcRaw = sessionStorage.getItem("blend_create_context");
+        if (bcRaw) {
+          const bc = JSON.parse(bcRaw);
+          const oilCount = bc.oils?.length || 0;
+          blendBannerHtml = `<div class="blend-context-banner">
+            <div class="blend-context-banner-body"><strong>${escapeHtml(bc.name || "Смесь")}</strong>${oilCount} ${oilCount === 1 ? "масло" : oilCount < 5 ? "масла" : "масел"} · контекст передаётся в генерацию</div>
+            <button type="button" class="blend-context-banner-dismiss" data-action="_dismissBlendContext" aria-label="Убрать контекст">&times;</button>
+          </div>`;
+        }
+      } catch (_e) { /* ignore */ }
+    }
+
     let formHtml = "";
     if (toolId === "content") {
       formHtml = `
@@ -290,6 +306,11 @@ export function createCreateModule(deps) {
           </form>
         </section>
       `;
+    }
+
+    // Inject blend context banner before <form> inside the section
+    if (blendBannerHtml && formHtml) {
+      formHtml = formHtml.replace(/<form /, blendBannerHtml + "<form ");
     }
 
     elements.draftDetail.innerHTML = `
