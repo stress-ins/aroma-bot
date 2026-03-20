@@ -173,32 +173,8 @@ export function createContentModule(deps) {
   }
 
   function renderReels() {
-    elements.listTitle.textContent = "Рилсы";
-    elements.draftCount.textContent = `${state.reels.length} шт`;
-    setEmptyState(state.reels.length > 0, {
-      eyebrow: "Рилсы",
-      title: "Рилсов пока нет",
-      body: "Создайте сценарий и раскадровку, чтобы здесь появился готовый рабочий список.",
-      actionLabel: "Открыть создание",
-      action: "openCreateTool()",
-    });
-    const createBtn = `<button class="reels-create-fab" data-action="openCreateTool" data-args='["reels"]' title="Создать рилс"><i data-lucide="plus" style="width:20px;height:20px"></i></button>`;
-    elements.draftList.innerHTML = (state.reels.length > 0 ? createBtn : "") + state.reels.map((reel, idx) => `
-      <article ${interactiveCardAttrs(`Открыть рилс ${reel.topic}`)} class="reels-card overview-card${reel.draft_id === state.selectedReels?.draft_id ? " active" : ""} interactive-card" data-action="openReels" data-args='${JSON.stringify([reel.draft_id])}'>
-        <div class="overview-card-top">
-          <div class="draft-kind">${contentKindIcon("reels")}<span>Рилс</span></div>
-          <span class="overview-card-date">#${idx + 1} · ${escapeHtml(formatPlanDate(reel.created_at) || "Видео")}</span>
-        </div>
-        <h3 class="draft-topic">${escapeHtml(reel.topic)}</h3>
-        <div class="draft-preview">${escapeHtml(stripMarkdown(reel.preview || ""))}</div>
-        <div class="draft-meta overview-card-footer">
-          ${tagMarkup(statusLabel(reel.status || "draft"), statusTone(reel.status || "draft"))}
-          ${tagMarkup(`${reel.images_ready || 0}/${reel.frame_count || 0} кадров`, "progress")}
-          ${tagMarkup(sourceLabel(reel.source || "/miniapp"), sourceTone(reel.source || "/miniapp"))}
-        </div>
-      </article>
-    `).join("");
-    syncMobileNavigation();
+    // No-op: reels list screen removed — list panel stays on drafts.
+    // Reels detail (renderReelsDetail) still works as before.
   }
 
   function renderReelsDetail(reel) {

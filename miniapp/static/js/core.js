@@ -568,7 +568,7 @@ export function createCoreModule(deps) {
       : await request();
     if (state.tab === "reels" || draft.kind === "reels") {
       mergeReelsIntoState(draft);
-      callbacks.renderReels();
+      callbacks.renderDraftList();
       callbacks.renderReelsDetail(draft);
       return;
     }

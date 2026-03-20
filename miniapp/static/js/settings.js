@@ -683,7 +683,7 @@ export function createSettingsModule(deps) {
 
     if (connected) {
       const usernameRow = acc.username ? `<span class="account-username">@${escapeHtml(acc.username)}</span>` : "";
-      const statusMeta = `<span class="account-meta">${uiIcon("check-circle")}<span>Подключено</span>${expiry ? ` · до ${expiry}` : ""}${expiryBadge}</span>`;
+      const statusMeta = `<span class="account-meta">${uiIcon("check-circle")}<span>Подключено</span>${expiry ? `<span class="account-expiry"> · до ${expiry}</span>` : ""}${expiryBadge}</span>`;
       const btn = readOnly
         ? ""
         : `<button class="secondary-button account-full-btn" type="button" data-action="connectPlatform" data-args='${JSON.stringify([acc.platform])}'>${uiIcon("regenerate")}<span>Переподключить</span></button>`;
