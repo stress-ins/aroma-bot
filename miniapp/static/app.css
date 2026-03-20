@@ -4034,6 +4034,12 @@ body.tg-theme-dark .concept-card {
 }
 .keyword-form input:focus { border-color: var(--brand-border); }
 
+.keyword-add-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
 .ui-notice {
   position: fixed;
   left: 50%;
