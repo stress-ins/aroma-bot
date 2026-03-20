@@ -16,8 +16,7 @@ from bot.services.miniapp_plans import serialize_plan
 from bot.services.plan_activation import activate_plan
 from bot.services.miniapp_presenter import serialize_draft
 from bot.services.miniapp_inbox import list_inbox_items
-from miniapp.api.generation import complete_reels_v2_generation
-from bot.agents import generate_content_draft
+from miniapp.api.generation import complete_content_generation, complete_reels_v2_generation
 from bot.services.plans_store import get_plan, list_recent_plans, save_plan, update_plan_status
 from config import settings
 from db.models import DraftModel
@@ -327,21 +326,17 @@ async def plan_generate(plan_id: str, payload: PlanGeneratePayload, background_t
         return {"kind": "draft", "draft": draft}
 
     goal_key = normalize_plan_goal(str(entry.get("goal", "")))
-    content_draft = await generate_content_draft(topic, goal_key, target)
     saved = await save_draft(
         kind=target,
         topic=topic,
         source="/plan",
         payload={
-            "angle": content_draft.angle,
-            "hook": content_draft.hook,
-            "caption": content_draft.caption,
-            "cta": content_draft.cta,
-            "hashtags": content_draft.hashtags,
-            "visual_prompt": content_draft.visual_prompt,
-            "slides": list(content_draft.slides),
+            "generation_pending": True,
+            "generation_stage": "content",
+            "generation_message": "Собираю контент...",
         },
     )
+    background_tasks.add_task(complete_content_generation, saved.draft_id, topic, goal_key, target)
     draft = await serialize_draft(saved)
     return {"kind": "draft", "draft": draft}
 

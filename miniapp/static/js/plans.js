@@ -31,6 +31,7 @@ export function createPlansModule(deps) {
     openPendingReelsCreation,
     finalizePendingReelsCreation,
     recoverPendingReelsCreation,
+    scheduleDraftRefresh,
   } = deps;
 
   // ── State initialisation ───────────────────────────────────────────────────
@@ -650,22 +651,22 @@ export function createPlansModule(deps) {
       const payload = await fetchJson(`/api/plans/${planId}/generate`, {
         method: "POST",
         body: JSON.stringify({ entry_index: entryIndex }),
+        timeout: 15000,
       });
       const draft = payload?.draft || null;
       if (draft?.draft_id) {
         upsertDraftSummary(draftSummaryFromDraft(draft));
+        await reloadPlans();
+        setTab("drafts");
+        await loadDrafts();
+        await openDraft(draft.draft_id);
+        if (draft.generation_pending) scheduleDraftRefresh(draft.draft_id);
       }
-      await reloadPlans();
-      await openPlan(planId);
       return draft;
     };
     const draft = button instanceof HTMLElement
       ? await withButtonFeedback(button, "Создаю...", apply, "Создано")
       : await apply();
-    if (draft?.draft_id) {
-      const tg = window.Telegram?.WebApp;
-      if (tg?.showAlert) tg.showAlert("Черновик создан и привязан к плану");
-    }
   }
 
   async function openPlanRelatedDraft(kind, draftId) {

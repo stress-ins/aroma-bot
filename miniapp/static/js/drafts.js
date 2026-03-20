@@ -35,6 +35,7 @@ export function createDraftsModule(deps) {
     withButtonFeedback,
     mergeDraftIntoState,
     scheduleCarouselRefresh,
+    scheduleDraftRefresh,
     setEmptyState,
     enterDetailView,
     syncMobileNavigation,
@@ -128,6 +129,7 @@ export function createDraftsModule(deps) {
       const draft = await fetchJson(`/api/drafts/${draftId}/content/polish`, {
         method: "POST",
         body: "{}",
+        timeout: 30000,
       });
       mergeDraftIntoState(draft);
       callbacks.renderDraftList?.();
@@ -472,6 +474,8 @@ export function createDraftsModule(deps) {
       const readyCount = (p.slide_images || []).filter(Boolean).length;
       const slideCount = (p.slides || []).length;
       if (d.generation_pending || readyCount < slideCount) scheduleCarouselRefresh(d.draft_id);
+    } else if (d.generation_pending) {
+      scheduleDraftRefresh(d.draft_id);
     }
   }
 

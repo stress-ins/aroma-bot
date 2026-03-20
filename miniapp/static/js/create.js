@@ -42,6 +42,7 @@ export function createCreateModule(deps) {
         const data = await fetchJson("/api/suggest-topics", {
           method: "POST",
           body: JSON.stringify(params),
+          timeout: 20000,
         });
         if (!data.topics || !data.topics.length) {
           dropdown.innerHTML = `<div class="suggest-topics-loading">Нет тем</div>`;
@@ -398,7 +399,7 @@ export function createCreateModule(deps) {
         enterDetailView();
 
         try {
-          const plan = await fetchJson("/api/generate/plan", { method: "POST", body: JSON.stringify({}) });
+          const plan = await fetchJson("/api/generate/plan", { method: "POST", body: JSON.stringify({}), timeout: 45000 });
           state.selectedPlan = plan;
           await loadPlans();
           renderPlanDetail(plan);

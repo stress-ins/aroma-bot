@@ -21,8 +21,10 @@ export function createSessionModule(deps) {
   function clearBackgroundRefreshes() {
     window.clearTimeout(timers.getReelRefresh());
     window.clearTimeout(timers.getCarouselRefresh());
+    window.clearTimeout(timers.getDraftRefresh());
     timers.setReelRefresh(null);
     timers.setCarouselRefresh(null);
+    timers.setDraftRefresh(null);
   }
 
   function isCurrentDraftDetail(draftId) {
@@ -112,6 +114,29 @@ export function createSessionModule(deps) {
         if (shouldContinue) scheduleReelsRefresh(draftId, attempts - 1);
       } catch (_error) {
         scheduleReelsRefresh(draftId, attempts - 1);
+      }
+    }, 4000));
+  }
+
+  function scheduleDraftRefresh(draftId, attempts = 15) {
+    if (!draftId || attempts <= 0) return;
+    window.clearTimeout(timers.getDraftRefresh());
+    timers.setDraftRefresh(window.setTimeout(async () => {
+      try {
+        const draft = await fetchJson(`/api/drafts/${draftId}`, { timeout: 10000 });
+        state.drafts = state.drafts.map(item =>
+          item.draft_id === draft.draft_id ? { ...item, ...draft } : item
+        );
+        if (isCurrentDraftDetail(draft.draft_id)) {
+          state.selected = draft;
+          renderDraftList();
+          if (!isEditingDetailForm()) renderDraftDetail(draft);
+        }
+        if (draft.generation_pending) {
+          scheduleDraftRefresh(draftId, attempts - 1);
+        }
+      } catch (_error) {
+        scheduleDraftRefresh(draftId, attempts - 1);
       }
     }, 4000));
   }
@@ -211,6 +236,7 @@ export function createSessionModule(deps) {
     initDataHeaders,
     scheduleReelsRefresh,
     scheduleCarouselRefresh,
+    scheduleDraftRefresh,
     loadDrafts,
     loadUserPlan,
   };
