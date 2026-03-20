@@ -149,6 +149,9 @@ export function createShellModule(deps) {
       window.clearTimeout(detailEntryTimer);
       requestAnimationFrame(() => {
         elements.detailPanel.classList.add("is-entering");
+        // Re-scroll after layout — prevents mid-page position after async render
+        elements.detailPanel.scrollTop = 0;
+        window.scrollTo(0, 0);
         detailEntryTimer = window.setTimeout(() => {
           elements.detailPanel?.classList.remove("is-entering");
         }, 280);

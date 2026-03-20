@@ -442,10 +442,10 @@ export function createDraftsModule(deps) {
             </div>
             ${d.kind === "carousel" ? `
               <div class="carousel-export-row">
-                <button class="secondary-button" data-action="downloadCarouselPptx" data-args='${JSON.stringify([d.draft_id, null])}'>${uiIcon("download")}<span>\u2193 PPTX</span></button>
-                <button class="secondary-button" data-action="importCarouselPptx" data-args='${JSON.stringify([d.draft_id, null])}'>${uiIcon("upload")}<span>\u2191 PPTX</span></button>
-                <button class="secondary-button" data-action="exportToCanva" data-args='${JSON.stringify([d.draft_id, null])}'>${uiIcon("arrow-up-right")}<span>\u2192 Canva</span></button>
-                <button class="secondary-button" data-action="importFromCanva" data-args='${JSON.stringify([d.draft_id, null])}'>${uiIcon("arrow-down-left")}<span>\u2190 Canva</span></button>
+                <button class="secondary-button" data-action="downloadCarouselPptx" data-args='${JSON.stringify([d.draft_id, null])}'>${uiIcon("download")}<span>PPTX</span></button>
+                <button class="secondary-button" data-action="importCarouselPptx" data-args='${JSON.stringify([d.draft_id, null])}'>${uiIcon("upload")}<span>PPTX</span></button>
+                <button class="secondary-button" data-action="exportToCanva" data-args='${JSON.stringify([d.draft_id, null])}'>${uiIcon("arrow-up-right")}<span>Canva</span></button>
+                <button class="secondary-button" data-action="importFromCanva" data-args='${JSON.stringify([d.draft_id, null])}'>${uiIcon("arrow-down-left")}<span>Canva</span></button>
               </div>
             ` : ""}
             ${renderMoveButton(d.draft_id)}

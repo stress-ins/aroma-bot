@@ -4686,6 +4686,27 @@ body.tg-theme-dark .blend-constructor-cta { color: #d4845e; }
 .blend-total-row { display: flex; align-items: center; justify-content: space-between; padding: 7px 0; border-top: 1px solid var(--border); margin-top: 4px; font-size: 12px; color: var(--hint); }
 .blend-total-row span:last-child { font-weight: 700; color: var(--brand); }
 
+/* Saved blend oil rows */
+.saved-blend-oils-detail .oil-row {
+  display: flex; align-items: baseline; gap: 8px;
+  padding: 6px 0; border-bottom: 1px solid var(--border);
+}
+.saved-blend-oils-detail .oil-row:last-child { border-bottom: none; }
+.saved-blend-oils-detail .oil-name { flex: 1; font-weight: 500; }
+.saved-blend-oils-detail .oil-name-en { font-weight: 400; color: var(--hint); font-size: 12px; }
+.saved-blend-oils-detail .oil-drops { white-space: nowrap; font-weight: 600; color: var(--brand); }
+.saved-blend-oils-detail .oil-role { font-size: 12px; color: var(--hint); }
+
+/* Keyword input (settings) */
+.keyword-input {
+  flex: 1; min-width: 0;
+  border: 1px solid var(--border);
+  background: var(--surface); color: var(--text);
+  border-radius: var(--radius-sm); padding: 7px 10px;
+  font-size: 14px; outline: none;
+}
+.keyword-input:focus { border-color: var(--brand-border); }
+
 /* Profile bars */
 .profile-bar-row { margin-bottom: 6px; }
 .profile-bar-label { display: flex; justify-content: space-between; margin-bottom: 2px; font-size: 11px; color: var(--muted); }

@@ -482,6 +482,7 @@ export function createBlendConstructorModule(deps) {
       const blend = await fetchJson(`/api/blend-constructor/saved/${savedId}`);
       state.viewingSavedBlend = blend;
       _renderSavedBlendDetail(blend);
+      enterDetailView();
     } catch {
       elements.draftDetail.innerHTML = `<div class="detail-grid">${renderBackButton()}<p class="field-help">\u0421\u043c\u0435\u0441\u044c \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d\u0430</p></div>`;
     }
@@ -511,7 +512,7 @@ export function createBlendConstructorModule(deps) {
       </section>
       ${Object.keys(blend.profile || {}).length ? `<section class="section"><h3>\u041f\u0440\u043e\u0444\u0438\u043b\u044c \u0441\u043c\u0435\u0441\u0438</h3>${renderProfileBars(blend.profile)}</section>` : ""}
       ${blend.expert_note ? `<div class="blend-expert-card blend-expert-aroma"><div class="blend-expert-header"><span class="blend-expert-icon">\ud83c\udf3f</span><div><div class="blend-expert-name">\u042d\u043a\u0441\u043f\u0435\u0440\u0442-\u0430\u0440\u043e\u043c\u0430\u0442\u0435\u0440\u0430\u043f\u0435\u0432\u0442</div></div></div><p class="blend-expert-text">${escapeHtml(blend.expert_note)}</p>${blend.application_guide ? `<div class="blend-application"><span class="blend-application-label">\u041a\u0430\u043a \u043f\u0440\u0438\u043c\u0435\u043d\u044f\u0442\u044c:</span> ${escapeHtml(blend.application_guide)}</div>` : ""}</div>` : ""}
-      <div class="blend-expert-card blend-expert-doctor"><div class="blend-expert-header"><span class="blend-expert-icon">\u2695\ufe0f</span><div><div class="blend-expert-name">\u041c\u0435\u0434\u0438\u0446\u0438\u043d\u0441\u043a\u0430\u044f \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0430</div></div><span class="blend-safety-badge" style="color:${safetyColor}">${safetyLabel}</span></div></div>
+      <div class="blend-expert-card blend-expert-doctor"><div class="blend-expert-header"><span class="blend-expert-icon">\u2695\ufe0f</span><div><div class="blend-expert-name">\u041c\u0435\u0434\u0438\u0446\u0438\u043d\u0441\u043a\u0430\u044f \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0430</div></div><span class="blend-safety-badge" style="color:${safetyColor}">${safetyLabel}</span></div>${blend.doctor_note ? `<p class="blend-expert-text">${escapeHtml(blend.doctor_note)}</p>` : ""}</div>
       <div class="blend-actions-stack">
         <button class="secondary-button" type="button" style="width:100%" data-action="savedBlendCreateContent">\u0421\u043e\u0437\u0434\u0430\u0442\u044c \u043a\u043e\u043d\u0442\u0435\u043d\u0442</button>
         <div id="savedBlendContentPicker" hidden style="margin-top:6px">
@@ -610,6 +611,7 @@ export function createBlendConstructorModule(deps) {
         ${blend.expert_note ? `<div class="blend-expert-card blend-expert-aroma"><div class="blend-expert-header"><span class="blend-expert-icon">\ud83c\udf3f</span><div><div class="blend-expert-name">\u042d\u043a\u0441\u043f\u0435\u0440\u0442-\u0430\u0440\u043e\u043c\u0430\u0442\u0435\u0440\u0430\u043f\u0435\u0432\u0442</div></div></div><p class="blend-expert-text">${escapeHtml(blend.expert_note)}</p>${blend.application_guide ? `<div class="blend-application"><span class="blend-application-label">\u041a\u0430\u043a \u043f\u0440\u0438\u043c\u0435\u043d\u044f\u0442\u044c:</span> ${escapeHtml(blend.application_guide)}</div>` : ""}</div>` : ""}
         <div class="blend-expert-card blend-expert-doctor"><div class="blend-expert-header"><span class="blend-expert-icon">\u2695\ufe0f</span><div><div class="blend-expert-name">\u041c\u0435\u0434\u0438\u0446\u0438\u043d\u0441\u043a\u0430\u044f \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0430</div></div><span class="blend-safety-badge" style="color:${safetyColor}">${safetyLabel}</span></div></div>
       </div>`;
+      enterDetailView();
       if (window.lucide) lucide.createIcons();
     } catch {
       elements.draftDetail.innerHTML = `<div class="detail-grid">${renderBackButton()}<p class="field-help">\u0421\u043c\u0435\u0441\u044c \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d\u0430 \u0438\u043b\u0438 \u0431\u044b\u043b\u0430 \u0443\u0434\u0430\u043b\u0435\u043d\u0430</p></div>`;
