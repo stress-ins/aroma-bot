@@ -115,7 +115,8 @@ def build_pptx_from_placement(
         tf.word_wrap = True
 
         p_txt = tf.paragraphs[0]
-        p_txt.alignment = PP_ALIGN.LEFT
+        align_val = pd.get("text_align", "left") if pd else "left"
+        p_txt.alignment = PP_ALIGN.CENTER if align_val == "center" else PP_ALIGN.LEFT
         r_txt = p_txt.add_run()
         r_txt.text = text
         r_txt.font.name = _FONT_NAME
