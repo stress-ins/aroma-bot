@@ -28,10 +28,13 @@ async def _enrich_aroma_cross_refs(serialized: dict[str, object]) -> dict[str, o
         aroma_slug_by_name: dict[str, str] = {}
         aroma_slug_to_source_type: dict[str, str] = {}
         for m in aroma_models:
-            aroma_slug_by_name[_normalize(m.name)] = m.slug
+            payload = _public_payload(m.payload or {})
+            name_ru = str(payload.get("name_ru", "")).strip()
+            name_en = str(payload.get("name_en", "")).strip()
+            for key in [m.name, name_ru, name_en] + list(m.aliases or []):
+                if key:
+                    aroma_slug_by_name[_normalize(key)] = m.slug
             aroma_slug_to_source_type[m.slug] = m.source_type or ""
-            for alias in (m.aliases or []):
-                aroma_slug_by_name[_normalize(alias)] = m.slug
 
         result2 = await session.execute(select(AromaCardModel).where(AromaCardModel.category == "blend"))
         blend_models = result2.scalars().all()
@@ -44,10 +47,14 @@ async def _enrich_aroma_cross_refs(serialized: dict[str, object]) -> dict[str, o
                 blends_containing_slugs.append(blend.slug)
                 blends_containing_categories.append(str(payload.get("blend_category", "") or ""))
 
-    # Resolve complementary oil slugs from stored names
-    for name in complementary_oil_names:
-        resolved = aroma_slug_by_name.get(_normalize(name))
-        complementary_oil_slugs.append(resolved or "")
+    # Resolve complementary oil slugs: prefer stored slugs, fallback to name lookup
+    for i, name in enumerate(complementary_oil_names):
+        stored = complementary_oil_slugs_from_payload[i] if i < len(complementary_oil_slugs_from_payload) else ""
+        if stored:
+            complementary_oil_slugs.append(stored)
+        else:
+            resolved = aroma_slug_by_name.get(_normalize(name))
+            complementary_oil_slugs.append(resolved or "")
 
     # If names list is empty but slugs are stored in payload, resolve names from slugs
     if not complementary_oil_names and complementary_oil_slugs_from_payload:
