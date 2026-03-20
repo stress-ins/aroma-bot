@@ -6240,3 +6240,7 @@ body.is-mobile-layout.is-detail-view .detail-panel::after {
 
 body.is-mobile-layout.is-detail-view .detail-panel.has-scroll-top::before { opacity: 1; }
 body.is-mobile-layout.is-detail-view .detail-panel.has-scroll-bottom::after { opacity: 1; }
+
+body[data-tab="settings"].is-mobile-layout.is-detail-view .detail-panel::after {
+  display: none;
+}
