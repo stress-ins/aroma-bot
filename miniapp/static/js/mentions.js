@@ -78,14 +78,14 @@ export function createMentionsModule(deps) {
 
     const filterBar = `
       <div class="plans-filter-bar" style="margin-bottom:12px">
-        <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <div style="display:flex;gap:6px;overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none;-webkit-overflow-scrolling:touch">
           ${platforms.map(p => `
-            <button class="filter-chip${platform === p ? " active" : ""}"
+            <button class="filter-chip${platform === p ? " active" : ""}" style="flex-shrink:0"
               data-action="setMentionsFilter" data-args='["platform","${p}"]'>
               ${p === "all" ? "Все платформы" : platformLabel(p)}
             </button>`).join("")}
         </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
+        <div style="display:flex;gap:6px;overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin-top:6px">
           ${statuses.map(s => `
             <button class="filter-chip${status === s ? " active" : ""}"
               data-action="setMentionsFilter" data-args='["status","${s}"]'>
@@ -275,7 +275,7 @@ export function createMentionsModule(deps) {
           state.selectedMention.status = "ignored";
         }
         state.selectedMention = null;
-        renderMentions();
+        loadMentions();
       });
     } catch (_e) {
       // withButtonFeedback already showed error via showUiNotice
