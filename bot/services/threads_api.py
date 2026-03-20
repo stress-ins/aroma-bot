@@ -119,6 +119,32 @@ class ThreadsClient:
             return []
 
 
+async def post_reply(parent_id: str, text: str) -> str:
+    """Post a reply to a Threads post. Runs sync ThreadsClient in executor."""
+    import asyncio
+
+    loop = asyncio.get_event_loop()
+
+    def _do():
+        client = ThreadsClient()
+        return client.publish_text_post(text, reply_to_id=parent_id)
+
+    return await loop.run_in_executor(None, _do)
+
+
+async def post_thread(text: str) -> str:
+    """Post a standalone Threads post. Runs sync ThreadsClient in executor."""
+    import asyncio
+
+    loop = asyncio.get_event_loop()
+
+    def _do():
+        client = ThreadsClient()
+        return client.publish_text_post(text)
+
+    return await loop.run_in_executor(None, _do)
+
+
 WATCH_KEYWORDS: list[str] = [
     "ароматерапия", "эфирные масла", "гонг медитация",
     "aromatherapy", "essential oils", "gong meditation",

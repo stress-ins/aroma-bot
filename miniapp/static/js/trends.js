@@ -156,14 +156,13 @@ export function createTrendsModule(deps) {
     if (!trendsData) return "";
     const topPosts = trendsData.top_posts || [];
     if (topPosts.length === 0) {
-      return renderGuidedState(
-        "bar-chart-3",
-        "Нет данных",
-        "Добавьте конкурентов в настройках бренда и дождитесь сбора данных.",
-        `<button class="btn btn-secondary" data-action="openSettingsSection" data-args='["accounts"]'>
-          ${uiIcon("plus", 16)} Добавить аккаунты
-        </button>`
-      );
+      return `<div class="detail-empty">${renderGuidedState({
+        eyebrow: "Тренды",
+        title: "Нет данных",
+        body: "Добавьте аккаунты для мониторинга и дождитесь сбора данных.",
+        actionLabel: "Обновить",
+        action: "refreshTrends",
+      })}</div>`;
     }
 
     const cards = topPosts
@@ -314,7 +313,15 @@ export function createTrendsModule(deps) {
 
   function renderTrendsDetail() {
     if (trendsPlatform === "compare") return renderCompareDetail();
-    if (!trendsData) return renderGuidedState("bar-chart-3", "Загрузка", "Выберите платформу и период.");
+    if (!trendsData) {
+      return `<div class="detail-empty">${renderGuidedState({
+        eyebrow: "Аналитика",
+        title: "Данные собираются ежедневно",
+        body: "Выберите пост слева для подробной аналитики. Если постов нет — добавьте аккаунты для мониторинга и нажмите «Обновить».",
+        actionLabel: "Обновить",
+        action: "refreshTrends",
+      })}</div>`;
+    }
 
     const sections = [];
 
@@ -364,7 +371,15 @@ export function createTrendsModule(deps) {
   }
 
   function renderCompareDetail() {
-    if (!trendsCompare) return renderGuidedState("columns-2", "Загрузка", "Сравнение платформ.");
+    if (!trendsCompare) {
+      return `<div class="detail-empty">${renderGuidedState({
+        eyebrow: "Сравнение",
+        title: "Загрузка данных",
+        body: "Сравнение платформ загружается. Если данных пока нет — добавьте аккаунты и обновите.",
+        actionLabel: "Обновить",
+        action: "refreshTrends",
+      })}</div>`;
+    }
     const ig = trendsCompare.instagram || {};
     const th = trendsCompare.threads || {};
 

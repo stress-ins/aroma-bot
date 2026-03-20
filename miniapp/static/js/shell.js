@@ -61,7 +61,7 @@ export function createShellModule(deps) {
       elements.detailPanel.style.removeProperty("--swipe-offset");
       syncMobileNavigation();
       if (typeof window._currentTabRefresh === "function") window._currentTabRefresh();
-    }, 180);
+    }, 260);
   }
 
   function goBackToList(animated = false) {

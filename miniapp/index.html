@@ -7,6 +7,16 @@
       content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
     />
     <title>Арома помощник</title>
+    <style>
+      /* Critical splash styles — visible before external CSS loads */
+      .splash{position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:#251e18}
+      .splash .brand-loader-letter{color:#b45c3d;font-size:54px;font-weight:700;animation:splash-pulse 1.4s ease-in-out infinite}
+      .splash .brand-loader-ring{position:absolute;inset:0;border:2.5px solid rgba(180,92,61,.18);border-top-color:#b45c3d;border-radius:50%;animation:splash-spin .9s linear infinite}
+      .splash .brand-loader{position:relative;width:120px;height:120px;display:flex;align-items:center;justify-content:center}
+      @keyframes splash-pulse{0%,100%{opacity:1}50%{opacity:.5}}
+      @keyframes splash-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+      body.app-ready .splash{opacity:0;pointer-events:none;transition:opacity .35s ease}
+    </style>
     <link rel="stylesheet" href="/static/app.css?v=__ASSET_VERSION__" />
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
   </head>
@@ -37,41 +47,47 @@
             <!-- Tabs injected by JS based on mode -->
           </div>
         </div>
-        <div class="toolbar-inner-filters" id="filtersContainer">
-          <label>
-            Тип
-            <select id="kindFilter">
-              <option value="">Все</option>
-              <option value="threads">Threads</option>
-              <option value="instagram">Instagram</option>
-              <option value="telegram">Telegram</option>
-              <option value="reels">Reels</option>
-              <option value="carousel">Карусель</option>
-            </select>
-          </label>
-          <label>
-            Статус
-            <select id="statusFilter">
-              <option value="">Все</option>
-              <option value="draft">Черновик</option>
-              <option value="in_review">На согласовании</option>
-              <option value="approved">Согласовано</option>
-              <option value="rejected">Не согласовано</option>
-              <option value="published">Опубликовано</option>
-            </select>
-          </label>
-          <label>
-            Результат
-            <select id="feedbackFilter">
-              <option value="">Все</option>
-              <option value="worked">Сработало</option>
-              <option value="missed">Не сработало</option>
-            </select>
-          </label>
-          <label class="search">
-            Поиск
-            <input id="queryFilter" type="search" placeholder="Тема, формат, источник" />
-          </label>
+        <div class="filters-collapse" id="filtersContainer">
+          <button class="filters-toggle" id="filtersToggleBtn" type="button">
+            <span id="filtersToggleLabel">Фильтры</span>
+            <i data-lucide="chevron-down" class="filters-toggle-icon"></i>
+          </button>
+          <div class="toolbar-inner-filters filters-body" id="filtersBody" hidden>
+            <label>
+              Тип
+              <select id="kindFilter">
+                <option value="">Все</option>
+                <option value="threads">Threads</option>
+                <option value="instagram">Instagram</option>
+                <option value="telegram">Telegram</option>
+                <option value="reels">Reels</option>
+                <option value="carousel">Карусель</option>
+              </select>
+            </label>
+            <label>
+              Статус
+              <select id="statusFilter">
+                <option value="">Все</option>
+                <option value="draft">Черновик</option>
+                <option value="in_review">На согласовании</option>
+                <option value="approved">Согласовано</option>
+                <option value="rejected">Не согласовано</option>
+                <option value="published">Опубликовано</option>
+              </select>
+            </label>
+            <label>
+              Результат
+              <select id="feedbackFilter">
+                <option value="">Все</option>
+                <option value="worked">Сработало</option>
+                <option value="missed">Не сработало</option>
+              </select>
+            </label>
+            <label class="search">
+              Поиск
+              <input id="queryFilter" type="search" placeholder="Тема, формат, источник" />
+            </label>
+          </div>
         </div>
       </section>
 

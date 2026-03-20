@@ -454,6 +454,40 @@ p,
 /* Tabs row stays full width */
 .tabs { grid-column: 1 / -1; }
 
+/* Filters collapse */
+.filters-collapse {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.filters-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--surface-2, var(--surface));
+  border: 1px solid var(--border);
+  border-radius: var(--radius, 8px);
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.filters-toggle:hover { color: var(--text-primary); }
+
+.filters-toggle .filters-toggle-icon {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.2s ease;
+}
+
+.filters-toggle.is-open .filters-toggle-icon {
+  transform: rotate(180deg);
+}
+
 /* Mobile: 2-column filter grid */
 .toolbar-inner-filters {
   display: grid;
@@ -879,6 +913,12 @@ body.app-ready .splash {
 
 .detail-loader-copy span {
   font-size: 13px;
+  animation: detail-loader-pulse 2s ease-in-out infinite;
+}
+
+@keyframes detail-loader-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
 }
 
 /* ═══════════════════════════════════════
@@ -1967,8 +2007,8 @@ body.tg-theme-dark .danger-button {
 
 .detail-panel.swipe-back-exit {
   transform: translateX(100%);
-  opacity: 0.82;
-  transition: transform 0.18s ease, opacity 0.18s ease;
+  opacity: 0.6;
+  transition: transform 0.25s var(--ease-standard, ease), opacity 0.25s var(--ease-standard, ease);
 }
 
 /* ── Pull-to-refresh ─────────────────────────────────────────────────────── */
@@ -2074,6 +2114,11 @@ body.tg-theme-dark .danger-button {
   font-size: 11px;
   color: var(--text-secondary);
   pointer-events: none;
+}
+
+.threads-char-counter.is-warn {
+  color: #d4a017;
+  font-weight: 500;
 }
 
 .threads-char-counter.is-over {
@@ -2386,8 +2431,16 @@ body.tg-theme-dark .danger-button {
     flex: 0 1 auto;
   }
 
+  .list-panel {
+    transition: opacity var(--duration-medium, 180ms) var(--ease-standard, ease),
+                transform var(--duration-medium, 180ms) var(--ease-standard, ease);
+  }
+
   .list-panel.hidden-mobile {
-    display: none !important;
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(-30px);
   }
 
   .detail-panel.hidden-mobile {

@@ -126,6 +126,14 @@ export function createSessionModule(deps) {
         const slideImages = Array.isArray(payload.slide_images) ? payload.slide_images : [];
         const slideCount = Array.isArray(payload.slides) ? payload.slides.length : 0;
         const readyCount = slideImages.filter(Boolean).length;
+        // Auto-close prompt disclosures for slides that now have images
+        const prevPayload = state.selected?.draft_id === draftId ? (state.selected.payload || {}) : {};
+        const prevImages = Array.isArray(prevPayload.slide_images) ? prevPayload.slide_images : [];
+        slideImages.forEach((img, idx) => {
+          if (img?.url && !prevImages[idx]?.url) {
+            state.openPromptPanels[`carousel:${draftId}:${idx}`] = false;
+          }
+        });
         state.drafts = state.drafts.map((item) => item.draft_id === draft.draft_id ? { ...item, ...draft } : item);
         if (isCurrentDraftDetail(draft.draft_id)) {
           state.selected = draft;
