@@ -14,7 +14,7 @@ import asyncio
 import logging
 import subprocess
 
-from telegram import Update
+from telegram import BotCommand, Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
 from config import settings
@@ -203,6 +203,22 @@ async def cmd_costs(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         )
 
 
+MONITOR_COMMANDS = [
+    BotCommand("status", "Статус сервисов"),
+    BotCommand("load", "CPU / RAM / диск"),
+    BotCommand("logs", "Последние логи aroma-bot"),
+    BotCommand("errors", "Ошибки из логов"),
+    BotCommand("restart", "Перезапуск aroma-bot"),
+    BotCommand("costs", "Статистика расходов API"),
+    BotCommand("help", "Справка"),
+]
+
+
+async def _monitor_post_init(application: Application) -> None:
+    await application.bot.set_my_commands(MONITOR_COMMANDS)
+    logger.info("Monitor bot commands registered")
+
+
 def main() -> None:
     app = (
         Application.builder()
@@ -210,6 +226,7 @@ def main() -> None:
         .connect_timeout(30)
         .read_timeout(30)
         .write_timeout(30)
+        .post_init(_monitor_post_init)
         .build()
     )
     app.add_handler(CommandHandler("start", cmd_help))
