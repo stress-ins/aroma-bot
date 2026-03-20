@@ -12,7 +12,7 @@ from .common import _extract_ru_name, _normalize, _public_payload, _SYMPTOM_STOP
 
 # Alias map: variant product names → canonical slug in DB
 _OIL_NAME_ALIASES: dict[str, str] = {
-    "sacred frankincense": "frankincense",
+    "sacred frankincense": "sacred-frankincense",
     "frereana frankincense": "frankincense",
     "eucalyptus blue": "eucaliptus-blue",
     "eucalyptus radiata": "ravintsara",
@@ -24,14 +24,37 @@ _OIL_NAME_ALIASES: dict[str, str] = {
     "tea tree melaleuca alternifolia": "tea-tree",
     "amazonian ylang ylang": "ylang-ylang",
     "plectranthus oregano": "oregano",
+    # Simple English names → slug (cards exist in DB)
+    "basil": "basil",
+    "bay laurel": "bay-laurel",
+    "laurus nobilis": "bay-laurel",
+    "carrot seed": "carrot-seed",
+    "cypress": "cypress",
+    "dill": "dill",
+    "fennel": "fennel",
+    "ginger": "ginger",
+    "juniper": "juniper",
+    "myrrh": "myrrh",
+    "мирра": "myrrh",
+    "neroli": "neroli",
+    "rosemary": "rosemary",
+    "sandalwood": "sandalwood",
+    "clary sage": "clary-sage",
+    "elemi": "elemi",
 }
 
 # Regex for garbage entries from PDF parser
 _GARBAGE_RE = re.compile(
-    r"^[(*•]"               # starts with (, *, •
+    r"^[(*•^_]"             # starts with (, *, •, ^, _
     r"|РЕКОМЕНДАЦИИ"         # section header leaked into names
     r"|  "                   # double space — glued tokens
     r"|\)$"                  # trailing paren without opening (e.g. "Иланг-иланг)")
+)
+
+# OCR prefix pattern: 1-3 lowercase letters (or punctuation) + space + uppercase start
+# e.g. "wk Copaiba", "чк Clove", "^k Fennel", "k Cistus", "w- Lemon", "i Rosemary"
+_OCR_PREFIX_RE = re.compile(
+    r"^[a-zа-яё~\-'^]{1,3}\s+[A-ZА-ЯЁ]"
 )
 
 
@@ -40,6 +63,12 @@ def _is_garbage_name(name: str) -> bool:
     if len(name) < 3:
         return True
     if _GARBAGE_RE.search(name):
+        return True
+    # OCR column-bleed prefixes: "wk Copaiba", "чк Clove", etc.
+    if _OCR_PREFIX_RE.match(name):
+        return True
+    # Russian sentences / book instructions: long strings starting with lowercase
+    if len(name) > 30 and name[0].islower():
         return True
     return False
 
