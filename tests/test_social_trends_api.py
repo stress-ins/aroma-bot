@@ -207,7 +207,8 @@ class TestMonitoredAccounts:
 
         # Remove
         resp = client.delete(
-            "/api/social/monitored-accounts/instagram/new_competitor",
+            "/api/social/monitored-accounts/instagram",
+            params={"username": "new_competitor"},
             headers=headers,
         )
         assert resp.status_code == 200

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from pydantic import BaseModel
 
 from bot.services.brand_settings_store import get_brand_settings, update_brand_settings
@@ -168,10 +168,10 @@ async def add_monitored_account(
     return {"added": new_entry, "total": len(accounts)}
 
 
-@router.delete("/api/social/monitored-accounts/{platform}/{username}")
+@router.delete("/api/social/monitored-accounts/{platform}")
 async def remove_monitored_account(
     platform: str,
-    username: str,
+    username: str = Query(..., description="Account username to remove"),
     ctx: TeamContext = Depends(require_team_role("editor")),
 ):
     """Remove a monitored account."""
