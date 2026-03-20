@@ -129,7 +129,7 @@ export function createBlendConstructorModule(deps) {
         .filter(([, k]) => (p[k] || 0) > 0)
         .map(([lbl, k]) => `<div class="profile-bar-row"><div class="profile-bar-label"><span>${lbl}</span><span>${p[k]}%</span></div><div class="profile-bar"><div class="profile-bar-fill" style="width:${p[k]}%"></div></div></div>`).join("");
     }
-    function blendToggleOil(oilId) {
+    window.blendToggleOil = function blendToggleOil(oilId) {
       const oil = blendState.oils.find(o => (o.db_id || o.name_ru) === oilId);
       if (!oil) return;
       if (oil.active && blendState.oils.filter(o => o.active).length <= 1) return;
@@ -639,7 +639,6 @@ export function createBlendConstructorModule(deps) {
     savedBlendLaunchContent,
     deleteSavedBlend,
     deleteSavedBlendFromDetail,
-    blendToggleOil,
     shareBlend,
     openSharedBlend,
   };

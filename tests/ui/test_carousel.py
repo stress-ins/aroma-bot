@@ -7,13 +7,18 @@ from PIL import Image as _PIL
 from playwright.sync_api import Error
 
 
-def test_carousel_detail_shows_prompt_copy_buttons(page):
+def _navigate_to_carousel(page):
+    """Navigate to carousel card in drafts list."""
     page.locator("#btnTabDrafts").click()
-    page.wait_for_timeout(100)
-    page.evaluate("window.goBackToList()")
-    page.get_by_text("Сенсорная карусель для вечернего ритуала").first.wait_for(state="visible")
-    page.get_by_text("Сенсорная карусель для вечернего ритуала").first.click()
-    page.wait_for_timeout(100)
+    page.wait_for_timeout(300)
+    card = page.get_by_text("Сенсорная карусель для вечернего ритуала").first
+    card.wait_for(state="visible", timeout=10000)
+    card.click()
+    page.wait_for_timeout(300)
+
+
+def test_carousel_detail_shows_prompt_copy_buttons(page):
+    _navigate_to_carousel(page)
 
     assert page.get_by_role("button", name="Скопировать промпт слайда").count() >= 1
     assert page.get_by_text("Сохранить подпись").count() >= 1
@@ -23,12 +28,7 @@ def test_carousel_detail_shows_prompt_copy_buttons(page):
 
 def test_carousel_preview_button_opens_modal(page):
     """Preview button should fetch PNG and show preview modal."""
-    page.locator("#btnTabDrafts").click()
-    page.wait_for_timeout(100)
-    page.evaluate("window.goBackToList()")
-    page.get_by_text("Сенсорная карусель для вечернего ритуала").first.wait_for(state="visible")
-    page.get_by_text("Сенсорная карусель для вечернего ритуала").first.click()
-    page.wait_for_timeout(100)
+    _navigate_to_carousel(page)
 
     _img = _PIL.new("RGB", (100, 100), "red")
     _buf = BytesIO()
@@ -58,10 +58,7 @@ def test_carousel_preview_button_opens_modal(page):
 
 
 def test_mobile_carousel_actions_use_two_columns(page):
-    page.locator("#btnTabDrafts").click()
-    page.wait_for_timeout(100)
-    page.get_by_text("Сенсорная карусель для вечернего ритуала").first.click()
-    page.wait_for_timeout(100)
+    _navigate_to_carousel(page)
 
     columns = page.locator(".prompt-actions.actions-grid-two").first.evaluate(
         "(node) => getComputedStyle(node).gridTemplateColumns"
