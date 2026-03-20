@@ -372,7 +372,7 @@ export function registerWindowBridge(deps) {
 
   window._syncCharCount = function(el) {
     const target = document.getElementById(el.dataset.countTarget);
-    if (target) target.textContent = el.value.length;
+    if (target) target.textContent = el.value.length + " / 500";
   };
 
   window._selectInput = function(el) {

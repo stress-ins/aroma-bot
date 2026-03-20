@@ -1133,6 +1133,15 @@ function draftHeroSummary(draft, payload, mainText) {
   return "Материал готов к редакторскому проходу и согласованию.";
 }
 
+function pluralize(n, forms) {
+  const abs = Math.abs(n) % 100;
+  const n1 = abs % 10;
+  if (abs > 10 && abs < 20) return forms[2];
+  if (n1 > 1 && n1 < 5) return forms[1];
+  if (n1 === 1) return forms[0];
+  return forms[2];
+}
+
 function formatPlanDate(value) {
   let text = String(value || "").trim();
   if (!text) return "";
