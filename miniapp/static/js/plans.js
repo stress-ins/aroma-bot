@@ -504,19 +504,18 @@ export function createPlansModule(deps) {
   }
 
   function renderPlansSwitcher(active) {
-    return `<div class="plans-sub-switcher">
-      <button class="tab-button${active === "publications" ? " active" : ""}" data-action="setPlansSubMode" data-args='["publications"]'>Публикации</button>
-      <button class="tab-button${active === "mentions" ? " active" : ""}" data-action="setPlansSubMode" data-args='["mentions"]'>Упоминания</button>
-    </div>`;
+    return `<button class="header-tab${active === "publications" ? " active" : ""}" data-action="setPlansSubMode" data-args='["publications"]'>Публикации</button>
+      <button class="header-tab${active === "mentions" ? " active" : ""}" data-action="setPlansSubMode" data-args='["mentions"]'>Упоминания</button>`;
   }
 
   function renderPlans() {
     const subMode = state.plansSubMode || "publications";
+    elements.headerTabs.innerHTML = renderPlansSwitcher(subMode);
 
     if (subMode === "mentions") {
       elements.listTitle.textContent = "Упоминания";
       elements.draftCount.textContent = "";
-      elements.draftList.innerHTML = renderPlansSwitcher("mentions") + `<div id="plans-container"></div>`;
+      elements.draftList.innerHTML = `<div id="plans-container"></div>`;
       if (window.mentionsModule) {
         window.mentionsModule.loadMentions();
       }
@@ -541,7 +540,6 @@ export function createPlansModule(deps) {
     const plans = state.plans || [];
     elements.draftList.innerHTML = `
       <div class="plans-sticky-header">
-        ${renderPlansSwitcher("publications")}
         ${renderCalendarStrip(filters.date, state.plansFeedDates || [])}
         ${renderStatusFilters(filters.status)}
         ${renderPlatformFilters(filters.platform)}

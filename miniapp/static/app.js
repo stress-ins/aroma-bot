@@ -130,6 +130,7 @@ const elements = {
   draftList: document.getElementById("draftList"),
   draftDetail: document.getElementById("draftDetail"),
   draftCount: document.getElementById("draftCount"),
+  headerTabs: document.getElementById("headerTabs"),
   listTitle: document.getElementById("listTitle"),
   emptyState: document.getElementById("emptyState"),
   kindFilter: document.getElementById("kindFilter"),
@@ -2028,6 +2029,7 @@ function setTab(t) {
   elements.filtersContainer.hidden = !["drafts", "inbox"].includes(t);
   
   // Clear panels immediately to prevent showing tools/content from previous tab
+  if (elements.headerTabs) elements.headerTabs.innerHTML = "";
   setEmptyState(true);
   elements.listTitle.textContent = "Загрузка...";
   elements.draftCount.textContent = "";

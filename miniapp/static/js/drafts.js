@@ -138,10 +138,8 @@ export function createDraftsModule(deps) {
   }
 
   function renderContentSwitcher(active) {
-    return `<div class="content-sub-switcher">
-      <button class="tab-button${active === "drafts" ? " active" : ""}" data-action="setContentSubMode" data-args='["drafts"]'>Черновики</button>
-      <button class="tab-button${active === "trends" ? " active" : ""}" data-action="setContentSubMode" data-args='["trends"]'>Тренды</button>
-    </div>`;
+    return `<button class="header-tab${active === "drafts" ? " active" : ""}" data-action="setContentSubMode" data-args='["drafts"]'>Черновики</button>
+      <button class="header-tab${active === "trends" ? " active" : ""}" data-action="setContentSubMode" data-args='["trends"]'>Тренды</button>`;
   }
 
   function renderDraftList() {
@@ -154,7 +152,8 @@ export function createDraftsModule(deps) {
       actionLabel: "Открыть создание",
       action: "openCreateTool()",
     });
-    elements.draftList.innerHTML = renderContentSwitcher("drafts") + state.drafts.map((d, idx) => `
+    elements.headerTabs.innerHTML = renderContentSwitcher("drafts");
+    elements.draftList.innerHTML = state.drafts.map((d, idx) => `
       <article ${interactiveCardAttrs(`Открыть черновик ${d.topic}`)} class="draft-card overview-card${d.draft_id === state.draftId ? " active" : ""}${d.generation_pending ? " is-pending" : ""} interactive-card" data-action="openDraft" data-args='${JSON.stringify([d.draft_id])}'>
         <div class="overview-card-top">
           <div class="draft-kind">${contentKindIcon(d.kind)}<span>${escapeHtml(kindLabel(d.kind))}</span></div>
