@@ -562,6 +562,8 @@ export function createDraftsModule(deps) {
           eyebrow: "Детали",
           title: "Выберите элемент из списка",
           body: "Откройте карточку слева, чтобы увидеть детали, правки и быстрые действия.",
+          actionLabel: "Создать черновик",
+          action: "openCreateTool()",
         })}
       </div>
     `;
