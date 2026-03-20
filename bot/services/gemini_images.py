@@ -76,6 +76,33 @@ _KIE_GPT_IMAGE_RATIO_MAP: dict[str, str] = {
 }
 
 
+def _extract_kie_image_url(data: dict) -> str | None:
+    """Extract image URL from KIE response data (shared by poll and callback)."""
+    inner = data.get("data", {}) if isinstance(data.get("data"), dict) else {}
+    state = inner.get("state") or data.get("state", "")
+    if state != "success":
+        return None
+    result_json_raw = inner.get("resultJson") or data.get("resultJson", "")
+    try:
+        result_obj = json.loads(result_json_raw) if isinstance(result_json_raw, str) else result_json_raw
+    except (json.JSONDecodeError, TypeError):
+        result_obj = {}
+    urls: list[str] = []
+    if isinstance(result_obj, dict):
+        urls = result_obj.get("resultUrls", [])
+        if not urls:
+            inner_data = result_obj.get("data", {})
+            if isinstance(inner_data, dict):
+                urls = inner_data.get("result_urls", []) or inner_data.get("resultUrls", [])
+    if urls:
+        return urls[0]
+    for src in (inner, data):
+        for key in ("resultImageUrl", "resultImage", "imageUrl", "url"):
+            if src.get(key):
+                return src[key]
+    return None
+
+
 def _kie_submit(
     prompt: str,
     headers: dict[str, str],
@@ -83,6 +110,7 @@ def _kie_submit(
     image_urls: list[str] | None,
     log_context: str,
     model: str | None = None,
+    callback_url: str = "",
 ) -> str | None:
     """Submit a task to Kie.ai. Returns taskId or None."""
     model_id = model or _KIE_MODEL
@@ -106,7 +134,7 @@ def _kie_submit(
     payload: dict[str, object] = {
         "model": model or _KIE_MODEL,
         "type": task_type,
-        "callBackUrl": "",
+        "callBackUrl": callback_url,
         "input": input_block,
     }
 
@@ -148,10 +176,33 @@ def _kie_submit(
     return None
 
 
-def _kie_poll(task_id: str, headers: dict[str, str], log_context: str) -> str | None:
-    """Poll Kie.ai for task result. Returns image URL or None."""
+def _kie_poll(
+    task_id: str,
+    headers: dict[str, str],
+    log_context: str,
+    *,
+    task_id_for_db_check: str | None = None,
+) -> str | None:
+    """Poll Kie.ai for task result. Returns image URL or None.
+
+    If *task_id_for_db_check* is set, every 5 iterations (~20 s) check the DB
+    to see if the webhook callback already delivered the result.
+    """
+    _DB_CHECK_INTERVAL = 5  # every 5 poll iterations
+
     time.sleep(_POLL_INITIAL_DELAY)
     for poll in range(_POLL_MAX_ATTEMPTS):
+        # --- DB short-circuit: callback may have arrived ---
+        if task_id_for_db_check and poll > 0 and poll % _DB_CHECK_INTERVAL == 0:
+            try:
+                from bot.services.kie_task_store import get_task_sync
+                db_task = get_task_sync(task_id_for_db_check)
+                if db_task and db_task.status == "success" and db_task.image_url:
+                    logger.info("%s: callback already delivered for %s, skipping poll", log_context, task_id)
+                    return db_task.image_url
+            except Exception:
+                pass  # DB check is best-effort
+
         try:
             with httpx.Client(timeout=_POLL_TIMEOUT) as client:
                 resp = client.get(
@@ -165,25 +216,9 @@ def _kie_poll(task_id: str, headers: dict[str, str], log_context: str) -> str | 
             state = inner.get("state") or data.get("state", "")
 
             if state == "success":
-                result_json_raw = inner.get("resultJson") or data.get("resultJson", "")
-                try:
-                    result_obj = json.loads(result_json_raw) if isinstance(result_json_raw, str) else result_json_raw
-                except (json.JSONDecodeError, TypeError):
-                    result_obj = {}
-                urls = []
-                if isinstance(result_obj, dict):
-                    urls = result_obj.get("resultUrls", [])
-                    if not urls:
-                        inner_data = result_obj.get("data", {})
-                        if isinstance(inner_data, dict):
-                            urls = inner_data.get("result_urls", []) or inner_data.get("resultUrls", [])
-                if urls:
-                    return urls[0]
-                # Fallback: check known URL fields
-                for src in (inner, data):
-                    for key in ("resultImageUrl", "resultImage", "imageUrl", "url"):
-                        if src.get(key):
-                            return src[key]
+                url = _extract_kie_image_url(data)
+                if url:
+                    return url
                 logger.warning("%s: Kie success but no image URL: %s", log_context, str(data)[:300])
                 _notify_image_failure(log_context, f"success but no image URL\n{str(data)[:200]}")
                 return None
@@ -323,10 +358,15 @@ def generate_gemini_image_sync(
     image_urls: list[str] | None = None,
     log_context: str = "image",
     model: str | None = None,
+    draft_id: str | None = None,
+    content_type: str = "",
+    slot_key: str = "",
 ) -> ImageGenResult:
     """Generate an image. Uses Kie.ai (primary) with NanoBanana fallback.
 
     Returns ImageGenResult with image_bytes and kie_task_id (if applicable).
+    When draft_id + content_type are provided, the task is registered in DB
+    so the webhook callback can deliver the result without polling.
     """
     kie_key = settings.kie_ai_api_key
     nano_key = settings.nana_banana_api_key
@@ -336,14 +376,33 @@ def generate_gemini_image_sync(
 
     ar = aspect_ratio or "1:1"
 
+    # Build callback URL if configured
+    callback_url = ""
+    base = settings.kie_callback_base_url.strip().rstrip("/")
+    if base:
+        callback_url = f"{base}/api/webhooks/kie-callback"
+
     # --- Primary: Kie.ai ---
     kie_task_id: str | None = None
     if kie_key:
         headers = {"Authorization": f"Bearer {kie_key}", "Content-Type": "application/json"}
-        kie_task_id = _kie_submit(prompt, headers, ar, image_urls, log_context, model=model)
+        kie_task_id = _kie_submit(prompt, headers, ar, image_urls, log_context, model=model, callback_url=callback_url)
         if kie_task_id:
-            logger.info("%s: Kie submitted taskId=%s", log_context, kie_task_id)
-            image_url = _kie_poll(kie_task_id, headers, log_context)
+            logger.info("%s: Kie submitted taskId=%s (callback=%s)", log_context, kie_task_id, bool(callback_url))
+            # Register in DB for callback tracking
+            if draft_id and content_type:
+                from bot.services.kie_task_store import register_task_sync
+                register_task_sync(
+                    kie_task_id,
+                    draft_id=draft_id,
+                    content_type=content_type,
+                    slot_key=slot_key,
+                    prompt=prompt[:4000],
+                    aspect_ratio=ar,
+                    model=model or _KIE_MODEL,
+                )
+            db_check_id = kie_task_id if (draft_id and content_type) else None
+            image_url = _kie_poll(kie_task_id, headers, log_context, task_id_for_db_check=db_check_id)
             if image_url:
                 img_bytes = _download_image(image_url, log_context)
                 if img_bytes:
@@ -385,33 +444,10 @@ def recover_kie_task_sync(task_id: str) -> ImageGenResult:
         if state != "success":
             return ImageGenResult(kie_task_id=task_id, error=f"task state: {state}")
 
-        result_json_raw = inner.get("resultJson") or data.get("resultJson", "")
-        try:
-            result_obj = json.loads(result_json_raw) if isinstance(result_json_raw, str) else result_json_raw
-        except (json.JSONDecodeError, TypeError):
-            result_obj = {}
-
-        urls: list[str] = []
-        if isinstance(result_obj, dict):
-            urls = result_obj.get("resultUrls", [])
-            if not urls:
-                inner_data = result_obj.get("data", {})
-                if isinstance(inner_data, dict):
-                    urls = inner_data.get("result_urls", []) or inner_data.get("resultUrls", [])
-
-        if not urls:
-            for src in (inner, data):
-                for key in ("resultImageUrl", "resultImage", "imageUrl", "url"):
-                    if src.get(key):
-                        urls = [src[key]]
-                        break
-                if urls:
-                    break
-
-        if not urls:
+        image_url = _extract_kie_image_url(data)
+        if not image_url:
             return ImageGenResult(kie_task_id=task_id, error="success but no image URL in response")
 
-        image_url = urls[0]
         img_bytes = _download_image(image_url, log_context)
         if img_bytes:
             return ImageGenResult(image_bytes=img_bytes, kie_task_id=task_id, image_url=image_url)

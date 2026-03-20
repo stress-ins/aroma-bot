@@ -57,9 +57,23 @@ async def _lifespan(app: FastAPI):  # noqa: ARG001
     from bot.services.carousel_assets import populate_carousel_slide_assets
     from bot.services.reels_assets import populate_reels_frame_assets
     from miniapp.api.generation import complete_carousel_generation, complete_reels_generation
+    from bot.services.kie_task_store import cleanup_expired
 
     await preload_brand_settings()
     _ready = True  # ready to serve traffic before recovery
+
+    # Periodic cleanup of expired KIE tasks
+    async def _periodic_kie_cleanup():
+        while True:
+            await asyncio.sleep(30 * 60)  # every 30 minutes
+            try:
+                count = await cleanup_expired()
+                if count:
+                    logger.info("kie_cleanup: expired %d stale tasks", count)
+            except Exception:
+                logger.debug("kie_cleanup: error", exc_info=True)
+
+    asyncio.create_task(_periodic_kie_cleanup())
 
     recovery_lock = _acquire_startup_recovery_lock()
     try:
@@ -113,6 +127,7 @@ def _setup_mounts_and_routers():
         blend_constructor, carousel, create, drafts, keywords, mentions,
         misc, plans, publish, recommendations, references, reels, social,
         social_trends, teams, thread_monitor, threads_series, tokens, trends, user,
+        webhooks,
     )
 
     app.mount("/generated/reels_assets", StaticFiles(directory=ASSETS_DIR), name="reels-generated-assets")
@@ -130,7 +145,7 @@ def _setup_mounts_and_routers():
         plans.router, recommendations.router, references.router, create.router,
         keywords.router, misc.router, publish.router, social.router, social_trends.router,
         teams.router, thread_monitor.router, threads_series.router, trends.router, mentions.router,
-        tokens.router, user.router,
+        tokens.router, user.router, webhooks.router,
     ):
         app.include_router(_router)
 

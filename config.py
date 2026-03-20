@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     gemini_api_key: str = ""  # deprecated, kept for .env compat
     nana_banana_api_key: str = ""
     kie_ai_api_key: str = ""
+    kie_callback_base_url: str = ""  # e.g. "https://app.aromara.ru"
     replicate_api_key: str = ""
 
     @property
