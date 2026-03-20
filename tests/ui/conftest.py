@@ -166,19 +166,25 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
             "INSERT INTO aroma_cards (slug, name, category, source_type, aliases, payload, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             (slug, name, category, source_type, json.dumps([]), json.dumps({}), now, now),
         )
-    for slug, name, cat_group in [
-        ("headache", "Головная боль", "НЕРВНАЯ СИСТЕМА"),
-        ("anxiety", "Тревожность", "НЕРВНАЯ СИСТЕМА"),
-        ("indigestion", "Несварение желудка", "ПИЩЕВАРЕНИЕ"),
-        ("insomnia", "Бессонница", "СОН И ОТДЫХ"),
-        ("fatigue", "Усталость и истощение", "ЭНЕРГИЯ"),
-        ("hypertension", "Гипертония", "СЕРДЕЧНО-СОСУДИСТАЯ"),
-        ("depression", "Депрессия", "ПСИХОЭМОЦИОНАЛЬНОЕ"),
-        ("allergy", "Аллергия", "ИММУНИТЕТ И КОЖА"),
-    ]:
+    symptom_rows = [
+        ("headache", "Головная боль", "НЕРВНАЯ СИСТЕМА", [], []),
+        ("anxiety", "Тревожность", "НЕРВНАЯ СИСТЕМА", ["lavender"], ["grounding"]),
+        ("indigestion", "Несварение желудка", "ПИЩЕВАРЕНИЕ", [], []),
+        ("insomnia", "Бессонница", "СОН И ОТДЫХ", [], []),
+        ("fatigue", "Усталость и истощение", "ЭНЕРГИЯ", [], []),
+        ("hypertension", "Гипертония", "СЕРДЕЧНО-СОСУДИСТАЯ", [], []),
+        ("depression", "Депрессия", "ПСИХОЭМОЦИОНАЛЬНОЕ", [], []),
+        ("allergy", "Аллергия", "ИММУНИТЕТ И КОЖА", [], []),
+    ]
+    for slug, name, cat_group, oil_slugs, blend_slugs in symptom_rows:
+        payload = {"category_group": cat_group, "parent_group": cat_group}
+        if oil_slugs:
+            payload["recommended_oil_slugs"] = oil_slugs
+        if blend_slugs:
+            payload["recommended_blend_slugs"] = blend_slugs
         cursor.execute(
             "INSERT INTO aroma_cards (slug, name, category, source_type, aliases, payload, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            (slug, name, "symptom", "symptom", json.dumps([]), json.dumps({"category_group": cat_group, "parent_group": cat_group}), now, now),
+            (slug, name, "symptom", "symptom", json.dumps([]), json.dumps(payload), now, now),
         )
     cursor.execute(
         "INSERT INTO mentions (mention_id, platform, external_id, type, author_username, author_name, content, url, context_post, received_at, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",

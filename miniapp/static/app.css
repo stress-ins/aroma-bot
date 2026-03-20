@@ -4654,6 +4654,7 @@ body.tg-theme-dark .blend-constructor-cta { color: #d4845e; }
 .search-group-header { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 16px 0 6px; padding: 0 2px; }
 .search-empty { text-align: center; padding: 24px 12px; color: var(--muted); font-size: 13px; }
 .search-empty .blend-constructor-cta { margin-top: 12px; }
+.search-symptom-tag { display: block; margin-top: 4px; padding: 2px 0; font-size: 11px; font-weight: 500; color: var(--brand, #c27a4a); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* ── Blend Constructor ── */
 .chip-selectable { padding: 6px 12px; border-radius: 99px; border: 1px solid var(--border); background: var(--surface-2); font-size: 12px; font-weight: 500; color: var(--muted); cursor: pointer; transition: 0.15s; }
