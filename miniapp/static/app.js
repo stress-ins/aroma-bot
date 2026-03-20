@@ -79,6 +79,7 @@ document.body.dataset.tab = state.tab;
 
 let reelRefreshTimer = null;
 let carouselRefreshTimer = null;
+let draftRefreshTimer = null;
 let bootstrapWatchdogTimer = null;
 let appBootstrapped = false;
 let startupLoadInFlight = false;
@@ -1284,6 +1285,7 @@ const {
   initDataHeaders,
   scheduleReelsRefresh,
   scheduleCarouselRefresh,
+  scheduleDraftRefresh,
   loadDrafts,
 } = createSessionModule({
   state,
@@ -1293,6 +1295,8 @@ const {
     setReelRefresh: (value) => { reelRefreshTimer = value; },
     getCarouselRefresh: () => carouselRefreshTimer,
     setCarouselRefresh: (value) => { carouselRefreshTimer = value; },
+    getDraftRefresh: () => draftRefreshTimer,
+    setDraftRefresh: (value) => { draftRefreshTimer = value; },
   },
   fetchJson,
   renderDraftList: () => renderDraftList(),
@@ -1400,6 +1404,7 @@ const {
   openPendingReelsCreation: (...a) => openPendingReelsCreation(...a),
   finalizePendingReelsCreation: (...a) => finalizePendingReelsCreation(...a),
   recoverPendingReelsCreation: (...a) => recoverPendingReelsCreation(...a),
+  scheduleDraftRefresh,
 });
 renderPlans = renderPlansImpl;
 
@@ -1717,6 +1722,7 @@ const {
   withButtonFeedback,
   mergeDraftIntoState,
   scheduleCarouselRefresh,
+  scheduleDraftRefresh,
   setEmptyState,
   enterDetailView,
   syncMobileNavigation,

@@ -109,11 +109,8 @@ def test_plan_detail_allows_creating_and_opening_linked_draft(page):
 
     assert page.get_by_role("button", name="Создать Тредс").is_visible()
     page.get_by_role("button", name="Создать Тредс").click()
-    page.wait_for_timeout(100)
+    page.wait_for_timeout(300)
 
-    assert page.get_by_role("button", name="Открыть Тредс").is_visible()
-    page.get_by_role("button", name="Открыть Тредс").click()
-    page.wait_for_timeout(100)
-
+    # After async generation UX: navigates directly to draft detail on drafts tab
     assert page.locator(".detail-title").inner_text().strip() == "Почему вечерний ритуал помогает нервной системе"
     assert page.locator("#btnTabDrafts").get_attribute("class")

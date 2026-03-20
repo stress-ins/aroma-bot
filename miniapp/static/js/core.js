@@ -177,7 +177,7 @@ export function createCoreModule(deps) {
     const message = String(item.generation_message || "").trim();
     const title = kind === "reels"
       ? (stage === "scenario" ? "Собираю сценарий и раскадровку" : stage === "images" ? "Генерирую кадры" : "Собираю рилс")
-      : (stage === "slides" ? "Собираю структуру карусели" : stage === "images" ? "Генерирую картинки" : "Собираю карточку");
+      : (stage === "content" ? "Генерирую контент" : stage === "slides" ? "Собираю структуру карусели" : stage === "images" ? "Генерирую картинки" : "Собираю карточку");
     const total = Number(item.slides_count || item.storyboard_count || 0);
     const ready = Number(item.images_ready || 0);
     const pct = total > 0 ? Math.round((ready / total) * 100) : 0;
