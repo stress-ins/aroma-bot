@@ -689,17 +689,61 @@ export function createReelsModule(deps) {
     const dateStr = deadlineDate.toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
     const concept = r.concept || r.payload?.concept || "";
     const scenario = r.scenario || r.payload?.scenario || "";
+    const frames = Array.isArray(r.frames) ? r.frames : [];
 
     return `
       <div class="detail-grid">
         ${renderBackButton()}
         ${reelsStepperMarkup(r.status, false)}
         <div class="detail-top">
-          <p class="eyebrow">🎬 <span>РИЛС · Согласован</span></p>
+          <p class="eyebrow">🎬 <span>РИЛС · Съёмка</span></p>
           <h2 class="detail-title">${escapeHtml(r.topic)}</h2>
           <div class="draft-meta">
             ${tagMarkup(statusLabel(r.status || "approved"), statusTone(r.status || "approved"))}
           </div>
+        </div>
+
+        ${scenario ? `
+          <section class="section">
+            <h3>${sectionHeadingIcon("Сценарий")}Сценарий</h3>
+            <div class="detail-markdown">${renderMarkdown(scenario)}</div>
+          </section>
+        ` : ""}
+
+        ${concept ? `
+          <section class="section">
+            <h3>${sectionHeadingIcon("Концепция")}Концепция</h3>
+            <div class="detail-markdown">${renderMarkdown(concept)}</div>
+          </section>
+        ` : ""}
+
+        ${frames.length ? `
+          <section class="section">
+            <h3>${sectionHeadingIcon("Кадры")}Кадры</h3>
+            <ol class="reels-frames-list">
+              ${frames.map((f, i) => `<li>${escapeHtml(f.overlay_text || f.description || f.scene || "Кадр " + (i + 1))}</li>`).join("")}
+            </ol>
+          </section>
+        ` : ""}
+
+        <div class="actions-row" style="margin-top:8px;gap:8px;flex-wrap:wrap">
+          <button class="secondary-button compact" type="button" data-action="updateDraft" data-args='${JSON.stringify(["status", { status: "draft" }, null])}'>
+            ${actionLabel("undo", "На доработку")}
+          </button>
+          <button class="secondary-button compact danger" type="button" data-action="deleteDraft" data-args='${JSON.stringify([r.draft_id, "reels", null])}'>
+            ${actionLabel("delete", "Удалить")}
+          </button>
+          <button class="secondary-button compact" type="button" data-action="sendDraftToChat" data-args='${JSON.stringify([r.draft_id, null])}'>
+            ${actionLabel("chat", "В чат")}
+          </button>
+        </div>
+
+        <div class="reels-upload-zone">
+          <div class="reels-upload-title">Загрузить видео</div>
+          <div class="reels-upload-hint">Запишите рилс по сценарию и загрузите через Telegram-бот командой /upload</div>
+          <button class="secondary-button" type="button" data-action="sendDraftToChat" data-args='${JSON.stringify([r.draft_id, null])}'>
+            ${actionLabel("chat", "Открыть в боте")}
+          </button>
         </div>
 
         <div class="reels-shooting-deadline">
@@ -711,33 +755,11 @@ export function createReelsModule(deps) {
               <span class="reels-deadline-l">дней осталось</span>
             </div>
             <div class="reels-deadline-stat">
-              <span class="reels-deadline-n">${(Array.isArray(r.frames) ? r.frames.length : 0)}</span>
+              <span class="reels-deadline-n">${frames.length}</span>
               <span class="reels-deadline-l">кадров в сценарии</span>
             </div>
           </div>
         </div>
-
-        <div class="reels-upload-zone">
-          <div class="reels-upload-title">Загрузить видео</div>
-          <div class="reels-upload-hint">Запишите рилс по сценарию и загрузите через Telegram-бот командой /upload</div>
-          <button class="secondary-button" type="button" data-action="sendDraftToChat" data-args='${JSON.stringify([r.draft_id, null])}'>
-            ${actionLabel("chat", "Открыть в боте")}
-          </button>
-        </div>
-
-        ${concept ? `
-          <section class="section">
-            <h3>${sectionHeadingIcon("Концепция")}Концепция</h3>
-            <div class="detail-markdown">${renderMarkdown(concept)}</div>
-          </section>
-        ` : ""}
-
-        ${scenario ? `
-          <section class="section">
-            <h3>${sectionHeadingIcon("Сценарий")}Сценарий</h3>
-            <div class="detail-markdown">${renderMarkdown(scenario)}</div>
-          </section>
-        ` : ""}
       </div>
     `;
   }
