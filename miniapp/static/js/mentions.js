@@ -9,6 +9,7 @@ export function createMentionsModule(deps) {
     fetchJson,
     escapeHtml,
     withButtonFeedback,
+    showUiNotice,
   } = deps;
 
   // ── State ──────────────────────────────────────────────────────────────────
@@ -114,13 +115,21 @@ export function createMentionsModule(deps) {
 
   // ── Detail view ────────────────────────────────────────────────────────────
 
-  function openMentionDetail(mentionId) {
-    const m = state.mentions.find(x => x.mention_id === mentionId);
-    if (!m) return;
-    state.selectedMention = m;
-    renderMentionDetail(
-      elements.plansContainer || document.getElementById("plans-container")
-    );
+  async function openMentionDetail(mentionId) {
+    const container = elements.plansContainer || document.getElementById("plans-container");
+    try {
+      const detail = await fetchJson(`/api/mentions/${mentionId}`);
+      // Merge fresh detail (with replies) into list state
+      const idx = state.mentions.findIndex(x => x.mention_id === mentionId);
+      if (idx !== -1) state.mentions[idx] = detail;
+      state.selectedMention = detail;
+    } catch (_e) {
+      // Fallback to cached list data
+      const m = state.mentions.find(x => x.mention_id === mentionId);
+      if (!m) return;
+      state.selectedMention = m;
+    }
+    renderMentionDetail(container);
   }
 
   function closeMentionDetail() {
@@ -132,17 +141,20 @@ export function createMentionsModule(deps) {
     const m = state.selectedMention;
     if (!m) return;
 
+    const hasPublished = m.replies && m.replies.some(r => r.published_at);
     const repliesHtml = m.replies && m.replies.length
       ? m.replies.map(r => `
           <div class="reply-option${r.selected ? " is-selected" : ""}">
             <div class="reply-tone-badge">${toneLabel(r.tone)}</div>
             <div class="reply-text">${escapeHtml(r.content)}</div>
             <div class="reply-length">${r.content.length} символов</div>
-            ${!r.published_at ? `
+            ${r.published_at
+              ? `<span class="tag-status-ok"><i data-lucide="check"></i> Опубликовано · ${toneLabel(r.tone)}</span>`
+              : !hasPublished ? `
               <button class="primary-button compact"
                 data-action="publishReply" data-args='${JSON.stringify([m.mention_id, r.reply_id, null])}'>
                 Опубликовать
-              </button>` : `<span class="tag-status-ok">Опубликовано</span>`}
+              </button>` : ""}
             ${r.publish_error ? `<div style="color:var(--danger);font-size:12px">${escapeHtml(r.publish_error)}</div>` : ""}
           </div>`).join("")
       : `<p class="field-help">Ещё нет ответов. Нажми «Сгенерировать».</p>`;
@@ -164,15 +176,15 @@ export function createMentionsModule(deps) {
         <div class="mention-content-text">${escapeHtml(m.content)}</div>
         ${m.url ? `<a href="${escapeHtml(m.url)}" class="mention-link" target="_blank">Открыть оригинал</a>` : ""}
       </div>
+      ${m.status === "pending" ? `
       <div class="mention-actions" style="display:flex;gap:8px;margin:12px 0">
         <button class="primary-button" data-action="generateReplies" data-args='${JSON.stringify([m.mention_id, null])}'>
           <i data-lucide="sparkles"></i> Сгенерировать ответы
         </button>
-        ${m.status === "pending" ? `
-          <button class="secondary-button" data-action="ignoreMentionAction" data-args='${JSON.stringify([m.mention_id, null])}'>
-            <i data-lucide="eye-off"></i> Игнорировать
-          </button>` : ""}
-      </div>
+        <button class="secondary-button" data-action="ignoreMentionAction" data-args='${JSON.stringify([m.mention_id, null])}'>
+          <i data-lucide="eye-off"></i> Игнорировать
+        </button>
+      </div>` : ""}
       <div class="reply-list" id="reply-list-${m.mention_id}">
         ${repliesHtml}
       </div>`;
@@ -191,6 +203,7 @@ export function createMentionsModule(deps) {
         if (state.selectedMention?.mention_id === mentionId) {
           state.selectedMention.replies = data.replies || [];
         }
+        showUiNotice("Ответы сгенерированы", "success");
         renderMentionDetail(
           elements.plansContainer || document.getElementById("plans-container")
         );
@@ -217,6 +230,7 @@ export function createMentionsModule(deps) {
           if (state.selectedMention?.mention_id === mentionId) {
             state.selectedMention.status = "replied";
           }
+          showUiNotice("Ответ опубликован", "success");
         }
         renderMentionDetail(
           elements.plansContainer || document.getElementById("plans-container")
