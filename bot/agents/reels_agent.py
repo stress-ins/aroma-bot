@@ -169,32 +169,45 @@ def generate_reels_director_sync(topic: str, script: str) -> list[StoryboardFram
 
 
 def _parse_draft(raw: str) -> ReelsV2Draft:
-    """Parse structured Claude response into ReelsV2Draft."""
+    """Parse structured Claude response into ReelsV2Draft.
+
+    Handles both plain-text (CONCEPT:) and markdown (**CONCEPT:**) formats.
+    """
     concept = hook = caption = music_mood = ""
     in_scenario = False
     scenario_buf: list[str] = []
 
     for line in raw.splitlines():
         stripped = line.strip()
-        if stripped.startswith("CONCEPT:"):
-            concept = stripped[len("CONCEPT:"):].strip()
+        # Strip markdown bold/heading markers: **CONCEPT:** → CONCEPT:
+        clean = stripped.lstrip("#").strip().replace("**", "").strip()
+
+        if clean.startswith("CONCEPT:"):
+            concept = clean[len("CONCEPT:"):].strip()
             in_scenario = False
-        elif stripped.startswith("HOOK:"):
-            hook = stripped[len("HOOK:"):].strip()
+        elif clean.startswith("HOOK:") or clean.startswith("HOOK "):
+            hook = clean.split(":", 1)[1].strip() if ":" in clean else ""
             in_scenario = False
-        elif stripped.startswith("SCENARIO:"):
+        elif clean.startswith("SCENARIO:") or clean == "SCENARIO":
             in_scenario = True
-            tail = stripped[len("SCENARIO:"):].strip()
+            tail = clean[len("SCENARIO:"):].strip() if ":" in clean else ""
             if tail:
                 scenario_buf.append(tail)
-        elif stripped.startswith("CAPTION:"):
+        elif clean.startswith("CAPTION:"):
             in_scenario = False
-            caption = stripped[len("CAPTION:"):].strip()
-        elif stripped.startswith("MUSIC_MOOD:"):
+            caption = clean[len("CAPTION:"):].strip()
+        elif clean.startswith("MUSIC_MOOD:") or clean.startswith("MUSIC MOOD:"):
             in_scenario = False
-            music_mood = stripped[len("MUSIC_MOOD:"):].strip()
+            music_mood = clean.split(":", 1)[1].strip() if ":" in clean else ""
         elif in_scenario:
             scenario_buf.append(line)
+
+    # Fallback: regex extraction if concept still empty
+    if not concept:
+        import re
+        m = re.search(r'CONCEPT:\s*(.+)', raw, re.IGNORECASE)
+        if m:
+            concept = m.group(1).strip().strip("*").strip()
 
     return ReelsV2Draft(
         concept=concept,
@@ -211,16 +224,17 @@ def _parse_frame_prompts(raw: str, n_frames: int = 4) -> list[FramePromptV2]:
     for i in range(1, n_frames + 1):
         timecode = overlay = prompt = ""
         for line in raw.splitlines():
-            stripped = line.strip()
+            # Strip markdown bold/heading markers
+            clean = line.strip().lstrip("#").strip().replace("**", "").strip()
             key_tc = f"FRAME{i}_TIMECODE:"
             key_ov = f"FRAME{i}_OVERLAY:"
             key_pr = f"FRAME{i}_PROMPT:"
-            if stripped.startswith(key_tc):
-                timecode = stripped[len(key_tc):].strip()
-            elif stripped.startswith(key_ov):
-                overlay = stripped[len(key_ov):].strip()
-            elif stripped.startswith(key_pr):
-                prompt = stripped[len(key_pr):].strip()
+            if clean.startswith(key_tc):
+                timecode = clean[len(key_tc):].strip()
+            elif clean.startswith(key_ov):
+                overlay = clean[len(key_ov):].strip()
+            elif clean.startswith(key_pr):
+                prompt = clean[len(key_pr):].strip()
         if timecode or overlay or prompt:
             frames.append(FramePromptV2(timecode=timecode, overlay_text=overlay, image_prompt=prompt))
     return frames
