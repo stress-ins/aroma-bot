@@ -118,7 +118,17 @@ async def complete_threads_series_generation(
         ts_payload = build_threads_series_payload(draft_obj, goal_key=goal_key, emotion=emotion)
         has_content = any(p.get("text") for p in ts_payload.get("threads_posts", []))
         if not has_content:
-            raise RuntimeError("threads_series generation produced 0 posts")
+            # Retry once with explicit marker instructions
+            import logging as _logging
+            _logging.getLogger(__name__).warning(
+                "threads_series first attempt produced 0 posts for %s, retrying with marker hint", draft_id,
+            )
+            retry_topic = enriched_topic + "\n\nВАЖНО: используй ТОЧНО три маркера: УТРО, ДЕНЬ, ВЕЧЕР — каждый на отдельной строке."
+            draft_obj = await generate_content_draft(retry_topic, goal_key, "threads_series", blend_context=blend_context)
+            ts_payload = build_threads_series_payload(draft_obj, goal_key=goal_key, emotion=emotion)
+            has_content = any(p.get("text") for p in ts_payload.get("threads_posts", []))
+            if not has_content:
+                raise RuntimeError("threads_series generation produced 0 posts after retry")
         if blend_context:
             ts_payload["blend_context"] = blend_context
         if ctx_metadata.get("trend_source"):

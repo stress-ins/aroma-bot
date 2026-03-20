@@ -79,6 +79,16 @@ def _log_cost_sync(
         logger.debug("Cost log write failed: %s", exc)
 
 
+def _has_images(messages: list[dict]) -> bool:
+    """Check if any message contains image content blocks."""
+    for msg in messages:
+        content = msg.get("content")
+        if isinstance(content, list):
+            if any(c.get("type") == "image" for c in content if isinstance(c, dict)):
+                return True
+    return False
+
+
 def call_claude(
     *,
     messages: list[dict],
@@ -93,12 +103,20 @@ def call_claude(
 
     # Primary: Replicate Claude (direct Claude API disabled — organization issue)
     if settings.replicate_api_key:
+        # Route image requests to Gemini Vision
+        use_vision = _has_images(messages)
+
         last_exc: Exception | None = None
         for attempt in range(retries):
             try:
-                text = _call_replicate_claude(
-                    messages=messages, max_tokens=max_tokens, system=system, context=context,
-                )
+                if use_vision:
+                    text = _call_replicate_gemini_vision(
+                        messages=messages, max_tokens=max_tokens, system=system, context=context,
+                    )
+                else:
+                    text = _call_replicate_claude(
+                        messages=messages, max_tokens=max_tokens, system=system, context=context,
+                    )
                 return text
             except Exception as exc:
                 last_exc = exc
@@ -198,7 +216,16 @@ def _call_replicate_claude(
     # Build prompt from messages (Replicate uses prompt, not messages format)
     parts: list[str] = []
     for msg in messages:
-        parts.append(msg["content"])
+        content = msg["content"]
+        if isinstance(content, list):
+            # Extract only text parts from multimodal messages
+            text_parts = [
+                c.get("text", "") for c in content
+                if isinstance(c, dict) and c.get("type") == "text"
+            ]
+            parts.append(" ".join(text_parts))
+        else:
+            parts.append(content)
     prompt = "\n\n".join(parts)
 
     payload: dict = {
@@ -253,6 +280,95 @@ def _call_replicate_claude(
         threading.Thread(
             target=_log_cost_sync,
             args=(today, tid, context, "claude-haiku-4.5/replicate", 0, 0, 0.0),
+            daemon=True,
+        ).start()
+    except Exception:
+        pass
+
+    return text
+
+
+def _call_replicate_gemini_vision(
+    *,
+    messages: list[dict],
+    max_tokens: int,
+    system: str = "",
+    context: str = "Replicate Gemini Vision",
+) -> str:
+    """Call Gemini 2.0 Flash via Replicate for multimodal (image+text) requests."""
+    import httpx
+
+    # Extract text and image from messages
+    text_parts: list[str] = []
+    image_uri: str | None = None
+    if system:
+        text_parts.append(system)
+
+    for msg in messages:
+        content = msg.get("content")
+        if isinstance(content, list):
+            for block in content:
+                if not isinstance(block, dict):
+                    continue
+                if block.get("type") == "text":
+                    text_parts.append(block["text"])
+                elif block.get("type") == "image":
+                    source = block.get("source", {})
+                    if source.get("type") == "base64":
+                        media_type = source.get("media_type", "image/png")
+                        data = source.get("data", "")
+                        image_uri = f"data:{media_type};base64,{data}"
+        elif isinstance(content, str):
+            text_parts.append(content)
+
+    prompt = "\n\n".join(text_parts)
+
+    input_payload: dict = {
+        "prompt": prompt,
+        "max_tokens": max(max_tokens, 1024),
+    }
+    if image_uri:
+        input_payload["image"] = image_uri
+
+    payload: dict = {"input": input_payload}
+
+    for _attempt in range(3):
+        resp = httpx.post(
+            "https://api.replicate.com/v1/models/google/gemini-2.0-flash/predictions",
+            headers={
+                "Authorization": f"Token {settings.replicate_api_key}",
+                "Content-Type": "application/json",
+                "Prefer": "wait=90",
+            },
+            json=payload,
+            timeout=95.0,
+        )
+        if resp.status_code == 429 and _attempt < 2:
+            logger.warning("Replicate Gemini 429, retrying in 10s (attempt %d/3)", _attempt + 1)
+            time.sleep(10)
+            continue
+        resp.raise_for_status()
+        break
+
+    data = resp.json()
+    if data.get("status") != "succeeded":
+        raise ValueError(f"Replicate Gemini prediction status: {data.get('status')}, error: {data.get('error')}")
+
+    output = data.get("output", "")
+    if isinstance(output, list):
+        text = "".join(str(s) for s in output).strip()
+    else:
+        text = str(output or "").strip()
+    if not text:
+        raise ValueError("Replicate Gemini Vision returned empty output")
+
+    # Fire-and-forget cost logging
+    try:
+        tid = current_telegram_id.get()
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        threading.Thread(
+            target=_log_cost_sync,
+            args=(today, tid, context, "gemini-2.0-flash/replicate", 0, 0, 0.0),
             daemon=True,
         ).start()
     except Exception:
