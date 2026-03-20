@@ -23,7 +23,7 @@ export function createTrendsModule(deps) {
     const trimmed = input.trim();
     const urlPatterns = [
       /(?:instagram\.com|instagr\.am)\/([a-zA-Z0-9_.]+)/,
-      /threads\.net\/@?([a-zA-Z0-9_.]+)/,
+      /(?:threads\.net|threads\.com)\/@?([a-zA-Z0-9_.]+)/,
     ];
     for (const pat of urlPatterns) {
       const m = trimmed.match(pat);
@@ -148,7 +148,6 @@ export function createTrendsModule(deps) {
         </div>
       </div>
       ${summary}
-      ${renderMonitoredAccountsSection()}
     `;
   }
 

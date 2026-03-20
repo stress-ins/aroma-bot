@@ -820,7 +820,11 @@ body.app-ready .splash {
 .tag-status-positive { background: rgba(46, 125, 79, 0.12); color: var(--good); border-color: rgba(46, 125, 79, 0.18); }
 .tag-status-negative { background: rgba(176, 58, 46, 0.12); color: var(--bad); border-color: rgba(176, 58, 46, 0.18); }
 .tag-status-review { background: rgba(var(--brand-rgb), 0.12); color: var(--brand); border-color: rgba(var(--brand-rgb), 0.2); }
-.tag-status-neutral { background: rgba(107, 90, 78, 0.12); color: var(--muted); border-color: rgba(107, 90, 78, 0.16); }
+.tag-status-neutral {
+  display: inline-block; font-size: 11px; font-weight: 600;
+  background: rgba(107, 90, 78, 0.12); border: 1px solid rgba(107, 90, 78, 0.16);
+  color: var(--muted); padding: 2px 8px; border-radius: 20px;
+}
 .tag-feedback-worked { background: rgba(46, 125, 79, 0.1); color: var(--good); border-color: rgba(46, 125, 79, 0.16); }
 .tag-feedback-missed { background: rgba(176, 58, 46, 0.1); color: var(--bad); border-color: rgba(176, 58, 46, 0.16); }
 .tag-feedback-neutral { background: rgba(107, 90, 78, 0.1); color: var(--muted); border-color: rgba(107, 90, 78, 0.16); }
@@ -3820,6 +3824,7 @@ body.tg-theme-dark .concept-card {
 .keyword-field { border-top: 1px solid var(--border); padding-top: 10px; }
 
 .keyword-items { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.keyword-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 
 .keyword-chip {
   display: inline-flex;
@@ -4745,8 +4750,8 @@ body.tg-theme-dark .blend-constructor-cta { color: #d4845e; }
 .oil-edit-row.is-removed { opacity: 0.3; }
 .oil-edit-toggle { width: 24px; height: 24px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface-2); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; font-size: 12px; transition: 0.15s; color: var(--brand); }
 .oil-edit-toggle.is-off { background: rgba(176,58,46,.08); border-color: rgba(176,58,46,.2); color: var(--bad); }
-.oil-edit-name { font-size: 13px; font-weight: 600; color: var(--text); flex: 1; }
-.oil-edit-role { font-size: 10px; color: var(--hint); max-width: 54px; text-align: right; line-height: 1.3; }
+.oil-edit-name { font-size: 13px; font-weight: 600; color: var(--text); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.oil-edit-role { font-size: 10px; color: var(--hint); max-width: 54px; text-align: right; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; }
 .oil-edit-drops { padding: 2px 7px; border-radius: 99px; font-size: 11px; font-weight: 700; background: var(--brand-bg); border: 1px solid var(--brand-border); color: var(--brand); min-width: 44px; text-align: center; transition: 0.2s; }
 .oil-edit-drops.is-recalculated { background: rgba(46,125,79,.12); border-color: rgba(46,125,79,.25); color: var(--good); }
 .blend-total-row { display: flex; align-items: center; justify-content: space-between; padding: 7px 0; border-top: 1px solid var(--border); margin-top: 4px; font-size: 12px; color: var(--hint); }
@@ -4795,7 +4800,7 @@ body.tg-theme-dark .blend-constructor-cta { color: #d4845e; }
 .blend-application-label { font-weight: 600; color: var(--hint); margin-right: 4px; }
 .blend-restrictions { margin-top: 7px; padding-top: 7px; border-top: 1px solid var(--border); }
 .blend-restriction-row { display: flex; align-items: flex-start; gap: 7px; margin-bottom: 5px; font-size: 12px; color: var(--muted); flex-wrap: wrap; }
-.blend-restriction-row .chip { flex-shrink: 0; }
+.blend-restriction-row .chip { flex-shrink: 1; min-width: 0; }
 .blend-restriction-row span:not(.chip) { min-width: 0; word-break: break-word; }
 .section-warning { border-color: rgba(176,58,46,.2); background: rgba(176,58,46,.04); }
 .incompat-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--border); font-size: 12px; color: var(--muted); flex-wrap: wrap; }
@@ -5907,12 +5912,16 @@ details[open] > .trend-suggestions-toggle::before { transform: rotate(90deg); }
 .trend-suggestions-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--hint); margin-bottom: 4px; }
 
 /* ── Touch targets for small icon-only buttons (Task 19) ────────────────── */
-.keyword-chip button,
 .keyword-form button,
 .smart-search-clear,
 .rewrite-chip button {
   min-width: 44px;
   min-height: 44px;
+}
+.keyword-chip button {
+  min-width: 28px;
+  min-height: 28px;
+  padding: 4px;
 }
 
 /* ── Chevron affordance for interactive cards (Task 31) ─────────────────── */

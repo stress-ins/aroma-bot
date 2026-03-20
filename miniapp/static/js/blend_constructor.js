@@ -423,8 +423,10 @@ export function createBlendConstructorModule(deps) {
     const req = _blendState.origRequest;
     const prevResult = _blendState.result;
     // Collect oils that user toggled off — tell LLM to exclude them
-    const excludeOils = (_blendState.oils || [])
-      .map(o => o.name_ru);
+    const activeOils = (_blendState.oils || []).filter(o => o.active).map(o => o.name_ru);
+    const excludeOils = (_blendState.oils || []).filter(o => !o.active).map(o => o.name_ru);
+    const pickerOils = (_blendState._pickerOils || []).map(o => o.name);
+    const customOils = [...activeOils, ...pickerOils];
     elements.draftDetail.innerHTML = `<div class="detail-grid">
       ${renderBackButton()}
       ${renderDetailLoader("\u041f\u0435\u0440\u0435\u0433\u0435\u043d\u0435\u0440\u0438\u0440\u0443\u044e \u0441\u043c\u0435\u0441\u044c", "\u0421\u043e\u0441\u0442\u0430\u0432\u043b\u044f\u044e \u043d\u043e\u0432\u044b\u0439 \u0432\u0430\u0440\u0438\u0430\u043d\u0442 \u0440\u0435\u0446\u0435\u043f\u0442\u0430 \u0441 \u0442\u0435\u043c\u0438 \u0436\u0435 \u043f\u0430\u0440\u0430\u043c\u0435\u0442\u0440\u0430\u043c\u0438.")}
@@ -432,7 +434,7 @@ export function createBlendConstructorModule(deps) {
     fetchJson("/api/blend-constructor/construct", {
       method: "POST",
       timeout: 60000,
-      body: JSON.stringify({...req, skip_cache: true, exclude_oils: excludeOils}),
+      body: JSON.stringify({...req, skip_cache: true, custom_oils: customOils, exclude_oils: excludeOils}),
     }).then(result => {
       renderBlendResult(result);
     }).catch(() => {

@@ -893,10 +893,10 @@ export function createSettingsModule(deps) {
       _renderTagChips(data.items || []);
       showUiNotice(`#${tag} добавлен`, "success");
     } catch (err) {
-      const detail = err?.detail || "";
+      const detail = err?.detail || err?.message || "";
       if (detail === "already_tracked") showUiNotice("Тег уже отслеживается", "error");
       else if (detail === "max_tags_reached") showUiNotice("Достигнут лимит тегов (30)", "error");
-      else showUiNotice("Не удалось добавить тег", "error");
+      else showUiNotice(typeof detail === "string" && detail ? detail : "Не удалось добавить тег", "error");
     }
   }
 
@@ -916,7 +916,7 @@ export function createSettingsModule(deps) {
     const trimmed = input.trim();
     const urlPatterns = [
       /(?:instagram\.com|instagr\.am)\/([a-zA-Z0-9_.]+)/,
-      /threads\.net\/@?([a-zA-Z0-9_.]+)/,
+      /(?:threads\.net|threads\.com)\/@?([a-zA-Z0-9_.]+)/,
     ];
     for (const pat of urlPatterns) {
       const m = trimmed.match(pat);
