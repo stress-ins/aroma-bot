@@ -42,85 +42,25 @@ def analyze_text_placement(
     from bot.handlers.carousel import _find_text_zone
 
     role = SLIDE_ROLES[slide_index] if slide_index < len(SLIDE_ROLES) else "unknown"
-    pref = ROLE_PLACEMENT_PREFS.get(role, "center")
 
-    try:
-        b64 = base64.standard_b64encode(img_bytes).decode()
-        prompt = (
-            f"You are an image layout analyst for Instagram carousel slides.\n"
-            f"Find the best \"quiet zone\" on this image where overlay text will be readable.\n"
-            f"The slide role is \"{role}\", preferred placement: \"{pref}\".\n\n"
-            f"RULES:\n"
-            f"- NEVER place text over the main subject of the image.\n"
-            f"- Prefer uniform, empty, or blurred areas for text placement.\n"
-            f"- Avoid busy or detailed regions.\n"
-            f"- Place text in areas with lowest visual complexity.\n\n"
-            f"Return ONLY a JSON object (no markdown) with these fields:\n"
-            f"- \"top\": float 0.0-1.0 (vertical start as fraction of image height)\n"
-            f"- \"left\": float 0.0-1.0 (horizontal start as fraction of image width)\n"
-            f"- \"width\": float 0.0-1.0 (text box width as fraction)\n"
-            f"- \"height\": float 0.0-1.0 (text box height as fraction)\n"
-            f"- \"text_color\": \"light\" or \"dark\" (what text color works best)\n"
-        )
-
-        raw = call_claude(
-            messages=[{
-                "role": "user",
-                "content": [
-                    {
-                        "type": "image",
-                        "source": {
-                            "type": "base64",
-                            "media_type": "image/png",
-                            "data": b64,
-                        },
-                    },
-                    {"type": "text", "text": prompt},
-                ],
-            }],
-            max_tokens=200,
-            context="carousel_preview",
-        )
-        # Strip markdown fences if present
-        if raw.startswith("```"):
-            raw = raw.split("\n", 1)[1] if "\n" in raw else raw[3:]
-            if raw.endswith("```"):
-                raw = raw[:-3]
-            raw = raw.strip()
-
-        placement = json.loads(raw)
-
-        # Validate required keys
-        for key in ("top", "left", "width", "height", "text_color"):
-            if key not in placement:
-                raise ValueError(f"Missing key: {key}")
-
-        # Clamp values
+    # TEMP: Vision API disabled — use heuristic only (re-enable when Gemini vision is verified)
+    logger.info("Vision API disabled, using heuristic for slide %d", slide_index)
+    top_frac, h_frac = _find_text_zone(img_bytes)
+    placement = {
+        "top": top_frac,
+        "left": 0.08,
+        "width": 0.84,
+        "height": h_frac,
+        "text_color": "light",
+        "role": role,
+        "source": "heuristic",
+    }
+    # Apply bias from correction history
+    if bias:
         for key in ("top", "left", "width", "height"):
-            placement[key] = max(0.0, min(1.0, float(placement[key])))
-
-        # Apply bias from correction history
-        if bias:
-            for key in ("top", "left", "width", "height"):
-                if key in bias:
-                    placement[key] = max(0.0, min(1.0, placement[key] + float(bias[key])))
-
-        placement["role"] = role
-        placement["source"] = "vision"
-        return placement
-
-    except Exception as exc:
-        logger.warning("Vision placement failed (slide %d): %s — falling back to heuristic", slide_index, exc)
-        top_frac, h_frac = _find_text_zone(img_bytes)
-        return {
-            "top": top_frac,
-            "left": 0.08,
-            "width": 0.84,
-            "height": h_frac,
-            "text_color": "light",
-            "role": role,
-            "source": "heuristic",
-        }
+            if key in bias:
+                placement[key] = max(0.0, min(1.0, placement[key] + float(bias[key])))
+    return placement
 
 
 # ── 1b. Analyze reels text placement via Claude Vision ───────────────────
@@ -133,47 +73,9 @@ _REELS_PLACEMENT_FALLBACK: dict = {
 
 def analyze_reels_placement(img_bytes: bytes) -> dict:
     """Use Claude Vision to find optimal text placement on a 9:16 reels frame."""
-    try:
-        b64 = base64.standard_b64encode(img_bytes).decode()
-        prompt = (
-            "You are an image layout analyst for Instagram Reels frames (9:16 vertical).\n"
-            "Find the best zone on this image for short overlay text (1-2 lines).\n\n"
-            "RULES:\n"
-            "- NEVER place text over the main subject.\n"
-            "- Prefer uniform, empty, or blurred areas.\n"
-            "- Pick a harmonious color from the image palette (NOT plain #FFFFFF or #000000).\n"
-            "- Warm images \u2192 terracotta/amber tones; cool images \u2192 indigo/teal tones.\n"
-            "- Ensure WCAG AA contrast (\u22654.5:1) between text color and background.\n"
-            "- Shadow color should complement the text color for readability.\n\n"
-            "Return ONLY a JSON object (no markdown) with:\n"
-            '- "placement": {"zone": "top"|"center"|"bottom", "x_percent": int 0-100, '
-            '"y_percent": int 0-100, "max_width_percent": int 50-90}\n'
-            '- "typography": {"color_hex": "#RRGGBB", "shadow_color": "rgba(...)", '
-            '"font_size_px": int 16-24, "font_weight": 600|700|800}\n'
-        )
-        raw = call_claude(messages=[{"role": "user", "content": [{"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": b64}}, {"type": "text", "text": prompt}]}], max_tokens=300, context="reels_preview")
-        if raw.startswith("```"):
-            raw = raw.split("\n", 1)[1] if "\n" in raw else raw[3:]
-            if raw.endswith("```"): raw = raw[:-3]
-            raw = raw.strip()
-        result = json.loads(raw)
-        if "placement" not in result or "typography" not in result:
-            raise ValueError("Missing placement or typography key")
-        for key in ("zone", "x_percent", "y_percent", "max_width_percent"):
-            if key not in result["placement"]: raise ValueError(f"Missing placement.{key}")
-        for key in ("color_hex", "shadow_color", "font_size_px", "font_weight"):
-            if key not in result["typography"]: raise ValueError(f"Missing typography.{key}")
-        p = result["placement"]
-        p["x_percent"] = max(0, min(100, int(p["x_percent"])))
-        p["y_percent"] = max(0, min(100, int(p["y_percent"])))
-        p["max_width_percent"] = max(50, min(90, int(p["max_width_percent"])))
-        t = result["typography"]
-        t["font_size_px"] = max(16, min(24, int(t["font_size_px"])))
-        t["font_weight"] = int(t["font_weight"])
-        return result
-    except Exception as exc:
-        logger.warning("Reels placement analysis failed: %s \u2014 using fallback", exc)
-        return dict(_REELS_PLACEMENT_FALLBACK)
+    # TEMP: Vision API disabled — use fallback only (re-enable when Gemini vision is verified)
+    logger.info("Vision API disabled for reels, using fallback placement")
+    return dict(_REELS_PLACEMENT_FALLBACK)
 
 
 # ── 2. Render preview PNG ─────────────────────────────────────────────────────

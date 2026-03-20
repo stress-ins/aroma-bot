@@ -46,40 +46,29 @@ def _mock_vision_response(placement: dict) -> MagicMock:
 class TestAnalyzeTextPlacement:
     def test_returns_dict_with_required_keys(self):
         img = _make_test_image()
-        placement = {"top": 0.6, "left": 0.1, "width": 0.8, "height": 0.25, "text_color": "light"}
-
-        import json as _json
-        with patch("bot.agents.carousel_preview_agent.call_claude", return_value=_json.dumps(placement)):
-            result = analyze_text_placement(img, 0)
+        result = analyze_text_placement(img, 0)
 
         assert isinstance(result, dict)
         for key in ("top", "left", "width", "height", "text_color", "role", "source"):
             assert key in result, f"Missing key: {key}"
-        assert result["source"] == "vision"
+        assert result["source"] == "heuristic"  # Vision API temporarily disabled
         assert result["role"] == "hook"
 
-    def test_clamps_values_to_0_1(self):
+    def test_heuristic_returns_clamped_values(self):
+        """Vision API is temporarily disabled; heuristic values are always 0-1."""
         img = _make_test_image()
-        placement = {"top": 1.5, "left": -0.2, "width": 0.8, "height": 0.3, "text_color": "dark"}
-
-        import json as _json
-        with patch("bot.agents.carousel_preview_agent.call_claude", return_value=_json.dumps(placement)):
-            result = analyze_text_placement(img, 1)
-
-        assert result["top"] == 1.0
-        assert result["left"] == 0.0
+        result = analyze_text_placement(img, 1)
+        for key in ("top", "left", "width", "height"):
+            assert 0.0 <= result[key] <= 1.0
 
     def test_applies_bias(self):
         img = _make_test_image()
-        placement = {"top": 0.5, "left": 0.1, "width": 0.8, "height": 0.25, "text_color": "light"}
         bias = {"top": -0.1, "left": 0.05}
-
-        import json as _json
-        with patch("bot.agents.carousel_preview_agent.call_claude", return_value=_json.dumps(placement)):
-            result = analyze_text_placement(img, 0, bias=bias)
-
-        assert abs(result["top"] - 0.4) < 0.001
-        assert abs(result["left"] - 0.15) < 0.001
+        result_no_bias = analyze_text_placement(img, 0)
+        result_bias = analyze_text_placement(img, 0, bias=bias)
+        # Bias should shift values
+        assert abs(result_bias["top"] - max(0.0, result_no_bias["top"] - 0.1)) < 0.001
+        assert abs(result_bias["left"] - min(1.0, result_no_bias["left"] + 0.05)) < 0.001
 
     def test_fallback_on_error(self):
         img = _make_test_image()
@@ -195,31 +184,15 @@ class TestGenerateSlidePreview:
 
 
 class TestAnalyzeReelsPlacement:
-    def test_returns_valid(self):
+    """Vision API is temporarily disabled — all calls return fallback."""
+
+    def test_returns_fallback(self):
         img = _make_test_image()
-        ai = {"placement": {"zone": "top", "x_percent": 10, "y_percent": 8, "max_width_percent": 80}, "typography": {"color_hex": "#D4876E", "shadow_color": "rgba(0,0,0,0.5)", "font_size_px": 20, "font_weight": 700}}
-        with patch(f"{_MOD}.call_claude", return_value=json.dumps(ai)):
-            r = analyze_reels_placement(img)
+        r = analyze_reels_placement(img)
+        assert r == _REELS_PLACEMENT_FALLBACK
+
+    def test_returns_fallback_always(self):
+        """No API call is made, fallback is always returned."""
+        r = analyze_reels_placement(_make_test_image())
         assert r["placement"]["zone"] == "top"
-        assert r["typography"]["color_hex"] == "#D4876E"
-
-    def test_clamps(self):
-        img = _make_test_image()
-        ai = {"placement": {"zone": "bottom", "x_percent": 150, "y_percent": -5, "max_width_percent": 95}, "typography": {"color_hex": "#FFF", "shadow_color": "rgba(0,0,0,0.5)", "font_size_px": 30, "font_weight": 700}}
-        with patch(f"{_MOD}.call_claude", return_value=json.dumps(ai)):
-            r = analyze_reels_placement(img)
-        assert r["placement"]["x_percent"] == 100
-        assert r["placement"]["y_percent"] == 0
-        assert r["typography"]["font_size_px"] == 24
-
-    def test_fallback_error(self):
-        with patch(f"{_MOD}.call_claude", side_effect=Exception("e")):
-            assert analyze_reels_placement(_make_test_image()) == _REELS_PLACEMENT_FALLBACK
-
-    def test_fallback_bad_json(self):
-        with patch(f"{_MOD}.call_claude", return_value="bad"):
-            assert analyze_reels_placement(_make_test_image()) == _REELS_PLACEMENT_FALLBACK
-
-    def test_fallback_missing_keys(self):
-        with patch(f"{_MOD}.call_claude", return_value=json.dumps({"placement": {"zone": "top"}})):
-            assert analyze_reels_placement(_make_test_image()) == _REELS_PLACEMENT_FALLBACK
+        assert r["typography"]["font_weight"] == 700
