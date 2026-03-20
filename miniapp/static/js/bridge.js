@@ -378,7 +378,11 @@ export function registerWindowBridge(deps) {
 
   window._syncCharCount = function(el) {
     const target = document.getElementById(el.dataset.countTarget);
-    if (target) target.textContent = el.value.length + " / 500";
+    if (!target) return;
+    const len = el.value.length;
+    target.textContent = `${len} / 500`;
+    target.classList.toggle("is-over", len > 500);
+    target.classList.toggle("is-warn", len > 480 && len <= 500);
   };
 
   window._selectInput = function(el) {

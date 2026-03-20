@@ -186,6 +186,66 @@ async def test_ignore_mention(client):
 
 
 @pytest.mark.asyncio
+async def test_publish_reply_threads(client, monkeypatch):
+    """Publish reply for a Threads mention calls post_reply and marks replied."""
+    # Ingest a threads mention
+    resp = await client.post(
+        "/api/mentions/ingest",
+        json={
+            "platform": "threads",
+            "external_id": "th-pub-001",
+            "type": "mention",
+            "author_username": "aroma_fan",
+            "author_name": "Aroma Fan",
+            "content": "Какое масло лучше для сна?",
+        },
+        headers=WEBHOOK_HEADERS,
+    )
+    mention_id = resp.json()["mention_id"]
+
+    # Generate replies (mock the agent)
+    from bot.services import mentions_store
+    await mentions_store.save_replies(mention_id, [
+        {"tone": "friendly", "content": "Рекомендую лаванду — она мягко расслабляет."},
+    ])
+    replies = await mentions_store.list_replies(mention_id)
+    reply_id = replies[0].reply_id
+
+    # Mock _publish_reply_to_platform to avoid real API call
+    calls = []
+    import miniapp.api.routers.mentions as mentions_mod
+
+    async def mock_publish(mention, content):
+        calls.append(("publish", mention.platform, content))
+
+    monkeypatch.setattr(mentions_mod, "_publish_reply_to_platform", mock_publish)
+
+    resp2 = await client.post(
+        f"/api/mentions/{mention_id}/publish-reply",
+        json={"reply_id": reply_id},
+        headers=AUTH_HEADERS,
+    )
+    assert resp2.status_code == 200
+    data = resp2.json()
+    assert data["published"] is True
+    assert data["reply_id"] == reply_id
+
+    # Verify mention is now replied
+    resp3 = await client.get(f"/api/mentions/{mention_id}", headers=AUTH_HEADERS)
+    assert resp3.json()["status"] == "replied"
+    assert len(calls) == 1
+
+
+@pytest.mark.asyncio
+async def test_post_reply_and_post_thread_exist():
+    """Verify post_reply and post_thread are importable from threads_api."""
+    from bot.services.threads_api import post_reply, post_thread
+    import inspect
+    assert inspect.iscoroutinefunction(post_reply)
+    assert inspect.iscoroutinefunction(post_thread)
+
+
+@pytest.mark.asyncio
 async def test_token_status_empty(client):
     resp = await client.get("/api/tokens/status", headers=AUTH_HEADERS)
     assert resp.status_code == 200

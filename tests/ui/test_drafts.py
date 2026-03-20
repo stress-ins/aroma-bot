@@ -9,6 +9,9 @@ from .helpers import WCAG_AA_MIN, contrast_ratio, parse_rgb
 def test_draft_search_empty_state_offers_guidance(page):
     page.locator("#btnTabDrafts").click()
     page.wait_for_timeout(100)
+    # Expand collapsed filters to access the search field
+    page.locator("#filtersToggleBtn").click()
+    page.wait_for_timeout(100)
     page.locator("#queryFilter").fill("совсем-нет-такой-темы")
     # Search has a 300ms debounce — wait for API round-trip too
     page.locator("#emptyState .guided-state").wait_for(state="visible", timeout=3000)

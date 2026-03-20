@@ -189,7 +189,7 @@ export function createCoreModule(deps) {
           <p>${escapeHtml(message || "Подождите ещё немного, мы обновим карточку автоматически.")}</p>
           ${progressBar}
         </div>
-        ${renderDetailLoader(title, message || "Подождите ещё немного, данные догружаются.", "detail-loader-card-compact")}
+        ${renderDetailLoader(title, message || "Обычно это занимает 15–30 секунд. Данные обновятся автоматически.", "detail-loader-card-compact")}
       </section>
     `;
   }

@@ -130,9 +130,31 @@ export function createRuntimeModule(deps) {
       void safeLoadCurrentTab("Не удалось загрузить настройки");
     });
 
-    [elements.kindFilter, elements.statusFilter, elements.feedbackFilter].forEach((field) => field.addEventListener("change", loadDrafts));
+    [elements.kindFilter, elements.statusFilter, elements.feedbackFilter].forEach((field) => field.addEventListener("change", () => {
+      loadDrafts();
+      _updateFiltersToggleLabel();
+    }));
+
+    // Filters collapse toggle
+    const filtersToggleBtn = document.getElementById("filtersToggleBtn");
+    const filtersBody = document.getElementById("filtersBody");
+    const _updateFiltersToggleLabel = () => {
+      const label = document.getElementById("filtersToggleLabel");
+      if (!label) return;
+      const active = [elements.kindFilter, elements.statusFilter, elements.feedbackFilter]
+        .filter((f) => f && f.value).length + (elements.queryFilter?.value ? 1 : 0);
+      label.textContent = active > 0 ? `Фильтры (${active})` : "Фильтры";
+    };
+    if (filtersToggleBtn && filtersBody) {
+      filtersToggleBtn.addEventListener("click", () => {
+        const isHidden = filtersBody.hidden;
+        filtersBody.hidden = !isHidden;
+        filtersToggleBtn.classList.toggle("is-open", isHidden);
+      });
+    }
 
     elements.queryFilter.addEventListener("input", () => {
+      _updateFiltersToggleLabel();
       window.clearTimeout(timers.getReelRefresh());
       timers.setReelRefresh(window.setTimeout(() => {
         if (state.tab === "drafts") {
