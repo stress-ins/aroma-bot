@@ -1591,7 +1591,7 @@ body.is-mobile-layout .detail-top::after {
   border: 1px solid var(--border);
   background: var(--surface);
   border-radius: var(--radius-sm);
-  padding: 28px 12px 9px;
+  padding: 28px 12px 26px;
   font-size: 14px;
   color: var(--text);
   font-family: var(--font-ui);
