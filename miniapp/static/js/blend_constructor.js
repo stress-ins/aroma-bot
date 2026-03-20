@@ -21,8 +21,9 @@ export function createBlendConstructorModule(deps) {
   async function _loadOilsCatalog() {
     if (_oilsCatalog) return _oilsCatalog;
     try {
-      const items = await fetchJson("/api/references/aroma");
-      _oilsCatalog = (items || []).map(o => ({ slug: o.slug, name: o.name, name_en: o.name_en }));
+      const resp = await fetchJson("/api/references/aroma");
+      const items = Array.isArray(resp) ? resp : (resp?.items || []);
+      _oilsCatalog = items.map(o => ({ slug: o.slug, name: o.name, name_en: o.name_en }));
     } catch { _oilsCatalog = null; return []; }
     return _oilsCatalog;
   }

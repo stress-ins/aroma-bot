@@ -415,6 +415,11 @@ export function registerWindowBridge(deps) {
     if (textarea) textarea.value = el.textContent;
   };
 
+  window._dismissBlendContext = function() {
+    sessionStorage.removeItem("blend_create_context");
+    renderCreateTool(state.selectedCreateTool);
+  };
+
   // Trends
   window.selectTrendsPlatform = selectTrendsPlatform;
   window.selectTrendsPeriod = selectTrendsPeriod;
