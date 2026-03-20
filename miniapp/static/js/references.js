@@ -1012,7 +1012,6 @@ export function createReferencesModule(deps) {
   async function runSmartSearch(query) {
     if (!query.trim()) { clearSmartSearch(); return; }
     const input = document.getElementById("smartSearchInput");
-    if (input && input.value !== query) input.value = query;
     const clearBtn = document.getElementById("smartSearchClear");
     if (clearBtn) clearBtn.hidden = false;
 
@@ -1113,10 +1112,12 @@ export function createReferencesModule(deps) {
   }
 
   function clearSmartSearch() {
+    clearTimeout(_smartSearchDebounce);
     const input = document.getElementById("smartSearchInput");
     if (input) input.value = "";
     const clearBtn = document.getElementById("smartSearchClear");
     if (clearBtn) clearBtn.hidden = true;
+    state.referenceSearch = "";
     renderReferences();
   }
 

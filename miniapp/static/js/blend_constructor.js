@@ -28,7 +28,12 @@ export function createBlendConstructorModule(deps) {
     return _oilsCatalog;
   }
 
-  function openBlendConstructor(prefill = "") {
+  function addRecoOilToBlend(oilName) {
+    openBlendConstructor("Смесь с маслом " + oilName, [oilName]);
+  }
+
+  function openBlendConstructor(prefill = "", customOils = []) {
+    _blendState = customOils.length ? { preselectedOils: customOils } : null;
     enterDetailView();
     const effects = ["\u043a\u043e\u043d\u0446\u0435\u043d\u0442\u0440\u0430\u0446\u0438\u044f","\u0442\u0432\u043e\u0440\u0447\u0435\u0441\u0442\u0432\u043e","\u0440\u0430\u0441\u0441\u043b\u0430\u0431\u043b\u0435\u043d\u0438\u0435","\u044d\u043d\u0435\u0440\u0433\u0438\u044f","\u0441\u043e\u043d","\u0431\u0430\u043b\u0430\u043d\u0441","\u0437\u0430\u0449\u0438\u0442\u0430"];
     const speeds = [["\u0431\u044b\u0441\u0442\u0440\u043e\u0435","fast"],["\u0441\u0440\u0435\u0434\u043d\u0435\u0435","medium"],["\u043f\u0440\u043e\u043b\u043e\u043d\u0433\u0438\u0440\u043e\u0432\u0430\u043d\u043d\u043e\u0435","extended"]];
@@ -81,7 +86,7 @@ export function createBlendConstructorModule(deps) {
     fetchJson("/api/blend-constructor/construct", {
       method: "POST",
       timeout: 60000,
-      body: JSON.stringify({brief, effects, speed, application, contraindications}),
+      body: JSON.stringify({brief, effects, speed, application, contraindications, custom_oils: _blendState?.preselectedOils || []}),
     }).then(result => {
       _blendState = { origRequest: {brief, effects, speed, application, contraindications} };
       try { sessionStorage.setItem("blend_last_result", JSON.stringify(result)); } catch(_e) {}
@@ -621,6 +626,7 @@ export function createBlendConstructorModule(deps) {
 
   return {
     openBlendConstructor,
+    addRecoOilToBlend,
     toggleEffect,
     selectSpeed,
     selectApp,
