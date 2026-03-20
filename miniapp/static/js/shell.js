@@ -76,6 +76,25 @@ export function createShellModule(deps) {
         return;
       }
     }
+    // Saved blend detail — back to saved list
+    if (state.viewingSavedBlend && typeof window.openSavedBlends === "function") {
+      window.Telegram?.WebApp?.BackButton?.hide();
+      elements.detailPanel.classList.remove("swipe-back-exit", "swipe-back-armed", "swipe-back-cancel");
+      elements.detailPanel.style.removeProperty("--swipe-offset");
+      state.viewingSavedBlend = null;
+      window.openSavedBlends();
+      return;
+    }
+    // Mentions detail — reset selectedMention and re-render
+    if (state.selectedMention && typeof window.closeMentionDetail === "function") {
+      window.Telegram?.WebApp?.BackButton?.hide();
+      elements.detailPanel.classList.remove("swipe-back-exit", "swipe-back-armed", "swipe-back-cancel");
+      elements.detailPanel.style.removeProperty("--swipe-offset");
+      window.closeMentionDetail();
+      state.mobileView = "list";
+      syncMobileNavigation();
+      return;
+    }
     // Settings sub-sections need a full reset, not just a view toggle
     if (state.tab === "settings" && state.settingsInDetail && typeof window.goBackToSettings === "function") {
       window.Telegram?.WebApp?.BackButton?.hide();

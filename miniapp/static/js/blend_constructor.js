@@ -301,12 +301,11 @@ export function createBlendConstructorModule(deps) {
         return;
       }
       el.innerHTML = items.map(b => `
-        <div class="saved-blend-card">
+        <div class="saved-blend-card" data-action="openSavedBlendDetail" data-args='${JSON.stringify([b.id || b._id])}' style="cursor:pointer">
           <h3>${escapeHtml(b.title)}</h3>
           ${b.brief ? `<p class="field-help">${escapeHtml(b.brief)}</p>` : ""}
           <div class="draft-meta">${(b.tags || []).map(t => tagMarkup(t, "brand")).join("")}</div>
           <div class="saved-blend-oils">${(b.oils || []).map(o => `${escapeHtml(o.name_ru || o.name || o.name_en || '')} ${o.drops}\u043a.`).join(" \u00b7 ")}</div>
-          <button class="danger-button" style="margin-top:6px" data-action="deleteSavedBlend" data-args='${JSON.stringify([b.id || b._id, null])}'>\u0423\u0434\u0430\u043b\u0438\u0442\u044c</button>
         </div>`).join("");
     } catch {
       const el = document.getElementById("savedBlendsList");
@@ -479,6 +478,111 @@ export function createBlendConstructorModule(deps) {
     }
   }
 
+  async function openSavedBlendDetail(savedId) {
+    enterDetailView();
+    elements.draftDetail.innerHTML = `<div class="detail-grid">${renderDetailLoader("\u0417\u0430\u0433\u0440\u0443\u0436\u0430\u044e \u0441\u043c\u0435\u0441\u044c")}</div>`;
+    try {
+      const blend = await fetchJson(`/api/blend-constructor/saved/${savedId}`);
+      state.viewingSavedBlend = blend;
+      _renderSavedBlendDetail(blend);
+    } catch {
+      elements.draftDetail.innerHTML = `<div class="detail-grid">${renderBackButton()}<p class="field-help">\u0421\u043c\u0435\u0441\u044c \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d\u0430</p></div>`;
+    }
+  }
+
+  function _renderSavedBlendDetail(blend) {
+    const safetyColors = { safe: "var(--good)", caution: "var(--brand)", warning: "var(--bad)" };
+    const safetyLabels = { safe: "\u2713 \u0431\u0435\u0437\u043e\u043f\u0430\u0441\u043d\u043e", caution: "\u26a0 \u043e\u0441\u0442\u043e\u0440\u043e\u0436\u043d\u043e", warning: "\u26d4 \u043e\u0433\u0440\u0430\u043d\u0438\u0447\u0435\u043d\u0438\u044f" };
+    const safetyColor = safetyColors[blend.safety_status] || safetyColors.safe;
+    const safetyLabel = safetyLabels[blend.safety_status] || blend.safety_status;
+    function renderProfileBars(profile) {
+      if (!profile || !Object.keys(profile).length) return "";
+      const labels = { focus: "\u0424\u043e\u043a\u0443\u0441", energy: "\u042d\u043d\u0435\u0440\u0433\u0438\u044f", creativity: "\u0422\u0432\u043e\u0440\u0447\u0435\u0441\u0442\u0432\u043e", calm: "\u0421\u043f\u043e\u043a\u043e\u0439\u0441\u0442\u0432\u0438\u0435" };
+      return Object.entries(profile).filter(([, v]) => v > 0).map(([k, v]) => `<div class="profile-bar-row"><div class="profile-bar-label"><span>${escapeHtml(labels[k] || k)}</span><span>${v}%</span></div><div class="profile-bar"><div class="profile-bar-fill" style="width:${v}%"></div></div></div>`).join("");
+    }
+    const savedId = blend.id || blend._id || blend.saved_id;
+    elements.draftDetail.innerHTML = `<div class="detail-grid">
+      ${renderBackButton()}
+      <p class="eyebrow">\u0421\u041e\u0425\u0420\u0410\u041d\u0401\u041d\u041d\u0410\u042f \u0421\u041c\u0415\u0421\u042c</p>
+      <h2 class="detail-title">${escapeHtml(blend.title)}</h2>
+      ${blend.brief ? `<p class="field-help">${escapeHtml(blend.brief)}</p>` : ""}
+      ${(blend.tags || []).length ? `<div class="draft-meta">${blend.tags.map(t => tagMarkup(t, "brand")).join("")}</div>` : ""}
+      <section class="section">
+        <h3>\ud83d\udccb \u0420\u0435\u0446\u0435\u043f\u0442 \u00b7 ${blend.total_drops || 0} \u043a\u0430\u043f.</h3>
+        <div class="saved-blend-oils-detail">${(blend.oils || []).map(o => `<div class="oil-row"><span class="oil-name">${escapeHtml(o.name_ru || o.name || "")}${o.name_en ? ` <span class="oil-name-en">${escapeHtml(o.name_en)}</span>` : ""}</span><span class="oil-drops">${o.drops} \u043a\u0430\u043f.</span>${o.role ? `<span class="oil-role">${escapeHtml(o.role)}</span>` : ""}</div>`).join("")}</div>
+        <div class="blend-total-row"><span>\u0418\u0442\u043e\u0433\u043e:</span><span>${blend.total_drops || 0} \u043a\u0430\u043f. \u00b7 10 \u043c\u043b \u0431\u0430\u0437\u044b</span></div>
+      </section>
+      ${Object.keys(blend.profile || {}).length ? `<section class="section"><h3>\u041f\u0440\u043e\u0444\u0438\u043b\u044c \u0441\u043c\u0435\u0441\u0438</h3>${renderProfileBars(blend.profile)}</section>` : ""}
+      ${blend.expert_note ? `<div class="blend-expert-card blend-expert-aroma"><div class="blend-expert-header"><span class="blend-expert-icon">\ud83c\udf3f</span><div><div class="blend-expert-name">\u042d\u043a\u0441\u043f\u0435\u0440\u0442-\u0430\u0440\u043e\u043c\u0430\u0442\u0435\u0440\u0430\u043f\u0435\u0432\u0442</div></div></div><p class="blend-expert-text">${escapeHtml(blend.expert_note)}</p>${blend.application_guide ? `<div class="blend-application"><span class="blend-application-label">\u041a\u0430\u043a \u043f\u0440\u0438\u043c\u0435\u043d\u044f\u0442\u044c:</span> ${escapeHtml(blend.application_guide)}</div>` : ""}</div>` : ""}
+      <div class="blend-expert-card blend-expert-doctor"><div class="blend-expert-header"><span class="blend-expert-icon">\u2695\ufe0f</span><div><div class="blend-expert-name">\u041c\u0435\u0434\u0438\u0446\u0438\u043d\u0441\u043a\u0430\u044f \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0430</div></div><span class="blend-safety-badge" style="color:${safetyColor}">${safetyLabel}</span></div></div>
+      <div class="blend-actions-stack">
+        <button class="secondary-button" type="button" style="width:100%" data-action="savedBlendCreateContent">\u0421\u043e\u0437\u0434\u0430\u0442\u044c \u043a\u043e\u043d\u0442\u0435\u043d\u0442</button>
+        <div id="savedBlendContentPicker" hidden style="margin-top:6px">
+          <p class="field-help" style="margin-bottom:6px">\u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u0444\u043e\u0440\u043c\u0430\u0442:</p>
+          <div class="chip-list">
+            <button class="chip chip-selectable" data-action="savedBlendLaunchContent" data-args='["content"]'>\u041f\u043e\u0441\u0442</button>
+            <button class="chip chip-selectable" data-action="savedBlendLaunchContent" data-args='["threads_series"]'>\u0421\u0435\u0440\u0438\u044f Threads</button>
+            <button class="chip chip-selectable" data-action="savedBlendLaunchContent" data-args='["carousel"]'>\u041a\u0430\u0440\u0443\u0441\u0435\u043b\u044c</button>
+          </div>
+        </div>
+        <div class="actions-grid-two">
+          <button class="secondary-button" type="button" data-action="shareBlend" data-args='${JSON.stringify([savedId, blend.title])}'>\u041f\u043e\u0434\u0435\u043b\u0438\u0442\u044c\u0441\u044f</button>
+          <button class="danger-button" type="button" data-action="deleteSavedBlendFromDetail" data-args='${JSON.stringify([savedId, null])}'>\u0423\u0434\u0430\u043b\u0438\u0442\u044c</button>
+        </div>
+      </div>
+    </div>`;
+    if (window.lucide) lucide.createIcons();
+  }
+
+  function savedBlendCreateContent() {
+    const picker = document.getElementById("savedBlendContentPicker");
+    if (picker) picker.hidden = !picker.hidden;
+  }
+
+  function savedBlendLaunchContent(toolId) {
+    const blend = state.viewingSavedBlend;
+    if (!blend) return;
+    const oilsList = (blend.oils || []).map(o => `${o.name_ru || o.name || ""} ${o.drops} \u043a\u0430\u043f.`).join(", ");
+    const topic = `${blend.title}${blend.brief ? ": " + blend.brief : ""}. \u0421\u043e\u0441\u0442\u0430\u0432: ${oilsList}.`;
+    try {
+      const bc = {
+        title: blend.title, brief: blend.brief || "",
+        oils: (blend.oils || []).map(o => ({
+          name_ru: o.name_ru || o.name || "", name_en: o.name_en || "", drops: o.drops, role: o.role || "",
+        })),
+        total_drops: blend.total_drops, profile: blend.profile || {},
+        expert_note: blend.expert_note || "", application_guide: blend.application_guide || "",
+        tags: blend.tags || [],
+      };
+      sessionStorage.setItem("blend_create_context", JSON.stringify(bc));
+    } catch(_e) {}
+    if (typeof window.openCreateTool === "function") window.openCreateTool(toolId);
+    let attempts = 0;
+    const tryFill = () => {
+      attempts++;
+      const selectors = ["[data-create-content] [name=topic]", "[data-create-threads-series] [name=topic]", "[data-create-carousel] [name=topic]", "#createForm textarea"];
+      for (const sel of selectors) {
+        const ta = document.querySelector(sel);
+        if (ta && !ta.value) { ta.value = topic; ta.dispatchEvent(new Event("input")); return; }
+      }
+      if (attempts < 15) setTimeout(tryFill, 80);
+    };
+    setTimeout(tryFill, 80);
+  }
+
+  async function deleteSavedBlendFromDetail(id, btn) {
+    if (btn) { btn.disabled = true; btn.textContent = "\u0423\u0434\u0430\u043b\u044f\u044e..."; }
+    try {
+      await fetchJson(`/api/blend-constructor/saved/${id}`, { method: "DELETE" });
+      showUiNotice("\u0421\u043c\u0435\u0441\u044c \u0443\u0434\u0430\u043b\u0435\u043d\u0430", "success");
+      state.viewingSavedBlend = null;
+      openSavedBlends();
+    } catch {
+      showUiNotice("\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0443\u0434\u0430\u043b\u0438\u0442\u044c", "error");
+      if (btn) { btn.disabled = false; btn.textContent = "\u0423\u0434\u0430\u043b\u0438\u0442\u044c"; }
+    }
+  }
+
   async function openSharedBlend(savedId) {
     enterDetailView();
     elements.draftDetail.innerHTML = `<div class="detail-grid">${renderDetailLoader()}</div>`;
@@ -528,7 +632,11 @@ export function createBlendConstructorModule(deps) {
     blendRegenerate,
     blendAdjustWithOil,
     openSavedBlends,
+    openSavedBlendDetail,
+    savedBlendCreateContent,
+    savedBlendLaunchContent,
     deleteSavedBlend,
+    deleteSavedBlendFromDetail,
     shareBlend,
     openSharedBlend,
   };

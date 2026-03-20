@@ -158,7 +158,8 @@ def _generate_slide_image_prompts_sync(slides: list[str], topic: str, blend_cont
     from bot.services.claude_client import call_claude
 
     slides_desc = "\n".join(
-        f"Slide {i + 1}: {text}" for i, text in enumerate(slides)
+        f"Slide {i + 1}: {s if isinstance(s, str) else ' '.join(str(x) for x in s)}"
+        for i, s in enumerate(slides)
     )
 
     blend_visual = ""

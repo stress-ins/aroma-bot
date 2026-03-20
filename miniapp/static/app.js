@@ -1390,11 +1390,14 @@ renderPlans = renderPlansImpl;
 
 const mentionsModule = createMentionsModule({
   state,
-  elements: { plansContainer: null },
+  elements: { plansContainer: null, draftDetail: elements.draftDetail },
   fetchJson,
   escapeHtml,
   withButtonFeedback,
   showUiNotice,
+  enterDetailView,
+  syncMobileNavigation,
+  renderBackButton,
 });
 
 window.mentionsModule = mentionsModule;
@@ -1565,7 +1568,11 @@ const {
   blendRegenerate,
   blendAdjustWithOil,
   openSavedBlends,
+  openSavedBlendDetail,
+  savedBlendCreateContent,
+  savedBlendLaunchContent,
   deleteSavedBlend,
+  deleteSavedBlendFromDetail,
   shareBlend,
   openSharedBlend,
 } = createBlendConstructorModule({
@@ -2126,7 +2133,11 @@ registerWindowBridge({
   blendRegenerate,
   blendAdjustWithOil,
   openSavedBlends,
+  openSavedBlendDetail,
+  savedBlendCreateContent,
+  savedBlendLaunchContent,
   deleteSavedBlend,
+  deleteSavedBlendFromDetail,
   openRecommendationsWizard,
   closeRecommendationsWizard,
   recoWizardNext,

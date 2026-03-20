@@ -114,6 +114,23 @@ async def get_saved_blends(ctx: TeamContext = Depends(_resolve_team_context)):
     return {"items": items, "total": len(items)}
 
 
+@router.get("/api/blend-constructor/saved/{saved_id}")
+async def get_saved_blend_detail(
+    saved_id: str,
+    ctx: TeamContext = Depends(_resolve_team_context),
+):
+    """Authenticated endpoint — returns full blend data for owner/team member."""
+    from bot.services.saved_blends_store import get_blend_by_id
+
+    blend = await get_blend_by_id(saved_id)
+    if not blend:
+        raise HTTPException(status_code=404, detail="blend_not_found")
+    # Verify ownership or team membership
+    if blend.get("telegram_id") != ctx.telegram_id:
+        raise HTTPException(status_code=403, detail="not_owner")
+    return blend
+
+
 @router.delete("/api/blend-constructor/saved/{saved_id}")
 async def remove_saved_blend(
     saved_id: str,

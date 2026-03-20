@@ -86,7 +86,12 @@ def _build_pptx(slides: list[str], images: list[bytes | None] | None = None) -> 
     prs.slide_height = Emu(_SLIDE_EMU)
     blank = prs.slide_layouts[6]
 
-    for i, text in enumerate(slides):
+    for i, raw_text in enumerate(slides):
+        text = raw_text
+        if isinstance(text, list):
+            text = "\n".join(str(item) for item in text)
+        elif not isinstance(text, str):
+            text = str(text)
         slide = prs.slides.add_slide(blank)
         img_bytes = (images[i] if images and i < len(images) else None)
 
