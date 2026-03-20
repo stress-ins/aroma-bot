@@ -2212,6 +2212,8 @@ registerWindowBridge({
   removeMonitoredAccount,
   addMonitoredAccountFromSettings,
   removeMonitoredAccountFromSettings,
+  addTrackedHashtag,
+  removeTrackedHashtag,
 });
 
 reelsCallbacks.renderReels = renderReels;
