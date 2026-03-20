@@ -1001,6 +1001,7 @@ body.app-ready .splash {
 }
 
 .detail-grid { display: flex; flex-direction: column; gap: var(--space-3); }
+.detail-grid > .section { flex-shrink: 0; flex-grow: 0; }
 .plan-entry-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); }
 .plan-entry-head .draft-meta { align-items: center; gap: 6px; }
 
@@ -3242,7 +3243,10 @@ body.tg-theme-dark .concept-card {
 .account-meta {
   display: flex; align-items: center; gap: 5px;
   font-size: 13px; color: var(--hint); padding-left: 28px;
+  flex-wrap: nowrap;
 }
+.account-meta .tag-status-warn,
+.account-meta .tag-status-error { flex-shrink: 0; white-space: nowrap; }
 .account-meta i, .account-meta svg { width: 14px; height: 14px; color: var(--good); }
 .account-full-btn { width: 100%; justify-content: center; margin-top: 6px; }
 
