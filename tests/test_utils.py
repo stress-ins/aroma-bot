@@ -1062,3 +1062,104 @@ class TestHandbookPdfImport:
         js = _miniapp_js_bundle()
         assert "archetype" in js
         assert '"Архетип"' in js
+
+    @pytest.mark.asyncio
+    async def test_list_reference_cards_symptom_returns_cross_ref_slugs(self, tmp_path):
+        import bot.services.miniapp_references as refs
+        from db.models import AromaCardModel, Base
+        from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+
+        engine = create_async_engine(f"sqlite+aiosqlite:///{tmp_path}/test.db")
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        TestSession = async_sessionmaker(engine, expire_on_commit=False)
+
+        symptom_card = AromaCardModel(
+            slug="anxiety",
+            name="Тревожность",
+            category="symptom",
+            source_type="symptom",
+            aliases=[],
+            payload={
+                "category_group": "НЕРВНАЯ СИСТЕМА",
+                "parent_group": "НЕРВНАЯ СИСТЕМА",
+                "recommended_oil_slugs": ["lavender", "bergamot"],
+                "recommended_blend_slugs": ["grounding"],
+            },
+        )
+        async with TestSession() as session:
+            session.add(symptom_card)
+            await session.commit()
+
+        import bot.services.miniapp_references.common as _refs_common
+        async def _noop(): pass
+        orig_session = refs.AsyncSessionLocal
+        orig_seed = refs.seed_reference_cards_if_empty
+        orig_common_session = _refs_common.AsyncSessionLocal
+        orig_common_seed = _refs_common.seed_reference_cards_if_empty
+        try:
+            refs.AsyncSessionLocal = TestSession
+            refs.seed_reference_cards_if_empty = _noop
+            _refs_common.AsyncSessionLocal = TestSession
+            _refs_common.seed_reference_cards_if_empty = _noop
+            items = await refs.list_reference_cards("symptom")
+        finally:
+            refs.AsyncSessionLocal = orig_session
+            refs.seed_reference_cards_if_empty = orig_seed
+            _refs_common.AsyncSessionLocal = orig_common_session
+            _refs_common.seed_reference_cards_if_empty = orig_common_seed
+
+        assert len(items) == 1
+        assert items[0]["recommended_oil_slugs"] == ["lavender", "bergamot"]
+        assert items[0]["recommended_blend_slugs"] == ["grounding"]
+
+    @pytest.mark.asyncio
+    async def test_list_reference_cards_aroma_has_no_recommended_slugs(self, tmp_path):
+        import bot.services.miniapp_references as refs
+        from db.models import AromaCardModel, Base
+        from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+
+        engine = create_async_engine(f"sqlite+aiosqlite:///{tmp_path}/test.db")
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        TestSession = async_sessionmaker(engine, expire_on_commit=False)
+
+        aroma_card = AromaCardModel(
+            slug="lavender",
+            name="Лаванда",
+            category="aroma",
+            source_type="herb",
+            aliases=[],
+            payload={"description": "Расслабляющее масло"},
+        )
+        async with TestSession() as session:
+            session.add(aroma_card)
+            await session.commit()
+
+        import bot.services.miniapp_references.common as _refs_common
+        async def _noop(): pass
+        orig_session = refs.AsyncSessionLocal
+        orig_seed = refs.seed_reference_cards_if_empty
+        orig_common_session = _refs_common.AsyncSessionLocal
+        orig_common_seed = _refs_common.seed_reference_cards_if_empty
+        try:
+            refs.AsyncSessionLocal = TestSession
+            refs.seed_reference_cards_if_empty = _noop
+            _refs_common.AsyncSessionLocal = TestSession
+            _refs_common.seed_reference_cards_if_empty = _noop
+            items = await refs.list_reference_cards("aroma")
+        finally:
+            refs.AsyncSessionLocal = orig_session
+            refs.seed_reference_cards_if_empty = orig_seed
+            _refs_common.AsyncSessionLocal = orig_common_session
+            _refs_common.seed_reference_cards_if_empty = orig_common_seed
+
+        assert len(items) == 1
+        assert "recommended_oil_slugs" not in items[0]
+        assert "recommended_blend_slugs" not in items[0]
+
+    def test_search_includes_symptom_cross_ref_boost(self):
+        js = _miniapp_js_bundle()
+        assert "recommended_oil_slugs" in js
+        assert "_matchedSymptoms" in js
+        assert "Помогает при" in js

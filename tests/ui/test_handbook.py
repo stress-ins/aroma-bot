@@ -80,6 +80,36 @@ def test_filter_chips_no_horizontal_overflow(page):
     )
 
 
+def test_smart_search_surfaces_oils_from_matching_symptoms(page):
+    """When searching a symptom name, cross-referenced oils/blends must appear in results."""
+    page.locator("#btnTabHandbook").click()
+    page.wait_for_timeout(100)
+
+    search_input = page.locator("#smartSearchInput")
+    search_input.fill("тревож")
+    page.wait_for_timeout(600)  # debounce 300ms + render
+
+    results_text = page.locator("#referenceListContainer").inner_text()
+    assert "Тревожность" in results_text, "Symptom 'Тревожность' should appear (direct match)"
+    assert "Лаванда" in results_text, "Oil 'Лаванда' should appear (cross-reference boost from Тревожность)"
+
+
+def test_smart_search_shows_helps_with_badge(page):
+    """Cross-referenced oil cards must show 'Помогает при' badge with symptom name."""
+    page.locator("#btnTabHandbook").click()
+    page.wait_for_timeout(100)
+
+    search_input = page.locator("#smartSearchInput")
+    search_input.fill("тревож")
+    page.wait_for_timeout(600)
+
+    badge = page.locator(".search-symptom-tag").first
+    assert badge.is_visible(), "Expected .search-symptom-tag badge to be visible"
+    badge_text = badge.inner_text()
+    assert "Помогает при" in badge_text
+    assert "Тревожность" in badge_text
+
+
 def test_themed_handbook_sections_render(themed_page):
     """Handbook sections render in both themes."""
     themed_page.locator("#btnTabHandbook").click()

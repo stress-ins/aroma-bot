@@ -1017,6 +1017,21 @@ export function createReferencesModule(deps) {
 
     await loadAllReferencesForSearch();
     const q = query.toLowerCase();
+
+    // Build cross-reference: find symptoms matching query, collect their recommended slugs
+    const _symptomBoostSlugs = {}; // slug → [symptom names]
+    for (const sym of (_searchCache.symptoms || [])) {
+      const symName = (sym.name || "").toLowerCase();
+      if (symName.includes(q)) {
+        for (const slug of (sym.recommended_oil_slugs || [])) {
+          (_symptomBoostSlugs[slug] = _symptomBoostSlugs[slug] || []).push(sym.name);
+        }
+        for (const slug of (sym.recommended_blend_slugs || [])) {
+          (_symptomBoostSlugs[slug] = _symptomBoostSlugs[slug] || []).push(sym.name);
+        }
+      }
+    }
+
     const allItems = [
       ...(_searchCache.aromas || []),
       ...(_searchCache.blends || []),
@@ -1039,6 +1054,12 @@ export function createReferencesModule(deps) {
         else if (f.startsWith(q)) score += 7;
         else if (f.includes(q)) score += 3;
       });
+      // Cross-reference boost: if this item is recommended by a matching symptom
+      const _matchedSymptoms = _symptomBoostSlugs[item.slug];
+      if (_matchedSymptoms) {
+        score += 5;
+        return {...item, _score: score, _matchedSymptoms};
+      }
       return {...item, _score: score};
     }).filter(i => i._score > 0);
     const currentType = state.tab.replace(/s$/, "");
@@ -1088,6 +1109,7 @@ export function createReferencesModule(deps) {
       <h3 class="draft-topic">${escapeHtml(name)}</h3>
       ${item.name_en ? `<div class="reference-name-en">${escapeHtml(item.name_en)}</div>` : ""}
       <div class="draft-preview">${escapeHtml(stripMarkdown(item.description_short || item.description || item.indications || "").slice(0, 100))}...</div>
+      ${item._matchedSymptoms ? `<span class="search-symptom-tag">Помогает при: ${escapeHtml(item._matchedSymptoms.join(", "))}</span>` : ""}
     </article>`;
   }
 

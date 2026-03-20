@@ -571,6 +571,9 @@ async def list_reference_cards(category: str) -> list[dict[str, str]]:
             "parent_group": str(payload.get("parent_group", "")),
             "blend_category": str(payload.get("blend_category", "")),
         })
+        if model.category == "symptom":
+            items[-1]["recommended_oil_slugs"] = list(payload.get("recommended_oil_slugs") or [])
+            items[-1]["recommended_blend_slugs"] = list(payload.get("recommended_blend_slugs") or [])
     return items
 
 
