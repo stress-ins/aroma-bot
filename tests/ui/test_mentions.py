@@ -20,8 +20,8 @@ def test_mentions_detail_buttons_visible(dark_page):
     mention_card.click()
     page.wait_for_timeout(300)
 
-    # Verify back button is visible and uses correct class
-    back_btn = page.locator("button.ghost-button", has_text="Назад")
+    # Verify back button uses renderBackButton() — .back-button class
+    back_btn = page.locator("button.back-button")
     back_btn.wait_for(state="visible", timeout=3000)
     box = back_btn.bounding_box()
     assert box is not None and box["width"] > 0 and box["height"] > 0, "Back button must have non-zero size"
@@ -41,6 +41,7 @@ def test_mentions_detail_buttons_visible(dark_page):
     # Verify no old btn classes remain
     assert page.locator(".btn.btn-primary").count() == 0, "No .btn.btn-primary elements should exist"
     assert page.locator(".btn.btn-ghost").count() == 0, "No .btn.btn-ghost elements should exist"
+    assert page.locator("button.ghost-button", has_text="Назад").count() == 0, "No ghost-button back should exist"
 
 
 def test_mentions_published_reply_state(dark_page):
@@ -97,8 +98,8 @@ def test_mentions_detail_back_navigation(dark_page):
     # We should see the detail view (generate button present)
     page.locator("button.primary-button", has_text="Сгенерировать").wait_for(state="visible", timeout=3000)
 
-    # Click back
-    page.locator("button.ghost-button", has_text="Назад").click()
+    # Click back via renderBackButton()
+    page.locator("button.back-button").click()
     page.wait_for_timeout(300)
 
     # Should return to list — mention cards visible again

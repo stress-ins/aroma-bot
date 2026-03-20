@@ -10,6 +10,9 @@ export function createMentionsModule(deps) {
     escapeHtml,
     withButtonFeedback,
     showUiNotice,
+    enterDetailView,
+    syncMobileNavigation,
+    renderBackButton,
   } = deps;
 
   // ── State ──────────────────────────────────────────────────────────────────
@@ -65,7 +68,7 @@ export function createMentionsModule(deps) {
     if (!container) return;
 
     if (state.selectedMention) {
-      renderMentionDetail(container);
+      renderMentionDetail();
       return;
     }
 
@@ -116,7 +119,6 @@ export function createMentionsModule(deps) {
   // ── Detail view ────────────────────────────────────────────────────────────
 
   async function openMentionDetail(mentionId) {
-    const container = elements.plansContainer || document.getElementById("plans-container");
     try {
       const detail = await fetchJson(`/api/mentions/${mentionId}`);
       // Merge fresh detail (with replies) into list state
@@ -129,7 +131,8 @@ export function createMentionsModule(deps) {
       if (!m) return;
       state.selectedMention = m;
     }
-    renderMentionDetail(container);
+    enterDetailView();
+    renderMentionDetail();
   }
 
   function closeMentionDetail() {
@@ -137,9 +140,10 @@ export function createMentionsModule(deps) {
     renderMentions();
   }
 
-  function renderMentionDetail(container) {
+  function renderMentionDetail() {
     const m = state.selectedMention;
     if (!m) return;
+    const container = elements.draftDetail || document.getElementById("draftDetail");
 
     const hasPublished = m.replies && m.replies.some(r => r.published_at);
     const repliesHtml = m.replies && m.replies.length
@@ -160,9 +164,7 @@ export function createMentionsModule(deps) {
       : `<p class="field-help">Ещё нет ответов. Нажми «Сгенерировать».</p>`;
 
     container.innerHTML = `
-      <button class="ghost-button" data-action="closeMentionDetail">
-        ← Назад
-      </button>
+      ${renderBackButton()}
       <div class="mention-content">
         <div class="mention-meta">
           <span class="mention-platform-badge">
@@ -204,9 +206,7 @@ export function createMentionsModule(deps) {
           state.selectedMention.replies = data.replies || [];
         }
         showUiNotice("Ответы сгенерированы", "success");
-        renderMentionDetail(
-          elements.plansContainer || document.getElementById("plans-container")
-        );
+        renderMentionDetail();
       });
     } catch (_e) {
       // withButtonFeedback already showed error via showUiNotice
@@ -232,9 +232,7 @@ export function createMentionsModule(deps) {
           }
           showUiNotice("Ответ опубликован", "success");
         }
-        renderMentionDetail(
-          elements.plansContainer || document.getElementById("plans-container")
-        );
+        renderMentionDetail();
       });
     } catch (_e) {
       // withButtonFeedback already showed error via showUiNotice

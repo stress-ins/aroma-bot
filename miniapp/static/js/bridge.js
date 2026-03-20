@@ -92,6 +92,10 @@ export function registerWindowBridge(deps) {
     updateConstructBtn,
     submitBlendConstructor,
     openSavedBlends,
+    openSavedBlendDetail,
+    savedBlendCreateContent,
+    savedBlendLaunchContent,
+    deleteSavedBlendFromDetail,
     blendSaveCurrentBlend,
     blendCreateContent,
     blendOfWeek,
@@ -270,6 +274,10 @@ export function registerWindowBridge(deps) {
   window.updateConstructBtn = updateConstructBtn;
   window.submitBlendConstructor = submitBlendConstructor;
   window.openSavedBlends = openSavedBlends;
+  window.openSavedBlendDetail = openSavedBlendDetail;
+  window.savedBlendCreateContent = savedBlendCreateContent;
+  window.savedBlendLaunchContent = savedBlendLaunchContent;
+  window.deleteSavedBlendFromDetail = deleteSavedBlendFromDetail;
   window.blendSaveCurrentBlend = blendSaveCurrentBlend;
   window.blendCreateContent = blendCreateContent;
   window.blendOfWeek = blendOfWeek;

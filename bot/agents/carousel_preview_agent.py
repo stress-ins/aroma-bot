@@ -305,6 +305,10 @@ async def generate_slide_preview(draft_id: str, slide_index: int) -> bytes:
         raise ValueError(f"Slide index {slide_index} out of range")
 
     text = slides[slide_index]
+    if isinstance(text, list):
+        text = "\n".join(str(item) for item in text)
+    elif not isinstance(text, str):
+        text = str(text)
     slide_images = list(draft.payload.get("slide_images", []))
     images = load_carousel_slide_images(draft_id, slide_images)
 
