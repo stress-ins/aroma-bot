@@ -366,7 +366,8 @@ async def carousel_canva_export(draft_id: str, _: None = Depends(_require_auth))
     else:
         pptx_bytes = await asyncio.get_running_loop().run_in_executor(None, _build_pptx, slides, images or None)
 
-    heading = (draft.payload.get("slides", [{}])[0].get("heading", "") or draft.payload.get("angle", "") or draft.topic or "").strip()
+    first_slide = (draft.payload.get("slides") or [None])[0]
+    heading = ((first_slide.get("heading", "") if isinstance(first_slide, dict) else "") or draft.payload.get("angle", "") or draft.topic or "").strip()
     title = f"#{draft.id} {heading}" if heading else f"Carousel #{draft.id}"
     try:
         result = await export_to_canva(pptx_bytes, title)
