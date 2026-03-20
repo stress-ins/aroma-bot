@@ -839,6 +839,16 @@ class TestMiniAppLinks:
         assert build_draft_tab("threads") == "drafts"
 
 
+class TestMentionsButtonClasses:
+    def test_mentions_detail_uses_correct_button_classes(self):
+        mentions_js = Path("miniapp/static/js/mentions.js").read_text()
+        assert "primary-button" in mentions_js
+        assert "btn btn-primary" not in mentions_js, "should use primary-button, not btn btn-primary"
+        assert "btn btn-ghost" not in mentions_js, "should use ghost-button/secondary-button, not btn btn-ghost"
+        assert "btn-sm" not in mentions_js, "should use compact, not btn-sm"
+        assert "closeMentionDetail" in mentions_js
+
+
 class TestMiniAppBridge:
     def test_parse_webapp_payload_accepts_open_draft(self):
         payload = parse_webapp_payload('{"action":"open_draft","draft_id":"abc123"}')

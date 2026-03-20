@@ -139,16 +139,16 @@ export function createMentionsModule(deps) {
             <div class="reply-text">${escapeHtml(r.content)}</div>
             <div class="reply-length">${r.content.length} символов</div>
             ${!r.published_at ? `
-              <button class="btn btn-sm btn-primary"
+              <button class="primary-button compact"
                 data-action="publishReply" data-args='${JSON.stringify([m.mention_id, r.reply_id, null])}'>
                 Опубликовать
               </button>` : `<span class="tag-status-ok">Опубликовано</span>`}
-            ${r.publish_error ? `<div class="error-text">${escapeHtml(r.publish_error)}</div>` : ""}
+            ${r.publish_error ? `<div style="color:var(--danger);font-size:12px">${escapeHtml(r.publish_error)}</div>` : ""}
           </div>`).join("")
-      : `<p class="hint-text">Ещё нет ответов. Нажми «Сгенерировать».</p>`;
+      : `<p class="field-help">Ещё нет ответов. Нажми «Сгенерировать».</p>`;
 
     container.innerHTML = `
-      <button class="btn btn-ghost btn-back" data-action="closeMentionDetail">
+      <button class="ghost-button" data-action="closeMentionDetail">
         ← Назад
       </button>
       <div class="mention-content">
@@ -165,11 +165,11 @@ export function createMentionsModule(deps) {
         ${m.url ? `<a href="${escapeHtml(m.url)}" class="mention-link" target="_blank">Открыть оригинал</a>` : ""}
       </div>
       <div class="mention-actions" style="display:flex;gap:8px;margin:12px 0">
-        <button class="btn btn-primary" data-action="generateReplies" data-args='${JSON.stringify([m.mention_id, null])}'>
+        <button class="primary-button" data-action="generateReplies" data-args='${JSON.stringify([m.mention_id, null])}'>
           <i data-lucide="sparkles"></i> Сгенерировать ответы
         </button>
         ${m.status === "pending" ? `
-          <button class="btn btn-ghost" data-action="ignoreMentionAction" data-args='${JSON.stringify([m.mention_id, null])}'>
+          <button class="secondary-button" data-action="ignoreMentionAction" data-args='${JSON.stringify([m.mention_id, null])}'>
             <i data-lucide="eye-off"></i> Игнорировать
           </button>` : ""}
       </div>
@@ -183,54 +183,65 @@ export function createMentionsModule(deps) {
   // ── Actions ────────────────────────────────────────────────────────────────
 
   async function generateReplies(mentionId, btn) {
-    await withButtonFeedback(btn, "Генерирую…", async () => {
-      const data = await fetchJson(`/api/mentions/${mentionId}/generate-replies`, { method: "POST" });
-      // Update in state
-      const m = state.mentions.find(x => x.mention_id === mentionId);
-      if (m) m.replies = data.replies || [];
-      if (state.selectedMention?.mention_id === mentionId) {
-        state.selectedMention.replies = data.replies || [];
-      }
-      renderMentionDetail(
-        elements.plansContainer || document.getElementById("plans-container")
-      );
-    });
+    try {
+      await withButtonFeedback(btn, "Генерирую…", async () => {
+        const data = await fetchJson(`/api/mentions/${mentionId}/generate-replies`, { method: "POST" });
+        const m = state.mentions.find(x => x.mention_id === mentionId);
+        if (m) m.replies = data.replies || [];
+        if (state.selectedMention?.mention_id === mentionId) {
+          state.selectedMention.replies = data.replies || [];
+        }
+        renderMentionDetail(
+          elements.plansContainer || document.getElementById("plans-container")
+        );
+      });
+    } catch (_e) {
+      // withButtonFeedback already showed error via showUiNotice
+    }
   }
 
   async function publishReply(mentionId, replyId, btn) {
-    await withButtonFeedback(btn, "Публикую…", async () => {
-      const data = await fetchJson(`/api/mentions/${mentionId}/publish-reply`, {
-        method: "POST",
-        body: JSON.stringify({ reply_id: replyId }),
+    try {
+      await withButtonFeedback(btn, "Публикую…", async () => {
+        const data = await fetchJson(`/api/mentions/${mentionId}/publish-reply`, {
+          method: "POST",
+          body: JSON.stringify({ reply_id: replyId }),
+        });
+        if (data.published) {
+          const m = state.mentions.find(x => x.mention_id === mentionId);
+          if (m) {
+            m.status = "replied";
+            const r = (m.replies || []).find(x => x.reply_id === replyId);
+            if (r) r.published_at = new Date().toISOString();
+          }
+          if (state.selectedMention?.mention_id === mentionId) {
+            state.selectedMention.status = "replied";
+          }
+        }
+        renderMentionDetail(
+          elements.plansContainer || document.getElementById("plans-container")
+        );
       });
-      if (data.published) {
-        const m = state.mentions.find(x => x.mention_id === mentionId);
-        if (m) {
-          m.status = "replied";
-          const r = (m.replies || []).find(x => x.reply_id === replyId);
-          if (r) r.published_at = new Date().toISOString();
-        }
-        if (state.selectedMention?.mention_id === mentionId) {
-          state.selectedMention.status = "replied";
-        }
-      }
-      renderMentionDetail(
-        elements.plansContainer || document.getElementById("plans-container")
-      );
-    });
+    } catch (_e) {
+      // withButtonFeedback already showed error via showUiNotice
+    }
   }
 
   async function ignoreMentionAction(mentionId, btn) {
-    await withButtonFeedback(btn, "…", async () => {
-      await fetchJson(`/api/mentions/${mentionId}/ignore`, { method: "PATCH" });
-      const m = state.mentions.find(x => x.mention_id === mentionId);
-      if (m) m.status = "ignored";
-      if (state.selectedMention?.mention_id === mentionId) {
-        state.selectedMention.status = "ignored";
-      }
-      state.selectedMention = null;
-      renderMentions();
-    });
+    try {
+      await withButtonFeedback(btn, "…", async () => {
+        await fetchJson(`/api/mentions/${mentionId}/ignore`, { method: "PATCH" });
+        const m = state.mentions.find(x => x.mention_id === mentionId);
+        if (m) m.status = "ignored";
+        if (state.selectedMention?.mention_id === mentionId) {
+          state.selectedMention.status = "ignored";
+        }
+        state.selectedMention = null;
+        renderMentions();
+      });
+    } catch (_e) {
+      // withButtonFeedback already showed error via showUiNotice
+    }
   }
 
   // ── Filter bridge ──────────────────────────────────────────────────────────

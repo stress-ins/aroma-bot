@@ -181,6 +181,10 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
             (slug, name, "symptom", "symptom", json.dumps([]), json.dumps({"category_group": cat_group, "parent_group": cat_group}), now, now),
         )
     cursor.execute(
+        "INSERT INTO mentions (mention_id, platform, external_id, type, author_username, author_name, content, url, context_post, received_at, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        ("mention001", "threads", "ext001", "mention", "aroma_user", "Aroma User", "Подскажите, какое масло лучше для вечернего расслабления?", "https://threads.net/t/123", "", now, "pending"),
+    )
+    cursor.execute(
         "INSERT INTO plans (plan_id, raw_text, entries, status, created_at) VALUES (?, ?, ?, 'draft', ?)",
         (
             "20260311180000",
