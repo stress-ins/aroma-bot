@@ -544,13 +544,15 @@ export function createReelsModule(deps) {
             ${tagMarkup("Генерируется", "progress")}
           </div>
         </div>
-        <div class="brand-loader">
-          <span class="brand-loader-ring"></span>
-          <span class="brand-loader-letter">А</span>
-        </div>
-        <div class="detail-loader-copy">
-          <strong>${escapeHtml(r.generation_message || "Генерирую концепцию и сценарий")}</strong>
-          <span>Изображения догенерируются в фоне — можно закрыть приложение</span>
+        <div class="detail-loader-card detail-loader-card-compact">
+          <div class="brand-loader">
+            <span class="brand-loader-ring"></span>
+            <span class="brand-loader-letter">А</span>
+          </div>
+          <div class="detail-loader-copy">
+            <strong>${escapeHtml(r.generation_message || "Генерирую концепцию и сценарий")}</strong>
+            <span>Изображения догенерируются в фоне — можно закрыть приложение</span>
+          </div>
         </div>
         <div class="reels-skeleton-section">
           <div class="reels-skeleton-bar" style="width:60%"></div>

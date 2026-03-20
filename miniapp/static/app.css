@@ -900,6 +900,12 @@ body.app-ready .splash {
   color: var(--muted);
 }
 
+.detail-loader-card-compact {
+  flex: 0;
+  min-height: auto;
+  padding: 12px 0;
+}
+
 .panel-loader-card {
   min-height: 180px;
   padding: 16px 0;
