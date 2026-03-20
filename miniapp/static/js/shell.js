@@ -18,8 +18,9 @@ export function createShellModule(deps) {
     if (!tabBar) return;
 
     const isMobile = window.matchMedia("(max-width: 760px)").matches;
-    tabBar.hidden = !isMobile;
-    if (!isMobile) return;
+    const isTablet = window.matchMedia("(min-width: 761px) and (max-width: 1024px)").matches;
+    tabBar.hidden = !(isMobile || isTablet);
+    if (!isMobile && !isTablet) return;
 
     const activeTab = state.mode === "handbook" ? "aromas" : state.tab;
     tabBar.querySelectorAll(".bottom-tab-btn").forEach((button) => {
