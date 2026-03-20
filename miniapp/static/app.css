@@ -5595,6 +5595,41 @@ body.tg-theme-dark .reco-cta-btn { color: #d4845e; }
 .canva-design-thumb--empty { display: flex; align-items: center; justify-content: center; }
 .canva-design-title { font-size: 12px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+/* Canva hero preview strip (after import) */
+.canva-hero-strip {
+  display: flex;
+  gap: 6px;
+  padding: 8px 0 4px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.canva-hero-strip::-webkit-scrollbar { display: none; }
+.canva-hero-thumb {
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: 8px;
+  flex-shrink: 0;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: border-color 0.15s;
+}
+.canva-hero-thumb:hover { border-color: var(--brand); }
+.canva-hero-extra {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  background: var(--surface-2, #f0f0f0);
+  color: var(--hint);
+  font-size: 14px;
+  font-weight: 600;
+}
+
 /* ── Trends ─────────────────────────────────────────────────────────── */
 .trends-controls { padding: 12px 14px 8px; }
 .trends-platform-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
