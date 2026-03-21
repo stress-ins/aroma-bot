@@ -90,19 +90,27 @@ def _format_trends(results: list) -> str:
 
 def _claude_topics(trends_text: str) -> list[str]:
     from bot.services.claude_client import call_claude
+    from cache.store import cache
 
-    raw = call_claude(
-        messages=[{"role": "user", "content": f"Тренды:\n{trends_text}"}],
-        max_tokens=800,
-        system=_PROMPT_TOPICS,
-        context="threads topics",
-    )
-    topics: list[str] = []
-    for line in raw.splitlines():
-        line = line.strip()
-        if line and line[0].isdigit() and ". " in line:
-            topics.append(line.split(". ", 1)[1].strip())
-    return topics[:10]
+    try:
+        raw = call_claude(
+            messages=[{"role": "user", "content": f"Тренды:\n{trends_text}"}],
+            max_tokens=800,
+            system=_PROMPT_TOPICS,
+            context="threads topics",
+        )
+        topics: list[str] = []
+        for line in raw.splitlines():
+            line = line.strip()
+            if line and line[0].isdigit() and ". " in line:
+                topics.append(line.split(". ", 1)[1].strip())
+        topics = topics[:10]
+        if topics:
+            cache.set("topics:threads", topics)
+        return topics
+    except Exception:
+        logger.warning("_claude_topics failed, trying cache", exc_info=True)
+        return cache.get("topics:threads") or []
 
 
 def _claude_post_and_prompt(topic: str) -> tuple[str, str]:

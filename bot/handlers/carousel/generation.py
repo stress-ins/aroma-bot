@@ -96,18 +96,26 @@ _FALLBACK_IMG_PROMPT = (
 
 def _claude_topics_carousel(trends_text: str) -> list[str]:
     from bot.services.claude_client import call_claude
-    text = call_claude(
-        messages=[{"role": "user", "content": f"Тренды:\n{trends_text}"}],
-        max_tokens=800,
-        system=_PROMPT_TOPICS,
-        context="carousel topics",
-    )
-    topics: list[str] = []
-    for line in text.splitlines():
-        line = line.strip()
-        if line and line[0].isdigit() and ". " in line:
-            topics.append(line.split(". ", 1)[1].strip())
-    return topics[:10]
+    from cache.store import cache
+    try:
+        text = call_claude(
+            messages=[{"role": "user", "content": f"Тренды:\n{trends_text}"}],
+            max_tokens=800,
+            system=_PROMPT_TOPICS,
+            context="carousel topics",
+        )
+        topics: list[str] = []
+        for line in text.splitlines():
+            line = line.strip()
+            if line and line[0].isdigit() and ". " in line:
+                topics.append(line.split(". ", 1)[1].strip())
+        topics = topics[:10]
+        if topics:
+            cache.set("topics:carousel", topics)
+        return topics
+    except Exception:
+        logger.warning("_claude_topics_carousel failed, trying cache", exc_info=True)
+        return cache.get("topics:carousel") or []
 
 
 def _claude_carousel_draft(topic: str, angle: str = "", hook: str = "") -> tuple[list[str], str]:
