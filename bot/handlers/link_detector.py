@@ -163,7 +163,7 @@ async def _handle_profile(
         [
             InlineKeyboardButton(
                 f"Добавить @{username} на мониторинг",
-                callback_data=f"link:aa:{platform[:2]}:{username}",
+                callback_data=f"link:aa:{_PLATFORM_SHORT[platform]}:{username}",
             ),
         ],
         [InlineKeyboardButton("Отмена", callback_data="link:x")],
