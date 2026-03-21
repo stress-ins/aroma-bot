@@ -62,13 +62,13 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--whisper",
         action="store_true",
-        default=False,
-        help="Enable Whisper STT for filler word detection (requires openai-whisper)",
+        default=True,
+        help="Enable Whisper STT for filler word detection (default: on)",
     )
     parser.add_argument(
         "--no-whisper",
         action="store_true",
-        help="Disable Whisper, use silencedetect only (default)",
+        help="Disable Whisper, use silencedetect only (faster, no filler detection)",
     )
     parser.add_argument(
         "--whisper-model",

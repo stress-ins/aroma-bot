@@ -609,6 +609,7 @@ async def _run_clean_video_task(
     draft_id: str,
     min_pause_duration: float,
     silence_threshold_db: float,
+    use_whisper: bool = True,
 ) -> None:
     """Background task: run video_processor on uploaded video."""
     import asyncio
@@ -639,6 +640,7 @@ async def _run_clean_video_task(
             mode="single",
             min_pause_duration=min_pause_duration,
             silence_threshold_db=silence_threshold_db,
+            use_whisper=use_whisper,
         )
 
         loop = asyncio.get_running_loop()
@@ -708,6 +710,7 @@ async def clean_reels_video(
         draft_id,
         payload.min_pause_duration,
         payload.silence_threshold_db,
+        payload.use_whisper,
     )
     return JSONResponse(
         status_code=202,
