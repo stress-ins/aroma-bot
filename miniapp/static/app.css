@@ -4344,12 +4344,14 @@ body:has(.preview-modal-backdrop) .back-button { display: none !important; }
 /* ── Mobile chrome reduction (#1 / #3 / #6) ─────────────────────────────── */
 
 /* On mobile the topbar shows only the title (sticky); mode selector and eyebrow are hidden */
+/* top: X (safe area) — .shell already has padding-top: X so topbar starts below Telegram chrome.
+   Sticky at X (not 0) means the topbar stays just below the chrome. padding-top: var(--space-3)
+   only — no safe area duplication. The < 760px media query overrides top/padding for phones. */
 body.is-mobile-layout .topbar-main {
   position: sticky;
-  top: 0;
+  top: var(--tg-content-inset-top, env(safe-area-inset-top, 0px));
   z-index: 10;
   padding: var(--space-3);
-  padding-top: calc(var(--space-3) + var(--tg-content-inset-top, env(safe-area-inset-top, 0px)));
   padding-left: 88px;
   background: var(--bg);
 }
@@ -4416,8 +4418,9 @@ body.is-mobile-layout[data-mode="content"] .toolbar {
 }
 
 /* Compact topbar-main padding on mobile since title is hidden.
-   Add --tg-content-inset-top (set by JS from Telegram.WebApp.contentSafeAreaInset.top)
-   so content is not hidden under Telegram's chrome bar in full-screen mode. */
+   Shell has padding-top: 8px + X which pushes topbar below Telegram chrome.
+   Topbar sticks at top: 8px + X (matching shell offset) so it doesn't jump on scroll.
+   padding-top: 8px only — no safe area duplication (shell already handles it). */
 @media (max-width: 760px) {
   body.is-mobile-layout .shell {
     padding-top: calc(8px + var(--tg-content-inset-top, env(safe-area-inset-top, 0px)));
@@ -4425,7 +4428,7 @@ body.is-mobile-layout[data-mode="content"] .toolbar {
 
   body.is-mobile-layout .topbar-main {
     padding: 8px 12px;
-    padding-top: calc(8px + var(--tg-content-inset-top, env(safe-area-inset-top, 0px)));
+    top: calc(8px + var(--tg-content-inset-top, env(safe-area-inset-top, 0px)));
     gap: 0;
   }
 
