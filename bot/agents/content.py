@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
+
+logger = logging.getLogger(__name__)
 
 from analytics.base import SourceResult
 from bot.agents.platform_rules import (
@@ -413,13 +416,22 @@ def _generate_topics_sync(
     format_key: str,
     user_brief: str = "",
 ) -> list[str]:
+    from cache.store import cache
+    cache_key = f"topics:content:{format_key}:{goal_key}"
     if user_brief:
         prompt = _custom_topics_prompt(user_brief, goal_key, format_key)
     else:
         trends_text = _format_trends(results or [])
         prompt = _topics_prompt(trends_text, goal_key, format_key)
-    raw = _call_claude(prompt, max_tokens=900)
-    return parse_numbered_list(raw, limit=10)
+    try:
+        raw = _call_claude(prompt, max_tokens=900)
+        topics = parse_numbered_list(raw, limit=10)
+        if topics:
+            cache.set(cache_key, topics)
+        return topics
+    except Exception:
+        logger.warning("_generate_topics_sync failed, trying cache", exc_info=True)
+        return cache.get(cache_key) or []
 
 
 def _generate_strategist_sync(topic: str, goal_key: str, format_key: str, blend_context: dict | None = None) -> tuple[str, str]:

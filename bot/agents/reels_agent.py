@@ -92,19 +92,27 @@ def _parse_storyboard(raw: str) -> list[StoryboardFrame]:
 
 
 def generate_reels_topics_sync(trends_text: str) -> list[str]:
+    from cache.store import cache
     bs = get_brand_settings_cached()
     prompt = _TOPICS_PROMPT.format(brand_context=bs.brand_voice, trends_text=trends_text)
-    text = call_claude(
-        messages=[{"role": "user", "content": prompt}],
-        max_tokens=700,
-        context="reels topics",
-    )
-    topics: list[str] = []
-    for line in text.splitlines():
-        line = line.strip()
-        if line and line[0].isdigit() and ". " in line:
-            topics.append(line.split(". ", 1)[1].strip())
-    return topics[:7]
+    try:
+        text = call_claude(
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=700,
+            context="reels topics",
+        )
+        topics: list[str] = []
+        for line in text.splitlines():
+            line = line.strip()
+            if line and line[0].isdigit() and ". " in line:
+                topics.append(line.split(". ", 1)[1].strip())
+        topics = topics[:7]
+        if topics:
+            cache.set("topics:reels", topics)
+        return topics
+    except Exception:
+        logger.warning("generate_reels_topics_sync failed, trying cache", exc_info=True)
+        return cache.get("topics:reels") or []
 
 
 def _render_reference_context_block(reference_context: str) -> str:

@@ -20,6 +20,25 @@ logger = logging.getLogger(__name__)
 _POLL_INTERVAL = 60  # seconds
 
 
+def _split_message(text: str, max_len: int = 4096) -> list[str]:
+    """Split a message into chunks of at most max_len characters, breaking on newlines."""
+    if len(text) <= max_len:
+        return [text]
+    chunks: list[str] = []
+    current: list[str] = []
+    current_len = 0
+    for line in text.splitlines(keepends=True):
+        if current_len + len(line) > max_len and current:
+            chunks.append("".join(current))
+            current = []
+            current_len = 0
+        current.append(line)
+        current_len += len(line)
+    if current:
+        chunks.append("".join(current))
+    return chunks
+
+
 async def _send_daily_digest(app: Application) -> None:
     """Collect trends and send daily digest to the configured chat."""
     from analytics.aggregator import collect_all
@@ -38,23 +57,24 @@ async def _send_daily_digest(app: Application) -> None:
         cache.set("digest", (ru_report, en_report))
 
     for report in (ru_report, en_report):
-        try:
-            await app.bot.send_message(
-                chat_id=settings.report_target_chat_id,
-                text=report,
-                parse_mode="MarkdownV2",
-                disable_web_page_preview=True,
-            )
-        except Exception:
-            plain = report.replace("\\", "")
+        for chunk in _split_message(report):
             try:
                 await app.bot.send_message(
                     chat_id=settings.report_target_chat_id,
-                    text=plain,
+                    text=chunk,
+                    parse_mode="MarkdownV2",
                     disable_web_page_preview=True,
                 )
-            except Exception as exc:
-                logger.error("Failed to send digest: %s", exc)
+            except Exception:
+                plain = chunk.replace("\\", "")
+                try:
+                    await app.bot.send_message(
+                        chat_id=settings.report_target_chat_id,
+                        text=plain,
+                        disable_web_page_preview=True,
+                    )
+                except Exception as exc:
+                    logger.error("Failed to send digest: %s", exc)
 
     logger.info("Daily digest sent to %s", settings.report_target_chat_id)
 
