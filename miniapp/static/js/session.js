@@ -225,7 +225,9 @@ export function createSessionModule(deps) {
   }
 
   async function loadDrafts() {
+    const gen = state._loadGen;
     const data = await fetchJson(`/api/drafts?${filtersToQueryString()}&include_metrics=true`, { timeout: 20000 });
+    if (gen !== state._loadGen) return;
     state.drafts = data.items || [];
     renderDraftList();
     const preferredId = state.draftId || "";

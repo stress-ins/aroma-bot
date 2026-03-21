@@ -2048,6 +2048,8 @@ function setTab(t) {
   document.body.dataset.tab = t;
   if (elements.topbarTitle) elements.topbarTitle.textContent = SECTION_TITLES[t] ?? t;
   state.mobileView = "list";
+  state.draftId = "";
+  state.selected = null;
   state.selectedCreateTool = null;
   if (t !== "keywords" && t !== "settings") state.selectedKeywordTopicIdx = null;
   elements.settingsButton?.classList.toggle("active", state.mode === "content" && t === "settings");

@@ -48,11 +48,14 @@ export function createRuntimeModule(deps) {
   }
 
   async function safeLoadCurrentTab(prefix = "Не удалось загрузить раздел") {
+    const gen = (state._loadGen = (state._loadGen || 0) + 1);
     try {
       await loadCurrentTab();
+      if (gen !== state._loadGen) return false;
       hideBootFallback();
       return true;
     } catch (error) {
+      if (gen !== state._loadGen) return false;
       console.error("miniapp runtime tab load failed", error);
       showRuntimeWarning(prefix, error);
       hideBootFallback();
