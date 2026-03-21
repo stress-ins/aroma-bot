@@ -251,8 +251,12 @@ async def generate_plan(ctx: TeamContext = Depends(_resolve_team_context)):
     # Enrich with social trends data for this team
     social_trends_text = await _build_social_trends_text(ctx.team_id)
 
+    # Enrich with own past publication performance
+    from bot.services.content_analytics import build_own_performance_text
+    own_performance_text = await build_own_performance_text(ctx.team_id)
+
     loop = asyncio.get_running_loop()
-    raw_plan = await loop.run_in_executor(None, generate_plan_sync, trends_text, social_trends_text)
+    raw_plan = await loop.run_in_executor(None, generate_plan_sync, trends_text, social_trends_text, own_performance_text)
     if not raw_plan:
         raise HTTPException(status_code=500, detail="plan_generation_failed")
 

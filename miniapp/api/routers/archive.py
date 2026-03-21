@@ -51,7 +51,15 @@ async def list_archive(
 
 @router.get("/api/archive/stats")
 async def archive_stats(ctx: TeamContext = Depends(_resolve_team_context)):
+    from bot.services.content_analytics import (
+        get_format_performance,
+        get_pillar_performance,
+        get_top_publications,
+    )
     stats = await get_stats(ctx.team_id)
+    stats["format_performance"] = await get_format_performance(ctx.team_id)
+    stats["pillar_performance"] = await get_pillar_performance(ctx.team_id)
+    stats["top_publications"] = await get_top_publications(ctx.team_id)
     return stats
 
 
