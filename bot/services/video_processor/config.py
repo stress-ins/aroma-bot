@@ -27,8 +27,8 @@ class ProcessorConfig:
         "типа", "значит", "буквально", "реально", "вообще",
     ])
 
-    # --- Whisper STT (optional, disabled by default) ---
-    use_whisper: bool = False
+    # --- Whisper STT (enabled by default — removes filler words) ---
+    use_whisper: bool = True
     whisper_model: str = "tiny"  # tiny | base | small | medium | large-v3
     whisper_language: str = "ru"
 
