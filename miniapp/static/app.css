@@ -6227,20 +6227,16 @@ body.is-mobile-layout.is-detail-view .detail-panel::after {
 body.is-mobile-layout.is-detail-view .detail-panel::before {
   top: 0;
   background: linear-gradient(to bottom,
-    rgba(var(--bg-rgb), 1) 0%,
-    rgba(var(--bg-rgb), 0) 100%);
+    rgba(var(--surface-rgb), 1) 0%,
+    rgba(var(--surface-rgb), 0) 100%);
 }
 
 body.is-mobile-layout.is-detail-view .detail-panel::after {
   bottom: 0;
   background: linear-gradient(to top,
-    rgba(var(--bg-rgb), 1) 0%,
-    rgba(var(--bg-rgb), 0) 100%);
+    rgba(var(--surface-rgb), 1) 0%,
+    rgba(var(--surface-rgb), 0) 100%);
 }
 
 body.is-mobile-layout.is-detail-view .detail-panel.has-scroll-top::before { opacity: 1; }
 body.is-mobile-layout.is-detail-view .detail-panel.has-scroll-bottom::after { opacity: 1; }
-
-body[data-tab="settings"].is-mobile-layout.is-detail-view .detail-panel::after {
-  display: none;
-}
