@@ -115,7 +115,7 @@ async def _no_cache_js_modules(request, call_next):
     response = await call_next(request)
     path = request.url.path
     if path.startswith("/static/") and (path.endswith(".js") or path.endswith(".css")):
-        response.headers["Cache-Control"] = "no-store, max-age=0"
+        response.headers["Cache-Control"] = "no-cache"
     return response
 
 
