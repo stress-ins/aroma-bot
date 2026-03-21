@@ -2,13 +2,16 @@
 from __future__ import annotations
 
 
-def test_archive_tab_visible(dark_page):
-    """Archive tab appears in Plans section."""
-    page = dark_page
-    page.locator("#btnTabPlans").click()
-    page.wait_for_timeout(300)
+def _nav_to_archive(page):
+    """Navigate to Archive via content sub-tab."""
+    page.locator(".content-sub-tab", has_text="Архив").click()
+    page.wait_for_timeout(800)
 
-    archive_tab = page.get_by_text("Архив")
+
+def test_archive_tab_visible(dark_page):
+    """Archive tab appears as a content sub-tab."""
+    page = dark_page
+    archive_tab = page.locator(".content-sub-tab", has_text="Архив")
     archive_tab.wait_for(state="visible", timeout=3000)
     assert archive_tab.is_visible()
 
@@ -16,11 +19,7 @@ def test_archive_tab_visible(dark_page):
 def test_archive_list_loads(dark_page):
     """Switching to Archive tab shows list of past publications."""
     page = dark_page
-    page.locator("#btnTabPlans").click()
-    page.wait_for_timeout(300)
-
-    page.get_by_text("Архив").click()
-    page.wait_for_timeout(800)
+    _nav_to_archive(page)
 
     cards = page.locator(".archive-card")
     cards.first.wait_for(state="visible", timeout=5000)
@@ -30,10 +29,7 @@ def test_archive_list_loads(dark_page):
 def test_archive_card_has_metrics(dark_page):
     """Archive cards display engagement metrics."""
     page = dark_page
-    page.locator("#btnTabPlans").click()
-    page.wait_for_timeout(300)
-    page.get_by_text("Архив").click()
-    page.wait_for_timeout(800)
+    _nav_to_archive(page)
 
     first_card = page.locator(".archive-card").first
     first_card.wait_for(state="visible", timeout=5000)
@@ -44,10 +40,7 @@ def test_archive_card_has_metrics(dark_page):
 def test_archive_detail_opens(dark_page):
     """Clicking an archive card opens detail view with scoring section."""
     page = dark_page
-    page.locator("#btnTabPlans").click()
-    page.wait_for_timeout(300)
-    page.get_by_text("Архив").click()
-    page.wait_for_timeout(800)
+    _nav_to_archive(page)
 
     first_card = page.locator(".archive-card").first
     first_card.wait_for(state="visible", timeout=5000)
@@ -62,10 +55,7 @@ def test_archive_detail_opens(dark_page):
 def test_archive_add_button(dark_page):
     """Add publication button is visible in archive list."""
     page = dark_page
-    page.locator("#btnTabPlans").click()
-    page.wait_for_timeout(300)
-    page.get_by_text("Архив").click()
-    page.wait_for_timeout(800)
+    _nav_to_archive(page)
 
     add_btn = page.locator("button", has_text="Добавить публикацию")
     add_btn.wait_for(state="visible", timeout=3000)
@@ -75,10 +65,7 @@ def test_archive_add_button(dark_page):
 def test_archive_form_opens(dark_page):
     """Clicking add button opens archive form with URL import and save."""
     page = dark_page
-    page.locator("#btnTabPlans").click()
-    page.wait_for_timeout(300)
-    page.get_by_text("Архив").click()
-    page.wait_for_timeout(800)
+    _nav_to_archive(page)
 
     page.locator("button", has_text="Добавить публикацию").click()
     page.wait_for_timeout(2000)
@@ -91,10 +78,7 @@ def test_archive_form_opens(dark_page):
 def test_archive_stats_section(dark_page):
     """Archive list shows statistics section when publications exist."""
     page = dark_page
-    page.locator("#btnTabPlans").click()
-    page.wait_for_timeout(300)
-    page.get_by_text("Архив").click()
-    page.wait_for_timeout(800)
+    _nav_to_archive(page)
 
     stats = page.locator(".archive-stats")
     stats.wait_for(state="visible", timeout=5000)
