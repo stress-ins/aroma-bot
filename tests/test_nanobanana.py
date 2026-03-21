@@ -10,11 +10,12 @@ import pytest
 from bot.services.gemini_images import ImageGenResult, generate_gemini_image_sync
 
 
-def _make_settings(kie_key="test-kie-key", nano_key=""):
+def _make_settings(kie_key="test-kie-key", nano_key="", callback_base_url=""):
     s = MagicMock()
     s.kie_ai_api_key = kie_key
     s.nana_banana_api_key = nano_key
     s.image_api_key = kie_key or nano_key
+    s.kie_callback_base_url = callback_base_url  # empty = polling mode (no webhook)
     return s
 
 

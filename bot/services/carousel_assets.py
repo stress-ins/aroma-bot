@@ -148,23 +148,32 @@ def _get_blend_mood_from_payload(payload: dict) -> str | None:
     return directive or None
 
 
-async def populate_carousel_slide_assets(draft_id: str) -> None:
+async def populate_carousel_slide_assets(draft_id: str) -> str:
     """Generate Gemini images for all slides that don't have one yet.
 
     Updates draft payload in-place: adds/fills slide_images list.
     Runs synchronous Gemini calls sequentially (rate-limit safe).
+
+    Returns: "done" | "awaiting_callback" | "error"
     """
     draft = await get_draft(draft_id)
     if not draft or draft.kind != "carousel":
-        return
+        return "error"
 
     img_prompts: list[str] = draft.payload.get("img_prompts", [])
     slide_images, slide_versions = _ensure_slide_versions(draft.payload, len(img_prompts))
 
-    changed = False
+    has_ready = False
+    has_pending_callback = False
     for i, prompt in enumerate(img_prompts):
-        if slide_images[i]:
-            continue  # already generated
+        if slide_images[i] and not isinstance(slide_images[i], dict) or (
+            isinstance(slide_images[i], dict) and slide_images[i].get("filename")
+        ):
+            has_ready = True
+            continue  # already has a real image
+        if isinstance(slide_images[i], dict) and slide_images[i].get("pending_callback"):
+            has_pending_callback = True
+            continue  # already submitted, waiting for webhook
         try:
             result = generate_gemini_image_sync(
                 prompt or _FALLBACK_PROMPT,
@@ -179,19 +188,39 @@ async def populate_carousel_slide_assets(draft_id: str) -> None:
                 version = save_carousel_slide_asset(draft_id, i, result.image_bytes, prompt=prompt)
                 slide_images[i] = version
                 slide_versions[i].append(version)
-                changed = True
+                has_ready = True
                 logger.info("carousel_assets: slide %d generated for draft %s", i + 1, draft_id)
+            elif result.kie_task_id and not result.error:
+                # Submitted to Kie, waiting for webhook callback
+                slide_images[i] = {"kie_task_id": result.kie_task_id, "pending_callback": True, "prompt": prompt}
+                has_pending_callback = True
+                logger.info("carousel_assets: slide %d submitted (awaiting callback) for draft %s", i + 1, draft_id)
+            else:
+                logger.warning("carousel_assets: slide %d failed for draft %s: %s", i + 1, draft_id, result.error)
         except Exception:
             logger.exception("carousel_assets: failed on slide %d for draft %s", i + 1, draft_id)
 
-    # Always persist slide_images so the auto-trigger guard
-    # (``not payload.get("slide_images")``) won't re-fire endlessly
-    # when all providers fail (e.g. 402 insufficient credits).
+    # Always persist slide_images so the auto-trigger guard won't re-fire
     payload = dict(draft.payload)
     payload["slide_images"] = slide_images
     payload["slide_image_versions"] = slide_versions
-    payload["images_ready"] = sum(1 for img in slide_images if img)
+    payload["images_ready"] = sum(
+        1 for img in slide_images
+        if isinstance(img, dict) and img.get("filename")
+    )
+
+    if has_pending_callback:
+        payload["generation_stage"] = "awaiting_callback"
+        await update_draft(draft_id, payload=payload)
+        return "awaiting_callback"
+
+    all_missing = all(
+        not (isinstance(img, dict) and img.get("filename"))
+        for img in slide_images
+    )
+    status = "error" if all_missing and not has_ready else "done"
     await update_draft(draft_id, payload=payload)
+    return status
 
 
 async def regenerate_carousel_slide_asset(
