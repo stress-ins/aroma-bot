@@ -162,6 +162,15 @@ export function registerWindowBridge(deps) {
     removeMonitoredAccountFromSettings,
     addTrackedHashtag,
     removeTrackedHashtag,
+    openArchiveDetail,
+    openArchiveForm,
+    savePublication,
+    deletePublication,
+    importFromUrl,
+    toggleArchiveStats,
+    setArchivePlatformFilter,
+    setArchiveScore,
+    bulkImportFromAccount,
   } = deps;
 
   window.retryCurrentTab = retryCurrentTab;
@@ -434,6 +443,17 @@ export function registerWindowBridge(deps) {
   window.removeMonitoredAccount = removeMonitoredAccount;
   window.addMonitoredAccountFromSettings = addMonitoredAccountFromSettings;
   window.removeMonitoredAccountFromSettings = removeMonitoredAccountFromSettings;
+
+  // Archive
+  window.openArchiveDetail = openArchiveDetail;
+  window.openArchiveForm = openArchiveForm;
+  window.savePublication = savePublication;
+  window.deletePublication = deletePublication;
+  window.importFromUrl = importFromUrl;
+  window.toggleArchiveStats = toggleArchiveStats;
+  window.setArchivePlatformFilter = setArchivePlatformFilter;
+  window.setArchiveScore = setArchiveScore;
+  window.bulkImportFromAccount = bulkImportFromAccount;
 
   // ── Global event delegation ────────────────────────────────────────────────
   // Replaces inline onclick/onchange/oninput/onkeydown attributes.

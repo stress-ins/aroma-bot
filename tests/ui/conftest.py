@@ -220,6 +220,15 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
             now,
         ),
     )
+    # Archive (past publications) seed data
+    cursor.execute(
+        "INSERT INTO past_publications (pub_id, platform, kind, external_url, external_id, topic, caption, hashtags, published_at, likes, comments, shares, saves, views, score_engagement, score_brand_fit, score_craft, score_goal_hit, content_pillar, funnel_stage, notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        ("pub001", "threads", "text", "https://threads.net/t/test1", "ext_pub001", "Утренний ритуал пробуждения", "Попробуйте начать утро с аромата лаванды.", "[]", now, 142, 23, 8, 5, 1240, 4, 3, 5, 4, "Образование", "awareness", "Хороший хук", now, now),
+    )
+    cursor.execute(
+        "INSERT INTO past_publications (pub_id, platform, kind, external_url, external_id, topic, caption, hashtags, published_at, likes, comments, shares, saves, views, content_pillar, funnel_stage, notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        ("pub002", "instagram", "carousel", "https://instagram.com/p/test2", "ext_pub002", "5 масел для сна", "Карусель про масла для крепкого сна.", "[]", now, 89, 15, 3, 12, 800, "Рецепты", "consideration", "", now, now),
+    )
     conn.commit()
     conn.close()
 
