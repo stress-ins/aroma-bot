@@ -44,8 +44,6 @@ export function createTrendsModule(deps) {
   // ── Loaders ──────────────────────────────────────────────────────────
 
   async function loadTrends() {
-    const topbarNavTabs = document.getElementById("topbarNavTabs");
-    if (topbarNavTabs) topbarNavTabs.innerHTML = renderContentSwitcher("trends");
     elements.draftList.innerHTML = renderTrendsListPanel();
     elements.draftDetail.innerHTML = renderDetailLoader();
     syncMobileNavigation();
@@ -88,18 +86,10 @@ export function createTrendsModule(deps) {
       suggestionsData = null;
     }
 
-    if (topbarNavTabs) topbarNavTabs.innerHTML = renderContentSwitcher("trends");
     elements.draftList.innerHTML = renderTrendsListPanel();
     elements.draftDetail.innerHTML = renderTrendsDetail();
     syncMobileNavigation();
     if (window.lucide) lucide.createIcons();
-  }
-
-  // ── Content sub-switcher ────────────────────────────────────────────
-
-  function renderContentSwitcher(active) {
-    return `<button class="header-tab${active === "drafts" ? " active" : ""}" data-action="setContentSubMode" data-args='["drafts"]'>Черновики</button>
-      <button class="header-tab${active === "trends" ? " active" : ""}" data-action="setContentSubMode" data-args='["trends"]'>Тренды</button>`;
   }
 
   // ── List Panel (platform selector + filters) ─────────────────────────
@@ -696,8 +686,6 @@ export function createTrendsModule(deps) {
       try {
         monitoredAccounts = await fetchJson("/api/social/monitored-accounts");
       } catch (_) { /* ignore */ }
-      const topbarNavTabs = document.getElementById("topbarNavTabs");
-    if (topbarNavTabs) topbarNavTabs.innerHTML = renderContentSwitcher("trends");
       elements.draftList.innerHTML = renderTrendsListPanel();
       if (window.lucide) lucide.createIcons();
     } catch (err) {
@@ -717,8 +705,6 @@ export function createTrendsModule(deps) {
       try {
         monitoredAccounts = await fetchJson("/api/social/monitored-accounts");
       } catch (_) { /* ignore */ }
-      const topbarNavTabs = document.getElementById("topbarNavTabs");
-    if (topbarNavTabs) topbarNavTabs.innerHTML = renderContentSwitcher("trends");
       elements.draftList.innerHTML = renderTrendsListPanel();
       if (window.lucide) lucide.createIcons();
     } catch (_err) {

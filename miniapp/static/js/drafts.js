@@ -137,23 +137,16 @@ export function createDraftsModule(deps) {
     }, "Готово");
   }
 
-  function renderContentSwitcher(active) {
-    return `<button class="header-tab${active === "drafts" ? " active" : ""}" data-action="setContentSubMode" data-args='["drafts"]'>Черновики</button>
-      <button class="header-tab${active === "trends" ? " active" : ""}" data-action="setContentSubMode" data-args='["trends"]'>Тренды</button>`;
-  }
-
   function renderDraftList() {
     elements.listTitle.textContent = "Контент";
     elements.draftCount.textContent = `${state.drafts.length} шт`;
     setEmptyState(state.drafts.length > 0, {
-      eyebrow: "Черновики",
+      eyebrow: "Публикации",
       title: "Ничего не найдено",
       body: "Создайте первый материал через вкладку «Создать». Выберите формат, укажите тему — AI сделает остальное.",
       actionLabel: "Открыть создание",
       action: "openCreateTool()",
     });
-    const topbarNavTabs = document.getElementById("topbarNavTabs");
-    if (topbarNavTabs) topbarNavTabs.innerHTML = renderContentSwitcher(state.contentSubMode || "drafts");
     elements.draftList.innerHTML = state.drafts.map((d, idx) => `
       <article ${interactiveCardAttrs(`Открыть черновик ${d.topic}`)} class="draft-card overview-card${d.draft_id === state.draftId ? " active" : ""}${d.generation_pending ? " is-pending" : ""} interactive-card" data-action="openDraft" data-args='${JSON.stringify([d.draft_id])}'>
         <div class="overview-card-top">

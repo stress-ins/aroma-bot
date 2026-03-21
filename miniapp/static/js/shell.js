@@ -23,7 +23,9 @@ export function createShellModule(deps) {
     tabBar.hidden = !(isMobile || isTablet);
     if (!isMobile && !isTablet) return;
 
-    const activeTab = state.mode === "handbook" ? "aromas" : state.tab;
+    // Plans/trends are now content sub-tabs, so highlight "drafts" (Контент) button
+    let activeTab = state.mode === "handbook" ? "aromas" : state.tab;
+    if (activeTab === "plans" || activeTab === "trends") activeTab = "drafts";
     tabBar.querySelectorAll(".bottom-tab-btn").forEach((button) => {
       const isActive = button.dataset.tab === activeTab;
       button.classList.toggle("active", isActive);
@@ -524,12 +526,16 @@ export function createShellModule(deps) {
           return;
         }
 
-        if (state.mode === "content" && state.tab === targetTab && state.mobileView === "list") {
+        // Content sub-tab aware: "plans" and "trends" are now under "drafts" bottom button
+        const isContentAreaTab = targetTab === "drafts" && ["drafts", "plans", "trends"].includes(state.tab);
+        const effectiveMatch = state.tab === targetTab || isContentAreaTab;
+
+        if (state.mode === "content" && effectiveMatch && state.mobileView === "list") {
           if (elements.listPanel) elements.listPanel.scrollTop = 0;
           return;
         }
 
-        if (state.mode === "content" && state.tab === targetTab && state.mobileView === "detail") {
+        if (state.mode === "content" && effectiveMatch && state.mobileView === "detail") {
           goBackToList(false);
           return;
         }
@@ -538,7 +544,26 @@ export function createShellModule(deps) {
           setMode("content");
         }
         state.mobileView = "list";
-        setTab(targetTab);
+        // When switching to "Контент", restore the last content sub-tab
+        if (targetTab === "drafts" && state.contentSubTab) {
+          const sub = state.contentSubTab;
+          if (sub === "publications") {
+            setTab("drafts");
+          } else if (sub === "plans") {
+            state.plansSubMode = "publications";
+            setTab("plans");
+          } else if (sub === "mentions") {
+            state.plansSubMode = "mentions";
+            setTab("plans");
+          } else if (sub === "archive") {
+            state.plansSubMode = "archive";
+            setTab("plans");
+          } else {
+            setTab(targetTab);
+          }
+        } else {
+          setTab(targetTab);
+        }
         void safeLoadCurrentTab("Не удалось загрузить вкладку");
         if (elements.listPanel) elements.listPanel.scrollTop = 0;
         if (elements.detailPanel) elements.detailPanel.scrollTop = 0;

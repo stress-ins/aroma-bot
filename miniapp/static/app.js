@@ -58,6 +58,11 @@ const state = {
   _fromContext: null,
   plansSubMode: "publications",
   contentSubMode: "drafts",
+  contentSubTab: (() => {
+    const t = new URLSearchParams(window.location.search).get("tab");
+    if (t === "plans") return "plans";
+    return "publications";
+  })(),
   mentions: [],
   mentionsFilter: { platform: "all", status: "pending" },
   activeTeamId: localStorage.getItem("activeTeamId") || null,
@@ -132,6 +137,7 @@ const elements = {
   draftDetail: document.getElementById("draftDetail"),
   draftCount: document.getElementById("draftCount"),
   headerTabs: document.getElementById("headerTabs"),
+  contentSubTabs: document.getElementById("contentSubTabs"),
   listTitle: document.getElementById("topbarTitle"),
   emptyState: document.getElementById("emptyState"),
   kindFilter: document.getElementById("kindFilter"),
@@ -954,6 +960,8 @@ async function scheduleThreadsSeries(draftId, date, slots, btn) {
     if (count > 0) {
       const draft = await fetchJson(`/api/drafts/${draftId}`);
       mergeDraftIntoState(draft);
+      state.contentSubTab = "plans";
+      state.plansSubMode = "publications";
       setTab("plans");
       await safeLoadCurrentTab();
     }
@@ -1475,11 +1483,16 @@ window.archiveModule = archiveModule;
 function setPlansSubMode(mode) {
   state.plansSubMode = mode;
   if (mode === "mentions") state.selectedMention = null;
+  if (mode === "publications") state.contentSubTab = "plans";
+  else if (mode === "mentions") state.contentSubTab = "mentions";
+  else if (mode === "archive") state.contentSubTab = "archive";
   renderPlans();
+  renderContentSubTabs();
 }
 
 function setContentSubMode(mode) {
   state.contentSubMode = mode;
+  state.contentSubTab = "publications";
   if (mode === "drafts") {
     setTab("drafts");
   } else {
@@ -2030,11 +2043,12 @@ function setMode(m) {
   }
   const _contentHidden = ["settings", "create", "inbox", "plans", "schedule", "keywords", "status", "drafts", "trends"];
   if (!(m === "content" && _contentHidden.includes(state.tab)) && tabs.length > 0 && !tabs.find(t => t.id === state.tab)) setTab(tabs[0].id);
+  renderContentSubTabs();
   syncMobileNavigation();
 }
 
 const SECTION_TITLES = {
-  drafts: "Контент", plans: "Планы",
+  drafts: "Контент", plans: "Контент",
   create: "Создать", settings: "Настройки",
   trends: "Контент", schedule: "Расписание", inbox: "Согласование",
   keywords: "Ключи", status: "Статус",
@@ -2042,11 +2056,63 @@ const SECTION_TITLES = {
   blends: "Смеси", symptoms: "Симптомы",
 };
 
+/* ── Content sub-tabs (pill-style below section title) ─────────────────── */
+const CONTENT_SUB_TABS = [
+  { id: "plans", label: "Планы" },
+  { id: "mentions", label: "Упоминания" },
+  { id: "publications", label: "Публикации" },
+  { id: "archive", label: "Архив" },
+];
+
+const _TABS_SHOWING_CONTENT_SUB = new Set(["drafts", "plans", "trends"]);
+
+function renderContentSubTabs() {
+  const container = elements.contentSubTabs;
+  if (!container) return;
+  const isContentMode = state.mode === "content" && _TABS_SHOWING_CONTENT_SUB.has(state.tab);
+  if (!isContentMode) {
+    container.innerHTML = "";
+    return;
+  }
+  container.innerHTML = CONTENT_SUB_TABS.map(t =>
+    `<button class="content-sub-tab${state.contentSubTab === t.id ? " active" : ""}" data-subtab="${t.id}" type="button"><span>${escapeHtml(t.label)}</span></button>`
+  ).join("");
+  container.querySelectorAll(".content-sub-tab").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const target = btn.dataset.subtab;
+      if (!target || target === state.contentSubTab) return;
+      switchContentSubTab(target);
+    });
+  });
+}
+
+function switchContentSubTab(subTab) {
+  state.contentSubTab = subTab;
+  if (subTab === "publications") {
+    state.contentSubMode = "drafts";
+    setTab("drafts");
+    void safeLoadCurrentTab("Не удалось загрузить публикации");
+  } else if (subTab === "plans") {
+    state.plansSubMode = "publications";
+    setTab("plans");
+    void safeLoadCurrentTab("Не удалось загрузить планы");
+  } else if (subTab === "mentions") {
+    state.plansSubMode = "mentions";
+    setTab("plans");
+    void safeLoadCurrentTab("Не удалось загрузить упоминания");
+  } else if (subTab === "archive") {
+    state.plansSubMode = "archive";
+    setTab("plans");
+    void safeLoadCurrentTab("Не удалось загрузить архив");
+  }
+}
+
 function setTab(t) {
   clearBackgroundRefreshes();
   state.tab = t;
   document.body.dataset.tab = t;
-  if (elements.topbarTitle) elements.topbarTitle.textContent = SECTION_TITLES[t] ?? t;
+  const titleOverride = _TABS_SHOWING_CONTENT_SUB.has(t) ? "Контент" : null;
+  if (elements.topbarTitle) elements.topbarTitle.textContent = titleOverride || (SECTION_TITLES[t] ?? t);
   state.mobileView = "list";
   state.draftId = "";
   state.selected = null;
@@ -2076,7 +2142,7 @@ function setTab(t) {
     if (isActive) b.scrollIntoView({ inline: "center", behavior: "smooth", block: "nearest" });
   });
   elements.filtersContainer.hidden = !["drafts", "inbox"].includes(t);
-  
+
   // Clear panels immediately to prevent showing tools/content from previous tab
   if (elements.headerTabs) elements.headerTabs.innerHTML = "";
   const _navTabs = document.getElementById("topbarNavTabs");
@@ -2086,7 +2152,8 @@ function setTab(t) {
   elements.draftCount.textContent = "";
   elements.draftList.innerHTML = renderPanelLoader("Загружаю раздел");
   elements.draftDetail.innerHTML = renderDetailLoader("Загружаю раздел");
-  
+
+  renderContentSubTabs();
   syncMobileNavigation();
 }
 
@@ -2216,6 +2283,7 @@ registerWindowBridge({
   renderReferences,
   setPlansSubMode,
   setContentSubMode,
+  switchContentSubTab,
   openMentionDetail,
   closeMentionDetail,
   generateReplies,
