@@ -29,7 +29,7 @@ def test_create_tool_selection_isolates_form(page):
     if page.locator(".back-button").is_visible():
         page.locator(".back-button").click()
         page.wait_for_timeout(300)
-        assert page.locator("#listTitle").evaluate("(el) => el.textContent.trim()") == "Инструменты"
+        assert page.locator("#topbarTitle").evaluate("(el) => el.textContent.trim()") == "Инструменты"
         assert page.locator(".create-card").count() >= 2
 
 
