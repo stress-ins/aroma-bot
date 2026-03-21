@@ -88,7 +88,6 @@ export function createTrendsModule(deps) {
       suggestionsData = null;
     }
 
-    const topbarNavTabs = document.getElementById("topbarNavTabs");
     if (topbarNavTabs) topbarNavTabs.innerHTML = renderContentSwitcher("trends");
     elements.draftList.innerHTML = renderTrendsListPanel();
     elements.draftDetail.innerHTML = renderTrendsDetail();
