@@ -6237,7 +6237,7 @@ details[open] > .trend-suggestions-toggle::before { transform: rotate(90deg); }
 
 /* Reuse .header-tab styles, active gets accent color */
 .topbar-nav-tabs .header-tab.active {
-  background: var(--color-accent, #b45c3d);
+  background: var(--brand);
   color: #fff;
 }
 
