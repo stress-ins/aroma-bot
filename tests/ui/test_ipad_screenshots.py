@@ -15,8 +15,8 @@ from .helpers import assert_visual_snapshot, prepare_visual_state
 
 
 def _nav_to_drafts(page):
-    """Navigate to drafts list via desktop UI (content sub-switcher)."""
-    page.get_by_role("button", name="Черновики").first.click()
+    """Navigate to drafts list via content sub-tab."""
+    page.locator(".content-sub-tab", has_text="Публикации").first.click()
     page.wait_for_timeout(200)
 
 
