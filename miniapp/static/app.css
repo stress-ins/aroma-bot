@@ -6241,6 +6241,45 @@ details[open] > .trend-suggestions-toggle::before { transform: rotate(90deg); }
   color: #fff;
 }
 
+/* ── Content sub-tabs (pill-style, below topbar title) ────────────────── */
+.content-sub-tabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 14px 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.content-sub-tabs::-webkit-scrollbar { display: none; }
+.content-sub-tabs:empty { display: none; }
+
+.content-sub-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  border-radius: 999px;
+  min-height: 34px;
+  padding: 5px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--muted);
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.content-sub-tab:active {
+  transform: scale(0.97);
+}
+.content-sub-tab.active {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+  font-weight: 600;
+}
+
 /* ── Topbar team container ────────────────────────────────────────────── */
 .topbar-team {
   display: flex;
@@ -6300,8 +6339,11 @@ body.is-mobile-layout .topbar-main {
   padding-left: var(--space-3);
 }
 
-/* In detail view: hide nav-row (tabs) and panel-header (prevents sticky bleed-through) */
+/* In detail view: hide nav-row (tabs), content sub-tabs and panel-header (prevents sticky bleed-through) */
 body.is-mobile-layout.is-detail-view .topbar-nav-row {
+  display: none;
+}
+body.is-mobile-layout.is-detail-view .content-sub-tabs {
   display: none;
 }
 body.is-mobile-layout.is-detail-view .panel-header {

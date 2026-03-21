@@ -503,16 +503,8 @@ export function createPlansModule(deps) {
     renderPlans();
   }
 
-  function renderPlansSwitcher(active) {
-    return `<button class="header-tab${active === "publications" ? " active" : ""}" data-action="setPlansSubMode" data-args='["publications"]'>Публикации</button>
-      <button class="header-tab${active === "archive" ? " active" : ""}" data-action="setPlansSubMode" data-args='["archive"]'>Архив</button>
-      <button class="header-tab${active === "mentions" ? " active" : ""}" data-action="setPlansSubMode" data-args='["mentions"]'>Упоминания</button>`;
-  }
-
   function renderPlans() {
     const subMode = state.plansSubMode || "publications";
-    const topbarNavTabs = document.getElementById("topbarNavTabs");
-    if (topbarNavTabs) topbarNavTabs.innerHTML = renderPlansSwitcher(subMode);
 
     if (subMode === "archive") {
       if (window.archiveModule) {

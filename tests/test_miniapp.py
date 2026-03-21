@@ -1450,9 +1450,9 @@ class TestMiniAppRussianLocale:
         # primary tab navigation still lives in the bottom bar.
         assert 'body.is-mobile-layout .topbar-main {' in app_css
         assert 'position: sticky' in app_css
+        # "Планы" tab moved into content sub-tabs; bottom bar has 4 buttons now
         expected_order = [
             'id="btnTabDrafts"',
-            'id="btnTabPlans"',
             'id="btnTabCreate"',
             'id="btnTabHandbook"',
             'id="btnTabSettings"',
