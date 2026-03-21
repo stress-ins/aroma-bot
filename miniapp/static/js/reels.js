@@ -915,6 +915,91 @@ export function createReelsModule(deps) {
     }, "Готово");
   }
 
+
+  // ── Video upload & cleaning handlers ───────────────────────────────────
+
+  document.addEventListener("input", (e) => {
+    if (e.target && e.target.id === "cleanPauseDuration") {
+      const valEl = document.getElementById("cleanPauseVal");
+      if (valEl) valEl.textContent = e.target.value + "с";
+    }
+  });
+
+  async function uploadReelsVideo(draftId, btn) {
+    const fileInput = document.getElementById("videoFileInput");
+    if (!fileInput || !fileInput.files.length) {
+      showRequestError("Выберите файл", { message: "Сначала выберите видео файл." });
+      return;
+    }
+    const file = fileInput.files[0];
+    if (file.size > 2 * 1024 * 1024 * 1024) {
+      showRequestError("Файл слишком большой", { message: "Максимальный размер — 2 ГБ." });
+      return;
+    }
+    const formData = new FormData();
+    formData.append("file", file);
+    await withButtonFeedback(btn, "Загружаю...", async () => {
+      await fetch(`/api/reels/${draftId}/upload-video`, {
+        method: "POST",
+        body: formData,
+      }).then((resp) => { if (!resp.ok) throw new Error(`HTTP ${resp.status}`); return resp.json(); });
+      await fetchJson(`/api/reels/${draftId}/check-video`, { method: "POST" });
+      const draft = await fetchJson(`/api/reels/${draftId}`);
+      mergeReelsIntoState(draft);
+      callbacks.renderReels?.();
+      callbacks.renderReelsDetail?.(draft);
+    }, "Загружено");
+  }
+
+  let _cleanPollTimer = null;
+
+  async function cleanReelsVideo(draftId, btn) {
+    const pauseInput = document.getElementById("cleanPauseDuration");
+    const minPause = pauseInput ? parseFloat(pauseInput.value) : 0.4;
+    await withButtonFeedback(btn, "Запускаю...", async () => {
+      await fetchJson(`/api/reels/${draftId}/clean-video`, {
+        method: "POST",
+        body: JSON.stringify({
+          min_pause_duration: minPause,
+          silence_threshold_db: -35.0,
+        }),
+      });
+      _startCleanPoll(draftId);
+    }, "Запущено");
+  }
+
+  function _startCleanPoll(draftId) {
+    if (_cleanPollTimer) clearInterval(_cleanPollTimer);
+    _cleanPollTimer = setInterval(async () => {
+      try {
+        const st = await fetchJson(`/api/reels/${draftId}/clean-video-status`);
+        if (st.status === "completed" || st.status === "failed") {
+          clearInterval(_cleanPollTimer);
+          _cleanPollTimer = null;
+          const draft = await fetchJson(`/api/reels/${draftId}`);
+          mergeReelsIntoState(draft);
+          callbacks.renderReelsDetail?.(draft);
+          if (st.status === "completed") {
+            showUiNotice("Видео очищено от пауз");
+          }
+        }
+      } catch (_e) {
+        clearInterval(_cleanPollTimer);
+        _cleanPollTimer = null;
+      }
+    }, 2000);
+  }
+
+  async function checkAndPublish(draftId, btn) {
+    await withButtonFeedback(btn, "Проверяю...", async () => {
+      await fetchJson(`/api/reels/${draftId}/check-video`, { method: "POST" });
+      const draft = await fetchJson(`/api/reels/${draftId}`);
+      mergeReelsIntoState(draft);
+      callbacks.renderReels?.();
+      callbacks.renderReelsDetail?.(draft);
+    }, "Проверено");
+  }
+
   function renderScreen7Published(r) {
     return `
       <div class="detail-grid">
@@ -1095,6 +1180,10 @@ export function createReelsModule(deps) {
     // Phase 4 exports
     publishReels,
     retryPlatform,
+    // Video upload & cleaning
+    uploadReelsVideo,
+    cleanReelsVideo,
+    checkAndPublish,
     // Phase 5 role gates
     canEditReels,
     canApproveReels,

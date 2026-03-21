@@ -162,6 +162,11 @@ class ReelsRetryPlatformPayload(BaseModel):
     platform: str = Field(default="")
 
 
+class CleanVideoPayload(BaseModel):
+    min_pause_duration: float = Field(default=0.4, ge=0.1, le=2.0)
+    silence_threshold_db: float = Field(default=-35.0, ge=-60.0, le=-10.0)
+
+
 class AromaCardPayload(BaseModel):
     description: str = Field(default="")
     questions: str = Field(default="")
