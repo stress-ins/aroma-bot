@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 
@@ -20,6 +21,33 @@ router = APIRouter()
 _executor = ThreadPoolExecutor(max_workers=2)
 
 _SLOT_LABELS = {"morning": "УТРО", "day": "ДЕНЬ", "evening": "ВЕЧЕР"}
+
+_ANALYSIS_RE = re.compile(
+    r"^(?:"
+    r"Отличный пост|Хороший пост|Неплохой пост"
+    r"|Что работает[:\s]"
+    r"|Замечани[яе][:\s]"
+    r"|Анализ[:\s]"
+    r"|Рекомендаци[ия][:\s]"
+    r"|Разбор[:\s]"
+    r"|Оценка[:\s]"
+    r"|✅\s*Что"
+    r")",
+    re.IGNORECASE,
+)
+
+_THREADS_MAX_CHARS = 500
+
+
+def _hard_truncate(text: str, max_chars: int = _THREADS_MAX_CHARS) -> str:
+    """Truncate text at last sentence boundary within max_chars."""
+    if len(text) <= max_chars:
+        return text
+    cut = text[:max_chars]
+    for i in range(len(cut) - 1, -1, -1):
+        if cut[i] in ".!?\n":
+            return cut[: i + 1].rstrip()
+    return cut.rstrip()
 _SLOT_DESCRIPTIONS = {
     "morning": "провокационный тезис или спорное мнение + открытый вопрос (Hot Take, байт на обсуждение)",
     "day": "лаконичный список, мясной совет или быстрый туториал (для сохранений и репостов)",
@@ -145,12 +173,27 @@ async def _regen_slot_text(topic: str, goal_key: str, slot: str, note: str | Non
 """
         raw = _call_claude(prompt, max_tokens=400)
         edited = edit_post_sync(raw, topic, platform="threads_slot")
+
+        # Guard: if editor returned analysis/review instead of a post, fall back to raw
+        if _ANALYSIS_RE.match(edited.strip()):
+            logger.warning("Editor returned analysis instead of post, using raw writer output")
+            edited = raw
+
         # Strip any markdown formatting that slipped through
         from bot.agents.content import _strip_markdown_formatting
         edited = _strip_markdown_formatting(edited)
         text, why = _extract_why_it_works(edited)
         from bot.agents.content import _strip_format_labels
         text = _strip_format_labels(text)
+
+        # Guard: trim if text exceeds limits
+        if len(text) > _THREADS_MAX_CHARS or len(text.split()) > 120:
+            from bot.agents.content import _trim_thread_post_sync
+            text = _trim_thread_post_sync(text, topic)
+
+        # Last resort: hard truncate at sentence boundary
+        text = _hard_truncate(text, _THREADS_MAX_CHARS)
+
         return text, why
 
     return await loop.run_in_executor(_executor, _sync)

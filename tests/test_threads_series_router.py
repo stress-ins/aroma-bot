@@ -544,3 +544,54 @@ class TestRequireThreadsSeries:
         draft = _make_draft(kind="threads_series")
         result = _require_threads_series(draft)
         assert result is draft
+
+
+# ---------------------------------------------------------------------------
+# _hard_truncate helper
+# ---------------------------------------------------------------------------
+
+class TestHardTruncate:
+    def test_short_text_unchanged(self):
+        from miniapp.api.routers.threads_series import _hard_truncate
+        assert _hard_truncate("Hello world.", 500) == "Hello world."
+
+    def test_truncates_at_sentence_boundary(self):
+        from miniapp.api.routers.threads_series import _hard_truncate
+        text = "First sentence. Second sentence. Third sentence is very long and goes over."
+        result = _hard_truncate(text, 40)
+        assert result == "First sentence. Second sentence."
+        assert len(result) <= 40
+
+    def test_truncates_at_newline(self):
+        from miniapp.api.routers.threads_series import _hard_truncate
+        text = "Line one\nLine two which is quite long and should be cut"
+        result = _hard_truncate(text, 15)
+        assert result == "Line one"
+
+    def test_no_sentence_boundary_falls_back(self):
+        from miniapp.api.routers.threads_series import _hard_truncate
+        text = "a" * 600
+        result = _hard_truncate(text, 500)
+        assert len(result) == 500
+
+
+# ---------------------------------------------------------------------------
+# _ANALYSIS_RE detection
+# ---------------------------------------------------------------------------
+
+class TestAnalysisDetection:
+    def test_detects_review_patterns(self):
+        from miniapp.api.routers.threads_series import _ANALYSIS_RE
+        assert _ANALYSIS_RE.match("Отличный пост, но есть несколько замечаний:")
+        assert _ANALYSIS_RE.match("Что работает: глубокая идея")
+        assert _ANALYSIS_RE.match("Замечания: текст длинноват")
+        assert _ANALYSIS_RE.match("Анализ: разберём пост")
+        assert _ANALYSIS_RE.match("Рекомендации: сократить")
+        assert _ANALYSIS_RE.match("✅ Что работает")
+
+    def test_no_false_positive_on_normal_posts(self):
+        from miniapp.api.routers.threads_series import _ANALYSIS_RE
+        assert not _ANALYSIS_RE.match("Благодарность за 5 минут перед встречей")
+        assert not _ANALYSIS_RE.match("Ты когда-нибудь замечал")
+        assert not _ANALYSIS_RE.match("Отличная погода")
+        assert not _ANALYSIS_RE.match("Запахи — это портал в прошлое")
