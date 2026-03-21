@@ -1,0 +1,8 @@
+# Video processor — optional dependencies
+# Core module uses only stdlib (subprocess, pathlib, re, logging, etc.)
+# FFmpeg + ffprobe must be available in PATH (apt install ffmpeg)
+
+# --- Optional: Whisper STT for filler word detection ---
+# Uncomment to enable --whisper mode (requires ~2 GB disk for torch):
+# openai-whisper>=20231117
+# torch>=2.0.0
