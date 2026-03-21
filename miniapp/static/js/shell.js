@@ -421,6 +421,9 @@ export function createShellModule(deps) {
       el.classList.add("refreshing");
       el.style.setProperty("--ptr-progress", `${THRESHOLD}px`);
       try {
+        if (state.mobileView === "list") {
+          state.draftId = "";
+        }
         await safeLoadCurrentTab("Не удалось обновить");
       } finally {
         el.classList.remove("visible", "ready", "refreshing");
