@@ -558,9 +558,10 @@ class TestForceShorten:
     def test_calls_llm_to_shorten(self):
         from miniapp.api.routers.threads_series import _force_shorten
         long_text = "А" * 600
-        with patch("bot.agents.content._call_claude", return_value="Short version.") as mock_call:
+        shortened = "Б" * 100  # >20 chars so _force_shorten accepts it
+        with patch("bot.agents.content._call_claude", return_value=shortened) as mock_call:
             result = _force_shorten(long_text, "test topic", max_chars=500)
-        assert result == "Short version."
+        assert result == shortened
         mock_call.assert_called_once()
 
     def test_keeps_original_if_llm_returns_longer(self):
