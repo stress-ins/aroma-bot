@@ -255,106 +255,124 @@ _PLATFORM_LABEL = {"ig": "Instagram", "th": "Threads"}
 async def _cb_add_account(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     await query.answer()
+    logger.info("link_detector cb_add_account: data=%s", query.data)
 
-    # link:aa:{pl}:{username}
-    parts = query.data.split(":", 3)
-    if len(parts) < 4:
-        return
-    pl_short, username = parts[2], parts[3]
-    platform = _PLATFORM_MAP.get(pl_short)
-    if not platform:
-        return
+    try:
+        # link:aa:{pl}:{username}
+        parts = query.data.split(":", 3)
+        if len(parts) < 4:
+            logger.warning("link_detector: bad callback data: %s", query.data)
+            return
+        pl_short, username = parts[2], parts[3]
+        platform = _PLATFORM_MAP.get(pl_short)
+        if not platform:
+            logger.warning("link_detector: unknown platform: %s", pl_short)
+            return
 
-    user = update.effective_user
-    if not user:
-        return
-    team = await get_default_team(user.id, user.username or "")
-    bs = await get_brand_settings(team.team_id)
+        user = update.effective_user
+        if not user:
+            return
+        team = await get_default_team(user.id, user.username or "")
+        bs = await get_brand_settings(team.team_id)
 
-    field = f"{platform}_accounts"
-    accounts: list = list(getattr(bs, field, None) or [])
+        field = f"{platform}_accounts"
+        accounts: list = list(getattr(bs, field, None) or [])
 
-    if any(a.get("username", "").lower() == username.lower() for a in accounts):
-        await query.edit_message_text(f"@{username} уже на мониторинге.")
-        return
+        if any(a.get("username", "").lower() == username.lower() for a in accounts):
+            await query.edit_message_text(f"@{username} уже на мониторинге.")
+            return
 
-    if len(accounts) >= _MAX_ACCOUNTS_PER_PLATFORM:
-        await query.edit_message_text(
-            f"Лимит ({_MAX_ACCOUNTS_PER_PLATFORM}) аккаунтов достигнут."
-        )
-        return
+        if len(accounts) >= _MAX_ACCOUNTS_PER_PLATFORM:
+            await query.edit_message_text(
+                f"Лимит ({_MAX_ACCOUNTS_PER_PLATFORM}) аккаунтов достигнут."
+            )
+            return
 
-    accounts.append({"username": username, "status": "checking"})
-    await update_brand_settings(team.team_id, **{field: accounts})
+        accounts.append({"username": username, "status": "checking"})
+        await update_brand_settings(team.team_id, **{field: accounts})
 
-    label = _PLATFORM_LABEL.get(pl_short, platform)
-    await query.edit_message_text(f"@{username} ({label}) добавлен на мониторинг.")
+        label = _PLATFORM_LABEL.get(pl_short, platform)
+        await query.edit_message_text(f"@{username} ({label}) добавлен на мониторинг.")
+    except Exception:
+        logger.exception("link_detector cb_add_account failed")
+        await query.edit_message_text("Ошибка при добавлении аккаунта.")
 
 
 async def _cb_add_tag(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     await query.answer()
+    logger.info("link_detector cb_add_tag: data=%s", query.data)
 
-    # link:at:{tag}
-    parts = query.data.split(":", 2)
-    if len(parts) < 3:
-        return
-    tag = parts[2].lower()
+    try:
+        # link:at:{tag}
+        parts = query.data.split(":", 2)
+        if len(parts) < 3:
+            return
+        tag = parts[2].lower()
 
-    user = update.effective_user
-    if not user:
-        return
-    team = await get_default_team(user.id, user.username or "")
-    bs = await get_brand_settings(team.team_id)
+        user = update.effective_user
+        if not user:
+            return
+        team = await get_default_team(user.id, user.username or "")
+        bs = await get_brand_settings(team.team_id)
 
-    tracked: list[str] = list(bs.tracked_hashtags or [])
-    if tag in [t.lower() for t in tracked]:
-        await query.edit_message_text(f"#{tag} уже отслеживается.")
-        return
-    if len(tracked) >= _MAX_HASHTAGS:
-        await query.edit_message_text(f"Лимит ({_MAX_HASHTAGS}) хештегов достигнут.")
-        return
+        tracked: list[str] = list(bs.tracked_hashtags or [])
+        if tag in [t.lower() for t in tracked]:
+            await query.edit_message_text(f"#{tag} уже отслеживается.")
+            return
+        if len(tracked) >= _MAX_HASHTAGS:
+            await query.edit_message_text(f"Лимит ({_MAX_HASHTAGS}) хештегов достигнут.")
+            return
 
-    tracked.append(tag)
-    await update_brand_settings(team.team_id, tracked_hashtags=tracked)
-    await query.edit_message_text(f"#{tag} добавлен в отслеживаемые хештеги.")
+        tracked.append(tag)
+        await update_brand_settings(team.team_id, tracked_hashtags=tracked)
+        await query.edit_message_text(f"#{tag} добавлен в отслеживаемые хештеги.")
+    except Exception:
+        logger.exception("link_detector cb_add_tag failed")
+        await query.edit_message_text("Ошибка при добавлении хештега.")
 
 
 async def _cb_add_all_tags(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     await query.answer()
+    logger.info("link_detector cb_add_all_tags: data=%s", query.data)
 
-    tags: list[str] = context.user_data.get("_link_tags", [])
-    if not tags:
-        await query.edit_message_text("Хештеги не найдены.")
-        return
+    try:
+        tags: list[str] = context.user_data.get("_link_tags", [])
+        if not tags:
+            await query.edit_message_text("Хештеги не найдены.")
+            return
 
-    user = update.effective_user
-    if not user:
-        return
-    team = await get_default_team(user.id, user.username or "")
-    bs = await get_brand_settings(team.team_id)
+        user = update.effective_user
+        if not user:
+            return
+        team = await get_default_team(user.id, user.username or "")
+        bs = await get_brand_settings(team.team_id)
 
-    tracked: list[str] = list(bs.tracked_hashtags or [])
-    existing = set(t.lower() for t in tracked)
-    added: list[str] = []
-    for tag in tags:
-        if tag not in existing and len(tracked) < _MAX_HASHTAGS:
-            tracked.append(tag)
-            existing.add(tag)
-            added.append(tag)
+        tracked: list[str] = list(bs.tracked_hashtags or [])
+        existing = set(t.lower() for t in tracked)
+        added: list[str] = []
+        for tag in tags:
+            if tag not in existing and len(tracked) < _MAX_HASHTAGS:
+                tracked.append(tag)
+                existing.add(tag)
+                added.append(tag)
 
-    if added:
-        await update_brand_settings(team.team_id, tracked_hashtags=tracked)
-        display = " ".join(f"#{t}" for t in added)
-        await query.edit_message_text(f"Добавлены хештеги: {display}")
-    else:
-        await query.edit_message_text("Все хештеги уже отслеживаются.")
+        if added:
+            await update_brand_settings(team.team_id, tracked_hashtags=tracked)
+            display = " ".join(f"#{t}" for t in added)
+            await query.edit_message_text(f"Добавлены хештеги: {display}")
+        else:
+            await query.edit_message_text("Все хештеги уже отслеживаются.")
+    except Exception:
+        logger.exception("link_detector cb_add_all_tags failed")
+        await query.edit_message_text("Ошибка при добавлении хештегов.")
 
 
 async def _cb_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     await query.answer()
+    logger.info("link_detector cb_cancel")
     await query.edit_message_text("Отменено.")
 
 
