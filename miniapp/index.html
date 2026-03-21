@@ -29,12 +29,13 @@
     </div>
     <div class="shell">
       <section class="topbar">
+        <div class="topbar-nav-row">
+          <div id="topbarNavTabs" class="topbar-nav-tabs"></div>
+        </div>
         <div class="topbar-main">
-          <div class="topbar-copy">
-            <p class="eyebrow">Workspace</p>
-            <h1 class="topbar-title">Арома помощник</h1>
-          </div>
-          <div class="mode-selector">
+          <h1 class="topbar-title" id="topbarTitle">Контент</h1>
+          <div id="topbarTeam" class="topbar-team"></div>
+          <div class="mode-selector" style="display:none">
             <button id="modeContent" class="mode-button active" type="button">Контент</button>
             <button id="modeHandbook" class="mode-button" type="button">Справочник</button>
           </div>
@@ -45,48 +46,6 @@
         <div class="tabs-wrapper">
           <div class="tabs" id="tabsContainer">
             <!-- Tabs injected by JS based on mode -->
-          </div>
-        </div>
-        <div class="filters-collapse" id="filtersContainer">
-          <button class="filters-toggle" id="filtersToggleBtn" type="button">
-            <span id="filtersToggleLabel">Фильтры</span>
-            <i data-lucide="chevron-down" class="filters-toggle-icon"></i>
-          </button>
-          <div class="toolbar-inner-filters filters-body" id="filtersBody" hidden>
-            <label>
-              Тип
-              <select id="kindFilter">
-                <option value="">Все</option>
-                <option value="threads">Threads</option>
-                <option value="instagram">Instagram</option>
-                <option value="telegram">Telegram</option>
-                <option value="reels">Reels</option>
-                <option value="carousel">Карусель</option>
-              </select>
-            </label>
-            <label>
-              Статус
-              <select id="statusFilter">
-                <option value="">Все</option>
-                <option value="draft">Черновик</option>
-                <option value="in_review">На согласовании</option>
-                <option value="approved">Согласовано</option>
-                <option value="rejected">Не согласовано</option>
-                <option value="published">Опубликовано</option>
-              </select>
-            </label>
-            <label>
-              Результат
-              <select id="feedbackFilter">
-                <option value="">Все</option>
-                <option value="worked">Сработало</option>
-                <option value="missed">Не сработало</option>
-              </select>
-            </label>
-            <label class="search">
-              Поиск
-              <input id="queryFilter" type="search" placeholder="Тема, формат, источник" />
-            </label>
           </div>
         </div>
       </section>
@@ -105,11 +64,52 @@
       <main class="layout" id="mainLayout">
         <section class="panel list-panel" id="listPanel">
           <div class="panel-header">
-            <h2 id="listTitle">Черновики</h2>
-            <div id="headerTabs" class="header-tabs"></div>
-            <div class="panel-header-right">
-              <span id="draftCount" class="meta"></span>
+            <div class="panel-filter-row">
+              <div class="filters-collapse" id="filtersContainer">
+                <button class="filters-toggle filters-toggle--compact" id="filtersToggleBtn" type="button">
+                  <span id="filtersToggleLabel">Фильтры</span>
+                  <i data-lucide="chevron-down" class="filters-toggle-icon"></i>
+                </button>
+                <div class="toolbar-inner-filters filters-body" id="filtersBody" hidden>
+                  <label>
+                    Тип
+                    <select id="kindFilter">
+                      <option value="">Все</option>
+                      <option value="threads">Threads</option>
+                      <option value="instagram">Instagram</option>
+                      <option value="telegram">Telegram</option>
+                      <option value="reels">Reels</option>
+                      <option value="carousel">Карусель</option>
+                    </select>
+                  </label>
+                  <label>
+                    Статус
+                    <select id="statusFilter">
+                      <option value="">Все</option>
+                      <option value="draft">Черновик</option>
+                      <option value="in_review">На согласовании</option>
+                      <option value="approved">Согласовано</option>
+                      <option value="rejected">Не согласовано</option>
+                      <option value="published">Опубликовано</option>
+                    </select>
+                  </label>
+                  <label>
+                    Результат
+                    <select id="feedbackFilter">
+                      <option value="">Все</option>
+                      <option value="worked">Сработало</option>
+                      <option value="missed">Не сработало</option>
+                    </select>
+                  </label>
+                  <label class="search">
+                    Поиск
+                    <input id="queryFilter" type="search" placeholder="Тема, формат, источник" />
+                  </label>
+                </div>
+              </div>
+              <span id="draftCount" class="meta panel-count"></span>
             </div>
+            <div id="headerTabs" class="header-tabs" style="display:none"></div>
           </div>
           <div id="draftList" class="draft-list"></div>
           <div id="emptyState" class="empty" hidden>Ничего не найдено.</div>

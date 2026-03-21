@@ -90,8 +90,8 @@ def test_overview_lists_use_consistent_card_meta(page):
 
 
 def test_desktop_layout_keeps_split_panels_and_comfortable_controls(desktop_page):
-    desktop_page.wait_for_selector(".header-tabs", timeout=10000)
-    desktop_page.locator(".header-tabs").get_by_role("button", name="Черновики").click()
+    desktop_page.wait_for_selector(".topbar-nav-tabs .header-tab", timeout=10000)
+    desktop_page.locator(".topbar-nav-tabs").get_by_role("button", name="Черновики").click()
     desktop_page.wait_for_timeout(100)
     layout = desktop_page.evaluate(
         """

@@ -152,7 +152,8 @@ export function createDraftsModule(deps) {
       actionLabel: "Открыть создание",
       action: "openCreateTool()",
     });
-    elements.headerTabs.innerHTML = renderContentSwitcher("drafts");
+    const topbarNavTabs = document.getElementById("topbarNavTabs");
+    if (topbarNavTabs) topbarNavTabs.innerHTML = renderContentSwitcher(state.contentSubMode || "drafts");
     elements.draftList.innerHTML = state.drafts.map((d, idx) => `
       <article ${interactiveCardAttrs(`Открыть черновик ${d.topic}`)} class="draft-card overview-card${d.draft_id === state.draftId ? " active" : ""}${d.generation_pending ? " is-pending" : ""} interactive-card" data-action="openDraft" data-args='${JSON.stringify([d.draft_id])}'>
         <div class="overview-card-top">
