@@ -39,15 +39,24 @@ _ANALYSIS_RE = re.compile(
 _THREADS_MAX_CHARS = 500
 
 
-def _hard_truncate(text: str, max_chars: int = _THREADS_MAX_CHARS) -> str:
-    """Truncate text at last sentence boundary within max_chars."""
+def _force_shorten(text: str, topic: str, max_chars: int = _THREADS_MAX_CHARS) -> str:
+    """If text still exceeds max_chars after trimming, rewrite it shorter via LLM."""
     if len(text) <= max_chars:
         return text
-    cut = text[:max_chars]
-    for i in range(len(cut) - 1, -1, -1):
-        if cut[i] in ".!?\n":
-            return cut[: i + 1].rstrip()
-    return cut.rstrip()
+    from bot.agents.content import _call_claude
+    prompt = (
+        f"Перепиши этот пост для Threads СТРОГО короче {max_chars} символов. "
+        f"Сейчас {len(text)} символов — нужно убрать {len(text) - max_chars}. "
+        f"Сохрани первую строку (хук) и основную мысль. Убери лишние детали и длинные фразы. "
+        f"Тема: {topic}\n\nТекст:\n{text}\n\n"
+        f"Верни ТОЛЬКО сокращённый текст поста, ничего больше."
+    )
+    result = _call_claude(prompt, max_tokens=300)
+    shortened = result.strip()
+    # Use shortened only if it's actually shorter and non-trivial
+    if len(shortened) < len(text) and len(shortened) > 20:
+        return shortened
+    return text
 _SLOT_DESCRIPTIONS = {
     "morning": "провокационный тезис или спорное мнение + открытый вопрос (Hot Take, байт на обсуждение)",
     "day": "лаконичный список, мясной совет или быстрый туториал (для сохранений и репостов)",
@@ -191,8 +200,9 @@ async def _regen_slot_text(topic: str, goal_key: str, slot: str, note: str | Non
             from bot.agents.content import _trim_thread_post_sync
             text = _trim_thread_post_sync(text, topic)
 
-        # Last resort: hard truncate at sentence boundary
-        text = _hard_truncate(text, _THREADS_MAX_CHARS)
+        # Last resort: rewrite shorter via LLM
+        if len(text) > _THREADS_MAX_CHARS:
+            text = _force_shorten(text, topic)
 
         return text, why
 

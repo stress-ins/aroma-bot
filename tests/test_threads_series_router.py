@@ -547,32 +547,29 @@ class TestRequireThreadsSeries:
 
 
 # ---------------------------------------------------------------------------
-# _hard_truncate helper
+# _force_shorten helper
 # ---------------------------------------------------------------------------
 
-class TestHardTruncate:
+class TestForceShorten:
     def test_short_text_unchanged(self):
-        from miniapp.api.routers.threads_series import _hard_truncate
-        assert _hard_truncate("Hello world.", 500) == "Hello world."
+        from miniapp.api.routers.threads_series import _force_shorten
+        assert _force_shorten("Hello world.", "test") == "Hello world."
 
-    def test_truncates_at_sentence_boundary(self):
-        from miniapp.api.routers.threads_series import _hard_truncate
-        text = "First sentence. Second sentence. Third sentence is very long and goes over."
-        result = _hard_truncate(text, 40)
-        assert result == "First sentence. Second sentence."
-        assert len(result) <= 40
+    def test_calls_llm_to_shorten(self):
+        from miniapp.api.routers.threads_series import _force_shorten
+        long_text = "А" * 600
+        shortened = "Б" * 100  # >20 chars so _force_shorten accepts it
+        with patch("bot.agents.content._call_claude", return_value=shortened) as mock_call:
+            result = _force_shorten(long_text, "test topic", max_chars=500)
+        assert result == shortened
+        mock_call.assert_called_once()
 
-    def test_truncates_at_newline(self):
-        from miniapp.api.routers.threads_series import _hard_truncate
-        text = "Line one\nLine two which is quite long and should be cut"
-        result = _hard_truncate(text, 15)
-        assert result == "Line one"
-
-    def test_no_sentence_boundary_falls_back(self):
-        from miniapp.api.routers.threads_series import _hard_truncate
-        text = "a" * 600
-        result = _hard_truncate(text, 500)
-        assert len(result) == 500
+    def test_keeps_original_if_llm_returns_longer(self):
+        from miniapp.api.routers.threads_series import _force_shorten
+        long_text = "А" * 600
+        with patch("bot.agents.content._call_claude", return_value="Б" * 700):
+            result = _force_shorten(long_text, "test topic", max_chars=500)
+        assert result == long_text  # keeps original since LLM returned even longer
 
 
 # ---------------------------------------------------------------------------

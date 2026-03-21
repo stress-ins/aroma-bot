@@ -295,10 +295,11 @@ export function createDraftsModule(deps) {
         <section class="section section-primary">
           <div class="section-heading">
             <h3>${uiIcon("text")}Посты серии</h3>
-            <p>${isApproved ? "Серия согласована. Запланируйте публикацию." : posts.length ? "Отредактируйте каждый пост, затем согласуйте серию." : "Посты не были сгенерированы. Попробуйте заново."}</p>
+            <p>${isApproved ? "Серия согласована. Запланируйте публикацию." : d.generation_pending && !posts.length ? "Генерируем посты..." : posts.length ? "Отредактируйте каждый пост, затем согласуйте серию." : "Посты не были сгенерированы. Попробуйте заново."}</p>
           </div>
+          ${d.generation_pending && !posts.length ? renderDetailLoader("Генерирую серию", "Создаю три поста: утро, день, вечер.<br>Займёт 15–30 секунд.", "detail-loader-card-compact") : ""}
           ${slotsHtml}
-          ${!posts.length && !isApproved ? `
+          ${!posts.length && !isApproved && !d.generation_pending ? `
           <div class="actions-row" style="margin-top: var(--space-3)">
             <button class="primary-button" type="button" data-action="regenerateSeriesPosts" data-args='${JSON.stringify([d.draft_id, null])}'>${actionLabel("regenerate", "Сгенерировать посты")}</button>
           </div>
