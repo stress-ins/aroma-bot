@@ -505,6 +505,7 @@ export function createPlansModule(deps) {
 
   function renderPlansSwitcher(active) {
     return `<button class="header-tab${active === "publications" ? " active" : ""}" data-action="setPlansSubMode" data-args='["publications"]'>Публикации</button>
+      <button class="header-tab${active === "archive" ? " active" : ""}" data-action="setPlansSubMode" data-args='["archive"]'>Архив</button>
       <button class="header-tab${active === "mentions" ? " active" : ""}" data-action="setPlansSubMode" data-args='["mentions"]'>Упоминания</button>`;
   }
 
@@ -512,6 +513,13 @@ export function createPlansModule(deps) {
     const subMode = state.plansSubMode || "publications";
     const topbarNavTabs = document.getElementById("topbarNavTabs");
     if (topbarNavTabs) topbarNavTabs.innerHTML = renderPlansSwitcher(subMode);
+
+    if (subMode === "archive") {
+      if (window.archiveModule) {
+        window.archiveModule.loadArchive();
+      }
+      return;
+    }
 
     if (subMode === "mentions") {
       elements.listTitle.textContent = "Упоминания";

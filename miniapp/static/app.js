@@ -7,6 +7,7 @@ import { createDraftsModule } from "./js/drafts.js";
 import { createPublishModule } from "./js/publish.js";
 import { createScheduleModule } from "./js/schedule.js";
 import { createPlansModule } from "./js/plans.js";
+import { createArchiveModule } from "./js/archive.js";
 import { createMentionsModule } from "./js/mentions.js";
 import { createBlendConstructorModule } from "./js/blend_constructor.js";
 import { createReferencesModule } from "./js/references.js";
@@ -1444,6 +1445,25 @@ const mentionsModule = createMentionsModule({
 
 window.mentionsModule = mentionsModule;
 
+// ── Archive module ──────────────────────────────────────────────────────────
+
+const archiveModule = createArchiveModule({
+  state,
+  elements,
+  escapeHtml,
+  uiIcon,
+  tagMarkup,
+  renderBackButton,
+  renderMarkdown,
+  renderGuidedState,
+  fetchJson,
+  withButtonFeedback,
+  enterDetailView,
+  syncMobileNavigation,
+});
+
+window.archiveModule = archiveModule;
+
 function setPlansSubMode(mode) {
   state.plansSubMode = mode;
   if (mode === "mentions") state.selectedMention = null;
@@ -1466,6 +1486,17 @@ function generateReplies(mentionId, btn) { return mentionsModule.generateReplies
 function publishReply(mentionId, replyId, btn) { return mentionsModule.publishReply(mentionId, replyId, btn); }
 function ignoreMentionAction(mentionId, btn) { return mentionsModule.ignoreMentionAction(mentionId, btn); }
 function setMentionsFilter(key, value) { mentionsModule.setMentionsFilter(key, value); }
+
+// Archive action wrappers
+function openArchiveDetail(pubId) { archiveModule.openArchiveDetail(pubId); }
+function openArchiveForm(pubId) { archiveModule.openArchiveForm(pubId); }
+function savePublication(pubId, btn) { return archiveModule.savePublication(pubId, btn); }
+function deletePublication(pubId, btn) { return archiveModule.deletePublication(pubId, btn); }
+function importFromUrl(btn) { return archiveModule.importFromUrl(btn); }
+function toggleArchiveStats() { archiveModule.toggleArchiveStats(); }
+function setArchivePlatformFilter(v) { archiveModule.setArchivePlatformFilter(v); }
+function setArchiveScore(name, value) { return archiveModule.setArchiveScore(name, value); }
+function bulkImportFromAccount(platform, btn) { return archiveModule.bulkImportFromAccount(platform, btn); }
 
 const reelsCallbacks = {
   renderReels: null,
@@ -2174,6 +2205,15 @@ registerWindowBridge({
   publishReply,
   ignoreMentionAction,
   setMentionsFilter,
+  openArchiveDetail,
+  openArchiveForm,
+  savePublication,
+  deletePublication,
+  importFromUrl,
+  toggleArchiveStats,
+  setArchivePlatformFilter,
+  setArchiveScore,
+  bulkImportFromAccount,
   handleSmartSearch,
   runSmartSearch,
   clearSmartSearch,
