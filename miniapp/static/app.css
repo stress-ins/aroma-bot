@@ -6324,7 +6324,7 @@ body[data-theme="terracotta"] {
   --border:       rgba(255, 255, 255, 0.06);
   --text:         #f0e0d0;
   --muted:        rgba(255, 255, 255, 0.50);
-  --hint:         rgba(255, 255, 255, 0.32);
+  --hint:         rgba(255, 255, 255, 0.45);
   --bg-rgb:       17, 11, 7;
   --surface-rgb:  26, 15, 9;
 }
@@ -6340,7 +6340,7 @@ body[data-theme="racing-green"] {
   --border:       rgba(14, 77, 42, 0.22);
   --text:         #d0f0dc;
   --muted:        rgba(255, 255, 255, 0.45);
-  --hint:         rgba(255, 255, 255, 0.28);
+  --hint:         rgba(255, 255, 255, 0.45);
   --bg-rgb:       5, 13, 8;
   --surface-rgb:  11, 28, 16;
 }
@@ -6356,7 +6356,7 @@ body[data-theme="champagne"] {
   --border:       rgba(200, 168, 106, 0.15);
   --text:         #f8edd8;
   --muted:        rgba(255, 255, 255, 0.52);
-  --hint:         rgba(255, 255, 255, 0.34);
+  --hint:         rgba(255, 255, 255, 0.45);
   --bg-rgb:       42, 34, 24;
   --surface-rgb:  53, 43, 30;
 }
@@ -6372,7 +6372,7 @@ body[data-theme="violet"] {
   --border:       rgba(112, 72, 168, 0.20);
   --text:         #f0e8ff;
   --muted:        rgba(255, 255, 255, 0.50);
-  --hint:         rgba(255, 255, 255, 0.30);
+  --hint:         rgba(255, 255, 255, 0.45);
   --bg-rgb:       26, 20, 40;
   --surface-rgb:  38, 30, 56;
 }
@@ -6388,7 +6388,7 @@ body[data-theme="teal"] {
   --border:       rgba(10, 104, 120, 0.22);
   --text:         #c8f0f5;
   --muted:        rgba(255, 255, 255, 0.45);
-  --hint:         rgba(255, 255, 255, 0.28);
+  --hint:         rgba(255, 255, 255, 0.45);
   --bg-rgb:       6, 14, 16;
   --surface-rgb:  12, 30, 34;
 }
@@ -6404,7 +6404,7 @@ body[data-theme="raspberry"] {
   --border:       rgba(138, 24, 72, 0.22);
   --text:         #ffe0ee;
   --muted:        rgba(255, 255, 255, 0.48);
-  --hint:         rgba(255, 255, 255, 0.30);
+  --hint:         rgba(255, 255, 255, 0.45);
   --bg-rgb:       18, 8, 16;
   --surface-rgb:  32, 16, 32;
 }
