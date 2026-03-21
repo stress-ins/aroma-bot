@@ -90,7 +90,7 @@ def test_drafts_reels_card_routes_into_storyboard_detail_with_mocked_api(page):
 
 def test_reels_and_plans_render_markdown_in_detail_views(page):
     """Plans still render markdown correctly; reels use V2 inline layout."""
-    page.locator("#btnTabPlans").click()
+    page.locator(".content-sub-tab", has_text="Планы").click()
     page.wait_for_timeout(100)
     page.locator(".plan-card").first.click()
     page.wait_for_timeout(100)

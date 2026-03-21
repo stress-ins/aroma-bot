@@ -101,7 +101,7 @@ def test_plan_detail_allows_creating_and_opening_linked_draft(page):
         route.continue_()
 
     page.route("**/*", handle_route)
-    page.locator("#btnTabPlans").click()
+    page.locator(".content-sub-tab", has_text="Планы").click()
     page.wait_for_timeout(100)
 
     page.locator(".plan-card").first.click()

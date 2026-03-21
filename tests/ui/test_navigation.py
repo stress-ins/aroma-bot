@@ -3,11 +3,13 @@ from __future__ import annotations
 
 
 def test_mobile_tabs_and_drafts_render_in_russian(page):
-    tabs = page.locator(".header-tab").evaluate_all(
+    sub_tabs = page.locator(".content-sub-tab").evaluate_all(
         "(nodes) => nodes.map((node) => node.textContent.trim())"
     )
-    assert "Черновики" in tabs
-    assert "Тренды" in tabs
+    assert "Планы" in sub_tabs
+    assert "Публикации" in sub_tabs
+    assert "Упоминания" in sub_tabs
+    assert "Архив" in sub_tabs
 
     page.locator("#btnTabHandbook").click()
     page.wait_for_timeout(100)
@@ -33,9 +35,10 @@ def test_mobile_bottom_tab_bar_switches_primary_sections(page):
     bottom_nav = page.locator("#bottomTabBar")
     assert bottom_nav.is_visible()
 
-    page.locator("#btnTabPlans").click()
+    # Navigate to plans via content sub-tab
+    page.locator(".content-sub-tab", has_text="Планы").click()
     page.wait_for_timeout(100)
-    assert page.locator("#btnTabPlans").get_attribute("aria-pressed") == "true"
+    assert page.locator("#btnTabDrafts").get_attribute("aria-pressed") == "true"
     assert page.locator(".plans-calendar-strip").is_visible()
 
     page.locator("#btnTabHandbook").click()
@@ -77,12 +80,12 @@ def test_overview_lists_use_consistent_card_meta(page):
     page.wait_for_timeout(100)
     assert page.locator(".draft-card .overview-card-date").first.inner_text().strip()
 
-    page.locator("#btnTabPlans").click()
+    page.locator(".content-sub-tab", has_text="Планы").click()
     page.wait_for_timeout(100)
     assert page.locator(".plan-card .draft-kind").first.is_visible()
     assert page.locator(".plan-card .overview-card-date").first.is_visible()
 
-    page.locator("#btnTabDrafts").click()
+    page.locator(".content-sub-tab", has_text="Публикации").click()
     page.wait_for_timeout(100)
     page.get_by_text("Вечерний ароматический ритуал").first.click()
     page.wait_for_timeout(100)
@@ -90,8 +93,8 @@ def test_overview_lists_use_consistent_card_meta(page):
 
 
 def test_desktop_layout_keeps_split_panels_and_comfortable_controls(desktop_page):
-    desktop_page.wait_for_selector(".topbar-nav-tabs .header-tab", timeout=10000)
-    desktop_page.locator(".topbar-nav-tabs").get_by_role("button", name="Черновики").click()
+    desktop_page.wait_for_selector(".content-sub-tab", timeout=10000)
+    desktop_page.locator(".content-sub-tab", has_text="Публикации").click()
     desktop_page.wait_for_timeout(100)
     layout = desktop_page.evaluate(
         """
@@ -159,11 +162,11 @@ def test_mobile_swipe_back_from_left_edge_works_over_interactive_controls(page):
 
 def test_themed_tabs_and_drafts_render(themed_page):
     """Tab labels and draft cards render correctly in both themes."""
-    tabs = themed_page.locator(".header-tab").evaluate_all(
+    sub_tabs = themed_page.locator(".content-sub-tab").evaluate_all(
         "(nodes) => nodes.map((node) => node.textContent.trim())"
     )
-    assert "Черновики" in tabs
-    assert "Тренды" in tabs
+    assert "Планы" in sub_tabs
+    assert "Публикации" in sub_tabs
 
     themed_page.locator("#btnTabDrafts").click()
     themed_page.wait_for_timeout(100)
@@ -172,9 +175,9 @@ def test_themed_tabs_and_drafts_render(themed_page):
 
 def test_themed_bottom_tab_bar_switches_sections(themed_page):
     """Bottom tab navigation works in both themes."""
-    themed_page.locator("#btnTabPlans").click()
+    themed_page.locator(".content-sub-tab", has_text="Планы").click()
     themed_page.wait_for_timeout(100)
-    assert themed_page.locator("#btnTabPlans").get_attribute("aria-pressed") == "true"
+    assert themed_page.locator("#btnTabDrafts").get_attribute("aria-pressed") == "true"
 
     themed_page.locator("#btnTabHandbook").click()
     themed_page.wait_for_timeout(100)
