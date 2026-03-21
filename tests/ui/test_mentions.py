@@ -2,17 +2,18 @@
 from __future__ import annotations
 
 
+def _nav_to_mentions(page):
+    """Navigate to Mentions via content sub-tab."""
+    page.locator(".content-sub-tab", has_text="Упоминания").click()
+    page.wait_for_timeout(500)
+
+
 def test_mentions_detail_buttons_visible(dark_page):
     """Open mention detail and verify buttons are visible with correct classes."""
     page = dark_page
 
-    # Navigate to Plans tab
-    page.locator("#btnTabPlans").click()
-    page.wait_for_timeout(300)
-
-    # Switch to Упоминания subtab
-    page.get_by_text("Упоминания").click()
-    page.wait_for_timeout(500)
+    # Navigate to Mentions via content sub-tab
+    _nav_to_mentions(page)
 
     # Open first mention detail
     mention_card = page.locator(".mention-card").first
@@ -48,11 +49,8 @@ def test_mentions_published_reply_state(dark_page):
     """Published mention shows badge, hides publish buttons and generate/ignore."""
     page = dark_page
 
-    # Navigate to Plans tab → Упоминания
-    page.locator("#btnTabPlans").click()
-    page.wait_for_timeout(300)
-    page.get_by_text("Упоминания").click()
-    page.wait_for_timeout(500)
+    # Navigate to Mentions via content sub-tab
+    _nav_to_mentions(page)
 
     # Switch filter to "Отвечено" to see mention002
     page.get_by_text("Отвечено").click()
@@ -86,11 +84,7 @@ def test_mentions_detail_back_navigation(dark_page):
     """Clicking back button returns to mentions list."""
     page = dark_page
 
-    page.locator("#btnTabPlans").click()
-    page.wait_for_timeout(300)
-
-    page.get_by_text("Упоминания").click()
-    page.wait_for_timeout(500)
+    _nav_to_mentions(page)
 
     # Open mention
     page.locator(".mention-card").first.wait_for(state="visible", timeout=5000)

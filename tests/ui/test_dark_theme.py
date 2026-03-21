@@ -125,7 +125,6 @@ def test_dark_button_contrast_on_all_tabs(dark_page):
     all_failures = []
     for tab_id, label in [
         ("#btnTabDrafts", "Drafts"),
-        ("#btnTabPlans", "Plans"),
         ("#btnTabCreate", "Create"),
         ("#btnTabHandbook", "Handbook"),
     ]:
@@ -240,7 +239,7 @@ def test_dark_create_form_fields_readable(dark_page):
 
 
 def test_dark_plans_scroll_and_click(dark_page):
-    dark_page.locator("#btnTabPlans").click()
+    dark_page.locator(".content-sub-tab", has_text="Планы").click()
     dark_page.wait_for_timeout(100)
 
     plan_cards = dark_page.locator(".plan-card")

@@ -21,8 +21,8 @@ def _nav_to_drafts(page):
 
 
 def _nav_to_plans(page):
-    """Navigate to plans tab (bottom tab bar hidden at iPad width — dispatch click via JS)."""
-    page.evaluate("document.getElementById('btnTabPlans').click()")
+    """Navigate to plans via content sub-tab (works at any viewport width)."""
+    page.evaluate("document.querySelector('.content-sub-tab[data-subtab=\"plans\"]')?.click() || window.switchContentSubTab('plans')")
     page.wait_for_timeout(300)
 
 

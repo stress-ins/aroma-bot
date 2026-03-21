@@ -3,8 +3,8 @@ from __future__ import annotations
 
 
 def test_mobile_layout_has_no_overlapping_controls(page):
-    for tab_name in ["Черновики", "Планы", "Создать"]:
-        {"Черновики": page.locator("#btnTabDrafts"), "Планы": page.locator("#btnTabPlans"), "Создать": page.locator("#btnTabCreate")}[tab_name].click()
+    for tab_name in ["Публикации", "Планы", "Создать"]:
+        {"Публикации": page.locator("#btnTabDrafts"), "Планы": page.locator(".content-sub-tab", has_text="Планы"), "Создать": page.locator("#btnTabCreate")}[tab_name].click()
         page.wait_for_timeout(100)
 
         overlaps = page.evaluate(
@@ -282,7 +282,7 @@ def test_detail_panel_allows_scroll_past_tab_bar(page):
 
 def test_themed_controls_have_no_overlaps(themed_page):
     """No controls overlap in either theme."""
-    for tab_id in ["#btnTabDrafts", "#btnTabPlans", "#btnTabCreate"]:
+    for tab_id in ["#btnTabDrafts", "#btnTabCreate"]:
         themed_page.locator(tab_id).click()
         themed_page.wait_for_timeout(100)
 

@@ -31,7 +31,7 @@ def test_visual_mobile_draft_detail_baseline(page):
 
 @pytest.mark.visual
 def test_visual_mobile_plan_detail_baseline(page):
-    page.locator("#btnTabPlans").click()
+    page.locator(".content-sub-tab", has_text="Планы").click()
     page.wait_for_timeout(100)
     page.locator(".plan-card").first.click()
     page.wait_for_timeout(100)
