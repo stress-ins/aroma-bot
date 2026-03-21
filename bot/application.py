@@ -23,6 +23,7 @@ from bot.handlers.threads_manager import build_threads_manager_handler
 from bot.handlers.social_connect import build_social_connect_handlers
 from bot.handlers.subscription import build_subscription_handlers
 from bot.handlers.admin import build_admin_handlers
+from bot.handlers.link_detector import build_link_detector_handlers
 
 
 USER_COMMANDS = [
@@ -124,6 +125,12 @@ def build_application() -> Application:
         app.add_handler(h)
     for h in build_admin_handlers():
         app.add_handler(h)
+
+    for h in build_link_detector_handlers():
+        if isinstance(h, MessageHandler):
+            app.add_handler(h, group=4)
+        else:
+            app.add_handler(h)
 
     app.add_error_handler(error_handler)
 
