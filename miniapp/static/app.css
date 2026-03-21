@@ -6208,34 +6208,7 @@ details[open] > .trend-suggestions-toggle::before { transform: rotate(90deg); }
 .draft-list.has-scroll-bottom::after,
 .create-list.has-scroll-bottom::after { opacity: 1; }
 
-/* ── Mobile detail panel fade masks ────────────────────────────────────── */
-body.is-mobile-layout.is-detail-view .detail-panel::before,
-body.is-mobile-layout.is-detail-view .detail-panel::after {
-  content: '';
-  display: block;
-  position: sticky;
-  left: 0;
-  right: 0;
-  height: 20px;
-  pointer-events: none;
-  z-index: 5;
-  opacity: 0;
-  transition: opacity var(--duration-fast) var(--ease-standard);
-}
-
-body.is-mobile-layout.is-detail-view .detail-panel::before {
-  top: 0;
-  background: linear-gradient(to bottom,
-    rgba(var(--surface-rgb), 1) 0%,
-    rgba(var(--surface-rgb), 0) 100%);
-}
-
-body.is-mobile-layout.is-detail-view .detail-panel::after {
-  bottom: 0;
-  background: linear-gradient(to top,
-    rgba(var(--surface-rgb), 1) 0%,
-    rgba(var(--surface-rgb), 0) 100%);
-}
-
-body.is-mobile-layout.is-detail-view .detail-panel.has-scroll-top::before { opacity: 1; }
-body.is-mobile-layout.is-detail-view .detail-panel.has-scroll-bottom::after { opacity: 1; }
+/* ── Mobile detail panel fade masks — removed
+   Detail cards contain images with light backgrounds; a dark sticky gradient
+   at the panel bottom creates a visible black stripe over them. List panels
+   (.draft-list / .create-list) keep their own fade masks above.           */
