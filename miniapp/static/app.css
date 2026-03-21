@@ -2503,6 +2503,16 @@ body.tg-theme-dark .danger-button {
     padding-right: 0;
   }
 
+  /* Blend expert cards and actions: inset with margin so border doesn't hug the screen edge */
+  body.is-mobile-layout .detail-grid > .blend-expert-card,
+  body.is-mobile-layout .detail-grid > .blend-actions-stack,
+  body.is-mobile-layout .detail-grid > .blend-warn {
+    margin-left: var(--space-3);
+    margin-right: var(--space-3);
+    padding-left: 11px;
+    padding-right: 11px;
+  }
+
   /* Sections keep their full card styling (border + radius from base .section) */
   body.is-mobile-layout .detail-grid .section {
     position: relative;
