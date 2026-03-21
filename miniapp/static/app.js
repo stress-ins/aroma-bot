@@ -691,6 +691,12 @@ function uiIcon(name) {
     list:       "rows-3",
     "chevron-down": "chevron-down",
     "chevron-up": "chevron-up",
+    archive:    "archive",
+    pencil:     "pencil",
+    save:       "save",
+    star:       "star",
+    "share-2":  "share-2",
+    "trash-2":  "trash-2",
   };
   return `<span class="ui-icon ui-icon-${escapeHtml(name)}">${icon(LUCIDE_MAP[name] || "square-terminal", 16)}</span>`;
 }
