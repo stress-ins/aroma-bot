@@ -526,7 +526,10 @@ export function createPlansModule(deps) {
       elements.draftCount.textContent = "";
       elements.draftList.innerHTML = `<div id="plans-container"></div>`;
       if (window.mentionsModule) {
-        window.mentionsModule.loadMentions();
+        window.mentionsModule.loadMentions().then(() => {
+          const count = (state.mentions || []).length;
+          if (count > 0) elements.draftCount.textContent = `${count} шт`;
+        });
       }
       return;
     }

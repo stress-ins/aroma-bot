@@ -27,8 +27,8 @@ def _nav_to_plans(page):
 
 
 def _nav_to_handbook(page):
-    """Navigate to handbook via desktop mode selector."""
-    page.locator("#modeHandbook").click()
+    """Navigate to handbook (dispatch click via JS — mode-selector hidden on mobile layout)."""
+    page.evaluate("document.getElementById('modeHandbook').click()")
     page.wait_for_timeout(200)
 
 

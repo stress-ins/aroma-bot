@@ -67,6 +67,12 @@ export function createMentionsModule(deps) {
     const container = elements.plansContainer || document.getElementById("plans-container");
     if (!container) return;
 
+    // Update mentions count in header
+    const count = (state.mentions || []).length;
+    if (elements.draftCount) {
+      elements.draftCount.textContent = count > 0 ? `${count} шт` : "";
+    }
+
     if (state.selectedMention) {
       renderMentionDetail();
       return;
