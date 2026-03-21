@@ -233,7 +233,7 @@ async def _handle_post(
         if not already and len(accounts) < _MAX_ACCOUNTS_PER_PLATFORM:
             rows.append([InlineKeyboardButton(
                 f"Добавить @{link.username} на мониторинг",
-                callback_data=f"link:aa:{link.platform[:2]}:{link.username}",
+                callback_data=f"link:aa:{_PLATFORM_SHORT[link.platform]}:{link.username}",
             )])
 
     rows.append([InlineKeyboardButton("Отмена", callback_data="link:x")])
@@ -248,6 +248,7 @@ async def _handle_post(
 # Callback handlers
 # ---------------------------------------------------------------------------
 
+_PLATFORM_SHORT = {"instagram": "ig", "threads": "th"}
 _PLATFORM_MAP = {"ig": "instagram", "th": "threads"}
 _PLATFORM_LABEL = {"ig": "Instagram", "th": "Threads"}
 
