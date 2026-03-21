@@ -556,6 +556,7 @@ class TestForceShorten:
         assert _force_shorten("Hello world.", "test") == "Hello world."
 
     def test_calls_llm_to_shorten(self):
+        import bot.agents.content as content_mod
         from miniapp.api.routers.threads_series import _force_shorten
         long_text = "А" * 600
         shortened = "Б" * 100  # >20 chars so _force_shorten accepts it
@@ -565,9 +566,10 @@ class TestForceShorten:
         mock_call.assert_called_once()
 
     def test_keeps_original_if_llm_returns_longer(self):
+        import bot.agents.content as content_mod
         from miniapp.api.routers.threads_series import _force_shorten
         long_text = "А" * 600
-        with patch("bot.agents.content._call_claude", return_value="Б" * 700):
+        with patch.object(content_mod, "_call_claude", return_value="Б" * 700):
             result = _force_shorten(long_text, "test topic", max_chars=500)
         assert result == long_text  # keeps original since LLM returned even longer
 
@@ -579,16 +581,24 @@ class TestForceShorten:
 class TestAnalysisDetection:
     def test_detects_review_patterns(self):
         from miniapp.api.routers.threads_series import _ANALYSIS_RE
-        assert _ANALYSIS_RE.match("Отличный пост, но есть несколько замечаний:")
-        assert _ANALYSIS_RE.match("Что работает: глубокая идея")
-        assert _ANALYSIS_RE.match("Замечания: текст длинноват")
-        assert _ANALYSIS_RE.match("Анализ: разберём пост")
-        assert _ANALYSIS_RE.match("Рекомендации: сократить")
-        assert _ANALYSIS_RE.match("✅ Что работает")
+        assert _ANALYSIS_RE.search("Отличный пост, но есть несколько замечаний:")
+        assert _ANALYSIS_RE.search("Что работает: глубокая идея")
+        assert _ANALYSIS_RE.search("Замечания: текст длинноват")
+        assert _ANALYSIS_RE.search("Анализ: разберём пост")
+        assert _ANALYSIS_RE.search("Рекомендации: сократить")
+        assert _ANALYSIS_RE.search("✅ Что работает")
+
+    def test_detects_analysis_in_middle_of_text(self):
+        from miniapp.api.routers.threads_series import _ANALYSIS_RE
+        assert _ANALYSIS_RE.search("Сильный пример, но разберу, почему это работает наполовину:")
+        assert _ANALYSIS_RE.search("Текст:\n\nЧто правда: гиподинамия враг спины")
+        assert _ANALYSIS_RE.search("Первая строка.\n\nЧто не работает: боль в спине")
+        assert _ANALYSIS_RE.search("Вступление.\n\nПочему хвалят: психологический зацеп")
+        assert _ANALYSIS_RE.search("Честнее было бы уточнить причину боли")
 
     def test_no_false_positive_on_normal_posts(self):
         from miniapp.api.routers.threads_series import _ANALYSIS_RE
-        assert not _ANALYSIS_RE.match("Благодарность за 5 минут перед встречей")
-        assert not _ANALYSIS_RE.match("Ты когда-нибудь замечал")
-        assert not _ANALYSIS_RE.match("Отличная погода")
-        assert not _ANALYSIS_RE.match("Запахи — это портал в прошлое")
+        assert not _ANALYSIS_RE.search("Благодарность за 5 минут перед встречей")
+        assert not _ANALYSIS_RE.search("Ты когда-нибудь замечал")
+        assert not _ANALYSIS_RE.search("Отличная погода")
+        assert not _ANALYSIS_RE.search("Запахи — это портал в прошлое")
