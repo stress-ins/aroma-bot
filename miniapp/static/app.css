@@ -41,7 +41,7 @@
   /* ── Semantic color tokens ─────────────────────────────────────────────── */
   --color-primary: var(--sage, #6B8F71);
   --color-secondary: var(--brand, #C4956A);
-  --color-accent: #8B7DB8;
+  --color-accent: var(--brand);
   --color-cta: var(--brand, #D4845E);
   --color-surface: var(--bg, #FAFAF7);
   --color-card: var(--surface, #FFFFFF);
@@ -6284,18 +6284,31 @@ details[open] > .trend-suggestions-toggle::before { transform: rotate(90deg); }
   gap: 4px;
 }
 
-/* Mobile: topbar nav row sticky, account for TG safe area */
+/* Mobile: topbar nav row fixed so tabs always sit in the TG close-bar row */
 body.is-mobile-layout .topbar-nav-row {
-  position: sticky;
+  position: fixed;
   top: 0;
-  z-index: 11;
+  left: 0;
+  right: 0;
+  z-index: 100;
   background: var(--bg);
-  padding-top: calc(6px + var(--tg-content-inset-top, env(safe-area-inset-top, 0px)));
+  /* Only account for phone notch/status-bar, not TG close-bar — tabs sit alongside it */
+  padding-top: calc(env(safe-area-inset-top, 0px) + 8px);
+  padding-bottom: 8px;
 }
 
 /* Mobile topbar-main follows nav row (no extra top safe-area padding) */
 body.is-mobile-layout .topbar-main {
   padding-top: var(--space-3);
+  padding-left: var(--space-3);  /* remove 88px offset — TG close-btn is now in nav row row above */
+}
+
+/* In detail view: hide nav-row (tabs) and panel-header (prevents sticky bleed-through) */
+body.is-mobile-layout.is-detail-view .topbar-nav-row {
+  display: none;
+}
+body.is-mobile-layout.is-detail-view .panel-header {
+  display: none !important;
 }
 
 body.is-mobile-layout.is-detail-view .detail-panel.has-scroll-top::before { opacity: 1; }
