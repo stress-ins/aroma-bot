@@ -624,6 +624,8 @@ function uiIcon(name) {
     eye:        "eye",
     approve:    "check",
     sparkle:    "sparkles",
+    scissors:   "scissors",
+    video:      "video",
     text:       "align-left",
     nps:        "heart",
     therapy:    "cross",
@@ -1536,6 +1538,10 @@ const {
   // Phase 4 functions:
   publishReels,
   retryPlatform,
+  // Video upload & cleaning
+  uploadReelsVideo,
+  cleanReelsVideo,
+  checkAndPublish,
   // Feature: copy caption + fullscreen image
   copyReelsCaption,
   openReelsImageFullscreen,
@@ -2159,6 +2165,9 @@ registerWindowBridge({
   autoResize,
   publishReels,
   retryPlatform,
+  uploadReelsVideo,
+  cleanReelsVideo,
+  checkAndPublish,
   copyReelsCaption,
   openReelsImageFullscreen,
   openReelsPreview,

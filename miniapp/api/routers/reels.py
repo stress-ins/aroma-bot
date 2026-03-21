@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, UploadFile
 from fastapi.responses import JSONResponse
 
 from bot.services.miniapp_reels import (
@@ -35,6 +35,7 @@ from ..generation import (
     set_generation_state,
 )
 from ..models import (
+    CleanVideoPayload,
     ReelsApprovePayload,
     ReelsFeedbackPayload,
     ReelsFrameFieldsPayload,
@@ -565,6 +566,172 @@ async def compose_reel_status(
                 "status": "completed",
                 "video_path": payload.get("video_path"),
                 "video_url": payload.get("video_url"),
+            }
+        return {"draft_id": draft_id, "status": "not_started"}
+
+    response: dict = {"draft_id": draft_id, "status": status["status"]}
+    if status["error"]:
+        response["error"] = status["error"]
+    if status["result"]:
+        response["result"] = status["result"]
+    return response
+
+
+# ── Video upload & cleaning ──────────────────────────────────────────────────
+
+
+@router.post("/api/reels/{draft_id}/upload-video")
+async def upload_reels_video(
+    draft_id: str,
+    file: UploadFile,
+    _: None = Depends(_require_auth),
+):
+    """Upload a raw video file for a reels draft."""
+    from bot.services.reels_video import save_uploaded_video
+
+    draft = await serialize_reels_draft(draft_id)
+    if not draft:
+        raise HTTPException(status_code=404, detail="reels_not_found")
+
+    video_bytes = await file.read()
+    if not video_bytes:
+        raise HTTPException(status_code=400, detail="empty_file")
+
+    result = await save_uploaded_video(draft_id, video_bytes, file.filename or "video.mp4")
+    return result
+
+
+_clean_status: dict[str, dict] = {}
+_clean_logger = logging.getLogger(__name__ + ".clean_video")
+
+
+async def _run_clean_video_task(
+    draft_id: str,
+    min_pause_duration: float,
+    silence_threshold_db: float,
+) -> None:
+    """Background task: run video_processor on uploaded video."""
+    import asyncio
+
+    from bot.services.reels_video import VIDEO_DIR
+
+    try:
+        _clean_status[draft_id] = {"status": "running", "error": None, "result": None}
+
+        draft = await _get_draft(draft_id)
+        if not draft:
+            raise ValueError("Draft not found")
+
+        video_filename = str(draft.payload.get("video_filename") or "").strip()
+        if not video_filename:
+            raise ValueError("No video uploaded")
+
+        video_path = VIDEO_DIR / draft_id / video_filename
+        if not video_path.exists():
+            raise FileNotFoundError(f"Video file not found: {video_path}")
+
+        output_dir = VIDEO_DIR / draft_id
+        from bot.services.video_processor import ProcessorConfig, process
+
+        config = ProcessorConfig(
+            input_file=str(video_path),
+            output_path=str(output_dir),
+            mode="single",
+            min_pause_duration=min_pause_duration,
+            silence_threshold_db=silence_threshold_db,
+        )
+
+        loop = asyncio.get_running_loop()
+        proc_result = await loop.run_in_executor(None, process, config)
+
+        payload = dict(draft.payload)
+        cleaned_filename = ""
+        if proc_result.output_files:
+            from pathlib import Path
+
+            cleaned_filename = Path(proc_result.output_files[0]).name
+        payload["cleaned_video_path"] = cleaned_filename
+        payload["cleaning_status"] = "completed"
+        payload["cleaning_result"] = {
+            "input_duration": round(proc_result.total_input_duration, 1),
+            "output_duration": round(proc_result.total_output_duration, 1),
+            "removed_duration": round(proc_result.removed_duration, 1),
+            "clip_count": proc_result.clip_count,
+        }
+        await _update_draft(draft_id, payload=payload)
+
+        _clean_status[draft_id] = {
+            "status": "completed",
+            "error": None,
+            "result": payload["cleaning_result"],
+        }
+        _clean_logger.info("Video cleaning completed for draft %s", draft_id)
+
+    except Exception as exc:
+        _clean_logger.error(
+            "Video cleaning failed for draft %s: %s", draft_id, exc, exc_info=True,
+        )
+        _clean_status[draft_id] = {"status": "failed", "error": str(exc), "result": None}
+        try:
+            draft = await _get_draft(draft_id)
+            if draft:
+                payload = dict(draft.payload)
+                payload["cleaning_status"] = "failed"
+                payload["cleaning_error"] = str(exc)
+                await _update_draft(draft_id, payload=payload)
+        except Exception:
+            pass
+
+
+@router.post("/api/reels/{draft_id}/clean-video")
+async def clean_reels_video(
+    draft_id: str,
+    payload: CleanVideoPayload,
+    background_tasks: BackgroundTasks,
+    _: None = Depends(_require_auth),
+):
+    """Start video cleaning (silence removal) as a background task."""
+    draft = await serialize_reels_draft(draft_id)
+    if not draft:
+        raise HTTPException(status_code=404, detail="reels_not_found")
+
+    current = _clean_status.get(draft_id)
+    if current and current["status"] == "running":
+        return JSONResponse(
+            status_code=409,
+            content={"detail": "clean_already_running", "draft_id": draft_id},
+        )
+
+    _clean_status[draft_id] = {"status": "pending", "error": None, "result": None}
+    background_tasks.add_task(
+        _run_clean_video_task,
+        draft_id,
+        payload.min_pause_duration,
+        payload.silence_threshold_db,
+    )
+    return JSONResponse(
+        status_code=202,
+        content={"draft_id": draft_id, "status": "pending"},
+    )
+
+
+@router.get("/api/reels/{draft_id}/clean-video-status")
+async def clean_video_status(
+    draft_id: str,
+    _: None = Depends(_require_auth),
+):
+    """Check video cleaning status."""
+    status = _clean_status.get(draft_id)
+    if not status:
+        draft = await serialize_reels_draft(draft_id)
+        if not draft:
+            raise HTTPException(status_code=404, detail="reels_not_found")
+        p = draft.get("payload", {})
+        if isinstance(p, dict) and p.get("cleaning_status") == "completed":
+            return {
+                "draft_id": draft_id,
+                "status": "completed",
+                "result": p.get("cleaning_result"),
             }
         return {"draft_id": draft_id, "status": "not_started"}
 
