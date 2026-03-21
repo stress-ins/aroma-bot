@@ -15,6 +15,7 @@ export function createSettingsModule(deps) {
     setEmptyState,
     syncMobileNavigation,
     enterDetailView,
+    applyTheme,
   } = deps;
 
   function keywordFieldEntries(topic) {
@@ -108,6 +109,7 @@ export function createSettingsModule(deps) {
     html += `<div class="settings-menu-group">
       <div class="settings-menu-group-header">Система</div>
       <div class="settings-menu-list">
+        ${settingsMenuRow("paintbrush", "#FF9500", "Цветовая тема", "theme", null)}
         ${settingsMenuRow("activity", "#FF3B30", "Источники данных", "status", enabledCount)}
       </div>
     </div>`;
@@ -414,6 +416,10 @@ export function createSettingsModule(deps) {
           state.status = await fetchJson("/api/status");
         }
         renderStatus();
+        return;
+      }
+      if (state.settingsSection === "theme") {
+        await renderTheme();
         return;
       }
     }
@@ -1313,6 +1319,50 @@ export function createSettingsModule(deps) {
     }
   }
 
+  async function setTheme(themeId) {
+    applyTheme(themeId);
+    document.querySelectorAll(".theme-swatch").forEach(el => {
+      el.classList.toggle("active", el.dataset.themeId === themeId);
+    });
+    try {
+      await fetchJson("/api/preferences/theme", { method: "PATCH", body: JSON.stringify({ theme: themeId }) });
+    } catch (e) {
+      console.warn("Theme save failed", e);
+    }
+  }
+
+  async function renderTheme() {
+    const THEMES = [
+      { id:"terracotta",   label:"Терракот",     accent:"#b45c3d", bg:"#1a0f09" },
+      { id:"racing-green", label:"Racing Green",  accent:"#2a8a50", bg:"#0b1c10" },
+      { id:"champagne",    label:"Шампань",       accent:"#c8a86a", bg:"#352b1e" },
+      { id:"violet",       label:"Фиалка",        accent:"#9060c8", bg:"#261e38" },
+      { id:"teal",         label:"Бирюза",        accent:"#3a9098", bg:"#0c1e22" },
+      { id:"raspberry",    label:"Малина",        accent:"#b04870", bg:"#201020" },
+    ];
+    let res;
+    try { res = await fetchJson("/api/preferences/theme"); } catch (_e) { res = {}; }
+    const current = res.theme || document.body.dataset.theme || "terracotta";
+
+    const swatches = THEMES.map(t => `
+      <button class="theme-swatch${t.id === current ? " active" : ""}"
+        data-action="setTheme" data-args='["${t.id}"]'
+        data-theme-id="${t.id}"
+        style="--sw-accent:${t.accent};--sw-bg:${t.bg}">
+        <span class="theme-swatch-preview"></span>
+        <span class="theme-swatch-label">${t.label}</span>
+      </button>`).join("");
+
+    elements.draftDetail.innerHTML = renderBackButton() + `
+      <div class="settings-section-content">
+        <h2 class="settings-section-title">Цветовая тема</h2>
+        <p class="settings-section-hint">Выберите цветовую схему интерфейса</p>
+        <div class="theme-grid">${swatches}</div>
+      </div>`;
+    if (window.lucide) lucide.createIcons();
+    enterDetailView();
+  }
+
   return {
     addKeywordItem,
     removeKeywordItem,
@@ -1353,5 +1403,7 @@ export function createSettingsModule(deps) {
     renderPromo,
     activatePromo,
     generatePromos,
+    setTheme,
+    renderTheme,
   };
 }

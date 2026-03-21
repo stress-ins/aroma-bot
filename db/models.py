@@ -160,6 +160,7 @@ class BrandSettingsModel(Base):
     city_name: Mapped[str] = mapped_column(String(100), default="Москва")
     city_lat: Mapped[float] = mapped_column(Float, default=55.7558)
     city_lon: Mapped[float] = mapped_column(Float, default=37.6173)
+    theme: Mapped[str] = mapped_column(String(32), default="terracotta")
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
         default=lambda: datetime.now(timezone.utc),

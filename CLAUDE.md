@@ -106,6 +106,32 @@ ssh root@46.32.186.192 'screen -S symptom-reseed -d -m bash -c "cd /opt/aroma &&
 | 8 | ✅/❌ `git push origin main` выполнен | после мержа |
 | 9 | ✅/❌ Деплой проверен на VPS | после пуша в main |
 | 10 | ✅/❌ Данные проверены на VPS после обогащения | после скриптов enrich/summarize/generate |
+| 11 | ✅/❌ UI проверен во всех 6 цветовых темах | если изменился UI/CSS |
+
+---
+
+## Система тем (Color Themes)
+
+Miniapp поддерживает 6 цветовых тем:
+`terracotta` (по умолчанию), `racing-green`, `champagne`, `violet`, `teal`, `raspberry`.
+
+**Как работает:**
+- Тема хранится в `BrandSettingsModel.theme` (SQLite) и в `localStorage("aromara_theme")`
+- Применяется через `data-theme="<name>"` на `<body>` — все CSS-компоненты используют CSS-переменные
+- При загрузке: сначала восстанавливается из localStorage (мгновенно, без мигания),
+  затем синхронизируется с сервером (`GET /api/preferences/theme`)
+- API: `GET /api/preferences/theme`, `PATCH /api/preferences/theme` (в `miniapp/api/routers/misc.py`)
+- Выбор темы — в Настройках → Система → Цветовая тема
+
+**Правило разработки UI:**
+После добавления любого нового UI-компонента или экрана — проверить читаемость
+и контраст во **всех 6 темах**. Использовать только CSS-переменные (`--brand`, `--bg`,
+`--surface`, `--text`, `--muted`, `--border` и т.д.), никаких хардкодных hex-цветов.
+
+**Тестирование тем (обязательно при изменениях UI):**
+- Визуально проверить компонент в каждой из 6 тем через `document.body.dataset.theme = "X"`
+- Минимальный контраст текста: WCAG AA (4.5:1 для обычного текста, 3:1 для крупного)
+- Особое внимание: тема `champagne` — самая светлая из тёмных, `raspberry`/`teal` — нетипичные акценты
 
 ---
 

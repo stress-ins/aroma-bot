@@ -93,7 +93,7 @@ let loadInbox, loadReels, loadKeywords, loadSettings, loadTrends;
 let renderCreate, renderCreateTool;
 let renderDraftList, openDraft, openReels, renderDraftDetail, renderEmptyDetail;
 let renderInbox, renderStatus, renderPlans, renderReels, renderReelsDetail, renderKeywords;
-let addRewrite, removeRewrite, savePlatformTone, saveUploadPostPrefs, saveImageModels, connectPlatform, switchAccountsTeam;
+let addRewrite, removeRewrite, savePlatformTone, saveUploadPostPrefs, saveImageModels, setTheme, connectPlatform, switchAccountsTeam;
 let addTrackedHashtag, removeTrackedHashtag;
 let addMonitoredAccountFromSettings, removeMonitoredAccountFromSettings;
 let addKeywordItem, removeKeywordItem, openKeywordTopic;
@@ -1300,6 +1300,7 @@ const {
   isCurrentReelsDetail,
   authQueryString,
   applyTelegramTheme,
+  applyTheme,
   filtersToQueryString,
   initDataHeaders,
   scheduleReelsRefresh,
@@ -1770,6 +1771,7 @@ const _settingsMod = createSettingsModule({
   setEmptyState,
   syncMobileNavigation,
   enterDetailView,
+  applyTheme,
 });
 const { renderBrand: renderBrandImpl, loadForbiddenPhrases: loadForbiddenPhrasesImpl, loadPolicy: loadPolicyImpl, renderAccounts: renderAccountsImpl } = _settingsMod;
 ({
@@ -1780,6 +1782,7 @@ const { renderBrand: renderBrandImpl, loadForbiddenPhrases: loadForbiddenPhrases
   addForbiddenPhrase, removeForbiddenPhrase,
   addRewrite, removeRewrite, savePlatformTone, saveUploadPostPrefs,
   saveImageModels,
+  setTheme,
   connectPlatform, switchAccountsTeam,
   addTrackedHashtag, removeTrackedHashtag,
   addMonitoredAccountFromSettings, removeMonitoredAccountFromSettings,
@@ -2146,6 +2149,7 @@ registerWindowBridge({
   savePlatformTone,
   saveUploadPostPrefs,
   saveImageModels,
+  setTheme,
   connectPlatform,
   switchAccountsTeam,
   createNewTeam,

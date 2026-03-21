@@ -50,7 +50,12 @@ export function createSessionModule(deps) {
     try { if (tg.requestFullscreen) tg.requestFullscreen(); } catch (_e) {}
     // Match Telegram's native background to our --surface so no dark strips
     // show through safe-area insets (top notch / bottom home indicator).
-    const surfaceColor = tg.colorScheme === "dark" ? "#251e18" : "#f5f0e8";
+    const activeTheme = document.body.dataset.theme;
+    const themedSurface = {
+      "terracotta":"#1a0f09","racing-green":"#0b1c10","champagne":"#352b1e",
+      "violet":"#261e38","teal":"#0c1e22","raspberry":"#201020"
+    }[activeTheme];
+    const surfaceColor = themedSurface || (tg.colorScheme === "dark" ? "#251e18" : "#f5f0e8");
     try { tg.setBackgroundColor(surfaceColor); } catch (_e) {}
     try { tg.setBottomBarColor(surfaceColor); } catch (_e) {}
     const bgColor = tg.themeParams.secondary_bg_color;
@@ -87,6 +92,27 @@ export function createSessionModule(deps) {
     if (tg.BackButton && tg.isVersionAtLeast?.("6.9")) {
       document.body.classList.add("tg-webapp");
       tg.BackButton.onClick(() => window.goBackToList?.(true));
+    }
+  }
+
+  function applyTheme(theme) {
+    const valid = ["terracotta","racing-green","champagne","violet","teal","raspberry"];
+    const t = valid.includes(theme) ? theme : "terracotta";
+    document.body.dataset.theme = t;
+    localStorage.setItem("aromara_theme", t);
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      const surfaceMap = {
+        "terracotta":   "#1a0f09",
+        "racing-green": "#0b1c10",
+        "champagne":    "#352b1e",
+        "violet":       "#261e38",
+        "teal":         "#0c1e22",
+        "raspberry":    "#201020",
+      };
+      const color = surfaceMap[t] || "#1a0f09";
+      try { tg.setBackgroundColor(color); } catch (_e) {}
+      try { tg.setBottomBarColor(color); } catch (_e) {}
     }
   }
 
@@ -235,6 +261,7 @@ export function createSessionModule(deps) {
     isCurrentReelsDetail,
     authQueryString,
     applyTelegramTheme,
+    applyTheme,
     filtersToQueryString,
     initDataHeaders,
     scheduleReelsRefresh,
