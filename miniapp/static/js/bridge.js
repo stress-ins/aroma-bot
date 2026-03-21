@@ -128,6 +128,7 @@ export function registerWindowBridge(deps) {
     savePlatformTone,
     saveUploadPostPrefs,
     saveImageModels,
+    setTheme,
     openMentionDetail,
     closeMentionDetail,
     generateReplies,
@@ -267,6 +268,7 @@ export function registerWindowBridge(deps) {
   window.savePlatformTone = savePlatformTone;
   window.saveUploadPostPrefs = saveUploadPostPrefs;
   window.saveImageModels = saveImageModels;
+  window.setTheme = setTheme;
   window.addTodoItem = () => addTodoItem();
   window.removeTodoItem = (id) => removeTodoItem(id);
   window.renderCreateTool = renderCreateTool;
@@ -364,7 +366,7 @@ export function registerWindowBridge(deps) {
   };
 
   window.openSettingsSection = async (section) => {
-    const valid = ["keywords", "brand", "accounts", "status", "team", "promo", "monitored", "hashtags"];
+    const valid = ["keywords", "brand", "accounts", "status", "team", "promo", "monitored", "hashtags", "theme"];
     state.settingsSection = valid.includes(section) ? section : "status";
     state.settingsInDetail = true;
     if (state.tab !== "settings") {

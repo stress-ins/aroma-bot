@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sqlalchemy import select, delete
@@ -55,6 +55,10 @@ class ImageModelPayload(BaseModel):
     image_model_img2img: str | None = None
     image_model_reels: str | None = None
     reels_auto_images: bool | None = None
+
+
+class ThemePayload(BaseModel):
+    theme: str
 
 
 class TodoAddPayload(BaseModel):
@@ -255,6 +259,23 @@ async def update_image_models(payload: ImageModelPayload, _: None = Depends(_req
         "image_model_reels": bs.image_model_reels or "gpt-image/1.5-text-to-image",
         "reels_auto_images": bs.reels_auto_images if bs.reels_auto_images is not None else False,
     }
+
+
+VALID_THEMES = {"terracotta", "racing-green", "champagne", "violet", "teal", "raspberry"}
+
+
+@router.get("/api/preferences/theme")
+async def get_theme(_: None = Depends(_require_auth)):
+    bs = await get_brand_settings()
+    return {"theme": bs.theme or "terracotta"}
+
+
+@router.patch("/api/preferences/theme")
+async def update_theme(payload: ThemePayload, _: None = Depends(_require_auth)):
+    if payload.theme not in VALID_THEMES:
+        raise HTTPException(status_code=400, detail="Invalid theme")
+    await update_brand_settings(theme=payload.theme)
+    return {"theme": payload.theme}
 
 
 @router.get("/api/todo")
