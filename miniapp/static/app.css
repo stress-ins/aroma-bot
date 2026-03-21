@@ -1802,14 +1802,14 @@ body.tg-webapp .back-button { display: none !important; }
 
 @media (prefers-color-scheme: dark) {
   .bottom-tab-bar-inner {
-    background: rgba(37, 30, 24, 0.72);
+    background: rgba(var(--bg-rgb), 0.72);
     border-color: rgba(255, 230, 200, 0.12);
     box-shadow: none;
   }
 }
 
 body.tg-theme-dark .bottom-tab-bar-inner {
-  background: rgba(37, 30, 24, 0.72);
+  background: rgba(var(--bg-rgb), 0.72);
   border-color: rgba(255, 230, 200, 0.12);
   box-shadow: none;
 }
@@ -2647,11 +2647,11 @@ body.tg-theme-dark .danger-button {
 
 @media (prefers-color-scheme: dark) {
   body.is-mobile-layout .back-button.visible {
-    background: rgba(37, 30, 24, 0.72);
+    background: rgba(var(--bg-rgb), 0.72);
   }
 }
 body.tg-theme-dark.is-mobile-layout .back-button.visible {
-  background: rgba(37, 30, 24, 0.72);
+  background: rgba(var(--bg-rgb), 0.72);
 }
 
 /* ═══════════════════════════════════════
@@ -6315,17 +6315,17 @@ body.is-mobile-layout.is-detail-view .detail-panel.has-scroll-top::before { opac
 body.is-mobile-layout.is-detail-view .detail-panel.has-scroll-bottom::after { opacity: 1; }
 
 /* ── Theme system ─────────────────────────────────────────────────────────── */
-[data-theme="terracotta"],
-[data-theme="racing-green"],
-[data-theme="champagne"],
-[data-theme="violet"],
-[data-theme="teal"],
-[data-theme="raspberry"] {
+body[data-theme="terracotta"],
+body[data-theme="racing-green"],
+body[data-theme="champagne"],
+body[data-theme="violet"],
+body[data-theme="teal"],
+body[data-theme="raspberry"] {
   /* Suppress automatic dark-mode media query when a theme is explicitly chosen */
   color-scheme: dark;
 }
 
-[data-theme="terracotta"] {
+body[data-theme="terracotta"] {
   --brand:        #b45c3d;
   --brand-rgb:    180, 92, 61;
   --brand-bg:     rgba(180, 92, 61, 0.15);
@@ -6337,11 +6337,11 @@ body.is-mobile-layout.is-detail-view .detail-panel.has-scroll-bottom::after { op
   --border:       rgba(255, 255, 255, 0.06);
   --text:         #f0e0d0;
   --muted:        rgba(255, 255, 255, 0.50);
-  --hint:         rgba(255, 255, 255, 0.32);
+  --hint:         rgba(255, 255, 255, 0.45);
   --bg-rgb:       17, 11, 7;
   --surface-rgb:  26, 15, 9;
 }
-[data-theme="racing-green"] {
+body[data-theme="racing-green"] {
   --brand:        #2a8a50;
   --brand-rgb:    42, 138, 80;
   --brand-bg:     rgba(14, 77, 42, 0.18);
@@ -6353,11 +6353,11 @@ body.is-mobile-layout.is-detail-view .detail-panel.has-scroll-bottom::after { op
   --border:       rgba(14, 77, 42, 0.22);
   --text:         #d0f0dc;
   --muted:        rgba(255, 255, 255, 0.45);
-  --hint:         rgba(255, 255, 255, 0.28);
+  --hint:         rgba(255, 255, 255, 0.45);
   --bg-rgb:       5, 13, 8;
   --surface-rgb:  11, 28, 16;
 }
-[data-theme="champagne"] {
+body[data-theme="champagne"] {
   --brand:        #c8a86a;
   --brand-rgb:    200, 168, 106;
   --brand-bg:     rgba(200, 168, 106, 0.12);
@@ -6369,11 +6369,11 @@ body.is-mobile-layout.is-detail-view .detail-panel.has-scroll-bottom::after { op
   --border:       rgba(200, 168, 106, 0.15);
   --text:         #f8edd8;
   --muted:        rgba(255, 255, 255, 0.52);
-  --hint:         rgba(255, 255, 255, 0.34);
+  --hint:         rgba(255, 255, 255, 0.45);
   --bg-rgb:       42, 34, 24;
   --surface-rgb:  53, 43, 30;
 }
-[data-theme="violet"] {
+body[data-theme="violet"] {
   --brand:        #9060c8;
   --brand-rgb:    144, 96, 200;
   --brand-bg:     rgba(112, 72, 168, 0.15);
@@ -6385,11 +6385,11 @@ body.is-mobile-layout.is-detail-view .detail-panel.has-scroll-bottom::after { op
   --border:       rgba(112, 72, 168, 0.20);
   --text:         #f0e8ff;
   --muted:        rgba(255, 255, 255, 0.50);
-  --hint:         rgba(255, 255, 255, 0.30);
+  --hint:         rgba(255, 255, 255, 0.45);
   --bg-rgb:       26, 20, 40;
   --surface-rgb:  38, 30, 56;
 }
-[data-theme="teal"] {
+body[data-theme="teal"] {
   --brand:        #3a9098;
   --brand-rgb:    58, 144, 152;
   --brand-bg:     rgba(10, 104, 120, 0.18);
@@ -6401,11 +6401,11 @@ body.is-mobile-layout.is-detail-view .detail-panel.has-scroll-bottom::after { op
   --border:       rgba(10, 104, 120, 0.22);
   --text:         #c8f0f5;
   --muted:        rgba(255, 255, 255, 0.45);
-  --hint:         rgba(255, 255, 255, 0.28);
+  --hint:         rgba(255, 255, 255, 0.45);
   --bg-rgb:       6, 14, 16;
   --surface-rgb:  12, 30, 34;
 }
-[data-theme="raspberry"] {
+body[data-theme="raspberry"] {
   --brand:        #b04870;
   --brand-rgb:    176, 72, 112;
   --brand-bg:     rgba(138, 24, 72, 0.15);
@@ -6417,7 +6417,7 @@ body.is-mobile-layout.is-detail-view .detail-panel.has-scroll-bottom::after { op
   --border:       rgba(138, 24, 72, 0.22);
   --text:         #ffe0ee;
   --muted:        rgba(255, 255, 255, 0.48);
-  --hint:         rgba(255, 255, 255, 0.30);
+  --hint:         rgba(255, 255, 255, 0.45);
   --bg-rgb:       18, 8, 16;
   --surface-rgb:  32, 16, 32;
 }

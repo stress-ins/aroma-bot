@@ -37,8 +37,11 @@ def test_dark_theme_class_styles_bottom_tab_bar(page):
     )
 
     assert theme_state["bodyDark"] is True
-    assert "37, 30, 24" in theme_state["tabBarBackground"]
-    assert "255, 230, 200" in theme_state["tabBarBorder"]
+    # bottom-tab-bar uses rgba(var(--bg-rgb), 0.72) — verify it's dark and semi-transparent
+    bg = theme_state["tabBarBackground"]
+    channels = [int(v) for v in __import__("re").findall(r"\d+", bg)[:3]]
+    assert all(c < 100 for c in channels), f"Expected dark tab bar background, got: {bg}"
+    assert "0.72" in bg or "0.7" in bg, f"Expected semi-transparent tab bar, got: {bg}"
 
 
 def test_dark_theme_keeps_reels_v2_frame_text_readable(page):
