@@ -131,7 +131,7 @@ const elements = {
   draftDetail: document.getElementById("draftDetail"),
   draftCount: document.getElementById("draftCount"),
   headerTabs: document.getElementById("headerTabs"),
-  listTitle: document.getElementById("listTitle"),
+  listTitle: document.getElementById("topbarTitle"),
   emptyState: document.getElementById("emptyState"),
   kindFilter: document.getElementById("kindFilter"),
   statusFilter: document.getElementById("statusFilter"),
@@ -145,7 +145,6 @@ const elements = {
   bootFallbackText: document.getElementById("bootFallbackText"),
   bootFallbackReload: document.getElementById("bootFallbackReload"),
   bottomTabBar: document.getElementById("bottomTabBar"),
-  topbarTitle: document.querySelector(".topbar-title"),
 };
 
 const SOURCE_TYPE_LABELS = {
@@ -2032,6 +2031,8 @@ function setTab(t) {
   
   // Clear panels immediately to prevent showing tools/content from previous tab
   if (elements.headerTabs) elements.headerTabs.innerHTML = "";
+  const _navTabs = document.getElementById("topbarNavTabs");
+  if (_navTabs) _navTabs.innerHTML = "";
   setEmptyState(true);
   elements.listTitle.textContent = "Загрузка...";
   elements.draftCount.textContent = "";

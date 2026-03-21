@@ -44,7 +44,8 @@ export function createTrendsModule(deps) {
   // ── Loaders ──────────────────────────────────────────────────────────
 
   async function loadTrends() {
-    elements.headerTabs.innerHTML = renderContentSwitcher("trends");
+    const topbarNavTabs = document.getElementById("topbarNavTabs");
+    if (topbarNavTabs) topbarNavTabs.innerHTML = renderContentSwitcher("trends");
     elements.draftList.innerHTML = renderTrendsListPanel();
     elements.draftDetail.innerHTML = renderDetailLoader();
     syncMobileNavigation();
@@ -87,7 +88,8 @@ export function createTrendsModule(deps) {
       suggestionsData = null;
     }
 
-    elements.headerTabs.innerHTML = renderContentSwitcher("trends");
+    const topbarNavTabs = document.getElementById("topbarNavTabs");
+    if (topbarNavTabs) topbarNavTabs.innerHTML = renderContentSwitcher("trends");
     elements.draftList.innerHTML = renderTrendsListPanel();
     elements.draftDetail.innerHTML = renderTrendsDetail();
     syncMobileNavigation();
@@ -695,7 +697,8 @@ export function createTrendsModule(deps) {
       try {
         monitoredAccounts = await fetchJson("/api/social/monitored-accounts");
       } catch (_) { /* ignore */ }
-      elements.headerTabs.innerHTML = renderContentSwitcher("trends");
+      const topbarNavTabs = document.getElementById("topbarNavTabs");
+    if (topbarNavTabs) topbarNavTabs.innerHTML = renderContentSwitcher("trends");
       elements.draftList.innerHTML = renderTrendsListPanel();
       if (window.lucide) lucide.createIcons();
     } catch (err) {
@@ -715,7 +718,8 @@ export function createTrendsModule(deps) {
       try {
         monitoredAccounts = await fetchJson("/api/social/monitored-accounts");
       } catch (_) { /* ignore */ }
-      elements.headerTabs.innerHTML = renderContentSwitcher("trends");
+      const topbarNavTabs = document.getElementById("topbarNavTabs");
+    if (topbarNavTabs) topbarNavTabs.innerHTML = renderContentSwitcher("trends");
       elements.draftList.innerHTML = renderTrendsListPanel();
       if (window.lucide) lucide.createIcons();
     } catch (_err) {

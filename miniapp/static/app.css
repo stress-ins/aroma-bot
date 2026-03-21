@@ -283,7 +283,8 @@ p,
 }
 
 .topbar-main {
-  display: grid;
+  display: flex;
+  align-items: center;
   gap: 8px;
   padding: 12px 14px;
   border: 1px solid var(--border);
@@ -644,8 +645,8 @@ body.app-ready .splash {
 
 .panel-header {
   display: flex;
-  align-items: center;
-  gap: var(--space-2) var(--space-3);
+  flex-direction: column;
+  gap: var(--space-2);
   padding-bottom: var(--space-2);
   border-bottom: 1px solid var(--border);
   margin-bottom: var(--space-3);
@@ -4354,22 +4355,12 @@ body.is-mobile-layout .topbar-main {
   background: var(--bg);
 }
 
-body.is-mobile-layout .topbar-main .mode-selector,
-body.is-mobile-layout .topbar-main .topbar-copy .eyebrow {
+body.is-mobile-layout .topbar-main .mode-selector {
   display: none;
 }
 
-body.is-mobile-layout .topbar-main .topbar-copy {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2, 8px);
-}
-body.is-mobile-layout .topbar-main .topbar-copy .team-switcher {
-  margin-left: auto;
-}
-
 /* Hide team switcher in settings — not relevant there */
-body[data-tab="settings"] .topbar-copy .team-switcher {
+body[data-tab="settings"] .topbar-team {
   display: none;
 }
 
@@ -6215,3 +6206,91 @@ details[open] > .trend-suggestions-toggle::before { transform: rotate(90deg); }
    Detail cards contain images with light backgrounds; a dark sticky gradient
    at the panel bottom creates a visible black stripe over them. List panels
    (.draft-list / .create-list) keep their own fade masks above.           */
+
+/* ═══════════════════════════════════════
+   SECTION: Content Header Redesign
+   topbar-nav-row carries Черновики/Тренды tabs (Telegram nav row)
+   panel-filter-row carries filters + count inside panel-header
+   ═══════════════════════════════════════ */
+
+/* ── Topbar nav row (tab strip above topbar-main) ─────────────────────── */
+.topbar-nav-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 14px 4px;
+}
+
+.topbar-nav-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.07);
+  border-radius: 20px;
+  padding: 3px;
+}
+
+.topbar-nav-tabs:empty { display: none; }
+
+/* Reuse .header-tab styles, active gets accent color */
+.topbar-nav-tabs .header-tab.active {
+  background: var(--color-accent, #b45c3d);
+  color: #fff;
+}
+
+/* ── Topbar team container ────────────────────────────────────────────── */
+.topbar-team {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.topbar-team:empty { display: none; }
+
+/* Topbar title takes available space */
+.topbar-main .topbar-title {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── Panel filter row (inside panel-header) ──────────────────────────── */
+.panel-filter-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.panel-count {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* Compact variant of filters-toggle for panel-header */
+.filters-toggle--compact {
+  font-size: 13px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm, 6px);
+  border: 1px solid var(--border);
+  background: var(--surface-raised, var(--surface));
+  color: var(--text-secondary);
+  gap: 4px;
+}
+
+/* Mobile: topbar nav row sticky, account for TG safe area */
+body.is-mobile-layout .topbar-nav-row {
+  position: sticky;
+  top: 0;
+  z-index: 11;
+  background: var(--bg);
+  padding-top: calc(6px + var(--tg-content-inset-top, env(safe-area-inset-top, 0px)));
+}
+
+/* Mobile topbar-main follows nav row (no extra top safe-area padding) */
+body.is-mobile-layout .topbar-main {
+  padding-top: var(--space-3);
+}

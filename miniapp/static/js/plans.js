@@ -510,7 +510,8 @@ export function createPlansModule(deps) {
 
   function renderPlans() {
     const subMode = state.plansSubMode || "publications";
-    elements.headerTabs.innerHTML = renderPlansSwitcher(subMode);
+    const topbarNavTabs = document.getElementById("topbarNavTabs");
+    if (topbarNavTabs) topbarNavTabs.innerHTML = renderPlansSwitcher(subMode);
 
     if (subMode === "mentions") {
       elements.listTitle.textContent = "Упоминания";

@@ -118,7 +118,7 @@ export function createTeamsModule(deps) {
   }
 
   function renderSwitcherInTopbar(teams) {
-    const container = document.querySelector(".panel-header-right");
+    const container = document.getElementById("topbarTeam");
     if (!container) return;
     const existing = container.querySelector(".team-switcher");
     if (existing) existing.remove();
