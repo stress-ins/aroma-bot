@@ -3327,6 +3327,7 @@ body.tg-theme-dark .concept-card {
 .account-meta .tag-status-error { flex-shrink: 0; white-space: nowrap; }
 .account-meta i, .account-meta svg { width: 14px; height: 14px; color: var(--good); }
 .account-full-btn { width: 100%; justify-content: center; margin-top: 6px; }
+.account-card-actions { display: flex; flex-direction: column; gap: 6px; }
 
 /* Team switcher chips (accounts page) */
 .accounts-team-switcher {

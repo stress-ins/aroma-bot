@@ -693,12 +693,15 @@ export function createSettingsModule(deps) {
       const btn = readOnly
         ? ""
         : `<button class="secondary-button account-full-btn" type="button" data-action="connectPlatform" data-args='${JSON.stringify([acc.platform])}'>${uiIcon("regenerate")}<span>Переподключить</span></button>`;
+      const importBtn = (!readOnly && (acc.platform === "threads" || acc.platform === "instagram"))
+        ? `<button class="secondary-button account-full-btn" type="button" data-action="bulkImportFromAccount" data-args='${JSON.stringify([acc.platform, null])}'>${uiIcon("archive")}<span>Выкачать за 14 дней</span></button>`
+        : "";
       return `
         <article class="account-card account-card--vertical">
           <div class="account-card-title">${icon}<strong>${label}</strong></div>
           ${usernameRow}
           ${statusMeta}
-          ${btn}
+          <div class="account-card-actions">${btn}${importBtn}</div>
         </article>
       `;
     }
