@@ -1876,6 +1876,8 @@ body.tg-theme-dark {
   --brand-bg:     rgba(var(--brand-rgb), 0.18);
   --brand-border: rgba(var(--brand-rgb), 0.40);
   --sage-bg:      rgba(93, 110, 58, 0.18);
+  --bg-rgb:       37, 30, 24;
+  --surface-rgb:  37, 30, 24;
 }
 
 /* Cards / panels that had hardcoded light backgrounds — switch to dark surface */
@@ -2496,10 +2498,7 @@ body.tg-theme-dark .danger-button {
 
   /* Edge-to-edge sections — no padding */
   body.is-mobile-layout .detail-grid > .detail-hero,
-  body.is-mobile-layout .detail-grid > .aroma-image,
-  body.is-mobile-layout .detail-grid > .blend-expert-card,
-  body.is-mobile-layout .detail-grid > .blend-actions-stack,
-  body.is-mobile-layout .detail-grid > .blend-warn {
+  body.is-mobile-layout .detail-grid > .aroma-image {
     padding-left: 0;
     padding-right: 0;
   }
@@ -4924,7 +4923,7 @@ body.tg-theme-dark .blend-constructor-cta { color: #d4845e; }
 .profile-bar-fill { height: 100%; border-radius: 99px; background: var(--brand); transition: width 0.35s ease; }
 
 /* Expert cards */
-.blend-expert-card { border-radius: var(--radius-md); padding: 11px; margin-bottom: 8px; }
+.blend-expert-card { border-radius: var(--radius-md); padding: 11px; margin-bottom: 8px; overflow: hidden; }
 .blend-expert-aroma { border: 1px solid var(--brand-border); background: rgba(180,92,61,.04); }
 .blend-expert-doctor { border: 1px solid rgba(46,125,79,.25); background: rgba(46,125,79,.04); }
 .blend-expert-header { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; padding-bottom: 7px; border-bottom: 1px solid var(--border); }
