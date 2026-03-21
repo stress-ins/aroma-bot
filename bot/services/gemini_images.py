@@ -401,6 +401,10 @@ def generate_gemini_image_sync(
                     aspect_ratio=ar,
                     model=model or _KIE_MODEL,
                 )
+            if callback_url:
+                # Webhook will deliver result; no polling needed
+                return ImageGenResult(kie_task_id=kie_task_id)
+            # Poll only when no callback URL configured (local dev / testing)
             db_check_id = kie_task_id if (draft_id and content_type) else None
             image_url = _kie_poll(kie_task_id, headers, log_context, task_id_for_db_check=db_check_id)
             if image_url:

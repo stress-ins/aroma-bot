@@ -101,10 +101,11 @@ async def serialize_draft(record: DraftRecord) -> dict[str, Any]:
     images_ready = int(payload.get("images_ready", 0) or 0)
     generation_stage = str(payload.get("generation_stage", ""))
     has_error = generation_stage == "error"
+    is_awaiting_callback = generation_stage == "awaiting_callback"
     explicit_pending = bool(payload.get("generation_pending"))
     generation_pending = explicit_pending
-    # Don't derive pending from missing images when generation already failed
-    if not has_error:
+    # Don't derive pending from missing images when generation failed or awaits webhook
+    if not has_error and not is_awaiting_callback:
         if record.kind == "carousel" and slides_count:
             generation_pending = generation_pending or images_ready < slides_count
         if record.kind == "reels" and storyboard_count:
@@ -141,8 +142,9 @@ async def serialize_draft_summary(record: DraftRecord) -> dict[str, Any]:
     images_ready = int(payload.get("images_ready", 0) or 0)
     generation_stage = str(payload.get("generation_stage", ""))
     has_error = generation_stage == "error"
+    is_awaiting_callback = generation_stage == "awaiting_callback"
     generation_pending = bool(payload.get("generation_pending"))
-    if not has_error:
+    if not has_error and not is_awaiting_callback:
         if record.kind == "carousel" and slides_count:
             generation_pending = generation_pending or images_ready < slides_count
         if record.kind == "reels" and storyboard_count:

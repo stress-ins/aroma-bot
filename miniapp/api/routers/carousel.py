@@ -37,12 +37,15 @@ async def get_carousel(
     draft: DraftRecord = Depends(require_draft("carousel")),
 ):
     payload = draft.payload or {}
+    gen_stage = payload.get("generation_stage", "")
     # Auto-trigger image generation for drafts created via Telegram bot
-    # that have prompts but no images and no pending generation
+    # that have prompts but no images and no pending generation.
+    # Don't re-trigger if generation already failed or is awaiting webhook callback.
     if (
         payload.get("img_prompts")
         and not payload.get("slide_images")
         and not payload.get("generation_pending")
+        and gen_stage not in ("error", "awaiting_callback")
     ):
         await set_generation_state(
             draft.draft_id, pending=True, stage="images",
@@ -60,8 +63,19 @@ async def _auto_populate_carousel(draft_id: str) -> None:
     from bot.services.carousel_assets import populate_carousel_slide_assets
 
     try:
-        await populate_carousel_slide_assets(draft_id)
-        await set_generation_state(draft_id, pending=False)
+        status = await populate_carousel_slide_assets(draft_id)
+        if status == "awaiting_callback":
+            # generation_stage already set to "awaiting_callback" in populate_carousel_slide_assets;
+            # keep generation_pending=True so UI shows progress
+            await set_generation_state(draft_id, pending=True, stage="awaiting_callback",
+                                       message="Картинки генерируются, ожидаем результат…")
+        elif status == "error":
+            await set_generation_state(
+                draft_id, pending=False, stage="error",
+                message="Не удалось сгенерировать картинки. Попробуйте ещё раз.",
+            )
+        else:
+            await set_generation_state(draft_id, pending=False)
     except Exception as exc:
         await set_generation_state(
             draft_id,
