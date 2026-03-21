@@ -5320,16 +5320,9 @@ body.tg-theme-dark .reco-cta-btn { color: #d4845e; }
 .reco-restart-btn:hover { background: var(--surface-3); }
 
 /* ── Blend Constructor Form ───────────────────────────────────────────── */
-.blend-constructor-form .section {
-  border: none;
-  border-bottom: 1px solid var(--border);
-  border-radius: 0;
-  padding: var(--space-3) 0;
-}
-.blend-constructor-form .section:last-of-type { border-bottom: none; }
 .blend-constructor-form .chip-list,
 .blend-constructor-form .radio-row { gap: 8px; justify-content: center; }
-.blend-constructor-form .chip-selectable { flex: 1 0 auto; text-align: center; border-radius: 99px; }
+.blend-constructor-form .chip-selectable { flex: 1 0 auto; text-align: center; border-radius: var(--radius-sm); }
 .blend-constructor-form .primary-button { width: 100%; }
 .blend-constructor-form .field-textarea,
 .blend-constructor-form .field-input { width: 100%; box-sizing: border-box; }
