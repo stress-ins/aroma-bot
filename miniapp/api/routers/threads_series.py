@@ -23,9 +23,14 @@ _executor = ThreadPoolExecutor(max_workers=2)
 _SLOT_LABELS = {"morning": "УТРО", "day": "ДЕНЬ", "evening": "ВЕЧЕР"}
 
 _ANALYSIS_RE = re.compile(
-    r"^(?:"
-    r"Отличный пост|Хороший пост|Неплохой пост"
+    r"(?:"
+    r"Отличный пост|Хороший пост|Неплохой пост|Сильный пример"
     r"|Что работает[:\s]"
+    r"|Что правда[:\s]"
+    r"|Что не работает[:\s]"
+    r"|Почему хвалят[:\s]"
+    r"|Честнее было бы"
+    r"|но разберу"
     r"|Замечани[яе][:\s]"
     r"|Анализ[:\s]"
     r"|Рекомендаци[ия][:\s]"
@@ -33,7 +38,7 @@ _ANALYSIS_RE = re.compile(
     r"|Оценка[:\s]"
     r"|✅\s*Что"
     r")",
-    re.IGNORECASE,
+    re.IGNORECASE | re.MULTILINE,
 )
 
 _THREADS_MAX_CHARS = 500
@@ -43,7 +48,7 @@ def _force_shorten(text: str, topic: str, max_chars: int = _THREADS_MAX_CHARS) -
     """If text still exceeds max_chars after trimming, rewrite it shorter via LLM."""
     if len(text) <= max_chars:
         return text
-    from bot.agents.content import _call_claude
+    import bot.agents.content as _content_mod
     prompt = (
         f"Перепиши этот пост для Threads СТРОГО короче {max_chars} символов. "
         f"Сейчас {len(text)} символов — нужно убрать {len(text) - max_chars}. "
@@ -51,7 +56,7 @@ def _force_shorten(text: str, topic: str, max_chars: int = _THREADS_MAX_CHARS) -
         f"Тема: {topic}\n\nТекст:\n{text}\n\n"
         f"Верни ТОЛЬКО сокращённый текст поста, ничего больше."
     )
-    result = _call_claude(prompt, max_tokens=300)
+    result = _content_mod._call_claude(prompt, max_tokens=300)
     shortened = result.strip()
     # Use shortened only if it's actually shorter and non-trivial
     if len(shortened) < len(text) and len(shortened) > 20:
@@ -184,7 +189,7 @@ async def _regen_slot_text(topic: str, goal_key: str, slot: str, note: str | Non
         edited = edit_post_sync(raw, topic, platform="threads_slot")
 
         # Guard: if editor returned analysis/review instead of a post, fall back to raw
-        if _ANALYSIS_RE.match(edited.strip()):
+        if _ANALYSIS_RE.search(edited.strip()):
             logger.warning("Editor returned analysis instead of post, using raw writer output")
             edited = raw
 
