@@ -677,6 +677,7 @@ function uiIcon(name) {
     send:       "send",
     copy:       "copy",
     zap:        "zap",
+    bot:        "bot",
     publish:    "upload",
     palette:    "palette",
     activity:   "activity",
@@ -1569,6 +1570,7 @@ const {
   copyReelsCaption,
   openReelsImageFullscreen,
   openReelsPreview,
+  openBotUploadLink,
 } = createReelsModule({
   state,
   reelsNoteSaveTimers,
@@ -2288,6 +2290,7 @@ registerWindowBridge({
   copyReelsCaption,
   openReelsImageFullscreen,
   openReelsPreview,
+  openBotUploadLink,
   approveThreadsSeries,
   regenSlot,
   regenerateSeriesPosts,
