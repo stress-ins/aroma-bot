@@ -292,6 +292,11 @@ const RU_STATUS_LABELS = {
   rejected: "Не согласовано",
   published: "Опубликовано",
   scheduled: "Запланировано",
+  video_uploaded: "Видео загружено",
+  checking: "Проверка",
+  passed: "Проверено",
+  failed: "Ошибка",
+  publishing: "Публикуется",
 };
 
 const RU_FEEDBACK_LABELS = {
@@ -714,6 +719,10 @@ function uiIcon(name) {
     star:       "star",
     "share-2":  "share-2",
     "trash-2":  "trash-2",
+    film:       "film",
+    scan:       "scan-line",
+    tools:      "wrench",
+    "tech-check": "scan-line",
   };
   return `<span class="ui-icon ui-icon-${escapeHtml(name)}">${icon(LUCIDE_MAP[name] || "square-terminal", 16)}</span>`;
 }
