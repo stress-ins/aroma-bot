@@ -82,6 +82,33 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             )
         return
 
+    # Deep link: /start upload_<draft_id> -> set video upload context for reels
+    if context.args and context.args[0].startswith("upload_"):
+        draft_id = context.args[0][len("upload_"):]
+        context.user_data["rl_v2_upload_draft_id"] = draft_id
+
+        from bot.services.drafts_store import get_draft
+        draft = await get_draft(draft_id)
+        topic = draft.topic if draft else "рилс"
+
+        from bot.services.mini_app import append_mini_app_button
+        await update.message.reply_text(
+            f"🎬 *Загрузка видео для рилса*\n\n"
+            f"Тема: _{topic}_\n\n"
+            f"Отправьте видеофайл прямо в этот чат\\.\n"
+            f"Я скачаю его и прикреплю к черновику\\.\n\n"
+            f"⚠️ Лимит Telegram: до 20 МБ через бот\\.\n"
+            f"Для файлов побольше используйте Mini App\\.",
+            parse_mode=ParseMode.MARKDOWN_V2,
+            reply_markup=append_mini_app_button(
+                None,
+                label="🎬 Загрузить через Mini App",
+                draft_id=draft_id,
+                tab="reels",
+            ),
+        )
+        return
+
     # Deep link: /start blend_<saved_id> -> open shared blend in Mini App
     if context.args and context.args[0].startswith("blend_"):
         saved_id = context.args[0][len("blend_"):]
