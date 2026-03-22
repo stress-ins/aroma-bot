@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from telegram import Bot
 
 from bot.services.drafts_store import delete_draft, get_draft, list_recent_drafts, update_draft
@@ -9,7 +9,7 @@ from bot.services.miniapp_content_review import polish_content_review_draft, upd
 from bot.services.miniapp_presenter import filter_drafts, serialize_draft, serialize_draft_summary
 from bot.services.post_metrics_store import get_latest_metrics_batch
 from config import settings
-from ..auth import TeamContext, _require_auth, _resolve_team_context
+from ..auth import TeamContext, _require_auth, _resolve_team_context, _telegram_user_id_from_init_data
 from ..models import DraftContentPayload, DraftFeedbackPayload, DraftMovePayload, DraftStatusPayload
 
 router = APIRouter()
@@ -24,6 +24,20 @@ def _draft_chat_message(draft) -> str:
     if draft.kind == "reels":
         scenario = str(payload.get("scenario", "")).strip()
         return f"Рилс\n\nТема: {draft.topic}\n\n{scenario}".strip()
+    if draft.kind == "reels_v2":
+        concept = str(payload.get("concept") or "").strip()[:200]
+        video_status = str(payload.get("video_status") or "none")
+        bot_user = settings.telegram_bot_username
+        deep_link = f"https://t.me/{bot_user}?start=upload_{draft.draft_id}"
+        lines = [f"🎬 Рилс\n\nТема: {draft.topic}"]
+        if concept:
+            lines.append(f"\n{concept}")
+        if video_status in ("none", "uploaded"):
+            lines.append(
+                f"\n📎 Чтобы загрузить видео, отправьте файл прямо в этот чат "
+                f"или перейдите по ссылке:\n{deep_link}"
+            )
+        return "\n".join(lines).strip()
     text = str(payload.get("caption") or payload.get("hook") or payload.get("angle") or "").strip()
     return f"{draft.kind.title()}\n\nТема: {draft.topic}\n\n{text}".strip()
 
@@ -184,12 +198,19 @@ async def move_draft(draft_id: str, payload: DraftMovePayload, ctx: TeamContext 
 
 
 @router.post("/api/drafts/{draft_id}/send")
-async def send_draft_to_chat(draft_id: str, _: None = Depends(_require_auth)):
+async def send_draft_to_chat(
+    draft_id: str,
+    _: None = Depends(_require_auth),
+    x_telegram_init_data: str | None = Header(default=None),
+):
     draft = await get_draft(draft_id)
     if not draft:
         raise HTTPException(status_code=404, detail="draft_not_found")
     if not settings.telegram_bot_token or not settings.report_target_chat_id:
         raise HTTPException(status_code=400, detail="telegram_not_configured")
     bot = Bot(token=settings.telegram_bot_token)
-    await bot.send_message(chat_id=settings.report_target_chat_id, text=_draft_chat_message(draft))
+    # Try to send to the requesting user's personal chat; fall back to admin
+    user_id = _telegram_user_id_from_init_data(x_telegram_init_data or "") if x_telegram_init_data else None
+    chat_id = str(user_id) if user_id else settings.report_target_chat_id
+    await bot.send_message(chat_id=chat_id, text=_draft_chat_message(draft))
     return {"ok": True}

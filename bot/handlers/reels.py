@@ -492,7 +492,13 @@ async def _regen_reels_frame(message, context: ContextTypes.DEFAULT_TYPE, idx: i
 
 
 async def msg_reels_video_upload(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle incoming video/document for reels_v2 video upload flow."""
+    """Handle incoming video/document for reels_v2 video upload flow.
+
+    Telegram Bot API limits file downloads to 20 MB.  For files within
+    that limit we stream to disk (not into RAM) and hand off to the
+    backend.  For larger files we reply with a clear instruction to use
+    the Mini App upload instead.
+    """
     message = update.message
     if not message:
         return
@@ -513,19 +519,42 @@ async def msg_reels_video_upload(update: Update, context: ContextTypes.DEFAULT_T
             return  # Silently ignore — no active reels_v2 in approved state
         draft_id = approved[0].draft_id
 
+    # ── File-size guard (Telegram Bot API allows ≤ 20 MB downloads) ──
+    TG_FILE_LIMIT = 20 * 1024 * 1024  # 20 MB
+    file_size = file_obj.file_size or 0
+    if file_size > TG_FILE_LIMIT:
+        size_mb = round(file_size / 1e6, 1)
+        await message.reply_text(
+            f"⚠️ Видео слишком большое ({size_mb} МБ).\n\n"
+            "Telegram не позволяет скачивать файлы > 20 МБ через бот-API.\n\n"
+            "Загрузите видео напрямую через Mini App — там нет этого ограничения.",
+            reply_markup=append_mini_app_button(
+                None,
+                label="🎬 Загрузить в Mini App",
+                draft_id=str(draft_id),
+                tab="reels",
+            ),
+        )
+        return
+
     status_msg = await message.reply_text("⏳ Загружаю видео...")
 
     try:
-        tg_file = await file_obj.get_file()
-        import io
-        buf = io.BytesIO()
-        await tg_file.download_to_memory(buf)
-        video_bytes = buf.getvalue()
+        import tempfile
+        from pathlib import Path
 
+        tg_file = await file_obj.get_file()
         original_name = getattr(file_obj, "file_name", None) or f"video_{draft_id[:8]}.mp4"
 
+        # Stream to a temp file instead of holding everything in RAM
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmp:
+            tmp_path = Path(tmp.name)
+        await tg_file.download_to_drive(custom_path=str(tmp_path))
+        video_bytes = tmp_path.read_bytes()
+        tmp_path.unlink(missing_ok=True)
+
         from bot.services.reels_video import save_uploaded_video
-        result = await save_uploaded_video(draft_id, video_bytes, original_name)
+        await save_uploaded_video(draft_id, video_bytes, original_name)
 
         context.user_data.pop("rl_v2_upload_draft_id", None)
 
@@ -542,7 +571,16 @@ async def msg_reels_video_upload(update: Update, context: ContextTypes.DEFAULT_T
         )
     except Exception as exc:
         logger.error("Reels video upload failed for draft %s: %s", draft_id, exc)
-        await status_msg.edit_text(f"❌ Не удалось загрузить видео: {exc}")
+        await status_msg.edit_text(
+            f"❌ Не удалось загрузить видео: {exc}\n\n"
+            "Попробуйте загрузить через Mini App.",
+            reply_markup=append_mini_app_button(
+                None,
+                label="🎬 Загрузить в Mini App",
+                draft_id=str(draft_id),
+                tab="reels",
+            ),
+        )
 
 
 def build_reels_handler():

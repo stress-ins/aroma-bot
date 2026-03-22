@@ -715,7 +715,8 @@ class TestSendDraft:
         assert resp.json() == {"ok": True}
         mock_bot_instance.send_message.assert_called_once()
         call_kwargs = mock_bot_instance.send_message.call_args
-        assert "-100123456" in str(call_kwargs)
+        # User's telegram_id (12345) is parsed from initData header and used as chat_id
+        assert "12345" in str(call_kwargs)
 
 
 # ---------------------------------------------------------------------------
@@ -745,6 +746,30 @@ class TestDraftChatMessage:
         assert "Рилс" in msg
         assert "Morning routine" in msg
         assert "A calming morning" in msg
+
+    def test_reels_v2_message_with_upload_link(self):
+        from miniapp.api.routers.drafts import _draft_chat_message
+        draft = MagicMock()
+        draft.kind = "reels_v2"
+        draft.topic = "Lavender ritual"
+        draft.draft_id = "abc123"
+        draft.payload = {"concept": "A soothing concept", "video_status": "none"}
+        msg = _draft_chat_message(draft)
+        assert "Рилс" in msg
+        assert "Lavender ritual" in msg
+        assert "A soothing concept" in msg
+        assert "upload_abc123" in msg
+
+    def test_reels_v2_message_video_passed(self):
+        from miniapp.api.routers.drafts import _draft_chat_message
+        draft = MagicMock()
+        draft.kind = "reels_v2"
+        draft.topic = "Gong session"
+        draft.draft_id = "def456"
+        draft.payload = {"concept": "Healing sounds", "video_status": "passed"}
+        msg = _draft_chat_message(draft)
+        assert "Рилс" in msg
+        assert "upload_def456" not in msg
 
     def test_generic_message_caption(self):
         from miniapp.api.routers.drafts import _draft_chat_message

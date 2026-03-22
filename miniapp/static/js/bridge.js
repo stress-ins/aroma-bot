@@ -59,6 +59,7 @@ export function registerWindowBridge(deps) {
     copyReelsCaption,
     openReelsImageFullscreen,
     openReelsPreview,
+    openBotUploadLink,
     // Phase 4
     publishReels,
     retryPlatform,
@@ -256,6 +257,7 @@ export function registerWindowBridge(deps) {
   window.copyReelsCaption = copyReelsCaption;
   window.openReelsImageFullscreen = openReelsImageFullscreen;
   window.openReelsPreview = openReelsPreview;
+  window.openBotUploadLink = openBotUploadLink;
   window.upgradeToFull = upgradeToFull;
   window.generateReelsImages = generateReelsImages;
   window.publishReels = publishReels;
