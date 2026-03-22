@@ -92,13 +92,16 @@ def _tech_check_ffprobe(video_path: Path) -> dict[str, Any]:
         height = int(video_stream.get("height") or 0)
         info["width"] = width
         info["height"] = height
-        if width < MIN_WIDTH or height < MIN_HEIGHT:
+        # Check minimum pixel count (allow both portrait 1080x1920 and landscape 1920x1080)
+        short_side = min(width, height)
+        long_side = max(width, height)
+        if short_side < MIN_WIDTH or long_side < MIN_HEIGHT:
             issues.append(f"Разрешение {width}×{height} ниже минимального {MIN_WIDTH}×{MIN_HEIGHT}")
-        # Aspect ratio
+        # Aspect ratio — accept 9:16 (portrait) or warn about other ratios
         if width > 0 and height > 0:
             ratio = width / height
-            if abs(ratio - TARGET_RATIO) > 0.05:
-                issues.append(f"Соотношение сторон {width}:{height} не соответствует 9:16")
+            if abs(ratio - TARGET_RATIO) > 0.05 and abs(ratio - 1 / TARGET_RATIO) > 0.05:
+                issues.append(f"Соотношение сторон {width}:{height}: рекомендуется 9:16 (вертикальное видео)")
 
     # Audio
     if not audio_stream:

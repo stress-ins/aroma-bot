@@ -531,9 +531,9 @@ export function createReelsModule(deps) {
     }
     return `<div class="reels-stepper">${steps.map((s, i) => {
       const cls = i < activeIdx ? "done" : i === activeIdx ? "active" : "";
-      const clickable = i < activeIdx && draftId;
+      const clickable = i <= activeIdx && draftId;
       const attrs = clickable
-        ? `data-action="jumpToReelsStep" data-args='${JSON.stringify([draftId, s.key, null])}' class="reels-step ${cls} clickable"`
+        ? `data-action="jumpToReelsStep" data-args='${JSON.stringify([draftId, s.key, null])}' class="reels-step ${cls} clickable" role="button" tabindex="0"`
         : `class="reels-step ${cls}"`;
       return `<div ${attrs}><span class="reels-step-dot"></span><span class="reels-step-label">${s.label}</span></div>`;
     }).join("")}</div>`;
@@ -942,7 +942,7 @@ export function createReelsModule(deps) {
         <section class="section">
           <h3>${sectionHeadingIcon("film")}Сборка из кадров</h3>
           <div class="field-grid" style="gap:8px">
-            <label>Renderer
+            <label>Движок видео
               <select id="composeRenderer" style="width:100%">
                 <option value="ffmpeg">FFmpeg (быстрый)</option>
                 <option value="remotion">Remotion (шаблоны)</option>
@@ -951,17 +951,17 @@ export function createReelsModule(deps) {
             <div id="remotionOptions" style="display:none">
               <label>Шаблон
                 <select id="composeTemplate" style="width:100%">
-                  <option value="aroma">Aroma</option>
-                  <option value="educational">Educational</option>
-                  <option value="promo">Promo</option>
+                  <option value="aroma">Аромат</option>
+                  <option value="educational">Образовательный</option>
+                  <option value="promo">Промо</option>
                 </select>
               </label>
               <label style="margin-top:6px">Анимация текста
                 <select id="composeTextAnimation" style="width:100%">
-                  <option value="fade">Fade</option>
-                  <option value="slide-up">Slide Up</option>
-                  <option value="typewriter">Typewriter</option>
-                  <option value="scale-in">Scale In</option>
+                  <option value="fade">Проявление</option>
+                  <option value="slide-up">Снизу вверх</option>
+                  <option value="typewriter">Печатная машинка</option>
+                  <option value="scale-in">Масштабирование</option>
                 </select>
               </label>
             </div>
@@ -1614,7 +1614,14 @@ export function createReelsModule(deps) {
     else if (stepKey === "approved") html = renderScreen4Shooting(r);
     else if (stepKey === "video_uploaded") html = renderScreen5VideoCheck(r);
     else html = renderScreen3Edit(r);
-    callbacks.renderReelsDetail?.(r);
+    if (html && elements.draftDetail) {
+      elements.draftDetail.innerHTML = html;
+      enterDetailView();
+      syncMobileNavigation();
+      if (window.lucide) lucide.createIcons();
+    } else {
+      callbacks.renderReelsDetail?.(r);
+    }
   }
 
   async function runTechCheck(draftId, btn) {
