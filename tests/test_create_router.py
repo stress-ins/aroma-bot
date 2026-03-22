@@ -18,7 +18,8 @@ from fastapi.testclient import TestClient
 def _bypass_auth(monkeypatch):
     monkeypatch.setenv("AROMA_BYPASS_AUTH", "1")
     monkeypatch.setenv("AROMA_ENV", "test")
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+    from config import settings
+    monkeypatch.setattr(settings, "anthropic_api_key", "test-key")
 
 
 HEADERS = {
