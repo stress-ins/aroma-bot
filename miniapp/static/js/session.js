@@ -277,6 +277,12 @@ export function createSessionModule(deps) {
         try {
           const data = JSON.parse(event.data);
           if (data.error === "not_found") { es.close(); _carouselEventSource = null; return; }
+          if (!data.generation_pending) {
+            es.close(); _carouselEventSource = null;
+            // Images may still be loading — use polling fallback
+            if (data.images_ready < data.slide_count) _pollCarouselRefresh(draftId, 30);
+            return;
+          }
           const { shouldContinue } = await _refreshCarouselState(draftId);
           if (!shouldContinue) { es.close(); _carouselEventSource = null; }
         } catch (_e) { /* ignore */ }
