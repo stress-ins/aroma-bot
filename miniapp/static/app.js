@@ -723,6 +723,13 @@ function uiIcon(name) {
     scan:       "scan-line",
     tools:      "wrench",
     "tech-check": "scan-line",
+    "copy-plus": "copy-plus",
+    sparkles:   "sparkles",
+    layers:     "layers",
+    palette:    "palette",
+    "refresh-cw": "refresh-cw",
+    "check-circle": "check-circle",
+    lightbulb:  "lightbulb",
   };
   return `<span class="ui-icon ui-icon-${escapeHtml(name)}">${icon(LUCIDE_MAP[name] || "square-terminal", 16)}</span>`;
 }
