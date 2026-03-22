@@ -1131,6 +1131,12 @@ export function createReelsModule(deps) {
   }
 
   let _cleanPollTimer = null;
+  let _cleanEventSource = null;
+
+  function _cleanAuthQs() {
+    const d = window.Telegram?.WebApp?.initData;
+    return d ? `?init_data=${encodeURIComponent(d)}` : "";
+  }
 
   async function cleanReelsVideo(draftId, btn) {
     const pauseInput = document.getElementById("cleanPauseDuration");
@@ -1148,24 +1154,41 @@ export function createReelsModule(deps) {
   }
 
   function _startCleanPoll(draftId) {
-    if (_cleanPollTimer) clearInterval(_cleanPollTimer);
+    if (_cleanPollTimer) { clearInterval(_cleanPollTimer); _cleanPollTimer = null; }
+    if (_cleanEventSource) { _cleanEventSource.close(); _cleanEventSource = null; }
+    if (typeof EventSource !== "undefined") {
+      const es = new EventSource(`/api/reels/${draftId}/clean-video-stream${_cleanAuthQs()}`);
+      _cleanEventSource = es;
+      es.onmessage = async (event) => {
+        try {
+          const st = JSON.parse(event.data);
+          if (st.status === "completed" || st.status === "failed") {
+            es.close(); _cleanEventSource = null;
+            const draft = await fetchJson(`/api/reels/${draftId}`);
+            mergeReelsIntoState(draft);
+            callbacks.renderReelsDetail?.(draft);
+            if (st.status === "completed") showUiNotice("Видео очищено от пауз");
+          }
+        } catch (_e) { /* ignore */ }
+      };
+      es.onerror = () => { es.close(); _cleanEventSource = null; _fallbackCleanPoll(draftId); };
+    } else {
+      _fallbackCleanPoll(draftId);
+    }
+  }
+
+  function _fallbackCleanPoll(draftId) {
     _cleanPollTimer = setInterval(async () => {
       try {
         const st = await fetchJson(`/api/reels/${draftId}/clean-video-status`);
         if (st.status === "completed" || st.status === "failed") {
-          clearInterval(_cleanPollTimer);
-          _cleanPollTimer = null;
+          clearInterval(_cleanPollTimer); _cleanPollTimer = null;
           const draft = await fetchJson(`/api/reels/${draftId}`);
           mergeReelsIntoState(draft);
           callbacks.renderReelsDetail?.(draft);
-          if (st.status === "completed") {
-            showUiNotice("Видео очищено от пауз");
-          }
+          if (st.status === "completed") showUiNotice("Видео очищено от пауз");
         }
-      } catch (_e) {
-        clearInterval(_cleanPollTimer);
-        _cleanPollTimer = null;
-      }
+      } catch (_e) { clearInterval(_cleanPollTimer); _cleanPollTimer = null; }
     }, 2000);
   }
 

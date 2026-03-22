@@ -19,6 +19,8 @@ export function createSessionModule(deps) {
   } = deps;
 
   let _reelsEventSource = null;
+  let _carouselEventSource = null;
+  let _draftEventSource = null;
 
   function clearBackgroundRefreshes() {
     window.clearTimeout(timers.getReelRefresh());
@@ -27,10 +29,9 @@ export function createSessionModule(deps) {
     timers.setReelRefresh(null);
     timers.setCarouselRefresh(null);
     timers.setDraftRefresh(null);
-    if (_reelsEventSource) {
-      _reelsEventSource.close();
-      _reelsEventSource = null;
-    }
+    if (_reelsEventSource) { _reelsEventSource.close(); _reelsEventSource = null; }
+    if (_carouselEventSource) { _carouselEventSource.close(); _carouselEventSource = null; }
+    if (_draftEventSource) { _draftEventSource.close(); _draftEventSource = null; }
   }
 
   function isCurrentDraftDetail(draftId) {
@@ -190,71 +191,121 @@ export function createSessionModule(deps) {
     }, 4000));
   }
 
-  function scheduleDraftRefresh(draftId, attempts = 15) {
+  // ── Draft generation SSE ──────────────────────────────────────────────
+  async function _refreshDraftState(draftId) {
+    const draft = await fetchJson(`/api/drafts/${draftId}`, { timeout: 10000 });
+    const posts = Array.isArray(draft.payload?.threads_posts) ? draft.payload.threads_posts : [];
+    state.drafts = state.drafts.map(item =>
+      item.draft_id === draft.draft_id ? { ...item, ...draft } : item
+    );
+    if (isCurrentDraftDetail(draft.draft_id)) {
+      state.selected = draft;
+      renderDraftList();
+      if (!isEditingDetailForm()) renderDraftDetail(draft);
+    }
+    return { shouldContinue: draft.generation_pending || (draft.kind === "threads_series" && !posts.length) };
+  }
+
+  function scheduleDraftRefresh(draftId, attempts = 90) {
+    if (!draftId) return;
+    if (_draftEventSource) { _draftEventSource.close(); _draftEventSource = null; }
+    if (typeof EventSource !== "undefined") {
+      const es = new EventSource(`/api/drafts/${draftId}/stream${authQueryString()}`);
+      _draftEventSource = es;
+      es.onmessage = async (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.error === "not_found") { es.close(); _draftEventSource = null; return; }
+          const { shouldContinue } = await _refreshDraftState(draftId);
+          if (!shouldContinue) { es.close(); _draftEventSource = null; }
+        } catch (_e) { /* ignore */ }
+      };
+      es.onerror = () => { es.close(); _draftEventSource = null; _pollDraftRefresh(draftId, attempts); };
+    } else {
+      _pollDraftRefresh(draftId, attempts);
+    }
+  }
+
+  function _pollDraftRefresh(draftId, attempts = 90) {
     if (!draftId || attempts <= 0) return;
     window.clearTimeout(timers.getDraftRefresh());
     timers.setDraftRefresh(window.setTimeout(async () => {
       try {
-        const draft = await fetchJson(`/api/drafts/${draftId}`, { timeout: 10000 });
-        const posts = Array.isArray(draft.payload?.threads_posts) ? draft.payload.threads_posts : [];
-        state.drafts = state.drafts.map(item =>
-          item.draft_id === draft.draft_id ? { ...item, ...draft } : item
-        );
-        if (isCurrentDraftDetail(draft.draft_id)) {
-          state.selected = draft;
-          renderDraftList();
-          if (!isEditingDetailForm()) renderDraftDetail(draft);
-        }
-        if (draft.generation_pending || (draft.kind === "threads_series" && !posts.length)) {
-          scheduleDraftRefresh(draftId, attempts - 1);
-        }
+        const { shouldContinue } = await _refreshDraftState(draftId);
+        if (shouldContinue) _pollDraftRefresh(draftId, attempts - 1);
       } catch (error) {
         const msg = String(error?.message || "");
         if (msg.includes("401") || msg.includes("403")) return;
-        scheduleDraftRefresh(draftId, attempts - 1);
+        _pollDraftRefresh(draftId, attempts - 1);
       }
     }, 4000));
   }
 
-  function scheduleCarouselRefresh(draftId, attempts = 12) {
+  // ── Carousel generation SSE ─────────────────────────────────────────
+  async function _refreshCarouselState(draftId) {
+    const draft = await fetchJson(`/api/carousel/${draftId}`);
+    const payload = draft.payload || {};
+    const slideImages = Array.isArray(payload.slide_images) ? payload.slide_images : [];
+    const slideCount = Array.isArray(payload.slides) ? payload.slides.length : 0;
+    const readyCount = slideImages.filter(Boolean).length;
+    const prevPayload = state.selected?.draft_id === draftId ? (state.selected.payload || {}) : {};
+    const prevImages = Array.isArray(prevPayload.slide_images) ? prevPayload.slide_images : [];
+    slideImages.forEach((img, idx) => {
+      if (img?.url && !prevImages[idx]?.url) {
+        state.openPromptPanels[`carousel:${draftId}:${idx}`] = false;
+      }
+    });
+    state.drafts = state.drafts.map((item) => item.draft_id === draft.draft_id ? { ...item, ...draft } : item);
+    if (isCurrentDraftDetail(draft.draft_id)) {
+      state.selected = draft;
+      renderDraftList();
+      const detailHasFocus = elements.draftDetail?.contains(document.activeElement);
+      if (!isEditingDetailForm() && !detailHasFocus && !hasPendingCarouselOperations(draft.draft_id)) {
+        renderDraftDetail(draft);
+      }
+    }
+    return { shouldContinue: draft.generation_pending || readyCount < slideCount };
+  }
+
+  function scheduleCarouselRefresh(draftId, attempts = 90) {
+    if (!draftId) return;
+    if (_carouselEventSource) { _carouselEventSource.close(); _carouselEventSource = null; }
+    if (typeof EventSource !== "undefined") {
+      const es = new EventSource(`/api/carousel/${draftId}/stream${authQueryString()}`);
+      _carouselEventSource = es;
+      es.onmessage = async (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.error === "not_found") { es.close(); _carouselEventSource = null; return; }
+          if (!data.generation_pending) {
+            es.close(); _carouselEventSource = null;
+            // Images may still be loading — use polling fallback
+            if (data.images_ready < data.slide_count) _pollCarouselRefresh(draftId, 30);
+            return;
+          }
+          const { shouldContinue } = await _refreshCarouselState(draftId);
+          if (!shouldContinue) { es.close(); _carouselEventSource = null; }
+        } catch (_e) { /* ignore */ }
+      };
+      es.onerror = () => { es.close(); _carouselEventSource = null; _pollCarouselRefresh(draftId, attempts); };
+    } else {
+      _pollCarouselRefresh(draftId, attempts);
+    }
+  }
+
+  function _pollCarouselRefresh(draftId, attempts = 90) {
     if (!draftId || attempts <= 0) return;
     window.clearTimeout(timers.getCarouselRefresh());
     timers.setCarouselRefresh(window.setTimeout(async () => {
       try {
-        const draft = await fetchJson(`/api/carousel/${draftId}`);
-        const payload = draft.payload || {};
-        const slideImages = Array.isArray(payload.slide_images) ? payload.slide_images : [];
-        const slideCount = Array.isArray(payload.slides) ? payload.slides.length : 0;
-        const readyCount = slideImages.filter(Boolean).length;
-        // Auto-close prompt disclosures for slides that now have images
-        const prevPayload = state.selected?.draft_id === draftId ? (state.selected.payload || {}) : {};
-        const prevImages = Array.isArray(prevPayload.slide_images) ? prevPayload.slide_images : [];
-        slideImages.forEach((img, idx) => {
-          if (img?.url && !prevImages[idx]?.url) {
-            state.openPromptPanels[`carousel:${draftId}:${idx}`] = false;
-          }
-        });
-        state.drafts = state.drafts.map((item) => item.draft_id === draft.draft_id ? { ...item, ...draft } : item);
-        if (isCurrentDraftDetail(draft.draft_id)) {
-          state.selected = draft;
-          renderDraftList();
-          const detailHasFocus = elements.draftDetail?.contains(document.activeElement);
-          if (!isEditingDetailForm() && !detailHasFocus && !hasPendingCarouselOperations(draft.draft_id)) {
-            renderDraftDetail(draft);
-          }
-        }
-        if (draft.generation_pending || readyCount < slideCount) {
-          scheduleCarouselRefresh(draftId, attempts - 1);
-        }
+        const { shouldContinue } = await _refreshCarouselState(draftId);
+        if (shouldContinue) _pollCarouselRefresh(draftId, attempts - 1);
       } catch (error) {
         const msg = String(error?.message || "");
-        if (msg.includes("401") || msg.includes("403")) {
-          console.error("Carousel refresh auth error:", msg);
-          return;
-        }
-        scheduleCarouselRefresh(draftId, attempts - 1);
+        if (msg.includes("401") || msg.includes("403")) return;
+        _pollCarouselRefresh(draftId, attempts - 1);
       }
-    }, 5000));
+    }, 4000));
   }
 
   async function loadUserPlan() {

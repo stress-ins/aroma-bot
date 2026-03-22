@@ -678,7 +678,14 @@ async def upload_reels_video(
 
 
 _clean_status: dict[str, dict] = {}
+_clean_events: dict[str, asyncio.Event] = {}
 _clean_logger = logging.getLogger(__name__ + ".clean_video")
+
+
+def _notify_clean_event(draft_id: str) -> None:
+    evt = _clean_events.get(draft_id)
+    if evt:
+        evt.set()
 
 
 async def _run_clean_video_task(
@@ -743,6 +750,7 @@ async def _run_clean_video_task(
             "error": None,
             "result": payload["cleaning_result"],
         }
+        _notify_clean_event(draft_id)
         _clean_logger.info("Video cleaning completed for draft %s", draft_id)
 
     except Exception as exc:
@@ -750,6 +758,7 @@ async def _run_clean_video_task(
             "Video cleaning failed for draft %s: %s", draft_id, exc, exc_info=True,
         )
         _clean_status[draft_id] = {"status": "failed", "error": str(exc), "result": None}
+        _notify_clean_event(draft_id)
         try:
             draft = await _get_draft(draft_id)
             if draft:
@@ -876,3 +885,46 @@ async def reels_generation_stream(draft_id: str, _: str = Depends(_resolve_init_
 
 def _sse_msg(data: dict) -> str:
     return f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+
+# ── SSE stream for video cleaning status ────────────────────────────────
+
+@router.get("/api/reels/{draft_id}/clean-video-stream")
+async def clean_video_stream(draft_id: str, _: str = Depends(_resolve_init_data)):
+    """Server-Sent Events stream that pushes video cleaning status."""
+
+    async def _event_generator():
+        if draft_id not in _clean_events:
+            _clean_events[draft_id] = asyncio.Event()
+        evt = _clean_events[draft_id]
+        try:
+            for _ in range(180):  # max ~6 minutes
+                status = _clean_status.get(draft_id)
+                if not status:
+                    draft = await serialize_reels_draft(draft_id)
+                    if not draft:
+                        yield _sse_msg({"error": "not_found"})
+                        return
+                    p = draft.get("payload", {}) if isinstance(draft, dict) else {}
+                    if p.get("cleaning_status") == "completed":
+                        yield _sse_msg({"draft_id": draft_id, "status": "completed", "result": p.get("cleaning_result")})
+                        return
+                    yield _sse_msg({"draft_id": draft_id, "status": "not_started"})
+                    return
+
+                yield _sse_msg({"draft_id": draft_id, "status": status["status"], "error": status.get("error"), "result": status.get("result")})
+                if status["status"] in ("completed", "failed"):
+                    return
+                evt.clear()
+                try:
+                    await asyncio.wait_for(evt.wait(), timeout=2.0)
+                except asyncio.TimeoutError:
+                    pass
+        finally:
+            _clean_events.pop(draft_id, None)
+
+    return StreamingResponse(
+        _event_generator(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "Connection": "keep-alive", "X-Accel-Buffering": "no"},
+    )

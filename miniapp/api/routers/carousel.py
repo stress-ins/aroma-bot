@@ -22,6 +22,7 @@ from bot.services.miniapp_presenter import serialize_draft
 from ..auth import _require_auth, _resolve_init_data, require_tier
 from ..deps import require_draft
 from ..generation import complete_carousel_regen_slide, complete_carousel_regenerate_all, set_generation_state
+from ..generation._common import get_generation_event, cleanup_generation_event, sse_msg
 from ..models import (
     CarouselSlideNotePayload,
     CarouselSlideRegeneratePayload,
@@ -460,3 +461,48 @@ async def carousel_canva_import(
     if not refreshed:
         raise HTTPException(status_code=404, detail="carousel_not_found")
     return await serialize_draft(refreshed)
+
+
+# ── SSE stream for real-time carousel generation updates ────────────────
+
+@router.get("/api/carousel/{draft_id}/stream")
+async def carousel_generation_stream(draft_id: str, _: str = Depends(_resolve_init_data)):
+    """Server-Sent Events stream that pushes carousel generation state."""
+
+    async def _event_generator():
+        evt = get_generation_event(draft_id)
+        try:
+            for _ in range(360):
+                draft = await get_draft(draft_id)
+                if not draft:
+                    yield sse_msg({"error": "not_found"})
+                    return
+                payload = dict(draft.payload or {})
+                slides = payload.get("slides") or []
+                slide_images = payload.get("slide_images") or []
+                data = {
+                    "draft_id": draft_id,
+                    "generation_pending": payload.get("generation_pending", False),
+                    "generation_stage": payload.get("generation_stage", ""),
+                    "generation_message": payload.get("generation_message", ""),
+                    "generation_error": payload.get("generation_error"),
+                    "slide_count": len(slides),
+                    "images_ready": sum(1 for img in slide_images if img),
+                    "status": draft.status,
+                }
+                yield sse_msg(data)
+                if not payload.get("generation_pending", False):
+                    return
+                evt.clear()
+                try:
+                    await asyncio.wait_for(evt.wait(), timeout=3.0)
+                except asyncio.TimeoutError:
+                    pass
+        finally:
+            cleanup_generation_event(draft_id)
+
+    return StreamingResponse(
+        _event_generator(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "Connection": "keep-alive", "X-Accel-Buffering": "no"},
+    )
