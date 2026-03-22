@@ -23,9 +23,10 @@ export function createShellModule(deps) {
     tabBar.hidden = !(isMobile || isTablet);
     if (!isMobile && !isTablet) return;
 
-    // Plans/trends are now content sub-tabs, so highlight "drafts" (Контент) button
+    // Map internal tab names to bottom-bar button tabs
     let activeTab = state.mode === "handbook" ? "aromas" : state.tab;
-    if (activeTab === "plans" || activeTab === "trends") activeTab = "drafts";
+    if (activeTab === "drafts" || activeTab === "trends") activeTab = "inspiration";
+    if (activeTab === "plans") activeTab = "content";
     tabBar.querySelectorAll(".bottom-tab-btn").forEach((button) => {
       const isActive = button.dataset.tab === activeTab;
       button.classList.toggle("active", isActive);
@@ -530,9 +531,11 @@ export function createShellModule(deps) {
           return;
         }
 
-        // Content sub-tab aware: "plans" and "trends" are now under "drafts" bottom button
-        const isContentAreaTab = targetTab === "drafts" && ["drafts", "plans", "trends"].includes(state.tab);
-        const effectiveMatch = state.tab === targetTab || isContentAreaTab;
+        // "inspiration" button covers drafts + trends
+        const isInspirationArea = targetTab === "inspiration" && ["drafts", "trends"].includes(state.tab);
+        // "content" button covers plans (with sub-modes)
+        const isContentArea = targetTab === "content" && state.tab === "plans";
+        const effectiveMatch = state.tab === targetTab || isInspirationArea || isContentArea;
 
         if (state.mode === "content" && effectiveMatch && state.mobileView === "list") {
           if (elements.listPanel) elements.listPanel.scrollTop = 0;
@@ -548,12 +551,13 @@ export function createShellModule(deps) {
           setMode("content");
         }
         state.mobileView = "list";
-        // When switching to "Контент", restore the last content sub-tab
-        if (targetTab === "drafts" && state.contentSubTab) {
-          const sub = state.contentSubTab;
-          if (sub === "publications") {
-            setTab("drafts");
-          } else if (sub === "plans") {
+
+        if (targetTab === "inspiration") {
+          const sub = state.inspirationSubTab || "drafts";
+          setTab(sub === "trends" ? "trends" : "drafts");
+        } else if (targetTab === "content") {
+          const sub = state.contentSubTab || "plans";
+          if (sub === "plans" || sub === "publications") {
             state.plansSubMode = "publications";
             setTab("plans");
           } else if (sub === "mentions") {
@@ -563,7 +567,7 @@ export function createShellModule(deps) {
             state.plansSubMode = "archive";
             setTab("plans");
           } else {
-            setTab(targetTab);
+            setTab("plans");
           }
         } else {
           setTab(targetTab);
