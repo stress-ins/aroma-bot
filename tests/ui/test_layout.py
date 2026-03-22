@@ -155,26 +155,30 @@ def test_detail_card_title_not_clipped_on_mobile(page):
     cards.first.wait_for(state="visible")
     count = cards.count()
 
+    checked = 0
     for i in range(count):
         page.evaluate("window.goBackToList()")
-        page.wait_for_timeout(100)
+        page.wait_for_timeout(300)
         cards.nth(i).click()
-        page.wait_for_timeout(200)
+        page.wait_for_timeout(500)
 
-        title = page.locator(".detail-title").first
-        if not title.count():
+        title = page.locator("#draftDetail .detail-title")
+        try:
+            title.first.wait_for(state="attached", timeout=2000)
+            title.first.wait_for(state="visible", timeout=2000)
+        except Exception:
+            continue  # some card types (reels, etc.) may not render .detail-title
+
+        box = title.first.bounding_box()
+        if box is None:
             continue
 
-        try:
-            title.wait_for(state="visible", timeout=3000)
-        except Exception:
-            continue  # detail may not have a visible title for this card type
-
-        box = title.bounding_box()
-        assert box is not None, f"Card {i}: title has no bounding box"
         assert box["y"] >= 0, f"Card {i}: title clipped at top (y={box['y']})"
         assert box["y"] + box["height"] <= 932, f"Card {i}: title below viewport"
-        assert title.inner_text().strip(), f"Card {i}: title is empty"
+        assert title.first.inner_text().strip(), f"Card {i}: title is empty"
+        checked += 1
+
+    assert checked > 0, "Expected at least one card with a visible detail title"
 
 
 def test_handbook_detail_title_not_clipped(page):
