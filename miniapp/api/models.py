@@ -152,6 +152,27 @@ class ScheduleSeriesRequest(BaseModel):
     slots: list[str] = Field(default_factory=lambda: ["morning", "day", "evening"])
 
 
+class ContentSeriesCreateRequest(BaseModel):
+    topic: str = Field(default="")
+    goal_key: str = Field(default="trust")
+    format_key: str = Field(default="instagram")
+    post_count: int = Field(default=5, ge=3, le=7)
+    template_key: str = Field(default="custom")
+    blend_context: BlendContext | None = Field(default=None)
+
+
+class SeriesPostPatchRequest(BaseModel):
+    caption: str | None = Field(default=None)
+    cta: str | None = Field(default=None)
+    visual_prompt: str | None = Field(default=None)
+    hashtags: str | None = Field(default=None)
+    scheduled_at: str | None = Field(default=None)
+
+
+class SeriesRegenPostRequest(BaseModel):
+    note: str | None = Field(default=None)
+
+
 class ReelsPublishPayload(BaseModel):
     platforms: list[str] = Field(default_factory=list)
     date: str = Field(default="")

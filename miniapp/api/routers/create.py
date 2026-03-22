@@ -13,8 +13,8 @@ from bot.services.miniapp_presenter import serialize_draft
 from bot.services.miniapp_reels import serialize_reels_draft
 from config import settings
 from ..auth import TeamContext, _check_content_limit, _require_auth, _resolve_team_context, require_tier
-from ..generation import complete_carousel_generation, complete_content_generation, complete_reels_lightweight_generation, complete_reels_v2_generation, complete_threads_series_generation
-from ..models import CreateCarouselPayload, CreateContentPayload, CreateReelsV2Payload, SuggestTopicsRequest, ThreadsSeriesCreateRequest
+from ..generation import complete_carousel_generation, complete_content_generation, complete_reels_lightweight_generation, complete_reels_v2_generation, complete_series_generation, complete_threads_series_generation
+from ..models import ContentSeriesCreateRequest, CreateCarouselPayload, CreateContentPayload, CreateReelsV2Payload, SuggestTopicsRequest, ThreadsSeriesCreateRequest
 
 router = APIRouter()
 
@@ -201,4 +201,44 @@ async def generate_carousel(
         created_by=ctx.telegram_id,
     )
     background_tasks.add_task(complete_carousel_generation, saved.draft_id, topic, bc)
+    return await serialize_draft(saved)
+
+
+@router.post("/api/generate/content-series", dependencies=[Depends(require_tier("expert")), Depends(_check_content_limit)])
+async def generate_content_series(
+    payload: ContentSeriesCreateRequest,
+    background_tasks: BackgroundTasks,
+    ctx: TeamContext = Depends(_resolve_team_context),
+):
+    topic = _validate_topic(payload)
+    goal_key = payload.goal_key.strip().lower() or "trust"
+    format_key = payload.format_key.strip().lower() or "instagram"
+    post_count = payload.post_count
+    template_key = payload.template_key.strip().lower() or "custom"
+
+    if not is_valid_content_goal(goal_key):
+        raise HTTPException(status_code=400, detail="invalid_goal")
+
+    stub_payload: dict = {
+        "generation_pending": True,
+        "generation_stage": "outline",
+        "generation_message": "Создаю план серии...",
+        "template_key": template_key,
+        "post_count": post_count,
+        "goal_key": goal_key,
+        "format_key": format_key,
+        "series_posts": [],
+    }
+    saved = await save_draft(
+        kind="content_series",
+        topic=topic,
+        source="/miniapp",
+        payload=stub_payload,
+        team_id=ctx.team_id,
+        created_by=ctx.telegram_id,
+    )
+    background_tasks.add_task(
+        complete_series_generation,
+        saved.draft_id, topic, goal_key, format_key, post_count, template_key,
+    )
     return await serialize_draft(saved)
