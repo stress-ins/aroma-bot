@@ -121,6 +121,7 @@ export function registerWindowBridge(deps) {
     setPlanDateFilter,
     setPlansSubMode,
     setContentSubMode,
+    switchContentSubTab,
     activatePlan,
     addForbiddenPhrase,
     removeForbiddenPhrase,
@@ -208,6 +209,7 @@ export function registerWindowBridge(deps) {
   window.setPlanDateFilter = setPlanDateFilter;
   window.setPlansSubMode = setPlansSubMode;
   window.setContentSubMode = setContentSubMode;
+  window.switchContentSubTab = switchContentSubTab;
   window.generateDraftFromPlan = generateDraftFromPlan;
   window.openPlanRelatedDraft = openPlanRelatedDraft;
   window.updateDraft = updateDraft;
