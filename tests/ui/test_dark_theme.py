@@ -313,8 +313,8 @@ def test_no_dark_gradient_overlays_on_detail_panel(page):
       const after = getComputedStyle(panel, '::after');
       return {
         found: true,
-        beforeBg: before.background || before.backgroundImage || '',
-        afterBg: after.background || after.backgroundImage || '',
+        beforeBgImage: before.backgroundImage || 'none',
+        afterBgImage: after.backgroundImage || 'none',
       };
     }""")
 
@@ -322,7 +322,7 @@ def test_no_dark_gradient_overlays_on_detail_panel(page):
         return
 
     for prefix in ("before", "after"):
-        bg = result.get(f"{prefix}Bg", "")
-        assert "rgba(0" not in bg, (
-            f".detail-panel::{prefix} has dark gradient overlay: {bg}"
+        bg_image = result.get(f"{prefix}BgImage", "none")
+        assert "gradient" not in bg_image, (
+            f".detail-panel::{prefix} has gradient overlay: {bg_image}"
         )
