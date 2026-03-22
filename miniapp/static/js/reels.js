@@ -611,6 +611,11 @@ export function createReelsModule(deps) {
               data-action="upgradeToFull" data-args='${JSON.stringify([r.draft_id, null])}'>
               ${actionLabel("slides", "Добавить раскадровку")}
             </button>
+          ` : frames.length === 0 && (concept || scenario) ? `
+            <button class="primary-button" type="button"
+              data-action="regenerateReelsStoryboard" data-args='${JSON.stringify([r.draft_id, null])}'>
+              ${actionLabel("slides", "Сгенерировать раскадровку")}
+            </button>
           ` : `
             <button class="primary-button${allFramesReady ? "" : " is-disabled"}" type="button"
               ${allFramesReady ? "" : "disabled"}

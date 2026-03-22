@@ -2057,6 +2057,9 @@ body.tg-theme-dark .danger-button {
   width: 26px;
   height: 26px;
   flex-basis: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .bottom-tab-btn .ui-icon svg,
@@ -2427,7 +2430,7 @@ body.tg-theme-dark .danger-button {
     position: sticky;
     top: calc(var(--tg-content-inset-top, env(safe-area-inset-top, 0px)) + 52px);
     z-index: 9;
-    background: rgba(245, 240, 232, 0.72);
+    background: rgba(var(--surface-rgb, 245, 240, 232), 0.72);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border-radius: 999px;
@@ -2449,6 +2452,9 @@ body.tg-theme-dark .danger-button {
     height: 100%;
     min-height: 0;   /* override base min-height: viewport */
     overflow: hidden;
+    gap: 0;
+    padding: 0;
+    background: var(--surface);
   }
   body.is-mobile-layout.is-detail-view .layout {
     min-height: 0;   /* allow flex shrink */
@@ -2477,6 +2483,7 @@ body.tg-theme-dark .danger-button {
     border: none;
     border-radius: 0;
     box-shadow: none;
+    background: var(--surface);
   }
 
   body.is-mobile-layout.is-detail-view .detail-grid .section {
