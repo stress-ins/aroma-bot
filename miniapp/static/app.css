@@ -406,7 +406,6 @@ p,
 .tabs {
   display: flex;
   gap: var(--space-3);
-  justify-content: center;
   overflow-x: auto;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
@@ -6337,7 +6336,8 @@ details[open] > .trend-suggestions-toggle::before { transform: rotate(90deg); }
 .content-sub-tabs {
   display: flex;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
+  gap: 8px;
   padding: 0 var(--space-3) var(--space-2);
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
