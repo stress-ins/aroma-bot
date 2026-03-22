@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import asyncio
+
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from telegram import Bot
 
 from bot.services.drafts_store import delete_draft, get_draft, list_recent_drafts, update_draft
@@ -9,7 +12,8 @@ from bot.services.miniapp_content_review import polish_content_review_draft, upd
 from bot.services.miniapp_presenter import filter_drafts, serialize_draft, serialize_draft_summary
 from bot.services.post_metrics_store import get_latest_metrics_batch
 from config import settings
-from ..auth import TeamContext, _require_auth, _resolve_team_context, _telegram_user_id_from_init_data
+from ..auth import TeamContext, _require_auth, _resolve_init_data, _resolve_team_context, _telegram_user_id_from_init_data
+from ..generation._common import get_generation_event, cleanup_generation_event, sse_msg
 from ..models import DraftContentPayload, DraftFeedbackPayload, DraftMovePayload, DraftStatusPayload
 
 router = APIRouter()
@@ -214,3 +218,46 @@ async def send_draft_to_chat(
     chat_id = str(user_id) if user_id else settings.report_target_chat_id
     await bot.send_message(chat_id=chat_id, text=_draft_chat_message(draft))
     return {"ok": True}
+
+
+# ── SSE stream for real-time draft generation updates ───────────────────
+
+@router.get("/api/drafts/{draft_id}/stream")
+async def draft_generation_stream(draft_id: str, _: str = Depends(_resolve_init_data)):
+    """Server-Sent Events stream that pushes draft generation state."""
+
+    async def _event_generator():
+        evt = get_generation_event(draft_id)
+        try:
+            for _ in range(360):
+                draft = await get_draft(draft_id)
+                if not draft:
+                    yield sse_msg({"error": "not_found"})
+                    return
+                payload = dict(draft.payload or {})
+                posts = payload.get("threads_posts") or []
+                data = {
+                    "draft_id": draft_id,
+                    "generation_pending": payload.get("generation_pending", False),
+                    "generation_stage": payload.get("generation_stage", ""),
+                    "generation_message": payload.get("generation_message", ""),
+                    "generation_error": payload.get("generation_error"),
+                    "status": draft.status,
+                    "posts_count": len(posts),
+                }
+                yield sse_msg(data)
+                if not payload.get("generation_pending", False):
+                    return
+                evt.clear()
+                try:
+                    await asyncio.wait_for(evt.wait(), timeout=3.0)
+                except asyncio.TimeoutError:
+                    pass
+        finally:
+            cleanup_generation_event(draft_id)
+
+    return StreamingResponse(
+        _event_generator(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "Connection": "keep-alive", "X-Accel-Buffering": "no"},
+    )

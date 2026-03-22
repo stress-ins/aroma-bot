@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 from collections.abc import Awaitable
 
 from bot.services.drafts_store import get_draft, update_draft
@@ -46,6 +47,11 @@ async def set_generation_state(
     evt = _generation_events.get(draft_id)
     if evt:
         evt.set()
+
+
+def sse_msg(data: dict) -> str:
+    """Format a dict as an SSE data line."""
+    return f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
 
 
 async def _run_generation_task(

@@ -13,6 +13,12 @@ export function createPublishModule(deps) {
   };
 
   let _pollTimer = null;
+  let _publishEventSource = null;
+
+  function _authQs() {
+    const d = window.Telegram?.WebApp?.initData;
+    return d ? `?init_data=${encodeURIComponent(d)}` : "";
+  }
 
   function renderPublishPanel(draftId, status, opts) {
     if (status !== "approved" && status !== "published" && status !== "scheduled") return "";
@@ -128,7 +134,29 @@ export function createPublishModule(deps) {
 
   function _startStatusPoll(draftId) {
     if (_pollTimer) clearInterval(_pollTimer);
+    if (_publishEventSource) { _publishEventSource.close(); _publishEventSource = null; }
     loadPublishStatus(draftId);
+    if (typeof EventSource !== "undefined") {
+      const es = new EventSource(`/api/drafts/${draftId}/publish-stream${_authQs()}`);
+      _publishEventSource = es;
+      es.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.error === "not_found" || data.done) {
+            _renderStatusLogs(data.logs || []);
+            es.close(); _publishEventSource = null;
+            return;
+          }
+          _renderStatusLogs(data.logs || []);
+        } catch (_e) { /* ignore */ }
+      };
+      es.onerror = () => { es.close(); _publishEventSource = null; _fallbackStatusPoll(draftId); };
+    } else {
+      _fallbackStatusPoll(draftId);
+    }
+  }
+
+  function _fallbackStatusPoll(draftId) {
     _pollTimer = setInterval(() => loadPublishStatus(draftId), 5000);
     setTimeout(() => { if (_pollTimer) clearInterval(_pollTimer); }, 60000);
   }

@@ -1,16 +1,19 @@
 """Publish API — publish/schedule drafts, check status, cancel scheduled posts."""
 from __future__ import annotations
 
+import asyncio
+import json
 import logging
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from bot.services.drafts_store import get_draft, list_scheduled_drafts_due, update_draft
 from bot.services.publish_log_store import list_all_logs, list_logs
 from bot.services.publisher import cancel_scheduled, check_status, publish
-from ..auth import TeamContext, _require_auth, _resolve_team_context, require_tier
+from ..auth import TeamContext, _require_auth, _resolve_init_data, _resolve_team_context, require_tier
 from ..models import ScheduleSeriesRequest
 
 logger = logging.getLogger(__name__)
@@ -224,3 +227,41 @@ async def refresh_draft_metrics(draft_id: str, _: None = Depends(_require_auth))
         raise HTTPException(status_code=400, detail="draft_not_published")
     result = await fetch_metrics_for_draft(draft_id)
     return {"draft_id": draft_id, "metrics": result}
+
+
+# ── SSE stream for real-time publish status updates ─────────────────────
+
+def _publish_sse_msg(data: dict) -> str:
+    return f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+
+@router.get("/api/drafts/{draft_id}/publish-stream")
+async def publish_status_stream(draft_id: str, _: str = Depends(_resolve_init_data)):
+    """Server-Sent Events stream that pushes publish status updates."""
+
+    async def _event_generator():
+        for _ in range(20):  # max ~60 seconds
+            draft = await get_draft(draft_id)
+            if not draft:
+                yield _publish_sse_msg({"error": "not_found"})
+                return
+            logs = await list_logs(draft_id)
+            remote_status = await check_status(draft_id)
+            all_done = logs and all(
+                l.get("status") in ("success", "failed") for l in logs
+            )
+            yield _publish_sse_msg({
+                "draft_id": draft_id,
+                "logs": logs,
+                "remote_status": remote_status,
+                "done": all_done,
+            })
+            if all_done:
+                return
+            await asyncio.sleep(3)
+
+    return StreamingResponse(
+        _event_generator(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "Connection": "keep-alive", "X-Accel-Buffering": "no"},
+    )
