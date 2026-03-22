@@ -72,6 +72,8 @@ const state = {
   mentionsFilter: { platform: "all", status: "pending" },
   activeTeamId: localStorage.getItem("activeTeamId") || null,
   teams: [],
+  /** @type {{ active: boolean, draftId: string|null, progress: number, fileName: string, error: string|null, xhr: XMLHttpRequest|null }} */
+  videoUpload: { active: false, draftId: null, progress: 0, fileName: "", error: null, xhr: null },
 };
 
 const MODE_TABS = {
