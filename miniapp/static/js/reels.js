@@ -755,9 +755,56 @@ export function createReelsModule(deps) {
           </button>
         </div>
 
+        ${frames.length ? `
+        <section class="section reels-compose-zone">
+          <h3>${sectionHeadingIcon("Видео")}Собрать видео из кадров</h3>
+          <div class="reels-compose-hint" style="font-size:13px;color:var(--muted);margin-bottom:12px">
+            AI автоматически создаст видео из ваших кадров с Ken Burns анимацией, переходами и текстом
+          </div>
+
+          <div class="reels-compose-options" style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px">
+            <label style="font-size:13px;font-weight:500;color:var(--text)">
+              Движок
+              <select id="composeRenderer" class="compose-select" style="margin-left:8px">
+                <option value="ffmpeg">FFmpeg (быстрый)</option>
+                <option value="remotion">Remotion (продвинутый)</option>
+              </select>
+            </label>
+
+            <div id="remotionOptions" style="display:none;flex-direction:column;gap:8px;padding-left:12px;border-left:2px solid var(--border)">
+              <label style="font-size:13px;font-weight:500;color:var(--text)">
+                Шаблон
+                <select id="composeTemplate" class="compose-select" style="margin-left:8px">
+                  <option value="aroma">Классический</option>
+                  <option value="educational">Обучающий</option>
+                  <option value="promo">Промо</option>
+                </select>
+              </label>
+              <label style="font-size:13px;font-weight:500;color:var(--text)">
+                Анимация текста
+                <select id="composeAnimation" class="compose-select" style="margin-left:8px">
+                  <option value="fade">Плавное появление</option>
+                  <option value="slide-up">Выезд снизу</option>
+                  <option value="typewriter">Печатная машинка</option>
+                  <option value="scale-in">Масштабирование</option>
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:12px">
+            <button class="primary-button compact" type="button" data-action="composeReelVideo" data-args='${JSON.stringify([r.draft_id, null])}'>
+              ${actionLabel("video", "Собрать видео")}
+            </button>
+            <span id="composeStatusText" style="font-size:12px;color:var(--muted)"></span>
+          </div>
+        </section>
+        ` : ""}
+
+        <section class="section">
         <div class="reels-upload-zone">
-          <div class="reels-upload-title">Загрузить видео</div>
-          <div class="reels-upload-hint">Запишите рилс по сценарию и загрузите файл</div>
+          <div class="reels-upload-title">Загрузить своё видео</div>
+          <div class="reels-upload-hint">Или запишите рилс по сценарию и загрузите файл</div>
           <input type="file" id="videoFileInput" accept="video/*" style="display:none">
           <label for="videoFileInput" class="secondary-button compact" style="cursor:pointer;text-align:center">
             ${actionLabel("file-video", "Выбрать видео")}
@@ -777,6 +824,7 @@ export function createReelsModule(deps) {
             ${actionLabel("bot", "Загрузить через бот")}
           </button>
         </div>
+        </section>
 
         <div class="reels-shooting-deadline">
           <div class="reels-deadline-header">Дедлайн съёмки</div>
@@ -968,7 +1016,67 @@ export function createReelsModule(deps) {
   }
 
 
+  // ── Video compose (AI-generated from frames) ─────────────────────────────
+
+  let _composePollTimer = null;
+
+  async function composeReelVideo(draftId, btn) {
+    const rendererEl = document.getElementById("composeRenderer");
+    const templateEl = document.getElementById("composeTemplate");
+    const animationEl = document.getElementById("composeAnimation");
+    const renderer = rendererEl ? rendererEl.value : "ffmpeg";
+    const template = templateEl ? templateEl.value : "aroma";
+    const textAnimation = animationEl ? animationEl.value : "fade";
+
+    const params = new URLSearchParams({ renderer, template, text_animation: textAnimation });
+
+    await withButtonFeedback(btn, "Запускаю…", async () => {
+      await fetchJson(`/api/reels/${draftId}/compose?${params}`, { method: "POST" });
+      _startComposePoll(draftId);
+      showUiNotice("Видео создаётся — это займёт несколько минут", "info");
+    }, "Запущено");
+  }
+
+  function _startComposePoll(draftId) {
+    if (_composePollTimer) clearInterval(_composePollTimer);
+    const statusEl = document.getElementById("composeStatusText");
+    if (statusEl) statusEl.textContent = "Создаётся…";
+
+    _composePollTimer = setInterval(async () => {
+      try {
+        const st = await fetchJson(`/api/reels/${draftId}/compose-status`);
+        if (statusEl) {
+          if (st.status === "running") statusEl.textContent = "Рендеринг видео…";
+          else if (st.status === "completed") statusEl.textContent = "Готово!";
+          else if (st.status === "failed") statusEl.textContent = "Ошибка: " + (st.error || "неизвестная");
+        }
+        if (st.status === "completed" || st.status === "failed") {
+          clearInterval(_composePollTimer);
+          _composePollTimer = null;
+          const draft = await fetchJson(`/api/reels/${draftId}`);
+          mergeReelsIntoState(draft);
+          callbacks.renderReelsDetail?.(draft);
+          if (st.status === "completed") {
+            showUiNotice("Видео готово!", "success");
+          } else {
+            showUiNotice("Ошибка создания видео: " + (st.error || ""), "error");
+          }
+        }
+      } catch (_e) {
+        clearInterval(_composePollTimer);
+        _composePollTimer = null;
+      }
+    }, 3000);
+  }
+
   // ── Video upload & cleaning handlers ───────────────────────────────────
+
+  document.addEventListener("change", (e) => {
+    if (e.target && e.target.id === "composeRenderer") {
+      const opts = document.getElementById("remotionOptions");
+      if (opts) opts.style.display = e.target.value === "remotion" ? "flex" : "none";
+    }
+  });
 
   document.addEventListener("input", (e) => {
     if (e.target && e.target.id === "cleanPauseDuration") {
@@ -1409,7 +1517,8 @@ export function createReelsModule(deps) {
     // Phase 4 exports
     publishReels,
     retryPlatform,
-    // Video upload & cleaning
+    // Video compose & upload & cleaning
+    composeReelVideo,
     uploadReelsVideo,
     cleanReelsVideo,
     checkAndPublish,
