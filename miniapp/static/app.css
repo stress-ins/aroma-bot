@@ -406,6 +406,7 @@ p,
 .tabs {
   display: flex;
   gap: var(--space-3);
+  justify-content: center;
   overflow-x: auto;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
@@ -6403,7 +6404,7 @@ details[open] > .trend-suggestions-toggle::before { transform: rotate(90deg); }
   align-items: center;
   gap: var(--space-2);
   width: 100%;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   overflow: hidden;
 }
 
