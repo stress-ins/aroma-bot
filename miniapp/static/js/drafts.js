@@ -42,6 +42,8 @@ export function createDraftsModule(deps) {
     renderMarkdown,
     callbacks,
   } = deps;
+  const showRequestError = deps.showRequestError || ((e) => console.error(e));
+  const showUiNotice = deps.showUiNotice || ((msg) => console.log(msg));
 
   const cleanSlotText = (t) => t ? t.replace(/\((?:Hot Take|Thread|Байт на обсуждение|Список|Туториал|Рефлексия|Шутка|Факап|Личная история)\)\s*/gi, '').replace(/^[-*_]{3,}\s*$/gm, '').replace(/\n{3,}/g, '\n\n').trim() : '';
 

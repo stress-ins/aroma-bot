@@ -821,7 +821,7 @@ export function createTrendsModule(deps) {
       showUiNotice("Генерация карточек запущена", "info");
       trendCards = null;
       renderTrendsListPanel();
-    } catch (e) { showRequestError(e); }
+    } catch (e) { showUiNotice("Произошла ошибка", "error"); }
   }
 
   async function createFromTrendCard(cardId, title) {
@@ -834,7 +834,7 @@ export function createTrendsModule(deps) {
       if (draft?.draft_id && deps.openDraft) {
         await deps.openDraft(draft.draft_id);
       }
-    } catch (e) { showRequestError(e); }
+    } catch (e) { showUiNotice("Произошла ошибка", "error"); }
   }
 
   return {

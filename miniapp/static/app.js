@@ -114,6 +114,7 @@ let addForbiddenPhrase, removeForbiddenPhrase;
 let createNewTeam, createTeamInvite, removeTeamMember, activatePromo, generatePromos;
 let goBackToSettings;
 let saveContentReviewDraft, saveThreadsReviewDraft, polishContentDraft, refreshDraftMetrics, moveDraftToTeam;
+let recommendHashtags, applyRecommendedHashtags, adaptTone, startRepurpose, regenSeriesPost, regenSeriesAll, coherenceCheck;
 let loadCurrentTab, safeLoadCurrentTab, retryCurrentTab;
 let publishDraft, cancelPublishSchedule, loadPublishStatus;
 let openPendingReelsCreation, finalizePendingReelsCreation, recoverPendingReelsCreation;
@@ -1841,6 +1842,8 @@ const {
   enterDetailView,
   syncMobileNavigation,
   renderMarkdown,
+  showRequestError,
+  showUiNotice,
   callbacks: {
     renderDraftList: (...args) => renderDraftList(...args),
     renderDraftDetail: (...args) => renderDraftDetail(...args),
