@@ -124,10 +124,10 @@ def _setup_mounts_and_routers():
     from bot.services.reels_assets import ASSETS_DIR
     from bot.services.carousel_assets import CAROUSEL_ASSETS_DIR
     from miniapp.api.routers import (
-        archive, blend_constructor, carousel, create, drafts, keywords, mentions,
-        misc, plans, publish, rag, recommendations, references, reels, series, social,
-        social_trends, teams, thread_monitor, threads_series, tokens, trends, user,
-        webhooks,
+        archive, blend_constructor, carousel, create, drafts, hashtags, keywords,
+        mentions, misc, plans, publish, rag, recommendations, references, reels,
+        series, social, social_trends, teams, thread_monitor, threads_series,
+        tokens, tone, trends, user, webhooks,
     )
 
     app.mount("/generated/reels_assets", StaticFiles(directory=ASSETS_DIR), name="reels-generated-assets")
@@ -147,8 +147,9 @@ def _setup_mounts_and_routers():
     for _router in (
         archive.router, blend_constructor.router, drafts.router, carousel.router, reels.router,
         plans.router, rag.router, recommendations.router, references.router, create.router,
-        keywords.router, misc.router, publish.router, series.router, social.router, social_trends.router,
-        teams.router, thread_monitor.router, threads_series.router, trends.router, mentions.router,
+        hashtags.router, keywords.router, misc.router, publish.router, series.router,
+        social.router, social_trends.router, teams.router, thread_monitor.router,
+        threads_series.router, tone.router, trends.router, mentions.router,
         tokens.router, user.router, webhooks.router,
     ):
         app.include_router(_router)
