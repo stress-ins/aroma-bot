@@ -772,9 +772,9 @@ export function createReelsModule(deps) {
             </div>
             <div class="reels-upload-progress-text" id="reelsUploadProgressText">${state.videoUpload.active ? Math.round(state.videoUpload.progress) + "%" : ""}</div>
           </div>
-          <div class="reels-upload-hint" style="margin-top:8px;font-size:12px;color:var(--muted)">или загрузите через бот</div>
-          <button class="secondary-button compact" type="button" data-action="sendDraftToChat" data-args='${JSON.stringify([r.draft_id, null])}'>
-            ${actionLabel("chat", "Открыть в боте")}
+          <div class="reels-upload-hint" style="margin-top:8px;font-size:12px;color:var(--muted)">или загрузите через бот (до 20 МБ)</div>
+          <button class="secondary-button compact" type="button" data-action="openBotUploadLink" data-args='${JSON.stringify([r.draft_id])}'>
+            ${actionLabel("bot", "Загрузить через бот")}
           </button>
         </div>
 
@@ -982,7 +982,13 @@ export function createReelsModule(deps) {
       const uploadBtn = document.getElementById("reelsUploadBtn");
       const nameEl = document.getElementById("reelsSelectedFileName");
       if (e.target.files.length) {
-        if (uploadBtn) uploadBtn.style.display = "";
+        if (uploadBtn) {
+          uploadBtn.style.display = "";
+          // Store draft ID for direct click handler fallback
+          uploadBtn._draftId = uploadBtn.dataset.args
+            ? JSON.parse(uploadBtn.dataset.args)[0]
+            : null;
+        }
         if (nameEl) {
           nameEl.style.display = "";
           nameEl.textContent = e.target.files[0].name;
@@ -1041,6 +1047,19 @@ export function createReelsModule(deps) {
     if (window.lucide) lucide.createIcons({ nodes: [indicator] });
   }
 
+  // Direct click handler as fallback for data-action delegation
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest("#reelsUploadBtn");
+    if (!btn) return;
+    try {
+      const draftId = btn.dataset.args ? JSON.parse(btn.dataset.args)[0] : null;
+      if (draftId) uploadReelsVideo(draftId, btn);
+    } catch (err) {
+      console.error("Upload click error:", err);
+      showUiNotice("Ошибка: " + (err.message || err), "error");
+    }
+  });
+
   function uploadReelsVideo(draftId, _btn) {
     const fileInput = document.getElementById("videoFileInput");
     if (!fileInput || !fileInput.files.length) {
@@ -1051,6 +1070,7 @@ export function createReelsModule(deps) {
       showUiNotice("Загрузка уже идёт — дождитесь завершения", "warning");
       return;
     }
+    showUiNotice("Начинаю загрузку...", "info");
     const file = fileInput.files[0];
     if (file.size > 2 * 1024 * 1024 * 1024) {
       showRequestError("Файл слишком большой", { message: "Максимальный размер — 2 ГБ." });
@@ -1321,6 +1341,17 @@ export function createReelsModule(deps) {
     openReelsPreview(url, "", "", "");
   }
 
+  function openBotUploadLink(draftId) {
+    const botUsername = window.__BOT_USERNAME || "Stress_ins_bot";
+    const url = `https://t.me/${botUsername}?start=upload_${draftId}`;
+    const tg = window.Telegram?.WebApp;
+    if (tg?.openTelegramLink) {
+      tg.openTelegramLink(url);
+    } else {
+      window.open(url, "_blank");
+    }
+  }
+
   // Toggle YouTube settings visibility when checkbox changes
   document.body.addEventListener("change", (e) => {
     if (e.target?.name === "publish_platform" && e.target?.value === "youtube") {
@@ -1368,5 +1399,6 @@ export function createReelsModule(deps) {
     copyReelsCaption,
     openReelsImageFullscreen,
     openReelsPreview,
+    openBotUploadLink,
   };
 }
