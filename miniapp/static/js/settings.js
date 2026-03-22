@@ -1336,12 +1336,12 @@ export function createSettingsModule(deps) {
 
   async function renderTheme() {
     const THEMES = [
-      { id:"terracotta",   label:"Терракот",     accent:"#b45c3d", bg:"#1a0f09" },
-      { id:"racing-green", label:"Racing Green",  accent:"#2a8a50", bg:"#0b1c10" },
-      { id:"champagne",    label:"Шампань",       accent:"#c8a86a", bg:"#352b1e" },
-      { id:"violet",       label:"Фиалка",        accent:"#9060c8", bg:"#261e38" },
-      { id:"teal",         label:"Бирюза",        accent:"#3a9098", bg:"#0c1e22" },
-      { id:"raspberry",    label:"Малина",        accent:"#b04870", bg:"#201020" },
+      { id:"terracotta",   label:"Терракот",     accent:"#b45c3d" },
+      { id:"racing-green", label:"Racing Green",  accent:"#2a8a50" },
+      { id:"champagne",    label:"Шампань",       accent:"#c8a86a" },
+      { id:"violet",       label:"Фиалка",        accent:"#9060c8" },
+      { id:"teal",         label:"Бирюза",        accent:"#3a9098" },
+      { id:"raspberry",    label:"Малина",        accent:"#b04870" },
     ];
     let res;
     try { res = await fetchJson("/api/preferences/theme"); } catch (_e) { res = {}; }
@@ -1351,7 +1351,7 @@ export function createSettingsModule(deps) {
       <button class="theme-swatch${t.id === current ? " active" : ""}"
         data-action="setTheme" data-args='["${t.id}"]'
         data-theme-id="${t.id}"
-        style="--sw-accent:${t.accent};--sw-bg:${t.bg}">
+        style="--sw-accent:${t.accent}">
         <span class="theme-swatch-preview"></span>
         <span class="theme-swatch-label">${t.label}</span>
       </button>`).join("");
