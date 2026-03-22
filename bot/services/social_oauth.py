@@ -35,6 +35,15 @@ INSTAGRAM_DEFAULT_SCOPES = (
     "instagram_business_content_publish",
 )
 
+YOUTUBE_AUTHORIZE_URL = "https://accounts.google.com/o/oauth2/v2/auth"
+YOUTUBE_TOKEN_URL = "https://oauth2.googleapis.com/token"
+YOUTUBE_CHANNELS_URL = "https://www.googleapis.com/youtube/v3/channels"
+YOUTUBE_DEFAULT_SCOPES = (
+    "https://www.googleapis.com/auth/youtube.upload",
+    "https://www.googleapis.com/auth/youtube.readonly",
+    "https://www.googleapis.com/auth/youtube.force-ssl",
+)
+
 CANVA_AUTHORIZE_URL = "https://www.canva.com/api/oauth/authorize"
 CANVA_TOKEN_URL = "https://api.canva.com/rest/v1/oauth/token"
 CANVA_ME_URL = "https://api.canva.com/rest/v1/users/me"
@@ -409,6 +418,116 @@ def refresh_canva_token(
         return _work(session)
 
 
+def build_youtube_authorize_url(
+    *,
+    client_id: str,
+    redirect_uri: str,
+    state: str = "",
+    scopes: tuple[str, ...] = YOUTUBE_DEFAULT_SCOPES,
+) -> str:
+    params = {
+        "client_id": client_id,
+        "redirect_uri": redirect_uri,
+        "response_type": "code",
+        "scope": " ".join(scopes),
+        "access_type": "offline",
+        "prompt": "consent",
+    }
+    if state:
+        params["state"] = state
+    return f"{YOUTUBE_AUTHORIZE_URL}?{urlencode(params)}"
+
+
+def exchange_youtube_code(
+    *,
+    code: str,
+    client_id: str,
+    client_secret: str,
+    redirect_uri: str,
+    client: httpx.Client | None = None,
+) -> OAuthTokenBundle:
+    def _work(session: httpx.Client) -> OAuthTokenBundle:
+        token_response = session.post(
+            YOUTUBE_TOKEN_URL,
+            data={
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "grant_type": "authorization_code",
+                "redirect_uri": redirect_uri,
+                "code": code,
+            },
+        )
+        token_payload = _parse_json_response(token_response, "YouTube code exchange")
+        access_token = str(token_payload.get("access_token", "")).strip()
+        if not access_token:
+            raise OAuthExchangeError("YouTube code exchange did not return access_token")
+
+        refresh_token = str(token_payload.get("refresh_token", "")).strip()
+
+        # Fetch channel info
+        channel_response = session.get(
+            YOUTUBE_CHANNELS_URL,
+            params={"part": "snippet", "mine": "true"},
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+        channel_payload = _parse_json_response(channel_response, "YouTube channel lookup")
+        items = channel_payload.get("items", [])
+        if not items:
+            raise OAuthExchangeError("YouTube account has no channels")
+        channel = items[0]
+        channel_id = str(channel.get("id", "")).strip()
+        channel_title = str(channel.get("snippet", {}).get("title", "")).strip()
+
+        return OAuthTokenBundle(
+            service="youtube",
+            short_lived_token=access_token,
+            access_token=access_token,
+            expires_in=_coerce_int(token_payload.get("expires_in")),
+            user_id=channel_id,
+            username=channel_title,
+            metadata={"refresh_token": refresh_token},
+        )
+
+    if client is not None:
+        return _work(client)
+    with httpx.Client(timeout=30.0) as session:
+        return _work(session)
+
+
+def refresh_youtube_token(
+    *,
+    refresh_token: str,
+    client_id: str,
+    client_secret: str,
+    client: httpx.Client | None = None,
+) -> dict[str, str | int]:
+    """Refresh a YouTube/Google access token."""
+    def _work(session: httpx.Client) -> dict[str, str | int]:
+        resp = session.post(
+            YOUTUBE_TOKEN_URL,
+            data={
+                "grant_type": "refresh_token",
+                "refresh_token": refresh_token,
+                "client_id": client_id,
+                "client_secret": client_secret,
+            },
+        )
+        payload = _parse_json_response(resp, "YouTube token refresh")
+        new_access = str(payload.get("access_token", "")).strip()
+        if not new_access:
+            raise OAuthExchangeError("YouTube refresh did not return access_token")
+        return {
+            "access_token": new_access,
+            "refresh_token": refresh_token,  # Google doesn't rotate refresh tokens
+            "expires_in": _coerce_int(payload.get("expires_in")) or 0,
+        }
+
+    if client is not None:
+        return _work(client)
+    with httpx.Client(timeout=30.0) as session:
+        return _work(session)
+
+
 def update_env_file(env_path: str | Path, updates: dict[str, str]) -> None:
     path = Path(env_path)
     existing_lines = path.read_text(encoding="utf-8").splitlines() if path.exists() else []
@@ -508,6 +627,13 @@ def bundle_env_updates(bundle: OAuthTokenBundle) -> dict[str, str]:
         }
     if bundle.service == "canva":
         return {}
+    if bundle.service == "youtube":
+        updates: dict[str, str] = {
+            "GOOGLE_REFRESH_TOKEN": bundle.metadata.get("refresh_token", ""),
+        }
+        if bundle.user_id:
+            updates["YOUTUBE_CHANNEL_ID"] = bundle.user_id
+        return updates
     raise OAuthExchangeError(f"Unsupported service: {bundle.service}")
 
 

@@ -199,70 +199,66 @@ async def publish_reels_video(
     platforms: list[str],
     date: str = "",
     time: str = "",
+    youtube_title: str = "",
+    youtube_privacy: str = "public",
 ) -> dict[str, Any] | None:
-    """Publish a reels_v2 draft video via upload-post."""
+    """Publish a reels_v2 draft video via direct platform APIs."""
     draft = await get_draft(draft_id)
     if not draft or draft.kind != "reels_v2":
         return None
 
     from config import settings
 
-    api_key_raw = settings.upload_post_api_key
-    upload_user_raw = getattr(settings, "upload_post_user", "") or ""
-
-    if not api_key_raw:
-        payload = dict(draft.payload)
-        payload["publish_status"] = [
-            {"platform": p, "status": "failed", "error": "UPLOAD_POST_API_KEY не настроен"}
-            for p in platforms
-        ]
-        await update_draft(draft_id, payload=payload)
-        return {
-            "draft_id": draft_id,
-            "publish_status": payload["publish_status"],
-        }
-
     video_path = _video_path_for_draft(draft_id, draft.payload)
     caption = str(draft.payload.get("caption") or "")
+
+    # Build public video URL for platforms that need it (Instagram, Threads)
+    video_public_url = ""
+    if video_path and video_path.exists():
+        base = getattr(settings, "assets_base_url", "") or ""
+        video_filename = draft.payload.get("video_filename", "")
+        if base and video_filename:
+            video_public_url = f"{base}/generated/reels_video/{draft_id}/{video_filename}"
 
     results: list[dict[str, Any]] = []
 
     for platform in platforms:
         entry: dict[str, Any] = {"platform": platform, "published_at": datetime.now(timezone.utc).isoformat()}
         try:
-            from upload_post import UploadPostClient
-            client = UploadPostClient(api_key_raw)
-            user = upload_user_raw or draft_id[:8]
-            try:
-                client.create_user(user)
-            except Exception:
-                pass  # user may already exist
+            if platform == "instagram":
+                if not video_public_url:
+                    raise RuntimeError("Нет публичного URL для видео — проверьте assets_base_url")
+                from bot.services.meta_publisher import publish_to_instagram_reels
+                result = await publish_to_instagram_reels(caption, video_public_url)
+                entry["status"] = "success"
+                entry["external_id"] = str(result.get("id", ""))
 
-            kwargs: dict[str, Any] = {}
-            if date and time:
-                scheduled_str = f"{date}T{time}:00"
-                kwargs["scheduled_date"] = scheduled_str
-                kwargs["timezone"] = getattr(settings, "timezone", "Europe/Moscow")
+            elif platform == "threads":
+                if not video_public_url:
+                    raise RuntimeError("Нет публичного URL для видео — проверьте assets_base_url")
+                from bot.services.meta_publisher import publish_to_threads
+                result = await publish_to_threads(text=caption, video_url=video_public_url)
+                entry["status"] = "success"
+                entry["external_id"] = str(result.get("id", ""))
 
-            if video_path and video_path.exists():
-                response = client.upload_video(
-                    video=str(video_path),
-                    title=caption,
-                    user=user,
-                    platforms=[platform],
-                    **kwargs,
+            elif platform == "youtube":
+                if not video_path or not video_path.exists():
+                    raise RuntimeError("Видеофайл не найден")
+                from bot.services.youtube_publisher import publish_to_youtube
+                yt_title = youtube_title or draft.topic or caption[:100]
+                result = await publish_to_youtube(
+                    video_path=video_path,
+                    title=yt_title,
+                    description=caption,
+                    privacy=youtube_privacy,
                 )
+                entry["status"] = "success"
+                entry["external_id"] = str(result.get("id", ""))
+                entry["url"] = str(result.get("url", ""))
+
             else:
-                response = client.upload_text(
-                    title=caption,
-                    user=user,
-                    platforms=[platform],
-                    **kwargs,
-                )
-
-            external_id = str(response.get("request_id") or response.get("id") or "")
-            entry["status"] = "success"
-            entry["external_id"] = external_id
+                entry["status"] = "failed"
+                entry["error"] = f"Неизвестная платформа: {platform}"
 
         except Exception as exc:
             entry["status"] = "failed"

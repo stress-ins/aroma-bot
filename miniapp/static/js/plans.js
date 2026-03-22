@@ -288,7 +288,7 @@ export function createPlansModule(deps) {
   // ── Plan card ──────────────────────────────────────────────────────────────
 
   function renderPlanCard(item) {
-    const kindIcons = { threads: "✍️", threads_series: "✍️", reels: "🎬", carousel: "🖼", instagram: "📸" };
+    const kindIconMap = { threads: "note", threads_series: "note", reels: "reel", carousel: "layers", instagram: "image" };
     const kindBadge = {
       threads: "ТРЕДС",
       threads_series: "ТРЕДС",
@@ -297,7 +297,7 @@ export function createPlansModule(deps) {
       instagram: "ИНСТАГРАМ",
       telegram: "ТЕЛЕГРАМ",
     };
-    const icon = kindIcons[item.kind] || "📄";
+    const icon = uiIcon(kindIconMap[item.kind] || "file-text");
     const badge = kindBadge[item.kind] || String(item.kind || "").toUpperCase();
     const slotSuffix = item.slot ? ` · ${slotLabel(item.slot)}` : "";
     const label = statusLabel(item.status);
@@ -406,8 +406,8 @@ export function createPlansModule(deps) {
       threads: "ТРЕДС", threads_series: "ТРЕДС", reels: "РИЛС",
       carousel: "КАРУСЕЛЬ", instagram: "ИНСТАГРАМ", telegram: "ТЕЛЕГРАМ",
     };
-    const kindIcons = { threads: "✍️", threads_series: "✍️", reels: "🎬", carousel: "🖼", instagram: "📸" };
-    const icon = kindIcons[draft.kind] || "📄";
+    const kindIconMap2 = { threads: "note", threads_series: "note", reels: "reel", carousel: "layers", instagram: "image" };
+    const icon = uiIcon(kindIconMap2[draft.kind] || "file-text");
     const badge = (kindBadge[draft.kind] || String(draft.kind || "").toUpperCase())
       + (slot ? ` · ${slotLabel(slot)}` : "");
 

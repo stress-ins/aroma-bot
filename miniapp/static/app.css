@@ -649,7 +649,7 @@ body.app-ready .splash {
   gap: var(--space-2);
   padding-bottom: var(--space-2);
   border-bottom: 1px solid var(--border);
-  margin-bottom: var(--space-3);
+  margin-bottom: var(--space-2);
   position: sticky;
   top: 0;
   z-index: 3;
@@ -815,6 +815,7 @@ body.app-ready .splash {
   text-transform: uppercase;
   color: var(--brand);
   line-height: 1;
+  margin-bottom: 8px;
 }
 
 .draft-kind .kind-glyph {
@@ -2057,9 +2058,6 @@ body.tg-theme-dark .danger-button {
   width: 26px;
   height: 26px;
   flex-basis: 26px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .bottom-tab-btn .ui-icon svg,
@@ -2430,7 +2428,7 @@ body.tg-theme-dark .danger-button {
     position: sticky;
     top: calc(var(--tg-content-inset-top, env(safe-area-inset-top, 0px)) + 52px);
     z-index: 9;
-    background: rgba(var(--surface-rgb, 245, 240, 232), 0.72);
+    background: rgba(245, 240, 232, 0.72);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border-radius: 999px;
@@ -2452,9 +2450,6 @@ body.tg-theme-dark .danger-button {
     height: 100%;
     min-height: 0;   /* override base min-height: viewport */
     overflow: hidden;
-    gap: 0;
-    padding: 0;
-    background: var(--surface);
   }
   body.is-mobile-layout.is-detail-view .layout {
     min-height: 0;   /* allow flex shrink */
@@ -2483,7 +2478,6 @@ body.tg-theme-dark .danger-button {
     border: none;
     border-radius: 0;
     box-shadow: none;
-    background: var(--surface);
   }
 
   body.is-mobile-layout.is-detail-view .detail-grid .section {
@@ -4361,6 +4355,7 @@ body.is-mobile-layout .topbar-main {
   top: var(--tg-content-inset-top, env(safe-area-inset-top, 0px));
   z-index: 10;
   padding: var(--space-3);
+  padding-left: 88px;
   background: var(--bg);
 }
 
@@ -5743,33 +5738,49 @@ body.is-mobile-layout .detail-icon-actions button {
 /* ── Suggest topic button + dropdown ────────────────────────────────── */
 /* Lightweight toggle */
 .lightweight-toggle {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
-  padding: 12px 14px; margin: 8px 0; border-radius: 10px;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  padding: 10px 14px; margin: 8px 0; border-radius: 10px;
   background: var(--surface); border: 1px solid var(--border);
   cursor: pointer; font-size: 14px;
 }
 .lightweight-toggle input[type="checkbox"] {
-  appearance: none; -webkit-appearance: none;
-  width: 40px; height: 22px; border-radius: 11px;
-  background: var(--border); position: relative;
-  margin: 0; flex-shrink: 0; cursor: pointer;
-  transition: background 0.2s ease;
-  order: 1; margin-left: auto;
+  appearance: none;
+  -webkit-appearance: none;
+  width: 44px;
+  height: 24px;
+  border-radius: 12px;
+  background: var(--border);
+  position: relative;
+  cursor: pointer;
+  flex-shrink: 0;
+  order: 1;
+  margin: 0 0 0 auto;
+  transition: background var(--duration-fast, 0.15s) ease;
+  border: none;
+  outline: none;
 }
 .lightweight-toggle input[type="checkbox"]::after {
-  content: ""; position: absolute;
-  top: 2px; left: 2px;
-  width: 18px; height: 18px; border-radius: 50%;
-  background: var(--bg); transition: transform 0.2s ease;
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform var(--duration-fast, 0.15s) ease;
 }
 .lightweight-toggle input[type="checkbox"]:checked {
   background: var(--brand);
 }
 .lightweight-toggle input[type="checkbox"]:checked::after {
-  transform: translateX(18px);
+  transform: translateX(20px);
 }
-.lightweight-toggle > span:not(.field-help) { order: 0; font-weight: 500; }
-.lightweight-toggle .field-help { flex-basis: 100%; font-size: 12px; order: 2; }
+.lightweight-toggle > span:not(.field-help) {
+  order: 0;
+  font-weight: 500;
+}
+.lightweight-toggle .field-help { flex-basis: 100%; font-size: 12px; }
 
 .suggest-topic-btn {
   display: inline-flex;
@@ -6200,7 +6211,7 @@ details[open] > .trend-suggestions-toggle::before { transform: rotate(90deg); }
   position: sticky;
   left: 0;
   right: 0;
-  height: 24px;
+  height: 8px;
   flex-shrink: 0;
   pointer-events: none;
   z-index: 2;
@@ -6264,45 +6275,6 @@ details[open] > .trend-suggestions-toggle::before { transform: rotate(90deg); }
   color: #fff;
 }
 
-/* ── Content sub-tabs (pill-style, below topbar title) ────────────────── */
-.content-sub-tabs {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 14px 8px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
-}
-.content-sub-tabs::-webkit-scrollbar { display: none; }
-.content-sub-tabs:empty { display: none; }
-
-.content-sub-tab {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  border: 1.5px solid var(--border);
-  background: transparent;
-  border-radius: 999px;
-  min-height: 34px;
-  padding: 5px 14px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  color: var(--muted);
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
-}
-.content-sub-tab:active {
-  transform: scale(0.97);
-}
-.content-sub-tab.active {
-  background: var(--brand);
-  border-color: var(--brand);
-  color: #fff;
-  font-weight: 600;
-}
-
 /* ── Topbar team container ────────────────────────────────────────────── */
 .topbar-team {
   display: flex;
@@ -6346,37 +6318,85 @@ details[open] > .trend-suggestions-toggle::before { transform: rotate(90deg); }
   gap: 4px;
 }
 
-/* Mobile: topbar nav row sticky BELOW the TG close-bar (not alongside it) */
+/* Mobile: topbar nav row fixed so tabs always sit in the TG close-bar row */
 body.is-mobile-layout .topbar-nav-row {
-  position: sticky;
-  top: var(--tg-content-inset-top, env(safe-area-inset-top, 0px));
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
   z-index: 100;
   background: var(--bg);
-  padding-top: 8px;
+  /* Only account for phone notch/status-bar, not TG close-bar — tabs sit alongside it */
+  padding-top: calc(env(safe-area-inset-top, 0px) + 8px);
   padding-bottom: 8px;
 }
 
-/* Mobile topbar-main follows nav row — sticky below nav-row height */
+/* Mobile topbar-main follows nav row (no extra top safe-area padding) */
 body.is-mobile-layout .topbar-main {
   padding-top: var(--space-3);
-  padding-left: var(--space-3);
+  padding-left: var(--space-3);  /* remove 88px offset — TG close-btn is now in nav row row above */
 }
 
-/* In detail view: hide nav-row (tabs), content sub-tabs and panel-header (prevents sticky bleed-through) */
+/* In detail view: hide nav-row (tabs) and panel-header (prevents sticky bleed-through) */
 body.is-mobile-layout.is-detail-view .topbar-nav-row {
-  display: none;
-}
-body.is-mobile-layout.is-detail-view .content-sub-tabs {
   display: none;
 }
 body.is-mobile-layout.is-detail-view .panel-header {
   display: none !important;
 }
 
-/* ── Detail-panel dark-theme gradient overlays — REMOVED ────────────────── */
-/* These ::before/::after pseudo-elements on .detail-panel created a visible
-   dark gradient stripe across the screen (especially on settings/theme
-   picker). Removed to prevent the regression. See also comment at line ~6208. */
+/* ── Detail-panel dark-theme gradient overlays (top & bottom) ──────────── */
+/* Light gradient vignette instead of solid rectangles in dark themes      */
+body.tg-theme-dark.is-mobile-layout.is-detail-view .detail-panel::before {
+  content: "";
+  position: sticky;
+  top: 0;
+  display: block;
+  height: 32px;
+  margin-bottom: -32px; /* collapse so it doesn't push content */
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.15) 0%, transparent 100%);
+  z-index: 4;
+  pointer-events: none;
+}
+
+body.tg-theme-dark.is-mobile-layout.is-detail-view .detail-panel::after {
+  content: "";
+  position: sticky;
+  bottom: 0;
+  display: block;
+  height: 40px;
+  margin-top: -40px; /* collapse so it doesn't push content */
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.12) 0%, transparent 100%);
+  z-index: 4;
+  pointer-events: none;
+}
+
+/* Fallback for standalone dark-mode (outside Telegram) */
+@media (prefers-color-scheme: dark) {
+  body:not(.tg-theme-dark).is-mobile-layout.is-detail-view .detail-panel::before {
+    content: "";
+    position: sticky;
+    top: 0;
+    display: block;
+    height: 32px;
+    margin-bottom: -32px;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.15) 0%, transparent 100%);
+    z-index: 4;
+    pointer-events: none;
+  }
+
+  body:not(.tg-theme-dark).is-mobile-layout.is-detail-view .detail-panel::after {
+    content: "";
+    position: sticky;
+    bottom: 0;
+    display: block;
+    height: 40px;
+    margin-top: -40px;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.12) 0%, transparent 100%);
+    z-index: 4;
+    pointer-events: none;
+  }
+}
 
 /* ── Theme system ─────────────────────────────────────────────────────────── */
 body[data-theme="terracotta"],
@@ -6494,7 +6514,7 @@ body[data-theme="raspberry"] {
   margin-top: 12px;
 }
 .theme-swatch {
-  background: var(--surface);
+  background: var(--sw-bg);
   border: 1.5px solid transparent;
   border-radius: var(--radius-md);
   padding: 10px 8px 8px;

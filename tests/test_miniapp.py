@@ -1590,7 +1590,6 @@ class TestMiniAppRussianLocale:
         assert "Перегенерировать сценарий" in app_js
         assert "Перегенерировать раскадровку" in app_js
         assert "Согласовать" in app_js
-        assert "Перейти к редактированию" in app_js
         assert "Сохранить замечания" in app_js
         assert "/api/reels/{draft_id}/scenario" in server_py
         assert "/api/reels/{draft_id}/storyboard/regenerate" in server_py

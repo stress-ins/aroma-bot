@@ -53,7 +53,7 @@ async def update_token(
     payload: TokenUpdatePayload,
     _: None = Depends(_require_webhook_auth),
 ):
-    if platform not in ("threads", "instagram", "canva"):
+    if platform not in ("threads", "instagram", "canva", "youtube"):
         raise HTTPException(status_code=400, detail="unsupported_platform")
 
     expires_at: datetime | None = None
@@ -71,7 +71,7 @@ async def update_token(
 
 @router.post("/api/tokens/{platform}/refresh")
 async def refresh_token(platform: str, _: None = Depends(_require_webhook_auth)):
-    if platform not in ("threads", "instagram", "canva"):
+    if platform not in ("threads", "instagram", "canva", "youtube"):
         raise HTTPException(status_code=400, detail="unsupported_platform")
 
     token_record = await get_token(platform)
@@ -80,6 +80,9 @@ async def refresh_token(platform: str, _: None = Depends(_require_webhook_auth))
 
     if platform == "canva":
         return await _refresh_canva(token_record)
+
+    if platform == "youtube":
+        return await _refresh_youtube(token_record)
 
     refresh_url = _REFRESH_URLS[platform]
     grant_type = _GRANT_TYPES[platform]
@@ -105,6 +108,40 @@ async def refresh_token(platform: str, _: None = Depends(_require_webhook_auth))
         expires_at = datetime.now(timezone.utc) + timedelta(seconds=int(data["expires_in"]))
 
     updated = await upsert_token(platform, new_token, expires_at)
+    return {**_serialize_token(updated), "refreshed": True}
+
+
+async def _refresh_youtube(token_record) -> dict:
+    """Refresh YouTube/Google access token using refresh_token."""
+    if not token_record.refresh_token:
+        raise HTTPException(
+            status_code=400,
+            detail="no_refresh_token — переподключите YouTube в Настройки → Аккаунты",
+        )
+    if not settings.google_client_id or not settings.google_client_secret:
+        raise HTTPException(status_code=500, detail="google_client_id/secret not configured")
+
+    try:
+        from bot.services.social_oauth import refresh_youtube_token
+        result = refresh_youtube_token(
+            refresh_token=token_record.refresh_token,
+            client_id=settings.google_client_id,
+            client_secret=settings.google_client_secret,
+        )
+    except Exception as exc:
+        logger.error("YouTube token refresh failed: %s", exc)
+        raise HTTPException(status_code=502, detail=f"refresh_failed: {exc}")
+
+    expires_at = None
+    if result.get("expires_in"):
+        expires_at = datetime.now(timezone.utc) + timedelta(seconds=int(result["expires_in"]))
+
+    updated = await upsert_token(
+        "youtube",
+        str(result["access_token"]),
+        expires_at,
+        refresh_token=str(result.get("refresh_token", "")),
+    )
     return {**_serialize_token(updated), "refreshed": True}
 
 

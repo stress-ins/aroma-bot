@@ -46,6 +46,7 @@ def generate_replies_sync(
         "threads": "Threads (аудитория — интересующиеся благополучием, ароматерапией)",
         "instagram": "Instagram (визуальная платформа, подписчики следят за контентом)",
         "telegram": "Telegram (более приватная среда, подписчики канала)",
+        "youtube": "YouTube (комментарии под видео, аудитория шире, тон может быть развёрнутым)",
     }.get(platform, platform)
 
     replies = []

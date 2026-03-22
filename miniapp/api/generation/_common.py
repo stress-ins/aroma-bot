@@ -1,9 +1,25 @@
 """Shared helpers for background generation tasks."""
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Awaitable
 
 from bot.services.drafts_store import get_draft, update_draft
+
+# ── In-memory pub/sub for SSE notifications ─────────────────────────────
+_generation_events: dict[str, asyncio.Event] = {}
+
+
+def get_generation_event(draft_id: str) -> asyncio.Event:
+    """Return (or create) an asyncio.Event for *draft_id*."""
+    if draft_id not in _generation_events:
+        _generation_events[draft_id] = asyncio.Event()
+    return _generation_events[draft_id]
+
+
+def cleanup_generation_event(draft_id: str) -> None:
+    """Remove the event for *draft_id* when SSE stream ends."""
+    _generation_events.pop(draft_id, None)
 
 
 async def set_generation_state(
@@ -26,6 +42,10 @@ async def set_generation_state(
     else:
         payload.pop("generation_error", None)
     await update_draft(draft_id, payload=payload, status="draft")
+    # Wake up any SSE listeners
+    evt = _generation_events.get(draft_id)
+    if evt:
+        evt.set()
 
 
 async def _run_generation_task(

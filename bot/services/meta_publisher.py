@@ -220,6 +220,123 @@ async def _publish_instagram_carousel(
     return pub_resp.json()
 
 
+# ── Instagram Reels (Video) ────────────────────────────────────────────────
+
+
+async def publish_to_instagram_reels(
+    caption: str,
+    video_url: str,
+) -> dict[str, Any]:
+    """Publish a video as Instagram Reels via Graph API.
+
+    video_url must be a publicly accessible HTTPS URL.
+    Returns {"id": "<post_id>"} on success.
+    Raises RuntimeError on failure.
+    """
+    creds = await _get_token_and_user("instagram")
+    if not creds:
+        raise RuntimeError("instagram_token_not_configured")
+    access_token, user_id = creds
+
+    async with httpx.AsyncClient(timeout=60) as client:
+        # Step 1: Create media container for REELS
+        resp = await client.post(
+            f"{INSTAGRAM_GRAPH_URL}/{user_id}/media",
+            params={
+                "media_type": "REELS",
+                "video_url": video_url,
+                "caption": caption,
+                "access_token": access_token,
+            },
+        )
+        _raise_for_meta_error(resp, "Instagram Reels container creation")
+        container_id = resp.json()["id"]
+
+        # Step 2: Wait for video processing
+        await _wait_for_instagram_container(client, container_id, access_token)
+
+        # Step 3: Publish
+        pub_resp = await client.post(
+            f"{INSTAGRAM_GRAPH_URL}/{user_id}/media_publish",
+            params={"creation_id": container_id, "access_token": access_token},
+        )
+        _raise_for_meta_error(pub_resp, "Instagram Reels publish")
+        return pub_resp.json()
+
+
+async def _wait_for_instagram_container(
+    client: httpx.AsyncClient,
+    container_id: str,
+    access_token: str,
+    max_attempts: int = 30,
+    interval: float = 5.0,
+) -> None:
+    """Poll Instagram container status until FINISHED or timeout.
+
+    Instagram uses `status_code` field (not `status` like Threads).
+    Video processing can take up to 2-3 minutes.
+    """
+    for _attempt in range(max_attempts):
+        resp = await client.get(
+            f"{INSTAGRAM_GRAPH_URL}/{container_id}",
+            params={"fields": "status_code,status", "access_token": access_token},
+        )
+        data = resp.json()
+        status_code = str(data.get("status_code", "")).upper()
+        if status_code == "FINISHED":
+            return
+        if status_code in ("ERROR", "EXPIRED"):
+            error_msg = data.get("status", "") or status_code
+            raise RuntimeError(
+                f"Instagram Reels container failed: {error_msg}"
+            )
+        await asyncio.sleep(interval)
+    raise RuntimeError("Instagram Reels container not ready after timeout")
+
+
+# ── Instagram Comments ────────────────────────────────────────────────────
+
+
+async def fetch_instagram_comments(post_id: str) -> list[dict[str, Any]]:
+    """Fetch comments for an Instagram post via Graph API.
+
+    Returns list of {"id", "text", "username", "timestamp", "like_count"}.
+    """
+    creds = await _get_token_and_user("instagram")
+    if not creds:
+        raise RuntimeError("instagram_token_not_configured")
+    access_token, _ = creds
+
+    comments: list[dict[str, Any]] = []
+    url: str | None = f"{INSTAGRAM_GRAPH_URL}/{post_id}/comments"
+    params: dict[str, Any] = {
+        "fields": "id,text,username,timestamp,like_count",
+        "access_token": access_token,
+        "limit": 50,
+    }
+
+    async with httpx.AsyncClient(timeout=30) as client:
+        while url:
+            resp = await client.get(url, params=params)
+            if resp.status_code >= 400:
+                break
+            data = resp.json()
+            for item in data.get("data", []):
+                comments.append({
+                    "id": item.get("id", ""),
+                    "text": item.get("text", ""),
+                    "username": item.get("username", ""),
+                    "timestamp": item.get("timestamp", ""),
+                    "like_count": item.get("like_count", 0),
+                })
+            # Pagination
+            paging = data.get("paging", {})
+            url = paging.get("next")
+            params = {}  # next URL includes all params
+
+    return comments
+
+
 # ── Insights / Metrics ─────────────────────────────────────────────────────
 
 

@@ -19,6 +19,7 @@ from bot.services.social_oauth import (
     exchange_canva_code,
     exchange_instagram_code,
     exchange_threads_code,
+    exchange_youtube_code,
     extract_state_payload_unsafe,
     notify_telegram_chat,
     parse_oauth_state,
@@ -34,6 +35,7 @@ ENV_FILE = Path(os.getenv("AROMA_ENV_FILE", Path(__file__).resolve().parent / ".
 THREADS_REDIRECT_URI = "https://oauth.aromara.ru/threads/callback"
 INSTAGRAM_REDIRECT_URI = "https://oauth.aromara.ru/instagram/callback"
 CANVA_REDIRECT_URI = "https://oauth.aromara.ru/canva/callback"
+YOUTUBE_REDIRECT_URI = "https://oauth.aromara.ru/youtube/callback"
 
 
 @app.get("/")
@@ -87,6 +89,11 @@ async def instagram_callback(request: Request):
 @app.get("/canva/callback")
 async def canva_callback(request: Request):
     return await _complete_oauth("canva", request)
+
+
+@app.get("/youtube/callback")
+async def youtube_callback(request: Request):
+    return await _complete_oauth("youtube", request)
 
 
 @app.get("/threads/deauthorize")
@@ -401,6 +408,13 @@ def _exchange_bundle(service: str, code: str, *, code_verifier: str = "") -> OAu
             redirect_uri=CANVA_REDIRECT_URI,
             code_verifier=code_verifier,
         )
+    if service == "youtube":
+        return exchange_youtube_code(
+            code=code,
+            client_id=settings.google_client_id,
+            client_secret=settings.google_client_secret,
+            redirect_uri=YOUTUBE_REDIRECT_URI,
+        )
     raise OAuthExchangeError(f"Unsupported service: {service}")
 
 
@@ -416,6 +430,12 @@ def _notify_success(chat_id: str, bundle: OAuthTokenBundle) -> None:
             "✅ Canva подключён.\n"
             f"User ID: {bundle.user_id}"
             + (f"\nИмя: {bundle.username}" if bundle.username else "")
+        )
+    elif bundle.service == "youtube":
+        text = (
+            "✅ YouTube подключён.\n"
+            f"Канал: {bundle.username or 'unknown'}\n"
+            f"Channel ID: {bundle.user_id}"
         )
     else:
         text = (
