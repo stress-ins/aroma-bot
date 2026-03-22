@@ -54,6 +54,9 @@ def test_mobile_bottom_tab_bar_switches_primary_sections(page):
     page.locator("#btnTabDrafts").click()
     page.wait_for_timeout(100)
     assert page.locator("#btnTabDrafts").get_attribute("aria-pressed") == "true"
+    # Returns to last content sub-tab (plans); switch to publications to see drafts
+    page.locator(".content-sub-tab", has_text="Публикации").click()
+    page.wait_for_timeout(100)
     assert page.locator(".draft-card").count() >= 2
 
 
