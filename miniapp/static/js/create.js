@@ -149,6 +149,11 @@ export function createCreateModule(deps) {
           <h3 class="draft-topic">Серия Threads</h3>
           <div class="draft-preview">Три поста: утро / день / вечер.</div>
         </article>
+        <article ${interactiveCardAttrs("Выбрать инструмент Контент-серия")} class="create-card${state.selectedCreateTool === "content_series" ? " active" : ""} interactive-card" data-tool="content_series" data-action="renderCreateTool" data-args='["content_series"]'>
+          <div class="draft-kind">${contentKindIcon("content_series")}<span>серия</span></div>
+          <h3 class="draft-topic">Контент-серия</h3>
+          <div class="draft-preview">5-7 постов с единой темой.</div>
+        </article>
       </div>
     `;
 
@@ -300,6 +305,45 @@ export function createCreateModule(deps) {
                   <option value="curiosity">Любопытство</option>
                   <option value="trust">Доверие</option>
                   <option value="joy">Радость</option>
+                </select>
+              </label>
+            </div>
+            <button class="primary-button" type="submit">Создать серию</button>
+          </form>
+        </section>
+      `;
+    } else if (toolId === "content_series") {
+      formHtml = `
+        <section class="section create-tool-panel">
+          <h3>Создать контент-серию</h3>
+          <form class="create-form" data-create-content-series>
+            <label>Шаблон
+              <select name="template_key" id="seriesTemplateSelect">
+                <option value="custom">Произвольная</option>
+              </select>
+            </label>
+            <p class="field-help" id="seriesTemplateHint">Выберите шаблон или создайте произвольную серию.</p>
+            <label>Тема<textarea name="topic" placeholder="Например: лаванда — масло недели"></textarea></label>
+            <div class="field-grid">
+              <label>Цель
+                <select name="goal_key">
+                  <option value="trust">Доверие</option>
+                  <option value="authority">Экспертность</option>
+                  <option value="engagement">Вовлечённость</option>
+                  <option value="sales">Продажи</option>
+                </select>
+              </label>
+              <label>Формат постов
+                <select name="format_key">
+                  <option value="instagram">Instagram</option>
+                  <option value="telegram">Telegram</option>
+                </select>
+              </label>
+              <label>Количество постов
+                <select name="post_count">
+                  <option value="5" selected>5 постов</option>
+                  <option value="6">6 постов</option>
+                  <option value="7">7 постов</option>
                 </select>
               </label>
             </div>
@@ -473,6 +517,56 @@ export function createCreateModule(deps) {
         throw error;
       }
     } });
+
+    // ── Content Series form ─────────────────────────────────────────
+    const contentSeriesForm = elements.draftDetail.querySelector("[data-create-content-series]");
+    if (contentSeriesForm) {
+      // Load templates
+      (async () => {
+        try {
+          const data = await fetchJson("/api/series/templates");
+          const select = contentSeriesForm.querySelector("#seriesTemplateSelect");
+          const hint = contentSeriesForm.querySelector("#seriesTemplateHint");
+          if (select && data.templates) {
+            data.templates.forEach(t => {
+              const opt = document.createElement("option");
+              opt.value = t.key;
+              opt.textContent = t.label;
+              select.appendChild(opt);
+            });
+            select.addEventListener("change", () => {
+              const tmpl = data.templates.find(t => t.key === select.value);
+              if (hint) hint.textContent = tmpl ? tmpl.description : "Произвольная серия.";
+              const countSelect = contentSeriesForm.querySelector("select[name='post_count']");
+              if (tmpl && countSelect) countSelect.value = String(tmpl.post_count);
+            });
+          }
+        } catch (_e) { /* templates optional */ }
+      })();
+
+      bindTopicForm(contentSeriesForm, { pendingText: "Создаю серию...", onSubmit: async (topic) => {
+        const goal_key = contentSeriesForm.querySelector("select[name='goal_key']")?.value || "trust";
+        const format_key = contentSeriesForm.querySelector("select[name='format_key']")?.value || "instagram";
+        const post_count = parseInt(contentSeriesForm.querySelector("select[name='post_count']")?.value || "5", 10);
+        const template_key = contentSeriesForm.querySelector("select[name='template_key']")?.value || "custom";
+        const pending = openPendingDraftCreation("content_series", topic);
+        try {
+          const draft = await fetchJson("/api/generate/content-series", {
+            method: "POST",
+            timeout: 90000,
+            body: JSON.stringify({ topic, goal_key, format_key, post_count, template_key }),
+          });
+          finalizePendingDraftCreation(draft);
+          await openDraft(draft.draft_id);
+        } catch (error) {
+          if (error?.message === "request_timeout") {
+            await recoverPendingDraftCreation("content_series", topic, pending.draft_id);
+            return;
+          }
+          throw error;
+        }
+      } });
+    }
   }
 
   // ── Trend Suggestions Panel ────────────────────────────────────────

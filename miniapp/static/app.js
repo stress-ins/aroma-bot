@@ -1786,6 +1786,13 @@ const {
   renderEmptyDetail,
   refreshDraftMetrics,
   moveDraftToTeam,
+  recommendHashtags,
+  applyRecommendedHashtags,
+  adaptTone,
+  startRepurpose,
+  regenSeriesPost,
+  regenSeriesAll,
+  coherenceCheck,
 } = createDraftsModule({
   state,
   elements,
@@ -1869,7 +1876,7 @@ const { renderBrand: renderBrandImpl, loadForbiddenPhrases: loadForbiddenPhrases
   activatePromo, generatePromos,
 } = _settingsMod);
 
-let selectTrendsPlatform, selectTrendsPeriod, refreshTrends, openTrendsPost, createFromInsight, addMonitoredAccount, removeMonitoredAccount;
+let selectTrendsPlatform, selectTrendsPeriod, refreshTrends, openTrendsPost, createFromInsight, addMonitoredAccount, removeMonitoredAccount, generateTrendCards, createFromTrendCard;
 ({
   loadTrends,
   selectTrendsPlatform,
@@ -1881,6 +1888,8 @@ let selectTrendsPlatform, selectTrendsPeriod, refreshTrends, openTrendsPost, cre
   removeMonitoredAccount,
   addTrackedHashtag,
   removeTrackedHashtag,
+  generateTrendCards,
+  createFromTrendCard,
 } = createTrendsModule({
   state,
   elements,
@@ -2408,6 +2417,16 @@ registerWindowBridge({
   removeMonitoredAccountFromSettings,
   addTrackedHashtag,
   removeTrackedHashtag,
+  // New features (roadmap sprint 1-6)
+  recommendHashtags,
+  applyRecommendedHashtags,
+  adaptTone,
+  startRepurpose,
+  regenSeriesPost,
+  regenSeriesAll,
+  coherenceCheck,
+  generateTrendCards,
+  createFromTrendCard,
 });
 
 reelsCallbacks.renderReels = () => { renderReels(); renderDraftList(); };

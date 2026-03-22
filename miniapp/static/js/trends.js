@@ -99,6 +99,7 @@ export function createTrendsModule(deps) {
       { id: "instagram", label: "Instagram", icon: "instagram" },
       { id: "threads", label: "Threads", icon: "at-sign" },
       { id: "compare", label: "Сравнение", icon: "columns-2" },
+      { id: "cards", label: "AI-карточки", icon: "sparkles" },
     ];
 
     const platformTabs = platforms
@@ -128,7 +129,9 @@ export function createTrendsModule(deps) {
     </button>`;
 
     let summary = "";
-    if (trendsPlatform === "compare" && trendsCompare) {
+    if (trendsPlatform === "cards") {
+      summary = renderTrendCardsList();
+    } else if (trendsPlatform === "compare" && trendsCompare) {
       summary = renderCompareSummaryList();
     } else if (trendsData) {
       summary = renderPlatformSummaryList();
@@ -771,6 +774,69 @@ export function createTrendsModule(deps) {
     if (window.lucide) lucide.createIcons();
   }
 
+  // ── Trend Cards (AI-generated) ────────────────────────────────────
+  let trendCards = null;
+
+  function renderTrendCardsList() {
+    if (!trendCards) {
+      (async () => {
+        try {
+          const data = await fetchJson("/api/trends/cards?limit=10");
+          trendCards = data.cards || [];
+          const container = elements.draftList.querySelector(".trends-cards-container");
+          if (container) container.innerHTML = _renderCardsInner();
+          if (window.lucide) lucide.createIcons();
+        } catch (_e) { /* optional */ }
+      })();
+      return `<div class="trends-cards-container"><div class="suggest-topics-loading"><span class="button-spinner"></span> Загрузка карточек...</div></div>`;
+    }
+    return `<div class="trends-cards-container">${_renderCardsInner()}</div>`;
+  }
+
+  function _renderCardsInner() {
+    if (!trendCards || !trendCards.length) {
+      return `<div class="detail-empty"><p>Нет AI-карточек. Нажмите "Сгенерировать" для создания.</p>
+        <button class="primary-button" type="button" data-action="generateTrendCards">${uiIcon("sparkles", 14)}<span>Сгенерировать карточки</span></button></div>`;
+    }
+    const lifecycleColors = { emerging: "#4CAF50", growing: "#2196F3", peaking: "#FF9800", declining: "#9E9E9E" };
+    return trendCards.map(c => `
+      <div class="trend-card interactive-card" data-card-id="${escapeHtml(c.card_id)}">
+        <div class="trend-card-header">
+          <span class="keyword-chip" style="background:${lifecycleColors[c.lifecycle] || "var(--muted)"};color:#fff;font-size:0.7rem">${escapeHtml(c.lifecycle || "?")}</span>
+          <strong>${escapeHtml(c.title || c.keyword)}</strong>
+          <span class="trend-strength" style="color:${c.strength >= 0.7 ? "var(--success, green)" : "var(--muted)"}">${(c.strength * 100).toFixed(0)}%</span>
+        </div>
+        <div class="trend-card-summary">${escapeHtml((c.summary || "").substring(0, 120))}</div>
+        ${c.recommendation ? `<div class="trend-card-rec">${uiIcon("lightbulb", 12)} ${escapeHtml(c.recommendation.substring(0, 100))}</div>` : ""}
+        <div class="trend-card-actions">
+          <button class="secondary-button" type="button" data-action="createFromTrendCard" data-args='${JSON.stringify([c.card_id, c.title])}'>${uiIcon("plus", 14)}<span>Создать контент</span></button>
+        </div>
+      </div>
+    `).join("") + `<button class="secondary-button" type="button" data-action="generateTrendCards" style="margin-top:0.5rem">${uiIcon("refresh-cw", 14)}<span>Обновить карточки</span></button>`;
+  }
+
+  async function generateTrendCards() {
+    try {
+      await fetchJson("/api/trends/cards/generate", { method: "POST", timeout: 60000 });
+      showUiNotice("Генерация карточек запущена", "info");
+      trendCards = null;
+      renderTrendsListPanel();
+    } catch (e) { showRequestError(e); }
+  }
+
+  async function createFromTrendCard(cardId, title) {
+    try {
+      const draft = await fetchJson("/api/trends/create-from-trend", {
+        method: "POST", timeout: 45000,
+        body: JSON.stringify({ card_id: cardId, format_key: "instagram", goal_key: "trust" }),
+      });
+      showUiNotice("Черновик создан из тренда", "success");
+      if (draft?.draft_id && deps.openDraft) {
+        await deps.openDraft(draft.draft_id);
+      }
+    } catch (e) { showRequestError(e); }
+  }
+
   return {
     loadTrends,
     renderTrendsListPanel,
@@ -784,5 +850,7 @@ export function createTrendsModule(deps) {
     addTrackedHashtag,
     removeTrackedHashtag,
     createFromInsight,
+    generateTrendCards,
+    createFromTrendCard,
   };
 }
