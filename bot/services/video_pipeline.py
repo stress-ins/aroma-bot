@@ -18,6 +18,9 @@ from bot.services.video_composer import compose_video_from_frames
 
 logger = logging.getLogger(__name__)
 
+# Valid renderer choices
+RENDERERS = ("ffmpeg", "remotion")
+
 # Where final videos are stored
 VIDEO_OUTPUT_DIR = Path(__file__).parent.parent.parent / "data" / "reels_video"
 VIDEO_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -183,8 +186,19 @@ def _extract_overlay_texts(payload: dict) -> list[str]:
     return texts
 
 
-async def compose_reel(draft_id: str) -> dict:
+async def compose_reel(
+    draft_id: str,
+    renderer: str = "ffmpeg",
+    template: str = "aroma",
+    text_animation: str = "fade",
+) -> dict:
     """Full pipeline: frames -> video -> voiceover -> music -> final MP4.
+
+    Args:
+        draft_id: The draft to compose.
+        renderer: Video renderer — ``"ffmpeg"`` (default) or ``"remotion"``.
+        template: Remotion composition template (aroma, educational, promo).
+        text_animation: Text animation style for Remotion (fade, slide-up, typewriter, scale-in).
 
     Returns::
 
@@ -193,9 +207,12 @@ async def compose_reel(draft_id: str) -> dict:
             "duration": float,
             "has_voiceover": bool,
             "has_music": bool,
+            "renderer": str,
             "steps_completed": [str],
         }
     """
+    if renderer not in RENDERERS:
+        raise ValueError(f"Unknown renderer: {renderer!r}. Use one of {RENDERERS}")
     steps_completed: list[str] = []
 
     # 1. Load draft
@@ -227,12 +244,24 @@ async def compose_reel(draft_id: str) -> dict:
 
     # 5. Compose silent video from frames
     silent_video_path = draft_video_dir / "silent_video.mp4"
-    await compose_video_from_frames(
-        frame_paths=frame_paths,
-        overlay_texts=overlay_texts if any(overlay_texts) else None,
-        output_path=silent_video_path,
-    )
-    steps_completed.append("compose_video")
+    if renderer == "remotion":
+        from bot.services.remotion_renderer import compose_video_remotion
+
+        await compose_video_remotion(
+            frame_paths=frame_paths,
+            overlay_texts=overlay_texts if any(overlay_texts) else None,
+            output_path=silent_video_path,
+            template=template,
+            text_animation=text_animation,
+        )
+        steps_completed.append("compose_video_remotion")
+    else:
+        await compose_video_from_frames(
+            frame_paths=frame_paths,
+            overlay_texts=overlay_texts if any(overlay_texts) else None,
+            output_path=silent_video_path,
+        )
+        steps_completed.append("compose_video")
 
     # 6. Generate voiceover (if text found)
     voiceover_path: Path | None = None
@@ -306,5 +335,6 @@ async def compose_reel(draft_id: str) -> dict:
         "duration": duration,
         "has_voiceover": voiceover_path is not None,
         "has_music": music_path is not None,
+        "renderer": renderer,
         "steps_completed": steps_completed,
     }
