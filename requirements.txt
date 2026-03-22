@@ -26,6 +26,11 @@ TikTokApi
 instagrapi
 anthropic
 
+# RAG
+faiss-cpu
+sentence-transformers>=3.0.0
+numpy>=1.24.0
+
 # Utils
 aiohttp==3.10.10
 httpx==0.27.2

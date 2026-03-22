@@ -18,7 +18,16 @@ async def complete_content_generation(
         from bot.agents import generate_content_draft
         from bot.services.miniapp_generator import build_content_payload
 
-        draft_obj = await generate_content_draft(topic, goal_key, format_key, blend_context=blend_context)
+        # RAG: retrieve relevant knowledge base context
+        rag_context = ""
+        try:
+            from bot.services.rag import retrieve_relevant_cards, format_rag_context
+            cards = await retrieve_relevant_cards(topic, max_items=5)
+            rag_context = format_rag_context(cards)
+        except Exception:
+            pass  # Graceful fallback: generate without RAG
+
+        draft_obj = await generate_content_draft(topic, goal_key, format_key, blend_context=blend_context, rag_context=rag_context)
         content_payload = build_content_payload(draft_obj, goal_key=goal_key, format_key=format_key)
         if blend_context:
             content_payload["blend_context"] = blend_context
@@ -114,7 +123,16 @@ async def complete_threads_series_generation(
         if extra_context:
             enriched_topic = f"{topic}\n\n{extra_context}\n\nИнструкция: утренний пост может отталкиваться от тренда, дневной — от факта из справочника, вечерний — от личного опыта."
 
-        draft_obj = await generate_content_draft(enriched_topic, goal_key, "threads_series", blend_context=blend_context)
+        # RAG: retrieve relevant knowledge base context
+        rag_context = ""
+        try:
+            from bot.services.rag import retrieve_relevant_cards, format_rag_context
+            cards = await retrieve_relevant_cards(topic, max_items=5)
+            rag_context = format_rag_context(cards)
+        except Exception:
+            pass
+
+        draft_obj = await generate_content_draft(enriched_topic, goal_key, "threads_series", blend_context=blend_context, rag_context=rag_context)
         ts_payload = build_threads_series_payload(draft_obj, goal_key=goal_key, emotion=emotion)
         has_content = any(p.get("text") for p in ts_payload.get("threads_posts", []))
         if not has_content:

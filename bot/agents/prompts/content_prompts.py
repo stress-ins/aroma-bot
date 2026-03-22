@@ -117,6 +117,7 @@ def strategist_prompt(
     goal_guidance: dict[str, str],
     format_labels: dict[str, str],
     blend_context: dict | None = None,
+    rag_context: str = "",
 ) -> str:
     blend_block = ""
     if blend_context:
@@ -126,6 +127,7 @@ def strategist_prompt(
             "\nКонтекст смеси:\n" + build_blend_strategist_block(blend_context) + "\n"
             "Угол должен раскрывать воздействие смеси через её профиль.\n"
         )
+    rag_block = f"\n{rag_context}\n" if rag_context else ""
     return f"""\
 {get_brand_context()}
 Роль: ты Content Strategist. Твоя задача — найти угол и первую строку.
@@ -133,7 +135,7 @@ def strategist_prompt(
 Тема: {topic}
 Цель: {goal_guidance[goal_key]}
 Формат: {format_labels[format_key]}
-
+{rag_block}
 Ответь строго в формате (два поля, на русском):
 ANGLE: [1-2 предложения — почему эта тема резонирует СЕЙЧАС с этой аудиторией и под эту цель]
 HOOK: [точная первая строка поста — останавливает скролл, без приветствий, без "Сегодня хочу поделиться"]
@@ -180,6 +182,7 @@ def writer_prompt(
     hook: str,
     goal_guidance: dict[str, str],
     blend_context: dict | None = None,
+    rag_context: str = "",
 ) -> str:
     rules = _PLATFORM_RULES_WRITER.get(format_key, _PLATFORM_RULES_WRITER["telegram"])
     blend_block = ""
@@ -195,6 +198,7 @@ def writer_prompt(
             "- Включи способ применения\n"
             "- Это рассказ, не рецепт\n"
         )
+    rag_block = f"\n{rag_context}\n" if rag_context else ""
     return f"""\
 {get_brand_context()}
 Роль: ты Platform Writer. Ты получил угол и хук от стратега. Напиши готовый пост.
@@ -203,7 +207,7 @@ def writer_prompt(
 Цель: {goal_guidance[goal_key]}
 Стратегический угол: {angle}
 Первая строка (хук): {hook}
-{blend_block}
+{blend_block}{rag_block}
 {rules}
 
 Дополнительные правила письма:
