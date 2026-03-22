@@ -23,6 +23,7 @@ from .reels import complete_reels_v2_regen_concept as complete_reels_v2_regen_co
 from .reels import complete_reels_v2_regen_concept_only as complete_reels_v2_regen_concept_only
 from .reels import complete_reels_v2_regen_frame as complete_reels_v2_regen_frame
 from .reels import complete_reels_v2_regen_scenario_only as complete_reels_v2_regen_scenario_only
+from .repurpose import complete_repurpose_generation as complete_repurpose_generation
 from .series import complete_series_generation as complete_series_generation
 
 __all__ = [
@@ -40,6 +41,7 @@ __all__ = [
     "complete_reels_v2_regen_concept_only",
     "complete_reels_v2_regen_frame",
     "complete_reels_v2_regen_scenario_only",
+    "complete_repurpose_generation",
     "complete_series_generation",
     "complete_threads_series_generation",
     "generate_blend_construct",
