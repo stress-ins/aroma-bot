@@ -6374,59 +6374,6 @@ body.is-mobile-layout.is-detail-view .panel-header {
   display: none !important;
 }
 
-/* ── Detail-panel dark-theme gradient overlays (top & bottom) ──────────── */
-/* Light gradient vignette instead of solid rectangles in dark themes      */
-body.tg-theme-dark.is-mobile-layout.is-detail-view .detail-panel::before {
-  content: "";
-  position: sticky;
-  top: 0;
-  display: block;
-  height: 32px;
-  margin-bottom: -32px; /* collapse so it doesn't push content */
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.15) 0%, transparent 100%);
-  z-index: 4;
-  pointer-events: none;
-}
-
-body.tg-theme-dark.is-mobile-layout.is-detail-view .detail-panel::after {
-  content: "";
-  position: sticky;
-  bottom: 0;
-  display: block;
-  height: 40px;
-  margin-top: -40px; /* collapse so it doesn't push content */
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.12) 0%, transparent 100%);
-  z-index: 4;
-  pointer-events: none;
-}
-
-/* Fallback for standalone dark-mode (outside Telegram) */
-@media (prefers-color-scheme: dark) {
-  body:not(.tg-theme-dark).is-mobile-layout.is-detail-view .detail-panel::before {
-    content: "";
-    position: sticky;
-    top: 0;
-    display: block;
-    height: 32px;
-    margin-bottom: -32px;
-    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.15) 0%, transparent 100%);
-    z-index: 4;
-    pointer-events: none;
-  }
-
-  body:not(.tg-theme-dark).is-mobile-layout.is-detail-view .detail-panel::after {
-    content: "";
-    position: sticky;
-    bottom: 0;
-    display: block;
-    height: 40px;
-    margin-top: -40px;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.12) 0%, transparent 100%);
-    z-index: 4;
-    pointer-events: none;
-  }
-}
-
 /* ── Theme system ─────────────────────────────────────────────────────────── */
 body[data-theme="terracotta"],
 body[data-theme="racing-green"],
