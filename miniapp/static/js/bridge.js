@@ -59,15 +59,12 @@ export function registerWindowBridge(deps) {
     copyReelsCaption,
     openReelsImageFullscreen,
     openReelsPreview,
-<<<<<<< Updated upstream
     openBotUploadLink,
-=======
     // Video compose & upload
     composeReelVideo,
     uploadReelsVideo,
     cleanReelsVideo,
     checkAndPublish,
->>>>>>> Stashed changes
     // Phase 4
     publishReels,
     retryPlatform,
