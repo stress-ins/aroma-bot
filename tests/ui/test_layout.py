@@ -159,10 +159,11 @@ def test_detail_card_title_not_clipped_on_mobile(page):
         page.evaluate("window.goBackToList()")
         page.wait_for_timeout(100)
         cards.nth(i).click()
-        page.wait_for_timeout(200)
 
         title = page.locator(".detail-title").first
-        if not title.count():
+        try:
+            title.wait_for(state="visible", timeout=3000)
+        except Exception:
             continue
 
         box = title.bounding_box()
