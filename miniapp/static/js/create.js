@@ -78,6 +78,23 @@ export function createCreateModule(deps) {
 
     updateState();
     topicField.addEventListener("input", updateState);
+
+    // Character counter
+    const MAX_TOPIC_LEN = 200;
+    let counter = form.querySelector(".char-counter");
+    if (!counter) {
+      counter = document.createElement("span");
+      counter.className = "char-counter";
+      topicField.parentNode.appendChild(counter);
+    }
+    const updateCounter = () => {
+      const len = topicField.value.length;
+      counter.textContent = `${len}/${MAX_TOPIC_LEN}`;
+      counter.classList.toggle("warn", len > MAX_TOPIC_LEN * 0.8);
+    };
+    updateCounter();
+    topicField.addEventListener("input", updateCounter);
+
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       const topic = topicField.value.trim();

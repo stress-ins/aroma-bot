@@ -52,6 +52,8 @@ from ..models import (
     ReelsScenarioPayload,
 )
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
 
 
@@ -530,7 +532,7 @@ async def _run_compose_task(
         _compose_logger.info("Compose completed for draft %s (renderer=%s)", draft_id, renderer)
     except Exception as exc:
         _compose_logger.error("Compose failed for draft %s: %s", draft_id, exc, exc_info=True)
-        _compose_status[draft_id] = {"status": "failed", "error": str(exc), "result": None}
+        _compose_status[draft_id] = {"status": "failed", "error": "compose_failed", "result": None}
 
 
 @router.post("/api/reels/{draft_id}/compose", dependencies=[Depends(require_tier("expert"))])
@@ -644,7 +646,8 @@ async def reels_preview_frames(
             count=count,
         )
     except RuntimeError as exc:
-        raise HTTPException(status_code=503, detail=str(exc))
+        logger.error("Preview frames generation failed: %s", exc)
+        raise HTTPException(status_code=503, detail="preview_generation_failed")
 
     urls = [
         f"/generated/reels_assets/{draft_id}/preview_frames/{p.name}"
@@ -757,14 +760,14 @@ async def _run_clean_video_task(
         _clean_logger.error(
             "Video cleaning failed for draft %s: %s", draft_id, exc, exc_info=True,
         )
-        _clean_status[draft_id] = {"status": "failed", "error": str(exc), "result": None}
+        _clean_status[draft_id] = {"status": "failed", "error": "cleaning_failed", "result": None}
         _notify_clean_event(draft_id)
         try:
             draft = await _get_draft(draft_id)
             if draft:
                 payload = dict(draft.payload)
                 payload["cleaning_status"] = "failed"
-                payload["cleaning_error"] = str(exc)
+                payload["cleaning_error"] = "cleaning_failed"
                 await _update_draft(draft_id, payload=payload)
         except Exception:
             pass

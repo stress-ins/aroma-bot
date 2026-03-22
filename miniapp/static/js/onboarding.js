@@ -9,9 +9,14 @@ const SLIDES = [
 const HELP_MAP = {
   "content/drafts": "Здесь хранятся черновики. Нажмите на карточку для редактирования.",
   "content/create": "Выберите формат и тему. AI сгенерирует черновик за секунды.",
+  "content/plans": "Контент-планы на неделю. Создавайте черновики прямо из карточек плана.",
+  "content/settings": "Настройки приложения: тема, команда, подписка.",
   "handbook/aromas": "200+ эфирных масел. Используйте поиск для быстрого доступа.",
   "handbook/blends": "Готовые смеси с рецептами. Нажмите на ингредиент для перехода.",
   "handbook/symptoms": "Найдите масло по симптому или состоянию.",
+  "content/reels": "Рилсы: сценарий, раскадровка и визуализация кадров.",
+  "content/archive": "Архив опубликованных и удалённых материалов.",
+  "content/mentions": "Упоминания вашего бренда в социальных сетях.",
 };
 
 export function createOnboardingModule(deps) {
@@ -30,7 +35,7 @@ export function createOnboardingModule(deps) {
     function render() {
       const slide = SLIDES[current];
       const isLast = current === SLIDES.length - 1;
-      const dots = SLIDES.map((_, i) => `<span class="onboarding-dot${i === current ? " active" : ""}"></span>`).join("");
+      const dots = SLIDES.map((_, i) => `<span class="onboarding-dot${i === current ? " active" : ""}" role="img" aria-label="Слайд ${i + 1} из ${SLIDES.length}"></span>`).join("");
       overlay.innerHTML = `
         <div class="onboarding-slide">
           <div class="onboarding-icon">${icon(slide.icon, 48)}</div>
@@ -82,6 +87,8 @@ export function createOnboardingModule(deps) {
       const text = HELP_MAP[`${state.mode}/${state.tab}`] || "Нажмите на элемент для подробностей.";
       popover = document.createElement("div");
       popover.className = "help-popover";
+      popover.setAttribute("role", "dialog");
+      popover.setAttribute("aria-label", "Справка");
       popover.innerHTML = `<p>${text}</p><button class="ghost-button help-popover-close" type="button">Понятно</button>`;
       document.body.appendChild(popover);
       popover.querySelector(".help-popover-close").addEventListener("click", () => { popover.remove(); popover = null; });

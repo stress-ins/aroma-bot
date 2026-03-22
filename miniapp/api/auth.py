@@ -28,7 +28,7 @@ _AUTH_DATE_MAX_AGE = 86400
 
 def _verify_init_data(init_data: str) -> bool:
     """Validate Telegram WebApp initData: HMAC-SHA256 signature + auth_date freshness."""
-    if os.getenv("AROMA_BYPASS_AUTH") == "1":
+    if os.getenv("AROMA_BYPASS_AUTH") == "1" and os.getenv("AROMA_ENV", "production") in ("test", "dev"):
         return True
     try:
         parsed = dict(urllib.parse.parse_qsl(init_data, strict_parsing=True))
@@ -74,7 +74,7 @@ def _telegram_username_from_init_data(init_data: str) -> str:
 
 def _require_auth(x_telegram_init_data: str | None = Header(default=None)) -> None:
     """FastAPI dependency: validate Telegram initData header on mutating endpoints."""
-    if os.getenv("AROMA_BYPASS_AUTH") == "1":
+    if os.getenv("AROMA_BYPASS_AUTH") == "1" and os.getenv("AROMA_ENV", "production") in ("test", "dev"):
         return
     if not x_telegram_init_data or not _verify_init_data(x_telegram_init_data):
         raise HTTPException(status_code=403, detail="forbidden")
@@ -84,7 +84,7 @@ def _resolve_init_data(
     x_telegram_init_data: str | None = Header(default=None),
     init_data: str | None = Query(default=None),
 ) -> str:
-    if os.getenv("AROMA_BYPASS_AUTH") == "1":
+    if os.getenv("AROMA_BYPASS_AUTH") == "1" and os.getenv("AROMA_ENV", "production") in ("test", "dev"):
         return x_telegram_init_data or init_data or ""
     candidate = x_telegram_init_data or init_data
     if not candidate or not _verify_init_data(candidate):
@@ -93,7 +93,7 @@ def _resolve_init_data(
 
 
 def _require_reference_access(x_telegram_init_data: str | None = Header(default=None)) -> int:
-    if os.getenv("AROMA_BYPASS_AUTH") == "1":
+    if os.getenv("AROMA_BYPASS_AUTH") == "1" and os.getenv("AROMA_ENV", "production") in ("test", "dev"):
         return settings.miniapp_aroma_allowed_user_id_set.copy().pop() if settings.miniapp_aroma_allowed_user_id_set else 12345
     if not x_telegram_init_data or not _verify_init_data(x_telegram_init_data):
         raise HTTPException(status_code=403, detail="forbidden")

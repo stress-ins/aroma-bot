@@ -59,7 +59,7 @@ async def publish_draft(draft_id: str, payload: PublishPayload, _: None = Depend
         logger.exception("publish failed for draft %s", draft_id)
         from bot.handlers.monitor import notify_owner
         notify_owner(f"⚠️ Publish failed for draft {draft_id}:\n{exc}")
-        raise HTTPException(status_code=500, detail=str(exc)[:500])
+        raise HTTPException(status_code=500, detail="publish_failed")
     return {"draft_id": draft_id, "results": results}
 
 

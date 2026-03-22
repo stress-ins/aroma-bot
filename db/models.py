@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 import uuid
 from typing import Any
-from sqlalchemy import BigInteger, Boolean, Float, ForeignKey, String, Text, JSON, DateTime, Integer, UniqueConstraint
+from sqlalchemy import BigInteger, Boolean, Float, ForeignKey, Index, String, Text, JSON, DateTime, Integer, UniqueConstraint
 from sqlalchemy.ext.mutable import MutableDict, MutableList
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -55,6 +55,10 @@ class TeamInviteModel(Base):
 
 class DraftModel(Base):
     __tablename__ = "drafts"
+    __table_args__ = (
+        Index("ix_draft_team_created", "team_id", "created_at"),
+        Index("ix_draft_team_status", "team_id", "status"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     draft_id: Mapped[str] = mapped_column(String(32), unique=True, index=True)
@@ -83,6 +87,9 @@ class DraftModel(Base):
 
 class PlanModel(Base):
     __tablename__ = "plans"
+    __table_args__ = (
+        Index("ix_plan_team_created", "team_id", "created_at"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     plan_id: Mapped[str] = mapped_column(String(32), unique=True, index=True)
@@ -122,6 +129,9 @@ class TodoModel(Base):
 
 class PublishLogModel(Base):
     __tablename__ = "publish_log"
+    __table_args__ = (
+        Index("ix_publish_log_draft_created", "draft_id", "created_at"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     draft_id: Mapped[str] = mapped_column(String(32), index=True)

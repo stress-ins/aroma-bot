@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, UploadFile, File
 from fastapi.responses import StreamingResponse
@@ -28,6 +29,8 @@ from ..models import (
     CarouselSlideRegeneratePayload,
     CarouselSlideTextPayload,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -224,7 +227,8 @@ async def carousel_slide_preview(
     try:
         png_bytes = await generate_slide_preview(draft_id, slide_index)
     except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
+        logger.warning("slide preview failed: %s", exc)
+        raise HTTPException(status_code=400, detail="slide_preview_failed")
 
     return StreamingResponse(
         iter([png_bytes]),
@@ -387,7 +391,8 @@ async def carousel_canva_export(draft_id: str, _: None = Depends(_require_auth))
     try:
         result = await export_to_canva(pptx_bytes, title)
     except CanvaAPIError as exc:
-        raise HTTPException(status_code=502, detail=str(exc))
+        logger.error("Canva export failed: %s", exc)
+        raise HTTPException(status_code=502, detail="canva_export_failed")
 
     return result
 
@@ -400,7 +405,8 @@ async def carousel_canva_designs(draft_id: str, _: None = Depends(_require_auth)
     try:
         designs = await list_canva_designs(limit=20)
     except CanvaAPIError as exc:
-        raise HTTPException(status_code=502, detail=str(exc))
+        logger.error("Canva list designs failed: %s", exc)
+        raise HTTPException(status_code=502, detail="canva_list_failed")
     return {"designs": designs}
 
 
@@ -420,7 +426,8 @@ async def carousel_canva_import(
     try:
         pptx_bytes = await export_canva_design(body.design_id)
     except CanvaAPIError as exc:
-        raise HTTPException(status_code=502, detail=str(exc))
+        logger.error("Canva import failed: %s", exc)
+        raise HTTPException(status_code=502, detail="canva_import_failed")
 
     if not pptx_bytes:
         raise HTTPException(status_code=400, detail="empty_export")

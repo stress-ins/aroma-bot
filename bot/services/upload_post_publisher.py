@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -21,6 +23,7 @@ UPLOAD_POST_PLATFORMS = {"threads", "instagram"}
 
 # Module-level flag — once user profile is ensured we skip further create_user calls.
 _user_ensured: set[str] = set()
+_user_ensured_lock = asyncio.Lock()
 
 
 async def _get_upload_credentials() -> tuple[str, str]:
@@ -40,21 +43,30 @@ def _get_upload_client(api_key: str | None = None) -> UploadPostClient:
     return UploadPostClient(key)
 
 
-def _ensure_user(client: UploadPostClient, user: str) -> None:
+async def _ensure_user(client: UploadPostClient, user: str) -> None:
     """Create upload-post user profile if not yet ensured this session."""
-    if user in _user_ensured:
-        return
-    try:
-        client.create_user(user)
-        logger.info("upload-post: ensured user profile '%s'", user)
-    except Exception as exc:
-        # create_user may fail if user already exists — that's OK
-        msg = str(exc).lower()
-        if "already" in msg or "exists" in msg or "duplicate" in msg:
-            logger.debug("upload-post: user '%s' already exists", user)
-        else:
-            logger.warning("upload-post: create_user('%s') failed: %s", user, exc)
-    _user_ensured.add(user)
+    async with _user_ensured_lock:
+        if user in _user_ensured:
+            return
+        try:
+            client.create_user(user)
+            logger.info("upload-post: ensured user profile '%s'", user)
+        except Exception as exc:
+            # create_user may fail if user already exists — that's OK
+            msg = str(exc).lower()
+            if "already" in msg or "exists" in msg or "duplicate" in msg:
+                logger.debug("upload-post: user '%s' already exists", user)
+            else:
+                logger.warning("upload-post: create_user('%s') failed: %s", user, exc)
+        _user_ensured.add(user)
+
+
+def _sanitize_filename(filename: str) -> str:
+    """Strip directory components and reject path traversal attempts."""
+    filename = os.path.basename(filename)
+    if ".." in filename or "/" in filename or "\\" in filename:
+        raise ValueError(f"Invalid filename: {filename}")
+    return filename
 
 
 def _resolve_media_paths(draft_kind: str, draft_id: str, payload: dict[str, Any]) -> list[Path]:
@@ -65,16 +77,18 @@ def _resolve_media_paths(draft_kind: str, draft_id: str, payload: dict[str, Any]
         for item in slide_images:
             if not item:
                 continue
-            filename = str(item.get("filename", "")).strip()
-            if filename:
+            raw_filename = str(item.get("filename", "")).strip()
+            if raw_filename:
+                filename = _sanitize_filename(raw_filename)
                 path = CAROUSEL_ASSETS_DIR / draft_id / filename
                 if path.exists():
                     paths.append(path)
     elif draft_kind in ("threads", "instagram"):
         image_info = payload.get("image")
         if isinstance(image_info, dict):
-            filename = str(image_info.get("filename", "")).strip()
-            if filename:
+            raw_filename = str(image_info.get("filename", "")).strip()
+            if raw_filename:
+                filename = _sanitize_filename(raw_filename)
                 path = CAROUSEL_ASSETS_DIR / draft_id / filename
                 if path.exists():
                     paths.append(path)
@@ -121,7 +135,7 @@ async def publish_item(
     if not user:
         raise RuntimeError("UPLOAD_POST_USER is not configured")
     client = _get_upload_client(api_key)
-    _ensure_user(client, user)
+    await _ensure_user(client, user)
 
     text = _draft_text(draft.payload, draft.kind)
     media_paths = _resolve_media_paths(draft.kind, draft_id, draft.payload)

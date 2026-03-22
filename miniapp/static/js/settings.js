@@ -910,6 +910,8 @@ export function createSettingsModule(deps) {
   }
 
   async function removeTrackedHashtag(tag) {
+    const confirmed = await confirmAction(`Удалить тег #${tag}?`);
+    if (!confirmed) return;
     try {
       const data = await fetchJson(`/api/social/tracked-hashtags/${encodeURIComponent(tag)}`, { method: "DELETE" });
       _renderTagChips(data.items || []);
@@ -1025,6 +1027,8 @@ export function createSettingsModule(deps) {
   }
 
   async function removeMonitoredAccountFromSettings(platform, username) {
+    const confirmed = await confirmAction(`Удалить аккаунт @${username}?`);
+    if (!confirmed) return;
     try {
       await fetchJson(`/api/social/monitored-accounts/${platform}?username=${encodeURIComponent(username)}`, { method: "DELETE" });
       showUiNotice(`@${username} удалён`, "success");

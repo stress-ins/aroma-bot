@@ -72,9 +72,7 @@ def _log_cost_sync(
             await session.commit()
 
     try:
-        loop = asyncio.new_event_loop()
-        loop.run_until_complete(_write())
-        loop.close()
+        asyncio.run(_write())
     except Exception as exc:
         logger.debug("Cost log write failed: %s", exc)
 

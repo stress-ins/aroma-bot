@@ -31,8 +31,8 @@ def upgrade() -> None:
         # Creating index is safe usually or we can check too
         try:
             op.create_index(op.f("ix_aroma_cards_category"), "aroma_cards", ["category"], unique=False)
-        except:
-            pass
+        except Exception:
+            pass  # index may already exist
 
 
 def downgrade() -> None:

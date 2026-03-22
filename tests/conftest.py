@@ -36,6 +36,9 @@ import miniapp.api.routers.misc
 
 @pytest.fixture(autouse=True, scope="function")
 async def setup_test_db(monkeypatch):
+    # Ensure auth bypass works with the new AROMA_ENV guard
+    monkeypatch.setenv("AROMA_ENV", "test")
+
     engine = create_async_engine(
         "sqlite+aiosqlite://",
         connect_args={"check_same_thread": False},
