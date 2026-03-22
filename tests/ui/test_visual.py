@@ -68,7 +68,7 @@ def test_visual_mobile_handbook_detail_baseline(page):
 
 @pytest.mark.visual
 def test_visual_desktop_split_view_baseline(desktop_page):
-    desktop_page.get_by_role("button", name="Черновики").click()
+    desktop_page.locator(".content-sub-tab", has_text="Публикации").click()
     desktop_page.wait_for_timeout(100)
     desktop_page.get_by_text("Как мягко выйти из рабочего напряжения").first.click()
     desktop_page.wait_for_timeout(100)
