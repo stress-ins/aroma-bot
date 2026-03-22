@@ -6350,58 +6350,10 @@ body.is-mobile-layout.is-detail-view .panel-header {
   display: none !important;
 }
 
-/* ── Detail-panel dark-theme gradient overlays (top & bottom) ──────────── */
-/* Light gradient vignette instead of solid rectangles in dark themes      */
-body.tg-theme-dark.is-mobile-layout.is-detail-view .detail-panel::before {
-  content: "";
-  position: sticky;
-  top: 0;
-  display: block;
-  height: 32px;
-  margin-bottom: -32px; /* collapse so it doesn't push content */
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.15) 0%, transparent 100%);
-  z-index: 4;
-  pointer-events: none;
-}
-
-body.tg-theme-dark.is-mobile-layout.is-detail-view .detail-panel::after {
-  content: "";
-  position: sticky;
-  bottom: 0;
-  display: block;
-  height: 40px;
-  margin-top: -40px; /* collapse so it doesn't push content */
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.12) 0%, transparent 100%);
-  z-index: 4;
-  pointer-events: none;
-}
-
-/* Fallback for standalone dark-mode (outside Telegram) */
-@media (prefers-color-scheme: dark) {
-  body:not(.tg-theme-dark).is-mobile-layout.is-detail-view .detail-panel::before {
-    content: "";
-    position: sticky;
-    top: 0;
-    display: block;
-    height: 32px;
-    margin-bottom: -32px;
-    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.15) 0%, transparent 100%);
-    z-index: 4;
-    pointer-events: none;
-  }
-
-  body:not(.tg-theme-dark).is-mobile-layout.is-detail-view .detail-panel::after {
-    content: "";
-    position: sticky;
-    bottom: 0;
-    display: block;
-    height: 40px;
-    margin-top: -40px;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.12) 0%, transparent 100%);
-    z-index: 4;
-    pointer-events: none;
-  }
-}
+/* ── Detail-panel dark-theme gradient overlays — REMOVED ────────────────── */
+/* These ::before/::after pseudo-elements on .detail-panel created a visible
+   dark gradient stripe across the screen (especially on settings/theme
+   picker). Removed to prevent the regression. See also comment at line ~6208. */
 
 /* ── Theme system ─────────────────────────────────────────────────────────── */
 body[data-theme="terracotta"],
@@ -6519,7 +6471,7 @@ body[data-theme="raspberry"] {
   margin-top: 12px;
 }
 .theme-swatch {
-  background: var(--sw-bg);
+  background: var(--surface);
   border: 1.5px solid transparent;
   border-radius: var(--radius-md);
   padding: 10px 8px 8px;
