@@ -2015,7 +2015,7 @@ body.tg-theme-dark .detail-markdown h5 {
 /* Dark-mode contrast fixes for tinted buttons */
 body.tg-theme-dark .filter-chip.active {
   background: rgba(var(--brand-rgb), 0.28);
-  color: var(--brand);
+  color: var(--text);
   border-color: rgba(var(--brand-rgb), 0.50);
 }
 body.tg-theme-dark .danger-button {
