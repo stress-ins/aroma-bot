@@ -3777,6 +3777,35 @@ body.tg-theme-dark .concept-card {
 .reels-upload-zone { border: 2px dashed rgba(46, 125, 79, 0.4); border-radius: var(--radius-md); padding: 16px; background: rgba(46, 125, 79, 0.05); text-align: center; margin-bottom: 10px; }
 .reels-upload-title { font-size: 14px; font-weight: 600; color: var(--good); margin-bottom: 6px; }
 .reels-upload-hint { font-size: 12px; color: var(--hint); margin-bottom: 12px; line-height: 1.5; }
+
+/* Video upload progress bar (inline on reels detail) */
+.reels-upload-progress-zone { margin-top: 10px; margin-bottom: 8px; }
+.reels-upload-progress-track { width: 100%; height: 8px; background: var(--surface-2, var(--border)); border-radius: 4px; overflow: hidden; }
+.reels-upload-progress-fill { height: 100%; background: var(--brand); border-radius: 4px; transition: width 0.2s ease; }
+.reels-upload-progress-text { font-size: 12px; color: var(--muted); margin-top: 4px; text-align: center; }
+
+/* Floating upload indicator (visible on any screen) */
+.video-upload-floating {
+  position: fixed;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 72px);
+  right: 12px;
+  z-index: 9999;
+  background: var(--surface, var(--bg));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md, 12px);
+  padding: 10px 14px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+  min-width: 180px;
+  max-width: 240px;
+  animation: videoUploadFadeIn 0.25s ease;
+}
+.video-upload-floating-content { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.video-upload-floating-content i,
+.video-upload-floating-content svg { color: var(--brand); flex-shrink: 0; }
+.video-upload-floating-label { font-size: 12px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.video-upload-floating-track { width: 100%; height: 4px; background: var(--surface-2, var(--border)); border-radius: 2px; overflow: hidden; }
+.video-upload-floating-fill { height: 100%; background: var(--brand); border-radius: 2px; transition: width 0.2s ease; }
+@keyframes videoUploadFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 .reels-video-preview { display: flex; align-items: center; gap: 12px; padding: 12px; background: rgba(46, 125, 79, 0.08); border: 1px solid rgba(46, 125, 79, 0.2); border-radius: var(--radius-md); margin-bottom: 10px; }
 .reels-video-thumb { width: 48px; height: 72px; background: var(--surface-2); border-radius: 8px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
 .reels-skeleton-section { border: 1px solid rgba(255, 230, 200, 0.06); border-radius: var(--radius-md); padding: 12px; margin-bottom: 8px; }

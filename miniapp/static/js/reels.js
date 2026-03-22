@@ -766,6 +766,12 @@ export function createReelsModule(deps) {
             ${actionLabel("upload", "Загрузить")}
           </button>
           <div id="reelsSelectedFileName" style="font-size:12px;color:var(--muted);margin-top:4px;display:none"></div>
+          <div id="reelsUploadProgressZone" class="reels-upload-progress-zone" style="display:${state.videoUpload.active && state.videoUpload.draftId === r.draft_id ? "" : "none"}">
+            <div class="reels-upload-progress-track">
+              <div class="reels-upload-progress-fill" id="reelsUploadProgressBar" style="width:${state.videoUpload.active ? state.videoUpload.progress : 0}%"></div>
+            </div>
+            <div class="reels-upload-progress-text" id="reelsUploadProgressText">${state.videoUpload.active ? Math.round(state.videoUpload.progress) + "%" : ""}</div>
+          </div>
           <div class="reels-upload-hint" style="margin-top:8px;font-size:12px;color:var(--muted)">или загрузите через бот</div>
           <button class="secondary-button compact" type="button" data-action="sendDraftToChat" data-args='${JSON.stringify([r.draft_id, null])}'>
             ${actionLabel("chat", "Открыть в боте")}
@@ -988,10 +994,61 @@ export function createReelsModule(deps) {
     }
   });
 
-  async function uploadReelsVideo(draftId, btn) {
+  function _updateUploadProgressUI() {
+    const { videoUpload } = state;
+    // Update inline progress bar (on reels detail screen)
+    const progressBar = document.getElementById("reelsUploadProgressBar");
+    const progressText = document.getElementById("reelsUploadProgressText");
+    const progressZone = document.getElementById("reelsUploadProgressZone");
+    if (progressZone) {
+      progressZone.style.display = videoUpload.active ? "" : "none";
+    }
+    if (progressBar) {
+      progressBar.style.width = `${videoUpload.progress}%`;
+    }
+    if (progressText) {
+      progressText.textContent = videoUpload.error
+        ? `Ошибка: ${videoUpload.error}`
+        : `${Math.round(videoUpload.progress)}%`;
+    }
+    // Update floating indicator (visible on any screen)
+    _updateFloatingIndicator();
+  }
+
+  function _updateFloatingIndicator() {
+    const { videoUpload } = state;
+    let indicator = document.getElementById("videoUploadFloatingIndicator");
+    if (!videoUpload.active) {
+      if (indicator) indicator.remove();
+      return;
+    }
+    if (!indicator) {
+      indicator = document.createElement("div");
+      indicator.id = "videoUploadFloatingIndicator";
+      indicator.className = "video-upload-floating";
+      document.body.appendChild(indicator);
+    }
+    const pct = Math.round(videoUpload.progress);
+    indicator.innerHTML = `
+      <div class="video-upload-floating-content">
+        <i data-lucide="upload" style="width:16px;height:16px"></i>
+        <span class="video-upload-floating-label">Загрузка видео ${pct}%</span>
+      </div>
+      <div class="video-upload-floating-track">
+        <div class="video-upload-floating-fill" style="width:${pct}%"></div>
+      </div>
+    `;
+    if (window.lucide) lucide.createIcons({ nodes: [indicator] });
+  }
+
+  function uploadReelsVideo(draftId, _btn) {
     const fileInput = document.getElementById("videoFileInput");
     if (!fileInput || !fileInput.files.length) {
       showRequestError("Выберите файл", { message: "Сначала выберите видео файл." });
+      return;
+    }
+    if (state.videoUpload.active) {
+      showUiNotice("Загрузка уже идёт — дождитесь завершения", "warning");
       return;
     }
     const file = fileInput.files[0];
@@ -999,20 +1056,58 @@ export function createReelsModule(deps) {
       showRequestError("Файл слишком большой", { message: "Максимальный размер — 2 ГБ." });
       return;
     }
+
     const formData = new FormData();
     formData.append("file", file);
-    await withButtonFeedback(btn, "Загружаю...", async () => {
-      await fetch(`/api/reels/${draftId}/upload-video`, {
-        method: "POST",
-        headers: getInitDataHeaders(),
-        body: formData,
-      }).then((resp) => { if (!resp.ok) throw new Error(`HTTP ${resp.status}`); return resp.json(); });
-      await fetchJson(`/api/reels/${draftId}/check-video`, { method: "POST" });
-      const draft = await fetchJson(`/api/reels/${draftId}`);
-      mergeReelsIntoState(draft);
-      callbacks.renderReels?.();
-      callbacks.renderReelsDetail?.(draft);
-    }, "Загружено");
+
+    const xhr = new XMLHttpRequest();
+    state.videoUpload = { active: true, draftId, progress: 0, fileName: file.name, error: null, xhr };
+    _updateUploadProgressUI();
+
+    xhr.upload.addEventListener("progress", (e) => {
+      if (e.lengthComputable) {
+        state.videoUpload.progress = (e.loaded / e.total) * 100;
+        _updateUploadProgressUI();
+      }
+    });
+
+    xhr.addEventListener("load", async () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          await fetchJson(`/api/reels/${draftId}/check-video`, { method: "POST" });
+          const draft = await fetchJson(`/api/reels/${draftId}`);
+          mergeReelsIntoState(draft);
+          callbacks.renderReels?.();
+          callbacks.renderReelsDetail?.(draft);
+          showUiNotice("Видео загружено", "success");
+        } catch (err) {
+          showUiNotice("Видео загружено, но проверка не удалась: " + (err.message || err), "error");
+        }
+      } else {
+        showUiNotice("Ошибка загрузки видео: HTTP " + xhr.status, "error");
+      }
+      state.videoUpload = { active: false, draftId: null, progress: 0, fileName: "", error: null, xhr: null };
+      _updateUploadProgressUI();
+    });
+
+    xhr.addEventListener("error", () => {
+      state.videoUpload.error = "Сетевая ошибка";
+      _updateUploadProgressUI();
+      showUiNotice("Ошибка сети при загрузке видео", "error");
+      state.videoUpload = { active: false, draftId: null, progress: 0, fileName: "", error: null, xhr: null };
+      _updateUploadProgressUI();
+    });
+
+    xhr.addEventListener("abort", () => {
+      state.videoUpload = { active: false, draftId: null, progress: 0, fileName: "", error: null, xhr: null };
+      _updateUploadProgressUI();
+      showUiNotice("Загрузка видео отменена", "info");
+    });
+
+    xhr.open("POST", `/api/reels/${draftId}/upload-video`);
+    const hdrs = getInitDataHeaders();
+    Object.entries(hdrs).forEach(([k, v]) => xhr.setRequestHeader(k, v));
+    xhr.send(formData);
   }
 
   let _cleanPollTimer = null;
