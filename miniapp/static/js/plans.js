@@ -526,34 +526,12 @@ export function createPlansModule(deps) {
       return;
     }
 
-    const feed = state.plansFeed || [];
-    const filters = state.plansFilter || { status: "all", platform: "all", date: null };
-
-    // Count for header
-    let filtered = feed.slice();
-    if (filters.status && filters.status !== "all") filtered = filtered.filter((i) => i.status === filters.status);
-    if (filters.platform && filters.platform !== "all") {
-      const pLower = filters.platform.toLowerCase();
-      filtered = filtered.filter((i) => (i.platforms || [i.platform]).some((p) => p.toLowerCase() === pLower));
-    }
-    if (filters.date) filtered = filtered.filter((i) => toDateKey(i.scheduled_at) === filters.date);
-
-    elements.listTitle.textContent = "Планы";
-    elements.draftCount.textContent = `${filtered.length} публикаций`;
-
-    const plans = state.plans || [];
-    elements.draftList.innerHTML = `
-      <div class="plans-sticky-header">
-        ${renderCalendarStrip(filters.date, state.plansFeedDates || [])}
-        ${renderStatusFilters(filters.status)}
-        ${renderPlatformFilters(filters.platform)}
-      </div>
-      <div class="plans-feed-body">
-        ${renderPlansFeed(feed, filters)}
-      </div>
-      ${plans.length > 0 ? `
+    if (subMode === "plans") {
+      const plans = state.plans || [];
+      elements.listTitle.textContent = "Контент-планы";
+      elements.draftCount.textContent = plans.length ? `${plans.length} шт` : "";
+      elements.draftList.innerHTML = plans.length ? `
         <div class="plans-feed-body plans-content-plans">
-          <div class="plans-day-label">Контент-планы</div>
           ${plans.map((plan) => `
             <article ${interactiveCardAttrs(`Открыть план ${plan.plan_id}`)} class="plan-card overview-card${plan.plan_id === state.selectedPlan?.plan_id ? " active" : ""} interactive-card" data-action="openPlan" data-args='["${plan.plan_id}"]'>
               <div class="overview-card-top">
@@ -569,7 +547,39 @@ export function createPlansModule(deps) {
             </article>
           `).join("")}
         </div>
-      ` : ""}
+      ` : `<div class="plans-feed-body">${renderGuidedState({
+        eyebrow: "КОНТЕНТ-ПЛАНЫ",
+        title: "Планов пока нет",
+        body: "Создайте контент-план для системного подхода к публикациям.",
+      })}</div>`;
+      syncMobileNavigation();
+      return;
+    }
+
+    const feed = state.plansFeed || [];
+    const filters = state.plansFilter || { status: "all", platform: "all", date: null };
+
+    // Count for header
+    let filtered = feed.slice();
+    if (filters.status && filters.status !== "all") filtered = filtered.filter((i) => i.status === filters.status);
+    if (filters.platform && filters.platform !== "all") {
+      const pLower = filters.platform.toLowerCase();
+      filtered = filtered.filter((i) => (i.platforms || [i.platform]).some((p) => p.toLowerCase() === pLower));
+    }
+    if (filters.date) filtered = filtered.filter((i) => toDateKey(i.scheduled_at) === filters.date);
+
+    elements.listTitle.textContent = "Публикации";
+    elements.draftCount.textContent = `${filtered.length} публикаций`;
+
+    elements.draftList.innerHTML = `
+      <div class="plans-sticky-header">
+        ${renderCalendarStrip(filters.date, state.plansFeedDates || [])}
+        ${renderStatusFilters(filters.status)}
+        ${renderPlatformFilters(filters.platform)}
+      </div>
+      <div class="plans-feed-body">
+        ${renderPlansFeed(feed, filters)}
+      </div>
     `;
 
     if (!state.selectedPlan) {
