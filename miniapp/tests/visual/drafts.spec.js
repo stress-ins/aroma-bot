@@ -54,7 +54,7 @@ test.describe('Черновики — визуальные тесты', () => {
     await page.route('**/api/drafts*', (route) =>
       route.fulfill({ status: 200, contentType: 'application/json', body: '[]' }),
     );
-    await page.locator('#btnTabDrafts').click();
+    await page.locator('#btnTabInspiration').click();
     await page.waitForTimeout(500);
     await page.evaluate('window.goBackToList()');
     await page.waitForTimeout(300);

@@ -3,8 +3,8 @@ from __future__ import annotations
 
 
 def test_mobile_layout_has_no_overlapping_controls(page):
-    for tab_name in ["Публикации", "Планы", "Создать"]:
-        {"Публикации": page.locator("#btnTabDrafts"), "Планы": page.locator(".content-sub-tab", has_text="Планы"), "Создать": page.locator("#btnTabCreate")}[tab_name].click()
+    for tab_name in ["Черновики", "Контент", "Создать"]:
+        {"Черновики": page.locator("#btnTabInspiration"), "Контент": page.locator("#btnTabContent"), "Создать": page.locator("#btnTabCreate")}[tab_name].click()
         page.wait_for_timeout(100)
 
         overlaps = page.evaluate(
@@ -70,7 +70,7 @@ def test_mobile_primary_controls_have_comfortable_hit_targets(page):
 
 
 def test_mobile_detail_actions_do_not_overlap(page):
-    page.locator("#btnTabDrafts").click()
+    page.locator("#btnTabInspiration").click()
     page.wait_for_timeout(100)
     page.evaluate("window.goBackToList()")
     page.locator(".draft-card").first.wait_for(state="visible")
@@ -117,7 +117,7 @@ def test_no_horizontal_overflow_on_mobile(page):
     page.reload()
     page.wait_for_timeout(100)
 
-    page.locator("#btnTabDrafts").click()
+    page.locator("#btnTabInspiration").click()
     page.wait_for_timeout(100)
     page.evaluate("window.goBackToList()")
     first_card = page.locator(".draft-card").first
@@ -147,7 +147,7 @@ def test_no_horizontal_overflow_on_mobile(page):
 
 def test_detail_card_title_not_clipped_on_mobile(page):
     """Every detail card type: title must be fully visible, not clipped at top."""
-    page.locator("#btnTabDrafts").click()
+    page.locator("#btnTabInspiration").click()
     page.wait_for_timeout(100)
     page.evaluate("window.goBackToList()")
 
@@ -230,7 +230,7 @@ _JS_CHECK_DETAIL_INTEGRITY = """(vw) => {
 
 def test_detail_sections_not_clipped_on_sides(page):
     """Detail view: sections have border-radius, horizontal gap from edges, no overflow."""
-    page.locator("#btnTabDrafts").click()
+    page.locator("#btnTabInspiration").click()
     page.wait_for_timeout(100)
     page.evaluate("window.goBackToList()")
 
@@ -264,7 +264,7 @@ def test_handbook_detail_sections_not_clipped(page):
 
 def test_detail_panel_allows_scroll_past_tab_bar(page):
     """Detail panel has overflow-y: auto so content can scroll under the floating tab bar."""
-    page.locator("#btnTabDrafts").click()
+    page.locator("#btnTabInspiration").click()
     page.wait_for_timeout(100)
     page.evaluate("window.goBackToList()")
     page.locator(".draft-card").first.click()
@@ -282,7 +282,7 @@ def test_detail_panel_allows_scroll_past_tab_bar(page):
 
 def test_themed_controls_have_no_overlaps(themed_page):
     """No controls overlap in either theme."""
-    for tab_id in ["#btnTabDrafts", "#btnTabCreate"]:
+    for tab_id in ["#btnTabInspiration", "#btnTabCreate"]:
         themed_page.locator(tab_id).click()
         themed_page.wait_for_timeout(100)
 

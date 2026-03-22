@@ -4,7 +4,7 @@ from __future__ import annotations
 
 def _navigate_to_threads_detail(page):
     """Go to Drafts tab and open the threads_series draft to get .btn-row buttons."""
-    page.locator("#btnTabDrafts").click()
+    page.locator("#btnTabInspiration").click()
     page.wait_for_timeout(300)
     card = page.locator(".draft-card").filter(has_text="Восстановление энергии").first
     if card.count():

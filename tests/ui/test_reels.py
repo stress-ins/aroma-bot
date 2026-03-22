@@ -79,7 +79,7 @@ def test_drafts_reels_card_routes_into_storyboard_detail_with_mocked_api(page):
     page.route("**/api/drafts/reels001", _draft_detail)
     page.route("**/api/reels/reels001", _reel_detail)
 
-    page.locator("#btnTabDrafts").click()
+    page.locator("#btnTabInspiration").click()
     page.wait_for_timeout(100)
     page.get_by_text("Вечерний ароматический ритуал").first.click()
     page.wait_for_timeout(100)
@@ -90,6 +90,8 @@ def test_drafts_reels_card_routes_into_storyboard_detail_with_mocked_api(page):
 
 def test_reels_and_plans_render_markdown_in_detail_views(page):
     """Plans still render markdown correctly; reels use V2 inline layout."""
+    page.locator("#btnTabContent").click()
+    page.wait_for_timeout(100)
     page.locator(".content-sub-tab", has_text="Планы").click()
     page.wait_for_timeout(100)
     page.locator(".plan-card").first.click()

@@ -109,8 +109,8 @@ export function createContentModule(deps) {
     enterDetailView();
   }
 
-  async function recoverPendingReelsCreation(topic, pendingDraftId) {
-    const startedAt = Date.now();
+  async function recoverPendingReelsCreation(topic, pendingDraftId, requestStartedAt) {
+    const startedAt = requestStartedAt || Date.now();
     state.pendingCreateRecovery = {
       draft_id: pendingDraftId,
       kind: "reels",
@@ -209,11 +209,13 @@ export function createContentModule(deps) {
       : 0;
     const hasGeneratingFrames = Array.isArray(reel.frames) && reel.frames.some((f) => f?.image_status === "generating");
     state.reels = state.reels.map((item) => item.draft_id === reel.draft_id ? { ...item, ...reel } : item);
+    state.drafts = state.drafts.map((item) => item.draft_id === reel.draft_id ? { ...item, ...reel } : item);
     if (isCurrentReelsDetail(reel.draft_id)) {
       state.selectedReels = reel;
       renderReels();
       if (!isEditingDetailForm()) renderReelsDetail(reel);
     }
+    if (typeof callbacks.renderDraftList === "function") callbacks.renderDraftList();
     return {
       reel,
       shouldContinue: reel.generation_pending || hasGeneratingFrames || readyFrames < (reel.frame_count || 0),

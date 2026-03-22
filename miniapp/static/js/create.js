@@ -370,6 +370,7 @@ export function createCreateModule(deps) {
       const bcRaw = sessionStorage.getItem("blend_create_context");
       let blend_context = null;
       if (bcRaw) { try { blend_context = JSON.parse(bcRaw); } catch(_e) {} }
+      const requestStartedAt = Date.now();
       const pending = openPendingReelsCreation(topic);
       try {
         const reel = await fetchJson("/api/generate/reels", {
@@ -381,7 +382,7 @@ export function createCreateModule(deps) {
         finalizePendingReelsCreation(reel);
       } catch (error) {
         if (error?.message === "request_timeout") {
-          await recoverPendingReelsCreation(topic, pending.draft_id);
+          await recoverPendingReelsCreation(topic, pending.draft_id, requestStartedAt);
           return;
         }
         throw error;

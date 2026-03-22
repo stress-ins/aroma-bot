@@ -106,7 +106,7 @@ def test_create_topic_field_visible_with_keyboard(page):
 
 def test_draft_editor_notes_visible_with_keyboard(page):
     """Draft detail: editor notes textarea stays visible when keyboard opens."""
-    page.locator("#btnTabDrafts").click()
+    page.locator("#btnTabInspiration").click()
     page.wait_for_timeout(DOM_RENDER)
 
     # Open first draft
@@ -274,7 +274,7 @@ def test_settings_promo_input_visible_with_keyboard(page):
 
 def test_draft_search_input_visible_with_keyboard(page):
     """Drafts list: search filter input stays visible with keyboard."""
-    page.locator("#btnTabDrafts").click()
+    page.locator("#btnTabInspiration").click()
     page.wait_for_timeout(DOM_RENDER)
 
     search = page.locator("#queryFilter")
@@ -298,7 +298,7 @@ def test_draft_search_input_visible_with_keyboard(page):
 
 def test_keyboard_open_sets_vv_height_property(page):
     """Verify that the visualViewport resize handler sets --vv-height on body."""
-    page.locator("#btnTabDrafts").click()
+    page.locator("#btnTabInspiration").click()
     page.wait_for_timeout(DOM_RENDER)
 
     card = page.locator(".draft-card").first

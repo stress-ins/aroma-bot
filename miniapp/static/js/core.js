@@ -303,6 +303,7 @@ export function createCoreModule(deps) {
     if (!draft?.draft_id) return;
     state.selectedReels = draft;
     state.reels = state.reels.map((item) => item.draft_id === draft.draft_id ? { ...item, ...draft } : item);
+    state.drafts = state.drafts.map((item) => item.draft_id === draft.draft_id ? { ...item, ...draft } : item);
   }
 
   function setEmptyState(hidden, text = "Ничего не найдено.") {

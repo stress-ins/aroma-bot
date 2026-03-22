@@ -7,7 +7,7 @@ from .helpers import WCAG_AA_MIN, contrast_ratio, parse_rgb
 
 
 def test_draft_search_empty_state_offers_guidance(page):
-    page.locator("#btnTabDrafts").click()
+    page.locator("#btnTabInspiration").click()
     page.wait_for_timeout(100)
     # Expand collapsed filters to access the search field
     page.locator("#filtersToggleBtn").click()
@@ -61,7 +61,7 @@ def test_content_review_detail_supports_save_polish_and_feedback(page):
         route.continue_()
 
     page.route("**/*", handle_route)
-    page.locator("#btnTabDrafts").click()
+    page.locator("#btnTabInspiration").click()
     page.wait_for_timeout(100)
     page.get_by_text("Как мягко выйти из рабочего напряжения").first.click()
     page.wait_for_timeout(100)
@@ -84,7 +84,7 @@ def test_content_review_detail_supports_save_polish_and_feedback(page):
 
 
 def test_content_review_detail_highlights_editor_focus_and_summary(page):
-    page.locator("#btnTabDrafts").click()
+    page.locator("#btnTabInspiration").click()
     page.wait_for_timeout(100)
     page.get_by_text("Как мягко выйти из рабочего напряжения").first.click()
     page.wait_for_timeout(100)
@@ -183,12 +183,12 @@ def test_create_carousel_routes_into_draft_detail(page):
 
     assert page.locator(".detail-title").inner_text().strip() == "Тестовая карусель"
     assert page.locator(".slide").count() == 2
-    assert page.locator("#btnTabDrafts").get_attribute("class")
+    assert page.locator("#btnTabInspiration").get_attribute("class")
 
 
 def test_themed_draft_detail_renders(themed_page):
     """Draft detail view renders with readable text in both themes."""
-    themed_page.locator("#btnTabDrafts").click()
+    themed_page.locator("#btnTabInspiration").click()
     themed_page.wait_for_timeout(100)
     themed_page.get_by_text("Как мягко выйти из рабочего напряжения").first.click()
     themed_page.wait_for_timeout(100)

@@ -3,16 +3,25 @@ from __future__ import annotations
 
 
 def _nav_to_archive(page):
-    """Navigate to Archive via content sub-tab."""
+    """Navigate to Archive via Контент bottom tab then content sub-tab."""
+    # Click the Контент bottom tab button to enter the plans/content area
+    content_btn = page.locator("#btnTabContent")
+    content_btn.wait_for(state="visible", timeout=5000)
+    content_btn.click()
+    page.wait_for_timeout(1000)
     page.locator(".content-sub-tab", has_text="Архив").click()
     page.wait_for_timeout(800)
 
 
 def test_archive_tab_visible(dark_page):
-    """Archive tab appears as a content sub-tab."""
+    """Archive tab appears as a content sub-tab under Контент."""
     page = dark_page
+    content_btn = page.locator("#btnTabContent")
+    content_btn.wait_for(state="visible", timeout=5000)
+    content_btn.click()
+    page.wait_for_timeout(1000)
     archive_tab = page.locator(".content-sub-tab", has_text="Архив")
-    archive_tab.wait_for(state="visible", timeout=3000)
+    archive_tab.wait_for(state="visible", timeout=5000)
     assert archive_tab.is_visible()
 
 

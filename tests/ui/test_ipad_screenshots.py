@@ -15,14 +15,14 @@ from .helpers import assert_visual_snapshot, prepare_visual_state
 
 
 def _nav_to_drafts(page):
-    """Navigate to drafts list via content sub-tab."""
-    page.locator(".content-sub-tab", has_text="Публикации").first.click()
+    """Navigate to drafts list via Вдохновение bottom tab."""
+    page.locator("#btnTabInspiration").click()
     page.wait_for_timeout(200)
 
 
 def _nav_to_plans(page):
-    """Navigate to plans via content sub-tab (works at any viewport width)."""
-    page.evaluate("document.querySelector('.content-sub-tab[data-subtab=\"plans\"]')?.click() || window.switchContentSubTab('plans')")
+    """Navigate to plans via Контент bottom tab."""
+    page.locator("#btnTabContent").click()
     page.wait_for_timeout(300)
 
 

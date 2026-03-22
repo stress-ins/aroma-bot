@@ -58,6 +58,11 @@ const state = {
   _fromContext: null,
   plansSubMode: "publications",
   contentSubMode: "drafts",
+  inspirationSubTab: (() => {
+    const t = new URLSearchParams(window.location.search).get("tab");
+    if (t === "trends") return "trends";
+    return "drafts";
+  })(),
   contentSubTab: (() => {
     const t = new URLSearchParams(window.location.search).get("tab");
     if (t === "plans") return "plans";
@@ -1492,7 +1497,7 @@ function setPlansSubMode(mode) {
 
 function setContentSubMode(mode) {
   state.contentSubMode = mode;
-  state.contentSubTab = "publications";
+  state.inspirationSubTab = mode === "trends" ? "trends" : "drafts";
   if (mode === "drafts") {
     setTab("drafts");
   } else {
@@ -1996,6 +2001,7 @@ const onboarding = createOnboardingModule({ state, icon });
   showUiNotice,
   callbacks: {
     renderReelsDetailMarkup,
+    renderDraftList: () => { if (typeof renderDraftList === "function") renderDraftList(); },
   },
 }));
 
@@ -2048,13 +2054,22 @@ function setMode(m) {
 }
 
 const SECTION_TITLES = {
-  drafts: "Контент", plans: "Контент",
+  drafts: "Вдохновение", trends: "Вдохновение",
+  plans: "Контент",
   create: "Создать", settings: "Настройки",
-  trends: "Контент", schedule: "Расписание", inbox: "Согласование",
+  schedule: "Расписание", inbox: "Согласование",
   keywords: "Ключи", status: "Статус",
   aromas: "Ароматы", concepts: "Концепции", practices: "Практики", sounds: "Звуки",
   blends: "Смеси", symptoms: "Симптомы",
 };
+
+/* ── Inspiration sub-tabs (pill-style below section title) ────────────── */
+const INSPIRATION_SUB_TABS = [
+  { id: "drafts", label: "Черновики" },
+  { id: "trends", label: "Тренды" },
+];
+
+const _TABS_SHOWING_INSPIRATION_SUB = new Set(["drafts", "trends"]);
 
 /* ── Content sub-tabs (pill-style below section title) ─────────────────── */
 const CONTENT_SUB_TABS = [
@@ -2064,33 +2079,59 @@ const CONTENT_SUB_TABS = [
   { id: "archive", label: "Архив" },
 ];
 
-const _TABS_SHOWING_CONTENT_SUB = new Set(["drafts", "plans", "trends"]);
+const _TABS_SHOWING_CONTENT_SUB = new Set(["plans"]);
 
 function renderContentSubTabs() {
   const container = elements.contentSubTabs;
   if (!container) return;
-  const isContentMode = state.mode === "content" && _TABS_SHOWING_CONTENT_SUB.has(state.tab);
-  if (!isContentMode) {
-    container.innerHTML = "";
+
+  if (state.mode === "content" && _TABS_SHOWING_INSPIRATION_SUB.has(state.tab)) {
+    container.innerHTML = INSPIRATION_SUB_TABS.map(t =>
+      `<button class="content-sub-tab${state.inspirationSubTab === t.id ? " active" : ""}" data-subtab="${t.id}" data-group="inspiration" type="button"><span>${escapeHtml(t.label)}</span></button>`
+    ).join("");
+    container.querySelectorAll(".content-sub-tab").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const target = btn.dataset.subtab;
+        if (!target || target === state.inspirationSubTab) return;
+        switchInspirationSubTab(target);
+      });
+    });
     return;
   }
-  container.innerHTML = CONTENT_SUB_TABS.map(t =>
-    `<button class="content-sub-tab${state.contentSubTab === t.id ? " active" : ""}" data-subtab="${t.id}" type="button"><span>${escapeHtml(t.label)}</span></button>`
-  ).join("");
-  container.querySelectorAll(".content-sub-tab").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const target = btn.dataset.subtab;
-      if (!target || target === state.contentSubTab) return;
-      switchContentSubTab(target);
+
+  if (state.mode === "content" && _TABS_SHOWING_CONTENT_SUB.has(state.tab)) {
+    container.innerHTML = CONTENT_SUB_TABS.map(t =>
+      `<button class="content-sub-tab${state.contentSubTab === t.id ? " active" : ""}" data-subtab="${t.id}" data-group="content" type="button"><span>${escapeHtml(t.label)}</span></button>`
+    ).join("");
+    container.querySelectorAll(".content-sub-tab").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const target = btn.dataset.subtab;
+        if (!target || target === state.contentSubTab) return;
+        switchContentSubTab(target);
+      });
     });
-  });
+    return;
+  }
+
+  container.innerHTML = "";
+}
+
+function switchInspirationSubTab(subTab) {
+  state.inspirationSubTab = subTab;
+  if (subTab === "drafts") {
+    setTab("drafts");
+    void safeLoadCurrentTab("Не удалось загрузить черновики");
+  } else if (subTab === "trends") {
+    setTab("trends");
+    void safeLoadCurrentTab("Не удалось загрузить тренды");
+  }
 }
 
 function switchContentSubTab(subTab) {
   state.contentSubTab = subTab;
   if (subTab === "publications") {
-    state.contentSubMode = "drafts";
-    setTab("drafts");
+    state.plansSubMode = "publications";
+    setTab("plans");
     void safeLoadCurrentTab("Не удалось загрузить публикации");
   } else if (subTab === "plans") {
     state.plansSubMode = "publications";
@@ -2111,7 +2152,7 @@ function setTab(t) {
   clearBackgroundRefreshes();
   state.tab = t;
   document.body.dataset.tab = t;
-  const titleOverride = _TABS_SHOWING_CONTENT_SUB.has(t) ? "Контент" : null;
+  const titleOverride = _TABS_SHOWING_INSPIRATION_SUB.has(t) ? "Вдохновение" : (_TABS_SHOWING_CONTENT_SUB.has(t) ? "Контент" : null);
   if (elements.topbarTitle) elements.topbarTitle.textContent = titleOverride || (SECTION_TITLES[t] ?? t);
   state.mobileView = "list";
   state.draftId = "";
@@ -2190,6 +2231,7 @@ registerWindowBridge({
   openDailyOilReference,
   copyText,
   openReels,
+  refreshReelsDetail,
   openPlan,
   generateDraftFromPlan,
   openPlanRelatedDraft,
@@ -2348,7 +2390,7 @@ registerWindowBridge({
   removeTrackedHashtag,
 });
 
-reelsCallbacks.renderReels = renderReels;
+reelsCallbacks.renderReels = () => { renderReels(); renderDraftList(); };
 reelsCallbacks.renderReelsDetail = renderReelsDetail;
 
 // Auto-resize for textareas is handled by shell.js bindTextareaAutoExpand()

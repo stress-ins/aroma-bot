@@ -3,7 +3,9 @@ from __future__ import annotations
 
 
 def _nav_to_mentions(page):
-    """Navigate to Mentions via content sub-tab."""
+    """Navigate to Mentions via Контент bottom tab then content sub-tab."""
+    page.locator("#btnTabContent").click()
+    page.wait_for_timeout(200)
     page.locator(".content-sub-tab", has_text="Упоминания").click()
     page.wait_for_timeout(500)
 

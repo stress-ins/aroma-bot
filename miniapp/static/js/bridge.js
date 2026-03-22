@@ -13,6 +13,7 @@ export function registerWindowBridge(deps) {
     openDailyOilReference,
     copyText,
     openReels,
+    refreshReelsDetail,
     openPlan,
     openPlanDetail,
     generateDraftFromPlan,
@@ -120,6 +121,7 @@ export function registerWindowBridge(deps) {
     setPlanDateFilter,
     setPlansSubMode,
     setContentSubMode,
+    switchContentSubTab,
     activatePlan,
     addForbiddenPhrase,
     removeForbiddenPhrase,
@@ -191,6 +193,15 @@ export function registerWindowBridge(deps) {
   window.openDailyOilReference = openDailyOilReference;
   window.copyText = copyText;
   window.openReels = openReels;
+  window.refreshCurrentDetail = async () => {
+    if (state.selectedReels?.draft_id) {
+      await refreshReelsDetail(state.selectedReels.draft_id);
+    } else if (state.selectedReference?.slug) {
+      await openReference(state.selectedReference.slug);
+    } else if (state.draftId) {
+      await openDraft(state.draftId);
+    }
+  };
   window.openPlan = openPlan;
   window.openPlanDetail = openPlanDetail;
   window.setPlanStatusFilter = setPlanStatusFilter;
@@ -198,6 +209,7 @@ export function registerWindowBridge(deps) {
   window.setPlanDateFilter = setPlanDateFilter;
   window.setPlansSubMode = setPlansSubMode;
   window.setContentSubMode = setContentSubMode;
+  window.switchContentSubTab = switchContentSubTab;
   window.generateDraftFromPlan = generateDraftFromPlan;
   window.openPlanRelatedDraft = openPlanRelatedDraft;
   window.updateDraft = updateDraft;

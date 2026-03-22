@@ -142,7 +142,7 @@ def assert_visual_snapshot(locator, snapshot_name: str, *, max_diff_ratio: float
 # ---------------------------------------------------------------------------
 
 def open_reels_detail_from_drafts(page):
-    page.locator("#btnTabDrafts").click()
+    page.locator("#btnTabInspiration").click()
     page.wait_for_timeout(DOM_RENDER)
     page.get_by_text("Вечерний ароматический ритуал").first.click()
     page.wait_for_timeout(DOM_RENDER)
