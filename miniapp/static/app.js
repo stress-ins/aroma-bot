@@ -637,6 +637,7 @@ function uiIcon(name) {
     sparkle:    "sparkles",
     scissors:   "scissors",
     video:      "video",
+    "file-video": "file-video",
     text:       "align-left",
     nps:        "heart",
     therapy:    "cross",
@@ -1251,6 +1252,13 @@ const coreCallbacks = {
   renderReelsDetail: (draft) => renderReelsDetail(draft),
 };
 
+function getInitDataHeaders() {
+  const initData = window.Telegram?.WebApp?.initData;
+  const headers = initData ? { "X-Telegram-Init-Data": initData } : {};
+  if (state.activeTeamId) headers["X-Team-Id"] = state.activeTeamId;
+  return headers;
+}
+
 const {
   interactiveCardAttrs,
   renderDetailLoader,
@@ -1287,12 +1295,7 @@ const {
   sectionHeadingIcon,
   renderBackButton,
   renderMarkdown,
-  getInitDataHeaders: () => {
-    const initData = window.Telegram?.WebApp?.initData;
-    const headers = initData ? { "X-Telegram-Init-Data": initData } : {};
-    if (state.activeTeamId) headers["X-Team-Id"] = state.activeTeamId;
-    return headers;
-  },
+  getInitDataHeaders,
   getCurrentDraftId: () => state.draftId || state.selectedReels?.draft_id || "",
   timers: {
     getUiNotice: () => uiNoticeTimer,
@@ -1591,6 +1594,7 @@ const {
   mergeReelsIntoState,
   scheduleReelsRefresh,
   showUiNotice,
+  getInitDataHeaders,
   callbacks: reelsCallbacks,
 });
 
