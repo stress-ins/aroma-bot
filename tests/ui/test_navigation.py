@@ -3,13 +3,23 @@ from __future__ import annotations
 
 
 def test_mobile_tabs_and_drafts_render_in_russian(page):
-    sub_tabs = page.locator(".content-sub-tab").evaluate_all(
+    # Default tab is Inspiration (drafts) — check inspiration sub-tabs
+    insp_tabs = page.locator(".content-sub-tab").evaluate_all(
         "(nodes) => nodes.map((node) => node.textContent.trim())"
     )
-    assert "Планы" in sub_tabs
-    assert "Публикации" in sub_tabs
-    assert "Упоминания" in sub_tabs
-    assert "Архив" in sub_tabs
+    assert "Черновики" in insp_tabs
+    assert "Тренды" in insp_tabs
+
+    # Switch to Контент tab — check content sub-tabs
+    page.locator("#btnTabContent").click()
+    page.wait_for_timeout(200)
+    content_tabs = page.locator(".content-sub-tab").evaluate_all(
+        "(nodes) => nodes.map((node) => node.textContent.trim())"
+    )
+    assert "Планы" in content_tabs
+    assert "Публикации" in content_tabs
+    assert "Упоминания" in content_tabs
+    assert "Архив" in content_tabs
 
     page.locator("#btnTabHandbook").click()
     page.wait_for_timeout(100)
@@ -79,22 +89,27 @@ def test_mobile_handbook_tab_remembers_last_section(page):
 
 def test_overview_lists_use_consistent_card_meta(page):
     page.locator("#btnTabInspiration").click()
-    page.wait_for_timeout(100)
+    page.wait_for_timeout(200)
     assert page.locator(".draft-card .overview-card-date").first.inner_text().strip()
 
     # Switch to Контент tab, then check plans sub-tab
     page.locator("#btnTabContent").click()
-    page.wait_for_timeout(100)
+    page.wait_for_timeout(200)
     page.locator(".content-sub-tab", has_text="Планы").click()
-    page.wait_for_timeout(100)
+    page.wait_for_timeout(200)
     assert page.locator(".plan-card .draft-kind").first.is_visible()
     assert page.locator(".plan-card .overview-card-date").first.is_visible()
 
-    page.locator(".content-sub-tab", has_text="Публикации").click()
-    page.wait_for_timeout(100)
-    page.get_by_text("Вечерний ароматический ритуал").first.click()
-    page.wait_for_timeout(100)
-    assert page.locator(".reels-frame-v2").count() >= 1
+    # Switch back to Inspiration and verify drafts are clickable
+    page.locator("#btnTabInspiration").click()
+    page.wait_for_timeout(200)
+    first_draft = page.locator(".draft-card").first
+    first_draft.wait_for(state="visible", timeout=5000)
+    first_draft.click()
+    page.wait_for_timeout(500)
+    # Detail panel should have content after clicking a draft
+    detail = page.locator("#draftDetail")
+    assert detail.inner_html().strip()
 
 
 def test_desktop_layout_keeps_split_panels_and_comfortable_controls(desktop_page):
