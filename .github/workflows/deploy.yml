@@ -40,6 +40,16 @@ jobs:
           git remote add vps ssh://root@46.32.186.192/opt/aroma.git
           git push --force vps HEAD:main
 
+      - name: Install Node.js on VPS (if missing)
+        run: |
+          ssh root@46.32.186.192 'command -v node >/dev/null 2>&1 || (curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && apt-get install -y nodejs)'
+
+      - name: Install Remotion dependencies
+        run: ssh root@46.32.186.192 'cd /opt/aroma/remotion && npm ci --production 2>&1 | tail -5'
+
+      - name: Install Remotion browser (Chromium)
+        run: ssh root@46.32.186.192 'cd /opt/aroma/remotion && npx remotion browser ensure 2>&1 | tail -3'
+
       - name: Run Alembic migrations
         run: ssh root@46.32.186.192 'cd /opt/aroma && .venv/bin/alembic upgrade head'
 

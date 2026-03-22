@@ -509,15 +509,25 @@ _compose_logger = logging.getLogger(__name__ + ".compose")
 _compose_status: dict[str, dict] = {}
 
 
-async def _run_compose_task(draft_id: str) -> None:
+async def _run_compose_task(
+    draft_id: str,
+    renderer: str = "ffmpeg",
+    template: str = "aroma",
+    text_animation: str = "fade",
+) -> None:
     """Background task that runs the video pipeline and updates status."""
     from bot.services.video_pipeline import compose_reel
 
     try:
         _compose_status[draft_id] = {"status": "running", "error": None, "result": None}
-        result = await compose_reel(draft_id)
+        result = await compose_reel(
+            draft_id,
+            renderer=renderer,
+            template=template,
+            text_animation=text_animation,
+        )
         _compose_status[draft_id] = {"status": "completed", "error": None, "result": result}
-        _compose_logger.info("Compose completed for draft %s", draft_id)
+        _compose_logger.info("Compose completed for draft %s (renderer=%s)", draft_id, renderer)
     except Exception as exc:
         _compose_logger.error("Compose failed for draft %s: %s", draft_id, exc, exc_info=True)
         _compose_status[draft_id] = {"status": "failed", "error": str(exc), "result": None}
@@ -527,12 +537,20 @@ async def _run_compose_task(draft_id: str) -> None:
 async def compose_reel_video(
     draft_id: str,
     background_tasks: BackgroundTasks,
+    renderer: str = Query(default="ffmpeg", regex="^(ffmpeg|remotion)$"),
+    template: str = Query(default="aroma", regex="^(aroma|educational|promo)$"),
+    text_animation: str = Query(default="fade", regex="^(fade|slide-up|typewriter|scale-in)$"),
     _: None = Depends(_require_auth),
 ):
     """Trigger video composition for a reels draft.
 
     Runs the full pipeline (frames -> video -> voiceover -> music -> final MP4)
     as a background task. Returns 202 Accepted immediately.
+
+    Query params:
+        renderer: "ffmpeg" (default) or "remotion"
+        template: Remotion template — "aroma", "educational", "promo"
+        text_animation: Text animation — "fade", "slide-up", "typewriter", "scale-in"
     """
     draft = await serialize_reels_draft(draft_id)
     if not draft:
@@ -546,10 +564,15 @@ async def compose_reel_video(
         )
 
     _compose_status[draft_id] = {"status": "pending", "error": None, "result": None}
-    background_tasks.add_task(_run_compose_task, draft_id)
+    background_tasks.add_task(_run_compose_task, draft_id, renderer, template, text_animation)
     return JSONResponse(
         status_code=202,
-        content={"draft_id": draft_id, "status": "pending", "message": "Video composition started"},
+        content={
+            "draft_id": draft_id,
+            "status": "pending",
+            "renderer": renderer,
+            "message": "Video composition started",
+        },
     )
 
 
@@ -581,6 +604,53 @@ async def compose_reel_status(
     if status["result"]:
         response["result"] = status["result"]
     return response
+
+
+# ── Remotion preview frames ──────────────────────────────────────────────────
+
+
+@router.get("/api/reels/{draft_id}/preview-frames")
+async def reels_preview_frames(
+    draft_id: str,
+    count: int = Query(default=4, ge=1, le=8),
+    template: str = Query(default="aroma", regex="^(aroma|educational|promo)$"),
+    text_animation: str = Query(default="fade", regex="^(fade|slide-up|typewriter|scale-in)$"),
+    _: None = Depends(_require_auth),
+):
+    """Render key frame stills via Remotion for preview filmstrip."""
+    from bot.services.remotion_renderer import render_still
+    from bot.services.reels_assets import ASSETS_DIR
+    from bot.services.video_pipeline import _find_frame_images, _extract_overlay_texts
+
+    draft = await _get_draft(draft_id)
+    if not draft:
+        raise HTTPException(status_code=404, detail="reels_not_found")
+
+    payload = dict(draft.payload or {})
+    frame_paths = _find_frame_images(draft_id, payload)
+    if not frame_paths:
+        raise HTTPException(status_code=400, detail="no_frame_images")
+
+    overlay_texts = _extract_overlay_texts(payload)
+    output_dir = ASSETS_DIR / draft_id / "preview_frames"
+
+    try:
+        stills = await render_still(
+            frame_paths=frame_paths,
+            overlay_texts=overlay_texts if any(overlay_texts) else None,
+            output_dir=output_dir,
+            template=template,
+            text_animation=text_animation,
+            count=count,
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc))
+
+    urls = [
+        f"/generated/reels_assets/{draft_id}/preview_frames/{p.name}"
+        for p in stills
+    ]
+    return {"draft_id": draft_id, "preview_urls": urls, "count": len(urls)}
 
 
 # ── Video upload & cleaning ──────────────────────────────────────────────────
