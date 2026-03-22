@@ -98,10 +98,8 @@ def test_overview_lists_use_consistent_card_meta(page):
 
 
 def test_desktop_layout_keeps_split_panels_and_comfortable_controls(desktop_page):
-    desktop_page.evaluate("document.getElementById('btnTabContent')?.click()")
-    desktop_page.wait_for_timeout(100)
-    desktop_page.wait_for_selector(".content-sub-tab", timeout=10000)
-    desktop_page.locator(".content-sub-tab", has_text="Публикации").click()
+    # Default tab is "drafts" — wait for content to load
+    desktop_page.wait_for_selector(".draft-card", timeout=10000)
     desktop_page.wait_for_timeout(100)
     layout = desktop_page.evaluate(
         """

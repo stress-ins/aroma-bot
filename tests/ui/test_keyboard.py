@@ -3,10 +3,8 @@ from __future__ import annotations
 
 
 def test_keyboard_can_open_cards_and_create_tools(desktop_page):
-    desktop_page.locator("#btnTabContent").click()
-    desktop_page.wait_for_timeout(100)
-    desktop_page.locator(".content-sub-tab", has_text="Публикации").click()
-    desktop_page.wait_for_timeout(100)
+    # Default tab is "drafts" (Вдохновение) — draft cards should be visible
+    desktop_page.wait_for_selector(".draft-card", timeout=5000)
     desktop_page.locator(".draft-card").first.focus()
     desktop_page.keyboard.press("Enter")
     desktop_page.wait_for_timeout(100)
