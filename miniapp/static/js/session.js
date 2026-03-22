@@ -18,6 +18,8 @@ export function createSessionModule(deps) {
     scheduleReelsDetailRefresh,
   } = deps;
 
+  let _reelsEventSource = null;
+
   function clearBackgroundRefreshes() {
     window.clearTimeout(timers.getReelRefresh());
     window.clearTimeout(timers.getCarouselRefresh());
@@ -25,6 +27,10 @@ export function createSessionModule(deps) {
     timers.setReelRefresh(null);
     timers.setCarouselRefresh(null);
     timers.setDraftRefresh(null);
+    if (_reelsEventSource) {
+      _reelsEventSource.close();
+      _reelsEventSource = null;
+    }
   }
 
   function isCurrentDraftDetail(draftId) {
@@ -131,15 +137,55 @@ export function createSessionModule(deps) {
     return initData ? { "X-Telegram-Init-Data": initData } : {};
   }
 
-  function scheduleReelsRefresh(draftId, attempts = 25) {
+  function scheduleReelsRefresh(draftId, attempts = 90) {
+    if (!draftId) return;
+    // Close any existing SSE connection for a different draft
+    if (_reelsEventSource) {
+      _reelsEventSource.close();
+      _reelsEventSource = null;
+    }
+    // Try SSE first, fallback to polling
+    if (typeof EventSource !== "undefined") {
+      const qs = authQueryString();
+      const url = `/api/reels/${draftId}/stream${qs}`;
+      const es = new EventSource(url);
+      _reelsEventSource = es;
+      es.onmessage = async (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.error === "not_found") {
+            es.close();
+            _reelsEventSource = null;
+            return;
+          }
+          // Refresh full detail from API to keep state consistent
+          await scheduleReelsDetailRefresh(draftId);
+          if (!data.generation_pending) {
+            es.close();
+            _reelsEventSource = null;
+          }
+        } catch (_e) { /* ignore parse errors */ }
+      };
+      es.onerror = () => {
+        es.close();
+        _reelsEventSource = null;
+        // Fallback to polling on SSE failure
+        _pollReelsRefresh(draftId, attempts);
+      };
+    } else {
+      _pollReelsRefresh(draftId, attempts);
+    }
+  }
+
+  function _pollReelsRefresh(draftId, attempts = 90) {
     if (!draftId || attempts <= 0) return;
     window.clearTimeout(timers.getReelRefresh());
     timers.setReelRefresh(window.setTimeout(async () => {
       try {
         const { shouldContinue } = await scheduleReelsDetailRefresh(draftId);
-        if (shouldContinue) scheduleReelsRefresh(draftId, attempts - 1);
+        if (shouldContinue) _pollReelsRefresh(draftId, attempts - 1);
       } catch (_error) {
-        scheduleReelsRefresh(draftId, attempts - 1);
+        _pollReelsRefresh(draftId, attempts - 1);
       }
     }, 4000));
   }

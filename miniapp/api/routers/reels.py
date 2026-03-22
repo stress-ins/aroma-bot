@@ -2,8 +2,11 @@ from __future__ import annotations
 
 import logging
 
+import asyncio
+import json
+
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, UploadFile
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from bot.services.miniapp_reels import (
     approve_reels,
@@ -21,7 +24,7 @@ from bot.services.miniapp_reels import (
     update_reels_scenario,
 )
 from bot.services.reels_assets import recover_frame_asset, regenerate_reels_frame_asset
-from ..auth import _require_auth, require_tier
+from ..auth import _require_auth, _resolve_init_data, require_tier
 from ..deps import require_draft
 from bot.services.drafts_store import get_draft as _get_draft, update_draft as _update_draft
 from ..generation import (
@@ -34,6 +37,7 @@ from ..generation import (
     complete_reels_v2_regen_scenario_only,
     set_generation_state,
 )
+from ..generation._common import get_generation_event, cleanup_generation_event
 from ..models import (
     CleanVideoPayload,
     ReelsApprovePayload,
@@ -265,6 +269,8 @@ async def reels_publish(
         platforms=payload.platforms,
         date=payload.date,
         time=payload.time,
+        youtube_title=payload.youtube_title,
+        youtube_privacy=payload.youtube_privacy,
     )
     if result is None:
         raise HTTPException(status_code=404, detail="reels_not_found")
@@ -744,3 +750,59 @@ async def clean_video_status(
     if status["result"]:
         response["result"] = status["result"]
     return response
+
+
+# ── SSE stream for real-time generation updates ─────────────────────────
+
+@router.get("/api/reels/{draft_id}/stream")
+async def reels_generation_stream(draft_id: str, _: str = Depends(_resolve_init_data)):
+    """Server-Sent Events stream that pushes generation state changes."""
+
+    async def _event_generator():
+        evt = get_generation_event(draft_id)
+        try:
+            for _ in range(360):  # max ~6 minutes
+                draft = await _get_draft(draft_id)
+                if not draft:
+                    yield _sse_msg({"error": "not_found"})
+                    return
+                serialized = serialize_reels_draft(draft)
+                payload = draft.payload or {}
+                data = {
+                    "draft_id": draft_id,
+                    "generation_pending": payload.get("generation_pending", False),
+                    "generation_stage": payload.get("generation_stage", ""),
+                    "generation_message": payload.get("generation_message", ""),
+                    "generation_error": payload.get("generation_error"),
+                    "status": serialized.get("status", draft.status),
+                    "frames": serialized.get("frames", []),
+                    "images_ready": serialized.get("images_ready", 0),
+                    "frame_count": serialized.get("frame_count", 0),
+                    "lightweight": payload.get("lightweight", False),
+                }
+                yield _sse_msg(data)
+                if not payload.get("generation_pending", False):
+                    # Generation finished — send final state and close
+                    return
+                # Wait for next state change or timeout after 3 seconds
+                evt.clear()
+                try:
+                    await asyncio.wait_for(evt.wait(), timeout=3.0)
+                except asyncio.TimeoutError:
+                    pass
+        finally:
+            cleanup_generation_event(draft_id)
+
+    return StreamingResponse(
+        _event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+def _sse_msg(data: dict) -> str:
+    return f"data: {json.dumps(data, ensure_ascii=False)}\n\n"

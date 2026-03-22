@@ -188,17 +188,37 @@ async def _publish_reply_to_platform(mention, content: str) -> None:
         else:
             await asyncio.to_thread(client.publish_text_post, content)
     elif mention.platform == "instagram":
-        # Instagram reply — post as comment (requires external_id = media_id)
+        # Instagram reply — post as comment
         import httpx
         if not mention.external_id:
-            raise ValueError("Instagram reply requires external_id (media_id)")
-        token = settings.instagram_access_token
+            raise ValueError("Instagram reply requires external_id")
+        # For comment mentions (ig:post_id:comment_id), reply to the media post
+        ext_id = mention.external_id
+        if ext_id.startswith("ig:"):
+            parts = ext_id.split(":")
+            media_id = parts[1] if len(parts) >= 2 else ext_id
+        else:
+            media_id = ext_id
+        token_row = await get_token("instagram")
+        token = token_row.access_token if token_row else settings.instagram_access_token
         async with httpx.AsyncClient(timeout=30) as client:
             r = await client.post(
-                f"https://graph.instagram.com/{mention.external_id}/comments",
+                f"https://graph.instagram.com/{media_id}/comments",
                 params={"message": content, "access_token": token},
             )
             r.raise_for_status()
+    elif mention.platform == "youtube":
+        if not mention.external_id:
+            raise ValueError("YouTube reply requires external_id")
+        # For YouTube comment mentions (yt:video_id:comment_id), reply to the comment
+        ext_id = mention.external_id
+        if ext_id.startswith("yt:"):
+            parts = ext_id.split(":")
+            comment_id = parts[2] if len(parts) >= 3 else ext_id
+        else:
+            comment_id = ext_id
+        from bot.services.youtube_publisher import reply_to_youtube_comment
+        await reply_to_youtube_comment(comment_id, content)
     # telegram: not auto-publishable from here, skip
 
 
@@ -214,6 +234,15 @@ async def poll_threads_endpoint(_: None = Depends(_require_auth)):
         raise HTTPException(status_code=400, detail="no_threads_token")
 
     polled, saved = await poll_threads_mentions(access_token)
+    return {"polled": polled, "saved": saved}
+
+
+@router.post("/api/mentions/poll-comments")
+async def poll_comments_endpoint(ctx: TeamContext = Depends(_resolve_team_context)):
+    """Poll Instagram + YouTube comments for published reels."""
+    from bot.services.comments_poller import poll_published_comments
+
+    polled, saved = await poll_published_comments(team_id=ctx.team_id)
     return {"polled": polled, "saved": saved}
 
 

@@ -13,6 +13,7 @@ from bot.services.social_oauth import (
     build_instagram_authorize_url,
     build_oauth_state,
     build_threads_authorize_url,
+    build_youtube_authorize_url,
 )
 from config import settings
 from ..auth import TeamContext, _require_auth, _telegram_user_id_from_init_data, require_team_role
@@ -23,8 +24,9 @@ router = APIRouter()
 THREADS_REDIRECT_URI = "https://oauth.aromara.ru/threads/callback"
 INSTAGRAM_REDIRECT_URI = "https://oauth.aromara.ru/instagram/callback"
 CANVA_REDIRECT_URI = "https://oauth.aromara.ru/canva/callback"
+YOUTUBE_REDIRECT_URI = "https://oauth.aromara.ru/youtube/callback"
 
-_PLATFORMS = ("threads", "instagram", "canva")
+_PLATFORMS = ("threads", "instagram", "canva", "youtube")
 
 
 @router.get("/api/social/status")
@@ -70,6 +72,8 @@ async def social_connect_url(
         raise HTTPException(status_code=400, detail="instagram_not_configured")
     if platform == "canva" and (not settings.canva_client_id or not settings.canva_client_secret):
         raise HTTPException(status_code=400, detail="canva_not_configured")
+    if platform == "youtube" and (not settings.google_client_id or not settings.google_client_secret):
+        raise HTTPException(status_code=400, detail="youtube_not_configured")
 
     user_id = _telegram_user_id_from_init_data(x_telegram_init_data or "") or 0
     chat_id = user_id
@@ -100,6 +104,12 @@ async def social_connect_url(
             url = build_threads_authorize_url(
                 client_id=settings.threads_app_id,
                 redirect_uri=THREADS_REDIRECT_URI,
+                state=state,
+            )
+        elif platform == "youtube":
+            url = build_youtube_authorize_url(
+                client_id=settings.google_client_id,
+                redirect_uri=YOUTUBE_REDIRECT_URI,
                 state=state,
             )
         else:

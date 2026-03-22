@@ -28,7 +28,7 @@ export function createMentionsModule(deps) {
   }
 
   function platformLabel(platform) {
-    return { telegram: "Telegram", threads: "Threads", instagram: "Instagram" }[platform] || platform;
+    return { telegram: "Telegram", threads: "Threads", instagram: "Instagram", youtube: "YouTube" }[platform] || platform;
   }
 
   function formatTime(isoStr) {
@@ -79,7 +79,7 @@ export function createMentionsModule(deps) {
     }
 
     const { platform, status } = state.mentionsFilter;
-    const platforms = ["all", "telegram", "threads", "instagram"];
+    const platforms = ["all", "telegram", "threads", "instagram", "youtube"];
     const statuses = ["pending", "replied", "ignored", "all"];
 
     const filterBar = `

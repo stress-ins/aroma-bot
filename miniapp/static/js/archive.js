@@ -38,8 +38,8 @@ export function createArchiveModule(deps) {
   }
 
   function kindIcon(kind) {
-    const map = { text: "✍️", carousel: "🖼", reels: "🎬", stories: "📱", image: "📸" };
-    return map[kind] || "📄";
+    const map = { text: "note", carousel: "layers", reels: "reel", stories: "smartphone", image: "image" };
+    return uiIcon(map[kind] || "file-text");
   }
 
   function kindBadge(kind) {

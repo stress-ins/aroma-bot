@@ -133,6 +133,10 @@ def _setup_mounts_and_routers():
     app.mount("/generated/reels_assets", StaticFiles(directory=ASSETS_DIR), name="reels-generated-assets")
     app.mount("/generated/carousel_assets", StaticFiles(directory=CAROUSEL_ASSETS_DIR), name="carousel-generated-assets")
 
+    from bot.services.reels_video import VIDEO_DIR
+    VIDEO_DIR.mkdir(parents=True, exist_ok=True)
+    app.mount("/generated/reels_video", StaticFiles(directory=VIDEO_DIR), name="reels-generated-video")
+
     REFERENCE_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
     app.mount("/reference-images", StaticFiles(directory=REFERENCE_IMAGES_DIR), name="reference-images")
 

@@ -156,6 +156,8 @@ class ReelsPublishPayload(BaseModel):
     platforms: list[str] = Field(default_factory=list)
     date: str = Field(default="")
     time: str = Field(default="")
+    youtube_title: str = Field(default="")
+    youtube_privacy: str = Field(default="public")
 
 
 class ReelsRetryPlatformPayload(BaseModel):

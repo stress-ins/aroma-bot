@@ -543,7 +543,7 @@ export function createReelsModule(deps) {
         ${renderBackButton()}
         ${reelsStepperMarkup(r.status, true)}
         <div class="detail-top">
-          <p class="eyebrow">🎬 <span>РИЛС · Генерируется</span></p>
+          <p class="eyebrow">${uiIcon("reel")} <span>РИЛС · Генерируется</span></p>
           <h2 class="detail-title">${escapeHtml(r.topic)}</h2>
           <div class="draft-meta">
             ${tagMarkup("Генерируется", "progress")}
@@ -592,7 +592,7 @@ export function createReelsModule(deps) {
         ${renderBackButton()}
         ${reelsStepperMarkup(r.status, false)}
         <div class="detail-top">
-          <p class="eyebrow">🎬 <span>РИЛС${isLightweight ? " · Быстрое планирование" : ""}</span></p>
+          <p class="eyebrow">${uiIcon("reel")} <span>РИЛС${isLightweight ? " · Быстрое планирование" : ""}</span></p>
           <h2 class="detail-title">${escapeHtml(r.topic)}</h2>
           ${concept ? `<p class="detail-summary">${escapeHtml(concept.slice(0, 120))}${concept.length > 120 ? "…" : ""}</p>` : ""}
           <div class="draft-meta">
@@ -713,7 +713,7 @@ export function createReelsModule(deps) {
         ${renderBackButton()}
         ${reelsStepperMarkup(r.status, false)}
         <div class="detail-top">
-          <p class="eyebrow">🎬 <span>РИЛС · Съёмка</span></p>
+          <p class="eyebrow">${uiIcon("reel")} <span>РИЛС · Съёмка</span></p>
           <h2 class="detail-title">${escapeHtml(r.topic)}</h2>
           <div class="draft-meta">
             ${tagMarkup(statusLabel(r.status || "approved"), statusTone(r.status || "approved"))}
@@ -796,14 +796,14 @@ export function createReelsModule(deps) {
         ${renderBackButton()}
         ${reelsStepperMarkup(r.status, false)}
         <div class="detail-top">
-          <p class="eyebrow">🎬 <span>РИЛС · Видео загружено</span></p>
+          <p class="eyebrow">${uiIcon("reel")} <span>РИЛС · Видео загружено</span></p>
           <h2 class="detail-title">${escapeHtml(r.topic)}</h2>
           <div class="draft-meta">
             ${tagMarkup(statusLabel(r.status), statusTone(r.status))}
           </div>
         </div>
         <div class="reels-video-preview">
-          <div class="reels-video-thumb">🎬</div>
+          <div class="reels-video-thumb">${uiIcon("reel")}</div>
           <div>
             <div style="font-weight:600;font-size:14px;margin-bottom:4px">Видео на проверке</div>
             <div style="font-size:12px;color:var(--hint)">Проверьте видео и опубликуйте его</div>
@@ -831,8 +831,8 @@ export function createReelsModule(deps) {
       if (entry?.platform) statusByPlatform[entry.platform] = entry.status || "";
     });
 
-    const platforms = ["instagram", "threads"];
-    const platformLabels = { instagram: "Instagram", threads: "Threads" };
+    const platforms = ["instagram", "threads", "youtube"];
+    const platformLabels = { instagram: "Instagram", threads: "Threads", youtube: "YouTube" };
 
     const publishStatusHtml = publishStatus.length ? `
       <section class="section">
@@ -861,7 +861,7 @@ export function createReelsModule(deps) {
         ${renderBackButton()}
         ${reelsStepperMarkup(r.status, false)}
         <div class="detail-top">
-          <p class="eyebrow">🎬 <span>РИЛС · Публикация</span></p>
+          <p class="eyebrow">${uiIcon("reel")} <span>РИЛС · Публикация</span></p>
           <h2 class="detail-title">${escapeHtml(r.topic)}</h2>
           <div class="draft-meta">
             ${tagMarkup(statusLabel(r.status), statusTone(r.status))}
@@ -895,6 +895,21 @@ export function createReelsModule(deps) {
             </label>
           </div>
           <p class="field-help">Оставьте дату пустой для немедленной публикации.</p>
+          <div id="youtubeFields" style="display:none;margin-top:12px;padding:12px;border:1px solid var(--border);border-radius:8px">
+            <p style="font-weight:600;font-size:13px;margin:0 0 8px;color:var(--text)">Настройки YouTube</p>
+            <div class="field-grid">
+              <label>Заголовок
+                <input type="text" id="youtubeTitle" placeholder="${escapeHtml((r.topic || '').slice(0, 100))}" maxlength="100" style="width:100%" />
+              </label>
+              <label>Приватность
+                <select id="youtubePrivacy" style="width:100%">
+                  <option value="public">Публичное</option>
+                  <option value="unlisted">По ссылке</option>
+                  <option value="private">Приватное</option>
+                </select>
+              </label>
+            </div>
+          </div>
           <button class="primary-button" type="button" data-action="publishReels" data-args='${JSON.stringify([r.draft_id, null])}'>
             ${actionLabel("publish", "Опубликовать")}
           </button>
@@ -912,11 +927,18 @@ export function createReelsModule(deps) {
     }
     const date = String(document.getElementById("publishDate")?.value || "");
     const time = String(document.getElementById("publishTime")?.value || "");
+    const youtubeTitle = String(document.getElementById("youtubeTitle")?.value || "");
+    const youtubePrivacy = String(document.getElementById("youtubePrivacy")?.value || "public");
     await withButtonFeedback(btn, "Публикую...", async () => {
+      const body = { platforms, date, time };
+      if (platforms.includes("youtube")) {
+        body.youtube_title = youtubeTitle;
+        body.youtube_privacy = youtubePrivacy;
+      }
       const result = await fetchJson(`/api/reels/${draftId}/publish`, {
         method: "POST",
-        body: JSON.stringify({ platforms, date, time }),
-        timeout: 60000,
+        body: JSON.stringify(body),
+        timeout: 120000,
       });
       const draft = await fetchJson(`/api/reels/${draftId}`);
       mergeReelsIntoState(draft);
@@ -1048,7 +1070,7 @@ export function createReelsModule(deps) {
         ${renderBackButton()}
         ${reelsStepperMarkup(r.status, false)}
         <div class="detail-top">
-          <p class="eyebrow">🎬 <span>РИЛС · Опубликован</span></p>
+          <p class="eyebrow">${uiIcon("reel")} <span>РИЛС · Опубликован</span></p>
           <h2 class="detail-title">${escapeHtml(r.topic)}</h2>
           <div class="draft-meta">
             ${tagMarkup(statusLabel(r.status), statusTone(r.status))}
@@ -1203,6 +1225,14 @@ export function createReelsModule(deps) {
   function openReelsImageFullscreen(url, n) {
     openReelsPreview(url, "", "", "");
   }
+
+  // Toggle YouTube settings visibility when checkbox changes
+  document.body.addEventListener("change", (e) => {
+    if (e.target?.name === "publish_platform" && e.target?.value === "youtube") {
+      const ytFields = document.getElementById("youtubeFields");
+      if (ytFields) ytFields.style.display = e.target.checked ? "block" : "none";
+    }
+  });
 
   return {
     renderReelsDetail,
