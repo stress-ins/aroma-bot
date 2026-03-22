@@ -10,6 +10,7 @@ export function createArchiveModule(deps) {
     renderGuidedState,
     fetchJson,
     withButtonFeedback,
+    confirmAction,
     enterDetailView,
     syncMobileNavigation,
   } = deps;
@@ -534,7 +535,9 @@ export function createArchiveModule(deps) {
   // ── Delete ──────────────────────────────────────────────────────────────────
 
   async function deletePublication(pubId, button) {
-    if (!confirm("Удалить публикацию?")) return;
+    const _confirm = confirmAction || ((msg) => Promise.resolve(window.confirm(msg)));
+    const confirmed = await _confirm("Удалить публикацию?");
+    if (!confirmed) return;
     const apply = async () => {
       await fetchJson(`/api/archive/${pubId}`, { method: "DELETE" });
       await loadArchive();

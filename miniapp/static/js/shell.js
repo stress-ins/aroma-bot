@@ -138,11 +138,10 @@ export function createShellModule(deps) {
   function renderBackButton(customAction) {
     const isMobile = window.matchMedia("(max-width: 760px)").matches;
     syncBottomTabBar();
-    if (!isMobile) return "";
     if (customAction) {
       return `<button class="back-button visible" data-action="${customAction}">${uiIcon("back")}<span>Назад</span></button>`;
     }
-    return `<button class="back-button visible" data-action="goBackToList" data-args='[true]'>${uiIcon("back")}<span>Назад к списку</span></button>`;
+    return `<button class="back-button visible" data-action="goBackToList" data-args='[${isMobile ? "true" : "false"}]'>${uiIcon("back")}<span>Назад к списку</span></button>`;
   }
 
   function enterDetailView() {

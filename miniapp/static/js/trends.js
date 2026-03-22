@@ -13,6 +13,7 @@ export function createTrendsModule(deps) {
     renderGuidedState,
     withButtonFeedback,
     fetchJson,
+    confirmAction,
     showUiNotice,
     setEmptyState,
     syncMobileNavigation,
@@ -655,6 +656,9 @@ export function createTrendsModule(deps) {
   }
 
   async function removeTrackedHashtag(tag) {
+    const _confirm = confirmAction || ((msg) => Promise.resolve(window.confirm(msg)));
+    const ok = await _confirm(`Удалить хештег #${tag}?`);
+    if (!ok) return;
     try {
       await fetchJson(`/api/social/tracked-hashtags/${encodeURIComponent(tag)}`, {
         method: "DELETE",
@@ -700,6 +704,9 @@ export function createTrendsModule(deps) {
   }
 
   async function removeMonitoredAccount(platform, username) {
+    const _confirm = confirmAction || ((msg) => Promise.resolve(window.confirm(msg)));
+    const ok = await _confirm(`Удалить аккаунт @${username}?`);
+    if (!ok) return;
     try {
       await fetchJson(`/api/social/monitored-accounts/${platform}/${encodeURIComponent(username)}`, {
         method: "DELETE",

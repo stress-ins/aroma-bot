@@ -4,6 +4,7 @@ export function createBlendConstructorModule(deps) {
     elements,
     escapeHtml,
     fetchJson,
+    confirmAction,
     enterDetailView,
     syncMobileNavigation,
     renderBackButton,
@@ -316,7 +317,9 @@ export function createBlendConstructorModule(deps) {
   }
 
   async function deleteSavedBlend(id, btn) {
-    if (!confirm("\u0423\u0434\u0430\u043b\u0438\u0442\u044c \u0441\u043e\u0445\u0440\u0430\u043d\u0451\u043d\u043d\u0443\u044e \u0441\u043c\u0435\u0441\u044c?")) return;
+    const _confirm = confirmAction || ((msg) => Promise.resolve(window.confirm(msg)));
+    const confirmed = await _confirm("Удалить сохранённую смесь?");
+    if (!confirmed) return;
     if (btn) { btn.disabled = true; btn.textContent = "\u0423\u0434\u0430\u043b\u044f\u044e..."; }
     try {
       await fetchJson(`/api/blend-constructor/saved/${id}`, { method: "DELETE" });
@@ -577,7 +580,9 @@ export function createBlendConstructorModule(deps) {
   }
 
   async function deleteSavedBlendFromDetail(id, btn) {
-    if (!confirm("\u0423\u0434\u0430\u043b\u0438\u0442\u044c \u0441\u043e\u0445\u0440\u0430\u043d\u0451\u043d\u043d\u0443\u044e \u0441\u043c\u0435\u0441\u044c?")) return;
+    const _confirm = confirmAction || ((msg) => Promise.resolve(window.confirm(msg)));
+    const confirmed = await _confirm("Удалить сохранённую смесь?");
+    if (!confirmed) return;
     if (btn) { btn.disabled = true; btn.textContent = "\u0423\u0434\u0430\u043b\u044f\u044e..."; }
     try {
       await fetchJson(`/api/blend-constructor/saved/${id}`, { method: "DELETE" });

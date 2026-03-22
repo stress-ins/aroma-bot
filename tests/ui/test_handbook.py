@@ -9,17 +9,17 @@ def test_handbook_section_titles_are_russian(page):
     page.locator("#btnTabHandbook").click()
     page.wait_for_timeout(100)
 
-    page.get_by_role("button", name="Смеси").click()
+    page.get_by_role("tab", name="Смеси").click()
     page.wait_for_timeout(100)
     title = page.locator(".topbar-title").inner_text().strip()
     assert title == "Смеси", f"Expected 'Смеси', got '{title}'"
 
-    page.get_by_role("button", name="Симптомы").click()
+    page.get_by_role("tab", name="Симптомы").click()
     page.wait_for_timeout(100)
     title = page.locator(".topbar-title").inner_text().strip()
     assert title == "Симптомы", f"Expected 'Симптомы', got '{title}'"
 
-    page.get_by_role("button", name="Ароматы").click()
+    page.get_by_role("tab", name="Ароматы").click()
     page.wait_for_timeout(100)
     title = page.locator(".topbar-title").inner_text().strip()
     assert title == "Ароматы", f"Expected 'Ароматы', got '{title}'"
@@ -39,7 +39,7 @@ def test_handbook_cards_open_in_all_sections(page):
     ]
 
     for tab_label, card_name in sections:
-        page.get_by_role("button", name=tab_label).click()
+        page.get_by_role("tab", name=tab_label).click()
         page.wait_for_timeout(100)
 
         card = page.locator(".reference-card").filter(has_text=card_name).first
@@ -66,7 +66,7 @@ def test_filter_chips_no_horizontal_overflow(page):
     page.locator("#btnTabHandbook").click()
     page.wait_for_timeout(100)
 
-    page.get_by_role("button", name="Симптомы").click()
+    page.get_by_role("tab", name="Симптомы").click()
     page.wait_for_timeout(100)
 
     page.wait_for_selector(".filter-chips", timeout=3000)
@@ -115,10 +115,10 @@ def test_themed_handbook_sections_render(themed_page):
     themed_page.locator("#btnTabHandbook").click()
     themed_page.wait_for_timeout(100)
 
-    themed_page.get_by_role("button", name="Смеси").click()
+    themed_page.get_by_role("tab", name="Смеси").click()
     themed_page.wait_for_timeout(100)
     assert themed_page.locator(".reference-card").count() >= 1
 
-    themed_page.get_by_role("button", name="Симптомы").click()
+    themed_page.get_by_role("tab", name="Симптомы").click()
     themed_page.wait_for_timeout(100)
     assert themed_page.locator(".reference-card").count() >= 1

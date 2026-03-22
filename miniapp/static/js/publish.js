@@ -4,7 +4,7 @@
  * Supports immediate publish and scheduling.
  */
 export function createPublishModule(deps) {
-  const { fetchJson, withButtonFeedback, escapeHtml, tagMarkup, uiIcon, showUiNotice, mergeDraftIntoState, renderDraftList, renderDraftDetail } = deps;
+  const { fetchJson, withButtonFeedback, escapeHtml, tagMarkup, uiIcon, showUiNotice, confirmAction, mergeDraftIntoState, renderDraftList, renderDraftDetail } = deps;
 
   const PLATFORM_SVG = {
     threads: `<svg class="publish-platform-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15 12a3 3 0 1 1-3-3c2 0 3.5 1 3.5 3s-1.5 3-3.5 3"/></svg>`,
@@ -103,6 +103,9 @@ export function createPublishModule(deps) {
   }
 
   async function cancelPublishSchedule(draftId, button) {
+    const _confirm = confirmAction || ((msg) => Promise.resolve(window.confirm(msg)));
+    const ok = await _confirm("Отменить запланированную публикацию?");
+    if (!ok) return;
     await withButtonFeedback(button, "Отменяю...", async () => {
       await fetchJson(`/api/drafts/${draftId}/publish-schedule`, { method: "DELETE" });
     }, "Отменено");

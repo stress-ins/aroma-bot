@@ -7,6 +7,7 @@ then fetches full data from the database for prompt injection.
 from __future__ import annotations
 
 import logging
+import threading
 from typing import Any
 
 from .embeddings import encode_query
@@ -16,27 +17,30 @@ logger = logging.getLogger(__name__)
 
 _cached_index = None
 _cached_docs = None
+_index_lock = threading.Lock()
 
 
 def _ensure_index() -> tuple:
     """Load or rebuild the index."""
     global _cached_index, _cached_docs
-    if _cached_index is not None and _cached_docs is not None:
+    with _index_lock:
+        if _cached_index is not None and _cached_docs is not None:
+            return _cached_index, _cached_docs
+
+        result = load_index()
+        if result is None:
+            return None, None
+
+        _cached_index, _cached_docs = result
         return _cached_index, _cached_docs
-
-    result = load_index()
-    if result is None:
-        return None, None
-
-    _cached_index, _cached_docs = result
-    return _cached_index, _cached_docs
 
 
 def invalidate_cache() -> None:
     """Clear the in-memory index cache (e.g. after rebuild)."""
     global _cached_index, _cached_docs
-    _cached_index = None
-    _cached_docs = None
+    with _index_lock:
+        _cached_index = None
+        _cached_docs = None
 
 
 async def retrieve_relevant_cards(

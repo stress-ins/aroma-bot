@@ -1502,6 +1502,7 @@ const archiveModule = createArchiveModule({
   renderGuidedState,
   fetchJson,
   withButtonFeedback,
+  confirmAction,
   enterDetailView,
   syncMobileNavigation,
 });
@@ -1713,6 +1714,7 @@ const {
   elements,
   escapeHtml,
   fetchJson,
+  confirmAction,
   enterDetailView,
   syncMobileNavigation,
   renderBackButton,
@@ -1755,6 +1757,7 @@ const _publishMod = createPublishModule({
   tagMarkup,
   uiIcon,
   showUiNotice,
+  confirmAction,
   mergeDraftIntoState,
   renderDraftList: () => renderDraftList(),
   renderDraftDetail: (d) => renderDraftDetail(d),
@@ -1910,6 +1913,7 @@ let selectTrendsPlatform, selectTrendsPeriod, refreshTrends, openTrendsPost, cre
   renderGuidedState,
   withButtonFeedback,
   fetchJson,
+  confirmAction,
   showUiNotice,
   setEmptyState,
   syncMobileNavigation,
@@ -2056,7 +2060,7 @@ function setMode(m) {
     const label = HANDBOOK_CATEGORY_META[t.id]
       ? `${handbookCategoryIcon(t.id)}<span>${escapeHtml(t.label)}</span>`
       : `<span>${escapeHtml(t.label)}</span>`;
-    return `<button class="tab-button${state.tab === t.id ? " active" : ""}" data-tab="${t.id}" type="button">${label}</button>`;
+    return `<button class="tab-button${state.tab === t.id ? " active" : ""}" data-tab="${t.id}" type="button" role="tab" aria-selected="${state.tab === t.id}">${label}</button>`;
   }).join("");
   elements.tabsContainer.querySelectorAll(".tab-button").forEach(b => {
     b.addEventListener("click", () => {
@@ -2217,6 +2221,7 @@ function setTab(t) {
   elements.tabsContainer.querySelectorAll(".tab-button").forEach(b => {
     const isActive = b.dataset.tab === t;
     b.classList.toggle("active", isActive);
+    b.setAttribute("aria-selected", String(isActive));
     if (isActive) b.scrollIntoView({ inline: "center", behavior: "smooth", block: "nearest" });
   });
   elements.filtersContainer.hidden = !["drafts", "inbox"].includes(t);

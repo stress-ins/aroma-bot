@@ -334,7 +334,7 @@ async def publish_series_now(draft_id: str, _: None = Depends(_require_auth)):
                 post["slot"], draft_id, exc,
             )
             results.append({
-                "slot": post["slot"], "status": "error", "error": str(exc),
+                "slot": post["slot"], "status": "error", "error": "publish_slot_failed",
             })
         # Pause between posts (except after the last one)
         if i < len(posts) - 1:
