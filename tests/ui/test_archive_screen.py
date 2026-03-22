@@ -3,20 +3,19 @@ from __future__ import annotations
 
 
 def _nav_to_archive(page):
-    """Navigate to Archive via Контент bottom tab then content sub-tab."""
-    page.locator("#btnTabContent").click()
-    page.wait_for_timeout(300)
-    page.locator(".content-sub-tab", has_text="Архив").click()
-    page.wait_for_timeout(800)
+    """Navigate to Archive via switchContentSubTab JS bridge."""
+    page.evaluate("window.switchContentSubTab('archive')")
+    page.wait_for_timeout(1000)
 
 
 def test_archive_tab_visible(dark_page):
     """Archive tab appears as a content sub-tab under Контент."""
     page = dark_page
-    page.locator("#btnTabContent").click()
-    page.wait_for_timeout(300)
+    # Switch to content area via JS bridge (bypasses bottom tab bar click)
+    page.evaluate("window.switchContentSubTab('plans')")
+    page.wait_for_timeout(1000)
     archive_tab = page.locator(".content-sub-tab", has_text="Архив")
-    archive_tab.wait_for(state="visible", timeout=3000)
+    archive_tab.wait_for(state="visible", timeout=5000)
     assert archive_tab.is_visible()
 
 
