@@ -406,7 +406,6 @@ p,
 .tabs {
   display: flex;
   gap: var(--space-3);
-  justify-content: center;
   overflow-x: auto;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
