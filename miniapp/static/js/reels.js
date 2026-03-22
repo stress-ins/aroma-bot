@@ -26,6 +26,7 @@ export function createReelsModule(deps) {
     mergeReelsIntoState,
     scheduleReelsRefresh,
     showUiNotice,
+    getInitDataHeaders,
     callbacks,
   } = deps;
 
@@ -756,8 +757,17 @@ export function createReelsModule(deps) {
 
         <div class="reels-upload-zone">
           <div class="reels-upload-title">Загрузить видео</div>
-          <div class="reels-upload-hint">Запишите рилс по сценарию и загрузите через Telegram-бот командой /upload</div>
-          <button class="secondary-button" type="button" data-action="sendDraftToChat" data-args='${JSON.stringify([r.draft_id, null])}'>
+          <div class="reels-upload-hint">Запишите рилс по сценарию и загрузите файл</div>
+          <input type="file" id="videoFileInput" accept="video/*" style="display:none">
+          <label for="videoFileInput" class="secondary-button compact" style="cursor:pointer;text-align:center">
+            ${actionLabel("file-video", "Выбрать видео")}
+          </label>
+          <button class="primary-button compact" type="button" data-action="uploadReelsVideo" data-args='${JSON.stringify([r.draft_id, null])}' style="display:none" id="reelsUploadBtn">
+            ${actionLabel("upload", "Загрузить")}
+          </button>
+          <div id="reelsSelectedFileName" style="font-size:12px;color:var(--muted);margin-top:4px;display:none"></div>
+          <div class="reels-upload-hint" style="margin-top:8px;font-size:12px;color:var(--muted)">или загрузите через бот</div>
+          <button class="secondary-button compact" type="button" data-action="sendDraftToChat" data-args='${JSON.stringify([r.draft_id, null])}'>
             ${actionLabel("chat", "Открыть в боте")}
           </button>
         </div>
@@ -939,6 +949,23 @@ export function createReelsModule(deps) {
     }
   });
 
+  document.addEventListener("change", (e) => {
+    if (e.target && e.target.id === "videoFileInput") {
+      const uploadBtn = document.getElementById("reelsUploadBtn");
+      const nameEl = document.getElementById("reelsSelectedFileName");
+      if (e.target.files.length) {
+        if (uploadBtn) uploadBtn.style.display = "";
+        if (nameEl) {
+          nameEl.style.display = "";
+          nameEl.textContent = e.target.files[0].name;
+        }
+      } else {
+        if (uploadBtn) uploadBtn.style.display = "none";
+        if (nameEl) nameEl.style.display = "none";
+      }
+    }
+  });
+
   async function uploadReelsVideo(draftId, btn) {
     const fileInput = document.getElementById("videoFileInput");
     if (!fileInput || !fileInput.files.length) {
@@ -955,6 +982,7 @@ export function createReelsModule(deps) {
     await withButtonFeedback(btn, "Загружаю...", async () => {
       await fetch(`/api/reels/${draftId}/upload-video`, {
         method: "POST",
+        headers: getInitDataHeaders(),
         body: formData,
       }).then((resp) => { if (!resp.ok) throw new Error(`HTTP ${resp.status}`); return resp.json(); });
       await fetchJson(`/api/reels/${draftId}/check-video`, { method: "POST" });
