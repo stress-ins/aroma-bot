@@ -2140,7 +2140,7 @@ function switchContentSubTab(subTab) {
     setTab("plans");
     void safeLoadCurrentTab("Не удалось загрузить публикации");
   } else if (subTab === "plans") {
-    state.plansSubMode = "publications";
+    state.plansSubMode = "plans";
     setTab("plans");
     void safeLoadCurrentTab("Не удалось загрузить планы");
   } else if (subTab === "mentions") {
