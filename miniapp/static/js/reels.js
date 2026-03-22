@@ -509,7 +509,7 @@ export function createReelsModule(deps) {
 
   // ── V2 stepper ───────────────────────────────────────────────────────
 
-  function reelsStepperMarkup(status, generationPending) {
+  function reelsStepperMarkup(status, generationPending, draftId) {
     const steps = [
       { key: "generating", label: "Генерация" },
       { key: "draft", label: "Черновик" },
@@ -531,7 +531,11 @@ export function createReelsModule(deps) {
     }
     return `<div class="reels-stepper">${steps.map((s, i) => {
       const cls = i < activeIdx ? "done" : i === activeIdx ? "active" : "";
-      return `<div class="reels-step ${cls}"><span class="reels-step-dot"></span><span class="reels-step-label">${s.label}</span></div>`;
+      const clickable = i < activeIdx && draftId;
+      const attrs = clickable
+        ? `data-action="jumpToReelsStep" data-args='${JSON.stringify([draftId, s.key, null])}' class="reels-step ${cls} clickable"`
+        : `class="reels-step ${cls}"`;
+      return `<div ${attrs}><span class="reels-step-dot"></span><span class="reels-step-label">${s.label}</span></div>`;
     }).join("")}</div>`;
   }
 
@@ -541,7 +545,7 @@ export function createReelsModule(deps) {
     return `
       <div class="detail-grid">
         ${renderBackButton()}
-        ${reelsStepperMarkup(r.status, true)}
+        ${reelsStepperMarkup(r.status, true, r.draft_id)}
         <div class="detail-top">
           <p class="eyebrow">${uiIcon("reel")} <span>РИЛС · Генерируется</span></p>
           <h2 class="detail-title">${escapeHtml(r.topic)}</h2>
@@ -590,7 +594,7 @@ export function createReelsModule(deps) {
     return `
       <div class="detail-grid">
         ${renderBackButton()}
-        ${reelsStepperMarkup(r.status, false)}
+        ${reelsStepperMarkup(r.status, false, r.draft_id)}
         <div class="detail-top">
           <p class="eyebrow">${uiIcon("reel")} <span>РИЛС${isLightweight ? " · Быстрое планирование" : ""}</span></p>
           <h2 class="detail-title">${escapeHtml(r.topic)}</h2>
@@ -711,7 +715,7 @@ export function createReelsModule(deps) {
     return `
       <div class="detail-grid">
         ${renderBackButton()}
-        ${reelsStepperMarkup(r.status, false)}
+        ${reelsStepperMarkup(r.status, false, r.draft_id)}
         <div class="detail-top">
           <p class="eyebrow">${uiIcon("reel")} <span>РИЛС · Съёмка</span></p>
           <h2 class="detail-title">${escapeHtml(r.topic)}</h2>
@@ -845,27 +849,137 @@ export function createReelsModule(deps) {
   }
 
   function renderScreen5VideoCheck(r) {
+    const p = r.payload || {};
+    const videoFilename = p.video_filename || "";
+    const videoUrl = videoFilename ? `/generated/reels_video/${r.draft_id}/${videoFilename}` : "";
+    const techCheck = p.tech_check || null;
+    const cleaningStatus = p.cleaning_status || "";
+    const cleaningResult = p.cleaning_result || null;
+    const cleanedPath = p.cleaned_video_path || "";
+    const isPassed = r.status === "passed" || (techCheck && techCheck.passed);
+
+    // Tech-check results
+    const techHtml = techCheck ? `
+      <section class="section">
+        <h3>${sectionHeadingIcon("tech-check")}Результаты проверки</h3>
+        <div class="field-grid" style="gap:8px">
+          ${techCheck.info?.file_size_mb != null ? `<div class="tech-row"><span>Размер</span><span>${techCheck.info.file_size_mb} МБ</span></div>` : ""}
+          ${techCheck.info?.duration_seconds != null ? `<div class="tech-row"><span>Длительность</span><span>${techCheck.info.duration_seconds} сек</span></div>` : ""}
+          ${techCheck.info?.width ? `<div class="tech-row"><span>Разрешение</span><span>${techCheck.info.width}×${techCheck.info.height}</span></div>` : ""}
+        </div>
+        ${techCheck.passed
+          ? `<div style="margin-top:8px;color:var(--positive);font-size:13px">${uiIcon("check")} Все проверки пройдены</div>`
+          : `<div style="margin-top:8px">${(techCheck.issues || []).map(i => `<div style="color:var(--danger);font-size:13px;margin:4px 0">${uiIcon("alert-circle")} ${escapeHtml(i)}</div>`).join("")}</div>`
+        }
+      </section>
+    ` : "";
+
+    // Cleaning results
+    const cleanHtml = cleaningStatus === "completed" && cleaningResult ? `
+      <div style="margin-top:8px;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:13px">
+        <div style="font-weight:600;margin-bottom:4px">${uiIcon("check")} Очистка завершена</div>
+        <div>Вход: ${cleaningResult.input_duration}с → Выход: ${cleaningResult.output_duration}с (удалено ${cleaningResult.removed_duration}с, ${cleaningResult.clip_count} фрагментов)</div>
+        ${cleanedPath ? `<div style="margin-top:4px"><a href="/generated/reels_video/${r.draft_id}/${escapeHtml(cleanedPath)}" target="_blank" style="color:var(--brand)">Скачать очищенное видео</a></div>` : ""}
+      </div>
+    ` : "";
+
     return `
       <div class="detail-grid">
         ${renderBackButton()}
-        ${reelsStepperMarkup(r.status, false)}
+        ${reelsStepperMarkup(r.status, false, r.draft_id)}
         <div class="detail-top">
-          <p class="eyebrow">${uiIcon("reel")} <span>РИЛС · Видео загружено</span></p>
+          <p class="eyebrow">${uiIcon("reel")} <span>РИЛС · ${statusLabel(r.status)}</span></p>
           <h2 class="detail-title">${escapeHtml(r.topic)}</h2>
           <div class="draft-meta">
             ${tagMarkup(statusLabel(r.status), statusTone(r.status))}
           </div>
         </div>
-        <div class="reels-video-preview">
-          <div class="reels-video-thumb">${uiIcon("reel")}</div>
-          <div>
-            <div style="font-weight:600;font-size:14px;margin-bottom:4px">Видео на проверке</div>
-            <div style="font-size:12px;color:var(--hint)">Проверьте видео и опубликуйте его</div>
+
+        ${videoUrl ? `
+          <section class="section">
+            <h3>${sectionHeadingIcon("video")}Предпросмотр</h3>
+            <video src="${videoUrl}" controls playsinline preload="metadata"
+              style="width:100%;max-height:400px;border-radius:8px;background:#000"></video>
+          </section>
+        ` : ""}
+
+        ${techHtml}
+
+        <section class="section">
+          <h3>${sectionHeadingIcon("tools")}Инструменты</h3>
+          <div class="actions-row" style="flex-wrap:wrap;gap:8px">
+            <button class="secondary-button compact" type="button" data-action="runTechCheck" data-args='${JSON.stringify([r.draft_id, null])}'>
+              ${uiIcon("scan")} Проверить видео
+            </button>
+            <button class="secondary-button compact" type="button" data-action="reuploadVideo" data-args='${JSON.stringify([r.draft_id, null])}'>
+              ${uiIcon("upload")} Загрузить другое
+            </button>
+            <input type="file" id="reuploadInput" accept="video/*" style="display:none" />
           </div>
-        </div>
-        <div class="actions-row">
-          <button class="secondary-button" type="button" data-action="sendDraftToChat" data-args='${JSON.stringify([r.draft_id, null])}'>
-            ${actionLabel("chat", "Открыть в боте")}
+        </section>
+
+        <section class="section">
+          <h3>${sectionHeadingIcon("scissors")}Нарезка от слов-паразитов</h3>
+          <div class="field-grid" style="gap:8px">
+            <label>Мин. пауза (сек)
+              <input type="range" id="cleanPauseDuration" min="0.1" max="2.0" step="0.1" value="0.4" style="width:100%" />
+              <span id="cleanPauseValue" style="font-size:12px;color:var(--hint)">0.4 с</span>
+            </label>
+            <label>Порог тишины (дБ)
+              <input type="range" id="cleanSilenceThreshold" min="-60" max="-10" step="1" value="-35" style="width:100%" />
+              <span id="cleanThresholdValue" style="font-size:12px;color:var(--hint)">-35 дБ</span>
+            </label>
+          </div>
+          <label style="display:flex;align-items:center;gap:8px;margin:8px 0;font-size:13px">
+            <input type="checkbox" id="cleanUseWhisper" checked /> Whisper транскрипция
+          </label>
+          <button class="secondary-button" type="button" data-action="cleanReelsVideo" data-args='${JSON.stringify([r.draft_id, null])}'>
+            ${actionLabel("scissors", "Очистить видео")}
+          </button>
+          <div id="cleanStatusContainer">${cleanHtml}</div>
+        </section>
+
+        <section class="section">
+          <h3>${sectionHeadingIcon("film")}Сборка из кадров</h3>
+          <div class="field-grid" style="gap:8px">
+            <label>Renderer
+              <select id="composeRenderer" style="width:100%">
+                <option value="ffmpeg">FFmpeg (быстрый)</option>
+                <option value="remotion">Remotion (шаблоны)</option>
+              </select>
+            </label>
+            <div id="remotionOptions" style="display:none">
+              <label>Шаблон
+                <select id="composeTemplate" style="width:100%">
+                  <option value="aroma">Aroma</option>
+                  <option value="educational">Educational</option>
+                  <option value="promo">Promo</option>
+                </select>
+              </label>
+              <label style="margin-top:6px">Анимация текста
+                <select id="composeTextAnimation" style="width:100%">
+                  <option value="fade">Fade</option>
+                  <option value="slide-up">Slide Up</option>
+                  <option value="typewriter">Typewriter</option>
+                  <option value="scale-in">Scale In</option>
+                </select>
+              </label>
+            </div>
+          </div>
+          <button class="secondary-button" type="button" data-action="composeReelsVideo" data-args='${JSON.stringify([r.draft_id, null])}' style="margin-top:8px">
+            ${actionLabel("film", "Собрать видео")}
+          </button>
+          <div id="composeStatusContainer"></div>
+        </section>
+
+        <div class="actions-row" style="margin-top:12px">
+          ${isPassed ? `
+            <button class="primary-button" type="button" data-action="proceedToPublish" data-args='${JSON.stringify([r.draft_id, null])}'>
+              ${actionLabel("publish", "Перейти к публикации")}
+            </button>
+          ` : ""}
+          <button class="secondary-button" type="button" data-action="jumpToReelsStep" data-args='${JSON.stringify([r.draft_id, "draft", null])}'>
+            ${uiIcon("arrow-left")} К сценарию
           </button>
         </div>
       </div>
@@ -913,7 +1027,7 @@ export function createReelsModule(deps) {
     return `
       <div class="detail-grid">
         ${renderBackButton()}
-        ${reelsStepperMarkup(r.status, false)}
+        ${reelsStepperMarkup(r.status, false, r.draft_id)}
         <div class="detail-top">
           <p class="eyebrow">${uiIcon("reel")} <span>РИЛС · Публикация</span></p>
           <h2 class="detail-title">${escapeHtml(r.topic)}</h2>
@@ -1248,13 +1362,18 @@ export function createReelsModule(deps) {
 
   async function cleanReelsVideo(draftId, btn) {
     const pauseInput = document.getElementById("cleanPauseDuration");
+    const thresholdInput = document.getElementById("cleanSilenceThreshold");
+    const whisperInput = document.getElementById("cleanUseWhisper");
     const minPause = pauseInput ? parseFloat(pauseInput.value) : 0.4;
+    const threshold = thresholdInput ? parseFloat(thresholdInput.value) : -35.0;
+    const useWhisper = whisperInput ? whisperInput.checked : true;
     await withButtonFeedback(btn, "Запускаю...", async () => {
       await fetchJson(`/api/reels/${draftId}/clean-video`, {
         method: "POST",
         body: JSON.stringify({
           min_pause_duration: minPause,
-          silence_threshold_db: -35.0,
+          silence_threshold_db: threshold,
+          use_whisper: useWhisper,
         }),
       });
       _startCleanPoll(draftId);
@@ -1314,7 +1433,7 @@ export function createReelsModule(deps) {
     return `
       <div class="detail-grid">
         ${renderBackButton()}
-        ${reelsStepperMarkup(r.status, false)}
+        ${reelsStepperMarkup(r.status, false, r.draft_id)}
         <div class="detail-top">
           <p class="eyebrow">${uiIcon("reel")} <span>РИЛС · Опубликован</span></p>
           <h2 class="detail-title">${escapeHtml(r.topic)}</h2>
@@ -1483,11 +1602,127 @@ export function createReelsModule(deps) {
     }
   }
 
+  // ── Screen 5 action functions ────────────────────────────────────────
+
+  async function jumpToReelsStep(draftId, stepKey, btn) {
+    const draft = await fetchJson(`/api/reels/${draftId}`);
+    if (!draft) return;
+    mergeReelsIntoState(draft);
+    const r = { ...draft, draft_id: draftId };
+    let html;
+    if (stepKey === "draft") html = renderScreen3Edit(r);
+    else if (stepKey === "approved") html = renderScreen4Shooting(r);
+    else if (stepKey === "video_uploaded") html = renderScreen5VideoCheck(r);
+    else html = renderScreen3Edit(r);
+    callbacks.renderReelsDetail?.(r);
+  }
+
+  async function runTechCheck(draftId, btn) {
+    await withButtonFeedback(btn, "Проверяю...", async () => {
+      await fetchJson(`/api/reels/${draftId}/check-video`, { method: "POST" });
+      const draft = await fetchJson(`/api/reels/${draftId}`);
+      mergeReelsIntoState(draft);
+      callbacks.renderReelsDetail?.(draft);
+    }, "Проверено");
+  }
+
+  async function composeReelsVideo(draftId, btn) {
+    const renderer = document.getElementById("composeRenderer")?.value || "ffmpeg";
+    const template = document.getElementById("composeTemplate")?.value || "aroma";
+    const textAnimation = document.getElementById("composeTextAnimation")?.value || "fade";
+    const qs = `renderer=${renderer}&template=${template}&text_animation=${textAnimation}`;
+    await withButtonFeedback(btn, "Запускаю сборку...", async () => {
+      await fetchJson(`/api/reels/${draftId}/compose?${qs}`, { method: "POST" });
+      _startComposePoll(draftId);
+    }, "Сборка запущена");
+  }
+
+  function _startComposePoll(draftId) {
+    const timer = setInterval(async () => {
+      try {
+        const st = await fetchJson(`/api/reels/${draftId}/compose-status`);
+        if (st.status === "completed" || st.status === "failed") {
+          clearInterval(timer);
+          const draft = await fetchJson(`/api/reels/${draftId}`);
+          mergeReelsIntoState(draft);
+          callbacks.renderReelsDetail?.(draft);
+          if (st.status === "completed") showUiNotice("Видео собрано");
+          else showUiNotice("Ошибка сборки: " + (st.error || ""), "error");
+        } else {
+          const el = document.getElementById("composeStatusContainer");
+          if (el) el.innerHTML = `<div style="font-size:13px;color:var(--hint);margin-top:8px">${uiIcon("loader")} Сборка видео...</div>`;
+        }
+      } catch (_e) { clearInterval(timer); }
+    }, 3000);
+  }
+
+  async function reuploadVideo(draftId, btn) {
+    const input = document.getElementById("reuploadInput");
+    if (!input) return;
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      const formData = new FormData();
+      formData.append("file", file);
+      try {
+        const hdrs = getInitDataHeaders();
+        const resp = await fetch(`/api/reels/${draftId}/upload-video`, {
+          method: "POST",
+          headers: hdrs,
+          body: formData,
+        });
+        if (!resp.ok) throw new Error(await resp.text());
+        const draft = await fetchJson(`/api/reels/${draftId}`);
+        mergeReelsIntoState(draft);
+        callbacks.renderReelsDetail?.(draft);
+        showUiNotice("Видео загружено");
+      } catch (e) {
+        showUiNotice("Ошибка загрузки: " + (e.message || ""), "error");
+      }
+    };
+    input.click();
+  }
+
+  async function proceedToPublish(draftId, btn) {
+    await withButtonFeedback(btn, "Переключаю...", async () => {
+      // Set status to "passed" so the publish screen shows
+      const draft = await fetchJson(`/api/reels/${draftId}`);
+      mergeReelsIntoState(draft);
+      callbacks.renderReelsDetail?.(draft);
+    }, "Готово");
+  }
+
   // Toggle YouTube settings visibility when checkbox changes
   document.body.addEventListener("change", (e) => {
     if (e.target?.name === "publish_platform" && e.target?.value === "youtube") {
       const ytFields = document.getElementById("youtubeFields");
       if (ytFields) ytFields.style.display = e.target.checked ? "block" : "none";
+    }
+    // Slider value displays
+    if (e.target?.id === "cleanPauseDuration") {
+      const el = document.getElementById("cleanPauseValue");
+      if (el) el.textContent = `${e.target.value} с`;
+    }
+    if (e.target?.id === "cleanSilenceThreshold") {
+      const el = document.getElementById("cleanThresholdValue");
+      if (el) el.textContent = `${e.target.value} дБ`;
+    }
+    // Renderer toggle
+    if (e.target?.id === "composeRenderer") {
+      const opts = document.getElementById("remotionOptions");
+      if (opts) opts.style.display = e.target.value === "remotion" ? "block" : "none";
+    }
+  });
+
+  // Also handle input events for sliders (real-time updates)
+  document.body.addEventListener("input", (e) => {
+    if (e.target?.id === "cleanPauseDuration") {
+      const el = document.getElementById("cleanPauseValue");
+      if (el) el.textContent = `${e.target.value} с`;
+    }
+    if (e.target?.id === "cleanSilenceThreshold") {
+      const el = document.getElementById("cleanThresholdValue");
+      if (el) el.textContent = `${e.target.value} дБ`;
     }
   });
 
@@ -1532,5 +1767,11 @@ export function createReelsModule(deps) {
     openReelsImageFullscreen,
     openReelsPreview,
     openBotUploadLink,
+    // Screen 5 video tools
+    jumpToReelsStep,
+    runTechCheck,
+    composeReelsVideo,
+    reuploadVideo,
+    proceedToPublish,
   };
 }

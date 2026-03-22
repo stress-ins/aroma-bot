@@ -3832,6 +3832,13 @@ body.tg-theme-dark .concept-card {
 .reels-step-label { font-size: 10px; color: var(--hint); margin-top: 6px; white-space: nowrap; }
 .reels-step.active .reels-step-label { color: var(--accent); font-weight: 600; }
 .reels-step.done .reels-step-label { color: var(--fg); }
+.reels-step.clickable { cursor: pointer; }
+.reels-step.clickable:hover .reels-step-dot { box-shadow: 0 0 0 3px rgba(200, 160, 100, 0.2); }
+.reels-step.clickable:hover .reels-step-label { color: var(--accent); }
+
+/* Tech-check result rows */
+.tech-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.tech-row:last-child { border-bottom: none; }
 
 /* Storyboard dot indicator */
 .storyboard-dots { display: flex; justify-content: center; gap: 6px; padding: 4px 0 8px; }
