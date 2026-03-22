@@ -299,3 +299,30 @@ def test_dark_swipe_scroll_draft_list(dark_page):
         assert after_scroll > initial_scroll, (
             f"Swipe scroll did not move: before={initial_scroll}, after={after_scroll}"
         )
+
+
+def test_no_dark_gradient_overlays_on_detail_panel(page):
+    """Detail panel must not have ::before/::after gradient overlays that create dark rectangles."""
+    page.evaluate("document.body.classList.add('tg-theme-dark', 'is-mobile-layout', 'is-detail-view')")
+    page.wait_for_timeout(50)
+
+    result = page.evaluate("""() => {
+      const panel = document.querySelector('.detail-panel');
+      if (!panel) return { found: false };
+      const before = getComputedStyle(panel, '::before');
+      const after = getComputedStyle(panel, '::after');
+      return {
+        found: true,
+        beforeBg: before.background || before.backgroundImage || '',
+        afterBg: after.background || after.backgroundImage || '',
+      };
+    }""")
+
+    if not result.get("found"):
+        return
+
+    for prefix in ("before", "after"):
+        bg = result.get(f"{prefix}Bg", "")
+        assert "rgba(0" not in bg, (
+            f".detail-panel::{prefix} has dark gradient overlay: {bg}"
+        )
