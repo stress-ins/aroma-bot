@@ -114,6 +114,7 @@ let addForbiddenPhrase, removeForbiddenPhrase;
 let createNewTeam, createTeamInvite, removeTeamMember, activatePromo, generatePromos;
 let goBackToSettings;
 let saveContentReviewDraft, saveThreadsReviewDraft, polishContentDraft, refreshDraftMetrics, moveDraftToTeam;
+let recommendHashtags, applyRecommendedHashtags, adaptTone, startRepurpose, regenSeriesPost, regenSeriesAll, coherenceCheck;
 let loadCurrentTab, safeLoadCurrentTab, retryCurrentTab;
 let publishDraft, cancelPublishSchedule, loadPublishStatus;
 let openPendingReelsCreation, finalizePendingReelsCreation, recoverPendingReelsCreation;
@@ -723,6 +724,13 @@ function uiIcon(name) {
     scan:       "scan-line",
     tools:      "wrench",
     "tech-check": "scan-line",
+    "copy-plus": "copy-plus",
+    sparkles:   "sparkles",
+    layers:     "layers",
+    palette:    "palette",
+    "refresh-cw": "refresh-cw",
+    "check-circle": "check-circle",
+    lightbulb:  "lightbulb",
   };
   return `<span class="ui-icon ui-icon-${escapeHtml(name)}">${icon(LUCIDE_MAP[name] || "square-terminal", 16)}</span>`;
 }
@@ -1786,6 +1794,13 @@ const {
   renderEmptyDetail,
   refreshDraftMetrics,
   moveDraftToTeam,
+  recommendHashtags,
+  applyRecommendedHashtags,
+  adaptTone,
+  startRepurpose,
+  regenSeriesPost,
+  regenSeriesAll,
+  coherenceCheck,
 } = createDraftsModule({
   state,
   elements,
@@ -1827,6 +1842,8 @@ const {
   enterDetailView,
   syncMobileNavigation,
   renderMarkdown,
+  showRequestError,
+  showUiNotice,
   callbacks: {
     renderDraftList: (...args) => renderDraftList(...args),
     renderDraftDetail: (...args) => renderDraftDetail(...args),
@@ -1869,7 +1886,7 @@ const { renderBrand: renderBrandImpl, loadForbiddenPhrases: loadForbiddenPhrases
   activatePromo, generatePromos,
 } = _settingsMod);
 
-let selectTrendsPlatform, selectTrendsPeriod, refreshTrends, openTrendsPost, createFromInsight, addMonitoredAccount, removeMonitoredAccount;
+let selectTrendsPlatform, selectTrendsPeriod, refreshTrends, openTrendsPost, createFromInsight, addMonitoredAccount, removeMonitoredAccount, generateTrendCards, createFromTrendCard;
 ({
   loadTrends,
   selectTrendsPlatform,
@@ -1881,6 +1898,8 @@ let selectTrendsPlatform, selectTrendsPeriod, refreshTrends, openTrendsPost, cre
   removeMonitoredAccount,
   addTrackedHashtag,
   removeTrackedHashtag,
+  generateTrendCards,
+  createFromTrendCard,
 } = createTrendsModule({
   state,
   elements,
@@ -2408,6 +2427,16 @@ registerWindowBridge({
   removeMonitoredAccountFromSettings,
   addTrackedHashtag,
   removeTrackedHashtag,
+  // New features (roadmap sprint 1-6)
+  recommendHashtags,
+  applyRecommendedHashtags,
+  adaptTone,
+  startRepurpose,
+  regenSeriesPost,
+  regenSeriesAll,
+  coherenceCheck,
+  generateTrendCards,
+  createFromTrendCard,
 });
 
 reelsCallbacks.renderReels = () => { renderReels(); renderDraftList(); };

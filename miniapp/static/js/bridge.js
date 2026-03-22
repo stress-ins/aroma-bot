@@ -170,6 +170,16 @@ export function registerWindowBridge(deps) {
     removeMonitoredAccountFromSettings,
     addTrackedHashtag,
     removeTrackedHashtag,
+    // New features (roadmap sprint 1-6)
+    recommendHashtags,
+    applyRecommendedHashtags,
+    adaptTone,
+    startRepurpose,
+    regenSeriesPost,
+    regenSeriesAll,
+    coherenceCheck,
+    generateTrendCards,
+    createFromTrendCard,
     openArchiveDetail,
     openArchiveForm,
     savePublication,
@@ -348,6 +358,17 @@ export function registerWindowBridge(deps) {
   window.removeTrackedHashtag = removeTrackedHashtag;
   window._selectSchedulerDate = _selectSchedulerDate;
   window._renderThreadsSchedulerDates = _renderThreadsSchedulerDates;
+
+  // New features (roadmap sprint 1-6)
+  window.recommendHashtags = recommendHashtags;
+  window.applyRecommendedHashtags = applyRecommendedHashtags;
+  window.adaptTone = adaptTone;
+  window.startRepurpose = startRepurpose;
+  window.regenSeriesPost = regenSeriesPost;
+  window.regenSeriesAll = regenSeriesAll;
+  window.coherenceCheck = coherenceCheck;
+  window.generateTrendCards = generateTrendCards;
+  window.createFromTrendCard = createFromTrendCard;
 
   // Recommendations wizard
   window.openRecommendationsWizard = openRecommendationsWizard;

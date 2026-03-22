@@ -42,6 +42,8 @@ export function createDraftsModule(deps) {
     renderMarkdown,
     callbacks,
   } = deps;
+  const showRequestError = deps.showRequestError || ((e) => console.error(e));
+  const showUiNotice = deps.showUiNotice || ((msg) => console.log(msg));
 
   const cleanSlotText = (t) => t ? t.replace(/\((?:Hot Take|Thread|Байт на обсуждение|Список|Туториал|Рефлексия|Шутка|Факап|Личная история)\)\s*/gi, '').replace(/^[-*_]{3,}\s*$/gm, '').replace(/\n{3,}/g, '\n\n').trim() : '';
 
@@ -335,6 +337,10 @@ export function createDraftsModule(deps) {
       return renderThreadsSeriesDetail(d);
     }
 
+    if (d?.kind === "content_series") {
+      return renderContentSeriesDetail(d);
+    }
+
     const p = d.payload || {};
     const mainText = p.caption || p.scenario || "";
 
@@ -379,12 +385,22 @@ export function createDraftsModule(deps) {
               <div class="content-review-support-grid">
                 <label><span>Призыв к действию</span><textarea id="contentCtaField" placeholder="Что читателю стоит сделать после текста">${escapeHtml(p.cta || "")}</textarea></label>
                 <label><span>Теги</span><textarea id="contentHashtagsField" placeholder="#ритуал #аромапрактика">${escapeHtml(p.hashtags || "")}</textarea></label>
+                <div id="hashtagRecommendations" hidden class="hashtag-recommendations"></div>
+                <button class="secondary-button" type="button" data-action="recommendHashtags" data-args='${JSON.stringify([d.draft_id])}'>${uiIcon("hash", 14)}<span>Подобрать хэштеги</span></button>
                 <label><span>Промпт для визуала</span><textarea id="contentVisualPromptField" placeholder="Какой образ или сцену должен поддержать визуал">${escapeHtml(p.visual_prompt || "")}</textarea></label>
                 <label><span>Комментарий редактора</span><textarea id="contentEditorNotesField" placeholder="Что усилить или перепроверить">${escapeHtml(p.editor_notes || "")}</textarea></label>
+              </div>
+              <div class="tone-adapter-row">
+                <span class="tone-label">${uiIcon("palette", 14)} Тональность:</span>
+                <button class="keyword-chip" type="button" data-action="adaptTone" data-args='${JSON.stringify([d.draft_id, "educational"])}'>Образовательный</button>
+                <button class="keyword-chip" type="button" data-action="adaptTone" data-args='${JSON.stringify([d.draft_id, "inspirational"])}'>Вдохновляющий</button>
+                <button class="keyword-chip" type="button" data-action="adaptTone" data-args='${JSON.stringify([d.draft_id, "selling"])}'>Продающий</button>
+                <button class="keyword-chip" type="button" data-action="adaptTone" data-args='${JSON.stringify([d.draft_id, "storytelling"])}'>Сторителлинг</button>
               </div>
               <div class="actions-row review-actions">
                 <button class="primary-button" type="button" data-action="saveContentReviewDraft" data-args='${JSON.stringify([d.draft_id, null])}'>${actionLabel("approve", "Сохранить версию")}</button>
                 <button class="secondary-button" type="button" data-action="polishContentDraft" data-args='${JSON.stringify([d.draft_id, null])}'>${actionLabel("sparkle", "Уточнить через AI")}</button>
+                ${d.status === "approved" ? `<button class="secondary-button" type="button" data-action="startRepurpose" data-args='${JSON.stringify([d.draft_id])}'>${uiIcon("copy-plus", 14)}<span>Адаптировать в другие форматы</span></button>` : ""}
               </div>
             `}
           </div>
@@ -596,6 +612,152 @@ export function createDraftsModule(deps) {
     return `<select class="move-to-team-select" data-on-change="moveDraftToTeam" data-args='${JSON.stringify([draftId])}' data-guard="truthy"><option value="">Перенести в...</option>${options}</select>`;
   }
 
+  // ── Content Series Detail ──────────────────────────────────────────
+  function renderContentSeriesDetail(d) {
+    const p = d.payload || {};
+    const posts = p.series_posts || [];
+    const coherenceScore = p.coherence_score;
+    const roleLabels = { intro: "Вступление", middle: "Основной", climax: "Кульминация", cta: "Призыв" };
+    const roleColors = { intro: "var(--brand)", middle: "var(--muted)", climax: "var(--accent, var(--brand))", cta: "var(--success, #4CAF50)" };
+
+    const postsHtml = posts.map((post, i) => `
+      <div class="series-post-card" data-index="${i}">
+        <div class="series-post-header">
+          <span class="series-role-badge" style="background:${roleColors[post.role] || "var(--muted)"}">${roleLabels[post.role] || post.role}</span>
+          <strong>${escapeHtml(post.title || `Пост ${i + 1}`)}</strong>
+        </div>
+        <div class="series-post-preview">${escapeHtml((post.caption || "").substring(0, 150))}${(post.caption || "").length > 150 ? "..." : ""}</div>
+        <div class="series-post-actions">
+          <button class="secondary-button" type="button" data-action="regenSeriesPost" data-args='${JSON.stringify([d.draft_id, i])}'>${uiIcon("refresh-cw", 14)}<span>Перегенерировать</span></button>
+        </div>
+      </div>
+    `).join("");
+
+    const coherenceHtml = coherenceScore != null ? `
+      <div class="series-coherence">
+        <span>Связность: <strong style="color:${coherenceScore >= 0.7 ? "var(--success, green)" : coherenceScore >= 0.5 ? "var(--brand)" : "var(--error, red)"}">${(coherenceScore * 100).toFixed(0)}%</strong></span>
+        ${(p.coherence_issues || []).length ? `<div class="series-issues">${p.coherence_issues.map(i => `<span class="series-issue-chip">${escapeHtml(i)}</span>`).join("")}</div>` : ""}
+      </div>
+    ` : "";
+
+    elements.draftDetail.innerHTML = `
+      <div class="detail-grid">
+        ${renderBackButton()}
+        <section class="section section-primary">
+          <div class="section-heading">
+            <h3>${uiIcon("layers")}${escapeHtml(d.topic || "Контент-серия")}</h3>
+            <p>Серия из ${posts.length} постов${p.template_key && p.template_key !== "custom" ? ` (${escapeHtml(p.template_key)})` : ""}</p>
+          </div>
+          ${coherenceHtml}
+          <div class="series-posts-timeline">${postsHtml}</div>
+          <div class="actions-row detail-actions">
+            <button class="primary-button" type="button" data-action="coherenceCheck" data-args='${JSON.stringify([d.draft_id])}'>${uiIcon("check-circle")}<span>Проверить связность</span></button>
+            <button class="secondary-button" type="button" data-action="regenSeriesAll" data-args='${JSON.stringify([d.draft_id])}'>${uiIcon("refresh-cw")}<span>Перегенерировать всё</span></button>
+            ${d.status === "draft" ? `<button class="primary-button" type="button" data-action="updateDraft" data-args='["status",{"status":"approved"},null]'>${uiIcon("check")}<span>Утвердить</span></button>` : ""}
+          </div>
+        </section>
+      </div>
+    `;
+    syncMobileNavigation();
+  }
+
+  async function regenSeriesPost(draftId, index) {
+    try {
+      await fetchJson(`/api/series/${draftId}/regen-post/${index}`, { method: "POST", body: JSON.stringify({}), timeout: 30000 });
+      await openDraft(draftId);
+    } catch (e) { showRequestError(e); }
+  }
+
+  async function regenSeriesAll(draftId) {
+    try {
+      await fetchJson(`/api/series/${draftId}/regen-all`, { method: "POST", timeout: 90000 });
+      showUiNotice("Серия перегенерируется...", "info");
+      await openDraft(draftId);
+    } catch (e) { showRequestError(e); }
+  }
+
+  async function coherenceCheck(draftId) {
+    try {
+      const result = await fetchJson(`/api/series/${draftId}/coherence-check`, { method: "POST", timeout: 30000 });
+      showUiNotice(`Связность: ${(result.score * 100).toFixed(0)}%`, result.score >= 0.7 ? "success" : "warning");
+      await openDraft(draftId);
+    } catch (e) { showRequestError(e); }
+  }
+
+  // ── Hashtag Recommender ──────────────────────────────────────────
+  async function recommendHashtags(draftId) {
+    const captionEl = document.getElementById("contentCaptionField");
+    const text = captionEl?.value || "";
+    if (!text.trim()) { showUiNotice("Нет текста для анализа", "warning"); return; }
+    try {
+      const data = await fetchJson("/api/hashtags/recommend", {
+        method: "POST", timeout: 20000,
+        body: JSON.stringify({ text, platform: "instagram", count: 12 }),
+      });
+      const container = document.getElementById("hashtagRecommendations");
+      if (container && data.hashtags) {
+        const tierColors = { high: "#4CAF50", medium: "#2196F3", niche: "#9C27B0" };
+        container.innerHTML = data.hashtags.map(h =>
+          `<span class="keyword-chip" style="border-color:${tierColors[h.tier] || "#999"};cursor:pointer" data-tag="${escapeHtml(h.tag)}">#${escapeHtml(h.tag)}</span>`
+        ).join(" ") + `<button class="secondary-button" type="button" data-action="applyRecommendedHashtags" data-args='${JSON.stringify([draftId, data.hashtags.map(h => h.tag)])}'>${uiIcon("check", 14)}<span>Применить все</span></button>`;
+        container.hidden = false;
+      }
+    } catch (e) { showRequestError(e); }
+  }
+
+  async function applyRecommendedHashtags(draftId, tags) {
+    try {
+      await fetchJson("/api/hashtags/apply", {
+        method: "POST",
+        body: JSON.stringify({ draft_id: draftId, hashtags: tags }),
+      });
+      const field = document.getElementById("contentHashtagsField");
+      if (field) field.value = tags.map(t => `#${t}`).join(" ");
+      showUiNotice("Хэштеги применены", "success");
+    } catch (e) { showRequestError(e); }
+  }
+
+  // ── Tone Adapter ─────────────────────────────────────────────────
+  async function adaptTone(draftId, tone) {
+    try {
+      const data = await fetchJson(`/api/drafts/${draftId}/tone/adapt`, {
+        method: "POST", timeout: 30000,
+        body: JSON.stringify({ tone }),
+      });
+      if (data.adapted_text) {
+        const captionEl = document.getElementById("contentCaptionField");
+        if (captionEl) captionEl.value = data.adapted_text;
+        showUiNotice(`Тон "${data.label}" применён`, "success");
+      }
+    } catch (e) { showRequestError(e); }
+  }
+
+  // ── Smart Schedule ───────────────────────────────────────────────
+  async function loadScheduleRecommendations(topic, container) {
+    try {
+      const data = await fetchJson(`/api/schedule/recommend?topic=${encodeURIComponent(topic)}&platform=instagram`);
+      if (data.slots && data.slots.length && container) {
+        const slotsHtml = data.slots.map(s =>
+          `<button type="button" class="keyword-chip schedule-slot-chip" data-day="${s.day}" data-hour="${s.hour_msk}" title="${escapeHtml(s.reason)}">${s.day.substring(0, 2).toUpperCase()} ${s.hour_msk}:00 (${(s.score * 100).toFixed(0)}%)</button>`
+        ).join(" ");
+        container.innerHTML = `<div class="schedule-recommend-label">${uiIcon("clock", 14)} Рекомендация${data.cold_start ? " (wellness defaults)" : ""}:</div>${slotsHtml}`;
+        container.hidden = false;
+      }
+    } catch (_e) { /* optional */ }
+  }
+
+  // ── Repurpose Engine ─────────────────────────────────────────────
+  async function startRepurpose(draftId) {
+    const formats = ["carousel", "reels_v2", "threads_series"];
+    try {
+      const data = await fetchJson("/api/repurpose/start", {
+        method: "POST", timeout: 15000,
+        body: JSON.stringify({ source_draft_id: draftId, formats }),
+      });
+      showUiNotice(`Адаптация запущена: ${formats.length} форматов`, "success");
+    } catch (e) { showRequestError(e); }
+  }
+
   return {
     saveContentReviewDraft,
     saveThreadsReviewDraft,
@@ -603,10 +765,19 @@ export function createDraftsModule(deps) {
     renderDraftList,
     openDraft,
     renderDraftDetail,
+    renderContentSeriesDetail,
     renderThreadsSeriesDetail,
     renderEmptyDetail,
     refreshDraftMetrics,
     moveDraftToTeam,
     renderMoveButton,
+    recommendHashtags,
+    applyRecommendedHashtags,
+    adaptTone,
+    loadScheduleRecommendations,
+    startRepurpose,
+    regenSeriesPost,
+    regenSeriesAll,
+    coherenceCheck,
   };
 }
