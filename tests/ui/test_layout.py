@@ -165,6 +165,8 @@ def test_detail_card_title_not_clipped_on_mobile(page):
         if not title.count():
             continue
 
+        # Scroll title into view if needed (back button may push it)
+        title.scroll_into_view_if_needed(timeout=3000)
         box = title.bounding_box()
         assert box is not None, f"Card {i}: title has no bounding box"
         assert box["y"] >= 0, f"Card {i}: title clipped at top (y={box['y']})"
