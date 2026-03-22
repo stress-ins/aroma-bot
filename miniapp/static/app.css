@@ -2058,6 +2058,9 @@ body.tg-theme-dark .danger-button {
   width: 26px;
   height: 26px;
   flex-basis: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .bottom-tab-btn .ui-icon svg,
@@ -2569,6 +2572,11 @@ body.tg-theme-dark .danger-button {
 
   body.is-mobile-layout .list-panel {
     max-height: calc(var(--tg-viewport-stable-height, 100dvh) - 160px);
+    /* Remove card frame on mobile — content should flow edge-to-edge */
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
   }
 
   .list-panel {
@@ -4455,12 +4463,12 @@ body.is-mobile-layout[data-mode="content"] .toolbar {
    padding-top: 8px only — no safe area duplication (shell already handles it). */
 @media (max-width: 760px) {
   body.is-mobile-layout .shell {
-    padding-top: calc(8px + var(--tg-content-inset-top, env(safe-area-inset-top, 0px)));
+    padding-top: calc(50px + var(--tg-content-inset-top, env(safe-area-inset-top, 0px)));
   }
 
   body.is-mobile-layout .topbar-main {
     padding: 8px 12px;
-    top: calc(8px + var(--tg-content-inset-top, env(safe-area-inset-top, 0px)));
+    top: calc(50px + var(--tg-content-inset-top, env(safe-area-inset-top, 0px)));
     gap: 0;
   }
 
@@ -6310,6 +6318,35 @@ details[open] > .trend-suggestions-toggle::before { transform: rotate(90deg); }
 
 /* Reuse .header-tab styles, active gets accent color */
 .topbar-nav-tabs .header-tab.active {
+  background: var(--brand);
+  color: #fff;
+}
+
+/* ── Content sub-tabs (pill strip below topbar-main) ────────────────────── */
+.content-sub-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 var(--space-3) var(--space-2);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.content-sub-tabs:empty { display: none; }
+
+.content-sub-tab {
+  padding: 5px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.07);
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--duration-fast), color var(--duration-fast);
+}
+
+.content-sub-tab.active {
   background: var(--brand);
   color: #fff;
 }
