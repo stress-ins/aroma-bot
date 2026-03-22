@@ -72,7 +72,7 @@ def test_mobile_bottom_tab_bar_switches_primary_sections(page):
 def test_mobile_handbook_tab_remembers_last_section(page):
     page.locator("#btnTabHandbook").click()
     page.wait_for_timeout(100)
-    page.get_by_role("button", name="Практики").click()
+    page.get_by_role("tab", name="Практики").click()
     page.wait_for_timeout(100)
 
     active_before = page.locator(".tab-button.active").inner_text().strip()
