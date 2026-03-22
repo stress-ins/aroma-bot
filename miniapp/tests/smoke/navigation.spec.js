@@ -26,7 +26,7 @@ test.describe('Навигация — smoke-тесты', () => {
     expect(handbookTabs.some((t) => t.includes('Теория'))).toBe(true);
 
     // Back to drafts
-    await page.locator('#btnTabDrafts').click();
+    await page.locator('#btnTabInspiration').click();
     await page.waitForTimeout(300);
     await page.evaluate('window.goBackToList()');
     await page.locator('.draft-card').first().waitFor({ state: 'visible' });
@@ -34,7 +34,7 @@ test.describe('Навигация — smoke-тесты', () => {
   });
 
   test('нижняя навигация переключает основные секции', async ({ page }) => {
-    const tabs = ['#btnTabDrafts', '#btnTabPlans', '#btnTabHandbook', '#btnTabSettings'];
+    const tabs = ['#btnTabInspiration', '#btnTabContent', '#btnTabHandbook', '#btnTabSettings'];
     for (const tabId of tabs) {
       await page.locator(tabId).click();
       await page.waitForTimeout(300);
@@ -58,7 +58,7 @@ test.describe('Навигация — smoke-тесты', () => {
     }
 
     // Switch away and back
-    await page.locator('#btnTabDrafts').click();
+    await page.locator('#btnTabInspiration').click();
     await page.waitForTimeout(300);
     await page.locator('#btnTabHandbook').click();
     await page.waitForTimeout(300);
@@ -138,7 +138,7 @@ test.describe('Навигация — smoke-тесты', () => {
     const nav = page.locator('#bottomTabBar');
     await expect(nav).toBeVisible();
 
-    for (const tabId of ['#btnTabDrafts', '#btnTabPlans', '#btnTabHandbook', '#btnTabSettings']) {
+    for (const tabId of ['#btnTabInspiration', '#btnTabContent', '#btnTabHandbook', '#btnTabSettings']) {
       await page.locator(tabId).click();
       await page.waitForTimeout(300);
       await expect(nav).toBeVisible();

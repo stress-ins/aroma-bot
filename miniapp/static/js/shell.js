@@ -423,10 +423,14 @@ export function createShellModule(deps) {
       el.classList.add("refreshing");
       el.style.setProperty("--ptr-progress", `${THRESHOLD}px`);
       try {
-        if (state.mobileView === "list") {
+        if (state.mobileView === "detail") {
+          if (typeof window.refreshCurrentDetail === "function") {
+            await window.refreshCurrentDetail();
+          }
+        } else {
           state.draftId = "";
+          await safeLoadCurrentTab("Не удалось обновить");
         }
-        await safeLoadCurrentTab("Не удалось обновить");
       } finally {
         el.classList.remove("visible", "ready", "refreshing");
         el.style.removeProperty("--ptr-progress");

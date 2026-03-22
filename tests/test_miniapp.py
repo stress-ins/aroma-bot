@@ -1452,7 +1452,7 @@ class TestMiniAppRussianLocale:
         assert 'position: sticky' in app_css
         # "Планы" tab moved into content sub-tabs; bottom bar has 4 buttons now
         expected_order = [
-            'id="btnTabDrafts"',
+            'id="btnTabInspiration"',
             'id="btnTabCreate"',
             'id="btnTabHandbook"',
             'id="btnTabSettings"',

@@ -13,7 +13,7 @@ test.describe('Планы — визуальные тесты', () => {
     await injectTelegramMock(page);
     await page.goto('/');
     await page.waitForSelector('body.app-ready', { timeout: 15_000 });
-    await page.locator('#btnTabPlans').click();
+    await page.locator('#btnTabContent').click();
     await page.waitForTimeout(500);
   });
 

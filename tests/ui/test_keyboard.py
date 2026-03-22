@@ -3,7 +3,8 @@ from __future__ import annotations
 
 
 def test_keyboard_can_open_cards_and_create_tools(desktop_page):
-    desktop_page.wait_for_selector(".content-sub-tab", timeout=10000)
+    desktop_page.locator("#btnTabContent").click()
+    desktop_page.wait_for_timeout(100)
     desktop_page.locator(".content-sub-tab", has_text="Публикации").click()
     desktop_page.wait_for_timeout(100)
     desktop_page.locator(".draft-card").first.focus()
@@ -38,7 +39,7 @@ def test_tap_outside_textarea_dismisses_keyboard_focus(page):
 
 
 def test_focusing_lower_review_field_keeps_it_in_view(page):
-    page.locator("#btnTabDrafts").click()
+    page.locator("#btnTabInspiration").click()
     page.wait_for_timeout(100)
     page.get_by_text("Как мягко выйти из рабочего напряжения").first.click()
     page.wait_for_timeout(100)

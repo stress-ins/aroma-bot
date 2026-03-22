@@ -101,6 +101,8 @@ def test_plan_detail_allows_creating_and_opening_linked_draft(page):
         route.continue_()
 
     page.route("**/*", handle_route)
+    page.locator("#btnTabContent").click()
+    page.wait_for_timeout(100)
     page.locator(".content-sub-tab", has_text="Планы").click()
     page.wait_for_timeout(100)
 
@@ -113,4 +115,4 @@ def test_plan_detail_allows_creating_and_opening_linked_draft(page):
 
     # After async generation UX: navigates directly to draft detail on drafts tab
     assert page.locator(".detail-title").inner_text().strip() == "Почему вечерний ритуал помогает нервной системе"
-    assert page.locator("#btnTabDrafts").get_attribute("class")
+    assert page.locator("#btnTabInspiration").get_attribute("class")

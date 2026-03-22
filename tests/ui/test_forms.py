@@ -129,7 +129,7 @@ def test_create_and_detail_forms_show_helper_microcopy(page):
     assert page.get_by_text("Сформулируйте тему как готовую мысль").is_visible()
     assert page.get_by_role("button", name="Собрать черновик").is_visible()
 
-    page.locator("#btnTabDrafts").click()
+    page.locator("#btnTabInspiration").click()
     page.wait_for_timeout(100)
     page.get_by_text("Как мягко выйти из рабочего напряжения").first.click()
     page.wait_for_timeout(100)

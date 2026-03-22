@@ -138,7 +138,7 @@ export function createDraftsModule(deps) {
   }
 
   function renderDraftList() {
-    elements.listTitle.textContent = "Контент";
+    elements.listTitle.textContent = "Вдохновение";
     elements.draftCount.textContent = `${state.drafts.length} шт`;
     setEmptyState(state.drafts.length > 0, {
       eyebrow: "Публикации",

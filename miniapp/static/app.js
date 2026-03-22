@@ -1996,6 +1996,7 @@ const onboarding = createOnboardingModule({ state, icon });
   showUiNotice,
   callbacks: {
     renderReelsDetailMarkup,
+    renderDraftList: () => { if (typeof renderDraftList === "function") renderDraftList(); },
   },
 }));
 
@@ -2190,6 +2191,7 @@ registerWindowBridge({
   openDailyOilReference,
   copyText,
   openReels,
+  refreshReelsDetail,
   openPlan,
   generateDraftFromPlan,
   openPlanRelatedDraft,
@@ -2348,7 +2350,7 @@ registerWindowBridge({
   removeTrackedHashtag,
 });
 
-reelsCallbacks.renderReels = renderReels;
+reelsCallbacks.renderReels = () => { renderReels(); renderDraftList(); };
 reelsCallbacks.renderReelsDetail = renderReelsDetail;
 
 // Auto-resize for textareas is handled by shell.js bindTextareaAutoExpand()

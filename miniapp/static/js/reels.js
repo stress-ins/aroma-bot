@@ -399,11 +399,15 @@ export function createReelsModule(deps) {
   }
 
   async function approveReels(draftId, btn) {
-    const frames = state.selectedReels?.frames || [];
-    const allReady = frames.length > 0 && frames.every((f) => f.image_status === "ready");
-    if (!allReady) {
-      showRequestError("Согласование невозможно", { message: "Не все кадры готовы. Дождитесь завершения генерации изображений." });
-      return;
+    const r = state.selectedReels;
+    const isLightweight = r?.lightweight || r?.payload?.lightweight;
+    if (!isLightweight) {
+      const frames = r?.frames || [];
+      const allReady = frames.length > 0 && frames.every((f) => f.image_status === "ready");
+      if (!allReady) {
+        showRequestError("Согласование невозможно", { message: "Не все кадры готовы. Дождитесь завершения генерации изображений." });
+        return;
+      }
     }
     await withButtonFeedback(btn, "Согласую...", async () => {
       const draft = await fetchJson(`/api/reels/${draftId}/approve`, {
@@ -563,12 +567,13 @@ export function createReelsModule(deps) {
           <div class="reels-skeleton-bar" style="width:80%"></div>
           <div class="reels-skeleton-bar" style="width:55%"></div>
         </div>
+        ${!String(r.draft_id || "").startsWith("pending-") ? `
         <div class="actions-row" style="justify-content:center;padding:12px 0">
           <button class="secondary-button compact" type="button"
             data-action="forceEditReels" data-args='${JSON.stringify([r.draft_id, null])}'>
             Перейти к редактированию
           </button>
-        </div>
+        </div>` : ""}
       </div>
     `;
   }
@@ -599,8 +604,12 @@ export function createReelsModule(deps) {
         <div class="actions-row">
           ${isLightweight ? `
             <button class="primary-button" type="button"
+              data-action="approveReels" data-args='${JSON.stringify([r.draft_id, null])}'>
+              ${actionLabel("approve", "Согласовать")}
+            </button>
+            <button class="secondary-button" type="button"
               data-action="upgradeToFull" data-args='${JSON.stringify([r.draft_id, null])}'>
-              ${actionLabel("slides", "Перейти к полной раскадровке")}
+              ${actionLabel("slides", "Добавить раскадровку")}
             </button>
           ` : `
             <button class="primary-button${allFramesReady ? "" : " is-disabled"}" type="button"
@@ -1064,15 +1073,23 @@ export function createReelsModule(deps) {
   }
 
   async function forceEditReels(draftId, btn) {
-    await withButtonFeedback(btn, "Переключаю...", async () => {
-      const draft = await fetchJson(`/api/reels/${draftId}/force-edit`, {
-        method: "PATCH",
-        body: "{}",
-      });
-      mergeReelsIntoState(draft);
-      callbacks.renderReels?.();
-      callbacks.renderReelsDetail?.(draft);
-    }, "Готово");
+    if (String(draftId || "").startsWith("pending-")) {
+      showRequestError("Рилс ещё создаётся", { message: "Дождитесь завершения генерации." });
+      return;
+    }
+    try {
+      await withButtonFeedback(btn, "Переключаю...", async () => {
+        const draft = await fetchJson(`/api/reels/${draftId}/force-edit`, {
+          method: "PATCH",
+          body: "{}",
+        });
+        mergeReelsIntoState(draft);
+        callbacks.renderReels?.();
+        callbacks.renderReelsDetail?.(draft);
+      }, "Готово");
+    } catch (error) {
+      showRequestError("Не удалось переключить в режим редактирования", error);
+    }
   }
 
   async function copyReelsCaption(draftId, btn) {

@@ -9,7 +9,7 @@ from playwright.sync_api import Error
 
 def _navigate_to_carousel(page):
     """Navigate to carousel card in drafts list."""
-    page.locator("#btnTabDrafts").click()
+    page.locator("#btnTabInspiration").click()
     page.wait_for_timeout(300)
     card = page.get_by_text("Сенсорная карусель для вечернего ритуала").first
     card.wait_for(state="visible", timeout=10000)

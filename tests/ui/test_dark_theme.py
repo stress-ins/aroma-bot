@@ -124,7 +124,7 @@ def test_dark_theme_reels_v2_frame_uses_dark_backgrounds(page):
 def test_dark_button_contrast_on_all_tabs(dark_page):
     all_failures = []
     for tab_id, label in [
-        ("#btnTabDrafts", "Drafts"),
+        ("#btnTabInspiration", "Drafts"),
         ("#btnTabCreate", "Create"),
         ("#btnTabHandbook", "Handbook"),
     ]:
@@ -140,7 +140,7 @@ def test_dark_button_contrast_on_all_tabs(dark_page):
 
 
 def test_dark_draft_detail_scroll_and_actions(dark_page):
-    dark_page.locator("#btnTabDrafts").click()
+    dark_page.locator("#btnTabInspiration").click()
     dark_page.wait_for_timeout(100)
     dark_page.get_by_text("Как мягко выйти из рабочего напряжения").first.click()
     dark_page.wait_for_timeout(100)
@@ -239,6 +239,8 @@ def test_dark_create_form_fields_readable(dark_page):
 
 
 def test_dark_plans_scroll_and_click(dark_page):
+    dark_page.locator("#btnTabContent").click()
+    dark_page.wait_for_timeout(100)
     dark_page.locator(".content-sub-tab", has_text="Планы").click()
     dark_page.wait_for_timeout(100)
 
@@ -270,7 +272,7 @@ def test_dark_plans_scroll_and_click(dark_page):
 
 
 def test_dark_swipe_scroll_draft_list(dark_page):
-    dark_page.locator("#btnTabDrafts").click()
+    dark_page.locator("#btnTabInspiration").click()
     dark_page.wait_for_timeout(100)
 
     initial_scroll = dark_page.evaluate(
