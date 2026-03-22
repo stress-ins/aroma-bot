@@ -1562,7 +1562,8 @@ const {
   // Phase 4 functions:
   publishReels,
   retryPlatform,
-  // Video upload & cleaning
+  // Video compose & upload & cleaning
+  composeReelVideo,
   uploadReelsVideo,
   cleanReelsVideo,
   checkAndPublish,
@@ -2284,6 +2285,7 @@ registerWindowBridge({
   autoResize,
   publishReels,
   retryPlatform,
+  composeReelVideo,
   uploadReelsVideo,
   cleanReelsVideo,
   checkAndPublish,

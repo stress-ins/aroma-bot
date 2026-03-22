@@ -60,6 +60,11 @@ export function registerWindowBridge(deps) {
     openReelsImageFullscreen,
     openReelsPreview,
     openBotUploadLink,
+    // Video compose & upload
+    composeReelVideo,
+    uploadReelsVideo,
+    cleanReelsVideo,
+    checkAndPublish,
     // Phase 4
     publishReels,
     retryPlatform,
@@ -260,6 +265,10 @@ export function registerWindowBridge(deps) {
   window.openBotUploadLink = openBotUploadLink;
   window.upgradeToFull = upgradeToFull;
   window.generateReelsImages = generateReelsImages;
+  window.composeReelVideo = composeReelVideo;
+  window.uploadReelsVideo = uploadReelsVideo;
+  window.cleanReelsVideo = cleanReelsVideo;
+  window.checkAndPublish = checkAndPublish;
   window.publishReels = publishReels;
   window.retryPlatform = retryPlatform;
 

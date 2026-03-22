@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 import uuid
 from typing import Any
-from sqlalchemy import BigInteger, Boolean, Float, ForeignKey, String, JSON, DateTime, Integer, UniqueConstraint
+from sqlalchemy import BigInteger, Boolean, Float, ForeignKey, String, Text, JSON, DateTime, Integer, UniqueConstraint
 from sqlalchemy.ext.mutable import MutableDict, MutableList
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -555,4 +555,59 @@ class PastPublicationModel(Base):
         DateTime,
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+
+class TrendCardModel(Base):
+    """AI-generated trend card from enriched signals."""
+
+    __tablename__ = "trend_cards"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    card_id: Mapped[str] = mapped_column(String(36), unique=True, index=True)
+    team_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("teams.team_id"), nullable=True, index=True,
+    )
+    keyword: Mapped[str] = mapped_column(String(255), index=True, default="")
+    title: Mapped[str] = mapped_column(String(500), default="")
+    strength: Mapped[float] = mapped_column(Float, default=0.0)
+    lifecycle: Mapped[str] = mapped_column(String(32), default="")
+    sentiment: Mapped[str] = mapped_column(String(16), default="")
+    summary: Mapped[str] = mapped_column(Text, default="")
+    recommendation: Mapped[str] = mapped_column(Text, default="")
+    suggested_formats: Mapped[list] = mapped_column(
+        MutableList.as_mutable(JSON), default=list,
+    )
+    source_signals: Mapped[list] = mapped_column(
+        MutableList.as_mutable(JSON), default=list,
+    )
+    velocity: Mapped[float] = mapped_column(Float, default=0.0)
+    convergence: Mapped[float] = mapped_column(Float, default=0.0)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc),
+    )
+
+
+class RepurposeGroupModel(Base):
+    """Group of drafts created by repurposing a single source draft."""
+
+    __tablename__ = "repurpose_groups"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    group_id: Mapped[str] = mapped_column(String(36), unique=True, index=True)
+    team_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("teams.team_id"), nullable=True, index=True,
+    )
+    source_draft_id: Mapped[str] = mapped_column(String(32), index=True, default="")
+    core_message: Mapped[str] = mapped_column(Text, default="")
+    key_points: Mapped[list] = mapped_column(
+        MutableList.as_mutable(JSON), default=list,
+    )
+    target_drafts: Mapped[list] = mapped_column(
+        MutableList.as_mutable(JSON), default=list,
+    )
+    status: Mapped[str] = mapped_column(String(32), default="pending")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc),
     )
