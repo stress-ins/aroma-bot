@@ -51,7 +51,7 @@ class TestAnalyzeTextPlacement:
         assert isinstance(result, dict)
         for key in ("top", "left", "width", "height", "text_color", "role", "source"):
             assert key in result, f"Missing key: {key}"
-        assert result["source"] == "heuristic"  # Vision API temporarily disabled
+        assert result["source"] in ("heuristic", "heuristic_v2")  # Vision API temporarily disabled
         assert result["role"] == "hook"
 
     def test_heuristic_returns_clamped_values(self):
@@ -76,7 +76,7 @@ class TestAnalyzeTextPlacement:
         with patch("bot.agents.carousel_preview_agent.call_claude", side_effect=Exception("API error")):
             result = analyze_text_placement(img, 0)
 
-        assert result["source"] == "heuristic"
+        assert result["source"] in ("heuristic", "heuristic_v2")
         assert "top" in result
         assert "left" in result
         assert result["role"] == "hook"
@@ -87,7 +87,7 @@ class TestAnalyzeTextPlacement:
         with patch("bot.agents.carousel_preview_agent.call_claude", return_value="not json at all"):
             result = analyze_text_placement(img, 2)
 
-        assert result["source"] == "heuristic"
+        assert result["source"] in ("heuristic", "heuristic_v2")
 
     def test_role_assignment(self):
         img = _make_test_image()

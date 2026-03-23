@@ -118,9 +118,11 @@ def _find_quiet_zone(
             left_frac = c0 / cols
             w_frac = rw / cols
             h_frac = rh_cells / rows
-            # Clamp
+            # Clamp to valid range
             if top_frac + h_frac > 0.97:
-                top_frac = 0.97 - h_frac
+                h_frac = min(h_frac, 0.97 - top_frac)
+            top_frac = max(0.0, top_frac)
+            left_frac = max(0.0, left_frac)
             return top_frac, left_frac, w_frac, h_frac
 
         # Fallback: use old single-cell approach
