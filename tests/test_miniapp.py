@@ -723,6 +723,26 @@ class TestMiniAppGenerator:
         assert payload["goal_key"] == "trust"
         assert payload["format_key"] == "instagram"
 
+    def test_build_content_payload_includes_stock_keywords(self):
+        payload = build_content_payload(
+            ContentDraft(
+                caption="Текст",
+                visual_prompt="photo",
+                stock_keywords=["aromatherapy", "lavender", "spa"],
+            ),
+            goal_key="trust",
+            format_key="instagram",
+        )
+        assert payload["stock_keywords"] == ["aromatherapy", "lavender", "spa"]
+
+    def test_build_content_payload_empty_stock_keywords(self):
+        payload = build_content_payload(
+            ContentDraft(caption="Текст"),
+            goal_key="trust",
+            format_key="instagram",
+        )
+        assert payload["stock_keywords"] == []
+
     def test_build_reels_payload_serializes_storyboard(self):
         frames = [
             StoryboardFrame(

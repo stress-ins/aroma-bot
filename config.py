@@ -32,6 +32,10 @@ class Settings(BaseSettings):
     kie_callback_base_url: str = ""  # e.g. "https://app.aromara.ru"
     replicate_api_key: str = ""
 
+    # Stock photos
+    unsplash_access_key: str = ""
+    pexels_api_key: str = ""
+
     @property
     def image_api_key(self) -> str:
         """Primary image generation API key (Kie.ai preferred, NanoBanana fallback)."""

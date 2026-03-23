@@ -212,6 +212,31 @@ class TestParseContentDraft:
         draft = parse_content_draft(raw)
         assert "телесный якорь" in draft.caption
 
+    def test_stock_keywords_parsed(self):
+        raw = (
+            "ANGLE: Через запах\n"
+            "HOOK: Нервная система\n"
+            "CAPTION: Текст поста.\n"
+            "CTA: Напиши мне.\n"
+            "HASHTAGS: #ароматерапия\n"
+            "VISUAL_PROMPT: warm wellness photo, essential oils\n"
+            "STOCK_KEYWORDS: aromatherapy, essential oils, lavender, spa, wellness, meditation"
+        )
+        draft = parse_content_draft(raw)
+        assert len(draft.stock_keywords) == 6
+        assert "aromatherapy" in draft.stock_keywords
+        assert "meditation" in draft.stock_keywords
+
+    def test_stock_keywords_empty_when_absent(self):
+        raw = (
+            "ANGLE: test\n"
+            "HOOK: test\n"
+            "CAPTION: text\n"
+            "VISUAL_PROMPT: photo"
+        )
+        draft = parse_content_draft(raw)
+        assert draft.stock_keywords == []
+
     def test_markdown_labels_are_parsed(self):
         raw = (
             "**ANGLE:** Через тело проще заметить усталость\n"
