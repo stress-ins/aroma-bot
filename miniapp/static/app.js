@@ -731,6 +731,7 @@ function uiIcon(name) {
     "refresh-cw": "refresh-cw",
     "check-circle": "check-circle",
     lightbulb:  "lightbulb",
+    "map-pin":  "map-pin",
   };
   return `<span class="ui-icon ui-icon-${escapeHtml(name)}">${icon(LUCIDE_MAP[name] || "square-terminal", 16)}</span>`;
 }
