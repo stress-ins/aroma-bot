@@ -106,6 +106,7 @@ class ReelsRegenFramePayload(BaseModel):
 class CreateCarouselPayload(BaseModel):
     topic: str = Field(default="")
     blend_context: BlendContext | None = Field(default=None)
+    layout_style: str = Field(default="overlay")  # "overlay" | "editorial"
 
 
 class CarouselSlideRegeneratePayload(BaseModel):

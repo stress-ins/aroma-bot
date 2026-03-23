@@ -257,10 +257,16 @@ export function createSessionModule(deps) {
     });
     state.drafts = state.drafts.map((item) => item.draft_id === draft.draft_id ? { ...item, ...draft } : item);
     if (isCurrentDraftDetail(draft.draft_id)) {
+      const prev = state.selected;
       state.selected = draft;
       renderDraftList();
       const detailHasFocus = elements.draftDetail?.contains(document.activeElement);
-      if (!isEditingDetailForm() && !detailHasFocus && !hasPendingCarouselOperations(draft.draft_id)) {
+      // Skip heavy re-render when still generating and nothing meaningful changed
+      const stateUnchanged = draft.generation_pending && prev?.generation_pending
+        && prev.generation_stage === draft.generation_stage
+        && prev.generation_message === draft.generation_message
+        && readyCount === (Array.isArray(prevPayload.slide_images) ? prevPayload.slide_images.filter(Boolean).length : 0);
+      if (!stateUnchanged && !isEditingDetailForm() && !detailHasFocus && !hasPendingCarouselOperations(draft.draft_id)) {
         renderDraftDetail(draft);
       }
     }
@@ -279,6 +285,8 @@ export function createSessionModule(deps) {
           if (data.error === "not_found") { es.close(); _carouselEventSource = null; return; }
           if (!data.generation_pending) {
             es.close(); _carouselEventSource = null;
+            // Re-render to show completed state (text ready, export buttons, etc.)
+            await _refreshCarouselState(draftId);
             // Images may still be loading — use polling fallback
             if (data.images_ready < data.slide_count) _pollCarouselRefresh(draftId, 30);
             return;

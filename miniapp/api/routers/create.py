@@ -192,6 +192,8 @@ async def generate_carousel(
     }
     if bc:
         carousel_payload["blend_context"] = bc
+    layout_style = payload.layout_style if payload.layout_style in ("overlay", "editorial") else "overlay"
+    carousel_payload["layout_style"] = layout_style
     saved = await save_draft(
         kind="carousel",
         topic=topic,
@@ -200,7 +202,7 @@ async def generate_carousel(
         team_id=ctx.team_id,
         created_by=ctx.telegram_id,
     )
-    background_tasks.add_task(complete_carousel_generation, saved.draft_id, topic, bc)
+    background_tasks.add_task(complete_carousel_generation, saved.draft_id, topic, bc, layout_style)
     return await serialize_draft(saved)
 
 
