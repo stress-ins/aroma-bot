@@ -545,21 +545,24 @@ export function createCarouselModule(deps) {
   }
 
   async function exportToCanva(draftId, button) {
-    await withButtonFeedback(button, "Экспорт...", async () => {
+    await withButtonFeedback(button, "Экспорт в Canva…", async () => {
       const result = await fetchJson(`/api/carousel/${draftId}/canva/export`, {
         method: "POST",
         body: "{}",
         timeout: 150000,
       });
       if (result?.edit_url) {
+        showUiNotice("Дизайн создан в Canva. Открываю редактор…", "success");
         const tg = window.Telegram?.WebApp;
         if (tg?.openLink) {
           tg.openLink(result.edit_url);
         } else {
           window.open(result.edit_url, "_blank", "noopener,noreferrer");
         }
+      } else {
+        showUiNotice("Экспорт выполнен, но ссылка на редактор не получена", "warning");
       }
-    }, "Экспортировано");
+    }, "Открыто в Canva");
   }
 
   async function importFromCanva(draftId, button) {
