@@ -59,7 +59,7 @@ async def create_team_endpoint(
 ):
     if not body.name.strip():
         raise HTTPException(status_code=400, detail="name_required")
-    team = await create_team(body.name.strip(), tg_user.telegram_id, creator_username=tg_user.username)
+    team = await create_team(body.name.strip(), tg_user.telegram_id, creator_username=tg_user.username, creator_first_name=tg_user.first_name)
     return {
         "team_id": team.team_id,
         "name": team.name,
@@ -98,9 +98,9 @@ async def get_team_detail(
             "username": None,
             "expires_at": info.get("expires_at"),
         }
-        uid_token = await get_token(f"{platform}_user_id")
-        if uid_token and uid_token.access_token:
-            acc["username"] = uid_token.access_token
+        username_token = await get_token(f"{platform}_username")
+        if username_token and username_token.access_token:
+            acc["username"] = username_token.access_token
         connected_accounts.append(acc)
 
     return {
@@ -228,7 +228,7 @@ async def accept_team_invite(
     invite_code: str,
     tg_user: TelegramUser = Depends(_resolve_telegram_user),
 ):
-    result = await accept_invite(invite_code, tg_user.telegram_id, username=tg_user.username)
+    result = await accept_invite(invite_code, tg_user.telegram_id, username=tg_user.username, first_name=tg_user.first_name)
     if result is None:
         raise HTTPException(status_code=404, detail="invite_not_found_or_expired")
     return result

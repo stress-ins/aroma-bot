@@ -110,6 +110,7 @@ export function createSettingsModule(deps) {
       <div class="settings-menu-group-header">Система</div>
       <div class="settings-menu-list">
         ${settingsMenuRow("paintbrush", "#FF9500", "Цветовая тема", "theme", null)}
+        ${settingsMenuRow("map-pin", "#FF6B6B", "Город", "city", null)}
         ${settingsMenuRow("activity", "#FF3B30", "Источники данных", "status", enabledCount)}
       </div>
     </div>`;
@@ -420,6 +421,10 @@ export function createSettingsModule(deps) {
       }
       if (state.settingsSection === "theme") {
         await renderTheme();
+        return;
+      }
+      if (state.settingsSection === "city") {
+        await renderCity();
         return;
       }
     }
@@ -1040,6 +1045,71 @@ export function createSettingsModule(deps) {
     }
   }
 
+  // ── City settings ──────────────────────────────────────────────────────
+
+  const CITY_PRESETS = [
+    { name: "Москва", lat: 55.7558, lon: 37.6173 },
+    { name: "Санкт-Петербург", lat: 59.9343, lon: 30.3351 },
+    { name: "Сочи", lat: 43.5855, lon: 39.7231 },
+    { name: "Казань", lat: 55.7887, lon: 49.1221 },
+    { name: "Екатеринбург", lat: 56.8389, lon: 60.6057 },
+    { name: "Новосибирск", lat: 55.0084, lon: 82.9357 },
+    { name: "Краснодар", lat: 45.0353, lon: 38.9753 },
+    { name: "Нижний Новгород", lat: 56.2965, lon: 43.9361 },
+  ];
+
+  async function renderCity() {
+    elements.listTitle.textContent = "Настройки";
+    elements.draftCount.textContent = "Город";
+    elements.draftList.innerHTML = `<button class="back-button" type="button" data-action="goBackToSettings">${uiIcon("arrow-left")}<span>Назад</span></button>`;
+
+    elements.draftDetail.innerHTML = renderBackButton() + `
+      <div class="detail-grid">
+        <div class="detail-top">
+          <p class="eyebrow">${uiIcon("map-pin")}<span>Настройки</span></p>
+          <h2 class="detail-title">Город</h2>
+        </div>
+        <div id="cityContent" class="section">
+          <div class="account-card skeleton"><div class="skeleton-line"></div></div>
+        </div>
+      </div>
+    `;
+    enterDetailView();
+
+    try {
+      const data = await fetchJson("/api/user/city");
+      const container = document.getElementById("cityContent");
+      if (!container) return;
+
+      const currentCity = data.city_name || "Москва";
+
+      container.innerHTML = `
+        <p class="settings-hint">Город используется для подбора масла дня с учётом погоды и геомагнитной обстановки.</p>
+        <div class="city-presets">
+          ${CITY_PRESETS.map((c) => `<button class="chip${c.name === currentCity ? " chip--active" : ""}" type="button" data-action="selectCity" data-args='${JSON.stringify([c.name, c.lat, c.lon])}'>${escapeHtml(c.name)}</button>`).join("")}
+        </div>
+        <p class="settings-hint" style="margin-top: 12px">Текущий город: <strong id="currentCityLabel">${escapeHtml(currentCity)}</strong></p>
+      `;
+      if (window.lucide) lucide.createIcons();
+    } catch (err) {
+      const container = document.getElementById("cityContent");
+      if (container) container.innerHTML = `<p class="plan-entry-hint">Не удалось загрузить настройки города.</p>`;
+    }
+  }
+
+  async function selectCity(name, lat, lon) {
+    try {
+      await fetchJson("/api/user/city", {
+        method: "PATCH",
+        body: JSON.stringify({ city_name: name, city_lat: lat, city_lon: lon }),
+      });
+      showUiNotice(`Город: ${name}`, "success");
+      await renderCity();
+    } catch (_err) {
+      showUiNotice("Не удалось сохранить город", "error");
+    }
+  }
+
   // ── Team management ──────────────────────────────────────────────────────
 
   async function renderTeam() {
@@ -1087,7 +1157,7 @@ export function createSettingsModule(deps) {
           const removeBtn = isOwner && m.telegram_id !== detail.created_by
             ? ` <button class="chip-remove-btn" type="button" data-action="removeTeamMember" data-args='${JSON.stringify([t.team_id, m.telegram_id])}' title="Удалить">&times;</button>`
             : "";
-          const displayName = m.username ? `@${escapeHtml(m.username)}` : `ID: ${m.telegram_id}`;
+          const displayName = m.username ? `@${escapeHtml(m.username)}` : m.first_name ? escapeHtml(m.first_name) : `ID: ${m.telegram_id}`;
           return `
             <div class="team-member-row">
               <span class="team-member-id">${displayName}</span>
@@ -1412,5 +1482,7 @@ export function createSettingsModule(deps) {
     generatePromos,
     setTheme,
     renderTheme,
+    renderCity,
+    selectCity,
   };
 }

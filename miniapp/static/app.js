@@ -111,7 +111,7 @@ let addTrackedHashtag, removeTrackedHashtag;
 let addMonitoredAccountFromSettings, removeMonitoredAccountFromSettings;
 let addKeywordItem, removeKeywordItem, openKeywordTopic;
 let addForbiddenPhrase, removeForbiddenPhrase;
-let createNewTeam, createTeamInvite, removeTeamMember, activatePromo, generatePromos;
+let createNewTeam, createTeamInvite, removeTeamMember, activatePromo, generatePromos, selectCity;
 let goBackToSettings;
 let saveContentReviewDraft, saveThreadsReviewDraft, polishContentDraft, refreshDraftMetrics, moveDraftToTeam;
 let recommendHashtags, applyRecommendedHashtags, adaptTone, startRepurpose, regenSeriesPost, regenSeriesAll, coherenceCheck;
@@ -731,6 +731,7 @@ function uiIcon(name) {
     "refresh-cw": "refresh-cw",
     "check-circle": "check-circle",
     lightbulb:  "lightbulb",
+    "map-pin":  "map-pin",
   };
   return `<span class="ui-icon ui-icon-${escapeHtml(name)}">${icon(LUCIDE_MAP[name] || "square-terminal", 16)}</span>`;
 }
@@ -1895,6 +1896,7 @@ const { renderBrand: renderBrandImpl, loadForbiddenPhrases: loadForbiddenPhrases
   addMonitoredAccountFromSettings, removeMonitoredAccountFromSettings,
   createNewTeam, createTeamInvite, removeTeamMember,
   activatePromo, generatePromos,
+  selectCity,
 } = _settingsMod);
 
 let selectTrendsPlatform, selectTrendsPeriod, refreshTrends, openTrendsPost, createFromInsight, addMonitoredAccount, removeMonitoredAccount, generateTrendCards, createFromTrendCard;
@@ -2372,6 +2374,7 @@ registerWindowBridge({
   removeTeamMember,
   activatePromo,
   generatePromos,
+  selectCity,
   goBackToSettings,
   setPlanStatusFilter,
   setPlanPlatformFilter,

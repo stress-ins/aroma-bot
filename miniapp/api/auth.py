@@ -128,21 +128,35 @@ async def _resolve_telegram_id(
 class TelegramUser:
     telegram_id: int
     username: str
+    first_name: str = ""
+
+
+def _telegram_first_name_from_init_data(init_data: str) -> str:
+    try:
+        parsed = dict(urllib.parse.parse_qsl(init_data, strict_parsing=True))
+        raw_user = parsed.get("user", "")
+        if not raw_user:
+            return ""
+        payload = json.loads(raw_user)
+        return str(payload.get("first_name", ""))
+    except Exception:
+        return ""
 
 
 async def _resolve_telegram_user(
     x_telegram_init_data: str | None = Header(default=None),
 ) -> TelegramUser:
-    """FastAPI dependency: validate auth and return telegram_id + username."""
+    """FastAPI dependency: validate auth and return telegram_id + username + first_name."""
     if not x_telegram_init_data or not _verify_init_data(x_telegram_init_data):
         raise HTTPException(status_code=403, detail="forbidden")
     user_id = _telegram_user_id_from_init_data(x_telegram_init_data)
     if user_id is None:
         raise HTTPException(status_code=403, detail="forbidden")
     username = _telegram_username_from_init_data(x_telegram_init_data)
+    first_name = _telegram_first_name_from_init_data(x_telegram_init_data)
     from bot.services.claude_client import current_telegram_id
     current_telegram_id.set(user_id)
-    return TelegramUser(telegram_id=user_id, username=username)
+    return TelegramUser(telegram_id=user_id, username=username, first_name=first_name)
 
 
 def require_tier(min_tier: str):
