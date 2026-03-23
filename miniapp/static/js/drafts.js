@@ -646,27 +646,26 @@ export function createDraftsModule(deps) {
 
     const coherenceHtml = coherenceScore != null ? `
       <div class="series-coherence">
-        <span>Связность: <strong style="color:${coherenceScore >= 0.7 ? "var(--success, green)" : coherenceScore >= 0.5 ? "var(--brand)" : "var(--error, red)"}">${(coherenceScore * 100).toFixed(0)}%</strong></span>
-        ${(p.coherence_issues || []).length ? `<div class="series-issues">${p.coherence_issues.map(i => `<span class="series-issue-chip">${escapeHtml(i)}</span>`).join("")}</div>` : ""}
+        <span class="series-coherence-score">Связность: <strong style="color:${coherenceScore >= 0.7 ? "var(--success, green)" : coherenceScore >= 0.5 ? "var(--brand)" : "var(--error, red)"}">${(coherenceScore * 100).toFixed(0)}%</strong></span>
+        ${(p.coherence_issues || []).length ? `<ul class="series-issues">${p.coherence_issues.map(i => `<li class="series-issue-item">${escapeHtml(i)}</li>`).join("")}</ul>` : ""}
       </div>
     ` : "";
 
     elements.draftDetail.innerHTML = `
-      <div class="detail-grid">
+      <div class="detail-grid series-detail-grid">
         ${renderBackButton()}
-        <section class="section section-primary">
-          <div class="section-heading">
-            <h3>${uiIcon("layers")}${escapeHtml(d.topic || "Контент-серия")}</h3>
-            <p>Серия из ${posts.length} постов${p.template_key && p.template_key !== "custom" ? ` (${escapeHtml(p.template_key)})` : ""}</p>
-          </div>
-          ${coherenceHtml}
-          <div class="series-posts-timeline">${postsHtml}</div>
-          <div class="actions-row detail-actions">
-            <button class="primary-button" type="button" data-action="coherenceCheck" data-args='${JSON.stringify([d.draft_id])}'>${uiIcon("check-circle")}<span>Проверить связность</span></button>
-            <button class="secondary-button" type="button" data-action="regenSeriesAll" data-args='${JSON.stringify([d.draft_id])}'>${uiIcon("refresh-cw")}<span>Перегенерировать всё</span></button>
-            ${d.status === "draft" ? `<button class="primary-button" type="button" data-action="updateDraft" data-args='["status",{"status":"approved"},null]'>${uiIcon("check")}<span>Утвердить</span></button>` : ""}
-          </div>
-        </section>
+        <div class="detail-top series-detail-top">
+          <p class="eyebrow">${contentKindIcon(d.kind)}<span>${escapeHtml(kindLabel(d.kind))}</span></p>
+          <h2 class="detail-title">${escapeHtml(d.topic || "Контент-серия")}</h2>
+          <p class="series-meta">${posts.length} постов${p.template_key && p.template_key !== "custom" ? ` · ${escapeHtml(p.template_key)}` : ""}</p>
+        </div>
+        ${coherenceHtml}
+        <div class="series-posts-timeline">${postsHtml}</div>
+        <div class="actions-row detail-actions">
+          <button class="primary-button" type="button" data-action="coherenceCheck" data-args='${JSON.stringify([d.draft_id])}'>${uiIcon("check-circle")}<span>Проверить связность</span></button>
+          <button class="secondary-button" type="button" data-action="regenSeriesAll" data-args='${JSON.stringify([d.draft_id])}'>${uiIcon("refresh-cw")}<span>Перегенерировать всё</span></button>
+          ${d.status === "draft" ? `<button class="primary-button" type="button" data-action="updateDraft" data-args='["status",{"status":"approved"},null]'>${uiIcon("check")}<span>Утвердить</span></button>` : ""}
+        </div>
       </div>
     `;
     syncMobileNavigation();

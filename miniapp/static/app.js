@@ -280,6 +280,7 @@ const PRACTICE_RU_LABELS = {
 const RU_KIND_LABELS = {
   threads: "Тредс",
   threads_series: "Серия Тредс",
+  content_series: "Контент-серия",
   instagram: "Инстаграм",
   telegram: "Телеграм",
   reels: "Рилсы",
@@ -787,6 +788,7 @@ function contentKindIcon(kind) {
     reels:          "reel",
     reels_v2:       "reel",
     carousel:       "layers",
+    content_series: "pencil",
     instagram:      "instagram",
     telegram:       "telegram",
   };
