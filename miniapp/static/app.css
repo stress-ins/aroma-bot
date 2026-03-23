@@ -2134,13 +2134,9 @@ body.tg-theme-dark .danger-button {
   margin-bottom: 12px;
 }
 
-/* Swipe-back: subtle hint without moving the panel */
-.detail-panel.swipe-back-hint {
-  box-shadow: inset 4px 0 12px -4px rgba(var(--brand-rgb), 0.25);
-}
+/* Swipe-back: visual indicator when threshold is reached */
 .detail-panel.swipe-back-ready {
   box-shadow: inset 6px 0 16px -4px rgba(var(--brand-rgb), 0.5);
-  opacity: 0.92;
 }
 
 .detail-panel.is-entering {
@@ -2487,7 +2483,7 @@ body.tg-theme-dark .danger-button {
        The height is constrained by body→shell→layout flex chain above. */
     align-self: stretch;
     min-height: 0;
-    padding-top: 0;
+    padding-top: var(--tg-content-inset-top, env(safe-area-inset-top, 0px));
     padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
     padding-left: 8px;
     padding-right: 8px;

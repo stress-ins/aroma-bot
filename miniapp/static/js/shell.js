@@ -463,38 +463,64 @@ export function createShellModule(deps) {
       }
       swipeStart = { x: touch.clientX, y: touch.clientY, edgeSwipe };
     }, { passive: true });
-    elements.detailPanel.addEventListener("touchmove", (event) => {
+    const panel = elements.detailPanel;
+    const resetSwipe = (springBack = false) => {
+      panel.classList.remove("swipe-back-hint", "swipe-back-ready");
+      if (springBack) {
+        panel.style.transition = "transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.3s ease";
+        panel.style.transform = "translateX(0)";
+        panel.style.opacity = "1";
+        window.setTimeout(() => {
+          panel.style.removeProperty("transform");
+          panel.style.removeProperty("opacity");
+          panel.style.removeProperty("transition");
+        }, 300);
+      } else {
+        panel.style.removeProperty("transform");
+        panel.style.removeProperty("opacity");
+        panel.style.removeProperty("transition");
+      }
+    };
+    panel.addEventListener("touchmove", (event) => {
       if (!swipeStart || state.mobileView !== "detail" || hasActiveTextSelection()) return;
       if (!swipeStart.edgeSwipe && (isInteractiveTarget(event.target) || isSelectableTextTarget(event.target))) return;
       const touch = event.touches[0];
       const dx = Math.max(0, touch.clientX - swipeStart.x);
       const dy = Math.abs(touch.clientY - swipeStart.y);
       if (dx > 10 && dy < 72) {
-        // Show hint without moving the panel
-        elements.detailPanel.classList.toggle("swipe-back-ready", dx > 72);
-        elements.detailPanel.classList.add("swipe-back-hint");
+        panel.style.removeProperty("transition");
+        panel.style.transform = `translateX(${dx}px)`;
+        panel.style.opacity = `${1 - (dx / window.innerWidth) * 0.4}`;
+        panel.classList.toggle("swipe-back-ready", dx > 72);
       }
     }, { passive: true });
-    const resetHint = () => {
-      elements.detailPanel.classList.remove("swipe-back-hint", "swipe-back-ready");
-    };
-    elements.detailPanel.addEventListener("touchend", (event) => {
+    panel.addEventListener("touchend", (event) => {
       if (!swipeStart || state.mobileView !== "detail" || hasActiveTextSelection()) {
-        resetHint();
+        resetSwipe(true);
         return;
       }
       const touch = event.changedTouches[0];
       const dx = touch.clientX - swipeStart.x;
       const dy = Math.abs(touch.clientY - swipeStart.y);
       swipeStart = null;
-      resetHint();
+      panel.classList.remove("swipe-back-hint", "swipe-back-ready");
       if (dx > 72 && dy < 56 && dx > dy * 1.4) {
-        goBackToList(true);
+        panel.style.transition = "transform 0.25s var(--ease-standard, ease), opacity 0.25s var(--ease-standard, ease)";
+        panel.style.transform = "translateX(100%)";
+        panel.style.opacity = "0.6";
+        window.setTimeout(() => {
+          panel.style.removeProperty("transform");
+          panel.style.removeProperty("opacity");
+          panel.style.removeProperty("transition");
+          goBackToList(false);
+        }, 260);
+      } else {
+        resetSwipe(true);
       }
     }, { passive: true });
-    elements.detailPanel.addEventListener("touchcancel", () => {
+    panel.addEventListener("touchcancel", () => {
       swipeStart = null;
-      resetHint();
+      resetSwipe(true);
     }, { passive: true });
   }
 
