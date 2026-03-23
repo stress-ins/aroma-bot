@@ -3571,6 +3571,31 @@ body.tg-theme-dark .concept-card {
   line-height: 1.5;
   margin-bottom: 8px;
 }
+.series-post-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  background: var(--bg);
+  color: var(--text);
+  resize: vertical;
+  min-height: 80px;
+  margin-bottom: 4px;
+}
+.series-post-textarea:focus {
+  outline: none;
+  border-color: var(--brand);
+}
+.series-post-regen-row {
+  margin: 6px 0;
+}
+.series-post-regen-row .threads-regen-input {
+  width: 100%;
+  box-sizing: border-box;
+}
 .series-post-actions {
   display: flex;
   gap: 8px;

@@ -456,6 +456,14 @@ export function registerWindowBridge(deps) {
     target.classList.toggle("is-warn", len > 480 && len <= 500);
   };
 
+  window._syncSeriesCharCount = function(el) {
+    const target = document.getElementById(el.dataset.countTarget);
+    if (!target) return;
+    const len = el.value.length;
+    target.textContent = len;
+    target.classList.toggle("is-over", len > 2200);
+  };
+
   window._selectInput = function(el) {
     el.select();
   };

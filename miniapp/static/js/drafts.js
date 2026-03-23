@@ -631,18 +631,34 @@ export function createDraftsModule(deps) {
     const roleLabels = { intro: "Вступление", middle: "Основной", climax: "Кульминация", cta: "Призыв" };
     const roleColors = { intro: "var(--brand)", middle: "var(--muted)", climax: "var(--accent, var(--brand))", cta: "var(--success, #4CAF50)" };
 
-    const postsHtml = posts.map((post, i) => `
+    const isApproved = d.status === "approved" || d.status === "scheduled" || d.status === "published";
+    const postsHtml = posts.map((post, i) => {
+      const charCount = (post.caption || "").length;
+      const isOver = charCount > 2200;
+      return `
       <div class="series-post-card" data-index="${i}">
         <div class="series-post-header">
           <span class="series-role-badge" style="background:${roleColors[post.role] || "var(--muted)"}">${roleLabels[post.role] || post.role}</span>
           <strong>${escapeHtml(post.title || `Пост ${i + 1}`)}</strong>
         </div>
-        <div class="series-post-preview">${escapeHtml((post.caption || "").substring(0, 150))}${(post.caption || "").length > 150 ? "..." : ""}</div>
-        <div class="series-post-actions">
-          <button class="secondary-button" type="button" data-action="regenSeriesPost" data-args='${JSON.stringify([d.draft_id, i])}'>${uiIcon("refresh-cw", 14)}<span>Перегенерировать</span></button>
+        ${!isApproved ? `
+        <textarea class="series-post-textarea" id="seriesCaption_${d.draft_id}_${i}"
+          placeholder="Текст публикации"
+          data-on-input="_syncSeriesCharCount" data-count-target="seriesCharCount_${d.draft_id}_${i}">${escapeHtml(post.caption || "")}</textarea>
+        <div class="threads-char-counter${isOver ? " is-over" : ""}" id="seriesCharCount_${d.draft_id}_${i}">${charCount}</div>
+        <div class="series-post-regen-row">
+          <input class="threads-regen-input" id="seriesNote_${d.draft_id}_${i}" type="text"
+            placeholder="Замечание к перегенерации (необязательно)">
         </div>
+        <div class="series-post-actions">
+          <button class="secondary-button" type="button" data-action="saveSeriesPost" data-args='${JSON.stringify([d.draft_id, i, null])}'>${uiIcon("save", 14)}<span>Сохранить</span></button>
+          <button class="secondary-button" type="button" data-action="regenSeriesPost" data-args='${JSON.stringify([d.draft_id, i, null])}'>${uiIcon("refresh-cw", 14)}<span>Переписать</span></button>
+        </div>
+        ` : `
+        <div class="series-post-preview">${escapeHtml(post.caption || "")}</div>
+        `}
       </div>
-    `).join("");
+    `}).join("");
 
     const coherenceHtml = coherenceScore != null ? `
       <div class="series-coherence">
@@ -671,11 +687,31 @@ export function createDraftsModule(deps) {
     syncMobileNavigation();
   }
 
-  async function regenSeriesPost(draftId, index) {
-    try {
-      await fetchJson(`/api/series/${draftId}/regen-post/${index}`, { method: "POST", body: JSON.stringify({}), timeout: 30000 });
+  async function saveSeriesPost(draftId, index, _btn) {
+    const textarea = document.getElementById(`seriesCaption_${draftId}_${index}`);
+    const caption = textarea?.value ?? "";
+    const btn = _btn || document.querySelector(`[data-action="saveSeriesPost"][data-args*="${draftId}"]`);
+    await withButtonFeedback(btn, "Сохраняю...", async () => {
+      await fetchJson(`/api/series/${draftId}/post/${index}`, {
+        method: "PATCH",
+        body: JSON.stringify({ caption }),
+      });
+      showUiNotice("Сохранено", "success");
+    });
+  }
+
+  async function regenSeriesPost(draftId, index, _btn) {
+    const noteEl = document.getElementById(`seriesNote_${draftId}_${index}`);
+    const note = noteEl?.value?.trim() || null;
+    const btn = _btn || document.querySelector(`[data-action="regenSeriesPost"][data-args*='"${index}"']`);
+    await withButtonFeedback(btn, "Переписываю...", async () => {
+      await fetchJson(`/api/series/${draftId}/regen-post/${index}`, {
+        method: "POST",
+        body: JSON.stringify(note ? { note } : {}),
+        timeout: 30000,
+      });
       await openDraft(draftId);
-    } catch (e) { showRequestError(e); }
+    });
   }
 
   async function regenSeriesAll(draftId) {
@@ -786,6 +822,7 @@ export function createDraftsModule(deps) {
     adaptTone,
     loadScheduleRecommendations,
     startRepurpose,
+    saveSeriesPost,
     regenSeriesPost,
     regenSeriesAll,
     coherenceCheck,
