@@ -3744,6 +3744,7 @@ body.tg-theme-dark .concept-card {
 .plan-entry-hint {
   font-size: 13px;
   color: var(--muted);
+  user-select: none;
 }
 
 /* ═══════════════════════════════════════
@@ -5666,11 +5667,12 @@ body.is-mobile-layout .detail-icon-actions button {
 #teamContent > .settings-section + .settings-section { margin-top: 16px; }
 
 /* ── City settings ── */
+.settings-hint { font-size: 13px; color: var(--muted); user-select: none; }
 .city-presets { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .city-presets .chip {
   padding: 8px 16px; border-radius: 99px; border: 1px solid var(--border);
   background: var(--surface-2); font-size: 13px; font-weight: 500;
-  color: var(--muted); cursor: pointer; transition: 0.15s;
+  color: var(--muted); cursor: pointer; transition: 0.15s; user-select: none;
 }
 .city-presets .chip--active {
   background: var(--brand-bg); border-color: var(--brand-border);
