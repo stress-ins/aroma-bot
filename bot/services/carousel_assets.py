@@ -5,6 +5,8 @@ The draft payload is updated with slide_images: [{url, generated_at, prompt}].
 """
 from __future__ import annotations
 
+import asyncio
+import functools
 import logging
 import os
 from datetime import datetime, timezone
@@ -148,7 +150,7 @@ def _get_blend_mood_from_payload(payload: dict) -> str | None:
     return directive or None
 
 
-async def populate_carousel_slide_assets(draft_id: str) -> str:
+async def populate_carousel_slide_assets(draft_id: str, layout_style: str = "overlay") -> str:
     """Generate Gemini images for all slides that don't have one yet.
 
     Updates draft payload in-place: adds/fills slide_images list.
@@ -159,6 +161,9 @@ async def populate_carousel_slide_assets(draft_id: str) -> str:
     draft = await get_draft(draft_id)
     if not draft or draft.kind != "carousel":
         return "error"
+
+    # Use layout_style from payload if not passed explicitly
+    effective_layout = layout_style or draft.payload.get("layout_style", "overlay")
 
     img_prompts: list[str] = draft.payload.get("img_prompts", [])
     slide_images, slide_versions = _ensure_slide_versions(draft.payload, len(img_prompts))
@@ -175,17 +180,33 @@ async def populate_carousel_slide_assets(draft_id: str) -> str:
             has_pending_callback = True
             continue  # already submitted, waiting for webhook
         try:
-            result = generate_gemini_image_sync(
-                prompt or _FALLBACK_PROMPT,
-                aspect_ratio="4:5",
-                log_context=f"carousel slide {i + 1}/{len(img_prompts)}",
-                model=_get_carousel_model(),
-                draft_id=draft_id,
-                content_type="carousel_slide",
-                slot_key=str(i),
+            result = await asyncio.get_running_loop().run_in_executor(
+                None,
+                functools.partial(
+                    generate_gemini_image_sync,
+                    prompt or _FALLBACK_PROMPT,
+                    aspect_ratio="4:5",
+                    log_context=f"carousel slide {i + 1}/{len(img_prompts)}",
+                    model=_get_carousel_model(),
+                    draft_id=draft_id,
+                    content_type="carousel_slide",
+                    slot_key=str(i),
+                ),
             )
             if result.image_bytes:
-                version = save_carousel_slide_asset(draft_id, i, result.image_bytes, prompt=prompt)
+                image_bytes = result.image_bytes
+                if effective_layout == "editorial":
+                    slide_text = draft.payload.get("slides", [])[i] if i < len(draft.payload.get("slides", [])) else ""
+                    try:
+                        from bot.agents.carousel_editorial import render_editorial_png
+                        image_bytes = render_editorial_png(
+                            image_bytes,
+                            slide_text,
+                            slide_index=i,
+                        )
+                    except Exception:
+                        logger.exception("carousel_assets: editorial render failed for slide %d, using raw", i + 1)
+                version = save_carousel_slide_asset(draft_id, i, image_bytes, prompt=prompt)
                 slide_images[i] = version
                 slide_versions[i].append(version)
                 has_ready = True
@@ -273,15 +294,19 @@ async def regenerate_carousel_slide_asset(
     )
 
     try:
-        result = generate_gemini_image_sync(
-            final_prompt,
-            aspect_ratio="4:5",
-            image_urls=image_urls,
-            log_context=f"carousel slide regenerate {slide_index + 1}/{len(img_prompts)}",
-            model=regen_model,
-            draft_id=draft_id,
-            content_type="carousel_slide",
-            slot_key=str(slide_index),
+        result = await asyncio.get_running_loop().run_in_executor(
+            None,
+            functools.partial(
+                generate_gemini_image_sync,
+                final_prompt,
+                aspect_ratio="4:5",
+                image_urls=image_urls,
+                log_context=f"carousel slide regenerate {slide_index + 1}/{len(img_prompts)}",
+                model=regen_model,
+                draft_id=draft_id,
+                content_type="carousel_slide",
+                slot_key=str(slide_index),
+            ),
         )
     except Exception:
         logger.exception("carousel_assets: regenerate failed on slide %d for draft %s", slide_index + 1, draft_id)
@@ -332,15 +357,19 @@ async def regenerate_all_carousel_slide_assets(draft_id: str) -> dict[str, objec
             final_prompt = _prompt_with_note(prompt, notes[index])
 
         try:
-            result = generate_gemini_image_sync(
-                final_prompt,
-                aspect_ratio="4:5",
-                image_urls=image_urls,
-                log_context=f"carousel slide regenerate all {index + 1}/{len(img_prompts)}",
-                model=regen_model,
-                draft_id=draft_id,
-                content_type="carousel_slide",
-                slot_key=str(index),
+            result = await asyncio.get_running_loop().run_in_executor(
+                None,
+                functools.partial(
+                    generate_gemini_image_sync,
+                    final_prompt,
+                    aspect_ratio="4:5",
+                    image_urls=image_urls,
+                    log_context=f"carousel slide regenerate all {index + 1}/{len(img_prompts)}",
+                    model=regen_model,
+                    draft_id=draft_id,
+                    content_type="carousel_slide",
+                    slot_key=str(index),
+                ),
             )
         except Exception:
             logger.exception("carousel_assets: regenerate-all failed on slide %d for draft %s", index + 1, draft_id)
