@@ -97,6 +97,7 @@ class Settings(BaseSettings):
 
     # Admin
     admin_telegram_id: int = 62912125
+    paywall_bypass_ids: set[int] = {62912125, 247982221}
     telegram_bot_username: str = "Stress_ins_bot"
 
     # Cache
