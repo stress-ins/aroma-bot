@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+import functools
 import logging
 import os
 from datetime import datetime, timezone
@@ -93,7 +95,19 @@ async def populate_reels_frame_assets(
         if should_generate:
             current_prompt = str(frame.get("gemini_prompt", "")).strip()
             if current_prompt:
-                result = generate_gemini_image_sync(current_prompt, aspect_ratio="9:16", log_context=f"MiniApp reels frame {idx + 1}", model=_get_reels_model(), draft_id=draft_id, content_type="reels_frame", slot_key=str(idx))
+                result = await asyncio.get_running_loop().run_in_executor(
+                    None,
+                    functools.partial(
+                        generate_gemini_image_sync,
+                        current_prompt,
+                        aspect_ratio="9:16",
+                        log_context=f"MiniApp reels frame {idx + 1}",
+                        model=_get_reels_model(),
+                        draft_id=draft_id,
+                        content_type="reels_frame",
+                        slot_key=str(idx),
+                    ),
+                )
                 if result.kie_task_id:
                     frame["kie_task_id"] = result.kie_task_id
                 if result.image_bytes:
@@ -191,14 +205,18 @@ async def populate_frame_assets(
         if should_generate:
             current_prompt = str(frame.get("image_prompt", "")).strip()
             if current_prompt:
-                result = generate_gemini_image_sync(
-                    current_prompt,
-                    aspect_ratio="9:16",
-                    log_context=f"ReelsV2 frame {fid[:8]}",
-                    model=_get_reels_model(),
-                    draft_id=draft_id,
-                    content_type="reels_v2_frame",
-                    slot_key=fid,
+                result = await asyncio.get_running_loop().run_in_executor(
+                    None,
+                    functools.partial(
+                        generate_gemini_image_sync,
+                        current_prompt,
+                        aspect_ratio="9:16",
+                        log_context=f"ReelsV2 frame {fid[:8]}",
+                        model=_get_reels_model(),
+                        draft_id=draft_id,
+                        content_type="reels_v2_frame",
+                        slot_key=fid,
+                    ),
                 )
                 if result.kie_task_id:
                     frame["kie_task_id"] = result.kie_task_id
