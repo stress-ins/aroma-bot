@@ -15,12 +15,18 @@ from bot.services.forbidden_phrases import load_forbidden_phrases
 from ._common import _run_generation_task, set_generation_state
 
 
-async def complete_carousel_generation(draft_id: str, topic: str, blend_context: dict | None = None) -> None:
+async def complete_carousel_generation(
+    draft_id: str,
+    topic: str,
+    blend_context: dict | None = None,
+    layout_style: str = "overlay",
+) -> None:
     try:
         loop = asyncio.get_running_loop()
         forbidden = load_forbidden_phrases()
+        render_style = "editorial" if layout_style == "editorial" else "overlay"
         slides, img_prompts, _angle, _hook = await loop.run_in_executor(
-            None, _generate_carousel_sync, topic, forbidden, blend_context
+            None, _generate_carousel_sync, topic, forbidden, blend_context, render_style
         )
         if not slides:
             raise RuntimeError("carousel_generation_failed")
@@ -45,7 +51,7 @@ async def complete_carousel_generation(draft_id: str, topic: str, blend_context:
         if blend_context:
             payload["blend_context"] = blend_context
         await update_draft(draft_id, payload=payload, status="draft")
-        await populate_carousel_slide_assets(draft_id)
+        await populate_carousel_slide_assets(draft_id, layout_style=layout_style)
         await set_generation_state(draft_id, pending=False)
     except Exception as exc:
         await set_generation_state(

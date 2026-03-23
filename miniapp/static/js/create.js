@@ -293,6 +293,30 @@ export function createCreateModule(deps) {
             <p class="field-help">Лучше работает тема с обещанием результата: что человек поймет, почувствует или сможет сделать после карусели.</p>
             <button type="button" class="suggest-topic-btn">${uiIcon("zap")}<span>Предложи тему</span></button>
             <div class="suggest-topics-dropdown" hidden></div>
+            <div class="carousel-layout-picker">
+              <p class="field-label">Раскладка слайда</p>
+              <div class="layout-option-row">
+                <label class="layout-option layout-option--active" id="layoutOptOverlay">
+                  <input type="radio" name="layout_style" value="overlay" checked hidden>
+                  <div class="layout-preview layout-preview--overlay">
+                    <div class="lp-image"></div>
+                    <div class="lp-text-overlay"></div>
+                  </div>
+                  <span>Полное фото</span>
+                </label>
+                <label class="layout-option" id="layoutOptEditorial">
+                  <input type="radio" name="layout_style" value="editorial" hidden>
+                  <div class="layout-preview layout-preview--editorial">
+                    <div class="lp-image" style="height:55%"></div>
+                    <div class="lp-text-block">
+                      <span class="lp-highlight"></span>
+                      <span class="lp-line"></span>
+                    </div>
+                  </div>
+                  <span>Редакционная <small>(55%/45%)</small></span>
+                </label>
+              </div>
+            </div>
             <button class="primary-button" type="submit">Собрать карусель</button>
           </form>
         </section>
@@ -479,17 +503,25 @@ export function createCreateModule(deps) {
         goal_key: "trust",
         format_key: "carousel",
       }));
+      carouselForm.querySelectorAll('[name="layout_style"]').forEach((radio) => {
+        radio.addEventListener("change", () => {
+          carouselForm.querySelectorAll(".layout-option").forEach((lbl) =>
+            lbl.classList.toggle("layout-option--active", lbl.querySelector("input") === radio)
+          );
+        });
+      });
     }
     if (carouselForm) bindTopicForm(carouselForm, { pendingText: "Создаю...", onSubmit: async (topic) => {
       const bcRaw = sessionStorage.getItem("blend_create_context");
       let blend_context = null;
       if (bcRaw) { try { blend_context = JSON.parse(bcRaw); } catch(_e) {} }
+      const layoutStyle = carouselForm.querySelector('[name="layout_style"]:checked')?.value || "overlay";
       const pending = openPendingDraftCreation("carousel", topic);
       try {
         const draft = await fetchJson("/api/generate/carousel", {
           method: "POST",
           timeout: 45000,
-          body: JSON.stringify({ topic, blend_context }),
+          body: JSON.stringify({ topic, blend_context, layout_style: layoutStyle }),
         });
         sessionStorage.removeItem("blend_create_context");
         finalizePendingDraftCreation(draft);

@@ -446,6 +446,7 @@ export function createDraftsModule(deps) {
               ${d.created_by_username ? `<span class="meta-chip meta-chip--muted">@${escapeHtml(d.created_by_username)}</span>` : ""}
               ${tagMarkup(statusLabel(d.status), statusTone(d.status))}
               ${p.canva_design_id ? tagMarkup("Canva", "status-positive") : ""}
+              ${d.kind === "carousel" && p.layout_style === "editorial" ? tagMarkup("Редакционная", "status-neutral") : ""}
               ${d.generation_pending && draftGenerationLabel(d) ? tagMarkup(draftGenerationLabel(d), "pending") : ""}
               ${isContentReviewKind(d.kind) ? tagMarkup(feedbackLabel(d.feedback), feedbackTone(d.feedback)) : ""}
               ${tagMarkup(sourceLabel(d.source), sourceTone(d.source))}
@@ -466,7 +467,7 @@ export function createDraftsModule(deps) {
               <button class="secondary-button" title="Вернуть на доработку" data-action="updateDraft" data-args='["status",{"status":"rejected"},null]'>${uiIcon("reject")}</button>
               ${d.kind === "carousel" ? `<button class="secondary-button" title="Обновить все слайды" data-action="regenerateCarouselAll" data-args='${JSON.stringify([d.draft_id, null])}'>${uiIcon("regenerate")}</button>` : ""}
             </div>
-            ${d.kind === "carousel" ? `
+            ${d.kind === "carousel" && !d.generation_pending ? `
               <div class="carousel-export-row">
                 <button class="secondary-button" data-action="downloadCarouselPptx" data-args='${JSON.stringify([d.draft_id, null])}'>${uiIcon("download")}<span>Скачать PPTX</span></button>
                 <button class="secondary-button" data-action="importCarouselPptx" data-args='${JSON.stringify([d.draft_id, null])}'>${uiIcon("upload")}<span>Загрузить PPTX</span></button>
