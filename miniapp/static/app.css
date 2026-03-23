@@ -2149,8 +2149,7 @@ body.tg-theme-dark .danger-button {
 
 .detail-panel.swipe-back-exit {
   transform: translateX(100%);
-  opacity: 0.6;
-  transition: transform 0.25s var(--ease-standard, ease), opacity 0.25s var(--ease-standard, ease);
+  transition: transform 0.25s var(--ease-standard, ease);
 }
 
 /* ── Pull-to-refresh ─────────────────────────────────────────────────────── */
@@ -4647,6 +4646,7 @@ body.is-mobile-layout .detail-icon-actions button {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  white-space: normal; /* override parent .detail-preview pre-wrap */
   padding: 4px 0;
 }
 .crossref-chip {
@@ -6895,12 +6895,11 @@ body[data-theme="raspberry"] {
 
 /* ── Audit fixes 2026-03-23 ───────────────────────────────────────────── */
 
-/* Fix: section headings truncated ("НЕРВНАЯ СИСТЕМ...") */
+/* Fix: section headings should wrap, not truncate */
 .section h3 {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  word-break: break-word;
 }
 
 /* Fix: paywall modal needs bottom safe area for navigation bar */

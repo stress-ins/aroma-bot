@@ -84,7 +84,7 @@ def _tech_check_ffprobe(video_path: Path) -> dict[str, Any]:
     duration = float(fmt.get("duration") or (video_stream or {}).get("duration") or 0)
     info["duration_seconds"] = round(duration, 1)
     if duration > MAX_DURATION_SECONDS:
-        issues.append(f"Видео слишком длинное: {duration:.0f} сек (лимит {MAX_DURATION_SECONDS} сек)")
+        issues.append(f"Видео длиннее {MAX_DURATION_SECONDS} сек ({duration:.0f} сек). Сократите или нарежьте на клипы.")
 
     # Resolution
     if video_stream:
@@ -96,12 +96,13 @@ def _tech_check_ffprobe(video_path: Path) -> dict[str, Any]:
         short_side = min(width, height)
         long_side = max(width, height)
         if short_side < MIN_WIDTH or long_side < MIN_HEIGHT:
-            issues.append(f"Разрешение {width}×{height} ниже минимального {MIN_WIDTH}×{MIN_HEIGHT}")
+            issues.append(f"Низкое качество видео ({width}×{height}). Нужно минимум {MIN_WIDTH}×{MIN_HEIGHT} (Full HD).")
         # Aspect ratio — accept 9:16 (portrait) or warn about other ratios
         if width > 0 and height > 0:
             ratio = width / height
             if abs(ratio - TARGET_RATIO) > 0.05 and abs(ratio - 1 / TARGET_RATIO) > 0.05:
-                issues.append(f"Соотношение сторон {width}:{height}: рекомендуется 9:16 (вертикальное видео)")
+                orientation = "горизонтальное" if width > height else "квадратное" if width == height else "нестандартное"
+                issues.append(f"Видео {orientation} ({width}×{height}). Для Reels нужен вертикальный формат 9:16.")
 
     # Audio
     if not audio_stream:
