@@ -2598,6 +2598,10 @@ body.tg-theme-dark .danger-button {
     border-radius: var(--radius-lg);
     background: var(--surface);
   }
+  /* Hide panel-header when filters are hidden AND counter is empty (settings, trends) */
+  body.is-mobile-layout .list-panel .panel-header:has(#filtersContainer[hidden]):has(.panel-count:empty) {
+    display: none;
+  }
 
   body.is-mobile-layout .list-panel:has(.guided-state) {
     flex: 0 1 auto;
