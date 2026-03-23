@@ -257,10 +257,13 @@ async def _collect_social_trends() -> None:
             if team["has_ig"]:
                 ig_token = await get_token_for_team("instagram", team_id)
                 ig_uid = await get_token_for_team("instagram_user_id", team_id)
+                ig_username_rec = await get_token_for_team("instagram_username", team_id)
                 if ig_token and ig_uid:
                     settings = await get_brand_settings(team_id)
+                    own_ig = ig_username_rec.access_token if ig_username_rec else ""
                     collector = InstagramTrendsCollector(
-                        team_id, ig_token.access_token, ig_uid.access_token
+                        team_id, ig_token.access_token, ig_uid.access_token,
+                        own_username=own_ig,
                     )
                     count = await collector.collect_from_accounts(
                         settings.instagram_accounts or []
@@ -271,13 +274,15 @@ async def _collect_social_trends() -> None:
             if team["has_threads"]:
                 th_token = await get_token_for_team("threads", team_id)
                 th_uid = await get_token_for_team("threads_user_id", team_id)
+                th_username_rec = await get_token_for_team("threads_username", team_id)
                 if th_token and th_uid:
                     settings = await get_brand_settings(team_id)
+                    own_th = th_username_rec.access_token if th_username_rec else ""
                     collector = ThreadsTrendsCollector(
                         team_id, th_token.access_token, th_uid.access_token
                     )
                     count = await collector.collect_from_accounts(
-                        settings.threads_accounts or []
+                        settings.threads_accounts or [], own_username=own_th,
                     )
                     logger.info("Social trends: Threads collected %d posts (team=%s)", count, team_id)
                     await collector.collect_own_insights()
