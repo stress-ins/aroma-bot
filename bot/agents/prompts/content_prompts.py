@@ -32,6 +32,7 @@ OUTPUT_FORMAT_THREADS = """\
 ПОЧЕМУ ЭТО СРАБОТАЕТ: [одно предложение]
 
 VISUAL_PROMPT: [на английском, до 25 слов, terracotta/beige/sage palette, soft light, atmospheric lifestyle]
+STOCK_KEYWORDS: [5-8 English keywords for stock photo search, comma-separated, e.g. "aromatherapy, essential oils, lavender, spa, wellness"]
 """
 
 OUTPUT_FORMAT_DEFAULT = """\
@@ -39,6 +40,7 @@ OUTPUT_FORMAT_DEFAULT = """\
 CAPTION: [полный текст поста, начиная с хука, с хэштегами согласно правилам платформы]
 CTA: [отдельный CTA если ещё не в тексте, иначе пусто]
 VISUAL_PROMPT: [на английском, до 25 слов, terracotta/beige/sage palette, soft light, atmospheric lifestyle]
+STOCK_KEYWORDS: [5-8 English keywords for stock photo search, comma-separated, e.g. "aromatherapy, essential oils, lavender, spa, wellness"]
 """
 
 

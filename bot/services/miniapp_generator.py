@@ -27,6 +27,7 @@ def build_content_payload(draft: ContentDraft, *, goal_key: str, format_key: str
         "cta": draft.cta,
         "hashtags": draft.hashtags,
         "visual_prompt": draft.visual_prompt,
+        "stock_keywords": list(draft.stock_keywords),
         "slides": list(draft.slides),
     }
 

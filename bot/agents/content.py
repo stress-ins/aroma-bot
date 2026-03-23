@@ -52,6 +52,7 @@ class ContentDraft:
     cta: str = ""
     hashtags: str = ""
     visual_prompt: str = ""
+    stock_keywords: list[str] = field(default_factory=list)
     slides: list[str] = field(default_factory=list)
     quality_score: dict | None = None
 
@@ -108,6 +109,10 @@ def parse_content_draft(raw: str) -> ContentDraft:
         elif probe.upper().startswith("VISUAL_PROMPT:"):
             draft.visual_prompt = humanize(probe.split(":", 1)[1].strip())
             current_field = "visual_prompt"
+        elif probe.upper().startswith("STOCK_KEYWORDS:"):
+            raw_kw = probe.split(":", 1)[1].strip()
+            draft.stock_keywords = [k.strip() for k in raw_kw.split(",") if k.strip()]
+            current_field = "stock_keywords"
         else:
             matched_slide = False
             for idx in range(1, 6):
@@ -130,6 +135,9 @@ def parse_content_draft(raw: str) -> ContentDraft:
                 draft.hashtags = "\n".join(filter(None, [draft.hashtags, humanize(line)]))
             elif current_field == "visual_prompt":
                 draft.visual_prompt = "\n".join(filter(None, [draft.visual_prompt, humanize(line)]))
+            elif current_field == "stock_keywords":
+                extra = [k.strip() for k in line.split(",") if k.strip()]
+                draft.stock_keywords.extend(extra)
     return draft
 
 
