@@ -715,9 +715,32 @@ export function createReferencesModule(deps) {
     const reference = state.selectedReference;
 
     elements.listTitle.textContent = meta.title;
-    elements.draftCount.textContent = query
+
+    const countText = query
       ? `Найдено ${filtered.length} из ${items.length}`
       : meta.count(items);
+
+    /* Render inline search bar inside draftCount area */
+    if (!document.getElementById("smartSearchInput")) {
+      elements.draftCount.innerHTML = `
+        <div class="smart-search-bar smart-search-bar--inline" id="smartSearchBar">
+          <span class="smart-search-icon"><svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="6.5" cy="6.5" r="4.5"/><line x1="10" y1="10" x2="13.5" y2="13.5"/></svg></span>
+          <input type="text" class="smart-search-input" id="smartSearchInput"
+            placeholder="${escapeHtml(countText)}"
+            data-on-input="handleSmartSearch" data-args='[]'
+            data-on-keydown="runSmartSearch" data-keydown-guard="Enter" data-args-keydown='[]'>
+          <button class="smart-search-clear" id="smartSearchClear" data-action="clearSmartSearch" hidden>\u2715</button>
+        </div>`;
+      document.getElementById("smartSearchInput")?.addEventListener("input", (e) => {
+        state.referenceSearch = e.target.value;
+      });
+    } else {
+      const searchInput = document.getElementById("smartSearchInput");
+      if (searchInput) {
+        searchInput.value = state.referenceSearch;
+        searchInput.placeholder = countText;
+      }
+    }
 
     setEmptyState(filtered.length > 0, query
       ? { eyebrow: meta.title, title: "Ничего не найдено", body: "Попробуйте другой запрос или сбросьте фильтр." }
@@ -732,15 +755,7 @@ export function createReferencesModule(deps) {
         <div id="referenceListContainer" class="plans-list"></div>
       `;
       listContainer = document.getElementById("referenceListContainer");
-      document.getElementById("smartSearchInput")?.addEventListener("input", (e) => {
-        state.referenceSearch = e.target.value;
-      });
       if (tabId === "aromas") _loadDailyOilBanner();
-    } else {
-      const searchInput = document.getElementById("smartSearchInput");
-      if (searchInput) {
-        searchInput.value = state.referenceSearch;
-      }
     }
     const filterChipsEl = document.getElementById("referenceFilterChips");
     if (filterChipsEl) filterChipsEl.innerHTML = renderFilterChips(items, tabId);
@@ -974,14 +989,6 @@ export function createReferencesModule(deps) {
   function renderSmartSearchHero() {
     return `
       <div class="smart-search-hero">
-        <div class="smart-search-bar" id="smartSearchBar">
-          <span class="smart-search-icon"><svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="6.5" cy="6.5" r="4.5"/><line x1="10" y1="10" x2="13.5" y2="13.5"/></svg></span>
-          <input type="text" class="smart-search-input" id="smartSearchInput"
-            placeholder="\u0420\u0430\u0441\u0441\u043b\u0430\u0431\u043b\u0435\u043d\u0438\u0435, \u0442\u0432\u043e\u0440\u0447\u0435\u0441\u0442\u0432\u043e, \u043d\u0430\u0441\u043c\u043e\u0440\u043a, \u0441\u0442\u0440\u0435\u0441\u0441..."
-            data-on-input="handleSmartSearch" data-args='[]'
-            data-on-keydown="runSmartSearch" data-keydown-guard="Enter" data-args-keydown='[]'>
-          <button class="smart-search-clear" id="smartSearchClear" data-action="clearSmartSearch" hidden>\u2715</button>
-        </div>
         <button class="blend-constructor-cta" data-action="openBlendConstructor">\u0421\u043e\u0437\u0434\u0430\u0442\u044c \u0441\u043c\u0435\u0441\u044c \u043f\u043e\u0434 \u0437\u0430\u0434\u0430\u0447\u0443</button>
         <button class="reco-cta-btn" data-action="openRecommendationsWizard">Подобрать масло</button>
         <button class="my-blends-btn" data-action="openSavedBlends">\u2665 \u0421\u043e\u0445\u0440\u0430\u043d\u0451\u043d\u043d\u043e\u0435</button>
@@ -1079,7 +1086,12 @@ export function createReferencesModule(deps) {
     if (!listContainer) return;
     const filterChipsEl = document.getElementById("referenceFilterChips");
     if (filterChipsEl) filterChipsEl.innerHTML = "";
-    elements.draftCount.textContent = `${items.length} \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442\u043e\u0432 \u043f\u043e \u0437\u0430\u043f\u0440\u043e\u0441\u0443 \u00ab${query}\u00bb`;
+    const _searchEl = document.getElementById("smartSearchInput");
+    if (_searchEl) {
+      _searchEl.placeholder = `${items.length} результатов по запросу «${query}»`;
+    } else {
+      elements.draftCount.textContent = `${items.length} результатов по запросу «${query}»`;
+    }
     if (items.length === 0) {
       listContainer.innerHTML = `<div class="search-empty"><p>\u041d\u0438\u0447\u0435\u0433\u043e \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d\u043e.</p>
         <button class="blend-constructor-cta" data-action="openBlendConstructor" data-args='${JSON.stringify([query])}'>\ud83e\uddea \u0421\u043e\u0437\u0434\u0430\u0442\u044c \u0441\u043c\u0435\u0441\u044c \u043f\u043e\u0434 \u044d\u0442\u0443 \u0437\u0430\u0434\u0430\u0447\u0443 \u2197</button></div>`;
