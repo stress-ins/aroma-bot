@@ -372,6 +372,7 @@ p,
 }
 
 .toolbar:not(:has(> :not([hidden]))) { display: none; }
+.toolbar:has(.tabs:empty) { display: none; }
 
 .topbar + .toolbar {
   margin-top: 0;
@@ -6025,7 +6026,7 @@ body.is-mobile-layout .detail-icon-actions button {
 
 /* ── Trends ─────────────────────────────────────────────────────────── */
 .trends-controls { padding: 12px 14px 8px; }
-.trends-platform-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+.trends-platform-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
 .trends-platform-btn {
   flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px;
   padding: 8px 4px; border-radius: 10px; font-size: 13px; font-weight: 500;
@@ -6061,6 +6062,9 @@ body.is-mobile-layout .detail-icon-actions button {
   background: var(--surface, #f7f7f7); border: 1px solid var(--border, #e0e0e0);
   color: var(--text); min-width: 100px;
 }
+
+/* Settings link in trends list */
+.trends-settings-link { padding: 8px 14px; }
 
 .trends-detail-content { padding: 0 14px 20px; }
 

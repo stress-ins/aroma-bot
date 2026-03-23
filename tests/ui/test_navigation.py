@@ -147,7 +147,8 @@ def test_desktop_layout_keeps_split_panels_and_comfortable_controls(desktop_page
     assert all(item["height"] >= 40 for item in layout["actions"])
 
 
-def test_mobile_swipe_back_from_left_edge_works_over_interactive_controls(page):
+def test_swipe_back_gesture_disabled(page):
+    """Swipe-back gesture was removed — swiping should NOT navigate back."""
     page.locator("#btnTabInspiration").click()
     page.wait_for_timeout(100)
     page.get_by_text("Сенсорная карусель для вечернего ритуала").first.click()
@@ -156,8 +157,8 @@ def test_mobile_swipe_back_from_left_edge_works_over_interactive_controls(page):
     page.evaluate(
         """
         () => {
-          const button = document.querySelector('#draftDetail .prompt-actions .secondary-button');
-          if (!button) throw new Error('detail action button not found');
+          const panel = document.getElementById('detailPanel');
+          if (!panel) throw new Error('detail panel not found');
           const makeEvent = (type, touches, changedTouches = touches) => {
             const event = new Event(type, { bubbles: true, cancelable: true });
             Object.defineProperty(event, 'touches', { value: touches });
@@ -166,18 +167,16 @@ def test_mobile_swipe_back_from_left_edge_works_over_interactive_controls(page):
           };
           const start = [{ clientX: 12, clientY: 180 }];
           const move = [{ clientX: 120, clientY: 184 }];
-          button.dispatchEvent(makeEvent('touchstart', start));
-          button.dispatchEvent(makeEvent('touchmove', move));
-          button.dispatchEvent(makeEvent('touchend', [], move));
+          panel.dispatchEvent(makeEvent('touchstart', start));
+          panel.dispatchEvent(makeEvent('touchmove', move));
+          panel.dispatchEvent(makeEvent('touchend', [], move));
         }
         """
     )
-    # animateBackToList uses setTimeout(180ms) — wait for animation to complete
     page.wait_for_timeout(400)
 
-    assert page.locator("#listPanel").evaluate("(node) => !node.classList.contains('hidden-mobile')")
-    assert page.locator("#detailPanel").evaluate("(node) => node.classList.contains('hidden-mobile')")
-    assert page.get_by_text("Сенсорная карусель для вечернего ритуала").first.is_visible()
+    # Detail view should still be visible (swipe did nothing)
+    assert page.locator("#detailPanel").evaluate("(node) => !node.classList.contains('hidden-mobile')")
 
 
 def test_themed_tabs_and_drafts_render(themed_page):

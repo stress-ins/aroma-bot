@@ -439,57 +439,7 @@ export function createShellModule(deps) {
   }
 
   function bindSwipeBack() {
-    const isMobile = window.matchMedia("(max-width: 760px)").matches;
-    if (!isMobile) return;
-    elements.detailPanel.addEventListener("touchstart", (event) => {
-      const touch = event.touches[0];
-      if (!touch || state.mobileView !== "detail" || hasActiveTextSelection()) {
-        swipeStart = null;
-        return;
-      }
-      // Allow swipe from left edge (first 44px) even over buttons
-      const edgeSwipe = touch.clientX < 44;
-      if (!edgeSwipe && (isInteractiveTarget(event.target) || isSelectableTextTarget(event.target))) {
-        swipeStart = null;
-        return;
-      }
-      swipeStart = { x: touch.clientX, y: touch.clientY, edgeSwipe };
-    }, { passive: true });
-    elements.detailPanel.addEventListener("touchmove", (event) => {
-      if (!swipeStart || state.mobileView !== "detail" || hasActiveTextSelection()) return;
-      if (!swipeStart.edgeSwipe && (isInteractiveTarget(event.target) || isSelectableTextTarget(event.target))) return;
-      const touch = event.touches[0];
-      const dx = Math.max(0, touch.clientX - swipeStart.x);
-      const dy = Math.abs(touch.clientY - swipeStart.y);
-      if (dx > 10 && dy < 72) {
-        elements.detailPanel.classList.add("swipe-back-armed");
-        elements.detailPanel.style.setProperty("--swipe-offset", `${Math.min(dx, 96)}px`);
-      }
-    }, { passive: true });
-    const resetSwipeState = () => {
-      swipeStart = null;
-      elements.detailPanel.classList.remove("swipe-back-armed");
-      elements.detailPanel.classList.add("swipe-back-cancel");
-      elements.detailPanel.style.removeProperty("--swipe-offset");
-      setTimeout(() => {
-        elements.detailPanel.classList.remove("swipe-back-cancel");
-      }, 200);
-    };
-    elements.detailPanel.addEventListener("touchend", (event) => {
-      if (!swipeStart || state.mobileView !== "detail" || hasActiveTextSelection()) return;
-      const touch = event.changedTouches[0];
-      const dx = touch.clientX - swipeStart.x;
-      const dy = Math.abs(touch.clientY - swipeStart.y);
-      swipeStart = null;
-      if (dx > 72 && dy < 56 && dx > dy * 1.4) {
-        goBackToList(true);
-        return;
-      }
-      resetSwipeState();
-    }, { passive: true });
-    elements.detailPanel.addEventListener("touchcancel", () => {
-      if (swipeStart) resetSwipeState();
-    }, { passive: true });
+    // Swipe-back gesture disabled — users found it confusing
   }
 
   function bindBottomTabBar() {
