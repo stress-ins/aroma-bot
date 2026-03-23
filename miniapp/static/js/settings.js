@@ -570,6 +570,23 @@ export function createSettingsModule(deps) {
     enterDetailView();
   }
 
+  const SOURCE_LABELS = {
+    google_trends_ru: "Google Trends (RU)",
+    google_trends_en: "Google Trends (EN)",
+    youtube: "YouTube",
+    reddit: "Reddit",
+    telegram_channels: "Telegram-каналы",
+    twitter: "X (Twitter)",
+    instagram: "Instagram",
+    vk: "ВКонтакте",
+    wordstat: "Яндекс Wordstat",
+    tiktok: "TikTok (Global)",
+    tiktok_ru: "TikTok (RU)",
+    threads: "Threads",
+    ai_recommendations: "AI-рекомендации",
+  };
+  function _sourceLabel(key) { return SOURCE_LABELS[key] || key; }
+
   function renderStatus() {
     const items = state.status?.items || [];
     const inSettings = state.tab === "settings";
@@ -579,7 +596,7 @@ export function createSettingsModule(deps) {
     elements.draftList.innerHTML = `
       <button class="back-button" type="button" data-action="${backAction}">${uiIcon("arrow-left")}<span>Назад</span></button>
       ${items.map((item) => `
-      <article class="status-card"><strong>${escapeHtml(item.source)}</strong> <span class="${item.enabled ? "status-good" : "status-bad"}">${item.enabled ? "вкл" : "выкл"}</span></article>
+      <article class="status-card"><strong>${escapeHtml(_sourceLabel(item.source))}</strong> <span class="${item.enabled ? "status-good" : "status-bad"}">${item.enabled ? "ВКЛ" : "ВЫКЛ"}</span></article>
     `).join("")}
     `;
     elements.draftDetail.innerHTML = renderBackButton() + (inSettings ? `
@@ -1411,7 +1428,7 @@ export function createSettingsModule(deps) {
   async function renderTheme() {
     const THEMES = [
       { id:"terracotta",   label:"Терракот",     accent:"#b45c3d" },
-      { id:"racing-green", label:"Racing Green",  accent:"#2a8a50" },
+      { id:"racing-green", label:"Изумруд",  accent:"#2a8a50" },
       { id:"champagne",    label:"Шампань",       accent:"#c8a86a" },
       { id:"violet",       label:"Фиалка",        accent:"#9060c8" },
       { id:"teal",         label:"Бирюза",        accent:"#3a9098" },

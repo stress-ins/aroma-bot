@@ -33,6 +33,13 @@ export function createReelsModule(deps) {
   const regenInProgressKeys = new Set();
   const frameOverlaySaveTimers = {};
 
+  function _pluralize(n, one, few, many) {
+    const mod10 = n % 10, mod100 = n % 100;
+    if (mod10 === 1 && mod100 !== 11) return `${n} ${one}`;
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return `${n} ${few}`;
+    return `${n} ${many}`;
+  }
+
   function bufferedReelsNote(draftId, index, fallback = "") {
     const key = frameDraftKey(draftId, index);
     return Object.prototype.hasOwnProperty.call(state.pendingReelsNotes, key)
@@ -770,8 +777,8 @@ export function createReelsModule(deps) {
             <label style="font-size:13px;font-weight:500;color:var(--text)">
               Движок
               <select id="composeRenderer" class="compose-select" style="margin-left:8px">
-                <option value="ffmpeg">FFmpeg (быстрый)</option>
-                <option value="remotion">Remotion (продвинутый)</option>
+                <option value="ffmpeg">Быстрая сборка</option>
+                <option value="remotion">С анимацией</option>
               </select>
             </label>
 
@@ -882,7 +889,7 @@ export function createReelsModule(deps) {
     const cleanHtml = cleaningStatus === "completed" && cleaningResult ? `
       <div style="margin-top:8px;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:13px">
         <div style="font-weight:600;margin-bottom:4px">${uiIcon("check")} Очистка завершена</div>
-        <div>Вход: ${cleaningResult.input_duration}с → Выход: ${cleaningResult.output_duration}с (удалено ${cleaningResult.removed_duration}с, ${cleaningResult.clip_count} фрагментов)</div>
+        <div>Вход: ${cleaningResult.input_duration}с → Выход: ${cleaningResult.output_duration}с (удалено ${cleaningResult.removed_duration}с, ${_pluralize(cleaningResult.clip_count, "фрагмент", "фрагмента", "фрагментов")})</div>
         ${cleanedVideoUrl ? `
           <div style="margin-top:8px">
             <video src="${cleanedVideoUrl}" controls playsinline preload="metadata"
@@ -974,8 +981,8 @@ export function createReelsModule(deps) {
           <div class="field-grid" style="gap:8px">
             <label>Движок видео
               <select id="composeRenderer" style="width:100%">
-                <option value="ffmpeg">FFmpeg (быстрый)</option>
-                <option value="remotion">Remotion (шаблоны)</option>
+                <option value="ffmpeg">Быстрая сборка</option>
+                <option value="remotion">С анимацией и шаблонами</option>
               </select>
             </label>
             <div id="remotionOptions" style="display:none">

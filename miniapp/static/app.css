@@ -2599,6 +2599,12 @@ body.tg-theme-dark .danger-button {
     opacity: 0;
     pointer-events: none;
     transform: translateX(-30px);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+  }
+  .list-panel:not(.hidden-mobile) {
+    opacity: 1;
+    transform: none;
+    transition: opacity 0.15s ease, transform 0.15s ease;
   }
 
   .detail-panel.hidden-mobile {
@@ -6852,5 +6858,29 @@ body[data-theme="raspberry"] {
   position: relative;
   background: var(--bg);
   padding: 0 12px;
+}
+
+/* ── Audit fixes 2026-03-23 ───────────────────────────────────────────── */
+
+/* Fix: section headings truncated ("НЕРВНАЯ СИСТЕМ...") */
+.section h3 {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Fix: paywall modal needs bottom safe area for navigation bar */
+.paywall-modal-backdrop {
+  padding-bottom: 80px;
+}
+
+/* Fix: stepper dots too small for touch (< 44px target) */
+.reels-step {
+  min-height: 44px;
+  min-width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 

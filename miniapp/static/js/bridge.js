@@ -68,6 +68,12 @@ export function registerWindowBridge(deps) {
     // Phase 4
     publishReels,
     retryPlatform,
+    jumpToReelsStep,
+    runTechCheck,
+    composeReelsVideo,
+    reuploadVideo,
+    proceedToPublish,
+    splitReelsClips,
     saveContentReviewDraft,
     polishContentDraft,
     openKeywordTopic,
@@ -281,6 +287,12 @@ export function registerWindowBridge(deps) {
   window.checkAndPublish = checkAndPublish;
   window.publishReels = publishReels;
   window.retryPlatform = retryPlatform;
+  window.jumpToReelsStep = jumpToReelsStep;
+  window.runTechCheck = runTechCheck;
+  window.composeReelsVideo = composeReelsVideo;
+  window.reuploadVideo = reuploadVideo;
+  window.proceedToPublish = proceedToPublish;
+  window.splitReelsClips = splitReelsClips;
 
   // Threads-series slot actions
   window.regenSlot = regenSlot;
@@ -419,7 +431,7 @@ export function registerWindowBridge(deps) {
   };
 
   window.openSettingsSection = async (section) => {
-    const valid = ["keywords", "brand", "accounts", "status", "team", "promo", "monitored", "hashtags", "theme"];
+    const valid = ["keywords", "brand", "accounts", "status", "team", "promo", "monitored", "hashtags", "theme", "city"];
     state.settingsSection = valid.includes(section) ? section : "status";
     state.settingsInDetail = true;
     if (state.tab !== "settings") {
