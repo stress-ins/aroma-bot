@@ -44,6 +44,7 @@ export function createDraftsModule(deps) {
   } = deps;
   const showRequestError = deps.showRequestError || ((e) => console.error(e));
   const showUiNotice = deps.showUiNotice || ((msg) => console.log(msg));
+  const renderPhotoPickerSection = deps.stockPhotoActions?.renderPhotoPickerSection || (() => "");
 
   const cleanSlotText = (t) => t ? t.replace(/\((?:Hot Take|Thread|Байт на обсуждение|Список|Туториал|Рефлексия|Шутка|Факап|Личная история)\)\s*/gi, '').replace(/^[-*_]{3,}\s*$/gm, '').replace(/\n{3,}/g, '\n\n').trim() : '';
 
@@ -486,6 +487,7 @@ export function createDraftsModule(deps) {
         ${d.status === "published" ? `<section class="section metrics-section" id="metricsSection_${d.draft_id}"><div class="metrics-empty"><i data-lucide="bar-chart-3"></i><span>Загружаю метрики...</span></div></section>` : ""}
         ${renderSlides(d.draft_id, p.slides, p.img_prompts, p.slide_images, p.img_prompt_notes, p.slide_image_versions)}
         ${promptSection("Промпт для изображения", p.visual_prompt, "Скопировать промпт", `draft:${d.draft_id}:visual`)}
+        ${renderPhotoPickerSection(d.draft_id, p.stock_keywords || [], p.image || null, p.stock_suggestions || null)}
         <div class="actions-row detail-actions-danger">
           <button class="danger-button" data-action="deleteDraft" data-args='${JSON.stringify([d.draft_id, "drafts", null])}'>${actionLabel("trash", "Удалить")}</button>
         </div>
