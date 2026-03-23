@@ -162,6 +162,8 @@ async def _resolve_telegram_user(
 def require_tier(min_tier: str):
     """Factory: returns a FastAPI dependency that enforces minimum subscription tier."""
     async def _dep(telegram_id: int = Depends(_resolve_telegram_id)) -> int:
+        if telegram_id == settings.admin_telegram_id:
+            return telegram_id
         user = await get_or_create_user(telegram_id)
         tier = await effective_tier(user)
         if TIER_RANK.get(tier, 0) < TIER_RANK.get(min_tier, 0):
@@ -175,6 +177,8 @@ def require_tier(min_tier: str):
 
 async def _check_content_limit(telegram_id: int = Depends(_resolve_telegram_id)) -> int:
     """FastAPI dependency: enforce daily content creation limit for free-tier users."""
+    if telegram_id == settings.admin_telegram_id:
+        return telegram_id
     user = await get_or_create_user(telegram_id)
     tier = await effective_tier(user)
     if tier == "free":
