@@ -875,11 +875,41 @@ export function createReelsModule(deps) {
     ` : "";
 
     // Cleaning results
+    const cleanedVideoUrl = cleanedPath ? `/generated/reels_video/${r.draft_id}/${escapeHtml(cleanedPath)}` : "";
+    const keepIntervals = Array.isArray(p.keep_intervals) ? p.keep_intervals : [];
+    const splitClips = Array.isArray(p.split_clips) ? p.split_clips : [];
+    const splitStatus = p.split_status || "";
     const cleanHtml = cleaningStatus === "completed" && cleaningResult ? `
       <div style="margin-top:8px;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:13px">
         <div style="font-weight:600;margin-bottom:4px">${uiIcon("check")} Очистка завершена</div>
         <div>Вход: ${cleaningResult.input_duration}с → Выход: ${cleaningResult.output_duration}с (удалено ${cleaningResult.removed_duration}с, ${cleaningResult.clip_count} фрагментов)</div>
-        ${cleanedPath ? `<div style="margin-top:4px"><a href="/generated/reels_video/${r.draft_id}/${escapeHtml(cleanedPath)}" target="_blank" style="color:var(--brand)">Скачать очищенное видео</a></div>` : ""}
+        ${cleanedVideoUrl ? `
+          <div style="margin-top:8px">
+            <video src="${cleanedVideoUrl}" controls playsinline preload="metadata"
+              style="width:100%;max-height:300px;border-radius:8px;background:#000"></video>
+          </div>
+          <div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap">
+            <a href="${cleanedVideoUrl}" download style="color:var(--brand);font-size:13px">${uiIcon("download")} Скачать очищенное</a>
+            <button class="secondary-button compact" type="button" data-action="splitReelsClips" data-args='${JSON.stringify([r.draft_id, null])}'>
+              ${uiIcon("scissors")} Нарезать на клипы
+            </button>
+          </div>
+        ` : ""}
+        ${splitStatus === "running" ? `<div style="margin-top:8px;color:var(--hint);font-size:12px">${uiIcon("loader")} Нарезаю клипы...</div>` : ""}
+        ${splitClips.length > 0 ? `
+          <div style="margin-top:8px">
+            <div style="font-weight:600;margin-bottom:4px">${uiIcon("film")} Клипы (${splitClips.length})</div>
+            ${splitClips.map((clip, i) => {
+              const clipUrl = `/generated/reels_video/${r.draft_id}/${escapeHtml(clip.filename)}`;
+              const start = clip.start != null ? clip.start.toFixed(1) : "?";
+              const end = clip.end != null ? clip.end.toFixed(1) : "?";
+              return `<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);font-size:12px">
+                <span>Клип ${i + 1} (${start}с – ${end}с)</span>
+                <a href="${clipUrl}" download style="color:var(--brand)">${uiIcon("download")} Скачать</a>
+              </div>`;
+            }).join("")}
+          </div>
+        ` : ""}
       </div>
     ` : "";
 
@@ -1419,6 +1449,30 @@ export function createReelsModule(deps) {
     }, 2000);
   }
 
+  async function splitReelsClips(draftId, btn) {
+    await withButtonFeedback(btn, "Нарезаю...", async () => {
+      await fetchJson(`/api/reels/${draftId}/split-clips`, { method: "POST" });
+      _startSplitPoll(draftId);
+    }, "Нарезка запущена");
+  }
+
+  let _splitPollTimer = null;
+  function _startSplitPoll(draftId) {
+    if (_splitPollTimer) { clearInterval(_splitPollTimer); _splitPollTimer = null; }
+    _splitPollTimer = setInterval(async () => {
+      try {
+        const st = await fetchJson(`/api/reels/${draftId}/split-clips-status`);
+        if (st.status === "completed" || st.status === "failed") {
+          clearInterval(_splitPollTimer); _splitPollTimer = null;
+          const draft = await fetchJson(`/api/reels/${draftId}`);
+          mergeReelsIntoState(draft);
+          callbacks.renderReelsDetail?.(draft);
+          if (st.status === "completed") showUiNotice("Клипы готовы к скачиванию");
+        }
+      } catch (_e) { clearInterval(_splitPollTimer); _splitPollTimer = null; }
+    }, 2000);
+  }
+
   async function checkAndPublish(draftId, btn) {
     await withButtonFeedback(btn, "Проверяю...", async () => {
       await fetchJson(`/api/reels/${draftId}/check-video`, { method: "POST" });
@@ -1609,19 +1663,11 @@ export function createReelsModule(deps) {
     if (!draft) return;
     mergeReelsIntoState(draft);
     const r = { ...draft, draft_id: draftId };
-    let html;
-    if (stepKey === "draft") html = renderScreen3Edit(r);
-    else if (stepKey === "approved") html = renderScreen4Shooting(r);
-    else if (stepKey === "video_uploaded") html = renderScreen5VideoCheck(r);
-    else html = renderScreen3Edit(r);
-    if (html && elements.draftDetail) {
-      elements.draftDetail.innerHTML = html;
-      enterDetailView();
-      syncMobileNavigation();
-      if (window.lucide) lucide.createIcons();
-    } else {
-      callbacks.renderReelsDetail?.(r);
-    }
+    if (stepKey === "draft") r.status = "draft";
+    else if (stepKey === "approved") r.status = "approved";
+    else if (stepKey === "video_uploaded") r.status = "video_uploaded";
+    else if (stepKey === "published") r.status = "passed";
+    callbacks.renderReelsDetail?.(r);
   }
 
   async function runTechCheck(draftId, btn) {
@@ -1763,6 +1809,7 @@ export function createReelsModule(deps) {
     composeReelVideo,
     uploadReelsVideo,
     cleanReelsVideo,
+    splitReelsClips,
     checkAndPublish,
     // Phase 5 role gates
     canEditReels,

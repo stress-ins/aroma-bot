@@ -746,6 +746,11 @@ async def _run_clean_video_task(
             "removed_duration": round(proc_result.removed_duration, 1),
             "clip_count": proc_result.clip_count,
         }
+        payload["keep_intervals"] = [
+            [round(s, 2), round(e, 2)] for s, e in proc_result.keep_intervals
+        ]
+        payload["split_clips"] = []
+        payload["split_status"] = ""
         await _update_draft(draft_id, payload=payload)
 
         _clean_status[draft_id] = {
@@ -931,3 +936,129 @@ async def clean_video_stream(draft_id: str, _: str = Depends(_resolve_init_data)
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "Connection": "keep-alive", "X-Accel-Buffering": "no"},
     )
+
+
+# ── Split clips ─────────────────────────────────────────────────────────
+
+_split_status: dict[str, dict] = {}
+_split_logger = logging.getLogger(__name__ + ".split_clips")
+
+
+async def _run_split_clips_task(draft_id: str) -> None:
+    """Background task: split video into individual clips using stored intervals."""
+    import asyncio
+    from pathlib import Path
+
+    from bot.services.reels_video import VIDEO_DIR
+
+    try:
+        _split_status[draft_id] = {"status": "running", "error": None}
+
+        draft = await _get_draft(draft_id)
+        if not draft:
+            raise ValueError("Draft not found")
+
+        payload = dict(draft.payload)
+        video_filename = str(payload.get("video_filename") or "").strip()
+        keep_intervals = payload.get("keep_intervals") or []
+
+        if not video_filename:
+            raise ValueError("No video uploaded")
+        if not keep_intervals:
+            raise ValueError("No intervals stored — run cleaning first")
+
+        video_path = VIDEO_DIR / draft_id / video_filename
+        if not video_path.exists():
+            raise FileNotFoundError(f"Video file not found: {video_path}")
+
+        output_dir = VIDEO_DIR / draft_id / "clips"
+
+        from bot.services.video_processor.config import ProcessorConfig
+        from bot.services.video_processor.filter_engine import Interval
+        from bot.services.video_processor.splitter import group_intervals_into_clips, run_split
+
+        loop = asyncio.get_running_loop()
+
+        intervals = [Interval(start=s, end=e) for s, e in keep_intervals]
+        config = ProcessorConfig(
+            input_file=str(video_path),
+            output_path=str(output_dir),
+            mode="split",
+        )
+
+        output_dir.mkdir(parents=True, exist_ok=True)
+        clips_data = group_intervals_into_clips(intervals, config)
+        clip_files = await loop.run_in_executor(
+            None, run_split, video_path, clips_data, output_dir, config,
+        )
+
+        split_clips = []
+        for clip_file, clip_group in zip(clip_files, clips_data):
+            start = round(clip_group[0].start, 1)
+            end = round(clip_group[-1].end, 1)
+            split_clips.append({
+                "filename": f"clips/{Path(clip_file).name}",
+                "start": start,
+                "end": end,
+            })
+
+        payload["split_clips"] = split_clips
+        payload["split_status"] = "completed"
+        await _update_draft(draft_id, payload=payload)
+
+        _split_status[draft_id] = {"status": "completed", "error": None}
+        _split_logger.info("Split into %d clips for draft %s", len(split_clips), draft_id)
+
+    except Exception as exc:
+        _split_logger.error("Split failed for draft %s: %s", draft_id, exc, exc_info=True)
+        _split_status[draft_id] = {"status": "failed", "error": str(exc)}
+        try:
+            draft = await _get_draft(draft_id)
+            if draft:
+                p = dict(draft.payload)
+                p["split_status"] = "failed"
+                await _update_draft(draft_id, payload=p)
+        except Exception:
+            pass
+
+
+@router.post("/api/reels/{draft_id}/split-clips")
+async def split_reels_clips(
+    draft_id: str,
+    background_tasks: BackgroundTasks,
+    _: None = Depends(_require_auth),
+):
+    """Split cleaned video into individual clips for download."""
+    draft = await serialize_reels_draft(draft_id)
+    if not draft:
+        raise HTTPException(404, "Reel not found")
+
+    p = draft.get("payload", {}) if isinstance(draft, dict) else {}
+    if not p.get("keep_intervals"):
+        raise HTTPException(400, "No intervals — run video cleaning first")
+
+    if _split_status.get(draft_id, {}).get("status") == "running":
+        return JSONResponse(status_code=409, content={"detail": "split_already_running"})
+
+    _split_status[draft_id] = {"status": "pending", "error": None}
+    background_tasks.add_task(_run_split_clips_task, draft_id)
+    return JSONResponse(status_code=202, content={"draft_id": draft_id, "status": "pending"})
+
+
+@router.get("/api/reels/{draft_id}/split-clips-status")
+async def split_clips_status(
+    draft_id: str,
+    _: None = Depends(_require_auth),
+):
+    """Check split clips status."""
+    status = _split_status.get(draft_id)
+    if not status:
+        draft = await serialize_reels_draft(draft_id)
+        if not draft:
+            raise HTTPException(404, "Reel not found")
+        p = draft.get("payload", {}) if isinstance(draft, dict) else {}
+        s = p.get("split_status", "")
+        if s == "completed":
+            return {"draft_id": draft_id, "status": "completed"}
+        return {"draft_id": draft_id, "status": "not_started"}
+    return {"draft_id": draft_id, "status": status["status"], "error": status.get("error")}
