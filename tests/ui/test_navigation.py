@@ -147,8 +147,8 @@ def test_desktop_layout_keeps_split_panels_and_comfortable_controls(desktop_page
     assert all(item["height"] >= 40 for item in layout["actions"])
 
 
-def test_swipe_back_gesture_disabled(page):
-    """Swipe-back gesture was removed — swiping should NOT navigate back."""
+def test_swipe_back_navigates_without_visual_shift(page):
+    """Swipe-back navigates back but panel does NOT shift visually during swipe."""
     page.locator("#btnTabInspiration").click()
     page.wait_for_timeout(100)
     page.get_by_text("Сенсорная карусель для вечернего ритуала").first.click()
@@ -173,10 +173,12 @@ def test_swipe_back_gesture_disabled(page):
         }
         """
     )
+    # animateBackToList uses setTimeout(180ms)
     page.wait_for_timeout(400)
 
-    # Detail view should still be visible (swipe did nothing)
-    assert page.locator("#detailPanel").evaluate("(node) => !node.classList.contains('hidden-mobile')")
+    # Swipe navigated back to list
+    assert page.locator("#listPanel").evaluate("(node) => !node.classList.contains('hidden-mobile')")
+    assert page.get_by_text("Сенсорная карусель для вечернего ритуала").first.is_visible()
 
 
 def test_themed_tabs_and_drafts_render(themed_page):

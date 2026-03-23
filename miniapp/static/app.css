@@ -2130,14 +2130,13 @@ body.tg-theme-dark .danger-button {
   margin-bottom: 12px;
 }
 
-.detail-panel.swipe-back-armed {
-  transform: translateX(var(--swipe-offset));
-  will-change: transform;
+/* Swipe-back: subtle hint without moving the panel */
+.detail-panel.swipe-back-hint {
+  box-shadow: inset 4px 0 12px -4px rgba(var(--brand-rgb), 0.25);
 }
-
-.detail-panel.swipe-back-cancel {
-  transform: translateX(0);
-  transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1);
+.detail-panel.swipe-back-ready {
+  box-shadow: inset 6px 0 16px -4px rgba(var(--brand-rgb), 0.5);
+  opacity: 0.92;
 }
 
 .detail-panel.is-entering {
