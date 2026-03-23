@@ -1321,19 +1321,20 @@ class TestMiniAppRussianLocale:
         assert "touch-action: manipulation;" in app_css
 
     def test_swipe_back_hint_without_panel_shift(self):
-        """Swipe-back shows visual hint but does NOT translateX the panel."""
+        """Swipe-back moves panel with finger (translateX) and shows ready indicator at threshold."""
         shell_js = _miniapp_static_text("js", "shell.js")
         app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
         assert "function bindSwipeBack" in shell_js
         assert "isInteractiveTarget(event.target)" in shell_js
         assert "const edgeSwipe = touch.clientX < 44;" in shell_js
         assert "dx > 72" in shell_js
-        # Hint classes present, not old armed/cancel + translateX
-        assert "swipe-back-hint" in shell_js
+        # Panel follows finger via translateX during drag
+        assert "style.transform" in shell_js
+        assert "TranslateX" in shell_js or "translateX" in shell_js
+        # Ready indicator class still present at threshold
         assert "swipe-back-ready" in shell_js
-        assert ".detail-panel.swipe-back-hint" in app_css
         assert ".detail-panel.swipe-back-ready" in app_css
-        # No translateX during drag
+        # No old armed class
         assert "swipe-back-armed" not in shell_js
         assert "swipe-back-armed" not in app_css
 
