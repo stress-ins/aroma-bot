@@ -1300,13 +1300,22 @@ class TestMiniAppRussianLocale:
         # Ensure CSS handles the 300ms delay/zoom
         assert "touch-action: manipulation;" in app_css
 
-    def test_swipe_back_gesture_disabled(self):
-        """Swipe-back was removed — bindSwipeBack should be a no-op stub."""
+    def test_swipe_back_hint_without_panel_shift(self):
+        """Swipe-back shows visual hint but does NOT translateX the panel."""
         shell_js = _miniapp_static_text("js", "shell.js")
+        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
         assert "function bindSwipeBack" in shell_js
-        # Gesture code should NOT be present
-        assert "isInteractiveTarget(event.target)" not in shell_js
-        assert "edgeSwipe" not in shell_js
+        assert "isInteractiveTarget(event.target)" in shell_js
+        assert "const edgeSwipe = touch.clientX < 44;" in shell_js
+        assert "dx > 72" in shell_js
+        # Hint classes present, not old armed/cancel + translateX
+        assert "swipe-back-hint" in shell_js
+        assert "swipe-back-ready" in shell_js
+        assert ".detail-panel.swipe-back-hint" in app_css
+        assert ".detail-panel.swipe-back-ready" in app_css
+        # No translateX during drag
+        assert "swipe-back-armed" not in shell_js
+        assert "swipe-back-armed" not in app_css
 
     def test_bootstrap_guard_shows_visible_fallback_instead_of_blank_screen(self):
         app_js = _miniapp_static_text("app.js")

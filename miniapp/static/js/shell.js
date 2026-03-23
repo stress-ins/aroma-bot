@@ -59,7 +59,7 @@ export function createShellModule(deps) {
   }
 
   function animateBackToList() {
-    elements.detailPanel.classList.remove("swipe-back-armed", "swipe-back-cancel");
+    elements.detailPanel.classList.remove("swipe-back-hint", "swipe-back-ready");
     elements.detailPanel.classList.add("swipe-back-exit");
     window.setTimeout(() => {
       state.mobileView = "list";
@@ -73,7 +73,7 @@ export function createShellModule(deps) {
   function goBackToList(animated = false) {
     if (state._recoWizardOpen) {
       window.Telegram?.WebApp?.BackButton?.hide();
-      elements.detailPanel.classList.remove("swipe-back-exit", "swipe-back-armed", "swipe-back-cancel");
+      elements.detailPanel.classList.remove("swipe-back-exit", "swipe-back-hint", "swipe-back-ready");
       elements.detailPanel.style.removeProperty("--swipe-offset");
       if (state._recoWizardStep > 0) {
         window.recoWizardBack?.();
@@ -97,7 +97,7 @@ export function createShellModule(deps) {
     // Saved blend detail — back to saved list
     if (state.viewingSavedBlend && typeof window.openSavedBlends === "function") {
       window.Telegram?.WebApp?.BackButton?.hide();
-      elements.detailPanel.classList.remove("swipe-back-exit", "swipe-back-armed", "swipe-back-cancel");
+      elements.detailPanel.classList.remove("swipe-back-exit", "swipe-back-hint", "swipe-back-ready");
       elements.detailPanel.style.removeProperty("--swipe-offset");
       state.viewingSavedBlend = null;
       window.openSavedBlends();
@@ -106,7 +106,7 @@ export function createShellModule(deps) {
     // Mentions detail — reset selectedMention and re-render
     if (state.selectedMention && typeof window.closeMentionDetail === "function") {
       window.Telegram?.WebApp?.BackButton?.hide();
-      elements.detailPanel.classList.remove("swipe-back-exit", "swipe-back-armed", "swipe-back-cancel");
+      elements.detailPanel.classList.remove("swipe-back-exit", "swipe-back-hint", "swipe-back-ready");
       elements.detailPanel.style.removeProperty("--swipe-offset");
       window.closeMentionDetail();
       state.mobileView = "list";
@@ -117,7 +117,7 @@ export function createShellModule(deps) {
     if (state.tab === "settings" && state.settingsInDetail && typeof window.goBackToSettings === "function") {
       window.Telegram?.WebApp?.BackButton?.hide();
       // Clear swipe state before navigating
-      elements.detailPanel.classList.remove("swipe-back-exit", "swipe-back-armed", "swipe-back-cancel");
+      elements.detailPanel.classList.remove("swipe-back-exit", "swipe-back-hint", "swipe-back-ready");
       elements.detailPanel.style.removeProperty("--swipe-offset");
       window.goBackToSettings();
       return;
@@ -128,7 +128,7 @@ export function createShellModule(deps) {
       return;
     }
     state.mobileView = "list";
-    elements.detailPanel.classList.remove("swipe-back-exit", "swipe-back-armed", "swipe-back-cancel");
+    elements.detailPanel.classList.remove("swipe-back-exit", "swipe-back-hint", "swipe-back-ready");
     elements.detailPanel.style.removeProperty("--swipe-offset");
     syncMobileNavigation();
     // Re-render current list to ensure content is visible after back-navigation
@@ -439,7 +439,54 @@ export function createShellModule(deps) {
   }
 
   function bindSwipeBack() {
-    // Swipe-back gesture disabled — users found it confusing
+    const isMobile = window.matchMedia("(max-width: 760px)").matches;
+    if (!isMobile) return;
+    elements.detailPanel.addEventListener("touchstart", (event) => {
+      const touch = event.touches[0];
+      if (!touch || state.mobileView !== "detail" || hasActiveTextSelection()) {
+        swipeStart = null;
+        return;
+      }
+      const edgeSwipe = touch.clientX < 44;
+      if (!edgeSwipe && (isInteractiveTarget(event.target) || isSelectableTextTarget(event.target))) {
+        swipeStart = null;
+        return;
+      }
+      swipeStart = { x: touch.clientX, y: touch.clientY, edgeSwipe };
+    }, { passive: true });
+    elements.detailPanel.addEventListener("touchmove", (event) => {
+      if (!swipeStart || state.mobileView !== "detail" || hasActiveTextSelection()) return;
+      if (!swipeStart.edgeSwipe && (isInteractiveTarget(event.target) || isSelectableTextTarget(event.target))) return;
+      const touch = event.touches[0];
+      const dx = Math.max(0, touch.clientX - swipeStart.x);
+      const dy = Math.abs(touch.clientY - swipeStart.y);
+      if (dx > 10 && dy < 72) {
+        // Show hint without moving the panel
+        elements.detailPanel.classList.toggle("swipe-back-ready", dx > 72);
+        elements.detailPanel.classList.add("swipe-back-hint");
+      }
+    }, { passive: true });
+    const resetHint = () => {
+      elements.detailPanel.classList.remove("swipe-back-hint", "swipe-back-ready");
+    };
+    elements.detailPanel.addEventListener("touchend", (event) => {
+      if (!swipeStart || state.mobileView !== "detail" || hasActiveTextSelection()) {
+        resetHint();
+        return;
+      }
+      const touch = event.changedTouches[0];
+      const dx = touch.clientX - swipeStart.x;
+      const dy = Math.abs(touch.clientY - swipeStart.y);
+      swipeStart = null;
+      resetHint();
+      if (dx > 72 && dy < 56 && dx > dy * 1.4) {
+        goBackToList(true);
+      }
+    }, { passive: true });
+    elements.detailPanel.addEventListener("touchcancel", () => {
+      swipeStart = null;
+      resetHint();
+    }, { passive: true });
   }
 
   function bindBottomTabBar() {
