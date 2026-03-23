@@ -648,6 +648,27 @@ async def generate_slide_preview(draft_id: str, slide_index: int) -> bytes:
     images = load_carousel_slide_images(draft_id, slide_images)
 
     img_bytes = images[slide_index] if slide_index < len(images) else None
+
+    # ── Editorial style ──
+    render_style = draft.payload.get("render_style", "overlay")
+    if render_style == "editorial":
+        from bot.agents.carousel_editorial import render_editorial_png
+        accent = draft.payload.get("accent_color", [138, 92, 246])
+        accent_rgb = tuple(accent) if isinstance(accent, list) and len(accent) == 3 else (138, 92, 246)
+        username = draft.payload.get("brand_username", "")
+        role = SLIDE_ROLES[slide_index] if slide_index < len(SLIDE_ROLES) else "unknown"
+        is_hook = role == "hook"
+        is_bullet = "\n•" in text or "\n-" in text or "\n*" in text
+
+        loop = asyncio.get_running_loop()
+        preview = await loop.run_in_executor(
+            None, render_editorial_png,
+            img_bytes, text, slide_index, accent_rgb,
+            (18, 18, 22), (1080, 1350), username, None, is_hook, is_bullet,
+        )
+        return preview
+
+    # ── Classic overlay style ──
     if not img_bytes:
         raise ValueError(f"No image for slide {slide_index}")
 
