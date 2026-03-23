@@ -90,11 +90,13 @@ class CityPayload(BaseModel):
 
 @router.get("/api/user/city")
 async def get_user_city(telegram_id: int = Depends(_resolve_telegram_id)):
-    user = await get_or_create_user(telegram_id)
+    from bot.services.brand_settings_store import get_brand_settings
+
+    bs = await get_brand_settings()
     return {
-        "city_name": user.city_name or "Москва",
-        "city_lat": user.city_lat or 55.7558,
-        "city_lon": user.city_lon or 37.6173,
+        "city_name": bs.city_name or "Москва",
+        "city_lat": bs.city_lat or 55.7558,
+        "city_lon": bs.city_lon or 37.6173,
     }
 
 
@@ -103,21 +105,13 @@ async def update_user_city(
     body: CityPayload,
     telegram_id: int = Depends(_resolve_telegram_id),
 ):
-    from sqlalchemy import update as sa_update
-    from db.models import UserProfile
-    from db.session import AsyncSessionLocal
+    from bot.services.brand_settings_store import update_brand_settings
 
-    async with AsyncSessionLocal() as session:
-        await session.execute(
-            sa_update(UserProfile)
-            .where(UserProfile.telegram_id == telegram_id)
-            .values(
-                city_name=body.city_name.strip(),
-                city_lat=body.city_lat,
-                city_lon=body.city_lon,
-            )
-        )
-        await session.commit()
+    await update_brand_settings(
+        city_name=body.city_name.strip(),
+        city_lat=body.city_lat,
+        city_lon=body.city_lon,
+    )
     return {"ok": True, "city_name": body.city_name.strip()}
 
 
