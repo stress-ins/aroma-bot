@@ -2477,8 +2477,7 @@ body.tg-theme-dark .danger-button {
     display: none;
   }
   body.is-mobile-layout.is-detail-view .back-button.visible {
-    top: 0;
-    padding-top: calc(6px + var(--tg-content-inset-top, env(safe-area-inset-top, 0px)));
+    top: var(--tg-content-inset-top, env(safe-area-inset-top, 0px));
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
   }
@@ -2497,6 +2496,20 @@ body.tg-theme-dark .danger-button {
     border: none;
     border-radius: 0;
     box-shadow: none;
+    background: transparent;
+  }
+
+  /* Gradient fade at the bottom — depth illusion above the tab bar */
+  body.is-mobile-layout.is-detail-view .layout::after {
+    content: "";
+    position: fixed;
+    bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+    left: 0;
+    right: 0;
+    height: 48px;
+    background: linear-gradient(to bottom, transparent, var(--bg));
+    pointer-events: none;
+    z-index: 20;
   }
 
   body.is-mobile-layout.is-detail-view .detail-grid .section {
