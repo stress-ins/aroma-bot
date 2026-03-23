@@ -4518,6 +4518,13 @@ body.is-mobile-layout[data-mode="content"] .toolbar {
   top: calc(var(--tg-content-inset-top, env(safe-area-inset-top, 0px)) + 48px);
   z-index: 9;
 }
+/* Reduce gap between handbook tabs and search bar */
+body.is-mobile-layout[data-mode="handbook"] .toolbar {
+  padding-bottom: 4px;
+}
+body.is-mobile-layout[data-mode="handbook"] .list-panel .panel-header {
+  margin-top: 0;
+}
 
 /* Compact topbar-main padding on mobile since title is hidden.
    Shell has padding-top: 8px + X which pushes topbar below Telegram chrome.
@@ -6495,6 +6502,12 @@ body[data-tab="create"] .panel-filter-row { display: none; }
 }
 .smart-search-bar--inline:focus-within {
   border-color: var(--brand);
+}
+.smart-search-count {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--hint);
+  white-space: nowrap;
 }
 
 /* Compact variant of filters-toggle for panel-header */

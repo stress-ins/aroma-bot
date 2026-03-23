@@ -720,15 +720,18 @@ export function createReferencesModule(deps) {
       ? `Найдено ${filtered.length} из ${items.length}`
       : meta.count(items);
 
+    const searchHint = meta.searchPlaceholder || "Масло, аромат, симптом...";
+
     /* Render inline search bar inside draftCount area */
     if (!document.getElementById("smartSearchInput")) {
       elements.draftCount.innerHTML = `
         <div class="smart-search-bar smart-search-bar--inline" id="smartSearchBar">
           <span class="smart-search-icon"><svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="6.5" cy="6.5" r="4.5"/><line x1="10" y1="10" x2="13.5" y2="13.5"/></svg></span>
           <input type="text" class="smart-search-input" id="smartSearchInput"
-            placeholder="${escapeHtml(countText)}"
+            placeholder="${escapeHtml(searchHint)}"
             data-on-input="handleSmartSearch" data-args='[]'
             data-on-keydown="runSmartSearch" data-keydown-guard="Enter" data-args-keydown='[]'>
+          <span class="smart-search-count" id="smartSearchCount">${escapeHtml(countText)}</span>
           <button class="smart-search-clear" id="smartSearchClear" data-action="clearSmartSearch" hidden>\u2715</button>
         </div>`;
       document.getElementById("smartSearchInput")?.addEventListener("input", (e) => {
@@ -738,8 +741,9 @@ export function createReferencesModule(deps) {
       const searchInput = document.getElementById("smartSearchInput");
       if (searchInput) {
         searchInput.value = state.referenceSearch;
-        searchInput.placeholder = countText;
       }
+      const countEl = document.getElementById("smartSearchCount");
+      if (countEl) countEl.textContent = countText;
     }
 
     setEmptyState(filtered.length > 0, query
@@ -1011,7 +1015,9 @@ export function createReferencesModule(deps) {
   function handleSmartSearch(value) {
     clearTimeout(_smartSearchDebounce);
     const clearBtn = document.getElementById("smartSearchClear");
+    const countEl = document.getElementById("smartSearchCount");
     if (clearBtn) clearBtn.hidden = !value.trim();
+    if (countEl) countEl.hidden = !!value.trim();
     _smartSearchDebounce = setTimeout(() => {
       if (value.trim().length >= 2) runSmartSearch(value);
       else if (!value.trim()) clearSmartSearch();
@@ -1086,9 +1092,9 @@ export function createReferencesModule(deps) {
     if (!listContainer) return;
     const filterChipsEl = document.getElementById("referenceFilterChips");
     if (filterChipsEl) filterChipsEl.innerHTML = "";
-    const _searchEl = document.getElementById("smartSearchInput");
-    if (_searchEl) {
-      _searchEl.placeholder = `${items.length} результатов по запросу «${query}»`;
+    const _countEl = document.getElementById("smartSearchCount");
+    if (_countEl) {
+      _countEl.textContent = `${items.length} результатов`;
     } else {
       elements.draftCount.textContent = `${items.length} результатов по запросу «${query}»`;
     }
@@ -1153,6 +1159,8 @@ export function createReferencesModule(deps) {
     if (input) input.value = "";
     const clearBtn = document.getElementById("smartSearchClear");
     if (clearBtn) clearBtn.hidden = true;
+    const countEl = document.getElementById("smartSearchCount");
+    if (countEl) countEl.hidden = false;
     state.referenceSearch = "";
     renderReferences();
   }
