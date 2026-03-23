@@ -142,11 +142,13 @@ export function createReferencesModule(deps) {
     }
   }
 
-  async function openReference(slug, tabId = state.tab) {
+  async function openReference(slug, tabId = state.tab, { quiet = false } = {}) {
     const meta = HANDBOOK_CATEGORY_META[tabId];
     if (!slug || !meta) return;
-    elements.draftDetail.innerHTML = `${renderBackButton()}${renderDetailLoader("Открываю карточку справочника")}`;
-    enterDetailView();
+    if (!quiet) {
+      elements.draftDetail.innerHTML = `${renderBackButton()}${renderDetailLoader("Открываю карточку справочника")}`;
+      enterDetailView();
+    }
     openReferenceInFlight = true;
     try {
       // Track cross-tab navigation context for back button
