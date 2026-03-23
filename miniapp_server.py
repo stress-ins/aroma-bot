@@ -126,7 +126,7 @@ def _setup_mounts_and_routers():
     from miniapp.api.routers import (
         archive, blend_constructor, carousel, create, drafts, hashtags, keywords,
         mentions, misc, plans, publish, rag, recommendations, references, reels,
-        repurpose, schedule, series, social, social_trends, teams,
+        repurpose, schedule, series, social, social_trends, stock_photos, teams,
         thread_monitor, threads_series, tokens, tone, trend_cards, trends,
         user, webhooks,
     )
@@ -145,13 +145,17 @@ def _setup_mounts_and_routers():
     SOUNDS_DIR.mkdir(parents=True, exist_ok=True)
     app.mount("/sounds", StaticFiles(directory=SOUNDS_DIR), name="sounds")
 
+    from bot.services.content_assets import CONTENT_ASSETS_DIR
+    CONTENT_ASSETS_DIR.mkdir(parents=True, exist_ok=True)
+    app.mount("/generated/content_assets", StaticFiles(directory=CONTENT_ASSETS_DIR), name="content-generated-assets")
+
     for _router in (
         archive.router, blend_constructor.router, drafts.router, carousel.router, reels.router,
         plans.router, rag.router, recommendations.router, references.router, create.router,
         hashtags.router, keywords.router, misc.router, publish.router, repurpose.router,
         schedule.router, series.router, social.router, social_trends.router, teams.router,
         thread_monitor.router, threads_series.router, tone.router, trend_cards.router,
-        trends.router, mentions.router,
+        trends.router, mentions.router, stock_photos.router,
         tokens.router, user.router, webhooks.router,
     ):
         app.include_router(_router)
