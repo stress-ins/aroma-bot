@@ -27,8 +27,6 @@ from bot.handlers.link_detector import build_link_detector_handlers
 
 
 USER_COMMANDS = [
-    BotCommand("trends", "Аналитика трендов (RU + EN)"),
-    BotCommand("keywords", "Ключевые слова"),
     BotCommand("app", "Открыть приложение"),
     BotCommand("status", "Активные источники данных"),
     BotCommand("help", "Список команд"),
