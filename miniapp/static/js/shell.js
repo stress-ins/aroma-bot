@@ -436,6 +436,7 @@ export function createShellModule(deps) {
           const scrollEl = scrollParent || document.scrollingElement || document.documentElement;
           const savedScroll = scrollEl.scrollTop;
           state.draftId = "";
+          state.selectedReference = null;
           await safeLoadCurrentTab("Не удалось обновить");
           // Restore scroll after new content is rendered
           requestAnimationFrame(() => { scrollEl.scrollTop = savedScroll; });
