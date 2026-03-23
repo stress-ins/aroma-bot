@@ -115,7 +115,7 @@ let addForbiddenPhrase, removeForbiddenPhrase;
 let createNewTeam, createTeamInvite, removeTeamMember, activatePromo, generatePromos, selectCity;
 let goBackToSettings;
 let saveContentReviewDraft, saveThreadsReviewDraft, polishContentDraft, refreshDraftMetrics, moveDraftToTeam;
-let recommendHashtags, applyRecommendedHashtags, adaptTone, startRepurpose, regenSeriesPost, regenSeriesAll, coherenceCheck;
+let recommendHashtags, applyRecommendedHashtags, adaptTone, startRepurpose, saveSeriesPost, regenSeriesPost, regenSeriesAll, coherenceCheck;
 let loadCurrentTab, safeLoadCurrentTab, retryCurrentTab;
 let publishDraft, cancelPublishSchedule, loadPublishStatus;
 let openPendingReelsCreation, finalizePendingReelsCreation, recoverPendingReelsCreation;
@@ -1825,6 +1825,7 @@ const _stockPhotosMod = createStockPhotosModule({
   applyRecommendedHashtags,
   adaptTone,
   startRepurpose,
+  saveSeriesPost,
   regenSeriesPost,
   regenSeriesAll,
   coherenceCheck,
@@ -2470,6 +2471,7 @@ registerWindowBridge({
   applyRecommendedHashtags,
   adaptTone,
   startRepurpose,
+  saveSeriesPost,
   regenSeriesPost,
   regenSeriesAll,
   coherenceCheck,
