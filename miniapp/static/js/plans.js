@@ -288,7 +288,7 @@ export function createPlansModule(deps) {
   // ── Plan card ──────────────────────────────────────────────────────────────
 
   function renderPlanCard(item) {
-    const kindIconMap = { threads: "note", threads_series: "note", reels: "reel", carousel: "layers", instagram: "image" };
+    const kindIconMap = { threads: "note", threads_series: "note", reels: "reel", reels_v2: "reel", carousel: "layers", instagram: "image" };
     const kindBadge = {
       threads: "ТРЕДС",
       threads_series: "ТРЕДС",
@@ -406,7 +406,7 @@ export function createPlansModule(deps) {
       threads: "ТРЕДС", threads_series: "ТРЕДС", reels: "РИЛС",
       carousel: "КАРУСЕЛЬ", instagram: "ИНСТАГРАМ", telegram: "ТЕЛЕГРАМ",
     };
-    const kindIconMap2 = { threads: "note", threads_series: "note", reels: "reel", carousel: "layers", instagram: "image" };
+    const kindIconMap2 = { threads: "note", threads_series: "note", reels: "reel", reels_v2: "reel", carousel: "layers", instagram: "image" };
     const icon = uiIcon(kindIconMap2[draft.kind] || "file-text");
     const badge = (kindBadge[draft.kind] || String(draft.kind || "").toUpperCase())
       + (slot ? ` · ${slotLabel(slot)}` : "");
