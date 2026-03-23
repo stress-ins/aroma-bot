@@ -22,7 +22,7 @@ def _slugify(name: str) -> str:
     return slug.strip("-")[:60] or "team"
 
 
-async def create_team(name: str, creator_telegram_id: int, creator_username: str = "") -> TeamModel:
+async def create_team(name: str, creator_telegram_id: int, creator_username: str = "", creator_first_name: str = "") -> TeamModel:
     async with AsyncSessionLocal() as session:
         slug_base = _slugify(name)
         slug = slug_base
@@ -43,6 +43,7 @@ async def create_team(name: str, creator_telegram_id: int, creator_username: str
             team_id=team.team_id,
             telegram_id=creator_telegram_id,
             username=creator_username,
+            first_name=creator_first_name,
             role="owner",
         )
         session.add(member)
@@ -118,6 +119,7 @@ async def get_team_members(team_id: str) -> list[dict]:
             {
                 "telegram_id": m.telegram_id,
                 "username": m.username or "",
+                "first_name": m.first_name or "",
                 "role": m.role,
                 "joined_at": m.joined_at.isoformat() if m.joined_at else None,
             }
@@ -138,11 +140,11 @@ async def get_member_role(team_id: str, telegram_id: int) -> str | None:
         return row
 
 
-async def add_member(team_id: str, telegram_id: int, role: str = "viewer", username: str = "") -> TeamMemberModel:
+async def add_member(team_id: str, telegram_id: int, role: str = "viewer", username: str = "", first_name: str = "") -> TeamMemberModel:
     if role not in VALID_ROLES:
         raise ValueError(f"Invalid role: {role}")
     async with AsyncSessionLocal() as session:
-        member = TeamMemberModel(team_id=team_id, telegram_id=telegram_id, username=username, role=role)
+        member = TeamMemberModel(team_id=team_id, telegram_id=telegram_id, username=username, first_name=first_name, role=role)
         session.add(member)
         await session.commit()
         await session.refresh(member)
@@ -201,7 +203,7 @@ async def create_invite(
         return invite
 
 
-async def accept_invite(invite_code: str, telegram_id: int, username: str = "") -> dict | None:
+async def accept_invite(invite_code: str, telegram_id: int, username: str = "", first_name: str = "") -> dict | None:
     async with AsyncSessionLocal() as session:
         result = await session.execute(
             select(TeamInviteModel).where(TeamInviteModel.invite_code == invite_code)
@@ -233,6 +235,7 @@ async def accept_invite(invite_code: str, telegram_id: int, username: str = "") 
             team_id=invite.team_id,
             telegram_id=telegram_id,
             username=username,
+            first_name=first_name,
             role=invite.role,
         )
         session.add(member)

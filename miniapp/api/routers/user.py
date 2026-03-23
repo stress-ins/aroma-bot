@@ -82,6 +82,45 @@ async def toggle_daily_oil_subscription(
     return {"daily_oil_subscribed": subscribed}
 
 
+class CityPayload(BaseModel):
+    city_name: str
+    city_lat: float
+    city_lon: float
+
+
+@router.get("/api/user/city")
+async def get_user_city(telegram_id: int = Depends(_resolve_telegram_id)):
+    user = await get_or_create_user(telegram_id)
+    return {
+        "city_name": user.city_name or "Москва",
+        "city_lat": user.city_lat or 55.7558,
+        "city_lon": user.city_lon or 37.6173,
+    }
+
+
+@router.patch("/api/user/city")
+async def update_user_city(
+    body: CityPayload,
+    telegram_id: int = Depends(_resolve_telegram_id),
+):
+    from sqlalchemy import update as sa_update
+    from db.models import UserProfile
+    from db.session import AsyncSessionLocal
+
+    async with AsyncSessionLocal() as session:
+        await session.execute(
+            sa_update(UserProfile)
+            .where(UserProfile.telegram_id == telegram_id)
+            .values(
+                city_name=body.city_name.strip(),
+                city_lat=body.city_lat,
+                city_lon=body.city_lon,
+            )
+        )
+        await session.commit()
+    return {"ok": True, "city_name": body.city_name.strip()}
+
+
 # ---------------------------------------------------------------------------
 # Admin promo management
 # ---------------------------------------------------------------------------

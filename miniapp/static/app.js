@@ -111,7 +111,7 @@ let addTrackedHashtag, removeTrackedHashtag;
 let addMonitoredAccountFromSettings, removeMonitoredAccountFromSettings;
 let addKeywordItem, removeKeywordItem, openKeywordTopic;
 let addForbiddenPhrase, removeForbiddenPhrase;
-let createNewTeam, createTeamInvite, removeTeamMember, activatePromo, generatePromos;
+let createNewTeam, createTeamInvite, removeTeamMember, activatePromo, generatePromos, selectCity;
 let goBackToSettings;
 let saveContentReviewDraft, saveThreadsReviewDraft, polishContentDraft, refreshDraftMetrics, moveDraftToTeam;
 let recommendHashtags, applyRecommendedHashtags, adaptTone, startRepurpose, regenSeriesPost, regenSeriesAll, coherenceCheck;
@@ -1895,6 +1895,7 @@ const { renderBrand: renderBrandImpl, loadForbiddenPhrases: loadForbiddenPhrases
   addMonitoredAccountFromSettings, removeMonitoredAccountFromSettings,
   createNewTeam, createTeamInvite, removeTeamMember,
   activatePromo, generatePromos,
+  selectCity,
 } = _settingsMod);
 
 let selectTrendsPlatform, selectTrendsPeriod, refreshTrends, openTrendsPost, createFromInsight, addMonitoredAccount, removeMonitoredAccount, generateTrendCards, createFromTrendCard;
@@ -2372,6 +2373,7 @@ registerWindowBridge({
   removeTeamMember,
   activatePromo,
   generatePromos,
+  selectCity,
   goBackToSettings,
   setPlanStatusFilter,
   setPlanPlatformFilter,
