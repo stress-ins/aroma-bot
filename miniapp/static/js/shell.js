@@ -145,9 +145,12 @@ export function createShellModule(deps) {
   }
 
   function enterDetailView() {
+    const wasDetail = state.mobileView === "detail";
     state.mobileView = "detail";
     syncMobileNavigation();
     window.Telegram?.WebApp?.BackButton?.show();
+    // Skip entry animation & scroll reset when already in detail view (e.g. pull-to-refresh)
+    if (wasDetail) return;
     if (elements.detailPanel) {
       elements.detailPanel.scrollTop = 0;
       elements.detailPanel.classList.remove("is-entering");
@@ -428,8 +431,14 @@ export function createShellModule(deps) {
             await window.refreshCurrentDetail();
           }
         } else {
+          // Save scroll position before re-render replaces innerHTML
+          const scrollParent = getScrollParent();
+          const scrollEl = scrollParent || document.scrollingElement || document.documentElement;
+          const savedScroll = scrollEl.scrollTop;
           state.draftId = "";
           await safeLoadCurrentTab("Не удалось обновить");
+          // Restore scroll after new content is rendered
+          requestAnimationFrame(() => { scrollEl.scrollTop = savedScroll; });
         }
       } finally {
         el.classList.remove("visible", "ready", "refreshing");

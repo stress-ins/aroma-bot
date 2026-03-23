@@ -219,9 +219,9 @@ export function registerWindowBridge(deps) {
     if (state.selectedReels?.draft_id) {
       await refreshReelsDetail(state.selectedReels.draft_id);
     } else if (state.selectedReference?.slug) {
-      await openReference(state.selectedReference.slug);
+      await openReference(state.selectedReference.slug, state.tab, { quiet: true });
     } else if (state.draftId) {
-      await openDraft(state.draftId);
+      await openDraft(state.draftId, { quiet: true });
     }
   };
   window.openPlan = openPlan;

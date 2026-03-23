@@ -176,15 +176,17 @@ export function createDraftsModule(deps) {
     syncMobileNavigation();
   }
 
-  async function openDraft(id) {
+  async function openDraft(id, { quiet = false } = {}) {
     if (isPendingDraftId(id) && state.selected?.draft_id === id) {
       renderDraftList();
       renderDraftDetail(state.selected);
       enterDetailView();
       return;
     }
-    elements.draftDetail.innerHTML = `${renderBackButton()}${renderDetailLoader("Открываю черновик")}`;
-    enterDetailView();
+    if (!quiet) {
+      elements.draftDetail.innerHTML = `${renderBackButton()}${renderDetailLoader("Открываю черновик")}`;
+      enterDetailView();
+    }
     const d = await fetchJson(`/api/drafts/${id}`, { timeout: 20000 });
     if ((d?.kind === "reels" || d?.kind === "reels_v2") && callbacks.openReels) {
       await callbacks.openReels(d.draft_id);
