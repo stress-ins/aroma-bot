@@ -88,6 +88,12 @@ jobs:
             .venv/bin/python scripts/cleanup_blend_ingredients.py 2>&1 | tail -3 && \
             echo "Cleanup complete."' || echo "Cleanup step failed (non-blocking)"
 
+      - name: Patch oil reflection questions (idempotent, no AI)
+        run: |
+          ssh root@46.32.186.192 'cd /opt/aroma && \
+            .venv/bin/python scripts/patch_oil_questions.py 2>&1 | tail -5' \
+            || echo "Oil questions patch failed (non-blocking)"
+
       - name: Fill complementary oils from PDF data (no AI, idempotent)
         run: |
           ssh root@46.32.186.192 'cd /opt/aroma && \
