@@ -1304,14 +1304,16 @@ export function createSettingsModule(deps) {
     try {
       const promos = await fetchJson("/api/admin/promos");
       // If we get here, user is admin
+      const tierLabelsAdmin = { expert: "Эксперт", student: "Студент" };
       const rows = (promos.items || []).map((p) => {
-        const exp = p.expires_at ? new Date(p.expires_at).toLocaleDateString("ru-RU") : "∞";
+        const exp = p.expires_at ? new Date(p.expires_at).toLocaleDateString("ru-RU") : "—";
+        const exhausted = p.uses_count >= p.max_uses;
         return `
-          <tr>
+          <tr class="${exhausted ? "promo-exhausted" : ""}">
             <td><code>${escapeHtml(p.code)}</code></td>
-            <td>${escapeHtml(p.tier)}</td>
-            <td>${p.duration_days}д</td>
-            <td>${p.uses_count}/${p.max_uses}</td>
+            <td>${escapeHtml(tierLabelsAdmin[p.tier] || p.tier)}</td>
+            <td>${p.duration_days} дн.</td>
+            <td>${p.uses_count} из ${p.max_uses}</td>
             <td>${exp}</td>
           </tr>`;
       }).join("");
@@ -1321,15 +1323,28 @@ export function createSettingsModule(deps) {
           <h3>${uiIcon("shield")}<span>Управление промокодами</span></h3>
           <div class="promo-gen-form">
             <div class="keyword-add-row">
-              <select id="promoTier">
-                <option value="expert">Expert</option>
-                <option value="student">Student</option>
-              </select>
-              <input id="promoDays" type="number" value="30" min="1" max="365" placeholder="Дней">
-              <input id="promoCount" type="number" value="1" min="1" max="50" placeholder="Кол-во">
+              <label class="promo-field"><span class="promo-field-label">Тариф</span>
+                <select id="promoTier">
+                  <option value="expert">Эксперт</option>
+                  <option value="student">Студент</option>
+                </select>
+              </label>
+              <label class="promo-field"><span class="promo-field-label">Срок (дней)</span>
+                <input id="promoDays" type="number" value="30" min="1" max="365">
+              </label>
             </div>
             <div class="keyword-add-row" style="margin-top:8px">
-              <input id="promoPrefix" type="text" value="AROMA" placeholder="Префикс">
+              <label class="promo-field"><span class="promo-field-label">Макс. использований</span>
+                <input id="promoMaxUses" type="number" value="5" min="1" max="100">
+              </label>
+              <label class="promo-field"><span class="promo-field-label">Кол-во кодов</span>
+                <input id="promoCount" type="number" value="1" min="1" max="50">
+              </label>
+            </div>
+            <div class="keyword-add-row" style="margin-top:8px">
+              <label class="promo-field"><span class="promo-field-label">Префикс</span>
+                <input id="promoPrefix" type="text" value="AROMA">
+              </label>
               <button class="secondary-button" type="button" data-action="generatePromos">Создать</button>
             </div>
           </div>
@@ -1337,7 +1352,7 @@ export function createSettingsModule(deps) {
           ${promos.items.length > 0 ? `
             <div class="promo-table-wrap">
               <table class="promo-table">
-                <thead><tr><th>Код</th><th>Тариф</th><th>Срок</th><th>Исп.</th><th>Истекает</th></tr></thead>
+                <thead><tr><th>Код</th><th>Тариф</th><th>Срок</th><th>Использований</th><th>Истекает</th></tr></thead>
                 <tbody>${rows}</tbody>
               </table>
             </div>
@@ -1396,12 +1411,13 @@ export function createSettingsModule(deps) {
     const tier = document.getElementById("promoTier")?.value || "expert";
     const days = parseInt(document.getElementById("promoDays")?.value || "30", 10);
     const count = parseInt(document.getElementById("promoCount")?.value || "1", 10);
+    const max_uses = parseInt(document.getElementById("promoMaxUses")?.value || "5", 10);
     const prefix = document.getElementById("promoPrefix")?.value?.trim() || "AROMA";
     const resultEl = document.getElementById("promoGenResult");
     try {
       const result = await fetchJson("/api/admin/promos", {
         method: "POST",
-        body: JSON.stringify({ tier, days, count, prefix }),
+        body: JSON.stringify({ tier, days, count, prefix, max_uses }),
       });
       const codes = (result.codes || []).map((c) => `<code>${escapeHtml(c)}</code>`).join("<br>");
       if (resultEl) resultEl.innerHTML = `<div class="promo-gen-codes"><p class="settings-hint">Созданные коды:</p>${codes}</div>`;

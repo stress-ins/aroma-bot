@@ -2497,14 +2497,14 @@ body.tg-theme-dark .danger-button {
     background: transparent;
   }
 
-  /* Gradient fade at the bottom — depth illusion above the tab bar */
+  /* Gradient fade at the bottom — behind the tab bar (z-index 20 < tab bar 30) */
   body.is-mobile-layout.is-detail-view .layout::after {
     content: "";
     position: fixed;
-    bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+    bottom: 0;
     left: 0;
     right: 0;
-    height: 48px;
+    height: calc(80px + env(safe-area-inset-bottom, 0px));
     background: linear-gradient(to bottom, transparent, var(--bg));
     pointer-events: none;
     z-index: 20;
@@ -5789,6 +5789,19 @@ body.is-mobile-layout .detail-icon-actions button {
 .promo-table code {
   user-select: all;
   font-size: 12px;
+}
+.promo-exhausted { opacity: 0.45; }
+.promo-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+.promo-field-label {
+  font-size: 11px;
+  color: var(--hint);
+  font-weight: 500;
 }
 .chip-remove-btn {
   background: none;
