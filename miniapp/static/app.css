@@ -4414,6 +4414,9 @@ body.is-mobile-layout .topbar-main {
   padding: var(--space-3);
   padding-left: 88px;
   background: var(--bg);
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 body.is-mobile-layout .topbar-main .mode-selector {
@@ -4438,6 +4441,22 @@ body.is-mobile-layout[data-mode="content"] .tabs::-webkit-scrollbar { display: n
 
 /* Toolbar filters are hidden via JS (filtersContainer.hidden) on non-drafts/inbox tabs.
    Keep toolbar visible so it can host the tab strip. */
+
+/* On mobile, sections render edge-to-edge — no card chrome (except in detail view) */
+body.is-mobile-layout .section:not(.detail-grid .section) {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* On mobile, toolbar loses card chrome too */
+body.is-mobile-layout .toolbar {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
 
 /* In mobile detail view, filters are irrelevant — hide the toolbar */
 body.is-mobile-layout.is-detail-view .toolbar {
@@ -4473,12 +4492,12 @@ body.is-mobile-layout[data-mode="content"] .toolbar {
    padding-top: 8px only — no safe area duplication (shell already handles it). */
 @media (max-width: 760px) {
   body.is-mobile-layout .shell {
-    padding-top: calc(50px + var(--tg-content-inset-top, env(safe-area-inset-top, 0px)));
+    padding-top: calc(44px + var(--tg-content-inset-top, env(safe-area-inset-top, 0px)));
   }
 
   body.is-mobile-layout .topbar-main {
-    padding: 8px 12px;
-    top: calc(50px + var(--tg-content-inset-top, env(safe-area-inset-top, 0px)));
+    padding: 6px 12px;
+    top: calc(44px + var(--tg-content-inset-top, env(safe-area-inset-top, 0px)));
     gap: 0;
   }
 
@@ -6384,7 +6403,7 @@ details[open] > .trend-suggestions-toggle::before { transform: rotate(90deg); }
   align-items: center;
   gap: var(--space-2);
   width: 100%;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   overflow: hidden;
 }
 
