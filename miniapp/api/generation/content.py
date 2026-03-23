@@ -35,6 +35,24 @@ async def complete_content_generation(
         content_payload.pop("generation_stage", None)
         content_payload.pop("generation_message", None)
         content_payload.pop("generation_error", None)
+
+        # Pre-search stock photos if keywords were generated
+        stock_kw = content_payload.get("stock_keywords") or []
+        if stock_kw:
+            try:
+                from bot.services.stock_photos import search_stock_photos
+                from config import Settings
+                _cfg = Settings()
+                photos = await search_stock_photos(
+                    stock_kw,
+                    unsplash_key=_cfg.unsplash_access_key,
+                    pexels_key=_cfg.pexels_api_key,
+                )
+                if photos:
+                    content_payload["stock_suggestions"] = [p.to_dict() for p in photos[:9]]
+            except Exception:
+                pass  # Graceful — UI will do lazy search
+
         await update_draft(draft_id, payload=content_payload, status="draft")
     except Exception as exc:
         await set_generation_state(

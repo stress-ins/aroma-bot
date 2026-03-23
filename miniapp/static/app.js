@@ -18,6 +18,7 @@ import { createSessionModule } from "./js/session.js";
 import { createSettingsModule } from "./js/settings.js";
 import { createRecommendationsModule } from "./js/recommendations.js";
 import { createShellModule } from "./js/shell.js";
+import { createStockPhotosModule } from "./js/stock_photos.js";
 import { createTeamsModule } from "./js/teams.js";
 import { createTrendsModule } from "./js/trends.js";
 
@@ -656,6 +657,7 @@ function uiIcon(name) {
     passport:   "file-text",
     reel:       "clapperboard",
     image:      "image",
+    search:     "search",
     download:   "download",
     upload:     "upload",
     sunrise:    "sunrise",
@@ -1796,6 +1798,17 @@ const {
   interactiveCardAttrs,
 });
 
+const _stockPhotosMod = createStockPhotosModule({
+  escapeHtml,
+  uiIcon,
+  fetchJson,
+  withButtonFeedback,
+  showUiNotice,
+  showRequestError,
+  mergeDraftIntoState,
+  initDataHeaders,
+});
+
 ({
   saveContentReviewDraft,
   saveThreadsReviewDraft,
@@ -1814,6 +1827,7 @@ const {
   regenSeriesAll,
   coherenceCheck,
 } = createDraftsModule({
+  stockPhotoActions: _stockPhotosMod,
   state,
   elements,
   escapeHtml,
@@ -2459,6 +2473,10 @@ registerWindowBridge({
   coherenceCheck,
   generateTrendCards,
   createFromTrendCard,
+  // Stock photo picker
+  searchStockPhotos: (...a) => _stockPhotosMod.searchStockPhotos(...a),
+  selectStockPhoto: (...a) => _stockPhotosMod.selectStockPhoto(...a),
+  uploadDraftPhoto: (...a) => _stockPhotosMod.uploadDraftPhoto(...a),
 });
 
 reelsCallbacks.renderReels = () => { renderReels(); renderDraftList(); };
