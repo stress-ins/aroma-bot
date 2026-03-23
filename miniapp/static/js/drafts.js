@@ -47,6 +47,13 @@ export function createDraftsModule(deps) {
 
   const cleanSlotText = (t) => t ? t.replace(/\((?:Hot Take|Thread|Байт на обсуждение|Список|Туториал|Рефлексия|Шутка|Факап|Личная история)\)\s*/gi, '').replace(/^[-*_]{3,}\s*$/gm, '').replace(/\n{3,}/g, '\n\n').trim() : '';
 
+  function _pluralizeDrafts(n) {
+    const mod10 = n % 10, mod100 = n % 100;
+    if (mod10 === 1 && mod100 !== 11) return `${n} черновик`;
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return `${n} черновика`;
+    return `${n} черновиков`;
+  }
+
   function _metricsBadge(ms) {
     const parts = [];
     if (ms.likes) parts.push(`<i data-lucide="heart" style="width:12px;height:12px"></i> ${ms.likes}`);
@@ -141,7 +148,7 @@ export function createDraftsModule(deps) {
 
   function renderDraftList() {
     elements.listTitle.textContent = "Вдохновение";
-    elements.draftCount.textContent = `${state.drafts.length} шт`;
+    elements.draftCount.textContent = _pluralizeDrafts(state.drafts.length);
     setEmptyState(state.drafts.length > 0, {
       eyebrow: "Публикации",
       title: "Ничего не найдено",
@@ -458,10 +465,10 @@ export function createDraftsModule(deps) {
             </div>
             ${d.kind === "carousel" ? `
               <div class="carousel-export-row">
-                <button class="secondary-button" data-action="downloadCarouselPptx" data-args='${JSON.stringify([d.draft_id, null])}'>${uiIcon("download")}<span>PPTX</span></button>
-                <button class="secondary-button" data-action="importCarouselPptx" data-args='${JSON.stringify([d.draft_id, null])}'>${uiIcon("upload")}<span>PPTX</span></button>
-                <button class="secondary-button" data-action="exportToCanva" data-args='${JSON.stringify([d.draft_id, null])}'>${uiIcon("arrow-up-right")}<span>Canva</span></button>
-                <button class="secondary-button" data-action="importFromCanva" data-args='${JSON.stringify([d.draft_id, null])}'>${uiIcon("arrow-down-left")}<span>Canva</span></button>
+                <button class="secondary-button" data-action="downloadCarouselPptx" data-args='${JSON.stringify([d.draft_id, null])}'>${uiIcon("download")}<span>Скачать PPTX</span></button>
+                <button class="secondary-button" data-action="importCarouselPptx" data-args='${JSON.stringify([d.draft_id, null])}'>${uiIcon("upload")}<span>Загрузить PPTX</span></button>
+                <button class="secondary-button" data-action="exportToCanva" data-args='${JSON.stringify([d.draft_id, null])}'>${uiIcon("arrow-up-right")}<span>Открыть в Canva</span></button>
+                <button class="secondary-button" data-action="importFromCanva" data-args='${JSON.stringify([d.draft_id, null])}'>${uiIcon("arrow-down-left")}<span>Импорт из Canva</span></button>
               </div>
             ` : ""}
             ${renderMoveButton(d.draft_id)}

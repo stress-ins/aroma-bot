@@ -349,6 +349,7 @@ export function createCoreModule(deps) {
 
   function showRequestError(prefix, error) {
     const message = error?.message || String(error || "unknown_error");
+    if (message === "paywall" || message === "daily_limit" || message === "regen_limit") return;
     showUiNotice(`${prefix}: ${humanizeRequestMessage(message)}`, "error");
   }
 

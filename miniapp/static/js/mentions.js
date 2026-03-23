@@ -101,7 +101,14 @@ export function createMentionsModule(deps) {
       </div>`;
 
     if (!state.mentions.length) {
-      container.innerHTML = filterBar + `<div class="empty-state"><p>Нет упоминаний</p></div>`;
+      container.innerHTML = filterBar + `<div class="empty-state">
+        <div style="text-align:center;padding:32px 16px">
+          <i data-lucide="message-circle" style="width:48px;height:48px;color:var(--muted);margin:0 auto 12px;display:block"></i>
+          <p style="font-size:16px;font-weight:600;margin-bottom:8px">Упоминаний пока нет</p>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Здесь появятся упоминания вашего бренда в социальных сетях. Убедитесь что аккаунты для мониторинга настроены.</p>
+          <button class="secondary-button" type="button" data-action="openSettingsSection" data-args='["monitored"]'>Настроить мониторинг</button>
+        </div>
+      </div>`;
       return;
     }
 

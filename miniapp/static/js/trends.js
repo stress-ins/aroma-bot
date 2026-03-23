@@ -87,6 +87,7 @@ export function createTrendsModule(deps) {
       suggestionsData = null;
     }
 
+    elements.listTitle.textContent = "Тренды";
     elements.draftList.innerHTML = renderTrendsListPanel();
     elements.draftDetail.innerHTML = renderTrendsDetail();
     syncMobileNavigation();
