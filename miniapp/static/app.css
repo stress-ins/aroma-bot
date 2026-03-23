@@ -297,7 +297,7 @@ p,
   border-radius: var(--radius-lg);
   background:
     radial-gradient(circle at top left, rgba(var(--brand-rgb), 0.12), transparent 32%),
-    linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
+    transparent;
   box-shadow: var(--shadow-sm);
 }
 
@@ -729,7 +729,7 @@ body.app-ready .splash {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: 15px 16px;
-  background: linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
+  background: transparent;
   cursor: pointer;
   text-align: left;
   transition: border-color var(--duration-fast) var(--ease-standard), background var(--duration-fast) var(--ease-standard), transform var(--duration-medium) var(--ease-standard), box-shadow var(--duration-medium) var(--ease-standard);
@@ -757,7 +757,7 @@ body.app-ready .splash {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: 13px 14px;
-  background: linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
+  background: transparent;
   text-align: left;
   cursor: pointer;
   transition: transform var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), background var(--duration-fast) var(--ease-standard), box-shadow var(--duration-medium) var(--ease-standard);
@@ -1430,8 +1430,7 @@ body.is-mobile-layout .detail-top::after {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: var(--space-4);
-  background: linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  background: transparent;
 }
 
 .section-primary {
@@ -1901,19 +1900,19 @@ body.tg-theme-dark .reels-overview-card {
 }
 
 body.tg-theme-dark .storyboard-frame {
-  background: linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
+  background: transparent;
   border-color: var(--border);
   color: var(--text);
 }
 
 body.tg-theme-dark .prompt-card {
-  background: var(--surface);
+  background: transparent;
   border-color: var(--border);
   color: var(--text);
 }
 
 body.tg-theme-dark .plan-entry-card {
-  background: var(--surface);
+  background: transparent;
   border-color: var(--border);
   color: var(--text);
 }
@@ -1921,18 +1920,18 @@ body.tg-theme-dark .plan-entry-card {
 body.tg-theme-dark .section-primary {
   background:
     radial-gradient(circle at top left, rgba(var(--brand-rgb), 0.10), transparent 34%),
-    linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
+    transparent;
   border-color: rgba(var(--brand-rgb), 0.22);
   color: var(--text);
 }
 
 body.tg-theme-dark .section-accent {
-  background: linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
+  background: transparent;
   color: var(--text);
 }
 
 body.tg-theme-dark .detail-facts {
-  background: linear-gradient(180deg, var(--surface-2) 0%, var(--surface-3) 100%);
+  background: transparent;
   border-color: rgba(var(--brand-rgb), 0.20);
   box-shadow: none;
   color: var(--text);
@@ -1940,7 +1939,7 @@ body.tg-theme-dark .detail-facts {
 
 /* guided-state had hardcoded near-white gradient */
 body.tg-theme-dark .guided-state {
-  background: linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
+  background: transparent;
   border-color: rgba(var(--brand-rgb), 0.18);
   color: var(--text);
 }
@@ -1954,7 +1953,7 @@ body.tg-theme-dark .reference-badge {
 body.tg-theme-dark .reference-hero-card.is-theory {
   background:
     radial-gradient(circle at top right, rgba(var(--brand-rgb), 0.1), transparent 33%),
-    linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
+    transparent;
   border-color: rgba(var(--brand-rgb), 0.2);
 }
 
@@ -3009,7 +3008,7 @@ body.tg-theme-dark.is-mobile-layout .back-button.visible {
   align-items: start;
   background:
     radial-gradient(circle at top right, rgba(var(--brand-rgb), 0.12), transparent 34%),
-    linear-gradient(180deg, var(--surface), var(--surface-2));
+    transparent;
 }
 
 .reference-hero-card.is-theory {
@@ -3475,7 +3474,7 @@ body.tg-theme-dark .concept-card {
   border: 1px solid var(--border);
   border-left: 3px solid var(--brand-border);
   border-radius: var(--radius-md);
-  background: linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
+  background: transparent;
 }
 
 .storyboard-frame strong {
@@ -3493,7 +3492,7 @@ body.tg-theme-dark .concept-card {
   padding: 12px 14px;
   border: 1px dashed var(--border);
   border-radius: var(--radius-sm);
-  background: linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
+  background: transparent;
   overflow: hidden;
   min-width: 0;
 }
@@ -3653,7 +3652,7 @@ body.tg-theme-dark .concept-card {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: 14px 15px;
-  background: linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
+  background: transparent;
   text-align: left;
   transition: border-color 0.15s, background 0.15s, transform 0.18s ease, box-shadow 0.18s ease;
 }
@@ -4761,7 +4760,7 @@ body.is-mobile-layout .detail-icon-actions button {
 .plans-day-group { margin-bottom: 4px; }
 .plans-day-label { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--hint); padding: 16px 0 8px; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
 
-.plan-card { border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px; background: linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%); margin-bottom: 8px; cursor: pointer; transition: border-color var(--duration-fast), transform var(--duration-medium) var(--ease-standard); }
+.plan-card { border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px; background: transparent; margin-bottom: 8px; cursor: pointer; transition: border-color var(--duration-fast), transform var(--duration-medium) var(--ease-standard); }
 .plan-card:hover { border-color: var(--brand-border); transform: translateY(-1px); }
 .plan-card.plan-card-error { border-color: rgba(176,58,46,.25); background: rgba(176,58,46,.04); }
 .plan-card.plan-card-published { opacity: 0.75; }
@@ -6468,6 +6467,21 @@ body[data-tab="create"] .panel-filter-row { display: none; }
   flex-shrink: 0;
   font-size: 13px;
   color: var(--muted);
+}
+/* When panel-count holds the inline search bar, stretch full width */
+.panel-count:has(.smart-search-bar--inline) {
+  width: 100%;
+  margin-left: 0;
+  flex-shrink: 1;
+}
+.smart-search-bar--inline {
+  margin-bottom: 0;
+  background: transparent;
+  border-color: var(--border);
+  padding: 8px 12px;
+}
+.smart-search-bar--inline:focus-within {
+  border-color: var(--brand);
 }
 
 /* Compact variant of filters-toggle for panel-header */
