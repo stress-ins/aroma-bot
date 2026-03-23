@@ -782,6 +782,7 @@ function contentKindIcon(kind) {
     threads_series: "threads",
     plan:           "plan",
     reels:          "reel",
+    reels_v2:       "reel",
     carousel:       "layers",
     instagram:      "instagram",
     telegram:       "telegram",
