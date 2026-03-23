@@ -251,7 +251,7 @@ def _generate_slide_image_prompts_sync(slides: list[str], topic: str, blend_cont
     return optimized
 
 
-def _generate_carousel_sync(topic: str, user_forbidden: list[str] | None = None, blend_context: dict | None = None) -> tuple[list[str], list[str], str, str]:
+def _generate_carousel_sync(topic: str, user_forbidden: list[str] | None = None, blend_context: dict | None = None, render_style: str = "overlay") -> tuple[list[str], list[str], str, str]:
     """Draft -> editor -> 6 refined slides + per-slide image prompts.
 
     Returns (slides, img_prompts, angle, hook).
@@ -279,6 +279,10 @@ def _generate_carousel_sync(topic: str, user_forbidden: list[str] | None = None,
                     continue
                 return [], [], angle, hook
             img_prompts = _generate_slide_image_prompts_sync(refined, topic, blend_context=blend_context)
+            # Apply editorial prompt modifier if render_style is editorial
+            if render_style == "editorial":
+                from bot.agents.carousel_editorial import editorial_image_prompt_modifier
+                img_prompts = [editorial_image_prompt_modifier(p) for p in img_prompts]
             return refined, img_prompts, angle, hook
         except Exception:
             logger.exception("_generate_carousel_sync attempt %d failed for topic: %s", attempt + 1, topic)
