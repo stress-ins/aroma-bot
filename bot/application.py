@@ -28,15 +28,8 @@ from bot.handlers.link_detector import build_link_detector_handlers
 
 USER_COMMANDS = [
     BotCommand("trends", "Аналитика трендов (RU + EN)"),
-    BotCommand("content", "Создать контент: цель → формат → тема → материал"),
-    BotCommand("threads", "Пост для Threads + картинка"),
-    BotCommand("carousel", "Карусель из 5 слайдов"),
-    BotCommand("reels", "Сценарий для Reels"),
-    BotCommand("adapt", "Адаптация поста под платформу"),
-    BotCommand("plan", "Контент-план на неделю"),
-    BotCommand("drafts", "Последние черновики"),
     BotCommand("keywords", "Ключевые слова"),
-    BotCommand("app", "Открыть Mini App"),
+    BotCommand("app", "Открыть приложение"),
     BotCommand("status", "Активные источники данных"),
     BotCommand("help", "Список команд"),
 ]
@@ -60,11 +53,11 @@ async def _post_init(application: Application) -> None:
     )
 
     await bot.set_my_short_description(
-        "Тренды ароматерапии, контент для соцсетей, AI-помощник",
+        "Тренды ароматерапии и AI-помощник для контента",
     )
     await bot.set_my_description(
-        "Слежу за трендами ароматерапии, генерирую контент для соцсетей, "
-        "помогаю с Threads, Reels, каруселями и контент-планами.",
+        "Слежу за трендами ароматерапии и помогаю создавать контент. "
+        "Контент, черновики, планы и справочник — в приложении.",
     )
     logger.info("Bot commands and descriptions registered")
 
