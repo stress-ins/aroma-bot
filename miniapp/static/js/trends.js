@@ -139,6 +139,13 @@ export function createTrendsModule(deps) {
       summary = renderPlatformSummaryList();
     }
 
+    const settingsLink = `
+      <div class="trends-settings-link">
+        <button class="secondary-button" type="button" data-action="openSettingsSection" data-args='["monitored"]'>
+          ${uiIcon("settings", 14)} <span>Аккаунты и хештеги</span>
+        </button>
+      </div>`;
+
     return `
       <div class="trends-controls">
         <div class="trends-platform-tabs">${platformTabs}</div>
@@ -148,8 +155,7 @@ export function createTrendsModule(deps) {
         </div>
       </div>
       ${summary}
-      ${renderMonitoredAccountsSection()}
-      ${renderTrackedHashtagsSection()}
+      ${settingsLink}
     `;
   }
 
@@ -280,7 +286,7 @@ export function createTrendsModule(deps) {
               <span class="trends-guide-step-num">1</span>
               <div>
                 <strong>Добавьте аккаунты для мониторинга</strong>
-                <p>Укажите конкурентов или источники вдохновения ниже в секции «Отслеживаемые аккаунты».</p>
+                <p>Перейдите в <button class="link-button" data-action="openSettingsSection" data-args='["monitored"]'>настройки аккаунтов</button> и укажите конкурентов или источники вдохновения.</p>
               </div>
             </div>
             <div class="trends-guide-step">
