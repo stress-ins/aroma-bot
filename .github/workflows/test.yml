@@ -7,9 +7,27 @@ on:
   pull_request:
 
 jobs:
+  # ── Detect which paths changed ──────────────────────────────────────
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    outputs:
+      ui: ${{ steps.filter.outputs.ui }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            ui:
+              - 'miniapp/static/**'
+              - 'miniapp/templates/**'
+              - 'tests/ui/**'
+
+  # ── Backend tests (always run) ──────────────────────────────────────
   pytest:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 8
     env:
       TELEGRAM_BOT_TOKEN: test-token
       REPORT_TARGET_CHAT_ID: test-chat
@@ -17,23 +35,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
         with:
-          python-version: "3.13"
-          cache: "pip"
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.13
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt pytest pytest-timeout pytest-xdist pytest-cov
+        run: uv pip install --system -r requirements.txt pytest pytest-timeout pytest-xdist pytest-cov
 
       - name: Run tests
         run: python -m pytest tests/ -q --ignore=tests/ui --ignore=tests/smoke --timeout=60 -n auto -m "not slow"
 
+  # ── UI tests (only when static files changed) ───────────────────────
   miniapp-ui:
+    needs: changes
+    if: needs.changes.outputs.ui == 'true' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 8
     env:
       TELEGRAM_BOT_TOKEN: test-token
       REPORT_TARGET_CHAT_ID: test-chat
@@ -41,16 +62,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
         with:
-          python-version: "3.13"
-          cache: "pip"
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.13
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt pytest pytest-timeout
+        run: uv pip install --system -r requirements.txt pytest pytest-timeout
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ runner.os }}
 
       - name: Install Chromium
         run: python -m playwright install --with-deps chromium
