@@ -6562,9 +6562,7 @@ details[open] > .trend-suggestions-toggle::before { transform: rotate(90deg); }
 
 /* ── List panel fade masks ─────────────────────────────────────────────── */
 .draft-list::before,
-.draft-list::after,
-.create-list::before,
-.create-list::after {
+.draft-list::after {
   content: '';
   display: block;
   position: sticky;
@@ -6578,14 +6576,14 @@ details[open] > .trend-suggestions-toggle::before { transform: rotate(90deg); }
   transition: opacity var(--duration-fast) var(--ease-standard);
 }
 
-.draft-list::before, .create-list::before {
+.draft-list::before {
   top: 0;
   background: linear-gradient(to bottom,
     rgba(var(--surface-rgb), 1) 0%,
     rgba(var(--surface-rgb), 0) 100%);
 }
 
-.draft-list::after, .create-list::after {
+.draft-list::after {
   bottom: 0;
   background: linear-gradient(to top,
     rgba(var(--surface-rgb), 1) 0%,
@@ -6593,10 +6591,8 @@ details[open] > .trend-suggestions-toggle::before { transform: rotate(90deg); }
 }
 
 /* JS toggles these classes based on scroll position */
-.draft-list.has-scroll-top::before,
-.create-list.has-scroll-top::before { opacity: 1; }
-.draft-list.has-scroll-bottom::after,
-.create-list.has-scroll-bottom::after { opacity: 1; }
+.draft-list.has-scroll-top::before { opacity: 1; }
+.draft-list.has-scroll-bottom::after { opacity: 1; }
 
 /* ── Mobile detail panel fade masks — removed
    Detail cards contain images with light backgrounds; a dark sticky gradient

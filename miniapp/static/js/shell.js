@@ -426,7 +426,10 @@ export function createShellModule(deps) {
       el.classList.add("refreshing");
       el.style.setProperty("--ptr-progress", `${THRESHOLD}px`);
       try {
-        if (state.mobileView === "detail") {
+        // Skip PTR on Create tab — nothing to refresh, avoids form re-render
+        if (state.tab === "create" && state.mobileView !== "detail") {
+          /* no-op */
+        } else if (state.mobileView === "detail") {
           if (typeof window.refreshCurrentDetail === "function") {
             await window.refreshCurrentDetail();
           }
