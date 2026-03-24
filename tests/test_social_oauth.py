@@ -41,12 +41,11 @@ def test_build_instagram_authorize_url():
     query = parse_qs(parsed.query)
 
     assert parsed.netloc == "www.instagram.com"
-    assert parsed.path == "/consent/"
-    assert query["flow"] == ["ig_biz_login_oauth"]
-    import json
-    params = json.loads(query["params_json"][0])
-    assert params["client_id"] == "instagram-app-id"
-    assert params["redirect_uri"] == "https://oauth.aromara.ru/instagram/callback"
+    assert parsed.path == "/oauth/authorize"
+    assert query["client_id"] == ["instagram-app-id"]
+    assert query["redirect_uri"] == ["https://oauth.aromara.ru/instagram/callback"]
+    assert query["response_type"] == ["code"]
+    assert query["enable_fb_login"] == ["0"]
 
 
 def test_oauth_state_roundtrip():
