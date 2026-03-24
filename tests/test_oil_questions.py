@@ -16,6 +16,8 @@ CURATED_SLUGS = {
     "geranium", "grapefruit", "jasmine", "ylang-ylang", "ginger",
     "cedarwood", "cypress", "copaiba", "cinnamon", "lavender",
     "frankincense", "lime",
+    "mandarin", "lemongrass", "clary-sage", "german-chamomile", "cassia",
+    "spruce", "blue-spruce", "balsam-fir", "kunzea", "citronella",
 }
 
 # Key phrases that MUST appear in each oil's questions (canary checks)
@@ -38,6 +40,16 @@ CURATED_CANARIES: dict[str, str] = {
     "lavender": "мамой",
     "frankincense": "центрированным",
     "lime": "серьёзно",
+    "mandarin": "внутренним ребёнком",
+    "lemongrass": "отпустить",
+    "clary-sage": "интуиции",
+    "german-chamomile": "мелочи выводят",
+    "cassia": "страх мешает",
+    "spruce": "внутренняя опора",
+    "blue-spruce": "внутренняя опора",
+    "balsam-fir": "ощущение «дома»",
+    "kunzea": "эмоциональная боль",
+    "citronella": "перезагрузка",
 }
 
 STUB_MARKER = "Какая тема этого масла"
