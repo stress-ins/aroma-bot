@@ -15,6 +15,10 @@ ExecReload=/bin/kill -s HUP $MAINPID
 Restart=always
 RestartSec=3
 User=root
+# Prevent FFmpeg OOM from killing the entire service
+MemoryMax=2500M
+MemorySwapMax=512M
+OOMPolicy=continue
 
 [Install]
 WantedBy=multi-user.target
