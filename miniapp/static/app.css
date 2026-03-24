@@ -3973,28 +3973,6 @@ body.tg-theme-dark .concept-card {
 .reels-deadline-stat { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 8px; text-align: center; }
 .reels-deadline-n { display: block; font-size: 22px; font-weight: 700; color: var(--brand); }
 .reels-deadline-l { font-size: 10px; color: var(--hint); }
-/* Reels meta header */
-.reels-meta-header {
-  padding: 10px 14px; margin-bottom: 8px;
-  border-bottom: 1px solid var(--border);
-}
-.reels-meta-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.reels-meta-id {
-  font-family: monospace; font-size: 12px; color: var(--hint);
-  background: var(--surface); padding: 2px 6px; border-radius: 4px;
-}
-.reels-meta-status {
-  font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 6px;
-}
-.reels-meta-status--neutral { background: var(--surface); color: var(--hint); }
-.reels-meta-status--info { background: rgba(var(--brand-rgb, 128,90,213), 0.15); color: var(--brand); }
-.reels-meta-status--warning { background: rgba(255, 152, 0, 0.15); color: #f59e0b; }
-.reels-meta-status--success { background: rgba(46, 125, 79, 0.15); color: var(--good, #2e7d4f); }
-.reels-meta-dates {
-  margin-top: 4px; font-size: 11px; color: var(--muted); gap: 12px;
-}
-.reels-meta-dates span { display: flex; align-items: center; gap: 3px; }
-
 .reels-upload-zone { border: 2px dashed rgba(46, 125, 79, 0.4); border-radius: var(--radius-md); padding: 16px; background: rgba(46, 125, 79, 0.05); text-align: center; margin-bottom: 10px; }
 .reels-upload-title { font-size: 14px; font-weight: 600; color: var(--good); margin-bottom: 6px; }
 .reels-upload-hint { font-size: 12px; color: var(--hint); margin-bottom: 12px; line-height: 1.5; }
