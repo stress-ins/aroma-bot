@@ -2538,18 +2538,7 @@ body.tg-theme-dark .danger-button {
     background: transparent;
   }
 
-  /* Gradient fade at the bottom — behind the tab bar (z-index 20 < tab bar 30) */
-  body.is-mobile-layout.is-detail-view .layout::after {
-    content: "";
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: calc(80px + env(safe-area-inset-bottom, 0px));
-    background: linear-gradient(to bottom, transparent, var(--bg));
-    pointer-events: none;
-    z-index: 20;
-  }
+  /* Bottom fade removed — padding-bottom on detail-panel handles tab bar gap */
 
   body.is-mobile-layout.is-detail-view .detail-grid .section {
     scroll-margin-top: calc(52px + var(--tg-content-inset-top, env(safe-area-inset-top, 0px)));
