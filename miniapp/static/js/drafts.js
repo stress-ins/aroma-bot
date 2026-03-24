@@ -262,7 +262,7 @@ export function createDraftsModule(deps) {
         <div class="date-picker-row" id="schedulerDates_${d.draft_id}"></div>
         <div class="actions-row" style="margin-top:8px">
           <button class="primary-button" id="schedulerSubmit_${d.draft_id}" type="button" data-date="" data-draft-id="${d.draft_id}" disabled
-            data-action="_scheduleThreadsSeriesFromBtn">
+            data-action="_scheduleThreadsSeriesFromBtn" data-args='[null]'>
             ${actionLabel("approve", "Запланировать публикацию")}
           </button>
         </div>
