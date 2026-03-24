@@ -137,7 +137,6 @@ def process(config: ProcessorConfig) -> ProcessResult:
         from bot.services.video_processor.ffmpeg_builder import _DemuxerCommand
         if isinstance(cmd, _DemuxerCommand) and cmd.pre_commands:
             logger.info("Using 2-pass concat demuxer (%d segments)", len(cmd.pre_commands))
-            import shutil
             try:
                 for i, pre_cmd in enumerate(cmd.pre_commands):
                     logger.debug("Extracting segment %d/%d", i + 1, len(cmd.pre_commands))
