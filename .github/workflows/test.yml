@@ -45,7 +45,7 @@ jobs:
         run: uv python install 3.13
 
       - name: Install dependencies
-        run: uv pip install --system -r requirements.txt pytest pytest-timeout pytest-xdist pytest-cov
+        run: uv pip install --system --break-system-packages -r requirements.txt pytest pytest-timeout pytest-xdist pytest-cov
 
       - name: Run tests
         run: python -m pytest tests/ -q --ignore=tests/ui --ignore=tests/smoke --timeout=60 -n auto -m "not slow"
@@ -73,7 +73,7 @@ jobs:
         run: uv python install 3.13
 
       - name: Install dependencies
-        run: uv pip install --system -r requirements.txt pytest pytest-timeout
+        run: uv pip install --system --break-system-packages -r requirements.txt pytest pytest-timeout
 
       - name: Cache Playwright browsers
         uses: actions/cache@v4
