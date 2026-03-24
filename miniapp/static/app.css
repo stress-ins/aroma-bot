@@ -4627,6 +4627,8 @@ body.is-mobile-layout[data-mode="handbook"] .toolbar {
 }
 body.is-mobile-layout[data-mode="handbook"] .list-panel .panel-header {
   margin-top: 0;
+  /* Always show in handbook — search bar is always rendered here */
+  display: flex;
 }
 
 /* Compact topbar-main padding on mobile since title is hidden.
