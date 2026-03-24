@@ -47,13 +47,16 @@ async def start_worker() -> None:
     try:
         # Ensure table exists (auto-create if missing)
         from db.models import VideoTaskModel, Base
-        from db.session import engine
-        async with engine.begin() as conn:
+        from sqlalchemy.ext.asyncio import create_async_engine
+        from db.session import DATABASE_URL
+        _engine = create_async_engine(DATABASE_URL, echo=False)
+        async with _engine.begin() as conn:
             await conn.run_sync(
                 lambda sync_conn: Base.metadata.create_all(
                     sync_conn, tables=[VideoTaskModel.__table__], checkfirst=True,
                 )
             )
+        await _engine.dispose()
 
         # Reset any tasks that were running when server died
         recovered = await recover_interrupted_tasks()
