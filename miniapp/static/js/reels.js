@@ -1361,13 +1361,46 @@ export function createReelsModule(deps) {
       _updateUploadProgressUI();
     });
 
-    xhr.addEventListener("error", () => {
-      state.videoUpload.error = "Сетевая ошибка";
+    let _uploadRetries = 0;
+    const MAX_UPLOAD_RETRIES = 3;
+
+    function _retryUpload() {
+      if (_uploadRetries >= MAX_UPLOAD_RETRIES) {
+        showUiNotice(`Загрузка не удалась после ${MAX_UPLOAD_RETRIES} попыток`, "error");
+        state.videoUpload = { active: false, draftId: null, progress: 0, fileName: "", error: null, xhr: null };
+        _updateUploadProgressUI();
+        return;
+      }
+      _uploadRetries++;
+      showUiNotice(`Сетевая ошибка. Повторная попытка ${_uploadRetries}/${MAX_UPLOAD_RETRIES}…`, "warning");
+      state.videoUpload.progress = 0;
+      state.videoUpload.error = null;
       _updateUploadProgressUI();
-      showUiNotice("Ошибка сети при загрузке видео", "error");
-      state.videoUpload = { active: false, draftId: null, progress: 0, fileName: "", error: null, xhr: null };
-      _updateUploadProgressUI();
-    });
+      // Re-send after short delay
+      setTimeout(() => {
+        const retryXhr = new XMLHttpRequest();
+        state.videoUpload.xhr = retryXhr;
+        retryXhr.upload.addEventListener("progress", (e) => {
+          if (e.lengthComputable) {
+            state.videoUpload.progress = (e.loaded / e.total) * 100;
+            _updateUploadProgressUI();
+          }
+        });
+        retryXhr.addEventListener("load", xhr.onload);
+        retryXhr.addEventListener("error", () => _retryUpload());
+        retryXhr.addEventListener("abort", () => {
+          state.videoUpload = { active: false, draftId: null, progress: 0, fileName: "", error: null, xhr: null };
+          _updateUploadProgressUI();
+          showUiNotice("Загрузка видео отменена", "info");
+        });
+        retryXhr.open("POST", `/api/reels/${draftId}/upload-video`);
+        const retryHdrs = getInitDataHeaders();
+        Object.entries(retryHdrs).forEach(([k, v]) => retryXhr.setRequestHeader(k, v));
+        retryXhr.send(formData);
+      }, 2000);
+    }
+
+    xhr.addEventListener("error", () => _retryUpload());
 
     xhr.addEventListener("abort", () => {
       state.videoUpload = { active: false, draftId: null, progress: 0, fileName: "", error: null, xhr: null };
@@ -1397,10 +1430,22 @@ export function createReelsModule(deps) {
     assembling: "Сборка очищенного видео…",
   };
 
+  function _formatEstimate(estSec, progress) {
+    if (!estSec) return "";
+    const remaining = Math.max(0, Math.round(estSec * (1 - (progress || 0) / 100)));
+    if (remaining <= 0) return "почти готово";
+    if (remaining < 60) return `~${remaining} сек`;
+    const m = Math.ceil(remaining / 60);
+    return `~${m} мин`;
+  }
+
   function _renderCleanProgress(step, progress, extra) {
     const label = CLEAN_STEP_LABELS[step] || "Обработка…";
     const pct = Math.min(Math.max(progress || 0, 0), 100);
-    const estimate = pct < 30 ? "~2-4 мин" : pct < 70 ? "~1-2 мин" : "меньше минуты";
+    const estSec = extra?.estimated_seconds;
+    const estimate = _formatEstimate(estSec, pct) || (pct < 30 ? "~2-4 мин" : pct < 70 ? "~1-2 мин" : "почти готово");
+    const queuePos = extra?.queue_position;
+    const queueHtml = queuePos > 1 ? `<div class="reels-progress-hint">В очереди: позиция ${queuePos}</div>` : "";
     return `
       <div class="reels-progress-container">
         <div class="reels-progress-header">
@@ -1414,6 +1459,7 @@ export function createReelsModule(deps) {
           <span>${pct}%</span>
           <span>Осталось ${estimate}</span>
         </div>
+        ${queueHtml}
         <div class="reels-progress-hint">Можно закрыть приложение — процесс продолжится на сервере.</div>
       </div>`;
   }
@@ -1461,7 +1507,10 @@ export function createReelsModule(deps) {
     const container = document.getElementById("cleanStatusContainer");
     if (!container) return;
     if (st.status === "running" || st.status === "pending") {
-      container.innerHTML = _renderCleanProgress(st.step || "preparing", st.progress || 5);
+      container.innerHTML = _renderCleanProgress(st.step || "preparing", st.progress || 5, {
+        estimated_seconds: st.estimated_seconds,
+        queue_position: st.queue_position,
+      });
     }
   }
 
@@ -1743,13 +1792,22 @@ export function createReelsModule(deps) {
 
   let _composeRunning = false;
 
-  function _renderComposeProgress(step) {
+  function _renderComposeProgress(step, extra) {
     const labels = {
+      queued: "В очереди…",
       pending: "Подготовка кадров…",
+      preparing: "Подготовка кадров…",
       running: "Рендеринг видео…",
+      rendering: "Рендеринг видео…",
       encoding: "Кодирование…",
     };
     const label = labels[step] || "Сборка видео…";
+    const pct = extra?.progress || 0;
+    const estSec = extra?.estimated_seconds;
+    const estimate = _formatEstimate(estSec, pct) || "~1-3 мин";
+    const queuePos = extra?.queue_position;
+    const queueHtml = queuePos > 1 ? `<div class="reels-progress-hint">В очереди: позиция ${queuePos}</div>` : "";
+    const barClass = pct > 0 ? "" : "reels-progress-bar-fill--indeterminate";
     return `
       <div class="reels-progress-container">
         <div class="reels-progress-header">
@@ -1757,11 +1815,13 @@ export function createReelsModule(deps) {
           <span class="reels-progress-label">${escapeHtml(label)}</span>
         </div>
         <div class="reels-progress-bar-track">
-          <div class="reels-progress-bar-fill reels-progress-bar-fill--indeterminate"></div>
+          <div class="reels-progress-bar-fill ${barClass}" style="width:${pct || 40}%"></div>
         </div>
         <div class="reels-progress-footer">
-          <span>~1-3 мин</span>
+          ${pct > 0 ? `<span>${pct}%</span>` : ""}
+          <span>Осталось ${estimate}</span>
         </div>
+        ${queueHtml}
         <div class="reels-progress-hint">Можно закрыть приложение — процесс продолжится на сервере.</div>
       </div>`;
   }
@@ -1807,7 +1867,11 @@ export function createReelsModule(deps) {
           else showUiNotice("Ошибка сборки: " + (st.error || ""), "error");
         } else {
           const el = document.getElementById("composeStatusContainer");
-          if (el) el.innerHTML = _renderComposeProgress(st.status || "running");
+          if (el) el.innerHTML = _renderComposeProgress(st.step || st.status || "running", {
+            progress: st.progress,
+            estimated_seconds: st.estimated_seconds,
+            queue_position: st.queue_position,
+          });
         }
       } catch (_e) { clearInterval(timer); _composeRunning = false; }
     }, 3000);
