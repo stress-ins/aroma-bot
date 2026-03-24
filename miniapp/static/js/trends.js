@@ -191,7 +191,7 @@ export function createTrendsModule(deps) {
             ${(p.reply_count || 0) ? `<span>${actionLabel("message-circle", p.reply_count)}</span>` : ""}
             ${(p.share_count || 0) ? `<span>${actionLabel("repeat", p.share_count)}</span>` : ""}
             ${(p.view_count || 0) ? `<span>${actionLabel("eye", p.view_count)}</span>` : ""}
-            ${(p.comment_count || 0) ? `<span>${actionLabel("quote", p.comment_count)}</span>` : ""}
+            ${(p.comment_count || 0) ? `<span>${actionLabel("copy", p.comment_count)}</span>` : ""}
           </div>
         </div>`;
       })
@@ -821,7 +821,7 @@ export function createTrendsModule(deps) {
           ${(post.reply_count || 0) ? actionLabel("message-circle", post.reply_count) : ""}
           ${(post.share_count || 0) ? actionLabel("repeat", post.share_count) : ""}
           ${(post.view_count || 0) ? actionLabel("eye", post.view_count) : ""}
-          ${(post.comment_count || 0) ? actionLabel("quote", post.comment_count) : ""}
+          ${(post.comment_count || 0) ? actionLabel("copy", post.comment_count) : ""}
         </div>
         ${post.permalink ? `<a href="${escapeHtml(post.permalink)}" target="_blank" class="btn btn-secondary" style="margin-top: 12px;">Открыть оригинал</a>` : ""}
         ${post.posted_at ? `<div class="detail-meta" style="margin-top: 8px; opacity: 0.6;">${escapeHtml(new Date(post.posted_at).toLocaleString("ru"))}</div>` : ""}
