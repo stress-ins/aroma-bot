@@ -188,20 +188,19 @@ export function createTrendsModule(deps) {
     const cards = topPosts
       .slice(0, 10)
       .map((p, i) => {
-        const eng = (p.like_count || 0) + (p.comment_count || 0) + (p.share_count || 0) + (p.reply_count || 0);
         const preview = escapeHtml((p.text || "").substring(0, 80));
         return `
         <div class="draft-card" data-action="openTrendsPost" data-args='[${i}]'>
           <div class="draft-card-header">
-            <span class="draft-card-topic">${escapeHtml(p.author_username || "")}</span>
-            <span class="draft-card-date">${actionLabel("heart", eng)}</span>
+            <span class="draft-card-topic">@${escapeHtml(p.author_username || "—")}</span>
           </div>
           <div class="draft-card-preview">${preview}${p.text && p.text.length > 80 ? "…" : ""}</div>
           <div class="draft-card-meta">
-            <span>${actionLabel("thumbs-up", p.like_count || 0)}</span>
-            <span>${actionLabel("message-circle", p.comment_count || 0)}</span>
-            ${p.share_count ? `<span>${actionLabel("repeat", p.share_count)}</span>` : ""}
-            ${p.reply_count ? `<span>${actionLabel("corner-down-right", p.reply_count)}</span>` : ""}
+            ${(p.like_count || 0) ? `<span>${actionLabel("heart", p.like_count)}</span>` : ""}
+            ${(p.reply_count || 0) ? `<span>${actionLabel("message-circle", p.reply_count)}</span>` : ""}
+            ${(p.share_count || 0) ? `<span>${actionLabel("repeat", p.share_count)}</span>` : ""}
+            ${(p.view_count || 0) ? `<span>${actionLabel("eye", p.view_count)}</span>` : ""}
+            ${(p.comment_count || 0) ? `<span>${actionLabel("copy", p.comment_count)}</span>` : ""}
           </div>
         </div>`;
       })
@@ -882,11 +881,11 @@ export function createTrendsModule(deps) {
         <div class="detail-section-title">${escapeHtml(post.author_username || "Пост")}</div>
         <div class="detail-text">${escapeHtml(post.text || "").replace(/\n/g, "<br>")}</div>
         <div class="detail-meta" style="margin-top: 12px;">
-          ${actionLabel("heart", post.like_count || 0)}
-          ${actionLabel("message-circle", post.comment_count || 0)}
-          ${post.share_count ? actionLabel("repeat", post.share_count) : ""}
-          ${post.reply_count ? actionLabel("corner-down-right", post.reply_count) : ""}
-          ${post.view_count ? actionLabel("eye", post.view_count) : ""}
+          ${(post.like_count || 0) ? actionLabel("heart", post.like_count) : ""}
+          ${(post.reply_count || 0) ? actionLabel("message-circle", post.reply_count) : ""}
+          ${(post.share_count || 0) ? actionLabel("repeat", post.share_count) : ""}
+          ${(post.view_count || 0) ? actionLabel("eye", post.view_count) : ""}
+          ${(post.comment_count || 0) ? actionLabel("copy", post.comment_count) : ""}
         </div>
         ${post.permalink ? `<a href="${escapeHtml(post.permalink)}" target="_blank" class="btn btn-secondary" style="margin-top: 12px;">Открыть оригинал</a>` : ""}
         ${post.posted_at ? `<div class="detail-meta" style="margin-top: 8px; opacity: 0.6;">${escapeHtml(new Date(post.posted_at).toLocaleString("ru"))}</div>` : ""}
