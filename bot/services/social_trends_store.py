@@ -325,6 +325,39 @@ async def list_teams_with_social_accounts() -> list[dict]:
         return teams
 
 
+async def get_account_collection_stats(
+    team_id: str,
+) -> list[dict]:
+    """Per-account collection stats: post count and last collected timestamp."""
+    async with AsyncSessionLocal() as session:
+        q = (
+            select(
+                SocialTrendPostModel.platform,
+                SocialTrendPostModel.source_value,
+                func.count(SocialTrendPostModel.id).label("post_count"),
+                func.max(SocialTrendPostModel.collected_at).label("last_collected"),
+            )
+            .where(
+                SocialTrendPostModel.team_id == team_id,
+                SocialTrendPostModel.source_type == "account",
+            )
+            .group_by(
+                SocialTrendPostModel.platform,
+                SocialTrendPostModel.source_value,
+            )
+        )
+        result = await session.execute(q)
+        return [
+            {
+                "platform": row.platform,
+                "source_value": row.source_value,
+                "post_count": row.post_count,
+                "last_collected": row.last_collected.isoformat() if row.last_collected else None,
+            }
+            for row in result.all()
+        ]
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

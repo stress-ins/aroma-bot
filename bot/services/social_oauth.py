@@ -33,6 +33,9 @@ INSTAGRAM_ME_URL = "https://graph.instagram.com/me"
 INSTAGRAM_DEFAULT_SCOPES = (
     "instagram_business_basic",
     "instagram_business_content_publish",
+    "instagram_business_manage_comments",
+    "instagram_business_manage_insights",
+    "instagram_business_manage_messages",
 )
 
 YOUTUBE_AUTHORIZE_URL = "https://accounts.google.com/o/oauth2/v2/auth"
