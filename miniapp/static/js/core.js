@@ -509,6 +509,8 @@ export function createCoreModule(deps) {
             `Лимит перегенераций: ${detail?.used ?? "?"}/${detail?.max ?? 5}. Создайте новую карточку.`,
             "error",
           );
+        } else if (errorType === "cooldown") {
+          // Don't show generic notice — let the caller handle cooldown UI
         } else {
           showUiNotice("Слишком много запросов. Подождите минуту.", "error");
         }
