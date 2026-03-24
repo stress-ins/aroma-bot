@@ -31,9 +31,15 @@ jobs:
     env:
       TELEGRAM_BOT_TOKEN: test-token
       REPORT_TARGET_CHAT_ID: test-chat
+      UV_SYSTEM_PYTHON: 1
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
 
       - name: Install uv
         uses: astral-sh/setup-uv@v4
@@ -41,11 +47,8 @@ jobs:
           enable-cache: true
           cache-dependency-glob: "requirements.txt"
 
-      - name: Set up Python
-        run: uv python install 3.13
-
       - name: Install dependencies
-        run: uv pip install --system --break-system-packages -r requirements.txt pytest pytest-timeout pytest-xdist pytest-cov
+        run: uv pip install -r requirements.txt pytest pytest-timeout pytest-xdist pytest-cov
 
       - name: Run tests
         run: python -m pytest tests/ -q --ignore=tests/ui --ignore=tests/smoke --timeout=60 -n auto -m "not slow"
@@ -59,9 +62,15 @@ jobs:
     env:
       TELEGRAM_BOT_TOKEN: test-token
       REPORT_TARGET_CHAT_ID: test-chat
+      UV_SYSTEM_PYTHON: 1
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
 
       - name: Install uv
         uses: astral-sh/setup-uv@v4
@@ -69,11 +78,8 @@ jobs:
           enable-cache: true
           cache-dependency-glob: "requirements.txt"
 
-      - name: Set up Python
-        run: uv python install 3.13
-
       - name: Install dependencies
-        run: uv pip install --system --break-system-packages -r requirements.txt pytest pytest-timeout
+        run: uv pip install -r requirements.txt pytest pytest-timeout
 
       - name: Cache Playwright browsers
         uses: actions/cache@v4
