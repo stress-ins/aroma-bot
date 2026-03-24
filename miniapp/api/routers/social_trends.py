@@ -7,6 +7,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException
 
 from bot.services.social_trends_store import (
+    get_account_collection_stats,
     get_best_posting_times,
     get_content_length_breakdown,
     get_format_breakdown,
@@ -85,6 +86,15 @@ async def trends_threads(
         "repost_leaders": repost_leaders,
         "period_days": period,
     }
+
+
+@router.get("/api/trends/account-stats")
+async def trends_account_stats(
+    ctx: TeamContext = Depends(require_team_role("viewer")),
+):
+    """Per-account collection stats: post count and last collected."""
+    stats = await get_account_collection_stats(ctx.team_id)
+    return {"accounts": stats}
 
 
 @router.post("/api/trends/refresh")
@@ -261,6 +271,25 @@ async def _run_team_collection(team_id: str) -> None:
             )
             # Keyword tagging for Threads posts
             await collector.tag_posts_by_keywords(brand_hashtags)
+
+        # Playwright fallback: if no API tokens, scrape public profiles
+        if not (ig_token and ig_uid) and ig_accounts:
+            try:
+                from analytics.playwright_scraper import run_playwright_collection
+
+                pw_result = await run_playwright_collection(team_id, ig_accounts, [])
+                logger.info("Playwright fallback IG: %d posts for team %s", pw_result["instagram"], team_id)
+            except Exception as pw_exc:
+                logger.warning("Playwright IG fallback failed for team %s: %s", team_id, pw_exc)
+
+        if not (th_token and th_uid) and th_accounts:
+            try:
+                from analytics.playwright_scraper import run_playwright_collection
+
+                pw_result = await run_playwright_collection(team_id, [], th_accounts)
+                logger.info("Playwright fallback Threads: %d posts for team %s", pw_result["threads"], team_id)
+            except Exception as pw_exc:
+                logger.warning("Playwright Threads fallback failed for team %s: %s", team_id, pw_exc)
 
         logger.info("Manual refresh complete for team %s", team_id)
     except Exception as exc:

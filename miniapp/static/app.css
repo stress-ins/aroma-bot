@@ -6385,6 +6385,21 @@ body.is-mobile-layout .detail-icon-actions button {
 .trends-time-eng { flex: 1; color: var(--text); }
 .trends-time-count { color: var(--hint); font-size: 12px; }
 
+/* Account collection stats */
+.keyword-chip--with-stat { flex-wrap: wrap; gap: 2px 8px; }
+.account-stat { font-size: 11px; color: var(--hint); font-weight: 400; }
+.account-stat--pending { font-style: italic; opacity: 0.6; }
+
+/* Repost leaders */
+.trends-repost-row {
+  display: flex; align-items: center; gap: 10px; padding: 8px 0;
+  border-bottom: 1px solid var(--border, #e0e0e0); font-size: 13px;
+}
+.trends-repost-row:last-child { border-bottom: none; }
+.trends-repost-author { font-weight: 600; min-width: 80px; color: var(--brand); white-space: nowrap; }
+.trends-repost-count { white-space: nowrap; color: var(--text); display: flex; align-items: center; gap: 4px; }
+.trends-repost-preview { flex: 1; color: var(--hint); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 /* Comparison */
 .trends-compare-cards { display: flex; gap: 10px; padding: 8px 14px; }
 .trends-compare-card {

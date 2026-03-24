@@ -286,6 +286,47 @@ class TestTrackedHashtags:
         assert resp.json()["detail"] == "already_tracked"
 
 
+class TestAccountStats:
+    async def test_account_stats(self, _seed_team_and_posts):
+        team = _seed_team_and_posts
+        from miniapp_server import app
+        client = TestClient(app)
+        resp = client.get(
+            "/api/trends/account-stats",
+            headers={**HEADERS, "X-Team-Id": team.team_id},
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "accounts" in data
+        accounts = data["accounts"]
+        assert len(accounts) >= 2  # ig + threads
+        # Each has platform, source_value, post_count, last_collected
+        for a in accounts:
+            assert "platform" in a
+            assert "post_count" in a
+            assert a["post_count"] > 0
+            assert "last_collected" in a
+
+
+class TestRepostLeaders:
+    async def test_threads_repost_leaders(self, _seed_team_and_posts):
+        team = _seed_team_and_posts
+        from miniapp_server import app
+        client = TestClient(app)
+        resp = client.get(
+            "/api/trends/threads?period=7",
+            headers={**HEADERS, "X-Team-Id": team.team_id},
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "repost_leaders" in data
+        leaders = data["repost_leaders"]
+        assert len(leaders) > 0
+        # Should be sorted by share_count descending
+        share_counts = [l.get("share_count", 0) for l in leaders]
+        assert share_counts == sorted(share_counts, reverse=True)
+
+
 class TestRefreshEndpoint:
     async def test_refresh_returns_started(self, _seed_team_and_posts):
         team = _seed_team_and_posts

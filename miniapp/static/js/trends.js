@@ -39,6 +39,7 @@ export function createTrendsModule(deps) {
   let trendsCompare = null;
   let monitoredAccounts = { instagram: [], threads: [] };
   let trackedHashtags = [];
+  let accountStats = [];
 
   const WEEKDAY_LABELS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 
@@ -56,11 +57,12 @@ export function createTrendsModule(deps) {
           : fetchJson(`/api/trends/${trendsPlatform}?period=${trendsPeriod}`),
         fetchJson("/api/social/monitored-accounts"),
         fetchJson("/api/social/tracked-hashtags"),
+        fetchJson("/api/trends/account-stats"),
       ];
       if (trendsPlatform !== "compare") {
         promises.push(fetchJson(`/api/trends/suggestions?platform=${trendsPlatform}`));
       }
-      const [trendsResult, accountsResult, hashtagsResult, suggestionsResult] = await Promise.allSettled(promises);
+      const [trendsResult, accountsResult, hashtagsResult, statsResult, suggestionsResult] = await Promise.allSettled(promises);
 
       if (trendsPlatform === "compare") {
         trendsCompare = trendsResult.status === "fulfilled" ? trendsResult.value : null;
@@ -75,6 +77,9 @@ export function createTrendsModule(deps) {
       }
       if (hashtagsResult.status === "fulfilled") {
         trackedHashtags = (hashtagsResult.value || {}).items || [];
+      }
+      if (statsResult && statsResult.status === "fulfilled") {
+        accountStats = (statsResult.value || {}).accounts || [];
       }
       if (suggestionsResult && suggestionsResult.status === "fulfilled") {
         suggestionsData = suggestionsResult.value;
@@ -361,6 +366,12 @@ export function createTrendsModule(deps) {
       sections.push(renderBestTimes(times));
     }
 
+    // Repost leaders (Threads)
+    const repostLeaders = trendsData.repost_leaders || [];
+    if (repostLeaders.length > 0) {
+      sections.push(renderRepostLeaders(repostLeaders));
+    }
+
     // Content lengths (Threads)
     const lengths = trendsData.content_lengths;
     if (lengths) {
@@ -573,6 +584,28 @@ export function createTrendsModule(deps) {
       </div>`;
   }
 
+  function renderRepostLeaders(leaders) {
+    const items = leaders
+      .filter((p) => (p.share_count || 0) > 0)
+      .map(
+        (p) => `
+      <div class="trends-repost-row">
+        <span class="trends-repost-author">@${escapeHtml(p.author_username || "—")}</span>
+        <span class="trends-repost-count">${actionLabel("repeat", p.share_count || 0)} репостов</span>
+        <span class="trends-repost-preview">${escapeHtml((p.text || "").substring(0, 60))}${(p.text || "").length > 60 ? "…" : ""}</span>
+      </div>`
+      )
+      .join("");
+
+    if (!items) return "";
+
+    return `
+      <div class="detail-section">
+        <div class="detail-section-title">${uiIcon("repeat", 16)} Лидеры репостов</div>
+        ${items}
+      </div>`;
+  }
+
   function renderDetailLoader() {
     return `<div class="detail-loader"><div class="loader"></div> Загрузка трендов…</div>`;
   }
@@ -583,12 +616,30 @@ export function createTrendsModule(deps) {
     const igAccounts = monitoredAccounts.instagram || [];
     const thAccounts = monitoredAccounts.threads || [];
 
+    const _formatRelative = (isoStr) => {
+      if (!isoStr) return "";
+      const d = new Date(isoStr);
+      const now = new Date();
+      const diffMs = now - d;
+      const diffMin = Math.floor(diffMs / 60000);
+      if (diffMin < 60) return `${diffMin} мин назад`;
+      const diffH = Math.floor(diffMin / 60);
+      if (diffH < 24) return `${diffH} ч назад`;
+      const diffD = Math.floor(diffH / 24);
+      return `${diffD} д назад`;
+    };
+
     const renderAccountChips = (accounts, platform) => {
       if (accounts.length === 0) return `<span class="plan-entry-hint">Нет аккаунтов</span>`;
       return accounts.map((a) => {
         const username = a.username || a;
-        return `<span class="keyword-chip">
+        const stat = accountStats.find((s) => s.platform === platform && s.source_value === `@${username}`);
+        const statHtml = stat
+          ? `<span class="account-stat">${stat.post_count} пост. · ${_formatRelative(stat.last_collected)}</span>`
+          : `<span class="account-stat account-stat--pending">ожидает сбора</span>`;
+        return `<span class="keyword-chip keyword-chip--with-stat">
           <span>@${escapeHtml(username)}</span>
+          ${statHtml}
           <button type="button" aria-label="Удалить" data-action="removeMonitoredAccount" data-args='${JSON.stringify([platform, username])}'><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
         </span>`;
       }).join("");
