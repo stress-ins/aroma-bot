@@ -966,8 +966,7 @@ export function createReelsModule(deps) {
             </label>
           </div>
           <label style="display:flex;align-items:center;gap:8px;margin:8px 0;font-size:13px">
-            <input type="checkbox" id="cleanUseWhisper" /> Whisper транскрипция
-            <span style="font-size:11px;color:var(--muted);display:block;margin-top:2px">Требует много памяти. Включайте только для коротких видео (&lt;30 сек)</span>
+            <input type="checkbox" id="cleanUseWhisper" checked /> Распознавание речи (находит слова-паразиты точнее)
           </label>
           <button class="secondary-button" type="button" data-action="cleanReelsVideo" data-args='${JSON.stringify([r.draft_id, null])}'>
             ${actionLabel("scissors", "Очистить видео")}
@@ -1475,10 +1474,12 @@ export function createReelsModule(deps) {
   function _renderCleanProgress(step, progress, extra) {
     const label = CLEAN_STEP_LABELS[step] || "Обработка…";
     const pct = Math.min(Math.max(progress || 0, 0), 100);
-    const estSec = extra?.estimated_seconds;
-    const estimate = _formatEstimate(estSec, pct) || (pct < 30 ? "~2-4 мин" : pct < 70 ? "~1-2 мин" : "почти готово");
-    const queuePos = extra?.queue_position;
-    const queueHtml = queuePos > 1 ? `<div class="reels-progress-hint">В очереди: позиция ${queuePos}</div>` : "";
+    const queuePos = extra?.queue_position || 0;
+    // Add queue wait time: ~5 min per task ahead
+    const queueExtra = queuePos > 1 ? (queuePos - 1) * 300 : 0;
+    const estSec = (extra?.estimated_seconds || 0) + queueExtra;
+    const estimate = estSec > 0 ? _formatEstimate(estSec, pct) : (pct < 30 ? "~5-8 мин" : pct < 70 ? "~2-4 мин" : "почти готово");
+    const queueHtml = queuePos > 1 ? `<div class="reels-progress-hint">В очереди: позиция ${queuePos}. Перед вами ещё ${queuePos - 1} видео.</div>` : "";
     return `
       <div class="reels-progress-container">
         <div class="reels-progress-header">
@@ -1494,6 +1495,9 @@ export function createReelsModule(deps) {
         </div>
         ${queueHtml}
         <div class="reels-progress-hint">Можно закрыть приложение — процесс продолжится на сервере.</div>
+        <button class="secondary-button compact" type="button" data-action="notifyWhenReady" style="margin-top:8px;width:100%">
+          ${uiIcon("bell")} Уведомить в Telegram по готовности
+        </button>
       </div>`;
   }
 
@@ -1565,12 +1569,10 @@ export function createReelsModule(deps) {
           <div class="reels-progress-header">
             ${uiIcon("warning")}
             <span class="reels-progress-label" style="color:var(--danger, #e53935)">
-              ${isOom ? "Не хватило памяти на сервере" : "Очистка не удалась"}
+              ${isOom ? "Сервер перегружен. Попробуйте позже." : "Очистка не удалась"}
             </span>
           </div>
-          <div class="reels-progress-hint">
-            ${isOom ? "Попробуйте отключить Whisper транскрипцию или загрузить видео покороче." : escapeHtml(errMsg.substring(0, 150))}
-          </div>
+          <div class="reels-progress-hint">Нажмите «Очистить видео» чтобы повторить.</div>
         </div>`;
       // Re-enable button
       const cleanBtn = container.closest(".section")?.querySelector('[data-action="cleanReelsVideo"]');
@@ -1906,6 +1908,9 @@ export function createReelsModule(deps) {
         </div>
         ${queueHtml}
         <div class="reels-progress-hint">Можно закрыть приложение — процесс продолжится на сервере.</div>
+        <button class="secondary-button compact" type="button" data-action="notifyWhenReady" style="margin-top:8px;width:100%">
+          ${uiIcon("bell")} Уведомить в Telegram по готовности
+        </button>
       </div>`;
   }
 
@@ -2015,6 +2020,16 @@ export function createReelsModule(deps) {
     }, "Готово");
   }
 
+  async function notifyWhenReady(btn) {
+    try {
+      await fetchJson("/api/reels/notify-when-ready", { method: "POST" });
+      showUiNotice("Бот напишет вам в Telegram когда будет готово", "success");
+      if (btn) { btn.disabled = true; btn.textContent = "Уведомление включено ✓"; }
+    } catch (_e) {
+      showUiNotice("Уведомление уже настроено", "info");
+    }
+  }
+
   // Toggle YouTube settings visibility when checkbox changes
   document.body.addEventListener("change", (e) => {
     if (e.target?.name === "publish_platform" && e.target?.value === "youtube") {
@@ -2091,11 +2106,13 @@ export function createReelsModule(deps) {
     openReelsImageFullscreen,
     openReelsPreview,
     openBotUploadLink,
+    notifyWhenReady,
     // Screen 5 video tools
     jumpToReelsStep,
     runTechCheck,
     composeReelsVideo,
     reuploadVideo,
     proceedToPublish,
+    notifyWhenReady,
   };
 }

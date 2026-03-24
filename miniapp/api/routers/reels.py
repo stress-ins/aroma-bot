@@ -709,6 +709,41 @@ async def reels_preview_frames(
     return {"draft_id": draft_id, "preview_urls": urls, "count": len(urls)}
 
 
+# ── Notification subscription ────────────────────────────────────────────────
+
+
+@router.post("/api/reels/notify-when-ready")
+async def reels_notify_when_ready(
+    user_data: dict = Depends(_resolve_init_data),
+):
+    """Subscribe current user to Telegram notification when video task completes."""
+    from bot.services.video_task_worker import subscribe_notification
+
+    telegram_id = user_data.get("id") or user_data.get("user_id")
+    if not telegram_id:
+        raise HTTPException(status_code=400, detail="no_user_id")
+
+    # Subscribe to all active tasks
+    from bot.services.video_task_store import AsyncSessionLocal
+    from db.models import VideoTaskModel
+    from sqlalchemy import select
+
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(
+            select(VideoTaskModel.draft_id)
+            .where(VideoTaskModel.status.in_(["pending", "running"]))
+        )
+        draft_ids = [r[0] for r in result.all()]
+
+    if not draft_ids:
+        raise HTTPException(status_code=404, detail="no_active_tasks")
+
+    for did in draft_ids:
+        subscribe_notification(did, int(telegram_id))
+
+    return {"subscribed": len(draft_ids)}
+
+
 # ── Video upload & cleaning ──────────────────────────────────────────────────
 
 
