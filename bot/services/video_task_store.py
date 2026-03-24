@@ -53,15 +53,18 @@ async def enqueue_task(
         return task
 
 
-async def claim_next_task() -> VideoTaskModel | None:
-    """Claim the oldest pending task. Returns None if queue empty."""
+async def claim_next_task(
+    task_types: tuple[str, ...] | None = None,
+) -> VideoTaskModel | None:
+    """Claim the oldest pending task. Optionally filter by task_types."""
     async with AsyncSessionLocal() as session:
         q = (
             select(VideoTaskModel)
             .where(VideoTaskModel.status == "pending")
-            .order_by(VideoTaskModel.created_at.asc())
-            .limit(1)
         )
+        if task_types:
+            q = q.where(VideoTaskModel.task_type.in_(task_types))
+        q = q.order_by(VideoTaskModel.created_at.asc()).limit(1)
         result = await session.execute(q)
         task = result.scalar_one_or_none()
         if not task:
@@ -162,13 +165,19 @@ async def get_queue_position(task_id: str) -> int:
         return -1
 
 
-async def recover_interrupted_tasks() -> int:
+async def recover_interrupted_tasks(
+    task_types: tuple[str, ...] | None = None,
+) -> int:
     """Reset any 'running' tasks back to 'pending' (after server restart)."""
     async with AsyncSessionLocal() as session:
-        result = await session.execute(
+        stmt = (
             update(VideoTaskModel)
             .where(VideoTaskModel.status == "running")
-            .values(status="pending", step="", progress=0)
+        )
+        if task_types:
+            stmt = stmt.where(VideoTaskModel.task_type.in_(task_types))
+        result = await session.execute(
+            stmt.values(status="pending", step="", progress=0)
         )
         await session.commit()
         return result.rowcount or 0

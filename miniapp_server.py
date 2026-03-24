@@ -79,6 +79,10 @@ async def _lifespan(app: FastAPI):  # noqa: ARG001
     from bot.services.video_task_worker import start_worker as _start_video_worker
     await _start_video_worker()
 
+    # Start Canva task worker (background export/import)
+    from bot.services.canva_task_worker import start_worker as _start_canva_worker
+    await _start_canva_worker()
+
     recovery_lock = _acquire_startup_recovery_lock()
     try:
         if recovery_lock is not None:

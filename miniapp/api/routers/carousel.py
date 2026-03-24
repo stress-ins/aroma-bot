@@ -387,13 +387,22 @@ async def carousel_canva_status(draft_id: str, _: None = Depends(_require_auth))
 
 @router.post("/api/carousel/{draft_id}/canva/export")
 async def carousel_canva_export(draft_id: str, _: None = Depends(_require_auth)):
-    """Generate PPTX from carousel draft and upload to Canva."""
-    from bot.services.canva_api import export_to_canva, CanvaAPIError
+    """Build PPTX and enqueue Canva upload as background task. Returns 202."""
+    from pathlib import Path
+    from bot.services.video_task_store import enqueue_task, get_active_task_for_draft
+    from bot.services.carousel_assets import CAROUSEL_ASSETS_DIR
+    from bot.services import canva_task_worker
+    from fastapi.responses import JSONResponse
 
     draft = await get_draft(draft_id)
     if not draft or draft.kind != "carousel":
         raise HTTPException(status_code=404, detail="carousel_not_found")
 
+    existing = await get_active_task_for_draft(draft_id, "canva_export")
+    if existing:
+        return JSONResponse(status_code=409, content={"detail": "canva_export_already_running", "task_id": existing.task_id})
+
+    # Build PPTX synchronously (fast, ~1-2s)
     slides = list(draft.payload.get("slides", []))
     images = load_carousel_slide_images(draft_id, list(draft.payload.get("slide_images", [])))
     placement_data = draft.payload.get("placement_data")
@@ -406,16 +415,27 @@ async def carousel_canva_export(draft_id: str, _: None = Depends(_require_auth))
     else:
         pptx_bytes = await asyncio.get_running_loop().run_in_executor(None, _build_pptx, slides, images or None)
 
+    # Save PPTX to temp file for the worker
+    pptx_dir = CAROUSEL_ASSETS_DIR / draft_id
+    pptx_dir.mkdir(parents=True, exist_ok=True)
+    pptx_path = pptx_dir / "_canva_export.pptx"
+    pptx_path.write_bytes(pptx_bytes)
+
     first_slide = (draft.payload.get("slides") or [None])[0]
     heading = ((first_slide.get("heading", "") if isinstance(first_slide, dict) else "") or draft.payload.get("angle", "") or draft.topic or "").strip()
     title = f"#{draft.draft_id} {heading}" if heading else f"Carousel #{draft.draft_id}"
-    try:
-        result = await export_to_canva(pptx_bytes, title)
-    except CanvaAPIError as exc:
-        logger.error("Canva export failed: %s", exc)
-        raise HTTPException(status_code=502, detail="canva_export_failed")
 
-    return result
+    task = await enqueue_task(draft_id, "canva_export", {"pptx_path": str(pptx_path), "title": title})
+
+    key = canva_task_worker._status_key(draft_id, "canva_export")
+    canva_task_worker.live_status[key] = {
+        "task_id": task.task_id, "task_type": "canva_export",
+        "status": "pending", "step": "queued",
+    }
+
+    return JSONResponse(status_code=202, content={
+        "draft_id": draft_id, "task_id": task.task_id, "status": "pending",
+    })
 
 
 @router.get("/api/carousel/{draft_id}/canva/designs")
@@ -437,58 +457,118 @@ async def carousel_canva_import(
     body: CanvaImportPayload,
     _: None = Depends(_require_auth),
 ):
-    """Export a design from Canva as PPTX, extract images, update draft."""
-    from bot.services.canva_api import export_canva_design, CanvaAPIError
+    """Enqueue Canva design import as background task. Returns 202."""
+    from bot.services.video_task_store import enqueue_task, get_active_task_for_draft
+    from bot.services import canva_task_worker
+    from fastapi.responses import JSONResponse
 
     draft = await get_draft(draft_id)
     if not draft or draft.kind != "carousel":
         raise HTTPException(status_code=404, detail="carousel_not_found")
 
-    try:
-        pptx_bytes = await export_canva_design(body.design_id)
-    except CanvaAPIError as exc:
-        logger.error("Canva import failed: %s", exc)
-        raise HTTPException(status_code=502, detail="canva_import_failed")
+    existing = await get_active_task_for_draft(draft_id, "canva_import")
+    if existing:
+        return JSONResponse(status_code=409, content={"detail": "canva_import_already_running", "task_id": existing.task_id})
 
-    if not pptx_bytes:
-        raise HTTPException(status_code=400, detail="empty_export")
+    task = await enqueue_task(draft_id, "canva_import", {"design_id": body.design_id})
 
-    loop = asyncio.get_running_loop()
-    images = await loop.run_in_executor(None, extract_images_from_pptx, pptx_bytes)
-    if not images or all(img is None for img in images):
-        raise HTTPException(status_code=400, detail="no_images_found_in_pptx")
+    key = canva_task_worker._status_key(draft_id, "canva_import")
+    canva_task_worker.live_status[key] = {
+        "task_id": task.task_id, "task_type": "canva_import",
+        "status": "pending", "step": "queued",
+    }
 
-    img_prompts: list[str] = list(draft.payload.get("img_prompts", []))
-    slide_images: list[dict | None] = list(draft.payload.get("slide_images", []))
-    slide_versions: list[list] = list(draft.payload.get("slide_image_versions", []))
+    return JSONResponse(status_code=202, content={
+        "draft_id": draft_id, "task_id": task.task_id, "status": "pending",
+    })
 
-    while len(slide_images) < len(images):
-        slide_images.append(None)
-    while len(slide_versions) < len(images):
-        slide_versions.append([])
 
-    for i, img_bytes in enumerate(images):
-        if img_bytes is None:
-            continue
-        prompt = img_prompts[i] if i < len(img_prompts) else "canva_import"
-        version = save_carousel_slide_asset(draft_id, i, img_bytes, prompt=f"canva_import: {prompt}")
-        slide_images[i] = version
-        if i < len(slide_versions):
-            slide_versions[i].append(version)
+@router.get("/api/carousel/{draft_id}/canva/task-status")
+async def carousel_canva_task_status(draft_id: str, _: None = Depends(_require_auth)):
+    """Check Canva background task status (polling fallback)."""
+    from bot.services import canva_task_worker
+    from bot.services.video_task_store import get_active_task_for_draft
 
-    payload = dict(draft.payload)
-    payload["slide_images"] = slide_images
-    payload["slide_image_versions"] = slide_versions
-    payload["images_ready"] = sum(1 for img in slide_images if img)
-    payload["canva_design_id"] = body.design_id
+    # Check live in-memory status first
+    for tt in ("canva_export", "canva_import"):
+        key = canva_task_worker._status_key(draft_id, tt)
+        live = canva_task_worker.live_status.get(key)
+        if live and live.get("status") not in (None, "idle"):
+            resp: dict = {"draft_id": draft_id, "task_type": tt, "status": live["status"], "step": live.get("step", "")}
+            if live.get("result"):
+                resp["result"] = live["result"]
+            if live.get("error"):
+                resp["error"] = live["error"]
+            return resp
 
-    await update_draft(draft_id, payload=payload, status="approved")
-    await create_revision(draft_id, payload, author="canva_import", note=f"Canva design import: {body.design_id}")
+    # Fall back to DB
+    for tt in ("canva_export", "canva_import"):
+        task = await get_active_task_for_draft(draft_id, tt)
+        if task:
+            resp = {"draft_id": draft_id, "task_type": tt, "status": task.status, "step": task.step or "queued"}
+            if task.result:
+                resp["result"] = task.result
+            if task.error:
+                resp["error"] = task.error
+            return resp
 
-    refreshed = await get_draft(draft_id)
-    if not refreshed:
-        raise HTTPException(status_code=404, detail="carousel_not_found")
-    return await serialize_draft(refreshed)
+    return {"draft_id": draft_id, "status": "idle"}
+
+
+@router.get("/api/carousel/{draft_id}/canva/stream")
+async def carousel_canva_stream(draft_id: str, _: str = Depends(_resolve_init_data)):
+    """SSE stream for Canva task progress."""
+    from bot.services import canva_task_worker
+
+    async def _event_generator():
+        # Determine which task type is active
+        active_type = None
+        for tt in ("canva_export", "canva_import"):
+            key = canva_task_worker._status_key(draft_id, tt)
+            if canva_task_worker.live_status.get(key):
+                active_type = tt
+                break
+
+        if not active_type:
+            yield sse_msg({"draft_id": draft_id, "status": "idle"})
+            return
+
+        key = canva_task_worker._status_key(draft_id, active_type)
+        evt = canva_task_worker.get_event(draft_id, active_type)
+
+        for _ in range(180):  # max ~6 min
+            live = canva_task_worker.live_status.get(key)
+            if not live:
+                yield sse_msg({"draft_id": draft_id, "status": "idle"})
+                return
+
+            msg: dict = {
+                "draft_id": draft_id,
+                "task_type": active_type,
+                "status": live["status"],
+                "step": live.get("step", ""),
+            }
+            if live.get("result"):
+                msg["result"] = live["result"]
+            if live.get("error"):
+                msg["error"] = live["error"]
+
+            yield sse_msg(msg)
+
+            if live["status"] in ("completed", "failed"):
+                return
+
+            evt.clear()
+            try:
+                await asyncio.wait_for(evt.wait(), timeout=2.0)
+            except asyncio.TimeoutError:
+                pass
+
+    return StreamingResponse(
+        _event_generator(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "Connection": "keep-alive", "X-Accel-Buffering": "no"},
+    )
 
 
 # ── SSE stream for real-time carousel generation updates ────────────────
