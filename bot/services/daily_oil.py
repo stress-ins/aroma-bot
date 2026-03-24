@@ -417,8 +417,12 @@ async def select_daily_oil(target_date: str) -> DailyOilModel:
                     None, partial(_generate_fact_and_practice, existing.name, existing.context)
                 )
                 if fact or practice:
-                    existing.fact = fact
-                    existing.daily_practice = practice
+                    from bot.services.humanizer import humanize, humanize_llm  # noqa: PLC0415
+
+                    existing.fact = humanize_llm(humanize(fact), "daily_oil") if fact else fact
+                    existing.daily_practice = (
+                        humanize_llm(humanize(practice), "daily_oil") if practice else practice
+                    )
                     await session.commit()
                     await session.refresh(existing)
             return existing
@@ -463,6 +467,13 @@ async def select_daily_oil(target_date: str) -> DailyOilModel:
         fact, practice = await loop.run_in_executor(
             None, partial(_generate_fact_and_practice, chosen.name, ctx)
         )
+
+        # Humanize all generated text: remove AI artifacts, em-dashes, markdown
+        from bot.services.humanizer import humanize, humanize_llm  # noqa: PLC0415
+
+        fact = humanize_llm(humanize(fact), "daily_oil") if fact else fact
+        practice = humanize_llm(humanize(practice), "daily_oil") if practice else practice
+        reason = humanize(reason) if reason else reason
 
         row = DailyOilModel(
             date=target_date,
