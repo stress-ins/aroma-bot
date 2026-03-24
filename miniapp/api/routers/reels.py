@@ -97,9 +97,11 @@ async def reels_regen_concept(
     background_tasks: BackgroundTasks,
     _: None = Depends(_require_auth),
 ):
+    from bot.services.draft_revisions_store import snapshot_before_regen
     draft = await serialize_reels_draft(draft_id)
     if not draft:
         raise HTTPException(status_code=404, detail="reels_not_found")
+    await snapshot_before_regen(draft_id, note="regen concept")
     topic = str(draft.get("topic", ""))
     payload_data = draft.get("payload", {})
     goal = str(payload_data.get("goal", "trust")) if isinstance(payload_data, dict) else "trust"
@@ -115,9 +117,11 @@ async def reels_regen_scenario(
     background_tasks: BackgroundTasks,
     _: None = Depends(_require_auth),
 ):
+    from bot.services.draft_revisions_store import snapshot_before_regen
     draft = await serialize_reels_draft(draft_id)
     if not draft:
         raise HTTPException(status_code=404, detail="reels_not_found")
+    await snapshot_before_regen(draft_id, note="regen scenario")
     await set_generation_state(draft_id, pending=True, stage="scenario", message="Перегенерирую сценарий рилса.")
     background_tasks.add_task(complete_reels_v2_regen_scenario_only, draft_id)
     return await serialize_reels_draft(draft_id)
@@ -389,7 +393,13 @@ async def reels_scenario_update(
     payload: ReelsScenarioPayload,
     _: None = Depends(_require_auth),
 ):
-    draft = await update_reels_scenario(draft_id, payload.scenario, payload.concept)
+    if payload.revision_note.strip():
+        from bot.services.draft_revisions_store import snapshot_before_regen
+        await snapshot_before_regen(draft_id, note=payload.revision_note.strip())
+    draft = await update_reels_scenario(
+        draft_id, payload.scenario, payload.concept,
+        revision_note=payload.revision_note,
+    )
     if not draft:
         raise HTTPException(status_code=404, detail="reels_not_found")
     return draft
@@ -401,6 +411,8 @@ async def reels_storyboard_regenerate(
     background_tasks: BackgroundTasks,
     _: None = Depends(_require_auth),
 ):
+    from bot.services.draft_revisions_store import snapshot_before_regen
+    await snapshot_before_regen(draft_id, note="regen storyboard")
     draft = await regenerate_reels_storyboard(draft_id)
     if not draft:
         raise HTTPException(status_code=404, detail="reels_not_found")

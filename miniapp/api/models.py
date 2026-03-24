@@ -44,6 +44,7 @@ class ReelsFramePromptPayload(BaseModel):
 class ReelsScenarioPayload(BaseModel):
     scenario: str = Field(default="")
     concept: str = Field(default="")
+    revision_note: str = Field(default="")
 
 
 class ReelsFrameFieldsPayload(BaseModel):

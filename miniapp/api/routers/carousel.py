@@ -119,6 +119,8 @@ async def regenerate_carousel_slide(
             status_code=429,
             detail={"error": "regen_limit", "used": regen_count, "max": REGEN_LIMIT_PER_CARD},
         )
+    from bot.services.draft_revisions_store import snapshot_before_regen
+    await snapshot_before_regen(draft_id, note=payload.note or f"regen slide {slide_index}")
     await set_generation_state(
         draft_id, pending=True, stage="images",
         message="Перегенерирую картинку для слайда.",
