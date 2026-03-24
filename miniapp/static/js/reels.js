@@ -1562,17 +1562,15 @@ export function createReelsModule(deps) {
       _cleanMaxProgress = 0;
       _cleanLastStep = "";
       _cleanRunning = false;
-      const errMsg = st.error || "неизвестная ошибка";
-      const isOom = errMsg.includes("rc=-9") || errMsg.includes("OOM") || errMsg.includes("killed");
       container.innerHTML = `
         <div class="reels-progress-container" style="border-color:var(--danger, #e53935)">
           <div class="reels-progress-header">
             ${uiIcon("warning")}
             <span class="reels-progress-label" style="color:var(--danger, #e53935)">
-              ${isOom ? "Сервер перегружен. Попробуйте позже." : "Очистка не удалась"}
+              Не получилось обработать видео
             </span>
           </div>
-          <div class="reels-progress-hint">Нажмите «Очистить видео» чтобы повторить.</div>
+          <div class="reels-progress-hint">Попробуйте ещё раз. Если ошибка повторяется — мы уже в курсе и работаем над этим.</div>
         </div>`;
       // Re-enable button
       const cleanBtn = container.closest(".section")?.querySelector('[data-action="cleanReelsVideo"]');
