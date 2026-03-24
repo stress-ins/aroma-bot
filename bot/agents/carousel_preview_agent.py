@@ -662,9 +662,16 @@ async def generate_slide_preview(draft_id: str, slide_index: int) -> bytes:
 
         loop = asyncio.get_running_loop()
         preview = await loop.run_in_executor(
-            None, render_editorial_png,
-            img_bytes, text, slide_index, accent_rgb,
-            (18, 18, 22), (1080, 1350), username, None, is_hook, is_bullet,
+            None, lambda: render_editorial_png(
+                img_bytes, text,
+                slide_index=slide_index,
+                accent_color=accent_rgb,
+                bg_color=(18, 18, 22),
+                size=(1080, 1350),
+                username=username,
+                is_hook=is_hook,
+                is_bullet_list=is_bullet,
+            ),
         )
         return preview
 

@@ -197,12 +197,21 @@ async def populate_carousel_slide_assets(draft_id: str, layout_style: str = "ove
                 image_bytes = result.image_bytes
                 if effective_layout == "editorial":
                     slide_text = draft.payload.get("slides", [])[i] if i < len(draft.payload.get("slides", [])) else ""
+                    accent = draft.payload.get("accent_color", [138, 92, 246])
+                    accent_rgb = tuple(accent) if isinstance(accent, list) and len(accent) == 3 else (138, 92, 246)
+                    brand_user = draft.payload.get("brand_username", "")
+                    is_hook = i == 0
+                    is_bullet = "\n•" in slide_text or "\n-" in slide_text or "\n*" in slide_text
                     try:
                         from bot.agents.carousel_editorial import render_editorial_png
                         image_bytes = render_editorial_png(
                             image_bytes,
                             slide_text,
                             slide_index=i,
+                            accent_color=accent_rgb,
+                            username=brand_user,
+                            is_hook=is_hook,
+                            is_bullet_list=is_bullet,
                         )
                     except Exception:
                         logger.exception("carousel_assets: editorial render failed for slide %d, using raw", i + 1)
