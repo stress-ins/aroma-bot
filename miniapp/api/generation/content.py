@@ -152,18 +152,23 @@ async def complete_threads_series_generation(
 
         draft_obj = await generate_content_draft(enriched_topic, goal_key, "threads_series", blend_context=blend_context, rag_context=rag_context)
         ts_payload = build_threads_series_payload(draft_obj, goal_key=goal_key, emotion=emotion)
-        has_content = any(p.get("text") for p in ts_payload.get("threads_posts", []))
-        if not has_content:
-            # Retry once with explicit marker instructions
+        # Check ALL 3 slots have content, not just any
+        all_slots_filled = all(p.get("text") for p in ts_payload.get("threads_posts", []))
+        if not all_slots_filled:
             import logging as _logging
+            empty_slots = [p["slot"] for p in ts_payload.get("threads_posts", []) if not p.get("text")]
             _logging.getLogger(__name__).warning(
-                "threads_series first attempt produced 0 posts for %s, retrying with marker hint", draft_id,
+                "threads_series first attempt has empty slots %s for %s, retrying with marker hint",
+                empty_slots, draft_id,
             )
-            retry_topic = enriched_topic + "\n\nВАЖНО: используй ТОЧНО три маркера: УТРО, ДЕНЬ, ВЕЧЕР — каждый на отдельной строке."
+            retry_topic = enriched_topic + (
+                "\n\nВАЖНО: используй ТОЧНО три маркера: УТРО, ДЕНЬ, ВЕЧЕР — каждый на отдельной строке."
+                " Все три секции ОБЯЗАТЕЛЬНЫ. Пропуск любой секции = провал задания."
+            )
             draft_obj = await generate_content_draft(retry_topic, goal_key, "threads_series", blend_context=blend_context)
             ts_payload = build_threads_series_payload(draft_obj, goal_key=goal_key, emotion=emotion)
-            has_content = any(p.get("text") for p in ts_payload.get("threads_posts", []))
-            if not has_content:
+            has_any_content = any(p.get("text") for p in ts_payload.get("threads_posts", []))
+            if not has_any_content:
                 raise RuntimeError("threads_series generation produced 0 posts after retry")
         if blend_context:
             ts_payload["blend_context"] = blend_context
