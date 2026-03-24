@@ -1657,6 +1657,7 @@ const {
   scheduleReelsRefresh,
   showUiNotice,
   getInitDataHeaders,
+  formatPlanDate,
   callbacks: reelsCallbacks,
 });
 
