@@ -84,6 +84,74 @@ class ThreadsTrendsCollector:
                     )
         return total
 
+    async def collect_from_keyword_search(self, keywords: list[str]) -> int:
+        """Search Threads for posts matching keywords via GET /keyword_search.
+        Requires threads_keyword_search scope. Returns total upserted count."""
+        if not keywords:
+            return 0
+
+        total = 0
+        cutoff = datetime.now(timezone.utc) - timedelta(days=_MAX_AGE_DAYS)
+        fields = "id,text,timestamp,permalink,username,media_type"
+
+        async with httpx.AsyncClient(timeout=30) as client:
+            for kw in keywords:
+                kw_clean = kw.strip().lstrip("#")
+                if not kw_clean:
+                    continue
+                try:
+                    await self._rate_check()
+                    resp = await client.get(
+                        f"{GRAPH_URL}/keyword_search",
+                        params={
+                            "q": kw_clean,
+                            "search_type": "TOP",
+                            "fields": fields,
+                            "limit": 25,
+                            "access_token": self._token,
+                        },
+                    )
+                    self._request_count += 1
+
+                    if resp.status_code != 200:
+                        _log_api_error(resp, f"Threads keyword_search '{kw_clean}'")
+                        continue
+
+                    posts = resp.json().get("data", [])
+                    for post in posts:
+                        posted_at = _parse_timestamp(post.get("timestamp"))
+                        if posted_at and posted_at < cutoff:
+                            continue
+                        post_username = post.get("username", "")
+                        await upsert_social_post(
+                            team_id=self.team_id,
+                            platform="threads",
+                            post_id=str(post["id"]),
+                            source_type="keyword",
+                            source_value=kw_clean,
+                            author_username=post_username,
+                            text=post.get("text", ""),
+                            permalink=post.get("permalink", ""),
+                            media_type=post.get("media_type", ""),
+                            posted_at=posted_at,
+                        )
+                        total += 1
+
+                    if posts:
+                        logger.info(
+                            "Threads keyword '%s': found %d posts (team=%s)",
+                            kw_clean, len(posts), self.team_id,
+                        )
+                except Exception as exc:
+                    logger.warning(
+                        "Threads keyword_search '%s' failed (team=%s): %s",
+                        kw_clean, self.team_id, exc,
+                    )
+
+        if total:
+            logger.info("Threads keyword search: collected %d total posts (team=%s)", total, self.team_id)
+        return total
+
     async def enrich_post_insights(self, post_ids: list[str]) -> int:
         """Fetch per-post insights (views, likes, replies, reposts, quotes)
         and update stored posts. Returns count of enriched posts."""

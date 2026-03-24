@@ -285,6 +285,12 @@ async def _collect_social_trends() -> None:
                         settings.threads_accounts or [], own_username=own_th,
                     )
                     logger.info("Social trends: Threads collected %d posts (team=%s)", count, team_id)
+                    # Keyword search — find posts from other users
+                    tracked_kw = list(settings.tracked_hashtags or [])
+                    if tracked_kw:
+                        kw_count = await collector.collect_from_keyword_search(tracked_kw)
+                        if kw_count:
+                            logger.info("Social trends: Threads keyword search %d posts (team=%s)", kw_count, team_id)
                     await collector.collect_own_insights()
 
         except Exception as exc:
