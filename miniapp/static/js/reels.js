@@ -1020,6 +1020,46 @@ export function createReelsModule(deps) {
         </section>
 
         <section class="section">
+          <h3>${sectionHeadingIcon("montage")}Автомонтаж</h3>
+          <div class="reels-form-fields">
+            <label class="reels-field-label">Шаблон
+              <select id="montageTemplate" class="reels-select">
+                <option value="minimal">Минимал — переходы + музыка</option>
+                <option value="expert" selected>Эксперт — переходы + субтитры + музыка + цвет</option>
+                <option value="full">Полный — всё: переходы + B-roll + музыка + ритм</option>
+                <option value="custom">Свой — ручной выбор</option>
+              </select>
+            </label>
+          </div>
+          <div id="montageCustomOptions" style="display:none">
+            <div class="reels-form-fields" style="margin-top:8px">
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px">
+                <input type="checkbox" id="montageTransitions" checked /> Переходы между фрагментами
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px">
+                <input type="checkbox" id="montageSubtitles" checked /> Субтитры из сценария
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px">
+                <input type="checkbox" id="montageMusic" /> Фоновая музыка
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px">
+                <input type="checkbox" id="montageBroll" /> B-roll вставки (AI-кадры)
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px">
+                <input type="checkbox" id="montageBeatSync" /> Подгонка под ритм музыки
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px">
+                <input type="checkbox" id="montageColorGrade" checked /> Применить цветокоррекцию
+              </label>
+            </div>
+          </div>
+          <button class="primary-button" type="button" data-action="startMontage" data-args='${JSON.stringify([r.draft_id, null])}' style="margin-top:10px">
+            ${actionLabel("sparkle", "Запустить автомонтаж")}
+          </button>
+          <div id="montageStatusContainer"></div>
+        </section>
+
+        <section class="section">
           <h3>${sectionHeadingIcon("film")}Сборка из кадров</h3>
           <div class="reels-form-fields">
             <label class="reels-field-label">Движок видео
@@ -2063,6 +2103,65 @@ export function createReelsModule(deps) {
     }, "Готово");
   }
 
+  // ── Auto-montage ────────────────────────────────────────────────────
+
+  async function startMontage(draftId, btn) {
+    const template = document.getElementById("montageTemplate")?.value || "expert";
+    const isCustom = template === "custom";
+
+    const config = { template };
+    if (isCustom) {
+      config.transitions_enabled = document.getElementById("montageTransitions")?.checked ?? true;
+      config.subtitles_enabled = document.getElementById("montageSubtitles")?.checked ?? true;
+      config.music_enabled = document.getElementById("montageMusic")?.checked ?? false;
+      config.broll_enabled = document.getElementById("montageBroll")?.checked ?? false;
+      config.beat_sync_enabled = document.getElementById("montageBeatSync")?.checked ?? false;
+      config.color_grade_enabled = document.getElementById("montageColorGrade")?.checked ?? true;
+    }
+
+    if (btn) { btn.disabled = true; btn.innerHTML = `${uiIcon("sparkle")} Запускаю…`; }
+    const statusEl = document.getElementById("montageStatusContainer");
+
+    try {
+      const qs = Object.entries(config).map(([k, v]) => `${k}=${v}`).join("&");
+      const res = await fetchJson(`/api/reels/${draftId}/montage?${qs}`, { method: "POST" });
+
+      const est = Math.ceil((res.estimated_seconds || 120) / 60);
+      if (statusEl) statusEl.innerHTML = `
+        <div class="reels-progress-container">
+          <div class="reels-progress-header">
+            <span class="button-spinner"></span>
+            <span class="reels-progress-label">Автомонтаж запущен</span>
+          </div>
+          <div class="reels-progress-bar-track"><div class="reels-progress-bar-fill reels-progress-bar-fill--indeterminate"></div></div>
+          <div class="reels-progress-footer"><span>~${est} мин</span></div>
+          <div class="reels-progress-hint">Можно закрыть приложение — процесс продолжится на сервере.</div>
+          <button class="secondary-button compact" type="button" data-action="notifyWhenReady" data-args='[null]' style="margin-top:8px;width:100%">
+            ${uiIcon("bell")} Уведомить в Telegram по готовности
+          </button>
+        </div>`;
+
+      showUiNotice(`Автомонтаж запущен (~${est} мин)`, "success");
+
+      // Poll for completion
+      const timer = setInterval(async () => {
+        try {
+          const draft = await fetchJson(`/api/reels/${draftId}`);
+          if (draft?.payload?.montage_video_path) {
+            clearInterval(timer);
+            mergeReelsIntoState(draft);
+            callbacks.renderReelsDetail?.(draft);
+            showUiNotice("Автомонтаж завершён", "success");
+          }
+        } catch (_) { clearInterval(timer); }
+      }, 5000);
+    } catch (e) {
+      showUiNotice("Ошибка: " + (e.message || ""), "error");
+      if (statusEl) statusEl.innerHTML = "";
+    }
+    if (btn) { btn.disabled = false; btn.innerHTML = `${actionLabel("sparkle", "Запустить автомонтаж")}`; }
+  }
+
   // ── Color grading ────────────────────────────────────────────────────
 
   async function gradePreview(draftId, btn) {
@@ -2231,6 +2330,11 @@ export function createReelsModule(deps) {
       const opts = document.getElementById("remotionOptions");
       if (opts) opts.style.display = e.target.value === "remotion" ? "block" : "none";
     }
+    // Montage template toggle
+    if (e.target?.id === "montageTemplate") {
+      const opts = document.getElementById("montageCustomOptions");
+      if (opts) opts.style.display = e.target.value === "custom" ? "block" : "none";
+    }
   });
 
   // Also handle input events for sliders (real-time updates)
@@ -2294,6 +2398,8 @@ export function createReelsModule(deps) {
     openReelsPreview,
     openBotUploadLink,
     notifyWhenReady,
+    // Auto-montage
+    startMontage,
     // Color grading
     gradePreview,
     gradeAnalyzeAI,

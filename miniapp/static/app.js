@@ -739,6 +739,7 @@ function uiIcon(name) {
     warning:    "warning",
     bell:       "bell",
     palette:    "palette",
+    "film-slate": "film-slate",
     save:       "floppy-disk",
     star:       "star",
     "share-2":  "share-network",
@@ -784,6 +785,7 @@ function sectionHeadingIcon(title) {
     "Видео": "video-camera",
     // ── Рилс: видео пайплайн ──
     "color-grade": "palette",       // Цветокоррекция → палитра
+    "montage": "film-slate",         // Автомонтаж → хлопушка
     "scissors": "waveform",         // Нарезка пауз → звуковая волна
     "film": "film-strip",           // Сборка из кадров → плёнка
     "tools": "wrench",              // Инструменты → гаечный ключ
