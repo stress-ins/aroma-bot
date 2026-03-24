@@ -40,6 +40,8 @@ export function createTrendsModule(deps) {
   let monitoredAccounts = { instagram: [], threads: [] };
   let trackedHashtags = [];
   let accountStats = [];
+  let cooldownUntil = 0; // unix ms when cooldown expires
+  let _cooldownTimer = null;
 
   const WEEKDAY_LABELS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 
@@ -129,9 +131,16 @@ export function createTrendsModule(deps) {
       )
       .join("");
 
-    const refreshBtn = `<button class="trends-refresh-btn" id="trendsRefreshBtn"
+    const now = Date.now();
+    const inCooldown = cooldownUntil > now;
+    const cooldownRemainSec = inCooldown ? Math.ceil((cooldownUntil - now) / 1000) : 0;
+    const cooldownLabel = inCooldown
+      ? `${uiIcon("clock", 14)} Обновление через ${_formatCooldown(cooldownRemainSec)}`
+      : `${uiIcon("refresh-cw", 14)} Обновить`;
+    const refreshBtn = `<button class="trends-refresh-btn ${inCooldown ? "trends-refresh-btn--cooldown" : ""}" id="trendsRefreshBtn"
+                                ${inCooldown ? "disabled" : ""}
                                 data-action="refreshTrends" data-args='[null]'>
-      ${uiIcon("refresh-cw", 14)} Обновить
+      ${cooldownLabel}
     </button>`;
 
     let summary = "";
@@ -787,18 +796,73 @@ export function createTrendsModule(deps) {
     void loadTrends();
   }
 
+  function _formatCooldown(totalSec) {
+    const m = Math.floor(totalSec / 60);
+    const s = totalSec % 60;
+    return m > 0 ? `${m} мин ${s > 0 ? s + " сек" : ""}`.trim() : `${s} сек`;
+  }
+
+  function _startCooldownTimer() {
+    if (_cooldownTimer) clearInterval(_cooldownTimer);
+    _cooldownTimer = setInterval(() => {
+      const now = Date.now();
+      if (cooldownUntil <= now) {
+        clearInterval(_cooldownTimer);
+        _cooldownTimer = null;
+        // Re-render button to unlock it
+        const btn = document.getElementById("trendsRefreshBtn");
+        if (btn) {
+          btn.disabled = false;
+          btn.classList.remove("trends-refresh-btn--cooldown");
+          btn.innerHTML = `${uiIcon("refresh-cw", 14)} Обновить`;
+        }
+        return;
+      }
+      const remainSec = Math.ceil((cooldownUntil - now) / 1000);
+      const btn = document.getElementById("trendsRefreshBtn");
+      if (btn) {
+        btn.innerHTML = `${uiIcon("clock", 14)} Обновление через ${_formatCooldown(remainSec)}`;
+      }
+    }, 1000);
+  }
+
   async function refreshTrends(btn) {
+    // Already in cooldown — ignore click
+    if (cooldownUntil > Date.now()) return;
+
     if (btn) {
       await withButtonFeedback(btn, "Обновление…", async () => {
         try {
           await fetchJson("/api/trends/refresh", { method: "POST" });
-          showUiNotice("Сбор данных запущен. Обновите через пару минут.");
+          // Set 1-hour cooldown
+          cooldownUntil = Date.now() + 60 * 60 * 1000;
+          _startCooldownTimer();
+          showUiNotice("Сбор данных запущен. Данные обновятся через пару минут.", "success");
+          // Re-render button with cooldown state
+          const refreshBtn = document.getElementById("trendsRefreshBtn");
+          if (refreshBtn) {
+            refreshBtn.disabled = true;
+            refreshBtn.classList.add("trends-refresh-btn--cooldown");
+            const remainSec = Math.ceil((cooldownUntil - Date.now()) / 1000);
+            refreshBtn.innerHTML = `${uiIcon("clock", 14)} Обновление через ${_formatCooldown(remainSec)}`;
+          }
         } catch (err) {
-          const detail = err?.detail || {};
-          if (detail.error === "cooldown") {
-            showUiNotice(`Повторите через ${Math.ceil(detail.retry_after_seconds / 60)} мин.`);
+          const msg = err?.message || "";
+          // fetchJson throws Error("cooldown") on 429 with cooldown detail
+          if (msg === "cooldown" || msg.includes("cooldown")) {
+            // Parse retry_after from the original 429 body — we need to fetch it
+            // The generic 429 handler already shows a notice, just set cooldown
+            cooldownUntil = Date.now() + 60 * 60 * 1000; // assume 1 hour
+            _startCooldownTimer();
+            const refreshBtn = document.getElementById("trendsRefreshBtn");
+            if (refreshBtn) {
+              refreshBtn.disabled = true;
+              refreshBtn.classList.add("trends-refresh-btn--cooldown");
+              const remainSec = Math.ceil((cooldownUntil - Date.now()) / 1000);
+              refreshBtn.innerHTML = `${uiIcon("clock", 14)} Обновление через ${_formatCooldown(remainSec)}`;
+            }
           } else {
-            showUiNotice("Не удалось запустить обновление.");
+            showUiNotice("Не удалось запустить обновление.", "error");
           }
         }
       }, "Готово");

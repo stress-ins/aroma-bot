@@ -6276,6 +6276,11 @@ body.is-mobile-layout .detail-icon-actions button {
   color: var(--hint); cursor: pointer;
 }
 .trends-refresh-btn:hover { border-color: var(--brand-border); color: var(--brand); }
+.trends-refresh-btn--cooldown {
+  opacity: 0.6; pointer-events: none; cursor: default;
+  color: var(--hint); border-color: var(--border);
+}
+.trends-refresh-btn--cooldown:hover { border-color: var(--border); color: var(--hint); }
 
 /* Monitored accounts section in trends */
 .trends-monitored-section { padding: 0 14px 12px; }
