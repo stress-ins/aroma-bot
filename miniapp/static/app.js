@@ -2056,7 +2056,13 @@ const _runtimeMod = createRuntimeModule({
 });
 const { bindBootFallbackReload, bindStartupErrorFallbacks, bootstrap: bootstrapImpl } = _runtimeMod;
 ({ loadCurrentTab, safeLoadCurrentTab, retryCurrentTab } = _runtimeMod);
-window._currentTabRefresh = () => safeLoadCurrentTab("Не удалось обновить раздел");
+window._currentTabRefresh = () => {
+  // Only reload if list panel is empty (avoids unnecessary network requests)
+  const list = document.getElementById("draftList");
+  if (list && list.children.length === 0) {
+    safeLoadCurrentTab("Не удалось обновить раздел");
+  }
+};
 
 const onboarding = createOnboardingModule({ state, icon });
 

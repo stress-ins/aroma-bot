@@ -40,12 +40,10 @@ def test_handbook_cards_open_in_all_sections(page):
 
     for tab_label, card_name in sections:
         page.get_by_role("tab", name=tab_label).click()
-        # Wait for cards to render (tab switch + possible data reload)
-        page.wait_for_selector(".reference-card", timeout=10000)
-        page.wait_for_timeout(200)
+        page.wait_for_timeout(100)
 
         card = page.locator(".reference-card").filter(has_text=card_name).first
-        card.wait_for(state="visible", timeout=10000)
+        assert card.is_visible(), f"Card '{card_name}' not found in '{tab_label}' tab"
         card.click()
         page.wait_for_function(
             f"() => (document.querySelector('#draftDetail') || {{innerText: ''}}).innerText.includes({json.dumps(card_name)})",
@@ -60,8 +58,7 @@ def test_handbook_cards_open_in_all_sections(page):
         back_btn = page.locator("#draftDetail .back-button")
         if back_btn.count() > 0:
             back_btn.first.click()
-            # Wait for list to re-render after back navigation
-            page.wait_for_selector(".reference-card", timeout=10000)
+            page.wait_for_timeout(100)
 
 
 def test_filter_chips_no_horizontal_overflow(page):
