@@ -1,6 +1,7 @@
 """Archive API — CRUD past publications, URL import, bulk import, stats."""
 from __future__ import annotations
 
+import asyncio
 import logging
 from datetime import datetime, timedelta, timezone
 
@@ -290,8 +291,9 @@ async def _fetch_recent_threads(team_id: str, days: int) -> list[dict]:
     threads = client.get_threads(limit=50)
 
     cutoff = datetime.now(timezone.utc) - timedelta(days=days)
-    results = []
 
+    # Filter by date first
+    filtered = []
     for t in threads:
         published_at = None
         if t.get("timestamp"):
@@ -301,15 +303,26 @@ async def _fetch_recent_threads(team_id: str, days: int) -> list[dict]:
                 continue
         if published_at and published_at < cutoff:
             continue
+        filtered.append((t, published_at))
 
-        # Fetch insights
-        metrics = {}
-        try:
-            from bot.services.meta_publisher import get_threads_insights
-            metrics = await get_threads_insights(t["id"])
-        except Exception:
-            logger.debug("Insights failed for thread %s", t.get("id"))
+    # Fetch insights in parallel (max 5 concurrent)
+    from bot.services.meta_publisher import get_threads_insights
 
+    sem = asyncio.Semaphore(5)
+
+    async def _get_insights(thread_id: str) -> dict:
+        async with sem:
+            try:
+                return await get_threads_insights(thread_id)
+            except Exception:
+                logger.debug("Insights failed for thread %s", thread_id)
+                return {}
+
+    insight_tasks = [_get_insights(t["id"]) for t, _ in filtered]
+    all_metrics = await asyncio.gather(*insight_tasks)
+
+    results = []
+    for (t, published_at), metrics in zip(filtered, all_metrics):
         results.append({
             "platform": "threads",
             "kind": _map_media_type(t.get("media_type", "TEXT_POST")),
