@@ -49,6 +49,7 @@ export function createContentModule(deps) {
 
   async function openReels(id) {
     elements.draftDetail.innerHTML = `${renderBackButton()}${renderDetailLoader("Открываю рилс")}`;
+    setTab("reels");
     enterDetailView();
     clearBackgroundRefreshes();
     const reel = await fetchJson(`/api/reels/${id}`);
