@@ -121,28 +121,20 @@ def build_instagram_authorize_url(
     state: str = "",
     scopes: tuple[str, ...] = INSTAGRAM_DEFAULT_SCOPES,
 ) -> str:
-    # Use /consent/ endpoint directly instead of /oauth/authorize.
-    # On iOS, Universal Links intercept instagram.com/oauth/authorize and open
-    # the Instagram app which can't handle it. The /consent/ URL with
-    # flow=ig_biz_login_oauth bypasses this by going straight to the consent page.
-    import json as _json
-    import uuid
-    params_json = _json.dumps({
+    # Standard Instagram Business Login OAuth URL.
+    # The user copies this link and pastes it in Safari, which bypasses
+    # iOS Universal Links interception (Universal Links only trigger on taps).
+    params = {
+        "enable_fb_login": "0",
+        "force_authentication": "1",
         "client_id": client_id,
         "redirect_uri": redirect_uri,
         "response_type": "code",
-        "state": state,
-        "scope": "-".join(scopes),
-        "logger_id": str(uuid.uuid4()),
-        "app_id": client_id,
-        "platform_app_id": client_id,
-    })
-    consent_params = {
-        "flow": "ig_biz_login_oauth",
-        "params_json": params_json,
-        "source": "oauth_permissions_page_www",
+        "scope": ",".join(scopes),
     }
-    return f"https://www.instagram.com/consent/?{urlencode(consent_params)}"
+    if state:
+        params["state"] = state
+    return f"https://www.instagram.com/oauth/authorize?{urlencode(params)}"
 
 
 def exchange_threads_code(
