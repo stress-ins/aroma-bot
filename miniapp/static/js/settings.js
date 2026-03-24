@@ -707,6 +707,17 @@ export function createSettingsModule(deps) {
       : daysLeft <= 7 ? ` <span class="tag-status-warn">Через ${daysLeft} дн</span>`
       : "";
 
+    const scopes = acc.scopes || [];
+    const scopesBlock = scopes.length > 0 ? (() => {
+      const scopeItems = scopes.map((s) =>
+        `<li class="${connected ? "granted" : "needed"}">${uiIcon(connected ? "check-circle" : "lock")}<span>${escapeHtml(s)}</span></li>`
+      ).join("");
+      const summary = connected
+        ? `Разрешения (${scopes.length}) ${uiIcon("check-circle")}`
+        : `Необходимые разрешения (${scopes.length})`;
+      return `<details class="account-scopes"><summary>${summary}</summary><ul class="account-scopes-list">${scopeItems}</ul></details>`;
+    })() : "";
+
     if (connected) {
       const usernameRow = acc.username ? `<span class="account-username">@${escapeHtml(acc.username)}</span>` : "";
       const statusMeta = `<span class="account-meta">${uiIcon("check-circle")}<span>Подключено</span>${expiry ? `<span class="account-expiry"> · до ${expiry}</span>` : ""}${expiryBadge}</span>`;
@@ -721,6 +732,7 @@ export function createSettingsModule(deps) {
           <div class="account-card-title">${icon}<strong>${label}</strong></div>
           ${usernameRow}
           ${statusMeta}
+          ${scopesBlock}
           <div class="account-card-actions">${btn}${importBtn}</div>
         </article>
       `;
@@ -733,6 +745,7 @@ export function createSettingsModule(deps) {
       <article class="account-card account-card--vertical">
         <div class="account-card-title">${icon}<strong>${label}</strong></div>
         <span class="account-meta">Не подключено</span>
+        ${scopesBlock}
         ${readOnly ? "" : btn}
       </article>
     `;
