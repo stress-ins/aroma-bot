@@ -194,6 +194,25 @@ async def delete_carousel_version(
     return await serialize_draft(draft)
 
 
+class CarouselLayoutPayload(BaseModel):
+    layout_style: str
+
+
+@router.post("/api/carousel/{draft_id}/layout")
+async def change_carousel_layout(
+    body: CarouselLayoutPayload,
+    draft: DraftRecord = Depends(require_draft("carousel")),
+):
+    style = body.layout_style if body.layout_style in ("overlay", "editorial") else "overlay"
+    payload = dict(draft.payload or {})
+    payload["layout_style"] = style
+    await update_draft(draft.draft_id, payload=payload)
+    refreshed = await get_draft(draft.draft_id)
+    if not refreshed:
+        raise HTTPException(status_code=404, detail="carousel_not_found")
+    return await serialize_draft(refreshed)
+
+
 @router.post("/api/carousel/{draft_id}/regenerate-all")
 async def regenerate_carousel_all(
     background_tasks: BackgroundTasks,
