@@ -1495,7 +1495,7 @@ export function createReelsModule(deps) {
         </div>
         ${queueHtml}
         <div class="reels-progress-hint">Можно закрыть приложение — процесс продолжится на сервере.</div>
-        <button class="secondary-button compact" type="button" data-action="notifyWhenReady" style="margin-top:8px;width:100%">
+        <button class="secondary-button compact" type="button" data-action="notifyWhenReady" data-args='[null]' style="margin-top:8px;width:100%">
           ${uiIcon("bell")} Уведомить в Telegram по готовности
         </button>
       </div>`;
@@ -1906,7 +1906,7 @@ export function createReelsModule(deps) {
         </div>
         ${queueHtml}
         <div class="reels-progress-hint">Можно закрыть приложение — процесс продолжится на сервере.</div>
-        <button class="secondary-button compact" type="button" data-action="notifyWhenReady" style="margin-top:8px;width:100%">
+        <button class="secondary-button compact" type="button" data-action="notifyWhenReady" data-args='[null]' style="margin-top:8px;width:100%">
           ${uiIcon("bell")} Уведомить в Telegram по готовности
         </button>
       </div>`;
@@ -2019,12 +2019,17 @@ export function createReelsModule(deps) {
   }
 
   async function notifyWhenReady(btn) {
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = `${uiIcon("bell")} Подключаю…`;
+    }
     try {
       await fetchJson("/api/reels/notify-when-ready", { method: "POST" });
       showUiNotice("Бот напишет вам в Telegram когда будет готово", "success");
-      if (btn) { btn.disabled = true; btn.textContent = "Уведомление включено ✓"; }
+      if (btn) btn.innerHTML = `${uiIcon("check")} Уведомление включено`;
     } catch (_e) {
       showUiNotice("Уведомление уже настроено", "info");
+      if (btn) { btn.innerHTML = `${uiIcon("check")} Уведомление включено`; }
     }
   }
 
