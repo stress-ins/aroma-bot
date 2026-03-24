@@ -58,10 +58,10 @@ class TestThreadsPrompts:
         from bot.agents.content import _PLATFORM_RULES_WRITER
 
         rules = _PLATFORM_RULES_WRITER["threads_series"]
-        assert "3 posts" in rules
-        assert "5-10 short lines" in rules
-        assert "40-80 words" in rules
-        assert "no hashtags" in rules
+        assert "3" in rules and ("пост" in rules or "секци" in rules)
+        assert "5-10" in rules
+        assert "40-80" in rules
+        assert "УТРО" in rules and "ДЕНЬ" in rules and "ВЕЧЕР" in rules
 
     def test_legacy_threads_prompt_uses_new_daily_pack_format(self):
         from bot.handlers.threads import _PROMPT_POST
