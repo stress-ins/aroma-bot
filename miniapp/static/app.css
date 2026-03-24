@@ -246,7 +246,28 @@ summary {
   -webkit-tap-highlight-color: transparent;
 }
 
-.date-picker-btn {
+.date-picker-btn,
+.topbar,
+.topbar-main,
+.brand-loader,
+.detail-loader-card,
+.panel-loader-card,
+.boot-fallback,
+.preview-modal-header,
+.preview-modal-backdrop,
+.canva-design-item,
+.filter-chips,
+.filter-chip,
+.detail-empty,
+.guided-state,
+.overview-card-footer,
+.draft-meta,
+.draft-kind,
+.badge,
+.status-tag,
+.back-button,
+.fab-button,
+h1, h2, h3, h4 {
   -webkit-user-select: none;
   user-select: none;
   -webkit-tap-highlight-color: transparent;

@@ -2059,9 +2059,11 @@ const _runtimeMod = createRuntimeModule({
 const { bindBootFallbackReload, bindStartupErrorFallbacks, bootstrap: bootstrapImpl } = _runtimeMod;
 ({ loadCurrentTab, safeLoadCurrentTab, retryCurrentTab } = _runtimeMod);
 window._currentTabRefresh = () => {
-  // Only reload if list panel is empty (avoids unnecessary network requests)
+  // Reload if list panel is empty or shows a loader/error placeholder
   const list = document.getElementById("draftList");
-  if (list && list.children.length === 0) {
+  const hasRealContent = list && list.children.length > 0
+    && !list.querySelector(".panel-loader-card, .boot-fallback, .detail-loader-card");
+  if (!hasRealContent) {
     safeLoadCurrentTab("Не удалось обновить раздел");
   }
 };
