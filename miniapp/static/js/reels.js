@@ -975,6 +975,51 @@ export function createReelsModule(deps) {
         </section>
 
         <section class="section">
+          <h3>${sectionHeadingIcon("color-grade")}Цветокоррекция</h3>
+          <div id="graderPreviewContainer"></div>
+          <div class="reels-form-fields" style="margin-top:8px">
+            <label class="reels-field-label">Яркость
+              <input type="range" id="gradeBrightness" min="-0.3" max="0.3" step="0.01" value="0" style="width:100%" />
+              <span id="gradeBrightnessVal" style="font-size:12px;color:var(--hint)">0</span>
+            </label>
+            <label class="reels-field-label">Контраст
+              <input type="range" id="gradeContrast" min="0.5" max="2.0" step="0.05" value="1.0" style="width:100%" />
+              <span id="gradeContrastVal" style="font-size:12px;color:var(--hint)">1.0</span>
+            </label>
+            <label class="reels-field-label">Насыщенность
+              <input type="range" id="gradeSaturation" min="0.0" max="2.0" step="0.05" value="1.0" style="width:100%" />
+              <span id="gradeSaturationVal" style="font-size:12px;color:var(--hint)">1.0</span>
+            </label>
+            <label class="reels-field-label">Гамма
+              <input type="range" id="gradeGamma" min="0.5" max="2.0" step="0.05" value="1.0" style="width:100%" />
+              <span id="gradeGammaVal" style="font-size:12px;color:var(--hint)">1.0</span>
+            </label>
+          </div>
+          <div class="reels-form-fields" style="margin-top:8px">
+            <label class="reels-field-label">Стиль AI-коррекции
+              <select id="gradeStyle" class="reels-select">
+                <option value="warm_natural">Тёплый натуральный</option>
+                <option value="luxury_dark">Тёмный люкс</option>
+                <option value="fresh_light">Свежий светлый</option>
+                <option value="moody_cinematic">Кинематографичный</option>
+              </select>
+            </label>
+          </div>
+          <div class="actions-row" style="margin-top:8px;flex-wrap:wrap;gap:8px">
+            <button class="secondary-button compact" type="button" data-action="gradePreview" data-args='${JSON.stringify([r.draft_id, null])}'>
+              ${actionLabel("eye", "Предпросмотр кадра")}
+            </button>
+            <button class="secondary-button compact" type="button" data-action="gradeAnalyzeAI" data-args='${JSON.stringify([r.draft_id, null])}'>
+              ${actionLabel("sparkle", "AI-анализ и коррекция")}
+            </button>
+            <button class="primary-button compact" type="button" data-action="gradeApply" data-args='${JSON.stringify([r.draft_id, null])}'>
+              ${actionLabel("check", "Применить коррекцию")}
+            </button>
+          </div>
+          <div id="gradeStatusContainer"></div>
+        </section>
+
+        <section class="section">
           <h3>${sectionHeadingIcon("film")}Сборка из кадров</h3>
           <div class="reels-form-fields">
             <label class="reels-field-label">Движок видео
@@ -2018,6 +2063,139 @@ export function createReelsModule(deps) {
     }, "Готово");
   }
 
+  // ── Color grading ────────────────────────────────────────────────────
+
+  async function gradePreview(draftId, btn) {
+    const b = parseFloat(document.getElementById("gradeBrightness")?.value || "0");
+    const c = parseFloat(document.getElementById("gradeContrast")?.value || "1");
+    const s = parseFloat(document.getElementById("gradeSaturation")?.value || "1");
+    const g = parseFloat(document.getElementById("gradeGamma")?.value || "1");
+
+    if (btn) { btn.disabled = true; btn.innerHTML = `${uiIcon("eye")} Загрузка…`; }
+    try {
+      const qs = `brightness=${b}&contrast=${c}&saturation=${s}&gamma=${g}`;
+      const res = await fetchJson(`/api/reels/${draftId}/grade-preview?${qs}`, { method: "POST", timeout: 30000 });
+
+      const container = document.getElementById("graderPreviewContainer");
+      if (container) {
+        const ts = Date.now();
+        container.innerHTML = `
+          <div class="grade-preview-grid">
+            <div class="grade-preview-item">
+              <span class="grade-preview-label">Оригинал</span>
+              <img src="${res.original_url}?t=${ts}" alt="Original" />
+            </div>
+            <div class="grade-preview-item">
+              <span class="grade-preview-label">После коррекции</span>
+              <img src="${res.corrected_url}?t=${ts}" alt="Corrected" />
+            </div>
+          </div>
+          ${res.vf_string ? `<div class="grade-vf-string">${escapeHtml(res.vf_string)}</div>` : ""}`;
+      }
+    } catch (e) {
+      showUiNotice("Не удалось создать предпросмотр", "error");
+    }
+    if (btn) { btn.disabled = false; btn.innerHTML = `${actionLabel("eye", "Предпросмотр кадра")}`; }
+  }
+
+  async function gradeAnalyzeAI(draftId, btn) {
+    const style = document.getElementById("gradeStyle")?.value || "warm_natural";
+    if (btn) { btn.disabled = true; btn.innerHTML = `${uiIcon("sparkle")} Анализ…`; }
+    const statusEl = document.getElementById("gradeStatusContainer");
+    if (statusEl) statusEl.innerHTML = `
+      <div class="reels-progress-container">
+        <div class="reels-progress-header">
+          <span class="button-spinner"></span>
+          <span class="reels-progress-label">Claude Vision анализирует кадры…</span>
+        </div>
+        <div class="reels-progress-bar-track"><div class="reels-progress-bar-fill reels-progress-bar-fill--indeterminate"></div></div>
+        <div class="reels-progress-footer"><span>~15-30 сек</span></div>
+      </div>`;
+
+    try {
+      const res = await fetchJson(`/api/reels/${draftId}/grade-analyze?style=${style}`, { method: "POST", timeout: 60000 });
+
+      // Apply recommended values to sliders
+      for (const rec of (res.recommendations || [])) {
+        const match = rec.ffmpeg_filter.match(/eq=([^,]+)/);
+        if (!match) continue;
+        const parts = match[1].split(":");
+        for (const part of parts) {
+          const [key, val] = part.split("=");
+          const slider = document.getElementById({
+            brightness: "gradeBrightness",
+            contrast: "gradeContrast",
+            saturation: "gradeSaturation",
+            gamma: "gradeGamma",
+          }[key]);
+          if (slider) {
+            slider.value = val;
+            slider.dispatchEvent(new Event("input", { bubbles: true }));
+          }
+        }
+      }
+
+      // Show analysis results
+      if (statusEl) {
+        const issues = (res.dominant_issues || []).map(i => `<li>${escapeHtml(i)}</li>`).join("");
+        const recs = (res.recommendations || []).map(r =>
+          `<div class="grade-rec-item">
+            <span class="grade-rec-priority grade-rec-priority--${r.priority}">${r.priority.toUpperCase()}</span>
+            <span>${escapeHtml(r.parameter)}: ${escapeHtml(r.suggestion)}</span>
+          </div>`
+        ).join("");
+        statusEl.innerHTML = `
+          <div class="grade-analysis-result">
+            <div class="grade-analysis-header">${uiIcon("sparkle")} Анализ (${Math.round(res.confidence * 100)}% уверенность)</div>
+            <p class="grade-analysis-text">${escapeHtml(res.overall_assessment)}</p>
+            ${issues ? `<ul class="grade-issues">${issues}</ul>` : ""}
+            ${recs ? `<div class="grade-recs">${recs}</div>` : ""}
+            ${res.ffmpeg_vf_string ? `<div class="grade-vf-string">${escapeHtml(res.ffmpeg_vf_string)}</div>` : ""}
+          </div>`;
+      }
+      showUiNotice("AI-анализ завершён. Ползунки обновлены.", "success");
+    } catch (e) {
+      showUiNotice("AI-анализ не удался: " + (e.message || ""), "error");
+      if (statusEl) statusEl.innerHTML = "";
+    }
+    if (btn) { btn.disabled = false; btn.innerHTML = `${actionLabel("sparkle", "AI-анализ и коррекция")}`; }
+  }
+
+  async function gradeApply(draftId, btn) {
+    const b = parseFloat(document.getElementById("gradeBrightness")?.value || "0");
+    const c = parseFloat(document.getElementById("gradeContrast")?.value || "1");
+    const s = parseFloat(document.getElementById("gradeSaturation")?.value || "1");
+    const g = parseFloat(document.getElementById("gradeGamma")?.value || "1");
+
+    if (b === 0 && c === 1 && s === 1 && g === 1) {
+      showUiNotice("Измените хотя бы один ползунок или запустите AI-анализ", "warning");
+      return;
+    }
+
+    if (btn) { btn.disabled = true; btn.innerHTML = `${uiIcon("check")} Применяю…`; }
+    try {
+      const qs = `brightness=${b}&contrast=${c}&saturation=${s}&gamma=${g}`;
+      const res = await fetchJson(`/api/reels/${draftId}/grade-apply?${qs}`, { method: "POST" });
+      showUiNotice(`Коррекция поставлена в очередь. ~${Math.ceil((res.estimated_seconds || 60) / 60)} мин`, "success");
+
+      // Start polling for completion
+      const timer = setInterval(async () => {
+        try {
+          const draft = await fetchJson(`/api/reels/${draftId}`);
+          if (draft?.payload?.graded_video_path) {
+            clearInterval(timer);
+            mergeReelsIntoState(draft);
+            callbacks.renderReelsDetail?.(draft);
+            showUiNotice("Цветокоррекция применена", "success");
+          }
+        } catch (_) { clearInterval(timer); }
+      }, 5000);
+    } catch (e) {
+      showUiNotice("Ошибка: " + (e.message || ""), "error");
+    }
+    if (btn) { btn.disabled = false; btn.innerHTML = `${actionLabel("check", "Применить коррекцию")}`; }
+  }
+
   async function notifyWhenReady(btn) {
     if (btn) {
       btn.disabled = true;
@@ -2065,6 +2243,12 @@ export function createReelsModule(deps) {
       const el = document.getElementById("cleanThresholdValue");
       if (el) el.textContent = `${e.target.value} дБ`;
     }
+    // Grade sliders
+    const _gradeMap = { gradeBrightness: "gradeBrightnessVal", gradeContrast: "gradeContrastVal", gradeSaturation: "gradeSaturationVal", gradeGamma: "gradeGammaVal" };
+    if (e.target?.id && _gradeMap[e.target.id]) {
+      const el = document.getElementById(_gradeMap[e.target.id]);
+      if (el) el.textContent = e.target.value;
+    }
   });
 
   return {
@@ -2110,6 +2294,10 @@ export function createReelsModule(deps) {
     openReelsPreview,
     openBotUploadLink,
     notifyWhenReady,
+    // Color grading
+    gradePreview,
+    gradeAnalyzeAI,
+    gradeApply,
     // Screen 5 video tools
     jumpToReelsStep,
     runTechCheck,

@@ -167,6 +167,8 @@ async def _worker_loop() -> None:
                     result = await _execute_clean(task)
                 elif task.task_type == "compose":
                     result = await _execute_compose(task)
+                elif task.task_type == "grade":
+                    result = await _execute_grade(task)
                 else:
                     raise ValueError(f"Unknown task type: {task.task_type}")
 
@@ -350,3 +352,68 @@ async def _execute_compose(task) -> dict:
 
     await _set_progress(task_id, draft_id, "done", 100)
     return result if isinstance(result, dict) else {"video_ready": True}
+
+
+async def _execute_grade(task) -> dict:
+    """Execute a video color grading task via FFmpeg subprocess."""
+    from bot.services.reels_video import VIDEO_DIR
+    from bot.services.drafts_store import get_draft, update_draft
+    from pathlib import Path as _Path
+
+    draft_id = task.draft_id
+    task_id = task.task_id
+    config = task.config or {}
+
+    await _set_progress(task_id, draft_id, "grading", 20)
+
+    draft = await get_draft(draft_id)
+    if not draft:
+        raise ValueError("Draft not found")
+
+    video_filename = config.get("video_filename") or ""
+    if not video_filename:
+        raise ValueError("No video filename in task config")
+
+    video_path = VIDEO_DIR / draft_id / video_filename
+    if not video_path.exists():
+        raise FileNotFoundError(f"Video file not found: {video_path}")
+
+    vf_string = config.get("vf_string", "")
+    if not vf_string:
+        raise ValueError("No vf_string in task config")
+
+    # Output file
+    stem = _Path(video_filename).stem
+    graded_filename = f"{stem}_graded.mp4"
+    output_path = VIDEO_DIR / draft_id / graded_filename
+
+    await _set_progress(task_id, draft_id, "encoding", 50)
+
+    cmd = [
+        "ffmpeg", "-i", str(video_path),
+        "-vf", vf_string,
+        "-c:v", "libx264", "-preset", "fast", "-crf", "20",
+        "-c:a", "aac",
+        "-y", str(output_path),
+    ]
+
+    proc = await asyncio.create_subprocess_exec(
+        *cmd,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    _, stderr = await proc.communicate()
+
+    if proc.returncode != 0:
+        raise RuntimeError(f"FFmpeg grading failed (rc={proc.returncode}): {stderr.decode('utf-8', errors='replace')[:300]}")
+
+    await _set_progress(task_id, draft_id, "saving", 90)
+
+    # Update draft payload
+    payload = dict(draft.payload)
+    payload["graded_video_path"] = graded_filename
+    payload["grade_vf_string"] = vf_string
+    await update_draft(draft_id, payload=payload)
+
+    await _set_progress(task_id, draft_id, "done", 100)
+    return {"graded_video_path": graded_filename, "vf_string": vf_string}
