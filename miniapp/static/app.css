@@ -525,6 +525,8 @@ p,
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  flex: 1;
+  min-width: 0;
 }
 
 .filters-toggle {
@@ -559,6 +561,21 @@ p,
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--space-2);
+}
+
+.toolbar-inner-filters > label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.toolbar-inner-filters > label > select,
+.toolbar-inner-filters > label > input {
+  min-width: 0;
+  width: 100%;
 }
 
 /* All labels after tabs become a flex-wrap row */
@@ -6775,11 +6792,10 @@ details[open] > .trend-suggestions-toggle::before { transform: rotate(90deg); }
 /* ── Panel filter row (inside panel-header) ──────────────────────────── */
 .panel-filter-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--space-2);
   width: 100%;
   border-radius: var(--radius-sm);
-  overflow: hidden;
 }
 
 /* Hide filter row on tabs that don't need it */
