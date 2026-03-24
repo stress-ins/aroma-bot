@@ -565,15 +565,41 @@ async def compose_reel_video(
             content={"detail": "compose_already_running", "draft_id": draft_id},
         )
 
+    from bot.services.video_task_store import enqueue_task, estimate_time_seconds, get_active_task_for_draft, pending_count
+    from bot.services import video_task_worker
+
+    existing = await get_active_task_for_draft(draft_id, "compose")
+    if existing:
+        return JSONResponse(
+            status_code=409,
+            content={"detail": "compose_already_running", "draft_id": draft_id},
+        )
+
+    p = draft.get("payload", {}) if isinstance(draft, dict) else {}
+    tech = (p.get("tech_check") or {}).get("info") or {}
+    video_duration = tech.get("duration_seconds")
+
+    config = {"renderer": renderer, "template": template, "text_animation": text_animation}
+    task = await enqueue_task(draft_id, "compose", config, video_duration=video_duration)
+    est = estimate_time_seconds("compose", video_duration, config)
+    queue_size = await pending_count()
+
     _compose_status[draft_id] = {"status": "pending", "error": None, "result": None}
-    background_tasks.add_task(_run_compose_task, draft_id, renderer, template, text_animation)
+    video_task_worker.live_status[draft_id] = {
+        "task_id": task.task_id, "task_type": "compose",
+        "status": "pending", "step": "queued", "progress": 0,
+        "video_duration": video_duration,
+    }
+
     return JSONResponse(
         status_code=202,
         content={
             "draft_id": draft_id,
+            "task_id": task.task_id,
             "status": "pending",
             "renderer": renderer,
-            "message": "Video composition started",
+            "estimated_seconds": est,
+            "queue_position": queue_size,
         },
     )
 
@@ -583,29 +609,56 @@ async def compose_reel_status(
     draft_id: str,
     _: None = Depends(_require_auth),
 ):
-    """Check video composition status for a reels draft."""
-    status = _compose_status.get(draft_id)
-    if not status:
-        # Check if the draft already has a video
-        draft = await serialize_reels_draft(draft_id)
-        if not draft:
-            raise HTTPException(status_code=404, detail="reels_not_found")
-        payload = draft.get("payload", {})
-        if isinstance(payload, dict) and payload.get("video_ready"):
-            return {
-                "draft_id": draft_id,
-                "status": "completed",
-                "video_path": payload.get("video_path"),
-                "video_url": payload.get("video_url"),
-            }
-        return {"draft_id": draft_id, "status": "not_started"}
+    """Check video composition status — checks live status, then DB, then payload."""
+    from bot.services import video_task_worker
+    from bot.services.video_task_store import get_active_task_for_draft, estimate_time_seconds
 
-    response: dict = {"draft_id": draft_id, "status": status["status"]}
-    if status["error"]:
-        response["error"] = status["error"]
-    if status["result"]:
-        response["result"] = status["result"]
-    return response
+    # 1. Live status
+    live = video_task_worker.live_status.get(draft_id)
+    if live and live.get("task_type") == "compose":
+        resp: dict = {
+            "draft_id": draft_id, "status": live["status"],
+            "step": live.get("step", ""), "progress": live.get("progress", 0),
+        }
+        if live.get("error"):
+            resp["error"] = live["error"]
+        if live.get("result"):
+            resp["result"] = live["result"]
+        if live.get("video_duration"):
+            resp["estimated_seconds"] = estimate_time_seconds("compose", live["video_duration"])
+        return resp
+
+    # 2. Task queue
+    task = await get_active_task_for_draft(draft_id, "compose")
+    if task:
+        return {
+            "draft_id": draft_id, "status": task.status,
+            "step": task.step or "queued", "progress": task.progress,
+            "estimated_seconds": estimate_time_seconds("compose", task.video_duration) if task.video_duration else None,
+        }
+
+    # 3. Legacy in-memory
+    status = _compose_status.get(draft_id)
+    if status:
+        resp = {"draft_id": draft_id, "status": status["status"]}
+        if status.get("error"):
+            resp["error"] = status["error"]
+        if status.get("result"):
+            resp["result"] = status["result"]
+        return resp
+
+    # 4. Draft payload
+    draft = await serialize_reels_draft(draft_id)
+    if not draft:
+        raise HTTPException(status_code=404, detail="reels_not_found")
+    payload = draft.get("payload", {})
+    if isinstance(payload, dict) and payload.get("video_ready"):
+        return {
+            "draft_id": draft_id, "status": "completed",
+            "video_path": payload.get("video_path"),
+            "video_url": payload.get("video_url"),
+        }
+    return {"draft_id": draft_id, "status": "not_started"}
 
 
 # ── Remotion preview frames ──────────────────────────────────────────────────
@@ -798,32 +851,57 @@ async def _run_clean_video_task(
 async def clean_reels_video(
     draft_id: str,
     payload: CleanVideoPayload,
-    background_tasks: BackgroundTasks,
     _: None = Depends(_require_auth),
 ):
-    """Start video cleaning (silence removal) as a background task."""
+    """Start video cleaning (silence removal) via persistent task queue."""
+    from bot.services.video_task_store import enqueue_task, estimate_time_seconds, get_active_task_for_draft, pending_count
+    from bot.services import video_task_worker
+
     draft = await serialize_reels_draft(draft_id)
     if not draft:
         raise HTTPException(status_code=404, detail="reels_not_found")
 
-    current = _clean_status.get(draft_id)
-    if current and current["status"] == "running":
+    existing = await get_active_task_for_draft(draft_id, "clean")
+    if existing:
         return JSONResponse(
             status_code=409,
             content={"detail": "clean_already_running", "draft_id": draft_id},
         )
 
-    _clean_status[draft_id] = {"status": "pending", "error": None, "result": None}
-    background_tasks.add_task(
-        _run_clean_video_task,
-        draft_id,
-        payload.min_pause_duration,
-        payload.silence_threshold_db,
-        payload.use_whisper,
+    # Get video duration for time estimation
+    p = draft.get("payload", {}) if isinstance(draft, dict) else {}
+    tech = p.get("tech_check") or {}
+    info = tech.get("info") or {}
+    video_duration = info.get("duration_seconds")
+
+    config = {
+        "min_pause_duration": payload.min_pause_duration,
+        "silence_threshold_db": payload.silence_threshold_db,
+        "use_whisper": payload.use_whisper,
+    }
+    task = await enqueue_task(
+        draft_id, "clean", config, video_duration=video_duration,
     )
+    est = estimate_time_seconds("clean", video_duration, config)
+    queue_size = await pending_count()
+
+    # Update in-memory status for SSE
+    _clean_status[draft_id] = {"status": "pending", "error": None, "result": None, "step": "queued", "progress": 0}
+    video_task_worker.live_status[draft_id] = {
+        "task_id": task.task_id, "task_type": "clean",
+        "status": "pending", "step": "queued", "progress": 0,
+        "video_duration": video_duration,
+    }
+
     return JSONResponse(
         status_code=202,
-        content={"draft_id": draft_id, "status": "pending"},
+        content={
+            "draft_id": draft_id,
+            "task_id": task.task_id,
+            "status": "pending",
+            "estimated_seconds": est,
+            "queue_position": queue_size,
+        },
     )
 
 
@@ -832,31 +910,68 @@ async def clean_video_status(
     draft_id: str,
     _: None = Depends(_require_auth),
 ):
-    """Check video cleaning status."""
-    status = _clean_status.get(draft_id)
-    if not status:
-        draft = await serialize_reels_draft(draft_id)
-        if not draft:
-            raise HTTPException(status_code=404, detail="reels_not_found")
-        p = draft.get("payload", {})
-        if isinstance(p, dict) and p.get("cleaning_status") == "completed":
-            return {
-                "draft_id": draft_id,
-                "status": "completed",
-                "result": p.get("cleaning_result"),
-            }
-        return {"draft_id": draft_id, "status": "not_started"}
+    """Check video cleaning status — checks live status, then DB task, then draft payload."""
+    from bot.services import video_task_worker
+    from bot.services.video_task_store import get_active_task_for_draft, estimate_time_seconds, get_queue_position
 
-    response: dict = {"draft_id": draft_id, "status": status["status"]}
-    if status.get("error"):
-        response["error"] = status["error"]
-    if status.get("result"):
-        response["result"] = status["result"]
-    if status.get("step"):
-        response["step"] = status["step"]
-    if status.get("progress"):
-        response["progress"] = status["progress"]
-    return response
+    # 1. Check live in-memory status (fastest)
+    live = video_task_worker.live_status.get(draft_id)
+    if live and live.get("task_type") == "clean":
+        resp: dict = {
+            "draft_id": draft_id,
+            "status": live["status"],
+            "step": live.get("step", ""),
+            "progress": live.get("progress", 0),
+        }
+        if live.get("error"):
+            resp["error"] = live["error"]
+        if live.get("result"):
+            resp["result"] = live["result"]
+        if live.get("video_duration"):
+            resp["estimated_seconds"] = estimate_time_seconds(
+                "clean", live["video_duration"],
+            )
+        return resp
+
+    # 2. Check persistent task queue
+    task = await get_active_task_for_draft(draft_id, "clean")
+    if task:
+        resp = {
+            "draft_id": draft_id,
+            "status": task.status,
+            "step": task.step or "queued",
+            "progress": task.progress,
+        }
+        if task.video_duration:
+            resp["estimated_seconds"] = estimate_time_seconds(
+                "clean", task.video_duration, task.config,
+            )
+        pos = await get_queue_position(task.task_id)
+        if pos > 0:
+            resp["queue_position"] = pos
+        return resp
+
+    # 3. Fallback: check in-memory dict (legacy)
+    status = _clean_status.get(draft_id)
+    if status:
+        resp = {"draft_id": draft_id, "status": status["status"]}
+        for key in ("error", "result", "step", "progress"):
+            if status.get(key):
+                resp[key] = status[key]
+        return resp
+
+    # 4. Check draft payload
+    draft = await serialize_reels_draft(draft_id)
+    if not draft:
+        raise HTTPException(status_code=404, detail="reels_not_found")
+    p = draft.get("payload", {})
+    if isinstance(p, dict) and p.get("cleaning_status") == "completed":
+        return {
+            "draft_id": draft_id,
+            "status": "completed",
+            "result": p.get("cleaning_result"),
+        }
+    return {"draft_id": draft_id, "status": "not_started"}
 
 
 # ── SSE stream for real-time generation updates ─────────────────────────
@@ -919,36 +1034,49 @@ def _sse_msg(data: dict) -> str:
 
 @router.get("/api/reels/{draft_id}/clean-video-stream")
 async def clean_video_stream(draft_id: str, _: str = Depends(_resolve_init_data)):
-    """Server-Sent Events stream that pushes video cleaning status."""
+    """Server-Sent Events stream for video task progress (clean or compose)."""
+    from bot.services import video_task_worker
+    from bot.services.video_task_store import estimate_time_seconds
 
     async def _event_generator():
-        if draft_id not in _clean_events:
-            _clean_events[draft_id] = asyncio.Event()
-        evt = _clean_events[draft_id]
+        evt = video_task_worker.get_event(draft_id)
         try:
-            for _ in range(180):  # max ~6 minutes
-                status = _clean_status.get(draft_id)
-                if not status:
-                    draft = await serialize_reels_draft(draft_id)
-                    if not draft:
-                        yield _sse_msg({"error": "not_found"})
+            for _ in range(300):  # max ~10 minutes
+                live = video_task_worker.live_status.get(draft_id)
+                if not live:
+                    # Check legacy in-memory
+                    status = _clean_status.get(draft_id)
+                    if not status:
+                        draft = await serialize_reels_draft(draft_id)
+                        if not draft:
+                            yield _sse_msg({"error": "not_found"})
+                            return
+                        p = draft.get("payload", {}) if isinstance(draft, dict) else {}
+                        if p.get("cleaning_status") == "completed":
+                            yield _sse_msg({"draft_id": draft_id, "status": "completed", "result": p.get("cleaning_result")})
+                            return
+                        yield _sse_msg({"draft_id": draft_id, "status": "not_started"})
                         return
-                    p = draft.get("payload", {}) if isinstance(draft, dict) else {}
-                    if p.get("cleaning_status") == "completed":
-                        yield _sse_msg({"draft_id": draft_id, "status": "completed", "result": p.get("cleaning_result")})
-                        return
-                    yield _sse_msg({"draft_id": draft_id, "status": "not_started"})
-                    return
+                    live = status
 
-                yield _sse_msg({
+                msg = {
                     "draft_id": draft_id,
-                    "status": status["status"],
-                    "error": status.get("error"),
-                    "result": status.get("result"),
-                    "step": status.get("step"),
-                    "progress": status.get("progress", 0),
-                })
-                if status["status"] in ("completed", "failed"):
+                    "status": live.get("status", "unknown"),
+                    "step": live.get("step", ""),
+                    "progress": live.get("progress", 0),
+                }
+                if live.get("error"):
+                    msg["error"] = live["error"]
+                if live.get("result"):
+                    msg["result"] = live["result"]
+                vid_dur = live.get("video_duration")
+                if vid_dur:
+                    msg["estimated_seconds"] = estimate_time_seconds(
+                        live.get("task_type", "clean"), vid_dur,
+                    )
+
+                yield _sse_msg(msg)
+                if live.get("status") in ("completed", "failed"):
                     return
                 evt.clear()
                 try:
@@ -956,7 +1084,7 @@ async def clean_video_stream(draft_id: str, _: str = Depends(_resolve_init_data)
                 except asyncio.TimeoutError:
                     pass
         finally:
-            _clean_events.pop(draft_id, None)
+            pass
 
     return StreamingResponse(
         _event_generator(),

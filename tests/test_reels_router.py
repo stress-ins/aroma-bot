@@ -377,9 +377,14 @@ class TestPublish:
 
 class TestCompose:
     def test_compose_starts(self, client):
+        mock_task = AsyncMock()
+        mock_task.task_id = "new-task-id"
         with (
             patch("miniapp.api.routers.reels.serialize_reels_draft", new_callable=AsyncMock, return_value=SAMPLE_DRAFT),
-            patch("miniapp.api.routers.reels._run_compose_task", new_callable=AsyncMock),
+            patch("bot.services.video_task_store.get_active_task_for_draft", new_callable=AsyncMock, return_value=None),
+            patch("bot.services.video_task_store.enqueue_task", new_callable=AsyncMock, return_value=mock_task),
+            patch("bot.services.video_task_store.estimate_time_seconds", return_value=90),
+            patch("bot.services.video_task_store.pending_count", new_callable=AsyncMock, return_value=1),
         ):
             resp = client.post("/api/reels/r01/compose")
         assert resp.status_code == 202
@@ -393,22 +398,34 @@ class TestCompose:
         assert resp.status_code == 404
 
     def test_compose_already_running(self, client):
-        _compose_status["r01"] = {"status": "running", "error": None, "result": None}
-        with patch("miniapp.api.routers.reels.serialize_reels_draft", new_callable=AsyncMock, return_value=SAMPLE_DRAFT):
+        mock_task = AsyncMock()
+        mock_task.task_id = "existing-task"
+        with (
+            patch("miniapp.api.routers.reels.serialize_reels_draft", new_callable=AsyncMock, return_value=SAMPLE_DRAFT),
+            patch("bot.services.video_task_store.get_active_task_for_draft", new_callable=AsyncMock, return_value=mock_task),
+        ):
             resp = client.post("/api/reels/r01/compose")
         assert resp.status_code == 409
         assert resp.json()["detail"] == "compose_already_running"
 
     def test_compose_status_not_started(self, client):
         draft_no_video = {**SAMPLE_DRAFT, "payload": {}}
-        with patch("miniapp.api.routers.reels.serialize_reels_draft", new_callable=AsyncMock, return_value=draft_no_video):
+        with (
+            patch("miniapp.api.routers.reels.serialize_reels_draft", new_callable=AsyncMock, return_value=draft_no_video),
+            patch("bot.services.video_task_store.get_active_task_for_draft", new_callable=AsyncMock, return_value=None),
+            patch("bot.services.video_task_worker.live_status", {}),
+        ):
             resp = client.get("/api/reels/r01/compose-status")
         assert resp.status_code == 200
         assert resp.json()["status"] == "not_started"
 
     def test_compose_status_completed_from_payload(self, client):
         draft_with_video = {**SAMPLE_DRAFT, "payload": {"video_ready": True, "video_path": "/v.mp4", "video_url": "/static/v.mp4"}}
-        with patch("miniapp.api.routers.reels.serialize_reels_draft", new_callable=AsyncMock, return_value=draft_with_video):
+        with (
+            patch("miniapp.api.routers.reels.serialize_reels_draft", new_callable=AsyncMock, return_value=draft_with_video),
+            patch("bot.services.video_task_store.get_active_task_for_draft", new_callable=AsyncMock, return_value=None),
+            patch("bot.services.video_task_worker.live_status", {}),
+        ):
             resp = client.get("/api/reels/r01/compose-status")
         assert resp.status_code == 200
         data = resp.json()
@@ -417,20 +434,32 @@ class TestCompose:
 
     def test_compose_status_running(self, client):
         _compose_status["r01"] = {"status": "running", "error": None, "result": None}
-        resp = client.get("/api/reels/r01/compose-status")
+        with (
+            patch("bot.services.video_task_store.get_active_task_for_draft", new_callable=AsyncMock, return_value=None),
+            patch("bot.services.video_task_worker.live_status", {}),
+        ):
+            resp = client.get("/api/reels/r01/compose-status")
         assert resp.status_code == 200
         assert resp.json()["status"] == "running"
 
     def test_compose_status_failed(self, client):
         _compose_status["r01"] = {"status": "failed", "error": "timeout", "result": None}
-        resp = client.get("/api/reels/r01/compose-status")
+        with (
+            patch("bot.services.video_task_store.get_active_task_for_draft", new_callable=AsyncMock, return_value=None),
+            patch("bot.services.video_task_worker.live_status", {}),
+        ):
+            resp = client.get("/api/reels/r01/compose-status")
         assert resp.status_code == 200
         data = resp.json()
         assert data["status"] == "failed"
         assert data["error"] == "timeout"
 
     def test_compose_status_draft_not_found(self, client):
-        with patch("miniapp.api.routers.reels.serialize_reels_draft", new_callable=AsyncMock, return_value=None):
+        with (
+            patch("miniapp.api.routers.reels.serialize_reels_draft", new_callable=AsyncMock, return_value=None),
+            patch("bot.services.video_task_store.get_active_task_for_draft", new_callable=AsyncMock, return_value=None),
+            patch("bot.services.video_task_worker.live_status", {}),
+        ):
             resp = client.get("/api/reels/missing/compose-status")
         assert resp.status_code == 404
 
