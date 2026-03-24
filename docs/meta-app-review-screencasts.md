@@ -1,7 +1,7 @@
 # Сценарии скринкастов для Meta App Review
 
 Каждый скринкаст демонстрирует конкретное permission и его использование в приложении.
-Рекомендуемая длительность: 30-60 секунд каждый.
+Рекомендуемая длительность: 30-60 секунд каждый. Всего: **15 скринкастов** (7 Threads + 8 Instagram).
 
 ---
 
@@ -77,7 +77,21 @@
 
 ---
 
-### 6. threads_manage_mentions — Управление упоминаниями
+### 6. threads_keyword_search — Поиск по ключевым словам
+
+**Что показать:** приложение ищет контент по ключевым словам в Threads.
+
+1. Открыть **Тренды** → вкладка **Threads**
+2. Показать раздел **"Ключевые слова"** — найденные посты по отслеживаемым темам
+3. Перейти в **Настройки** → **Теги для мониторинга** → добавить новый тег
+4. Вернуться в **Тренды** → нажать **"Обновить"**
+5. Показать что новые посты по ключевому слову появились
+
+**API-вызовы:** `GET /search` (keyword search в Threads)
+
+---
+
+### 7. threads_manage_mentions — Управление упоминаниями
 
 **Что показать:** приложение мониторит и обрабатывает упоминания бренда.
 
@@ -94,7 +108,7 @@
 
 ## Instagram Permissions
 
-### 7. instagram_business_basic — Базовый доступ
+### 8. instagram_business_basic — Базовый доступ
 
 **Что показать:** приложение читает профиль и медиа бизнес-аккаунта.
 
@@ -110,7 +124,7 @@
 
 ---
 
-### 8. instagram_business_content_publish — Публикация контента
+### 9. instagram_business_content_publish — Публикация контента
 
 **Что показать:** приложение создаёт и публикует пост в Instagram.
 
@@ -125,7 +139,7 @@
 
 ---
 
-### 9. instagram_business_manage_comments — Управление комментариями
+### 10. instagram_business_manage_comments — Управление комментариями
 
 **Что показать:** приложение читает комментарии и отвечает на них.
 
@@ -140,7 +154,7 @@
 
 ---
 
-### 10. instagram_business_manage_insights — Аналитика
+### 11. instagram_business_manage_insights — Аналитика
 
 **Что показать:** приложение собирает и отображает аналитику постов.
 
@@ -155,7 +169,7 @@
 
 ---
 
-### 11. instagram_business_manage_messages — Сообщения
+### 12. instagram_business_manage_messages — Сообщения (DM)
 
 **Что показать:** приложение мониторит входящие сообщения (DM).
 
@@ -165,6 +179,48 @@
 4. Сгенерировать AI-ответ или перейти к DM в Instagram
 
 **API-вызовы:** Webhook-based — Instagram отправляет уведомления о новых DM
+
+---
+
+### 13. instagram_manage_comments — Комментарии (Creator/Personal)
+
+**Что показать:** аналогично `instagram_business_manage_comments`, но для Creator-аккаунтов.
+
+1. Открыть **Упоминания** → фильтр **Instagram**
+2. Показать комментарии к постам (от Creator-аккаунта)
+3. Выбрать комментарий → сгенерировать ответ
+4. Опубликовать ответ
+
+**API-вызовы:** `GET /{post_id}/comments`, `POST /{media_id}/comments`
+**Примечание:** объединить с записью #10, показав что функционал работает для разных типов аккаунтов.
+
+---
+
+### 14. instagram_manage_insights — Аналитика (Creator/Personal)
+
+**Что показать:** аналогично `instagram_business_manage_insights`, но для Creator-аккаунтов.
+
+1. Открыть **Тренды** → вкладка **Instagram**
+2. Показать метрики постов (reach, impressions, likes, comments)
+3. Показать сравнительный анализ вовлечённости
+
+**API-вызовы:** `GET /{post_id}/insights`, `GET /{post_id}?fields=like_count`
+**Примечание:** объединить с записью #11.
+
+---
+
+### 15. pages_read_engagement — Чтение вовлечённости страниц
+
+**Что показать:** приложение читает данные вовлечённости Facebook Page, привязанной к Instagram.
+
+1. Открыть **Настройки** → **Аккаунты** → показать подключённый Instagram
+2. Показать раздел **"Разрешения"** — `pages_read_engagement` в списке
+3. Перейти в **Тренды** → вкладка **Instagram**
+4. Показать данные постов — лайки, комментарии, вовлечённость (собираются через Page API)
+5. Показать business_discovery — посты мониторимых конкурентных аккаунтов
+
+**API-вызовы:** `GET /{page_id}/published_posts`, engagement metrics via Graph API
+**Примечание:** этот permission необходим для корректной работы business_discovery и сбора метрик.
 
 ---
 
@@ -178,17 +234,34 @@
 5. Убедиться что есть хотя бы 1-2 упоминания в разделе Упоминания
 
 ### Порядок записи (рекомендуемый):
-1. **threads_basic** + OAuth flow (подключение)
-2. **threads_manage_mentions** (входящие упоминания)
-3. **threads_read_replies** (чтение ответов)
-4. **threads_manage_replies** (публикация ответа)
-5. **threads_content_publish** (публикация поста)
-6. **threads_manage_insights** (аналитика Threads)
-7. **instagram_business_basic** + OAuth flow
-8. **instagram_business_manage_insights** (аналитика Instagram)
-9. **instagram_business_manage_comments** (комментарии)
-10. **instagram_business_content_publish** (публикация)
-11. **instagram_business_manage_messages** (DM)
+
+**Threads (7 скринкастов):**
+1. **threads_basic** + OAuth flow (подключение, профиль, посты)
+2. **threads_keyword_search** (поиск контента по ключевым словам)
+3. **threads_manage_mentions** (входящие упоминания)
+4. **threads_read_replies** (чтение ответов)
+5. **threads_manage_replies** (публикация ответа в тред)
+6. **threads_content_publish** (публикация поста)
+7. **threads_manage_insights** (аналитика Threads)
+
+**Instagram (8 скринкастов):**
+8. **instagram_business_basic** + OAuth flow (подключение, посты, хэштеги)
+9. **instagram_business_content_publish** (публикация поста/карусели)
+10. **instagram_business_manage_comments** (чтение + ответы на комментарии)
+11. **instagram_business_manage_insights** (аналитика, business_discovery)
+12. **instagram_business_manage_messages** (DM)
+13. **instagram_manage_comments** (объединить с #10 — показать для Creator-аккаунта)
+14. **instagram_manage_insights** (объединить с #11 — показать для Creator-аккаунта)
+15. **pages_read_engagement** (данные вовлечённости, business_discovery конкурентов)
+
+### Что показать в OAuth consent screen:
+Для каждого подключения (Threads и Instagram) — **на паузу показать список запрашиваемых permissions** в consent-экране, чтобы рецензент видел что приложение запрашивает именно тот scope.
+
+### Что показать в UI (Настройки → Аккаунты):
+Раскрыть блок **"Разрешения"** в карточке подключённого аккаунта — все скоупы с зелёными галочками. Это подтверждает что приложение использует все запрошенные permissions.
+
+### Оптимизация — объединение скринкастов:
+Скринкасты #13 и #14 (`instagram_manage_comments`, `instagram_manage_insights`) можно объединить с #10 и #11 соответственно, показав что один и тот же функционал работает для Business и Creator аккаунтов. Итого можно записать **13 скринкастов** вместо 15.
 
 ### Советы для скринкаста:
 - Записывать только экран браузера (без рабочий стол)
@@ -196,3 +269,4 @@
 - Не торопиться — каждое действие должно быть видимым
 - Если данных нет (пусто) — сначала наполнить через "Обновить"
 - Запись в 1080p, формат MP4 или MOV
+- Каждый скринкаст подписать названием permission (для рецензента)
