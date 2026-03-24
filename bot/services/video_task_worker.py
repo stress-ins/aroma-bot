@@ -80,6 +80,34 @@ def get_event(draft_id: str) -> asyncio.Event:
     return _events[draft_id]
 
 
+async def _notify_admin_error(task, error_msg: str) -> None:
+    """Send error details to admin via Telegram (monitoring)."""
+    try:
+        from config import settings
+        import httpx
+
+        admin_chat_id = getattr(settings, "admin_telegram_chat_id", None)
+        bot_token = getattr(settings, "bot_token", None)
+        if not admin_chat_id or not bot_token:
+            return
+
+        is_oom = "rc=-9" in error_msg or "OOM" in error_msg or "killed" in error_msg
+        text = (
+            f"\u26a0\ufe0f Video task FAILED\n"
+            f"Type: {task.task_type}\n"
+            f"Draft: {task.draft_id}\n"
+            f"Duration: {task.video_duration or '?'}s\n"
+            f"{'OOM KILL' if is_oom else 'Error'}: {error_msg[:300]}"
+        )
+        async with httpx.AsyncClient(timeout=10) as client:
+            await client.post(
+                f"https://api.telegram.org/bot{bot_token}/sendMessage",
+                json={"chat_id": admin_chat_id, "text": text},
+            )
+    except Exception:
+        logger.debug("Failed to notify admin about video task error")
+
+
 async def start_worker() -> None:
     """Start the background worker. Call once at app startup."""
     global _worker_task
@@ -169,6 +197,7 @@ async def _worker_loop() -> None:
                 notify(task.draft_id)
                 logger.error("video_worker: %s failed for draft %s: %s", task.task_type, task.draft_id, exc)
                 await _send_notifications(task.draft_id, task.task_type, "failed")
+                await _notify_admin_error(task, error_msg)
 
         except Exception:
             logger.exception("video_worker: unexpected error in loop")
