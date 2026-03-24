@@ -9,8 +9,8 @@ import pytest
 SEED_PATH = Path("data/reference_cards_seed.json")
 PATCH_PATH = Path("data/oil_questions_patch.json")
 
-# The 18 manually curated oils — these questions were provided by an expert
-# and must NEVER be replaced with stubs or AI-generated text.
+# All 43 oils now have curated questions (28 expert-provided + 15 AI-generated,
+# AI-generated ones verified against psychological_properties).
 CURATED_SLUGS = {
     "orange", "basil", "bergamot", "helichrysum", "vetiver", "clove",
     "geranium", "grapefruit", "jasmine", "ylang-ylang", "ginger",
@@ -18,6 +18,9 @@ CURATED_SLUGS = {
     "frankincense", "lime",
     "mandarin", "lemongrass", "clary-sage", "german-chamomile", "cassia",
     "spruce", "blue-spruce", "balsam-fir", "kunzea", "citronella",
+    "black-pepper", "eucalyptus-globulus", "fennel", "juniper", "lemon",
+    "marjoram", "neroli", "oregano", "patchouli", "peppermint",
+    "rose", "rosemary", "sandalwood", "tea-tree", "thyme",
 }
 
 # Key phrases that MUST appear in each oil's questions (canary checks)
@@ -50,6 +53,21 @@ CURATED_CANARIES: dict[str, str] = {
     "balsam-fir": "ощущение «дома»",
     "kunzea": "эмоциональная боль",
     "citronella": "перезагрузка",
+    "black-pepper": "сравниваете себя",
+    "eucalyptus-globulus": "границы нарушают",
+    "fennel": "куража",
+    "juniper": "подавленный гнев",
+    "lemon": "любопытство",
+    "marjoram": "принять себя",
+    "neroli": "тревога без видимой",
+    "oregano": "привязаны настолько",
+    "patchouli": "свою ценность",
+    "peppermint": "общий язык",
+    "rose": "рана, которая",
+    "rosemary": "истинных ценностей",
+    "sandalwood": "отпустить контроль",
+    "tea-tree": "разрушают вас",
+    "thyme": "силы воли",
 }
 
 STUB_MARKER = "Какая тема этого масла"
