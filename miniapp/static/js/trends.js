@@ -185,14 +185,42 @@ export function createTrendsModule(deps) {
       })}</div>`;
     }
 
+    const ownUsernames = new Set(
+      [...(monitoredAccounts.instagram || []), ...(monitoredAccounts.threads || [])]
+        .map(a => (a.username || a).replace(/^@/, "").toLowerCase()),
+    );
+    const _mediaLabel = (mt) => {
+      if (!mt) return "";
+      const map = { IMAGE: "Фото", VIDEO: "Видео", CAROUSEL_ALBUM: "Карусель", TEXT_POST: "Текст", REEL: "Reels" };
+      return map[mt] || mt;
+    };
+    const _relDate = (iso) => {
+      if (!iso) return "";
+      const d = new Date(iso);
+      const now = new Date();
+      const diffH = Math.round((now - d) / 3600000);
+      if (diffH < 1) return "только что";
+      if (diffH < 24) return `${diffH}ч назад`;
+      const diffD = Math.round(diffH / 24);
+      return `${diffD}д назад`;
+    };
+
     const cards = topPosts
       .slice(0, 10)
       .map((p, i) => {
         const preview = escapeHtml((p.text || "").substring(0, 80));
+        const author = (p.author_username || "").toLowerCase();
+        const isOwn = ownUsernames.has(author);
+        const ownerBadge = isOwn
+          ? `<span class="meta-chip meta-chip--own">Свой</span>`
+          : `<span class="meta-chip meta-chip--competitor">Чужой</span>`;
+        const mediaBadge = p.media_type ? `<span class="meta-chip">${_mediaLabel(p.media_type)}</span>` : "";
+        const dateBadge = p.posted_at ? `<span class="meta-chip meta-chip--muted">${_relDate(p.posted_at)}</span>` : "";
         return `
         <div class="draft-card" data-action="openTrendsPost" data-args='[${i}]'>
           <div class="draft-card-header">
             <span class="draft-card-topic">@${escapeHtml(p.author_username || "—")}</span>
+            <span class="draft-card-badges">${ownerBadge}${mediaBadge}${dateBadge}</span>
           </div>
           <div class="draft-card-preview">${preview}${p.text && p.text.length > 80 ? "…" : ""}</div>
           <div class="draft-card-meta">
@@ -874,11 +902,22 @@ export function createTrendsModule(deps) {
     if (!post) return;
 
     const eng = (post.like_count || 0) + (post.comment_count || 0) + (post.share_count || 0) + (post.reply_count || 0);
+    const ownUsernames = new Set(
+      [...(monitoredAccounts.instagram || []), ...(monitoredAccounts.threads || [])]
+        .map(a => (a.username || a).replace(/^@/, "").toLowerCase()),
+    );
+    const detailAuthor = (post.author_username || "").toLowerCase();
+    const isOwnPost = ownUsernames.has(detailAuthor);
+    const _mediaLbl = (mt) => ({ IMAGE: "Фото", VIDEO: "Видео", CAROUSEL_ALBUM: "Карусель", TEXT_POST: "Текст", REEL: "Reels" }[mt] || mt || "");
 
     elements.draftDetail.innerHTML = `
       ${renderBackButton("К трендам", () => { void loadTrends(); })}
       <div class="detail-section">
-        <div class="detail-section-title">${escapeHtml(post.author_username || "Пост")}</div>
+        <div class="detail-section-title">
+          @${escapeHtml(post.author_username || "Пост")}
+          ${isOwnPost ? `<span class="meta-chip meta-chip--own">Свой</span>` : `<span class="meta-chip meta-chip--competitor">Чужой</span>`}
+          ${post.media_type ? `<span class="meta-chip">${_mediaLbl(post.media_type)}</span>` : ""}
+        </div>
         <div class="detail-text">${escapeHtml(post.text || "").replace(/\n/g, "<br>")}</div>
         <div class="detail-meta" style="margin-top: 12px;">
           ${(post.like_count || 0) ? actionLabel("heart", post.like_count) : ""}
@@ -942,7 +981,10 @@ export function createTrendsModule(deps) {
       showUiNotice("Генерация карточек запущена", "info");
       trendCards = null;
       renderTrendsListPanel();
-    } catch (e) { showUiNotice("Произошла ошибка", "error"); }
+    } catch (e) {
+      if (e?.message === "paywall") return; // paywall already shown by fetchJson
+      showUiNotice(`Ошибка генерации: ${e?.message || "неизвестная ошибка"}`, "error");
+    }
   }
 
   async function createFromTrendCard(cardId, title) {
