@@ -477,6 +477,24 @@ export function createDraftsModule(deps) {
             ` : ""}
             ${renderMoveButton(d.draft_id)}
           </div>
+          ${d.kind === "carousel" ? (() => {
+            const curLayout = p.layout_style || "overlay";
+            return `<div class="carousel-layout-switcher">
+              <p class="field-label">Раскладка слайда</p>
+              <div class="layout-option-row">
+                <label class="layout-option${curLayout === "overlay" ? " layout-option--active" : ""}">
+                  <input type="radio" name="detail_layout_style" value="overlay" ${curLayout === "overlay" ? "checked" : ""} hidden>
+                  <div class="layout-preview layout-preview--overlay"><div class="lp-image"></div><div class="lp-text-overlay"></div></div>
+                  <span>Полное фото</span>
+                </label>
+                <label class="layout-option${curLayout === "editorial" ? " layout-option--active" : ""}">
+                  <input type="radio" name="detail_layout_style" value="editorial" ${curLayout === "editorial" ? "checked" : ""} hidden>
+                  <div class="layout-preview layout-preview--editorial"><div class="lp-image" style="height:55%"></div><div class="lp-text-block"><span class="lp-highlight"></span><span class="lp-line"></span></div></div>
+                  <span>Редакционная</span>
+                </label>
+              </div>
+            </div>`;
+          })() : ""}
         </div>
         ${payloadSection("Превью", fullPreview(d))}
         ${payloadSection("Угол", p.angle)}
@@ -499,6 +517,24 @@ export function createDraftsModule(deps) {
       const readyCount = (p.slide_images || []).filter(Boolean).length;
       const slideCount = (p.slides || []).length;
       if (d.generation_pending || readyCount < slideCount) scheduleCarouselRefresh(d.draft_id);
+      // Layout switcher
+      elements.draftDetail.querySelectorAll('[name="detail_layout_style"]').forEach((radio) => {
+        radio.addEventListener("change", async () => {
+          const newStyle = radio.value;
+          elements.draftDetail.querySelectorAll(".layout-option").forEach((lbl) =>
+            lbl.classList.toggle("layout-option--active", lbl.querySelector("input")?.value === newStyle));
+          try {
+            const updated = await fetchJson(`/api/carousel/${d.draft_id}/layout`, {
+              method: "POST", body: JSON.stringify({ layout_style: newStyle }),
+            });
+            mergeDraftIntoState(updated);
+            callbacks.renderDraftList?.();
+            showUiNotice(`Раскладка: ${newStyle === "editorial" ? "Редакционная" : "Полное фото"}`, "success");
+          } catch (_err) {
+            showUiNotice("Не удалось сменить раскладку", "error");
+          }
+        });
+      });
     } else if (d.generation_pending) {
       scheduleDraftRefresh(d.draft_id);
     }

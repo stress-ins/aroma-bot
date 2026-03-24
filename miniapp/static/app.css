@@ -4722,8 +4722,12 @@ body.is-mobile-layout .detail-icon-actions button {
 }
 
 /* ── Carousel layout picker ───────────────────────────────────────────────── */
-.carousel-layout-picker {
+.carousel-layout-picker,
+.carousel-layout-switcher {
   margin-top: var(--space-4);
+}
+.carousel-layout-switcher {
+  padding: 0 var(--space-3);
 }
 .layout-option-row {
   display: flex;
