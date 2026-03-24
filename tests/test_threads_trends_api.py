@@ -121,7 +121,8 @@ class TestCollectFromAccounts:
             ])
 
         assert count == 6
-        assert call_count == 2
+        # 2 pages + 6 per-post insights enrichment calls
+        assert call_count == 8
 
 
 class TestOwnInsights:
