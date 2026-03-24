@@ -579,13 +579,6 @@ export function createReelsModule(deps) {
           <div class="reels-skeleton-bar" style="width:80%"></div>
           <div class="reels-skeleton-bar" style="width:55%"></div>
         </div>
-        ${!String(r.draft_id || "").startsWith("pending-") ? `
-        <div class="actions-row" style="justify-content:center;padding:12px 0">
-          <button class="secondary-button compact" type="button"
-            data-action="forceEditReels" data-args='${JSON.stringify([r.draft_id, null])}'>
-            Перейти к редактированию
-          </button>
-        </div>` : ""}
       </div>
     `;
   }
@@ -613,7 +606,7 @@ export function createReelsModule(deps) {
           </div>
         </div>
 
-        <div class="actions-row">
+        <div class="actions-row" style="flex-direction:column">
           ${isLightweight ? `
             <button class="primary-button" type="button"
               data-action="approveReels" data-args='${JSON.stringify([r.draft_id, null])}'>

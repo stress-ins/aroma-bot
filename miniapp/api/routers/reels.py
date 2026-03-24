@@ -853,7 +853,7 @@ async def reels_generation_stream(draft_id: str, _: str = Depends(_resolve_init_
                 if not draft:
                     yield _sse_msg({"error": "not_found"})
                     return
-                serialized = serialize_reels_draft(draft)
+                serialized = await serialize_reels_draft(draft.draft_id) or {}
                 payload = draft.payload or {}
                 data = {
                     "draft_id": draft_id,
