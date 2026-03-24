@@ -6,6 +6,65 @@ import json
 from .helpers import WCAG_AA_MIN, contrast_ratio, parse_rgb
 
 
+def test_filter_panel_layout_no_overflow(page):
+    """Filter selects stay within viewport and labels stack vertically."""
+    page.locator("#btnTabInspiration").click()
+    page.wait_for_timeout(100)
+    page.locator("#filtersToggleBtn").click()
+    page.wait_for_timeout(100)
+
+    metrics = page.evaluate(
+        """
+        () => {
+            const vw = window.innerWidth;
+            const body = document.getElementById('filtersBody');
+            if (!body) return { error: 'filtersBody not found' };
+            const bodyRect = body.getBoundingClientRect();
+            const labels = [...body.querySelectorAll('label')];
+            const results = labels.map(l => {
+                const rect = l.getBoundingClientRect();
+                const sel = l.querySelector('select, input');
+                const selRect = sel ? sel.getBoundingClientRect() : null;
+                return {
+                    text: l.textContent.trim().slice(0, 20),
+                    right: Math.round(rect.right),
+                    labelTop: Math.round(rect.top),
+                    selectTop: selRect ? Math.round(selRect.top) : null,
+                };
+            });
+            const count = document.getElementById('draftCount');
+            const countRect = count ? count.getBoundingClientRect() : null;
+            return {
+                vw,
+                bodyRight: Math.round(bodyRect.right),
+                labels: results,
+                countRight: countRect ? Math.round(countRect.right) : null,
+                countClipped: countRect ? countRect.right > vw : null,
+            };
+        }
+        """
+    )
+
+    assert "error" not in metrics, metrics.get("error")
+    vw = metrics["vw"]
+
+    # Filter body should not overflow viewport
+    assert metrics["bodyRight"] <= vw + 2, (
+        f"Filter body overflows viewport: right={metrics['bodyRight']}px > vw={vw}px"
+    )
+
+    # Each label's select should be below the label text (column layout)
+    for lbl in metrics["labels"]:
+        if lbl["selectTop"] is not None:
+            assert lbl["selectTop"] >= lbl["labelTop"], (
+                f"Filter '{lbl['text']}': select not below label text"
+            )
+
+    # Draft count should not be clipped
+    if metrics["countClipped"] is not None:
+        assert not metrics["countClipped"], "Draft count is clipped by viewport"
+
+
 def test_draft_search_empty_state_offers_guidance(page):
     page.locator("#btnTabInspiration").click()
     page.wait_for_timeout(100)
