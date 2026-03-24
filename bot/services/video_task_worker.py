@@ -46,12 +46,13 @@ async def _send_notifications(draft_id: str, task_type: str, status: str) -> Non
     from config import settings
     import httpx
 
-    bot_token = settings.bot_token
+    bot_token = settings.telegram_bot_token
     if not bot_token:
         return
 
+    task_labels = {"clean": "Очистка видео", "compose": "Сборка видео", "grade": "Цветокоррекция"}
     emoji = "\u2705" if status == "completed" else "\u274c"
-    task_label = "Очистка видео" if task_type == "clean" else "Сборка видео"
+    task_label = task_labels.get(task_type, task_type)
     status_label = "завершена" if status == "completed" else "не удалась"
     text = f"{emoji} {task_label} {status_label}.\n\nОткройте приложение чтобы посмотреть результат."
 
@@ -86,26 +87,44 @@ async def _notify_admin_error(task, error_msg: str) -> None:
         from config import settings
         import httpx
 
-        admin_chat_id = getattr(settings, "admin_telegram_chat_id", None)
-        bot_token = getattr(settings, "bot_token", None)
-        if not admin_chat_id or not bot_token:
+        bot_token = settings.telegram_bot_token
+        if not bot_token:
+            return
+
+        # Try admin chat, fallback to draft creator
+        admin_chat_id = getattr(settings, "admin_telegram_chat_id", "") or ""
+        if not admin_chat_id:
+            # Get draft creator
+            try:
+                from bot.services.drafts_store import get_draft
+                draft = await get_draft(task.draft_id)
+                if draft and draft.created_by:
+                    admin_chat_id = str(draft.created_by)
+            except Exception:
+                pass
+
+        if not admin_chat_id:
+            logger.warning("No admin_chat_id and no draft creator — cannot send error notification")
             return
 
         is_oom = "rc=-9" in error_msg or "OOM" in error_msg or "killed" in error_msg
+        task_labels = {"clean": "Очистка видео", "compose": "Сборка видео", "grade": "Цветокоррекция"}
+        task_label = task_labels.get(task.task_type, task.task_type)
         text = (
-            f"\u26a0\ufe0f Video task FAILED\n"
-            f"Type: {task.task_type}\n"
-            f"Draft: {task.draft_id}\n"
-            f"Duration: {task.video_duration or '?'}s\n"
-            f"{'OOM KILL' if is_oom else 'Error'}: {error_msg[:300]}"
+            f"\u26a0\ufe0f {task_label} — ошибка\n\n"
+            f"Draft: {task.draft_id[:8]}\n"
+            f"Длительность: {task.video_duration or '?'}с\n"
+            f"{'⚡ OOM (нехватка памяти)' if is_oom else 'Ошибка'}\n\n"
+            f"{error_msg[:500]}"
         )
         async with httpx.AsyncClient(timeout=10) as client:
             await client.post(
                 f"https://api.telegram.org/bot{bot_token}/sendMessage",
                 json={"chat_id": admin_chat_id, "text": text},
             )
+            logger.info("Sent error notification to %s", admin_chat_id)
     except Exception:
-        logger.debug("Failed to notify admin about video task error")
+        logger.debug("Failed to notify admin about video task error", exc_info=True)
 
 
 async def start_worker() -> None:
@@ -283,10 +302,15 @@ async def _execute_clean(task) -> dict:
     stdout, stderr = await proc.communicate()
 
     if proc.returncode != 0:
-        err_text = stderr.decode("utf-8", errors="replace")[:500]
+        err_text = stderr.decode("utf-8", errors="replace")
+        # Log full stderr for debugging
+        logger.error("video_processor stderr (rc=%d):\n%s", proc.returncode, err_text[-2000:])
         if proc.returncode == -9:
-            raise RuntimeError(f"Процесс убит (OOM). Попробуйте без Whisper или с коротким видео. Код: {proc.returncode}")
-        raise RuntimeError(f"video_processor завершился с кодом {proc.returncode}: {err_text}")
+            raise RuntimeError(f"Процесс убит системой (нехватка ресурсов). Код: {proc.returncode}")
+        # Take last meaningful lines for error message
+        err_lines = [l for l in err_text.strip().splitlines() if l.strip() and "INFO" not in l]
+        short_err = "\n".join(err_lines[-5:]) if err_lines else err_text[-300:]
+        raise RuntimeError(f"video_processor rc={proc.returncode}: {short_err}")
 
     await _set_progress(task_id, draft_id, "assembling", 85)
 
