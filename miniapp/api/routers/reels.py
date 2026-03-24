@@ -702,8 +702,15 @@ async def _run_clean_video_task(
 
     from bot.services.reels_video import VIDEO_DIR
 
+    def _set_step(step: str, progress: int = 0):
+        _clean_status[draft_id] = {
+            "status": "running", "error": None, "result": None,
+            "step": step, "progress": progress,
+        }
+        _notify_clean_event(draft_id)
+
     try:
-        _clean_status[draft_id] = {"status": "running", "error": None, "result": None}
+        _set_step("preparing", 0)
 
         draft = await _get_draft(draft_id)
         if not draft:
@@ -720,6 +727,8 @@ async def _run_clean_video_task(
         output_dir = VIDEO_DIR / draft_id
         from bot.services.video_processor import ProcessorConfig, process
 
+        _set_step("analyzing", 15)
+
         config = ProcessorConfig(
             input_file=str(video_path),
             output_path=str(output_dir),
@@ -729,8 +738,15 @@ async def _run_clean_video_task(
             use_whisper=use_whisper,
         )
 
+        if use_whisper:
+            _set_step("transcribing", 30)
+        else:
+            _set_step("detecting_silence", 30)
+
         loop = asyncio.get_running_loop()
         proc_result = await loop.run_in_executor(None, process, config)
+
+        _set_step("assembling", 85)
 
         payload = dict(draft.payload)
         cleaned_filename = ""
@@ -832,10 +848,14 @@ async def clean_video_status(
         return {"draft_id": draft_id, "status": "not_started"}
 
     response: dict = {"draft_id": draft_id, "status": status["status"]}
-    if status["error"]:
+    if status.get("error"):
         response["error"] = status["error"]
-    if status["result"]:
+    if status.get("result"):
         response["result"] = status["result"]
+    if status.get("step"):
+        response["step"] = status["step"]
+    if status.get("progress"):
+        response["progress"] = status["progress"]
     return response
 
 
@@ -920,7 +940,14 @@ async def clean_video_stream(draft_id: str, _: str = Depends(_resolve_init_data)
                     yield _sse_msg({"draft_id": draft_id, "status": "not_started"})
                     return
 
-                yield _sse_msg({"draft_id": draft_id, "status": status["status"], "error": status.get("error"), "result": status.get("result")})
+                yield _sse_msg({
+                    "draft_id": draft_id,
+                    "status": status["status"],
+                    "error": status.get("error"),
+                    "result": status.get("result"),
+                    "step": status.get("step"),
+                    "progress": status.get("progress", 0),
+                })
                 if status["status"] in ("completed", "failed"):
                     return
                 evt.clear()
