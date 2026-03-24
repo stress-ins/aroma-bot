@@ -8,10 +8,17 @@
     />
     <title>Арома помощник</title>
     <style>
+      /* Critical: inline theme vars so splash colors match before app.css loads */
+      body[data-theme="terracotta"]{--bg:#251e18;--brand:#b45c3d;--brand-rgb:180,92,61}
+      body[data-theme="racing-green"]{--bg:#0a1810;--brand:#2a8a50;--brand-rgb:42,138,80}
+      body[data-theme="champagne"]{--bg:#2a2218;--brand:#c8a86a;--brand-rgb:200,168,106}
+      body[data-theme="violet"]{--bg:#1a1428;--brand:#9060c8;--brand-rgb:144,96,200}
+      body[data-theme="teal"]{--bg:#060e10;--brand:#3a9098;--brand-rgb:58,144,152}
+      body[data-theme="raspberry"]{--bg:#120810;--brand:#b04870;--brand-rgb:176,72,112}
       /* Critical splash styles — visible before external CSS loads */
-      .splash{position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:#251e18}
-      .splash .brand-loader-letter{color:#b45c3d;font-size:54px;font-weight:700;animation:splash-pulse 1.4s ease-in-out infinite}
-      .splash .brand-loader-ring{position:absolute;inset:0;border:2.5px solid rgba(180,92,61,.18);border-top-color:#b45c3d;border-radius:50%;animation:splash-spin .9s linear infinite}
+      .splash{position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:var(--bg,#251e18)}
+      .splash .brand-loader-letter{color:var(--brand,#b45c3d);font-size:54px;font-weight:700;animation:splash-pulse 1.4s ease-in-out infinite}
+      .splash .brand-loader-ring{position:absolute;inset:0;border:2.5px solid rgba(var(--brand-rgb,180,92,61),.18);border-top-color:var(--brand,#b45c3d);border-radius:50%;animation:splash-spin .9s linear infinite}
       .splash .brand-loader{position:relative;width:120px;height:120px;display:flex;align-items:center;justify-content:center}
       @keyframes splash-pulse{0%,100%{opacity:1}50%{opacity:.5}}
       @keyframes splash-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
