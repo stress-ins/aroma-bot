@@ -540,7 +540,6 @@ export function createBlendConstructorModule(deps) {
         </div>
       </div>
     </div>`;
-    if (window.lucide) lucide.createIcons();
   }
 
   function savedBlendCreateContent() {
@@ -625,7 +624,6 @@ export function createBlendConstructorModule(deps) {
         <div class="blend-expert-card blend-expert-doctor"><div class="blend-expert-header"><span class="blend-expert-icon">\u2695\ufe0f</span><div><div class="blend-expert-name">\u041c\u0435\u0434\u0438\u0446\u0438\u043d\u0441\u043a\u0430\u044f \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0430</div></div><span class="blend-safety-badge" style="color:${safetyColor}">${safetyLabel}</span></div></div>
       </div>`;
       enterDetailView();
-      if (window.lucide) lucide.createIcons();
     } catch {
       elements.draftDetail.innerHTML = `<div class="detail-grid">${renderBackButton()}<p class="field-help">\u0421\u043c\u0435\u0441\u044c \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d\u0430 \u0438\u043b\u0438 \u0431\u044b\u043b\u0430 \u0443\u0434\u0430\u043b\u0435\u043d\u0430</p></div>`;
     }

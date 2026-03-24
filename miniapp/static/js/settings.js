@@ -36,10 +36,10 @@ export function createSettingsModule(deps) {
   function settingsMenuRow(icon, color, title, section, badge) {
     const badgeHtml = badge != null ? `<span class="settings-menu-badge">${escapeHtml(String(badge))}</span>` : "";
     return `<div class="settings-menu-row" data-action="openSettingsSection" data-args='${JSON.stringify([section])}'>
-      <span class="settings-menu-icon" style="background:${color}"><i data-lucide="${icon}"></i></span>
+      <span class="settings-menu-icon" style="background:${color}"><i class="ph ph-${icon}"></i></span>
       <span class="settings-menu-text">${escapeHtml(title)}</span>
       ${badgeHtml}
-      <span class="settings-menu-chevron"><i data-lucide="chevron-right"></i></span>
+      <span class="settings-menu-chevron"><i class="ph ph-caret-right"></i></span>
     </div>`;
   }
 
@@ -109,7 +109,7 @@ export function createSettingsModule(deps) {
     html += `<div class="settings-menu-group">
       <div class="settings-menu-group-header">Система</div>
       <div class="settings-menu-list">
-        ${settingsMenuRow("paintbrush", "#FF9500", "Цветовая тема", "theme", null)}
+        ${settingsMenuRow("paint-brush", "#FF9500", "Цветовая тема", "theme", null)}
         ${settingsMenuRow("map-pin", "#FF6B6B", "Город", "city", null)}
         ${settingsMenuRow("activity", "#FF3B30", "Источники данных", "status", enabledCount)}
       </div>
@@ -124,7 +124,6 @@ export function createSettingsModule(deps) {
       body: "Нажмите на пункт меню слева, чтобы перейти к настройкам.",
     })}</div>`;
 
-    if (window.lucide) lucide.createIcons();
     syncMobileNavigation();
   }
 
@@ -189,8 +188,8 @@ export function createSettingsModule(deps) {
   function renderRewrites(rewrites) {
     const container = document.getElementById("rewritesList");
     if (!container) return;
-    const ARROW_SVG = `<i data-lucide="arrow-right" style="width:12px;height:12px"></i>`;
-    const CLOSE_SVG = `<i data-lucide="x" style="width:14px;height:14px"></i>`;
+    const ARROW_SVG = `<i class="ph ph-arrow-right" style="font-size:12px"></i>`;
+    const CLOSE_SVG = `<i class="ph ph-x" style="font-size:14px"></i>`;
     container.innerHTML = (rewrites || []).map((r) => {
       const [pattern, replacement] = r;
       return `<span class="keyword-chip rewrite-chip">
@@ -198,7 +197,6 @@ export function createSettingsModule(deps) {
         <button type="button" aria-label="Удалить замену" data-action="removeRewrite" data-args='${JSON.stringify([String(pattern)])}'>${CLOSE_SVG}</button>
       </span>`;
     }).join("") || `<span class="plan-entry-hint">Нет авто-замен.</span>`;
-    if (window.lucide) lucide.createIcons();
   }
 
   function renderPlatformTone(tone) {
@@ -858,7 +856,6 @@ export function createSettingsModule(deps) {
         prompt("Скопируйте ссылку:", url);
       });
     };
-    if (window.lucide) lucide.createIcons();
   }
 
   // ── Tracked hashtags ─────────────────────────────────────────────────────
@@ -908,7 +905,6 @@ export function createSettingsModule(deps) {
     container.innerHTML = tags.map((t) =>
       `<span class="keyword-chip">#${escapeHtml(t)}<button type="button" aria-label="Удалить тег" data-action="removeTrackedHashtag" data-args='${JSON.stringify([t])}'>${uiIcon("x", 14)}</button></span>`
     ).join("");
-    if (window.lucide) lucide.createIcons();
   }
 
   async function addTrackedHashtag() {
@@ -1020,7 +1016,6 @@ export function createSettingsModule(deps) {
       const username = a.username || a;
       return `<span class="keyword-chip">@${escapeHtml(username)}<button type="button" aria-label="Удалить" data-action="removeMonitoredAccountFromSettings" data-args='${JSON.stringify([platform, username])}'>${uiIcon("x", 14)}</button></span>`;
     }).join("");
-    if (window.lucide) lucide.createIcons();
   }
 
   async function addMonitoredAccountFromSettings(platform) {
@@ -1107,7 +1102,6 @@ export function createSettingsModule(deps) {
         </div>
         <p class="settings-hint" style="margin-top: 12px">Текущий город: <strong id="currentCityLabel">${escapeHtml(currentCity)}</strong></p>
       `;
-      if (window.lucide) lucide.createIcons();
     } catch (err) {
       const container = document.getElementById("cityContent");
       if (container) container.innerHTML = `<p class="plan-entry-hint">Не удалось загрузить настройки города.</p>`;
@@ -1469,7 +1463,6 @@ export function createSettingsModule(deps) {
         <p class="settings-section-hint">Выберите цветовую схему интерфейса</p>
         <div class="theme-grid">${swatches}</div>
       </div>`;
-    if (window.lucide) lucide.createIcons();
     enterDetailView();
   }
 

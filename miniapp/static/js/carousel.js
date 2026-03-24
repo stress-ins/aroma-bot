@@ -219,7 +219,7 @@ export function createCarouselModule(deps) {
         : img?.url
         ? `<div class="carousel-slide-image-wrap"><img src="${escapeHtml(img.url)}" alt="Слайд ${index + 1}" style="cursor:pointer" data-action="openImageFullscreen" data-args='${JSON.stringify([img.url, `Слайд ${index + 1}`])}' /></div>`
         : genFailed
-          ? `<div class="carousel-slide-image-wrap"><div class="frame-loading"><div class="frame-loading-inner"><i data-lucide="alert-triangle"></i><span>Не удалось сгенерировать картинку. Нажмите «Новый вариант» чтобы попробовать снова.</span></div></div></div>`
+          ? `<div class="carousel-slide-image-wrap"><div class="frame-loading"><div class="frame-loading-inner"><i class="ph ph-warning"></i><span>Не удалось сгенерировать картинку. Нажмите «Новый вариант» чтобы попробовать снова.</span></div></div></div>`
           : `<div class="carousel-slide-image-wrap"><div class="frame-loading"><div class="frame-loading-inner"><span class="button-spinner" aria-hidden="true"></span><span>Изображение ещё готовится</span></div></div></div>`;
       return `
         <article class="slide">
@@ -272,7 +272,6 @@ export function createCarouselModule(deps) {
           if (e.target.tagName === "IMG") e.target.classList.add("is-broken");
         }, true);
       }
-      if (window.lucide) lucide.createIcons();
     });
 
     return `
@@ -458,7 +457,6 @@ export function createCarouselModule(deps) {
     `;
     document.body.appendChild(modal);
     document.body.style.overflow = "hidden";
-    if (window.lucide) lucide.createIcons();
     const cleanup = () => {
       document.body.style.overflow = "";
       URL.revokeObjectURL(imageUrl);
@@ -613,7 +611,6 @@ export function createCarouselModule(deps) {
     `;
     document.body.appendChild(modal);
     document.body.style.overflow = "hidden";
-    if (window.lucide) lucide.createIcons();
 
     const cleanup = () => { document.body.style.overflow = ""; modal.remove(); };
     modal.querySelector(".preview-modal-close").addEventListener("click", cleanup);

@@ -1956,15 +1956,15 @@ class TestMiniAppRussianLocale:
 
 
 class TestIconMappings:
-    """Guard tests: every icon name used in JS must have a LUCIDE_MAP entry."""
+    """Guard tests: every icon name used in JS must have a PHOSPHOR_MAP entry."""
 
-    def _parse_lucide_map_keys(self) -> set[str]:
-        """Extract all keys from LUCIDE_MAP in app.js."""
+    def _parse_phosphor_map_keys(self) -> set[str]:
+        """Extract all keys from PHOSPHOR_MAP in app.js."""
         import re
         src = _miniapp_static_text("app.js")
-        # Find LUCIDE_MAP block
-        m = re.search(r"const LUCIDE_MAP\s*=\s*\{(.*?)\};", src, re.DOTALL)
-        assert m, "LUCIDE_MAP not found in app.js"
+        # Find PHOSPHOR_MAP block
+        m = re.search(r"const PHOSPHOR_MAP\s*=\s*\{(.*?)\};", src, re.DOTALL)
+        assert m, "PHOSPHOR_MAP not found in app.js"
         block = m.group(1)
         # Extract keys: either bare identifiers or quoted strings
         keys = set()
@@ -1983,25 +1983,24 @@ class TestIconMappings:
         return names
 
     def test_all_icon_names_have_lucide_mapping(self):
-        """Every icon name referenced in uiIcon/actionLabel must exist in LUCIDE_MAP."""
-        lucide_keys = self._parse_lucide_map_keys()
+        """Every icon name referenced in uiIcon/actionLabel must exist in PHOSPHOR_MAP."""
+        phosphor_keys = self._parse_phosphor_map_keys()
         used_names = self._find_used_icon_names()
-        missing = used_names - lucide_keys
+        missing = used_names - phosphor_keys
         assert not missing, (
-            f"Icon names used but missing from LUCIDE_MAP: {sorted(missing)}. "
-            f"Add them to LUCIDE_MAP in miniapp/static/app.js"
+            f"Icon names used but missing from PHOSPHOR_MAP: {sorted(missing)}. "
+            f"Add them to PHOSPHOR_MAP in miniapp/static/app.js"
         )
 
     def test_no_square_terminal_fallback_in_rendered_html(self):
-        """No JS file should hard-code square-terminal except as the prompt icon mapping."""
+        """No JS file should hard-code terminal-window except as the prompt icon mapping."""
         import re
         bundle = _miniapp_js_bundle()
-        # Remove the LUCIDE_MAP prompt entry — that's intentional
-        # Remove the LUCIDE_MAP prompt entry and the fallback line — both intentional
-        cleaned = re.sub(r'prompt:\s*"square-terminal"', '', bundle)
-        cleaned = re.sub(r'LUCIDE_MAP\[name\]\s*\|\|\s*"square-terminal"', '', cleaned)
-        assert 'square-terminal' not in cleaned, (
-            "Found 'square-terminal' outside of LUCIDE_MAP prompt entry — "
+        # Remove the PHOSPHOR_MAP prompt entry and fallback line — both intentional
+        cleaned = re.sub(r'prompt:\s*"terminal-window"', '', bundle)
+        cleaned = re.sub(r'PHOSPHOR_MAP\[name\]\s*\|\|\s*"terminal-window"', '', cleaned)
+        assert 'terminal-window' not in cleaned, (
+            "Found 'terminal-window' outside of PHOSPHOR_MAP prompt entry — "
             "likely a fallback icon is being used where a proper mapping should exist"
         )
 

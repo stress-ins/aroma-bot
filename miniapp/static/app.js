@@ -622,59 +622,59 @@ function detailFactMarkup(label, value) {
 }
 
 function icon(name, size = 18) {
-  return `<i data-lucide="${name}" width="${size}" height="${size}" stroke-width="1.75" style="display:block;flex-shrink:0"></i>`;
+  return `<i class="ph ph-${name}" style="font-size:${size}px;display:block;flex-shrink:0"></i>`;
 }
 
 function uiIcon(name) {
-  const LUCIDE_MAP = {
+  const PHOSPHOR_MAP = {
     card:       "file-text",
-    slides:     "layout-grid",
-    prompt:     "square-terminal",
-    regenerate: "rotate-ccw",
-    chat:       "message-square",
-    pptx:       "presentation",
+    slides:     "grid-four",
+    prompt:     "terminal-window",
+    regenerate: "arrow-counter-clockwise",
+    chat:       "chat-square",
+    pptx:       "presentation-chart",
     note:       "pencil-line",
     reject:     "x",
     close:      "x",
     "x":        "x",
-    trash:      "trash-2",
-    delete:     "trash-2",
-    undo:       "undo-2",
-    back:       "chevron-left",
-    gear:       "settings-2",
+    trash:      "trash",
+    delete:     "trash",
+    undo:       "arrow-counter-clockwise",
+    back:       "caret-left",
+    gear:       "gear",
     eye:        "eye",
     approve:    "check",
-    sparkle:    "sparkles",
+    sparkle:    "sparkle",
     scissors:   "scissors",
-    video:      "video",
+    video:      "video-camera",
     "file-video": "file-video",
-    text:       "align-left",
+    text:       "text-align-left",
     nps:        "heart",
-    therapy:    "cross",
+    therapy:    "first-aid",
     psyche:     "brain",
     plus:       "plus",
     minus:      "minus",
     history:    "clock",
     passport:   "file-text",
-    reel:       "clapperboard",
+    reel:       "film-slate",
     image:      "image",
-    search:     "search",
+    search:     "magnifying-glass",
     download:   "download",
     upload:     "upload",
     sunrise:    "sunrise",
     sun:        "sun",
     moon:       "moon",
-    threads:    "at-sign",
-    instagram:  "instagram",
-    telegram:   "send",
-    plan:       "calendar-days",
+    threads:    "at",
+    instagram:  "instagram-logo",
+    telegram:   "paper-plane-tilt",
+    plan:       "calendar-dots",
     play:       "play",
-    layers:     "layers",
-    loader:     "loader-circle",
-    calendar:   "calendar-days",
+    layers:     "stack",
+    loader:     "spinner",
+    calendar:   "calendar-dots",
     link:       "link",
-    "external-link": "external-link",
-    "message-circle": "message-circle",
+    "external-link": "arrow-square-out",
+    "message-circle": "chat-circle",
     camera:     "camera",
     "check-circle": "check-circle",
     users:      "users",
@@ -683,60 +683,55 @@ function uiIcon(name) {
     ticket:     "ticket",
     shield:     "shield",
     crown:      "crown",
-    send:       "send",
+    send:       "paper-plane-tilt",
     copy:       "copy",
-    zap:        "zap",
-    bot:        "bot",
+    zap:        "lightning",
+    bot:        "robot",
     publish:    "upload",
     palette:    "palette",
     activity:   "activity",
     "arrow-left": "arrow-left",
-    "alert-circle": "alert-circle",
+    "alert-circle": "warning-circle",
     check:      "check",
     lock:       "lock",
-    "bar-chart-3": "bar-chart-3",
-    "columns-2": "columns-2",
-    "corner-down-right": "corner-down-right",
+    "bar-chart-3": "chart-bar",
+    "columns-2": "columns",
+    "corner-down-right": "arrow-bend-down-right",
     hash:       "hash",
     heart:      "heart",
-    "refresh-cw": "refresh-cw",
+    "refresh-cw": "arrow-clockwise",
     repeat:     "repeat",
     "thumbs-up": "thumbs-up",
-    "align-left": "align-left",
-    "at-sign":  "at-sign",
+    "align-left": "text-align-left",
+    "at-sign":  "at",
     clock:      "clock",
     "file-text": "file-text",
-    "layout-grid": "layout-grid",
+    "layout-grid": "grid-four",
     "arrow-up-right": "arrow-up-right",
     "arrow-down-left": "arrow-down-left",
-    "pen-tool": "pen-tool",
+    "pen-tool": "pen-nib",
     compass:    "compass",
     lightbulb:  "lightbulb",
-    settings:   "settings",
-    grid:       "layout-grid",
-    list:       "rows-3",
-    "chevron-down": "chevron-down",
-    "chevron-up": "chevron-up",
-    archive:    "archive",
+    settings:   "gear-six",
+    grid:       "grid-four",
+    list:       "rows",
+    "chevron-down": "caret-down",
+    "chevron-up": "caret-up",
+    archive:    "archive-box",
     pencil:     "pencil",
-    save:       "save",
+    save:       "floppy-disk",
     star:       "star",
-    "share-2":  "share-2",
-    "trash-2":  "trash-2",
-    film:       "film",
-    scan:       "scan-line",
+    "share-2":  "share-network",
+    "trash-2":  "trash",
+    film:       "film-strip",
+    scan:       "scan",
     tools:      "wrench",
-    "tech-check": "scan-line",
-    "copy-plus": "copy-plus",
-    sparkles:   "sparkles",
-    layers:     "layers",
-    palette:    "palette",
-    "refresh-cw": "refresh-cw",
-    "check-circle": "check-circle",
-    lightbulb:  "lightbulb",
+    "tech-check": "scan",
+    "copy-plus": "copy",
+    sparkles:   "sparkle",
     "map-pin":  "map-pin",
   };
-  return `<span class="ui-icon ui-icon-${escapeHtml(name)}">${icon(LUCIDE_MAP[name] || "square-terminal", 16)}</span>`;
+  return `<span class="ui-icon ui-icon-${escapeHtml(name)}">${icon(PHOSPHOR_MAP[name] || "terminal-window", 16)}</span>`;
 }
 
 function sectionHeadingIcon(title) {
@@ -2488,7 +2483,7 @@ reelsCallbacks.renderReels = () => { renderReels(); renderDraftList(); };
 reelsCallbacks.renderReelsDetail = renderReelsDetail;
 
 // Auto-resize for textareas is handled by shell.js bindTextareaAutoExpand()
-function refreshIcons() { if (window.lucide) lucide.createIcons(); }
+function refreshIcons() { /* Phosphor icons are CSS-based, no initialization needed */ }
 
 bootstrap()
   .then(() => {
@@ -2500,20 +2495,3 @@ bootstrap()
     document.body.classList.add("app-ready");
   });
 
-if (window.lucide) {
-  let _lcBusy = false;
-  const _lcObs = new MutationObserver((mutations) => {
-    if (_lcBusy) return;
-    const hasNewIcons = mutations.some(m =>
-      [...m.addedNodes].some(n =>
-        n.nodeType === 1 && (n.matches?.("i[data-lucide]") || n.querySelector?.("i[data-lucide]"))
-      )
-    );
-    if (hasNewIcons) {
-      _lcBusy = true;
-      lucide.createIcons();
-      _lcBusy = false;
-    }
-  });
-  _lcObs.observe(document.getElementById("app") || document.body, { childList: true, subtree: true });
-}

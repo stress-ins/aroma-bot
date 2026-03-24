@@ -1296,14 +1296,13 @@ export function createReelsModule(deps) {
     const pct = Math.round(videoUpload.progress);
     indicator.innerHTML = `
       <div class="video-upload-floating-content">
-        <i data-lucide="upload" style="width:16px;height:16px"></i>
+        <i class="ph ph-upload" style="font-size:16px"></i>
         <span class="video-upload-floating-label">Загрузка видео ${pct}%</span>
       </div>
       <div class="video-upload-floating-track">
         <div class="video-upload-floating-fill" style="width:${pct}%"></div>
       </div>
     `;
-    if (window.lucide) lucide.createIcons({ nodes: [indicator] });
   }
 
   // Direct click handler as fallback for data-action delegation
@@ -1579,15 +1578,17 @@ export function createReelsModule(deps) {
     if (!caption) return;
     try {
       await navigator.clipboard.writeText(caption);
-      const icon = btn.querySelector("[data-lucide]");
+      const icon = btn.querySelector(".ph");
       if (icon) {
-        const orig = icon.getAttribute("data-lucide");
-        icon.setAttribute("data-lucide", "check");
-        if (window.lucide) lucide.createIcons();
-        setTimeout(() => {
-          icon.setAttribute("data-lucide", orig);
-          if (window.lucide) lucide.createIcons();
-        }, 1500);
+        const origClass = [...icon.classList].find(c => c.startsWith("ph-") && c !== "ph");
+        if (origClass) {
+          icon.classList.remove(origClass);
+          icon.classList.add("ph-check");
+          setTimeout(() => {
+            icon.classList.remove("ph-check");
+            icon.classList.add(origClass);
+          }, 1500);
+        }
       }
     } catch (_e) {}
   }

@@ -202,7 +202,7 @@ summary {
 }
 
 svg,
-i[data-lucide] {
+.ph {
   -webkit-user-select: none;
   user-select: none;
   pointer-events: none;
@@ -838,10 +838,10 @@ body.app-ready .splash {
   flex: 0 0 18px;
 }
 .draft-kind .ui-icon svg,
-.draft-kind .ui-icon [data-lucide] {
+.draft-kind .ui-icon .ph {
+  font-size: 18px;
   width: 18px;
   height: 18px;
-  stroke-width: 1.75;
 }
 
 .draft-topic {
@@ -2074,7 +2074,8 @@ body.tg-theme-dark .danger-button {
 }
 
 .bottom-tab-btn .ui-icon svg,
-.bottom-tab-btn .ui-icon [data-lucide] {
+.bottom-tab-btn .ui-icon .ph {
+  font-size: 26px;
   width: 26px;
   height: 26px;
 }
@@ -2116,14 +2117,10 @@ body.tg-theme-dark .danger-button {
 }
 
 .ui-icon svg,
-.ui-icon [data-lucide] {
+.ui-icon .ph {
+  font-size: 16px;
   width: 16px;
   height: 16px;
-  stroke: currentColor;
-  fill: none;
-  stroke-width: 1.75;
-  stroke-linecap: round;
-  stroke-linejoin: round;
 }
 
 .settings-switcher {
@@ -4215,7 +4212,7 @@ body.tg-theme-dark .concept-card {
 .platform-format-option:has(input:checked) { border-color: var(--brand); background: var(--brand-bg); color: var(--text); }
 .platform-format-option .ui-icon { width: 15px; height: 15px; flex-shrink: 0; }
 .platform-format-option .ui-icon svg,
-.platform-format-option .ui-icon [data-lucide] { width: 15px; height: 15px; }
+.platform-format-option .ui-icon .ph { font-size: 15px; width: 15px; height: 15px; }
 
 /* Platform label with icon (settings tone section) */
 .platform-label { display: inline-flex; align-items: center; gap: 6px; }
@@ -5739,7 +5736,8 @@ body.is-mobile-layout .detail-icon-actions button {
 
 .empty-state-icon i,
 .empty-state-icon svg,
-.empty-state-icon [data-lucide] {
+.empty-state-icon .ph {
+  font-size: 40px;
   width: 40px;
   height: 40px;
 }
@@ -6045,7 +6043,7 @@ body.is-mobile-layout .detail-icon-actions button {
   flex-shrink: 0;
   color: var(--text-on-brand);
 }
-.settings-menu-icon i[data-lucide] { width: 18px; height: 18px; }
+.settings-menu-icon i.ph { font-size: 18px; width: 18px; height: 18px; }
 .settings-menu-text {
   flex: 1;
   font-size: 16px;
@@ -6063,7 +6061,7 @@ body.is-mobile-layout .detail-icon-actions button {
   opacity: 0.5;
   flex-shrink: 0;
 }
-.settings-menu-chevron i[data-lucide] { width: 16px; height: 16px; }
+.settings-menu-chevron i.ph { font-size: 16px; width: 16px; height: 16px; }
 
 
 /* ── Suggest topic button + dropdown ────────────────────────────────── */
@@ -6129,7 +6127,7 @@ body.is-mobile-layout .detail-icon-actions button {
 }
 .suggest-topic-btn:hover { background: var(--surface-2, #f5f5f5); }
 .suggest-topic-btn:disabled { opacity: 0.5; pointer-events: none; }
-.suggest-topic-btn i[data-lucide] { width: 16px; height: 16px; }
+.suggest-topic-btn i.ph { font-size: 16px; width: 16px; height: 16px; }
 
 .suggest-topics-dropdown {
   position: relative;

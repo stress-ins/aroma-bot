@@ -57,9 +57,9 @@ export function createDraftsModule(deps) {
 
   function _metricsBadge(ms) {
     const parts = [];
-    if (ms.likes) parts.push(`<i data-lucide="heart" style="width:12px;height:12px"></i> ${ms.likes}`);
-    if (ms.comments) parts.push(`<i data-lucide="message-circle" style="width:12px;height:12px"></i> ${ms.comments}`);
-    if (ms.views) parts.push(`<i data-lucide="eye" style="width:12px;height:12px"></i> ${ms.views}`);
+    if (ms.likes) parts.push(`<i class="ph ph-heart" style="font-size:12px"></i> ${ms.likes}`);
+    if (ms.comments) parts.push(`<i class="ph ph-chat-circle" style="font-size:12px"></i> ${ms.comments}`);
+    if (ms.views) parts.push(`<i class="ph ph-eye" style="font-size:12px"></i> ${ms.views}`);
     if (!parts.length) return "";
     return `<span class="tag metrics-badge">${parts.join(" ")}</span>`;
   }
@@ -485,7 +485,7 @@ export function createDraftsModule(deps) {
         ${generationStateMarkup(d, "draft")}
         ${reviewActions}
         ${renderPublishPanel(d.draft_id, d.status, { kind: d.kind, hasMedia: _hasMedia(d) })}
-        ${d.status === "published" ? `<section class="section metrics-section" id="metricsSection_${d.draft_id}"><div class="metrics-empty"><i data-lucide="bar-chart-3"></i><span>Загружаю метрики...</span></div></section>` : ""}
+        ${d.status === "published" ? `<section class="section metrics-section" id="metricsSection_${d.draft_id}"><div class="metrics-empty"><i class="ph ph-chart-bar"></i><span>Загружаю метрики...</span></div></section>` : ""}
         ${renderSlides(d.draft_id, p.slides, p.img_prompts, p.slide_images, p.img_prompt_notes, p.slide_image_versions)}
         ${promptSection("Промпт для изображения", p.visual_prompt, "Скопировать промпт", `draft:${d.draft_id}:visual`)}
         ${renderPhotoPickerSection(d.draft_id, p.stock_keywords || [], p.image || null, p.stock_suggestions || null)}
@@ -511,25 +511,25 @@ export function createDraftsModule(deps) {
     threads: [
       { key: "views", icon: "eye", label: "Просмотры" },
       { key: "likes", icon: "heart", label: "Лайки" },
-      { key: "replies", icon: "message-circle", label: "Ответы" },
+      { key: "replies", icon: "chat-circle", label: "Ответы" },
       { key: "reposts", icon: "repeat", label: "Репосты" },
-      { key: "quotes", icon: "quote", label: "Цитаты" },
+      { key: "quotes", icon: "quotes", label: "Цитаты" },
     ],
     instagram: [
       { key: "impressions", icon: "eye", label: "Показы" },
       { key: "reach", icon: "users", label: "Охват" },
       { key: "likes", icon: "heart", label: "Лайки" },
-      { key: "comments", icon: "message-circle", label: "Комментарии" },
+      { key: "comments", icon: "chat-circle", label: "Комментарии" },
     ],
   };
 
   function _renderMetricsHTML(draftId, data) {
     const items = data.metrics || [];
     if (!items.length) {
-      return `<div class="metrics-empty"><i data-lucide="bar-chart-3"></i><span>Метрики ещё не собраны</span></div>
-        <div class="actions-row"><button class="secondary-button" type="button" data-action="refreshDraftMetrics" data-args='${JSON.stringify([draftId, null])}'><i data-lucide="refresh-cw"></i> Обновить</button></div>`;
+      return `<div class="metrics-empty"><i class="ph ph-chart-bar"></i><span>Метрики ещё не собраны</span></div>
+        <div class="actions-row"><button class="secondary-button" type="button" data-action="refreshDraftMetrics" data-args='${JSON.stringify([draftId, null])}'><i class="ph ph-arrow-clockwise"></i> Обновить</button></div>`;
     }
-    let html = `<div class="section-heading"><h3><i data-lucide="bar-chart-3"></i> Эффективность</h3></div>`;
+    let html = `<div class="section-heading"><h3><i class="ph ph-chart-bar"></i> Эффективность</h3></div>`;
     for (const entry of items) {
       const defs = PLATFORM_METRICS[entry.platform] || [];
       if (!defs.length) continue;
@@ -538,7 +538,7 @@ export function createDraftsModule(deps) {
       for (const def of defs) {
         const val = m[def.key];
         if (val === undefined || val === null) continue;
-        html += `<div class="metric-card"><i data-lucide="${def.icon}"></i><span class="metric-value">${Number(val).toLocaleString("ru-RU")}</span><span class="metric-label">${escapeHtml(def.label)}</span></div>`;
+        html += `<div class="metric-card"><i class="ph ph-${def.icon}"></i><span class="metric-value">${Number(val).toLocaleString("ru-RU")}</span><span class="metric-label">${escapeHtml(def.label)}</span></div>`;
       }
       html += `</div>`;
     }
@@ -548,7 +548,7 @@ export function createDraftsModule(deps) {
       const ts = dt.toLocaleDateString("ru-RU") + " " + dt.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
       html += `<p class="metrics-updated">Последнее обновление: ${ts}</p>`;
     }
-    html += `<div class="actions-row"><button class="secondary-button" type="button" data-action="refreshDraftMetrics" data-args='${JSON.stringify([draftId, null])}'><i data-lucide="refresh-cw"></i> Обновить</button></div>`;
+    html += `<div class="actions-row"><button class="secondary-button" type="button" data-action="refreshDraftMetrics" data-args='${JSON.stringify([draftId, null])}'><i class="ph ph-arrow-clockwise"></i> Обновить</button></div>`;
     return html;
   }
 
@@ -559,10 +559,9 @@ export function createDraftsModule(deps) {
       const data = await fetchJson(`/api/drafts/${draftId}/metrics`);
       container.innerHTML = _renderMetricsHTML(draftId, data);
     } catch (_e) {
-      container.innerHTML = `<div class="metrics-empty"><i data-lucide="bar-chart-3"></i><span>Метрики ещё не собраны</span></div>
-        <div class="actions-row"><button class="secondary-button" type="button" data-action="refreshDraftMetrics" data-args='${JSON.stringify([draftId, null])}'><i data-lucide="refresh-cw"></i> Обновить</button></div>`;
+      container.innerHTML = `<div class="metrics-empty"><i class="ph ph-chart-bar"></i><span>Метрики ещё не собраны</span></div>
+        <div class="actions-row"><button class="secondary-button" type="button" data-action="refreshDraftMetrics" data-args='${JSON.stringify([draftId, null])}'><i class="ph ph-arrow-clockwise"></i> Обновить</button></div>`;
     }
-    if (window.lucide) lucide.createIcons();
   }
 
   async function refreshDraftMetrics(draftId, button) {
