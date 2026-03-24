@@ -49,7 +49,6 @@ export function createOnboardingModule(deps) {
         </div>`;
       overlay.querySelector(".onboarding-btn-next").addEventListener("click", () => { if (isLast) finish(); else { current++; render(); } });
       overlay.querySelector(".onboarding-btn-skip").addEventListener("click", finish);
-      if (window.lucide) lucide.createIcons({ nodes: [overlay] });
     }
 
     function finish() {
@@ -77,9 +76,8 @@ export function createOnboardingModule(deps) {
     fab.className = "help-fab";
     fab.type = "button";
     fab.setAttribute("aria-label", "Справка");
-    fab.innerHTML = icon("help-circle", 22);
+    fab.innerHTML = icon("question", 22);
     document.body.appendChild(fab);
-    if (window.lucide) lucide.createIcons({ nodes: [fab] });
 
     let popover = null;
     fab.addEventListener("click", () => {

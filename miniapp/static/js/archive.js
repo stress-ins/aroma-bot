@@ -226,7 +226,6 @@ export function createArchiveModule(deps) {
     })}</div>`;
 
     syncMobileNavigation();
-    if (window.lucide) lucide.createIcons();
   }
 
   function renderArchiveCard(item) {
@@ -343,7 +342,6 @@ export function createArchiveModule(deps) {
       </div>
     `;
     syncMobileNavigation();
-    if (window.lucide) lucide.createIcons();
 
     // Store current pubId for score saving
     state._currentArchivePubId = pub.pub_id;
@@ -482,7 +480,6 @@ export function createArchiveModule(deps) {
 
     enterDetailView();
     syncMobileNavigation();
-    if (window.lucide) lucide.createIcons();
 
     // Chip selection handler
     elements.draftDetail.querySelectorAll("[data-chip-group]").forEach(btn => {

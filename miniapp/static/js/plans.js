@@ -149,8 +149,8 @@ export function createPlansModule(deps) {
       const views = m.views ?? m.impressions ?? null;
       const likes = m.likes ?? null;
       let badge = "";
-      if (views !== null) badge += `<i data-lucide="eye" style="width:12px;height:12px"></i> ${Number(views).toLocaleString("ru-RU")}`;
-      if (likes !== null) badge += `${badge ? " \u00b7 " : ""}<i data-lucide="heart" style="width:12px;height:12px"></i> ${Number(likes).toLocaleString("ru-RU")}`;
+      if (views !== null) badge += `<i class="ph ph-eye" style="font-size:12px"></i> ${Number(views).toLocaleString("ru-RU")}`;
+      if (likes !== null) badge += `${badge ? " \u00b7 " : ""}<i class="ph ph-heart" style="font-size:12px"></i> ${Number(likes).toLocaleString("ru-RU")}`;
       _metricsCache.set(draftId, badge);
       return badge;
     } catch (_e) {
@@ -169,7 +169,6 @@ export function createPlansModule(deps) {
         if (html) {
           el.innerHTML = html;
           el.hidden = false;
-          if (window.lucide) lucide.createIcons();
         }
       });
     }
@@ -773,7 +772,6 @@ export function createPlansModule(deps) {
       </div>
     `;
     syncMobileNavigation();
-    if (window.lucide) lucide.createIcons();
   }
 
   async function activatePlan(planId, button) {

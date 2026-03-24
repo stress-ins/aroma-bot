@@ -23,8 +23,8 @@ export function createMentionsModule(deps) {
   // ── Helpers ────────────────────────────────────────────────────────────────
 
   function platformIcon(platform) {
-    const icons = { threads: "at-sign", instagram: "instagram", telegram: "send" };
-    return icons[platform] || "message-circle";
+    const icons = { threads: "at", instagram: "instagram-logo", telegram: "paper-plane-tilt" };
+    return icons[platform] || "chat-circle";
   }
 
   function platformLabel(platform) {
@@ -103,7 +103,7 @@ export function createMentionsModule(deps) {
     if (!state.mentions.length) {
       container.innerHTML = filterBar + `<div class="empty-state">
         <div style="text-align:center;padding:32px 16px">
-          <i data-lucide="message-circle" style="width:48px;height:48px;color:var(--muted);margin:0 auto 12px;display:block"></i>
+          <i class="ph ph-chat-circle" style="font-size:48px;color:var(--muted);margin:0 auto 12px;display:block"></i>
           <p style="font-size:16px;font-weight:600;margin-bottom:8px">Упоминаний пока нет</p>
           <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Здесь появятся упоминания вашего бренда в социальных сетях. Убедитесь что аккаунты для мониторинга настроены.</p>
           <button class="secondary-button" type="button" data-action="openSettingsSection" data-args='["monitored"]'>Настроить мониторинг</button>
@@ -117,12 +117,12 @@ export function createMentionsModule(deps) {
         : m.status === "replied" ? "tag-status-ok"
         : "tag-status-neutral";
       const dimClass = m.status !== "pending" ? " mention-card--dim" : "";
-      const checkIcon = m.status === "replied" ? `<i data-lucide="check" style="width:12px;height:12px"></i> ` : "";
+      const checkIcon = m.status === "replied" ? `<i class="ph ph-check" style="font-size:12px"></i> ` : "";
       return `
       <div class="mention-card${dimClass}" data-action="openMentionDetail" data-args='["${m.mention_id}"]'>
         <div class="mention-meta">
           <span class="mention-platform-badge">
-            <i data-lucide="${platformIcon(m.platform)}"></i> ${platformLabel(m.platform)}
+            <i class="ph ph-${platformIcon(m.platform)}"></i> ${platformLabel(m.platform)}
           </span>
           <span class="mention-time">${formatTime(m.received_at)}</span>
           <span class="${statusClass}">${checkIcon}${statusLabel(m.status)}</span>
@@ -133,7 +133,6 @@ export function createMentionsModule(deps) {
     }).join("");
 
     container.innerHTML = filterBar + `<div class="mention-list">${cards}</div>`;
-    if (window.lucide) lucide.createIcons();
   }
 
   // ── Detail view ────────────────────────────────────────────────────────────
@@ -172,15 +171,15 @@ export function createMentionsModule(deps) {
           const hasError = !!r.publish_error;
           let statusHtml = "";
           if (isPublished) {
-            statusHtml = `<span class="tag-status-ok"><i data-lucide="check"></i> Опубликовано · ${toneLabel(r.tone)}</span>`;
+            statusHtml = `<span class="tag-status-ok"><i class="ph ph-check"></i> Опубликовано · ${toneLabel(r.tone)}</span>`;
           } else if (hasError) {
             statusHtml = `
               <div class="reply-publish-error">
-                <span class="tag-status-warn"><i data-lucide="alert-triangle" style="width:12px;height:12px"></i> Ошибка публикации</span>
+                <span class="tag-status-warn"><i class="ph ph-warning" style="font-size:12px"></i> Ошибка публикации</span>
                 <div style="color:var(--danger);font-size:12px;margin-top:4px">${escapeHtml(r.publish_error)}</div>
                 <button class="secondary-button compact" style="margin-top:6px"
                   data-action="publishReply" data-args='${JSON.stringify([m.mention_id, r.reply_id, null])}'>
-                  <i data-lucide="refresh-cw"></i> Повторить
+                  <i class="ph ph-arrow-clockwise"></i> Повторить
                 </button>
               </div>`;
           } else if (!hasPublished) {
@@ -205,7 +204,7 @@ export function createMentionsModule(deps) {
       <div class="mention-content">
         <div class="mention-meta">
           <span class="mention-platform-badge">
-            <i data-lucide="${platformIcon(m.platform)}"></i> ${platformLabel(m.platform)}
+            <i class="ph ph-${platformIcon(m.platform)}"></i> ${platformLabel(m.platform)}
           </span>
           <span class="mention-time">${formatTime(m.received_at)}</span>
           <span class="tag-status-${m.status === "pending" ? "warn" : "ok"}">${statusLabel(m.status)}</span>
@@ -219,18 +218,17 @@ export function createMentionsModule(deps) {
       <div class="mention-actions" style="display:flex;gap:8px;margin:12px 0">
         <button class="primary-button" data-action="generateReplies" data-args='${JSON.stringify([m.mention_id, null])}'
           ${m.status === "replied" ? "disabled" : ""}>
-          <i data-lucide="sparkles"></i> Сгенерировать ответы
+          <i class="ph ph-sparkle"></i> Сгенерировать ответы
         </button>
         <button class="secondary-button" data-action="ignoreMentionAction" data-args='${JSON.stringify([m.mention_id, null])}'
           ${m.status === "replied" ? "disabled" : ""}>
-          <i data-lucide="eye-off"></i> Игнорировать
+          <i class="ph ph-eye-slash"></i> Игнорировать
         </button>
       </div>` : ""}
       <div class="reply-list" id="reply-list-${m.mention_id}">
         ${repliesHtml}
       </div>`;
 
-    if (window.lucide) lucide.createIcons();
   }
 
   // ── Actions ────────────────────────────────────────────────────────────────

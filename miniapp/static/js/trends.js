@@ -91,7 +91,6 @@ export function createTrendsModule(deps) {
     elements.draftList.innerHTML = renderTrendsListPanel();
     elements.draftDetail.innerHTML = renderTrendsDetail();
     syncMobileNavigation();
-    if (window.lucide) lucide.createIcons();
   }
 
   // ── List Panel (platform selector + filters) ─────────────────────────
@@ -654,7 +653,6 @@ export function createTrendsModule(deps) {
         trackedHashtags = (res || {}).items || [];
       } catch (_) { /* ignore */ }
       elements.draftList.innerHTML = renderTrendsListPanel();
-      if (window.lucide) lucide.createIcons();
     } catch (err) {
       const detail = err?.detail || "";
       if (detail === "already_tracked") showUiNotice("Хештег уже добавлен", "warning");
@@ -676,7 +674,6 @@ export function createTrendsModule(deps) {
         trackedHashtags = (res || {}).items || [];
       } catch (_) { /* ignore */ }
       elements.draftList.innerHTML = renderTrendsListPanel();
-      if (window.lucide) lucide.createIcons();
     } catch (_err) {
       showUiNotice("Не удалось удалить хештег", "error");
     }
@@ -701,7 +698,6 @@ export function createTrendsModule(deps) {
         monitoredAccounts = await fetchJson("/api/social/monitored-accounts");
       } catch (_) { /* ignore */ }
       elements.draftList.innerHTML = renderTrendsListPanel();
-      if (window.lucide) lucide.createIcons();
     } catch (err) {
       const detail = err?.detail || "";
       if (detail === "already_monitored") showUiNotice("Аккаунт уже добавлен", "warning");
@@ -723,7 +719,6 @@ export function createTrendsModule(deps) {
         monitoredAccounts = await fetchJson("/api/social/monitored-accounts");
       } catch (_) { /* ignore */ }
       elements.draftList.innerHTML = renderTrendsListPanel();
-      if (window.lucide) lucide.createIcons();
     } catch (_err) {
       showUiNotice("Не удалось удалить аккаунт", "error");
     }
@@ -785,7 +780,6 @@ export function createTrendsModule(deps) {
     `;
     enterDetailView();
     syncMobileNavigation();
-    if (window.lucide) lucide.createIcons();
   }
 
   // ── Trend Cards (AI-generated) ────────────────────────────────────
@@ -799,7 +793,6 @@ export function createTrendsModule(deps) {
           trendCards = data.cards || [];
           const container = elements.draftList.querySelector(".trends-cards-container");
           if (container) container.innerHTML = _renderCardsInner();
-          if (window.lucide) lucide.createIcons();
         } catch (_e) { /* optional */ }
       })();
       return `<div class="trends-cards-container"><div class="suggest-topics-loading"><span class="button-spinner"></span> Загрузка карточек...</div></div>`;

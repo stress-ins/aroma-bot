@@ -476,8 +476,7 @@ export function registerWindowBridge(deps) {
     const pre = el.previousElementSibling;
     if (!pre) return;
     navigator.clipboard.writeText(pre.textContent).then(() => {
-      el.innerHTML = '<i data-lucide="check" style="width:13px;height:13px"></i>';
-      if (window.lucide) lucide.createIcons();
+      el.innerHTML = '<i class="ph ph-check" style="font-size:13px"></i>';
       setTimeout(() => { el.textContent = "Копировать"; }, 1200);
     });
   };

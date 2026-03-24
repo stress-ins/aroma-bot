@@ -404,11 +404,11 @@ export function createReferencesModule(deps) {
     const audioUrl = `/sounds/${encodeURIComponent(reference.slug)}.mp3`;
     return `
       <section class="section sound-player-section">
-        <h3><i data-lucide="volume-2" style="width:16px;height:16px"></i> Прослушать</h3>
+        <h3><i class="ph ph-speaker-high" style="font-size:16px"></i> Прослушать</h3>
         <div class="sound-player" data-audio-url="${escapeHtml(audioUrl)}">
           <button class="sound-player-btn" type="button" aria-label="Воспроизвести">
-            <span class="sound-player-icon-play"><i data-lucide="play"></i></span>
-            <span class="sound-player-icon-pause" hidden><i data-lucide="pause"></i></span>
+            <span class="sound-player-icon-play"><i class="ph ph-play"></i></span>
+            <span class="sound-player-icon-pause" hidden><i class="ph ph-pause"></i></span>
           </button>
           <div class="sound-player-progress">
             <div class="sound-player-bar">
@@ -945,7 +945,7 @@ export function createReferencesModule(deps) {
       state._dailyOil = null;
       const dailyOilHtml = _dOil && (_dOil.reason || _dOil.fact || _dOil.daily_practice)
         ? `<section class="section daily-oil-detail-section">
-            <h3><i data-lucide="sparkles"></i> Масло дня</h3>
+            <h3><i class="ph ph-sparkle"></i> Масло дня</h3>
             ${_dOil.reason ? `<p class="daily-oil-detail-reason">💡 ${escapeHtml(_dOil.reason)}</p>` : ""}
             ${_dOil.fact ? `<p>${escapeHtml(_dOil.fact)}</p>` : ""}
             ${_dOil.daily_practice ? `<p><strong>Практика дня:</strong> ${escapeHtml(_dOil.daily_practice)}</p>` : ""}
@@ -975,7 +975,7 @@ export function createReferencesModule(deps) {
           ${aromaSection("Материалы курса", reference.course_notes)}
           ${renderCollapsibleSection("Исторические сведения", reference.history, 280)}
           <div class="actions-row" style="margin-top:var(--space-3)">
-            <button class="secondary-button" type="button" data-action="createContentFromOil" data-args='${JSON.stringify([reference.name])}'><i data-lucide="plus" style="width:16px;height:16px"></i><span>Создать контент</span></button>
+            <button class="secondary-button" type="button" data-action="createContentFromOil" data-args='${JSON.stringify([reference.name])}'><i class="ph ph-plus" style="font-size:16px"></i><span>Создать контент</span></button>
           </div>
         </div>
       `;
@@ -984,7 +984,6 @@ export function createReferencesModule(deps) {
     // Init audio player for sound cards
     const playerEl = elements.draftDetail.querySelector(".sound-player");
     if (playerEl) initSoundPlayer(playerEl);
-    if (window.lucide) lucide.createIcons();
     syncMobileNavigation();
   }
 
@@ -1240,14 +1239,13 @@ export function createReferencesModule(deps) {
       el.innerHTML = `
         <div class="daily-oil-banner" data-action="openDailyOilReference" data-args='${JSON.stringify([oil.slug])}'>
           <div class="daily-oil-header">
-            <i data-lucide="sparkles" class="daily-oil-icon"></i>
+            <i class="ph ph-sparkle daily-oil-icon"></i>
             <span class="daily-oil-label">\u041c\u0430\u0441\u043b\u043e \u0434\u043d\u044f</span>
           </div>
           <h3 class="daily-oil-name">${escapeHtml(oil.name)}</h3>
-          ${oil.reason ? `<p class="daily-oil-reason"><i data-lucide="lightbulb" style="width:14px;height:14px;vertical-align:-2px;margin-right:4px"></i>${escapeHtml(oil.reason)}</p>` : ""}
-          <span class="daily-oil-cta">\u0423\u0437\u043d\u0430\u0442\u044c \u0431\u043e\u043b\u044c\u0448\u0435 <i data-lucide="chevron-right"></i></span>
+          ${oil.reason ? `<p class="daily-oil-reason"><i class="ph ph-lightbulb" style="font-size:14px;vertical-align:-2px;margin-right:4px"></i>${escapeHtml(oil.reason)}</p>` : ""}
+          <span class="daily-oil-cta">\u0423\u0437\u043d\u0430\u0442\u044c \u0431\u043e\u043b\u044c\u0448\u0435 <i class="ph ph-caret-right"></i></span>
         </div>`;
-      if (window.lucide) lucide.createIcons();
     } catch {
       el.innerHTML = "";
     }
