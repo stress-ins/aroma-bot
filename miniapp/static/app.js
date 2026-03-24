@@ -2056,6 +2056,7 @@ const _runtimeMod = createRuntimeModule({
 });
 const { bindBootFallbackReload, bindStartupErrorFallbacks, bootstrap: bootstrapImpl } = _runtimeMod;
 ({ loadCurrentTab, safeLoadCurrentTab, retryCurrentTab } = _runtimeMod);
+window._currentTabRefresh = () => safeLoadCurrentTab("Не удалось обновить раздел");
 
 const onboarding = createOnboardingModule({ state, icon });
 
