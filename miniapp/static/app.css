@@ -5205,6 +5205,25 @@ body.is-mobile-layout .detail-icon-actions button {
 /* ── Compact meta chips ─────────────────────────────────────────────────── */
 .meta-chip { display: inline-block; font-size: 12px; line-height: 1.4; }
 .meta-chip--muted { color: var(--hint); }
+.meta-chip--own {
+  background: var(--success, #4CAF50);
+  color: #fff;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  vertical-align: middle;
+}
+.meta-chip--competitor {
+  background: var(--brand-muted, var(--muted));
+  color: var(--text);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  vertical-align: middle;
+}
+.draft-card-badges { display: inline-flex; gap: 4px; flex-wrap: wrap; margin-left: auto; }
 .draft-meta .meta-chip--muted + .tag,
 .draft-meta .tag + .meta-chip--muted { margin-left: 2px; }
 .draft-meta .meta-chip--muted + .meta-chip--muted::before { content: "·"; margin-right: 6px; opacity: 0.5; }
