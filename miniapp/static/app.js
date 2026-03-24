@@ -736,25 +736,39 @@ function uiIcon(name) {
 
 function sectionHeadingIcon(title) {
   const iconMap = {
-    "Превью": "card",
-    "Угол": "sparkle",
-    "Текст": "text",
-    "CTA": "chat",
-    "Паспорт карточки": "passport",
-    "Паспорт аромата": "passport",
-    "О концепции": "sparkle",
-    "О практике": "passport",
-    "Описание": "card",
-    "Какие вопросы поднимает": "prompt",
-    "Действие на НПС": "nps",
-    "Терапевтические свойства": "therapy",
-    "Психологические свойства": "psyche",
-    'Ресурс "+"': "plus",
-    'Ресурс "-"': "minus",
-    "Исторические сведения": "history",
-    "Промпт для изображения": "prompt",
-    "Сценарий": "play",
-    "Кадры и промпты": "layers",
+    // ── Карточки контента ──
+    "Превью": "eye",
+    "Угол": "compass",
+    "Текст": "text-aa",
+    "CTA": "megaphone",
+    "Паспорт карточки": "identification-card",
+    "Паспорт аромата": "identification-card",
+    "Описание": "text-align-left",
+    "Промпт для изображения": "magic-wand",
+    "Какие вопросы поднимает": "question",
+    // ── Справочник ──
+    "О концепции": "lightbulb",
+    "О практике": "book-open",
+    "Действие на НПС": "brain",
+    "Терапевтические свойства": "first-aid",
+    "Психологические свойства": "smiley",
+    "Исторические сведения": "clock-counter-clockwise",
+    'Ресурс "+"': "plus-circle",
+    'Ресурс "-"': "minus-circle",
+    // ── Рилс: сценарий ──
+    "Сценарий": "scroll",
+    "Концепция": "lightbulb",
+    "Кадры": "stack",
+    "Кадры и промпты": "stack",
+    "Замечания": "note-pencil",
+    "Видео": "video-camera",
+    // ── Рилс: видео пайплайн ──
+    "scissors": "waveform",         // Нарезка пауз → звуковая волна
+    "film": "film-strip",           // Сборка из кадров → плёнка
+    "tools": "wrench",              // Инструменты → гаечный ключ
+    "video": "play-circle",         // Предпросмотр → плеер
+    "tech-check": "shield-check",   // Проверка → щит с галочкой
+    "publish": "paper-plane-tilt",  // Публикация → отправка
   };
   return uiIcon(iconMap[title] || "card");
 }
