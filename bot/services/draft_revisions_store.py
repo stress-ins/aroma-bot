@@ -97,6 +97,21 @@ async def create_revision(
         return DraftRevision.from_model(model)
 
 
+async def snapshot_before_regen(draft_id: str, note: str = "", author: str = "user") -> DraftRevision | None:
+    """Create a revision snapshot before regeneration. Safe to call — returns None if draft missing."""
+    from bot.services.drafts_store import get_draft
+
+    draft = await get_draft(draft_id)
+    if not draft:
+        return None
+    return await create_revision(
+        draft_id=draft_id,
+        payload=dict(draft.payload or {}),
+        author=author,
+        note=note or "pre-regeneration snapshot",
+    )
+
+
 async def list_revisions(draft_id: str) -> list[DraftRevision]:
     """Return all revisions for a draft, ordered by rev_num ascending."""
     async with AsyncSessionLocal() as session:

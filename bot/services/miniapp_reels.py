@@ -134,13 +134,21 @@ async def update_reels_frame_prompt(draft_id: str, frame_index: int, prompt: str
     return await serialize_reels_draft(draft_id)
 
 
-async def update_reels_scenario(draft_id: str, scenario: str, concept: str = "") -> dict[str, object] | None:
+async def update_reels_scenario(
+    draft_id: str, scenario: str, concept: str = "", *, revision_note: str = "",
+) -> dict[str, object] | None:
     draft = await get_draft(draft_id)
     if not draft or draft.kind not in ("reels", "reels_v2"):
         return None
     payload = dict(draft.payload)
     payload["scenario"] = scenario.strip()
     payload["concept"] = concept.strip()
+    # Accumulate revision notes history
+    if revision_note.strip():
+        payload["revision_note"] = revision_note.strip()
+        history: list = list(payload.get("revision_history", []))
+        history.append(revision_note.strip())
+        payload["revision_history"] = history
     updated = await update_draft(draft_id, payload=payload, status="draft")
     if not updated:
         return None
