@@ -966,7 +966,8 @@ export function createReelsModule(deps) {
             </label>
           </div>
           <label style="display:flex;align-items:center;gap:8px;margin:8px 0;font-size:13px">
-            <input type="checkbox" id="cleanUseWhisper" checked /> Whisper транскрипция
+            <input type="checkbox" id="cleanUseWhisper" /> Whisper транскрипция
+            <span style="font-size:11px;color:var(--muted);display:block;margin-top:2px">Требует много памяти. Включайте только для коротких видео (&lt;30 сек)</span>
           </label>
           <button class="secondary-button" type="button" data-action="cleanReelsVideo" data-args='${JSON.stringify([r.draft_id, null])}'>
             ${actionLabel("scissors", "Очистить видео")}
@@ -1511,6 +1512,8 @@ export function createReelsModule(deps) {
     const useWhisper = whisperInput ? whisperInput.checked : true;
 
     _cleanRunning = true;
+    _cleanMaxProgress = 0;
+    _cleanLastStep = "";
     if (btn) { btn.disabled = true; btn.style.opacity = "0.5"; }
 
     // Show initial progress immediately
@@ -1535,15 +1538,25 @@ export function createReelsModule(deps) {
     }
   }
 
+  let _cleanMaxProgress = 0;
+  let _cleanLastStep = "";
+
   function _updateCleanProgressUI(st) {
     const container = document.getElementById("cleanStatusContainer");
     if (!container) return;
     if (st.status === "running" || st.status === "pending") {
-      container.innerHTML = _renderCleanProgress(st.step || "preparing", st.progress || 5, {
+      // Progress can only go up, never backwards
+      const progress = Math.max(st.progress || 0, _cleanMaxProgress);
+      _cleanMaxProgress = progress;
+      const step = st.step && st.step !== "queued" && st.step !== "preparing" ? st.step : (_cleanLastStep || st.step || "preparing");
+      if (st.step && st.step !== "queued") _cleanLastStep = st.step;
+      container.innerHTML = _renderCleanProgress(step, progress, {
         estimated_seconds: st.estimated_seconds,
         queue_position: st.queue_position,
       });
     } else if (st.status === "failed") {
+      _cleanMaxProgress = 0;
+      _cleanLastStep = "";
       _cleanRunning = false;
       const errMsg = st.error || "неизвестная ошибка";
       const isOom = errMsg.includes("rc=-9") || errMsg.includes("OOM") || errMsg.includes("killed");
