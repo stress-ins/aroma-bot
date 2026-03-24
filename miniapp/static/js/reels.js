@@ -1621,38 +1621,79 @@ export function createReelsModule(deps) {
   function canApproveReels() { return (state.userRole || "assistant") === "expert"; }
   function canPublishReels() { return ["expert", "publisher"].includes(state.userRole || "assistant"); }
 
+  // ── Reels metadata header ──────────────────────────────────────────────
+
+  function _reelsMetaHeader(r) {
+    const STATUS_LABELS = {
+      draft: "Черновик",
+      generating: "Генерация",
+      approved: "Одобрен → съёмка",
+      video_uploaded: "Видео загружено",
+      checking: "Проверка видео",
+      passed: "Готов к публикации",
+      publishing: "Публикуется",
+      published: "Опубликован",
+    };
+    const STATUS_TONES = {
+      draft: "neutral", generating: "info", approved: "info",
+      video_uploaded: "info", checking: "warning",
+      passed: "success", publishing: "info", published: "success",
+    };
+
+    const status = r.generation_pending ? "generating" : (r.status || "draft");
+    const statusLabel = STATUS_LABELS[status] || status;
+    const statusTone = STATUS_TONES[status] || "neutral";
+    const shortId = (r.draft_id || "").substring(0, 8);
+    const created = r.created_at ? new Date(r.created_at).toLocaleDateString("ru", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
+    const updated = r.updated_at ? new Date(r.updated_at).toLocaleDateString("ru", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
+
+    return `
+      <div class="reels-meta-header">
+        <div class="reels-meta-row">
+          <span class="reels-meta-id">#${escapeHtml(shortId)}</span>
+          <span class="reels-meta-status reels-meta-status--${statusTone}">${escapeHtml(statusLabel)}</span>
+        </div>
+        <div class="reels-meta-row reels-meta-dates">
+          ${created ? `<span>${uiIcon("calendar")} ${created}</span>` : ""}
+          ${updated && updated !== created ? `<span>${uiIcon("pencil-simple")} ${updated}</span>` : ""}
+        </div>
+      </div>`;
+  }
+
   // ── Main render dispatcher ─────────────────────────────────────────────
 
   function renderReelsDetail(r) {
+    const metaHeader = _reelsMetaHeader(r);
+
     // V2 routing by status and generation_pending
     if (r.generation_pending === true) {
-      return renderScreen2Generating(r);
+      return metaHeader + renderScreen2Generating(r);
     }
 
     const status = r.status || "draft";
 
     if (status === "approved") {
-      return renderScreen4Shooting(r);
+      return metaHeader + renderScreen4Shooting(r);
     }
 
     if (status === "video_uploaded" || status === "checking") {
-      return renderScreen5VideoCheck(r);
+      return metaHeader + renderScreen5VideoCheck(r);
     }
 
     if (status === "passed") {
-      return renderScreen6Publish(r);
+      return metaHeader + renderScreen6Publish(r);
     }
 
     if (status === "publishing" || status === "published") {
       const hasFailures = Array.isArray(r.publish_status) && r.publish_status.some((e) => e?.status === "failed");
       if (status === "publishing" || hasFailures) {
-        return renderScreen6Publish(r);
+        return metaHeader + renderScreen6Publish(r);
       }
-      return renderScreen7Published(r);
+      return metaHeader + renderScreen7Published(r);
     }
 
     // Default: "draft" (Screen 3 — Edit)
-    return renderScreen3Edit(r);
+    return metaHeader + renderScreen3Edit(r);
   }
 
   async function forceEditReels(draftId, btn) {
