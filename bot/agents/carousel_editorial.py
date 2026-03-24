@@ -158,10 +158,14 @@ def _draw_rich_line(
     for i, (word, hl) in enumerate(line_words):
         color = accent_color if hl else base_color
         draw.text((cx, y), word, font=font, fill=color)
+        # Don't add space before punctuation in the next word
+        next_is_punct = (i + 1 < len(line_words) and
+                         line_words[i + 1][0][:1] in ",.;:!?—–")
+        spacer = "" if next_is_punct else " "
         try:
-            ww = draw.textlength(word + " ", font=font)
+            ww = draw.textlength(word + spacer, font=font)
         except AttributeError:
-            bbox = draw.textbbox((0, 0), word + " ", font=font)
+            bbox = draw.textbbox((0, 0), word + spacer, font=font)
             ww = bbox[2] - bbox[0]
         cx += int(ww)
 
@@ -208,8 +212,8 @@ def render_editorial_png(
         photo = photo.crop((lc, tc, lc + w, tc + photo_h))
         canvas.paste(photo, (0, 0))
 
-        # Soft gradient transition from photo to bg
-        gradient_h = int(60 * h / 1350)
+        # Soft gradient transition from photo to bg (longer for smoother blend)
+        gradient_h = int(120 * h / 1350)
         gradient = Image.new("RGBA", (w, gradient_h), (0, 0, 0, 0))
         gd = ImageDraw.Draw(gradient)
         for i in range(gradient_h):
@@ -363,7 +367,7 @@ def render_editorial_png(
     # ── "Свайпай →" on hook slide ──
     if is_hook:
         swipe_font = _load_font(28)
-        swipe_text = "СВАЙПАЙ  →"
+        swipe_text = "СВАЙПАЙ  >>"
         try:
             sw = draw.textlength(swipe_text, font=swipe_font)
         except AttributeError:
