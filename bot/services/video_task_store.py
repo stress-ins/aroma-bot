@@ -189,18 +189,22 @@ async def pending_count() -> int:
 def estimate_time_seconds(
     task_type: str, video_duration: float | None, config: dict | None = None,
 ) -> int:
-    """Estimate processing time in seconds based on video duration."""
+    """Estimate processing time in seconds based on video duration.
+
+    Coefficients tuned for CPU-only VPS (4GB RAM, no GPU).
+    Whisper tiny on CPU runs ~3-5x realtime; ffmpeg adds overhead.
+    """
     dur = video_duration or 60.0  # assume 60s if unknown
 
     if task_type == "clean":
         use_whisper = (config or {}).get("use_whisper", True)
         if use_whisper:
-            # Whisper runs ~0.5-1x realtime + ffmpeg overhead
-            return int(dur * 1.2 + 30)
+            # Whisper tiny on CPU: ~4x realtime + ffmpeg + overhead
+            return int(dur * 5.0 + 60)
         else:
-            # Silence detection only — much faster
-            return int(dur * 0.3 + 15)
+            # Silence detection only (ffmpeg silencedetect + concat)
+            return int(dur * 0.5 + 20)
     elif task_type == "compose":
-        # Frame rendering + encoding
-        return int(dur * 0.8 + 45)
-    return int(dur + 30)
+        # Frame rendering + encoding on CPU
+        return int(dur * 2.0 + 60)
+    return int(dur * 2.0 + 60)

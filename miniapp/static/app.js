@@ -736,6 +736,7 @@ function uiIcon(name) {
     archive:    "archive-box",
     pencil:     "pencil",
     "pencil-simple": "pencil-simple",
+    warning:    "warning",
     save:       "floppy-disk",
     star:       "star",
     "share-2":  "share-network",

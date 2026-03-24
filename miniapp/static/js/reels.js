@@ -1021,6 +1021,32 @@ export function createReelsModule(deps) {
     `;
   }
 
+  // Auto-check task status when screen5 renders (picks up failed/running tasks)
+  function _autoCheckTaskStatus(draftId) {
+    setTimeout(async () => {
+      try {
+        const st = await fetchJson(`/api/reels/${draftId}/clean-video-status`);
+        if (st.status === "running" || st.status === "pending") {
+          _cleanRunning = true;
+          _updateCleanProgressUI(st);
+          _startCleanPoll(draftId);
+        } else if (st.status === "failed") {
+          _updateCleanProgressUI(st);
+        }
+        // Also check compose
+        const cst = await fetchJson(`/api/reels/${draftId}/compose-status`);
+        if (cst.status === "running" || cst.status === "pending") {
+          _composeRunning = true;
+          const el = document.getElementById("composeStatusContainer");
+          if (el) el.innerHTML = _renderComposeProgress(cst.step || cst.status, {
+            progress: cst.progress, estimated_seconds: cst.estimated_seconds,
+          });
+          _startComposePoll2(draftId);
+        }
+      } catch (_) { /* ignore */ }
+    }, 500);
+  }
+
   function renderScreen6Publish(r) {
     const caption = r.caption || r.payload?.caption || "";
     const captionLen = caption.length;
@@ -1517,6 +1543,25 @@ export function createReelsModule(deps) {
         estimated_seconds: st.estimated_seconds,
         queue_position: st.queue_position,
       });
+    } else if (st.status === "failed") {
+      _cleanRunning = false;
+      const errMsg = st.error || "неизвестная ошибка";
+      const isOom = errMsg.includes("rc=-9") || errMsg.includes("OOM") || errMsg.includes("killed");
+      container.innerHTML = `
+        <div class="reels-progress-container" style="border-color:var(--danger, #e53935)">
+          <div class="reels-progress-header">
+            ${uiIcon("warning")}
+            <span class="reels-progress-label" style="color:var(--danger, #e53935)">
+              ${isOom ? "Не хватило памяти на сервере" : "Очистка не удалась"}
+            </span>
+          </div>
+          <div class="reels-progress-hint">
+            ${isOom ? "Попробуйте отключить Whisper транскрипцию или загрузить видео покороче." : escapeHtml(errMsg.substring(0, 150))}
+          </div>
+        </div>`;
+      // Re-enable button
+      const cleanBtn = container.closest(".section")?.querySelector('[data-action="cleanReelsVideo"]');
+      if (cleanBtn) { cleanBtn.disabled = false; cleanBtn.style.opacity = ""; }
     }
   }
 
@@ -1660,6 +1705,7 @@ export function createReelsModule(deps) {
     }
 
     if (status === "video_uploaded" || status === "checking") {
+      _autoCheckTaskStatus(r.draft_id);
       return renderScreen5VideoCheck(r);
     }
 
