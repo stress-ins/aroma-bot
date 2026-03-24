@@ -137,6 +137,22 @@ function initScrollFade(container) {
   update();
 }
 
+// ── Range slider fill color (WebKit doesn't support ::-webkit-slider-progress) ──
+function _updateRangeFill(el) {
+  const min = parseFloat(el.min) || 0;
+  const max = parseFloat(el.max) || 100;
+  const val = parseFloat(el.value) || 0;
+  const pct = ((val - min) / (max - min)) * 100;
+  el.style.background = `linear-gradient(to right, var(--brand) 0%, var(--brand) ${pct}%, var(--border) ${pct}%, var(--border) 100%)`;
+}
+document.addEventListener("input", (e) => {
+  if (e.target?.type === "range") _updateRangeFill(e.target);
+});
+// Apply to all existing range inputs on DOM mutations
+new MutationObserver(() => {
+  document.querySelectorAll('input[type="range"]').forEach(_updateRangeFill);
+}).observe(document.body, { childList: true, subtree: true });
+
 const elements = {
   tabsContainer: document.getElementById("tabsContainer"),
   filtersContainer: document.getElementById("filtersContainer"),
@@ -731,7 +747,7 @@ function uiIcon(name) {
     sparkles:   "sparkle",
     "map-pin":  "map-pin",
   };
-  return `<span class="ui-icon ui-icon-${escapeHtml(name)}">${icon(PHOSPHOR_MAP[name] || "terminal-window", 16)}</span>`;
+  return `<span class="ui-icon ui-icon-${escapeHtml(name)}">${icon(PHOSPHOR_MAP[name] || name, 16)}</span>`;
 }
 
 function sectionHeadingIcon(title) {
