@@ -58,7 +58,9 @@ def test_handbook_cards_open_in_all_sections(page):
         back_btn = page.locator("#draftDetail .back-button")
         if back_btn.count() > 0:
             back_btn.first.click()
-            page.wait_for_timeout(100)
+            page.wait_for_timeout(300)
+            # Wait for list to re-render after back navigation
+            page.wait_for_selector(".reference-card", timeout=5000)
 
 
 def test_filter_chips_no_horizontal_overflow(page):
