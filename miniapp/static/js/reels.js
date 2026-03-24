@@ -1718,11 +1718,26 @@ export function createReelsModule(deps) {
   }
 
   async function reuploadVideo(draftId, btn) {
-    const input = document.getElementById("reuploadInput");
-    if (!input) return;
+    // Find existing input or create one dynamically (survives re-renders)
+    let input = document.getElementById("reuploadInput");
+    if (!input) {
+      input = document.createElement("input");
+      input.id = "reuploadInput";
+      input.type = "file";
+      input.accept = "video/*";
+      input.style.display = "none";
+      document.body.appendChild(input);
+    }
+    // Clear previous value so onchange fires even for the same file
+    input.value = "";
     input.onchange = async () => {
       const file = input.files?.[0];
       if (!file) return;
+      if (file.size > 2 * 1024 * 1024 * 1024) {
+        showUiNotice("Файл слишком большой (макс. 2 ГБ)", "error");
+        return;
+      }
+      showUiNotice("Загрузка видео…", "info");
       const formData = new FormData();
       formData.append("file", file);
       try {
@@ -1732,13 +1747,17 @@ export function createReelsModule(deps) {
           headers: hdrs,
           body: formData,
         });
-        if (!resp.ok) throw new Error(await resp.text());
+        if (!resp.ok) {
+          const errText = await resp.text().catch(() => `HTTP ${resp.status}`);
+          throw new Error(errText);
+        }
+        await fetchJson(`/api/reels/${draftId}/check-video`, { method: "POST" }).catch(() => {});
         const draft = await fetchJson(`/api/reels/${draftId}`);
         mergeReelsIntoState(draft);
         callbacks.renderReelsDetail?.(draft);
-        showUiNotice("Видео загружено");
+        showUiNotice("Видео загружено", "success");
       } catch (e) {
-        showUiNotice("Ошибка загрузки: " + (e.message || ""), "error");
+        showUiNotice("Ошибка загрузки: " + (e.message || "неизвестная ошибка"), "error");
       }
     };
     input.click();
