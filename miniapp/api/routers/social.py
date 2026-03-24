@@ -9,6 +9,8 @@ from pydantic import BaseModel
 from bot.services.brand_settings_store import get_brand_settings, update_brand_settings
 from bot.services.mentions_store import get_token, list_tokens
 from bot.services.social_oauth import (
+    INSTAGRAM_DEFAULT_SCOPES,
+    THREADS_DEFAULT_SCOPES,
     build_canva_authorize_url,
     build_instagram_authorize_url,
     build_oauth_state,
@@ -27,6 +29,13 @@ CANVA_REDIRECT_URI = "https://oauth.aromara.ru/canva/callback"
 YOUTUBE_REDIRECT_URI = "https://oauth.aromara.ru/youtube/callback"
 
 _PLATFORMS = ("threads", "instagram", "canva", "youtube")
+
+_PLATFORM_SCOPES: dict[str, list[str]] = {
+    "threads": list(THREADS_DEFAULT_SCOPES),
+    "instagram": list(INSTAGRAM_DEFAULT_SCOPES),
+    "canva": [],
+    "youtube": [],
+}
 
 
 @router.get("/api/social/status")
@@ -49,6 +58,7 @@ async def social_status(ctx: TeamContext = Depends(require_team_role("owner"))):
             "username": None,
             "expires_at": info.get("expires_at"),
             "updated_at": info.get("updated_at"),
+            "scopes": _PLATFORM_SCOPES.get(platform, []),
         })
     for acc in accounts:
         username_token = await get_token(f"{acc['platform']}_username")

@@ -20,6 +20,7 @@ THREADS_ME_URL = "https://graph.threads.net/me"
 THREADS_DEFAULT_SCOPES = (
     "threads_basic",
     "threads_content_publish",
+    "threads_keyword_search",
     "threads_manage_replies",
     "threads_manage_insights",
     "threads_read_replies",
@@ -36,6 +37,10 @@ INSTAGRAM_DEFAULT_SCOPES = (
     "instagram_business_manage_comments",
     "instagram_business_manage_insights",
     "instagram_business_manage_messages",
+    "instagram_manage_comments",
+    "instagram_manage_insights",
+    "instagram_manage_messages",
+    "pages_read_engagement",
 )
 
 YOUTUBE_AUTHORIZE_URL = "https://accounts.google.com/o/oauth2/v2/auth"
