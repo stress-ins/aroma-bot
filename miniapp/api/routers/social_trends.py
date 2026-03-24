@@ -269,8 +269,6 @@ async def _run_team_collection(team_id: str) -> None:
             await collector.collect_from_accounts(
                 th_accounts, own_username=own_th_username,
             )
-            # Keyword search — find posts from other users
-            await collector.collect_from_keyword_search(brand_hashtags)
             # Post-hoc keyword tagging for already-collected posts
             await collector.tag_posts_by_keywords(brand_hashtags)
 
