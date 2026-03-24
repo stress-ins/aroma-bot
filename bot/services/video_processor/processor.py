@@ -132,11 +132,31 @@ def process(config: ProcessorConfig) -> ProcessResult:
 
         out_file = output_path / f"{input_file.stem}_clean.mp4"
         cmd = build_single(input_file, intervals, out_file, config)
-        logger.debug("FFmpeg cmd: %s", " ".join(cmd))
 
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
-        if result.returncode != 0:
-            raise FFmpegError(cmd, result.returncode, result.stderr)
+        # Handle 2-pass demuxer concat (many segments)
+        from bot.services.video_processor.ffmpeg_builder import _DemuxerCommand
+        if isinstance(cmd, _DemuxerCommand) and cmd.pre_commands:
+            logger.info("Using 2-pass concat demuxer (%d segments)", len(cmd.pre_commands))
+            import shutil
+            try:
+                for i, pre_cmd in enumerate(cmd.pre_commands):
+                    logger.debug("Extracting segment %d/%d", i + 1, len(cmd.pre_commands))
+                    r = subprocess.run(pre_cmd, capture_output=True, text=True, timeout=60)
+                    if r.returncode != 0:
+                        raise FFmpegError(pre_cmd, r.returncode, r.stderr)
+                # Pass 2: concat
+                logger.debug("Concat pass: %s", " ".join(list(cmd)[:8]))
+                result = subprocess.run(list(cmd), capture_output=True, text=True, timeout=600)
+                if result.returncode != 0:
+                    raise FFmpegError(list(cmd), result.returncode, result.stderr)
+            finally:
+                if cmd.tmp_dir:
+                    shutil.rmtree(cmd.tmp_dir, ignore_errors=True)
+        else:
+            logger.debug("FFmpeg cmd: %s", " ".join(cmd)[:500])
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+            if result.returncode != 0:
+                raise FFmpegError(cmd, result.returncode, result.stderr)
 
         if not out_file.exists() or out_file.stat().st_size == 0:
             raise RuntimeError("FFmpeg produced no output file")
