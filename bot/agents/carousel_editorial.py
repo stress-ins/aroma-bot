@@ -28,12 +28,15 @@ _HIGHLIGHT_PATTERNS = [
 ]
 
 
-def _parse_highlighted_text(text: str) -> list[tuple[str, bool]]:
+def _parse_highlighted_text(text: str, *, skip_caps_highlight: bool = False) -> list[tuple[str, bool]]:
     """Parse text into segments: (text, is_highlighted).
 
     Highlights come from:
     1. Explicit **bold** markdown markers
     2. Auto-detected key phrases (numbers, ALL CAPS, quotes)
+
+    When skip_caps_highlight=True, the ALL CAPS pattern is skipped
+    (useful when the entire text has been uppercased).
     """
     # Step 1: Extract explicit **bold** markers
     segments: list[tuple[str, bool]] = []
@@ -46,6 +49,9 @@ def _parse_highlighted_text(text: str) -> list[tuple[str, bool]]:
         else:
             raw_segments.append((part, False))
 
+    # Choose which patterns to apply
+    patterns = [p for i, p in enumerate(_HIGHLIGHT_PATTERNS) if not (skip_caps_highlight and i == 2)]
+
     # Step 2: Auto-highlight in non-bold segments
     for seg_text, is_bold in raw_segments:
         if is_bold:
@@ -54,7 +60,7 @@ def _parse_highlighted_text(text: str) -> list[tuple[str, bool]]:
 
         # Find all auto-highlight spans
         highlights: list[tuple[int, int]] = []
-        for pat in _HIGHLIGHT_PATTERNS:
+        for pat in patterns:
             for m in pat.finditer(seg_text):
                 highlights.append((m.start(), m.end()))
 
@@ -203,16 +209,17 @@ def render_editorial_png(
         canvas.paste(photo, (0, 0))
 
         # Soft gradient transition from photo to bg
-        gradient = Image.new("RGBA", (w, 60), (0, 0, 0, 0))
+        gradient_h = int(60 * h / 1350)
+        gradient = Image.new("RGBA", (w, gradient_h), (0, 0, 0, 0))
         gd = ImageDraw.Draw(gradient)
-        for i in range(60):
-            alpha = int(255 * (i / 60) ** 1.5)
+        for i in range(gradient_h):
+            alpha = int(255 * (i / gradient_h) ** 1.5)
             gd.line([(0, i), (w, i)], fill=(*bg_color, alpha))
         canvas.paste(Image.composite(
-            Image.new("RGB", (w, 60), bg_color),
-            canvas.crop((0, photo_h - 60, w, photo_h)),
+            Image.new("RGB", (w, gradient_h), bg_color),
+            canvas.crop((0, photo_h - gradient_h, w, photo_h)),
             gradient.split()[3],
-        ), (0, photo_h - 60))
+        ), (0, photo_h - gradient_h))
 
     # ── Avatar + username bar ──
     bar_y = photo_h + 12 if img_bytes else 40
@@ -220,7 +227,7 @@ def render_editorial_png(
 
     if username:
         # Avatar circle
-        avatar_size = 36
+        avatar_size = 48
         ax = PAD
         ay = bar_y
 
@@ -239,41 +246,47 @@ def render_editorial_png(
                              fill=(60, 60, 70))
 
             # Username text
-            ufont = _load_font(18)
-            ux = ax + avatar_size + 10
+            ufont = _load_font(22)
+            ux = ax + avatar_size + 14
             # Dash line
-            draw.line([(ux, ay + avatar_size // 2), (ux + 20, ay + avatar_size // 2)],
+            draw.line([(ux, ay + avatar_size // 2), (ux + 28, ay + avatar_size // 2)],
                       fill=(100, 100, 110), width=2)
-            draw.text((ux + 26, ay + 8), username, font=ufont, fill=(200, 200, 210))
+            draw.text((ux + 34, ay + 12), username, font=ufont, fill=(200, 200, 210))
         else:
-            ufont = _load_font(18)
-            draw.text((ax, ay + 8), username, font=ufont, fill=(200, 200, 210))
+            ufont = _load_font(22)
+            draw.text((ax, ay + 12), username, font=ufont, fill=(200, 200, 210))
 
-        bar_y += avatar_size + 20
+        bar_y += avatar_size + 24
 
     # ── Parse and render text ──
-    segments = _parse_highlighted_text(text)
+    # Uppercase transformation for headlines (not bullet body)
+    uppercased = not is_bullet_list
+    display_text = text.upper() if uppercased else text
+    segments = _parse_highlighted_text(display_text, skip_caps_highlight=uppercased)
 
     # Determine font size based on text length
     char_count = len(text)
     if is_bullet_list:
-        title_size = 38
-        body_size = 26
-    elif char_count <= 40:
         title_size = 52
-        body_size = 52
+        body_size = 36
+    elif char_count <= 40:
+        title_size = 80
+        body_size = 80
     elif char_count <= 80:
-        title_size = 46
-        body_size = 46
+        title_size = 68
+        body_size = 68
     elif char_count <= 150:
-        title_size = 38
-        body_size = 30
+        title_size = 56
+        body_size = 42
     else:
-        title_size = 34
-        body_size = 26
+        title_size = 48
+        body_size = 34
+
+    # Tighter line height for large fonts (magazine style)
+    line_mult = 1.25 if title_size >= 60 else 1.35
 
     usable_w = w - PAD * 2
-    text_y = bar_y
+    swipe_reserve = 70 if is_hook else 30
 
     if is_bullet_list:
         # Split into title (first line before •) and bullets
@@ -291,41 +304,57 @@ def render_editorial_png(
             else:
                 bullets.append(stripped)
 
+        # Pre-calculate total height for vertical centering
+        title_font = _load_font(title_size) if title else None
+        title_upper = title.upper()
+        title_segs = _parse_highlighted_text(title_upper, skip_caps_highlight=True) if title else []
+        title_lines = _wrap_rich_text(draw, title_segs, title_font, usable_w) if title_segs else []
+        title_line_h = int(title_size * 1.35)
+        total_title_h = len(title_lines) * title_line_h + (12 if title else 0)
+
+        bullet_font = _load_font(body_size) if bullets else None
+        bullet_line_h = int(body_size * 1.5)
+        total_bullets_h = 0
+        bullet_wrapped = []
+        for bullet in bullets:
+            b_segs = _parse_highlighted_text(bullet)
+            b_lines = _wrap_rich_text(draw, b_segs, bullet_font, usable_w - 30)
+            bullet_wrapped.append(b_lines)
+            total_bullets_h += len(b_lines) * bullet_line_h + 4
+
+        total_text_h = total_title_h + total_bullets_h
+        available_h = (h - swipe_reserve) - bar_y
+        text_y = bar_y + max(0, (available_h - total_text_h) // 2)
+
         # Draw title in accent
-        if title:
-            title_font = _load_font(title_size)
-            title_segs = _parse_highlighted_text(title)
-            title_lines = _wrap_rich_text(draw, title_segs, title_font, usable_w)
-            line_h = int(title_size * 1.35)
+        if title_lines:
             for tl in title_lines:
                 _draw_rich_line(draw, tl, PAD, text_y, title_font,
                                 (255, 255, 255), accent_color, "left", PAD, usable_w)
-                text_y += line_h
+                text_y += title_line_h
             text_y += 12
 
         # Draw bullets
-        if bullets:
-            bullet_font = _load_font(body_size)
-            line_h = int(body_size * 1.5)
-            for bullet in bullets:
-                b_segs = _parse_highlighted_text(bullet)
-                b_lines = _wrap_rich_text(draw, b_segs, bullet_font, usable_w - 30)
-                # Bullet dot
-                dot_y = text_y + body_size // 3
-                draw.ellipse((PAD, dot_y, PAD + 8, dot_y + 8), fill=(180, 180, 190))
-                for j, bl in enumerate(b_lines):
-                    _draw_rich_line(draw, bl, PAD + 26, text_y, bullet_font,
-                                    (220, 220, 230), accent_color, "left", PAD + 26, usable_w - 26)
-                    text_y += line_h
-                text_y += 4
+        for b_lines in bullet_wrapped:
+            dot_y = text_y + body_size // 3
+            draw.ellipse((PAD, dot_y, PAD + 8, dot_y + 8), fill=(180, 180, 190))
+            for bl in b_lines:
+                _draw_rich_line(draw, bl, PAD + 26, text_y, bullet_font,
+                                (220, 220, 230), accent_color, "left", PAD + 26, usable_w - 26)
+                text_y += bullet_line_h
+            text_y += 4
     else:
-        # Regular text — all same size, center-aligned
+        # Regular text — uppercase, center-aligned, vertically centered
         font = _load_font(title_size)
         text_lines = _wrap_rich_text(draw, segments, font, usable_w)
-        line_h = int(title_size * 1.35)
+        line_h = int(title_size * line_mult)
+        total_text_h = len(text_lines) * line_h
+
+        available_h = (h - swipe_reserve) - bar_y
+        text_y = bar_y + max(0, (available_h - total_text_h) // 2)
 
         for tl in text_lines:
-            if text_y + title_size > h - 60:
+            if text_y + title_size > h - swipe_reserve:
                 break
             _draw_rich_line(draw, tl, PAD, text_y, font,
                             (255, 255, 255), accent_color, "center", PAD, usable_w)
@@ -333,15 +362,20 @@ def render_editorial_png(
 
     # ── "Свайпай →" on hook slide ──
     if is_hook:
-        swipe_font = _load_font(16)
+        swipe_font = _load_font(28)
         swipe_text = "СВАЙПАЙ  →"
         try:
             sw = draw.textlength(swipe_text, font=swipe_font)
         except AttributeError:
-            sw = 100
+            sw = 160
         sx = (w - int(sw)) // 2
-        sy = h - 50
-        draw.text((sx, sy), swipe_text, font=swipe_font, fill=(140, 140, 150))
+        sy = h - 60
+        swipe_color = (
+            min(255, accent_color[0] // 2 + 70),
+            min(255, accent_color[1] // 2 + 70),
+            min(255, accent_color[2] // 2 + 70),
+        )
+        draw.text((sx, sy), swipe_text, font=swipe_font, fill=swipe_color)
 
     buf = io.BytesIO()
     canvas.save(buf, format="PNG", quality=92)
