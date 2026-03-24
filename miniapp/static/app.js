@@ -738,6 +738,7 @@ function uiIcon(name) {
     "pencil-simple": "pencil-simple",
     warning:    "warning",
     bell:       "bell",
+    palette:    "palette",
     save:       "floppy-disk",
     star:       "star",
     "share-2":  "share-network",
@@ -782,6 +783,7 @@ function sectionHeadingIcon(title) {
     "Замечания": "note-pencil",
     "Видео": "video-camera",
     // ── Рилс: видео пайплайн ──
+    "color-grade": "palette",       // Цветокоррекция → палитра
     "scissors": "waveform",         // Нарезка пауз → звуковая волна
     "film": "film-strip",           // Сборка из кадров → плёнка
     "tools": "wrench",              // Инструменты → гаечный ключ

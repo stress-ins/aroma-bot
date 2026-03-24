@@ -756,6 +756,208 @@ async def reels_notify_when_ready(
     return {"subscribed": len(draft_ids)}
 
 
+# ── Video color grading ──────────────────────────────────────────────────────
+
+
+@router.post("/api/reels/{draft_id}/grade-preview")
+async def grade_preview_frame(
+    draft_id: str,
+    brightness: float = 0.0,
+    contrast: float = 1.0,
+    saturation: float = 1.0,
+    gamma: float = 1.0,
+    _: None = Depends(_require_auth),
+):
+    """Extract a mid-frame, apply color correction, return preview image URL."""
+    from bot.services.reels_video import VIDEO_DIR
+    from pathlib import Path
+    import subprocess
+
+    draft = await serialize_reels_draft(draft_id)
+    if not draft:
+        raise HTTPException(status_code=404, detail="reels_not_found")
+
+    p = draft.get("payload", {}) if isinstance(draft, dict) else {}
+    video_filename = p.get("cleaned_video_path") or p.get("video_filename") or ""
+    if not video_filename:
+        raise HTTPException(status_code=400, detail="no_video")
+
+    video_path = VIDEO_DIR / draft_id / video_filename
+    if not video_path.exists():
+        raise HTTPException(status_code=400, detail="video_file_missing")
+
+    # Get duration for mid-frame
+    probe = subprocess.run(
+        ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+         "-of", "default=noprint_wrappers=1:nokey=1", str(video_path)],
+        capture_output=True, text=True, timeout=15,
+    )
+    duration = float(probe.stdout.strip()) if probe.returncode == 0 else 10.0
+    mid_ts = duration * 0.5
+
+    preview_dir = VIDEO_DIR / draft_id / "grade_preview"
+    preview_dir.mkdir(parents=True, exist_ok=True)
+
+    # Build filter string from sliders
+    vf_parts = []
+    eq_parts = []
+    if brightness != 0.0:
+        eq_parts.append(f"brightness={brightness}")
+    if contrast != 1.0:
+        eq_parts.append(f"contrast={contrast}")
+    if saturation != 1.0:
+        eq_parts.append(f"saturation={saturation}")
+    if gamma != 1.0:
+        eq_parts.append(f"gamma={gamma}")
+
+    vf = f"eq={'='.join(eq_parts) if len(eq_parts) == 1 else ':'.join(eq_parts)}" if eq_parts else ""
+
+    # Extract original frame
+    orig_path = str(preview_dir / "original.jpg")
+    subprocess.run(
+        ["ffmpeg", "-ss", str(mid_ts), "-i", str(video_path),
+         "-vframes", "1", "-q:v", "2", "-y", orig_path],
+        capture_output=True, timeout=15,
+    )
+
+    # Extract corrected frame
+    corrected_path = str(preview_dir / "corrected.jpg")
+    cmd = ["ffmpeg", "-ss", str(mid_ts), "-i", str(video_path), "-vframes", "1", "-q:v", "2"]
+    if vf:
+        cmd += ["-vf", vf]
+    cmd += ["-y", corrected_path]
+    subprocess.run(cmd, capture_output=True, timeout=15)
+
+    return {
+        "original_url": f"/generated/reels_video/{draft_id}/grade_preview/original.jpg",
+        "corrected_url": f"/generated/reels_video/{draft_id}/grade_preview/corrected.jpg",
+        "vf_string": vf,
+    }
+
+
+@router.post("/api/reels/{draft_id}/grade-analyze")
+async def grade_analyze_ai(
+    draft_id: str,
+    style: str = "warm_natural",
+    _: None = Depends(_require_auth),
+):
+    """Run Claude Vision analysis on video frames and return recommendations."""
+    from bot.services.video_grader.config import GraderConfig
+    from bot.services.video_grader.session import GraderSession
+    from bot.services.reels_video import VIDEO_DIR
+
+    draft = await serialize_reels_draft(draft_id)
+    if not draft:
+        raise HTTPException(status_code=404, detail="reels_not_found")
+
+    p = draft.get("payload", {}) if isinstance(draft, dict) else {}
+    video_filename = p.get("cleaned_video_path") or p.get("video_filename") or ""
+    if not video_filename:
+        raise HTTPException(status_code=400, detail="no_video")
+
+    video_path = VIDEO_DIR / draft_id / video_filename
+    config = GraderConfig(
+        input_file=str(video_path),
+        target_style=style,
+        frame_output_dir=str(VIDEO_DIR / draft_id / "grader_frames"),
+        frame_count=4,
+        save_report=False,
+    )
+
+    session = GraderSession(config)
+    try:
+        analysis = await session.run_analysis()
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"analysis_failed: {str(exc)[:200]}")
+
+    return {
+        "overall_assessment": analysis.overall_assessment,
+        "dominant_issues": analysis.dominant_issues,
+        "mood_tags": analysis.mood_tags,
+        "target_mood_tags": analysis.target_mood_tags,
+        "confidence": analysis.confidence,
+        "recommendations": [
+            {
+                "parameter": r.parameter,
+                "current_state": r.current_state,
+                "suggestion": r.suggestion,
+                "ffmpeg_filter": r.ffmpeg_filter,
+                "priority": r.priority,
+            }
+            for r in analysis.recommendations
+        ],
+        "ffmpeg_vf_string": analysis.ffmpeg_vf_string,
+    }
+
+
+@router.post("/api/reels/{draft_id}/grade-apply")
+async def grade_apply(
+    draft_id: str,
+    brightness: float = 0.0,
+    contrast: float = 1.0,
+    saturation: float = 1.0,
+    gamma: float = 1.0,
+    custom_vf: str = "",
+    _: None = Depends(_require_auth),
+):
+    """Apply color correction to video and save as graded version."""
+    from bot.services.video_task_store import enqueue_task, pending_count, estimate_time_seconds
+    from bot.services import video_task_worker
+
+    draft = await serialize_reels_draft(draft_id)
+    if not draft:
+        raise HTTPException(status_code=404, detail="reels_not_found")
+
+    p = draft.get("payload", {}) if isinstance(draft, dict) else {}
+    video_filename = p.get("cleaned_video_path") or p.get("video_filename") or ""
+    if not video_filename:
+        raise HTTPException(status_code=400, detail="no_video")
+
+    # Build vf_string
+    if custom_vf:
+        vf_string = custom_vf
+    else:
+        eq_parts = []
+        if brightness != 0.0:
+            eq_parts.append(f"brightness={brightness}")
+        if contrast != 1.0:
+            eq_parts.append(f"contrast={contrast}")
+        if saturation != 1.0:
+            eq_parts.append(f"saturation={saturation}")
+        if gamma != 1.0:
+            eq_parts.append(f"gamma={gamma}")
+        vf_string = f"eq={':'.join(eq_parts)}" if eq_parts else ""
+
+    if not vf_string:
+        raise HTTPException(status_code=400, detail="no_corrections")
+
+    # Get duration for estimate
+    tech = (p.get("tech_check") or {}).get("info") or {}
+    video_duration = tech.get("duration_seconds")
+
+    config = {
+        "vf_string": vf_string,
+        "video_filename": video_filename,
+    }
+    task = await enqueue_task(
+        draft_id, "grade", config, video_duration=video_duration,
+    )
+    est = estimate_time_seconds("compose", video_duration)
+    queue_size = await pending_count()
+
+    return JSONResponse(
+        status_code=202,
+        content={
+            "draft_id": draft_id,
+            "task_id": task.task_id,
+            "status": "pending",
+            "vf_string": vf_string,
+            "estimated_seconds": est,
+            "queue_position": queue_size,
+        },
+    )
+
+
 # ── Video upload & cleaning ──────────────────────────────────────────────────
 
 
