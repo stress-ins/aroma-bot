@@ -105,7 +105,7 @@ class ThreadsClient:
             logger.debug("search_threads('%s') — keyword search disabled", keyword)
             return []
         try:
-            payload = self._request("GET", "/threads/search", params={"q": keyword, "fields": THREAD_FIELDS, "limit": limit})
+            payload = self._request("GET", "/me/threads_search", params={"q": keyword, "fields": THREAD_FIELDS, "limit": limit})
             return payload.get("data", [])
         except ThreadsAPIError:
             return []

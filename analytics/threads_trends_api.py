@@ -84,74 +84,59 @@ class ThreadsTrendsCollector:
                     )
         return total
 
-    async def collect_from_keyword_search(self, keywords: list[str]) -> int:
-        """Search Threads for posts matching keywords (uses threads_keyword_search scope).
-        Returns total upserted count."""
-        if not keywords:
+    async def enrich_post_insights(self, post_ids: list[str]) -> int:
+        """Fetch per-post insights (views, likes, replies, reposts, quotes)
+        and update stored posts. Returns count of enriched posts."""
+        if not post_ids:
             return 0
-
-        total = 0
-        cutoff = datetime.now(timezone.utc) - timedelta(days=_MAX_AGE_DAYS)
-        fields = "id,text,timestamp,permalink,username,media_type,like_count,reply_count,repost_count,quotes_count"
-
+        enriched = 0
         async with httpx.AsyncClient(timeout=30) as client:
-            for kw in keywords:
-                kw_clean = kw.strip().lstrip("#")
-                if not kw_clean:
-                    continue
+            for pid in post_ids:
                 try:
                     await self._rate_check()
                     resp = await client.get(
-                        f"{GRAPH_URL}/threads/search",
+                        f"{GRAPH_URL}/{pid}/insights",
                         params={
-                            "q": kw_clean,
-                            "fields": fields,
-                            "limit": 25,
+                            "metric": "views,likes,replies,reposts,quotes",
                             "access_token": self._token,
                         },
                     )
                     self._request_count += 1
-
                     if resp.status_code != 200:
-                        _log_api_error(resp, f"Threads keyword search '{kw_clean}'")
                         continue
+                    metrics: dict[str, int] = {}
+                    for item in resp.json().get("data", []):
+                        name = item.get("name", "")
+                        val = item.get("total_value", {}).get("value")
+                        if val is None:
+                            vals = item.get("values", [])
+                            val = vals[0].get("value", 0) if vals else 0
+                        metrics[name] = val or 0
 
-                    posts = resp.json().get("data", [])
-                    for post in posts:
-                        posted_at = _parse_timestamp(post.get("timestamp"))
-                        if posted_at and posted_at < cutoff:
-                            continue
-                        post_username = post.get("username", "")
+                    known = {"views", "likes", "replies", "reposts", "quotes"}
+                    if metrics.keys() & known:
                         await upsert_social_post(
                             team_id=self.team_id,
                             platform="threads",
-                            post_id=str(post["id"]),
-                            source_type="keyword",
-                            source_value=kw_clean,
-                            author_username=post_username,
-                            text=post.get("text", ""),
-                            permalink=post.get("permalink", ""),
-                            media_type=post.get("media_type", ""),
-                            like_count=post.get("like_count", 0) or 0,
-                            reply_count=post.get("reply_count", 0) or 0,
-                            share_count=post.get("repost_count", 0) or 0,
-                            comment_count=post.get("quotes_count", 0) or 0,
-                            posted_at=posted_at,
+                            post_id=pid,
+                            source_type="account",
+                            source_value="",
+                            author_username="",
+                            text="",
+                            permalink="",
+                            media_type="",
+                            like_count=metrics.get("likes", 0),
+                            reply_count=metrics.get("replies", 0),
+                            share_count=metrics.get("reposts", 0),
+                            comment_count=metrics.get("quotes", 0),
+                            view_count=metrics.get("views", 0),
+                            posted_at=None,
                         )
-                        total += 1
-
-                    logger.info(
-                        "Threads keyword '%s': found %d posts (team=%s)",
-                        kw_clean, len(posts), self.team_id,
-                    )
-                except Exception as exc:
-                    logger.warning(
-                        "Threads keyword search '%s' failed (team=%s): %s",
-                        kw_clean, self.team_id, exc,
-                    )
-
-        logger.info("Threads keyword search: collected %d total posts (team=%s)", total, self.team_id)
-        return total
+                        enriched += 1
+                except Exception:
+                    continue
+        logger.info("Threads insights: enriched %d/%d posts (team=%s)", enriched, len(post_ids), self.team_id)
+        return enriched
 
     async def tag_posts_by_keywords(self, keywords: list[str]) -> int:
         """Post-hoc tag collected posts that match keywords. Returns count of tagged posts."""
@@ -197,8 +182,10 @@ class ThreadsTrendsCollector:
         username: str,
         cutoff: datetime,
     ) -> int:
-        """Fetch threads for a user, paginating up to _MAX_POSTS."""
+        """Fetch threads for a user, paginating up to _MAX_POSTS.
+        Also enriches collected posts with per-post insights."""
         collected = 0
+        collected_ids: list[str] = []
         next_url: str | None = None
         fields = "id,text,timestamp,permalink,username,media_type,like_count,reply_count,repost_count,quotes_count"
 
@@ -234,10 +221,11 @@ class ThreadsTrendsCollector:
                     continue
 
                 post_username = post.get("username", username)
+                post_id_str = str(post["id"])
                 await upsert_social_post(
                     team_id=self.team_id,
                     platform="threads",
-                    post_id=str(post["id"]),
+                    post_id=post_id_str,
                     source_type="account",
                     source_value=f"@{post_username}",
                     author_username=post_username,
@@ -251,6 +239,7 @@ class ThreadsTrendsCollector:
                     posted_at=posted_at,
                 )
                 collected += 1
+                collected_ids.append(post_id_str)
 
             if should_stop or collected >= _MAX_POSTS:
                 break
@@ -264,6 +253,9 @@ class ThreadsTrendsCollector:
             "Threads trends: collected %d posts from @%s (team=%s)",
             collected, username, self.team_id,
         )
+        # Enrich with per-post insights (views, likes, replies, etc.)
+        if collected_ids:
+            await self.enrich_post_insights(collected_ids)
         return collected
 
     async def collect_own_insights(self) -> dict:
