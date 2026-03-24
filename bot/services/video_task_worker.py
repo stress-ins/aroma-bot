@@ -20,6 +20,8 @@ from bot.services.video_task_store import (
 
 logger = logging.getLogger(__name__)
 
+_VIDEO_TASK_TYPES = ("clean", "compose")
+
 # In-memory status for SSE/polling (fast reads, not persisted)
 live_status: dict[str, dict] = {}
 _events: dict[str, asyncio.Event] = {}
@@ -126,8 +128,8 @@ async def start_worker() -> None:
             )
         await _engine.dispose()
 
-        # Reset any tasks that were running when server died
-        recovered = await recover_interrupted_tasks()
+        # Reset any video tasks that were running when server died
+        recovered = await recover_interrupted_tasks(task_types=_VIDEO_TASK_TYPES)
         if recovered:
             logger.info("video_worker: recovered %d interrupted tasks", recovered)
     except Exception:
@@ -142,7 +144,7 @@ async def _worker_loop() -> None:
     """Main worker loop — picks tasks one by one."""
     while True:
         try:
-            task = await claim_next_task()
+            task = await claim_next_task(task_types=_VIDEO_TASK_TYPES)
             if not task:
                 await asyncio.sleep(3)
                 continue
