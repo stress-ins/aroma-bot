@@ -650,7 +650,7 @@ async def generate_slide_preview(draft_id: str, slide_index: int) -> bytes:
     img_bytes = images[slide_index] if slide_index < len(images) else None
 
     # ── Editorial style ──
-    render_style = draft.payload.get("render_style", "overlay")
+    render_style = draft.payload.get("layout_style") or draft.payload.get("render_style", "overlay")
     if render_style == "editorial":
         from bot.agents.carousel_editorial import render_editorial_png
         accent = draft.payload.get("accent_color", [138, 92, 246])
