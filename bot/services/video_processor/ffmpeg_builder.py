@@ -17,6 +17,9 @@ XFADE_TRANSITIONS = frozenset({
 })
 
 
+_CONCAT_DEMUXER_THRESHOLD = 20  # Use concat demuxer for >20 segments (saves memory)
+
+
 def build_single(
     input_file: Path,
     intervals: list[Interval],
@@ -27,12 +30,20 @@ def build_single(
 
     If ``config.transitions_enabled`` is True, uses xfade/acrossfade between
     segments. Otherwise uses the simpler concat filter.
+
+    For many segments (>20), uses 2-pass concat demuxer to avoid OOM:
+    1. Extract each segment with -c copy (fast, no re-encode)
+    2. Concat all segments via concat demuxer + re-encode once
     """
     if not intervals:
         raise ValueError("No intervals to process")
 
     if config.transitions_enabled and len(intervals) > 1:
         return _build_with_xfade(input_file, intervals, output_file, config)
+
+    if len(intervals) > _CONCAT_DEMUXER_THRESHOLD:
+        return _build_with_demuxer(input_file, intervals, output_file, config)
+
     return _build_with_concat(input_file, intervals, output_file, config)
 
 
@@ -77,6 +88,74 @@ def _build_with_concat(
         "-movflags", "+faststart",
         str(output_file),
     ]
+
+
+def _build_with_demuxer(
+    input_file: Path,
+    intervals: list[Interval],
+    output_file: Path,
+    config: ProcessorConfig,
+) -> list[str]:
+    """Build 2-pass concat for many segments — avoids OOM.
+
+    Pass 1: Extract each segment as separate file (stream copy, fast)
+    Pass 2: Concat all segment files via concat demuxer
+
+    Returns the command for pass 2. Pass 1 commands are stored in
+    _demuxer_pre_commands attribute of the returned list.
+    """
+    import tempfile
+
+    tmp_dir = Path(tempfile.mkdtemp(prefix="vp_concat_"))
+    concat_list = tmp_dir / "concat.txt"
+
+    pre_commands: list[list[str]] = []
+    segment_files: list[Path] = []
+
+    for i, iv in enumerate(intervals):
+        seg_path = tmp_dir / f"seg_{i:04d}.mp4"
+        segment_files.append(seg_path)
+        cmd = [
+            "ffmpeg", "-y",
+            "-ss", f"{iv.start:.3f}",
+            "-i", str(input_file),
+            "-t", f"{iv.duration:.3f}",
+            "-c", "copy",
+            "-avoid_negative_ts", "make_zero",
+            str(seg_path),
+        ]
+        pre_commands.append(cmd)
+
+    # Write concat list
+    with open(concat_list, "w") as f:
+        for seg in segment_files:
+            f.write(f"file '{seg}'\n")
+
+    # Pass 2: concat + re-encode
+    final_cmd = [
+        "ffmpeg", "-y",
+        "-f", "concat", "-safe", "0",
+        "-i", str(concat_list),
+        "-c:v", config.video_codec,
+        "-preset", config.preset,
+        "-crf", str(config.crf),
+        "-c:a", config.audio_codec,
+        "-b:a", "128k",
+        "-movflags", "+faststart",
+        str(output_file),
+    ]
+
+    # Store pre-commands on the list object for processor to pick up
+    final_cmd = _DemuxerCommand(final_cmd)
+    final_cmd.pre_commands = pre_commands
+    final_cmd.tmp_dir = str(tmp_dir)
+    return final_cmd
+
+
+class _DemuxerCommand(list):
+    """List subclass carrying extra attrs for 2-pass concat."""
+    pre_commands: list[list[str]] = []
+    tmp_dir: str = ""
 
 
 def _build_with_xfade(
