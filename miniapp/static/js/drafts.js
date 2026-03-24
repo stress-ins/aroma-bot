@@ -529,7 +529,6 @@ export function createDraftsModule(deps) {
             });
             mergeDraftIntoState(updated);
             callbacks.renderDraftList?.();
-            showUiNotice(`Раскладка: ${newStyle === "editorial" ? "Редакционная" : "Полное фото"}`, "success");
           } catch (_err) {
             showUiNotice("Не удалось сменить раскладку", "error");
           }
