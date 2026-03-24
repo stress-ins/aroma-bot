@@ -6075,9 +6075,10 @@ body.is-mobile-layout .detail-icon-actions button {
 .lightweight-toggle input[type="checkbox"] {
   appearance: none;
   -webkit-appearance: none;
-  width: 44px;
-  height: 24px;
-  border-radius: 12px;
+  width: 46px;
+  min-width: 46px;
+  height: 26px;
+  border-radius: 13px;
   background: var(--border);
   position: relative;
   cursor: pointer;
@@ -6085,18 +6086,20 @@ body.is-mobile-layout .detail-icon-actions button {
   order: 1;
   margin: 0 0 0 auto;
   transition: background var(--duration-fast, 0.15s) ease;
-  border: none;
+  border: 2px solid transparent;
   outline: none;
+  box-sizing: content-box;
 }
 .lightweight-toggle input[type="checkbox"]::after {
   content: '';
   position: absolute;
-  top: 2px;
-  left: 2px;
+  top: 3px;
+  left: 3px;
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: var(--surface);
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
   transition: transform var(--duration-fast, 0.15s) ease;
 }
 .lightweight-toggle input[type="checkbox"]:checked {
