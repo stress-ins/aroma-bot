@@ -3938,6 +3938,52 @@ body.tg-theme-dark .concept-card {
 /* Compose renderer options */
 .compose-select { font-size: 13px; padding: 4px 8px; border-radius: var(--radius-sm, 6px); border: 1px solid var(--border); background: var(--surface); color: var(--text); outline: none; }
 
+/* Reels form fields & selects */
+.reels-form-fields { display: flex; flex-direction: column; gap: 10px; }
+.reels-sub-fields { display: flex; flex-direction: column; gap: 10px; padding-left: 12px; border-left: 2px solid var(--border); }
+.reels-field-label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 500; color: var(--hint); }
+.reels-select {
+  width: 100%; padding: 10px 12px; font-size: 14px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm, 8px);
+  background: var(--surface); color: var(--text);
+  -webkit-appearance: none; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center;
+}
+.reels-select:focus { border-color: var(--brand); outline: none; }
+
+/* Reels progress bar (cleaning & composing) */
+.reels-progress-container {
+  margin-top: 10px; padding: 12px; border-radius: 10px;
+  background: var(--surface); border: 1px solid var(--border);
+}
+.reels-progress-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.reels-progress-label { font-size: 13px; font-weight: 600; color: var(--text); }
+.reels-progress-bar-track {
+  width: 100%; height: 6px; border-radius: 3px;
+  background: var(--surface-2, var(--border)); overflow: hidden;
+}
+.reels-progress-bar-fill {
+  height: 100%; border-radius: 3px; background: var(--brand);
+  transition: width 0.4s ease;
+}
+.reels-progress-bar-fill--indeterminate {
+  width: 40% !important;
+  animation: reels-progress-indeterminate 1.5s ease-in-out infinite;
+}
+@keyframes reels-progress-indeterminate {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}
+.reels-progress-footer {
+  display: flex; justify-content: space-between; margin-top: 6px;
+  font-size: 12px; color: var(--hint);
+}
+.reels-progress-hint {
+  margin-top: 6px; font-size: 11px; color: var(--muted);
+  font-style: italic;
+}
+
 /* Floating upload indicator (visible on any screen) */
 .video-upload-floating {
   position: fixed;

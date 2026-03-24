@@ -971,23 +971,23 @@ export function createReelsModule(deps) {
 
         <section class="section">
           <h3>${sectionHeadingIcon("film")}Сборка из кадров</h3>
-          <div class="field-grid" style="gap:8px">
-            <label>Движок видео
-              <select id="composeRenderer" style="width:100%">
+          <div class="reels-form-fields">
+            <label class="reels-field-label">Движок видео
+              <select id="composeRenderer" class="reels-select">
                 <option value="ffmpeg">Быстрая сборка</option>
                 <option value="remotion">С анимацией и шаблонами</option>
               </select>
             </label>
-            <div id="remotionOptions" style="display:none">
-              <label>Шаблон
-                <select id="composeTemplate" style="width:100%">
+            <div id="remotionOptions" class="reels-sub-fields" style="display:none">
+              <label class="reels-field-label">Шаблон
+                <select id="composeTemplate" class="reels-select">
                   <option value="aroma">Аромат</option>
                   <option value="educational">Образовательный</option>
                   <option value="promo">Промо</option>
                 </select>
               </label>
-              <label style="margin-top:6px">Анимация текста
-                <select id="composeTextAnimation" style="width:100%">
+              <label class="reels-field-label">Анимация текста
+                <select id="composeTextAnimation" class="reels-select">
                   <option value="fade">Проявление</option>
                   <option value="slide-up">Снизу вверх</option>
                   <option value="typewriter">Печатная машинка</option>
@@ -1389,14 +1389,57 @@ export function createReelsModule(deps) {
     return d ? `?init_data=${encodeURIComponent(d)}` : "";
   }
 
+  const CLEAN_STEP_LABELS = {
+    preparing: "Подготовка файла…",
+    analyzing: "Анализ аудиодорожки…",
+    transcribing: "Транскрипция через Whisper…",
+    detecting_silence: "Поиск пауз и тишины…",
+    assembling: "Сборка очищенного видео…",
+  };
+
+  function _renderCleanProgress(step, progress, extra) {
+    const label = CLEAN_STEP_LABELS[step] || "Обработка…";
+    const pct = Math.min(Math.max(progress || 0, 0), 100);
+    const estimate = pct < 30 ? "~2-4 мин" : pct < 70 ? "~1-2 мин" : "меньше минуты";
+    return `
+      <div class="reels-progress-container">
+        <div class="reels-progress-header">
+          <span class="button-spinner"></span>
+          <span class="reels-progress-label">${escapeHtml(label)}</span>
+        </div>
+        <div class="reels-progress-bar-track">
+          <div class="reels-progress-bar-fill" style="width:${pct}%"></div>
+        </div>
+        <div class="reels-progress-footer">
+          <span>${pct}%</span>
+          <span>Осталось ${estimate}</span>
+        </div>
+        <div class="reels-progress-hint">Можно закрыть приложение — процесс продолжится на сервере.</div>
+      </div>`;
+  }
+
+  let _cleanRunning = false;
+
   async function cleanReelsVideo(draftId, btn) {
+    if (_cleanRunning) {
+      showUiNotice("Очистка уже запущена — дождитесь завершения", "warning");
+      return;
+    }
     const pauseInput = document.getElementById("cleanPauseDuration");
     const thresholdInput = document.getElementById("cleanSilenceThreshold");
     const whisperInput = document.getElementById("cleanUseWhisper");
     const minPause = pauseInput ? parseFloat(pauseInput.value) : 0.4;
     const threshold = thresholdInput ? parseFloat(thresholdInput.value) : -35.0;
     const useWhisper = whisperInput ? whisperInput.checked : true;
-    await withButtonFeedback(btn, "Запускаю...", async () => {
+
+    _cleanRunning = true;
+    if (btn) { btn.disabled = true; btn.style.opacity = "0.5"; }
+
+    // Show initial progress immediately
+    const container = document.getElementById("cleanStatusContainer");
+    if (container) container.innerHTML = _renderCleanProgress("preparing", 5);
+
+    try {
       await fetchJson(`/api/reels/${draftId}/clean-video`, {
         method: "POST",
         body: JSON.stringify({
@@ -1406,7 +1449,29 @@ export function createReelsModule(deps) {
         }),
       });
       _startCleanPoll(draftId);
-    }, "Запущено");
+    } catch (e) {
+      _cleanRunning = false;
+      if (btn) { btn.disabled = false; btn.style.opacity = ""; }
+      if (container) container.innerHTML = "";
+      showUiNotice("Не удалось запустить очистку: " + (e.message || ""), "error");
+    }
+  }
+
+  function _updateCleanProgressUI(st) {
+    const container = document.getElementById("cleanStatusContainer");
+    if (!container) return;
+    if (st.status === "running" || st.status === "pending") {
+      container.innerHTML = _renderCleanProgress(st.step || "preparing", st.progress || 5);
+    }
+  }
+
+  async function _onCleanDone(draftId, status) {
+    _cleanRunning = false;
+    const draft = await fetchJson(`/api/reels/${draftId}`);
+    mergeReelsIntoState(draft);
+    callbacks.renderReelsDetail?.(draft);
+    if (status === "completed") showUiNotice("Видео очищено от пауз", "success");
+    else showUiNotice("Очистка не удалась", "error");
   }
 
   function _startCleanPoll(draftId) {
@@ -1418,12 +1483,10 @@ export function createReelsModule(deps) {
       es.onmessage = async (event) => {
         try {
           const st = JSON.parse(event.data);
+          _updateCleanProgressUI(st);
           if (st.status === "completed" || st.status === "failed") {
             es.close(); _cleanEventSource = null;
-            const draft = await fetchJson(`/api/reels/${draftId}`);
-            mergeReelsIntoState(draft);
-            callbacks.renderReelsDetail?.(draft);
-            if (st.status === "completed") showUiNotice("Видео очищено от пауз");
+            await _onCleanDone(draftId, st.status);
           }
         } catch (_e) { /* ignore */ }
       };
@@ -1437,12 +1500,10 @@ export function createReelsModule(deps) {
     _cleanPollTimer = setInterval(async () => {
       try {
         const st = await fetchJson(`/api/reels/${draftId}/clean-video-status`);
+        _updateCleanProgressUI(st);
         if (st.status === "completed" || st.status === "failed") {
           clearInterval(_cleanPollTimer); _cleanPollTimer = null;
-          const draft = await fetchJson(`/api/reels/${draftId}`);
-          mergeReelsIntoState(draft);
-          callbacks.renderReelsDetail?.(draft);
-          if (st.status === "completed") showUiNotice("Видео очищено от пауз");
+          await _onCleanDone(draftId, st.status);
         }
       } catch (_e) { clearInterval(_cleanPollTimer); _cleanPollTimer = null; }
     }, 2000);
@@ -1680,33 +1741,75 @@ export function createReelsModule(deps) {
     }, "Проверено");
   }
 
+  let _composeRunning = false;
+
+  function _renderComposeProgress(step) {
+    const labels = {
+      pending: "Подготовка кадров…",
+      running: "Рендеринг видео…",
+      encoding: "Кодирование…",
+    };
+    const label = labels[step] || "Сборка видео…";
+    return `
+      <div class="reels-progress-container">
+        <div class="reels-progress-header">
+          <span class="button-spinner"></span>
+          <span class="reels-progress-label">${escapeHtml(label)}</span>
+        </div>
+        <div class="reels-progress-bar-track">
+          <div class="reels-progress-bar-fill reels-progress-bar-fill--indeterminate"></div>
+        </div>
+        <div class="reels-progress-footer">
+          <span>~1-3 мин</span>
+        </div>
+        <div class="reels-progress-hint">Можно закрыть приложение — процесс продолжится на сервере.</div>
+      </div>`;
+  }
+
   async function composeReelsVideo(draftId, btn) {
+    if (_composeRunning) {
+      showUiNotice("Сборка уже запущена — дождитесь завершения", "warning");
+      return;
+    }
     const renderer = document.getElementById("composeRenderer")?.value || "ffmpeg";
     const template = document.getElementById("composeTemplate")?.value || "aroma";
     const textAnimation = document.getElementById("composeTextAnimation")?.value || "fade";
     const qs = `renderer=${renderer}&template=${template}&text_animation=${textAnimation}`;
-    await withButtonFeedback(btn, "Запускаю сборку...", async () => {
+
+    _composeRunning = true;
+    if (btn) { btn.disabled = true; btn.style.opacity = "0.5"; }
+
+    const container = document.getElementById("composeStatusContainer");
+    if (container) container.innerHTML = _renderComposeProgress("pending");
+
+    try {
       await fetchJson(`/api/reels/${draftId}/compose?${qs}`, { method: "POST" });
-      _startComposePoll(draftId);
-    }, "Сборка запущена");
+      _startComposePoll2(draftId);
+    } catch (e) {
+      _composeRunning = false;
+      if (btn) { btn.disabled = false; btn.style.opacity = ""; }
+      if (container) container.innerHTML = "";
+      showUiNotice("Не удалось запустить сборку: " + (e.message || ""), "error");
+    }
   }
 
-  function _startComposePoll(draftId) {
+  function _startComposePoll2(draftId) {
     const timer = setInterval(async () => {
       try {
         const st = await fetchJson(`/api/reels/${draftId}/compose-status`);
         if (st.status === "completed" || st.status === "failed") {
           clearInterval(timer);
+          _composeRunning = false;
           const draft = await fetchJson(`/api/reels/${draftId}`);
           mergeReelsIntoState(draft);
           callbacks.renderReelsDetail?.(draft);
-          if (st.status === "completed") showUiNotice("Видео собрано");
+          if (st.status === "completed") showUiNotice("Видео собрано", "success");
           else showUiNotice("Ошибка сборки: " + (st.error || ""), "error");
         } else {
           const el = document.getElementById("composeStatusContainer");
-          if (el) el.innerHTML = `<div style="font-size:13px;color:var(--hint);margin-top:8px">${uiIcon("loader")} Сборка видео...</div>`;
+          if (el) el.innerHTML = _renderComposeProgress(st.status || "running");
         }
-      } catch (_e) { clearInterval(timer); }
+      } catch (_e) { clearInterval(timer); _composeRunning = false; }
     }, 3000);
   }
 
