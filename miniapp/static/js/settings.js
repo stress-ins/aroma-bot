@@ -908,7 +908,7 @@ export function createSettingsModule(deps) {
   }
 
   async function addTrackedHashtag() {
-    const input = document.getElementById("trackedTagInput");
+    const input = document.getElementById("trackedTagInput") || document.getElementById("trackedHashtagInput");
     const tag = (input?.value || "").trim().replace(/^#/, "");
     if (!tag) { input?.focus(); return; }
     try {
@@ -919,6 +919,7 @@ export function createSettingsModule(deps) {
       if (input) input.value = "";
       _renderTagChips(data.items || []);
       showUiNotice(`#${tag} добавлен`, "success");
+      if (state.tab === "trends" && typeof window._currentTabRefresh === "function") window._currentTabRefresh();
     } catch (err) {
       const detail = err?.detail || err?.message || "";
       if (detail === "already_tracked") showUiNotice("Тег уже отслеживается", "error");
@@ -934,6 +935,7 @@ export function createSettingsModule(deps) {
       const data = await fetchJson(`/api/social/tracked-hashtags/${encodeURIComponent(tag)}`, { method: "DELETE" });
       _renderTagChips(data.items || []);
       showUiNotice(`#${tag} удалён`, "success");
+      if (state.tab === "trends" && typeof window._currentTabRefresh === "function") window._currentTabRefresh();
     } catch (_err) {
       showUiNotice("Не удалось удалить тег", "error");
     }
