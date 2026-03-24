@@ -20,7 +20,7 @@ from bot.services.video_task_store import (
 
 logger = logging.getLogger(__name__)
 
-_VIDEO_TASK_TYPES = ("clean", "compose")
+_VIDEO_TASK_TYPES = ("clean", "compose", "grade", "montage")
 
 # In-memory status for SSE/polling (fast reads, not persisted)
 live_status: dict[str, dict] = {}
@@ -190,6 +190,8 @@ async def _worker_loop() -> None:
                     result = await _execute_compose(task)
                 elif task.task_type == "grade":
                     result = await _execute_grade(task)
+                elif task.task_type == "montage":
+                    result = await _execute_montage(task)
                 else:
                     raise ValueError(f"Unknown task type: {task.task_type}")
 
@@ -443,3 +445,82 @@ async def _execute_grade(task) -> dict:
 
     await _set_progress(task_id, draft_id, "done", 100)
     return {"graded_video_path": graded_filename, "vf_string": vf_string}
+
+
+async def _execute_montage(task) -> dict:
+    """Execute auto-montage pipeline."""
+    from bot.services.video_montage.config import MontageConfig
+    from bot.services.video_montage.engine import run_montage
+    from bot.services.reels_video import VIDEO_DIR
+    from bot.services.drafts_store import get_draft, update_draft
+
+    draft_id = task.draft_id
+    task_id = task.task_id
+    config_data = task.config or {}
+
+    draft = await get_draft(draft_id)
+    if not draft:
+        raise ValueError("Draft not found")
+
+    payload = dict(draft.payload)
+    video_filename = payload.get("cleaned_video_path") or payload.get("video_filename") or ""
+    if not video_filename:
+        raise ValueError("No video to montage")
+
+    video_path = VIDEO_DIR / draft_id / video_filename
+    output_path = VIDEO_DIR / draft_id / f"{Path(video_filename).stem}_montage.mp4"
+
+    # Build montage config
+    montage_config = MontageConfig(
+        input_video=str(video_path),
+        draft_id=draft_id,
+        keep_intervals=payload.get("keep_intervals", []),
+        template=config_data.get("template", "expert"),
+        transitions_enabled=config_data.get("transitions_enabled", True),
+        transition_type=config_data.get("transition_type", "fade"),
+        subtitles_enabled=config_data.get("subtitles_enabled", True),
+        subtitle_style=config_data.get("subtitle_style", "bottom_bar"),
+        music_enabled=config_data.get("music_enabled", False),
+        music_track=config_data.get("music_track", ""),
+        music_volume=config_data.get("music_volume", 0.15),
+        broll_enabled=config_data.get("broll_enabled", False),
+        broll_frames=config_data.get("broll_frames", []),
+        beat_sync_enabled=config_data.get("beat_sync_enabled", False),
+        color_grade_enabled=config_data.get("color_grade_enabled", False),
+        color_grade_vf=config_data.get("color_grade_vf", payload.get("grade_vf_string", "")),
+        output_path=str(output_path),
+    )
+    montage_config.apply_template()
+
+    # Get script text for subtitles
+    script_text = payload.get("scenario") or payload.get("script") or ""
+    storyboard = payload.get("storyboard") or []
+    if not script_text and storyboard:
+        script_text = " ".join(
+            f.get("voiceover", "") or f.get("text", "") for f in storyboard if isinstance(f, dict)
+        )
+
+    # Progress callback
+    async def _progress(step, pct):
+        await _set_progress(task_id, draft_id, step, pct)
+
+    result = await run_montage(
+        montage_config,
+        script_text=script_text,
+        progress_callback=_progress,
+    )
+
+    if not result.success:
+        raise RuntimeError(f"Montage failed: {result.error}")
+
+    # Update draft
+    payload["montage_video_path"] = Path(result.output_file).name
+    payload["montage_features"] = result.features_applied
+    payload["montage_duration"] = result.duration
+    await update_draft(draft_id, payload=payload)
+
+    return {
+        "montage_video_path": Path(result.output_file).name,
+        "features_applied": result.features_applied,
+        "duration": result.duration,
+    }

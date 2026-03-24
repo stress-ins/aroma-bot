@@ -756,6 +756,85 @@ async def reels_notify_when_ready(
     return {"subscribed": len(draft_ids)}
 
 
+# ── Auto-montage ────────────────────────────────────────────────────────────
+
+
+@router.post("/api/reels/{draft_id}/montage")
+async def start_montage(
+    draft_id: str,
+    template: str = "expert",
+    transitions_enabled: bool = True,
+    transition_type: str = "fade",
+    subtitles_enabled: bool = True,
+    subtitle_style: str = "bottom_bar",
+    music_enabled: bool = False,
+    music_track: str = "",
+    broll_enabled: bool = False,
+    beat_sync_enabled: bool = False,
+    color_grade_enabled: bool = False,
+    _: None = Depends(_require_auth),
+):
+    """Queue auto-montage task for a reels draft."""
+    from bot.services.video_task_store import enqueue_task, estimate_time_seconds, pending_count
+    from bot.services import video_task_worker
+
+    draft = await serialize_reels_draft(draft_id)
+    if not draft:
+        raise HTTPException(status_code=404, detail="reels_not_found")
+
+    p = draft.get("payload", {}) if isinstance(draft, dict) else {}
+    video_filename = p.get("cleaned_video_path") or p.get("video_filename") or ""
+    if not video_filename:
+        raise HTTPException(status_code=400, detail="no_video")
+
+    tech = (p.get("tech_check") or {}).get("info") or {}
+    video_duration = tech.get("duration_seconds")
+
+    # Collect B-roll frames from reels storyboard
+    broll_frames = []
+    if broll_enabled:
+        from bot.services.reels_video import VIDEO_DIR
+        storyboard = p.get("storyboard") or []
+        for frame in storyboard:
+            if isinstance(frame, dict) and frame.get("image_url"):
+                img_path = frame["image_url"]
+                if img_path.startswith("/"):
+                    # Convert URL to file path
+                    img_path = str(Path("/opt/aroma") / img_path.lstrip("/"))
+                broll_frames.append(img_path)
+
+    config = {
+        "template": template,
+        "transitions_enabled": transitions_enabled,
+        "transition_type": transition_type,
+        "subtitles_enabled": subtitles_enabled,
+        "subtitle_style": subtitle_style,
+        "music_enabled": music_enabled,
+        "music_track": music_track,
+        "broll_enabled": broll_enabled,
+        "broll_frames": broll_frames[:3],
+        "beat_sync_enabled": beat_sync_enabled,
+        "color_grade_enabled": color_grade_enabled,
+        "color_grade_vf": p.get("grade_vf_string", ""),
+    }
+
+    task = await enqueue_task(draft_id, "montage", config, video_duration=video_duration)
+    est = estimate_time_seconds("compose", video_duration)
+    queue_size = await pending_count()
+
+    return JSONResponse(
+        status_code=202,
+        content={
+            "draft_id": draft_id,
+            "task_id": task.task_id,
+            "status": "pending",
+            "template": template,
+            "estimated_seconds": est,
+            "queue_position": queue_size,
+        },
+    )
+
+
 # ── Video color grading ──────────────────────────────────────────────────────
 
 
