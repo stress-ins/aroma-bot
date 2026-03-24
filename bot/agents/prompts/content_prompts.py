@@ -18,21 +18,24 @@ from bot.agents.platform_rules import (
 # ---------------------------------------------------------------------------
 
 OUTPUT_FORMAT_THREADS = """\
-Верни 3 поста в формате:
+ОБЯЗАТЕЛЬНЫЙ ФОРМАТ — верни ровно 3 поста. Пропуск любого = провал:
+
 УТРО
-[текст поста]
+[текст поста, 40-80 слов]
 ПОЧЕМУ ЭТО СРАБОТАЕТ: [одно предложение]
 
 ДЕНЬ
-[текст поста]
+[текст поста, 40-80 слов]
 ПОЧЕМУ ЭТО СРАБОТАЕТ: [одно предложение]
 
 ВЕЧЕР
-[текст поста]
+[текст поста, 40-80 слов]
 ПОЧЕМУ ЭТО СРАБОТАЕТ: [одно предложение]
 
 VISUAL_PROMPT: [на английском, до 25 слов, terracotta/beige/sage palette, soft light, atmospheric lifestyle]
-STOCK_KEYWORDS: [5-8 English keywords for stock photo search, comma-separated, e.g. "aromatherapy, essential oils, lavender, spa, wellness"]
+STOCK_KEYWORDS: [5-8 English keywords for stock photo search, comma-separated]
+
+Каждое слово УТРО, ДЕНЬ, ВЕЧЕР стоит СТРОГО на отдельной строке. Все три секции обязательны.
 """
 
 OUTPUT_FORMAT_DEFAULT = """\
