@@ -2259,7 +2259,8 @@ function setTab(t) {
   if (_navTabs) _navTabs.innerHTML = "";
   setEmptyState(true);
   elements.listTitle.textContent = "Загрузка...";
-  elements.draftCount.textContent = "";
+  // Preserve search bar in handbook tabs — renderReferences will update the count
+  if (!HANDBOOK_CATEGORY_META[t]) elements.draftCount.textContent = "";
   elements.draftList.innerHTML = renderPanelLoader("Загружаю раздел");
   elements.draftDetail.innerHTML = renderDetailLoader("Загружаю раздел");
 
