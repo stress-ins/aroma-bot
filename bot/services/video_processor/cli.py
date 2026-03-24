@@ -151,6 +151,13 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Constant Rate Factor 18-28 (default: 23, lower = better quality)",
     )
 
+    # Output
+    parser.add_argument(
+        "--json-output",
+        action="store_true",
+        help="Print result as JSON to stdout (for subprocess integration)",
+    )
+
     # Logging
     parser.add_argument(
         "--log-level",
@@ -228,9 +235,26 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Error: {exc}", file=sys.stderr)
         return 1
 
-    # Print summary
-    _print_summary(result)
+    # Print summary or JSON
+    if getattr(args, "json_output", False):
+        _print_json(result)
+    else:
+        _print_summary(result)
     return 0
+
+
+def _print_json(result) -> None:  # noqa: ANN001
+    """Print machine-readable JSON to stdout."""
+    data = {
+        "output_files": result.output_files,
+        "total_input_duration": round(result.total_input_duration, 2),
+        "total_output_duration": round(result.total_output_duration, 2),
+        "removed_duration": round(result.removed_duration, 2),
+        "clip_count": result.clip_count,
+        "keep_intervals": [[round(s, 2), round(e, 2)] for s, e in result.keep_intervals],
+        "mode": result.mode,
+    }
+    print(json.dumps(data))
 
 
 def _print_summary(result) -> None:  # noqa: ANN001

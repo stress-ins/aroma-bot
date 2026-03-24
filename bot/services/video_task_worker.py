@@ -25,6 +25,46 @@ live_status: dict[str, dict] = {}
 _events: dict[str, asyncio.Event] = {}
 _worker_task: asyncio.Task | None = None
 
+# Users to notify when a task for their draft completes
+# {draft_id: set of telegram_user_ids}
+_notify_subscribers: dict[str, set[int]] = {}
+
+
+def subscribe_notification(draft_id: str, telegram_user_id: int) -> None:
+    """Register user to be notified when video task completes."""
+    if draft_id not in _notify_subscribers:
+        _notify_subscribers[draft_id] = set()
+    _notify_subscribers[draft_id].add(telegram_user_id)
+
+
+async def _send_notifications(draft_id: str, task_type: str, status: str) -> None:
+    """Send Telegram notification to subscribed users."""
+    subscribers = _notify_subscribers.pop(draft_id, set())
+    if not subscribers:
+        return
+
+    from config import settings
+    import httpx
+
+    bot_token = settings.bot_token
+    if not bot_token:
+        return
+
+    emoji = "\u2705" if status == "completed" else "\u274c"
+    task_label = "Очистка видео" if task_type == "clean" else "Сборка видео"
+    status_label = "завершена" if status == "completed" else "не удалась"
+    text = f"{emoji} {task_label} {status_label}.\n\nОткройте приложение чтобы посмотреть результат."
+
+    async with httpx.AsyncClient(timeout=10) as client:
+        for uid in subscribers:
+            try:
+                await client.post(
+                    f"https://api.telegram.org/bot{bot_token}/sendMessage",
+                    json={"chat_id": uid, "text": text},
+                )
+            except Exception:
+                logger.debug("Failed to notify user %s", uid)
+
 
 def notify(draft_id: str) -> None:
     """Wake up any SSE listeners for this draft."""
@@ -113,6 +153,7 @@ async def _worker_loop() -> None:
                 }
                 notify(task.draft_id)
                 logger.info("video_worker: completed %s for draft %s", task.task_type, task.draft_id)
+                await _send_notifications(task.draft_id, task.task_type, "completed")
 
             except Exception as exc:
                 error_msg = str(exc)[:500]
@@ -127,6 +168,7 @@ async def _worker_loop() -> None:
                 }
                 notify(task.draft_id)
                 logger.error("video_worker: %s failed for draft %s: %s", task.task_type, task.draft_id, exc)
+                await _send_notifications(task.draft_id, task.task_type, "failed")
 
         except Exception:
             logger.exception("video_worker: unexpected error in loop")
@@ -143,9 +185,14 @@ async def _set_progress(task_id: str, draft_id: str, step: str, progress: int) -
 
 
 async def _execute_clean(task) -> dict:
-    """Execute a video cleaning task."""
+    """Execute a video cleaning task as a subprocess.
+
+    Runs video_processor CLI as a separate process to isolate memory usage.
+    This prevents Whisper/ffmpeg from OOM-killing the gunicorn worker.
+    """
+    import json as _json
+    import sys
     from bot.services.reels_video import VIDEO_DIR
-    from bot.services.video_processor import ProcessorConfig, process
 
     draft_id = task.draft_id
     task_id = task.task_id
@@ -168,51 +215,90 @@ async def _execute_clean(task) -> dict:
 
     output_dir = VIDEO_DIR / draft_id
 
-    await _set_progress(task_id, draft_id, "analyzing", 15)
+    use_whisper = config.get("use_whisper", False)
+    min_pause = config.get("min_pause_duration", 0.4)
+    silence_db = config.get("silence_threshold_db", -35.0)
 
-    proc_config = ProcessorConfig(
-        input_file=str(video_path),
-        output_path=str(output_dir),
-        mode="single",
-        min_pause_duration=config.get("min_pause_duration", 0.4),
-        silence_threshold_db=config.get("silence_threshold_db", -35.0),
-        use_whisper=config.get("use_whisper", True),
+    if use_whisper:
+        await _set_progress(task_id, draft_id, "transcribing", 20)
+    else:
+        await _set_progress(task_id, draft_id, "detecting_silence", 20)
+
+    # Build CLI command — runs as separate process (isolated memory)
+    cmd = [
+        sys.executable, "-m", "bot.services.video_processor.cli",
+        "--input", str(video_path),
+        "--output", str(output_dir),
+        "--mode", "single",
+        "--min-pause", str(min_pause),
+        "--silence-threshold", str(silence_db),
+        "--json-output",
+    ]
+    if use_whisper:
+        cmd += ["--whisper", "--whisper-model", "tiny"]
+    else:
+        cmd += ["--no-whisper"]
+
+    logger.info("video_worker: running subprocess: %s", " ".join(cmd[:6]))
+
+    proc = await asyncio.create_subprocess_exec(
+        *cmd,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
     )
 
-    use_whisper = config.get("use_whisper", True)
-    if use_whisper:
-        await _set_progress(task_id, draft_id, "transcribing", 30)
-    else:
-        await _set_progress(task_id, draft_id, "detecting_silence", 30)
+    await _set_progress(task_id, draft_id, "processing", 40)
 
-    loop = asyncio.get_running_loop()
-    proc_result = await loop.run_in_executor(None, process, proc_config)
+    stdout, stderr = await proc.communicate()
+
+    if proc.returncode != 0:
+        err_text = stderr.decode("utf-8", errors="replace")[:500]
+        if proc.returncode == -9:
+            raise RuntimeError(f"Процесс убит (OOM). Попробуйте без Whisper или с коротким видео. Код: {proc.returncode}")
+        raise RuntimeError(f"video_processor завершился с кодом {proc.returncode}: {err_text}")
 
     await _set_progress(task_id, draft_id, "assembling", 85)
 
+    # Parse JSON output from CLI
+    try:
+        result_data = _json.loads(stdout.decode("utf-8"))
+    except (ValueError, UnicodeDecodeError):
+        # Fallback: scan output dir for cleaned file
+        result_data = {}
+
+    # Find output file
+    cleaned_filename = ""
+    output_files = result_data.get("output_files", [])
+    if output_files:
+        from pathlib import Path as _Path
+        cleaned_filename = _Path(output_files[0]).name
+    else:
+        # Scan directory for new files
+        from pathlib import Path as _Path
+        existing_before = {video_path.name}
+        for f in output_dir.iterdir():
+            if f.suffix in (".mp4", ".mkv", ".mov") and f.name not in existing_before:
+                cleaned_filename = f.name
+                break
+
     # Save results to draft
     payload = dict(draft.payload)
-    cleaned_filename = ""
-    if proc_result.output_files:
-        from pathlib import Path as _Path
-        cleaned_filename = _Path(proc_result.output_files[0]).name
     payload["cleaned_video_path"] = cleaned_filename
     payload["cleaning_status"] = "completed"
-    payload["cleaning_result"] = {
-        "input_duration": round(proc_result.total_input_duration, 1),
-        "output_duration": round(proc_result.total_output_duration, 1),
-        "removed_duration": round(proc_result.removed_duration, 1),
-        "clip_count": proc_result.clip_count,
+    cleaning_result = {
+        "input_duration": result_data.get("total_input_duration", 0),
+        "output_duration": result_data.get("total_output_duration", 0),
+        "removed_duration": result_data.get("removed_duration", 0),
+        "clip_count": result_data.get("clip_count", 0),
     }
-    payload["keep_intervals"] = [
-        [round(s, 2), round(e, 2)] for s, e in proc_result.keep_intervals
-    ]
+    payload["cleaning_result"] = cleaning_result
+    payload["keep_intervals"] = result_data.get("keep_intervals", [])
     payload["split_clips"] = []
     payload["split_status"] = ""
     await update_draft(draft_id, payload=payload)
 
     await _set_progress(task_id, draft_id, "done", 100)
-    return payload["cleaning_result"]
+    return cleaning_result
 
 
 async def _execute_compose(task) -> dict:
