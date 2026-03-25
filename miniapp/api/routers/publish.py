@@ -122,9 +122,10 @@ async def scheduled_posts(ctx: TeamContext = Depends(_resolve_team_context)):
 async def schedule_series(payload: ScheduleSeriesRequest, _: None = Depends(_require_auth)):
     from datetime import date as date_type
 
+    logger.info("schedule-series: received draft_id=%r date=%r slots=%r", payload.draft_id, payload.date, payload.slots)
     draft = await get_draft(payload.draft_id)
     if not draft:
-        logger.warning("schedule-series: draft not found, draft_id=%r", payload.draft_id)
+        logger.warning("schedule-series: draft NOT FOUND, draft_id=%r (len=%d)", payload.draft_id, len(payload.draft_id))
         raise HTTPException(status_code=404, detail="draft_not_found")
     if draft.kind != "threads_series":
         logger.warning("schedule-series: wrong kind %r for draft %s", draft.kind, payload.draft_id)

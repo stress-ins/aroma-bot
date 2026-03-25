@@ -517,7 +517,17 @@ export function createCoreModule(deps) {
         throw new Error(errorType);
       }
       const detail = body?.detail ? (typeof body.detail === "string" ? body.detail : JSON.stringify(body.detail)) : "";
-      throw new Error(detail || `${response.status} ${response.statusText}`);
+      const errorCode = detail || `${response.status} ${response.statusText}`;
+      const ERROR_RU = {
+        draft_not_found: "Черновик не найден. Попробуйте обновить страницу.",
+        draft_must_be_approved: "Сначала согласуйте черновик.",
+        draft_kind_mismatch: "Неверный тип черновика.",
+        platforms_required: "Выберите хотя бы одну платформу.",
+        invalid_date_format: "Некорректная дата.",
+        request_timeout: "Запрос занял слишком много времени. Попробуйте ещё раз.",
+        unsupported_platform: "Платформа не поддерживается.",
+      };
+      throw new Error(ERROR_RU[errorCode] || errorCode);
     }
     return response.json();
   }
