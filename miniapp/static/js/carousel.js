@@ -345,14 +345,20 @@ export function createCarouselModule(deps) {
       });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const blob = await resp.blob();
-      const objectUrl = URL.createObjectURL(blob);
+      // Use data URL for Telegram WebApp compatibility
+      const reader = new FileReader();
+      const dataUrl = await new Promise((resolve, reject) => {
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
 
       // Update slide_images in state so the new image persists across re-renders
       const current = state.selected;
       if (current && current.draft_id === draftId) {
         const imgs = current.payload?.slide_images || [];
         if (imgs[slideIndex]) {
-          imgs[slideIndex] = { ...imgs[slideIndex], url: objectUrl };
+          imgs[slideIndex] = { ...imgs[slideIndex], url: dataUrl };
         }
       }
     } catch (err) {
@@ -516,7 +522,7 @@ export function createCarouselModule(deps) {
     document.body.style.overflow = "hidden";
     const cleanup = () => {
       document.body.style.overflow = "";
-      URL.revokeObjectURL(imageUrl);
+      if (imageUrl.startsWith("blob:")) URL.revokeObjectURL(imageUrl);
       modal.remove();
     };
     modal.querySelector(".preview-modal-close").addEventListener("click", cleanup);
@@ -546,8 +552,14 @@ export function createCarouselModule(deps) {
         });
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const blob = await resp.blob();
-        const objectUrl = URL.createObjectURL(blob);
-        showPreviewModal(objectUrl, `Слайд ${slideIndex + 1} — предпросмотр`);
+        // Use data URL instead of blob URL for Telegram WebApp compatibility
+        const reader = new FileReader();
+        const dataUrl = await new Promise((resolve, reject) => {
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+        showPreviewModal(dataUrl, `Слайд ${slideIndex + 1} — предпросмотр`);
       }, "Готово");
     } catch (error) {
       showRequestError("Не удалось сгенерировать предпросмотр", error);
