@@ -1795,9 +1795,11 @@ class TestMiniAppRussianLocale:
             p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/api").rglob("*.py"))
         )
 
-        assert "__ASSET_VERSION__" in html
+        # Vite migration: HTML uses __VITE_JS__/__VITE_CSS__ placeholders
+        # resolved from the Vite build manifest (or raw sources in dev)
+        assert "__VITE_JS__" in html or "__ASSET_VERSION__" in html
         assert "def _asset_version()" in server_py
-        assert 'html.replace("__ASSET_VERSION__", _asset_version())' in server_py
+        assert "get_vite_assets" in server_py
         assert "HTMLResponse" in server_py
 
     def test_detail_buttons_have_visual_feedback_and_notes_survive_refresh(self):

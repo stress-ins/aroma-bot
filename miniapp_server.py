@@ -17,6 +17,7 @@ from fastapi.staticfiles import StaticFiles
 BASE_DIR = Path(__file__).parent
 MINIAPP_DIR = BASE_DIR / "miniapp"
 STATIC_DIR = MINIAPP_DIR / "static"
+STATIC_DIST_DIR = MINIAPP_DIR / "static-dist"
 REFERENCE_IMAGES_DIR = BASE_DIR / "assets" / "reference_images"
 STARTUP_RECOVERY_LOCK_PATH = Path(
     os.getenv("AROMA_MINIAPP_RECOVERY_LOCK", "/tmp/aroma-miniapp-recovery.lock")
@@ -114,6 +115,11 @@ async def _lifespan(app: FastAPI):  # noqa: ARG001
 
 app = FastAPI(lifespan=_lifespan)
 
+# Serve Vite-built bundles (hashed filenames, immutable cache)
+if STATIC_DIST_DIR.exists():
+    app.mount("/static-dist", StaticFiles(directory=STATIC_DIST_DIR), name="miniapp-static-dist")
+
+# Serve raw source files (fonts, images, and dev-mode fallback)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="miniapp-static")
 
 
@@ -134,9 +140,12 @@ async def _security_headers(request, call_next):
         "img-src 'self' data: blob: https:; "
         "connect-src 'self'; frame-ancestors 'none';",
     )
-    # Cache control for JS/CSS modules
+    # Cache control for assets
     path = request.url.path
-    if path.startswith("/static/") and (path.endswith(".js") or path.endswith(".css")):
+    if path.startswith("/static-dist/assets/"):
+        # Hashed bundles are immutable — cache aggressively
+        response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+    elif path.startswith("/static/") and (path.endswith(".js") or path.endswith(".css")):
         response.headers["Cache-Control"] = "no-cache"
     return response
 
@@ -204,8 +213,15 @@ _TELEGRAM_STUB_JS = (
 
 @app.get("/", response_class=HTMLResponse)
 async def index():
+    from miniapp.vite_manifest import get_vite_assets
+
+    vite = get_vite_assets()
     html = (MINIAPP_DIR / "index.html").read_text(encoding="utf-8")
-    html = html.replace("__ASSET_VERSION__", _asset_version())
+
+    # Replace Vite asset placeholders with manifest-resolved paths
+    html = html.replace("__VITE_JS__", vite["js"])
+    html = html.replace("__VITE_CSS__", vite["css"])
+
     if os.getenv("AROMA_BYPASS_AUTH") == "1":
         html = html.replace(
             '<script src="https://telegram.org/js/telegram-web-app.js"></script>',

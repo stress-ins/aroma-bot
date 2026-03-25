@@ -87,6 +87,31 @@ jobs:
       - name: Run smoke tests
         run: python -m pytest tests/smoke/ -v --timeout=30 -x --tb=short || echo "No smoke tests found (skip)"
 
+  # ── Vite build check (catch bundling errors in PRs) ─────────────────
+  vite-build:
+    needs: changes
+    if: needs.changes.outputs.ui == 'true' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: miniapp/package-lock.json
+
+      - name: Install dependencies
+        working-directory: miniapp
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: miniapp
+        run: npm run build
+
   # ── UI tests (only when static files changed) ───────────────────────
   miniapp-ui:
     needs: changes
