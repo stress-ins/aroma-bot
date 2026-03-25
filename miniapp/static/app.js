@@ -113,6 +113,7 @@ let addMonitoredAccountFromSettings, removeMonitoredAccountFromSettings;
 let addKeywordItem, removeKeywordItem, openKeywordTopic;
 let addForbiddenPhrase, removeForbiddenPhrase;
 let createNewTeam, createTeamInvite, removeTeamMember, activatePromo, generatePromos, selectCity;
+let adminResetStuck, adminRestartWorker;
 let goBackToSettings;
 let saveContentReviewDraft, saveThreadsReviewDraft, polishContentDraft, refreshDraftMetrics, moveDraftToTeam;
 let recommendHashtags, applyRecommendedHashtags, adaptTone, startRepurpose, saveSeriesPost, regenSeriesPost, regenSeriesAll, coherenceCheck;
