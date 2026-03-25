@@ -43,7 +43,9 @@ async def _send_notifications(draft_id: str, task_type: str, status: str) -> Non
     """Send Telegram notification to subscribed users."""
     subscribers = _notify_subscribers.pop(draft_id, set())
     if not subscribers:
+        logger.debug("_send_notifications: no subscribers for %s", draft_id)
         return
+    logger.info("_send_notifications: sending to %d users for %s (%s)", len(subscribers), draft_id, status)
 
     from config import settings
     import httpx
@@ -52,10 +54,10 @@ async def _send_notifications(draft_id: str, task_type: str, status: str) -> Non
     if not bot_token:
         return
 
-    task_labels = {"clean": "Очистка видео", "compose": "Сборка видео", "grade": "Цветокоррекция"}
+    task_labels = {"clean": "Очистка видео", "compose": "Сборка видео", "grade": "Цветокоррекция", "montage": "Автомонтаж"}
     emoji = "\u2705" if status == "completed" else "\u274c"
     task_label = task_labels.get(task_type, task_type)
-    status_label = "завершена" if status == "completed" else "не удалась"
+    status_label = "завершён" if status == "completed" else "не удался"
     text = f"{emoji} {task_label} {status_label}.\n\nОткройте приложение чтобы посмотреть результат."
 
     async with httpx.AsyncClient(timeout=10) as client:
