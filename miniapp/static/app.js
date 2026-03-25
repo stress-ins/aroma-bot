@@ -2305,6 +2305,7 @@ function setTab(t) {
     if (isActive) b.scrollIntoView({ inline: "center", behavior: "smooth", block: "nearest" });
   });
   elements.filtersContainer.hidden = !["drafts", "inbox"].includes(t);
+  renderContentSubTabs();
 
   // Clear panels immediately to prevent showing tools/content from previous tab
   if (elements.headerTabs) elements.headerTabs.innerHTML = "";
