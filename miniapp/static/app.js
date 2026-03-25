@@ -1654,6 +1654,8 @@ function toggleArchiveStats() { archiveModule.toggleArchiveStats(); }
 function setArchivePlatformFilter(v) { archiveModule.setArchivePlatformFilter(v); }
 function setArchiveScore(name, value) { return archiveModule.setArchiveScore(name, value); }
 function bulkImportFromAccount(platform, btn) { return archiveModule.bulkImportFromAccount(platform, btn); }
+function toggleCoachingSummary() { return archiveModule.toggleCoachingSummary(); }
+function loadPostCoaching(pubId, btn) { return archiveModule.loadPostCoaching(pubId, btn); }
 
 const reelsCallbacks = {
   renderReels: null,
@@ -2555,6 +2557,8 @@ registerWindowBridge({
   setArchivePlatformFilter,
   setArchiveScore,
   bulkImportFromAccount,
+  toggleCoachingSummary,
+  loadPostCoaching,
   handleSmartSearch,
   runSmartSearch,
   clearSmartSearch,
