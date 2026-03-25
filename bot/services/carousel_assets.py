@@ -195,7 +195,11 @@ async def populate_carousel_slide_assets(draft_id: str, layout_style: str = "ove
             )
             if result.image_bytes:
                 image_bytes = result.image_bytes
+                raw_filename = None
                 if effective_layout == "editorial":
+                    # Save raw image (without text) for Canva export
+                    raw_version = save_carousel_slide_asset(draft_id, i, image_bytes, prompt=prompt)
+                    raw_filename = raw_version.get("filename")
                     slide_text = draft.payload.get("slides", [])[i] if i < len(draft.payload.get("slides", [])) else ""
                     accent = draft.payload.get("accent_color", [138, 92, 246])
                     accent_rgb = tuple(accent) if isinstance(accent, list) and len(accent) == 3 else (138, 92, 246)
@@ -216,6 +220,8 @@ async def populate_carousel_slide_assets(draft_id: str, layout_style: str = "ove
                     except Exception:
                         logger.exception("carousel_assets: editorial render failed for slide %d, using raw", i + 1)
                 version = save_carousel_slide_asset(draft_id, i, image_bytes, prompt=prompt)
+                if raw_filename:
+                    version["raw_filename"] = raw_filename
                 slide_images[i] = version
                 slide_versions[i].append(version)
                 has_ready = True
@@ -510,6 +516,27 @@ def load_carousel_slide_images(draft_id: str, slide_images: list[dict | None]) -
             images.append(None)
             continue
         filename = str(item.get("filename", "")).strip()
+        if not filename:
+            images.append(None)
+            continue
+        path = _slide_dir(draft_id) / filename
+        images.append(path.read_bytes() if path.exists() else None)
+    return images
+
+
+def load_carousel_raw_images(draft_id: str, slide_images: list[dict | None]) -> list[bytes | None]:
+    """Load raw (without editorial text overlay) images for Canva/PPTX export.
+
+    Falls back to the main filename if raw_filename is not available.
+    """
+    images: list[bytes | None] = []
+    for item in slide_images:
+        if not item:
+            images.append(None)
+            continue
+        raw_fn = str(item.get("raw_filename", "")).strip()
+        fn = str(item.get("filename", "")).strip()
+        filename = raw_fn or fn
         if not filename:
             images.append(None)
             continue

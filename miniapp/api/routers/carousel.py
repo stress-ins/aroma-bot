@@ -286,16 +286,28 @@ async def carousel_pptx_export(draft_id: str, _: str = Depends(_resolve_init_dat
     if not draft or draft.kind != "carousel":
         raise HTTPException(status_code=404, detail="carousel_not_found")
     slides = list(draft.payload.get("slides", []))
-    images = load_carousel_slide_images(draft_id, list(draft.payload.get("slide_images", [])))
-    placement_data = draft.payload.get("placement_data")
+    layout_style = draft.payload.get("layout_style", "overlay")
 
-    if placement_data:
-        from bot.agents.carousel_export_agent import build_pptx_from_placement
+    if layout_style == "editorial":
+        from bot.services.carousel_assets import load_carousel_raw_images
+        from bot.agents.carousel_export_agent import build_editorial_pptx
+        raw_images = load_carousel_raw_images(draft_id, list(draft.payload.get("slide_images", [])))
+        accent = draft.payload.get("accent_color", [138, 92, 246])
+        accent_rgb = tuple(accent) if isinstance(accent, list) and len(accent) == 3 else (138, 92, 246)
+        username = draft.payload.get("brand_username", "")
         pptx_bytes = await asyncio.get_running_loop().run_in_executor(
-            None, build_pptx_from_placement, slides, images or [], placement_data,
+            None, build_editorial_pptx, slides, raw_images or [], accent_rgb, (18, 18, 22), username,
         )
     else:
-        pptx_bytes = await asyncio.get_running_loop().run_in_executor(None, _build_pptx, slides, images or None)
+        images = load_carousel_slide_images(draft_id, list(draft.payload.get("slide_images", [])))
+        placement_data = draft.payload.get("placement_data")
+        if placement_data:
+            from bot.agents.carousel_export_agent import build_pptx_from_placement
+            pptx_bytes = await asyncio.get_running_loop().run_in_executor(
+                None, build_pptx_from_placement, slides, images or [], placement_data,
+            )
+        else:
+            pptx_bytes = await asyncio.get_running_loop().run_in_executor(None, _build_pptx, slides, images or None)
 
     return StreamingResponse(
         iter([pptx_bytes]),
@@ -404,16 +416,28 @@ async def carousel_canva_export(draft_id: str, _: None = Depends(_require_auth))
 
     # Build PPTX synchronously (fast, ~1-2s)
     slides = list(draft.payload.get("slides", []))
-    images = load_carousel_slide_images(draft_id, list(draft.payload.get("slide_images", [])))
-    placement_data = draft.payload.get("placement_data")
+    layout_style = draft.payload.get("layout_style", "overlay")
 
-    if placement_data:
-        from bot.agents.carousel_export_agent import build_pptx_from_placement
+    if layout_style == "editorial":
+        from bot.services.carousel_assets import load_carousel_raw_images
+        from bot.agents.carousel_export_agent import build_editorial_pptx
+        raw_images = load_carousel_raw_images(draft_id, list(draft.payload.get("slide_images", [])))
+        accent = draft.payload.get("accent_color", [138, 92, 246])
+        accent_rgb = tuple(accent) if isinstance(accent, list) and len(accent) == 3 else (138, 92, 246)
+        username = draft.payload.get("brand_username", "")
         pptx_bytes = await asyncio.get_running_loop().run_in_executor(
-            None, build_pptx_from_placement, slides, images or [], placement_data,
+            None, build_editorial_pptx, slides, raw_images or [], accent_rgb, (18, 18, 22), username,
         )
     else:
-        pptx_bytes = await asyncio.get_running_loop().run_in_executor(None, _build_pptx, slides, images or None)
+        images = load_carousel_slide_images(draft_id, list(draft.payload.get("slide_images", [])))
+        placement_data = draft.payload.get("placement_data")
+        if placement_data:
+            from bot.agents.carousel_export_agent import build_pptx_from_placement
+            pptx_bytes = await asyncio.get_running_loop().run_in_executor(
+                None, build_pptx_from_placement, slides, images or [], placement_data,
+            )
+        else:
+            pptx_bytes = await asyncio.get_running_loop().run_in_executor(None, _build_pptx, slides, images or None)
 
     # Save PPTX to temp file for the worker
     pptx_dir = CAROUSEL_ASSETS_DIR / draft_id

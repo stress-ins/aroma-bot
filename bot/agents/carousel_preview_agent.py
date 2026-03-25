@@ -645,13 +645,15 @@ async def generate_slide_preview(draft_id: str, slide_index: int) -> bytes:
     elif not isinstance(text, str):
         text = str(text)
     slide_images = list(draft.payload.get("slide_images", []))
-    images = load_carousel_slide_images(draft_id, slide_images)
-
-    img_bytes = images[slide_index] if slide_index < len(images) else None
 
     # ── Editorial style ──
     render_style = draft.payload.get("layout_style") or draft.payload.get("render_style", "overlay")
     if render_style == "editorial":
+        # Use raw images (without burnt text) to avoid double-rendering
+        from bot.services.carousel_assets import load_carousel_raw_images
+        raw_images = load_carousel_raw_images(draft_id, slide_images)
+        img_bytes = raw_images[slide_index] if slide_index < len(raw_images) else None
+
         from bot.agents.carousel_editorial import render_editorial_png
         accent = draft.payload.get("accent_color", [138, 92, 246])
         accent_rgb = tuple(accent) if isinstance(accent, list) and len(accent) == 3 else (138, 92, 246)
@@ -674,6 +676,9 @@ async def generate_slide_preview(draft_id: str, slide_index: int) -> bytes:
             ),
         )
         return preview
+
+    images = load_carousel_slide_images(draft_id, slide_images)
+    img_bytes = images[slide_index] if slide_index < len(images) else None
 
     # ── Classic overlay style ──
     if not img_bytes:

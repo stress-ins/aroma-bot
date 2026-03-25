@@ -133,7 +133,35 @@ async def _save_carousel_callback(task, img_bytes: bytes) -> None:
     from bot.services.carousel_assets import _ensure_slide_versions
     slide_images, slide_versions = _ensure_slide_versions(draft.payload, len(img_prompts))
 
+    layout_style = draft.payload.get("layout_style", "overlay")
+    raw_filename = None
+
+    if layout_style == "editorial":
+        # Save raw image first, then render editorial on top
+        raw_version = save_carousel_slide_asset(task.draft_id, slide_index, img_bytes, prompt=task.prompt)
+        raw_filename = raw_version.get("filename")
+        slide_text = draft.payload.get("slides", [])[slide_index] if slide_index < len(draft.payload.get("slides", [])) else ""
+        accent = draft.payload.get("accent_color", [138, 92, 246])
+        accent_rgb = tuple(accent) if isinstance(accent, list) and len(accent) == 3 else (138, 92, 246)
+        brand_user = draft.payload.get("brand_username", "")
+        is_hook = slide_index == 0
+        is_bullet = "\n•" in slide_text or "\n-" in slide_text or "\n*" in slide_text
+        try:
+            from bot.agents.carousel_editorial import render_editorial_png
+            img_bytes = render_editorial_png(
+                img_bytes, slide_text,
+                slide_index=slide_index,
+                accent_color=accent_rgb,
+                username=brand_user,
+                is_hook=is_hook,
+                is_bullet_list=is_bullet,
+            )
+        except Exception:
+            logger.exception("kie_callback bg: editorial render failed for slide %d", slide_index)
+
     version = save_carousel_slide_asset(task.draft_id, slide_index, img_bytes, prompt=task.prompt)
+    if raw_filename:
+        version["raw_filename"] = raw_filename
     slide_images[slide_index] = version
     slide_versions[slide_index].append(version)
 
