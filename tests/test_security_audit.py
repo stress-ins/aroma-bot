@@ -71,14 +71,18 @@ class TestKieWebhookAuth:
         )
         assert resp.status_code == 403
 
-    async def test_kie_callback_valid_secret_passes_auth(self, client):
-        """With correct secret, auth passes (returns 400/404 because task doesn't exist, not 403)."""
+    async def test_kie_callback_valid_secret_passes_auth(self, client, monkeypatch):
+        """With correct secret, auth passes (returns 404 because task doesn't exist, not 403)."""
+        # Mock get_task to avoid needing kie_tasks table in test DB
+        async def _mock_get_task(task_id):
+            return None
+        monkeypatch.setattr("bot.services.kie_task_store.get_task", _mock_get_task)
         resp = await client.post(
             "/api/webhooks/kie-callback",
             json={"taskId": "nonexistent", "data": {"state": "success"}},
             headers={"X-Kie-Secret": KIE_SECRET},
         )
-        assert resp.status_code in (404, 400)  # auth passed, task not found
+        assert resp.status_code == 404  # auth passed, task not found
 
     async def test_kie_callback_no_secret_configured_returns_403(self, client, monkeypatch):
         """If KIE_CALLBACK_SECRET is empty, all requests are rejected (fail closed)."""
