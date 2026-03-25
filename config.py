@@ -109,6 +109,7 @@ class Settings(BaseSettings):
 
     # Cache
     cache_ttl: int = 3600
+    reference_cache_ttl: int = 300  # TTL for in-memory reference data cache (seconds)
 
     def is_source_enabled(self, source: str) -> bool:
         checks = {

@@ -49,6 +49,10 @@ from .common import (
     update_reference_card,
 )
 
+# --- cache --------------------------------------------------------------------
+from .cache import invalidate_all as invalidate_reference_cache
+from .cache import invalidate_category as invalidate_reference_category
+
 # --- entity-specific enrichment ------------------------------------------------
 from .aroma import _enrich_aroma_cross_refs
 from .blend import _enrich_blend_cross_refs
@@ -100,6 +104,9 @@ __all__ = [
     "list_reference_cards_with_placeholder_images",
     "seed_reference_cards_if_empty",
     "update_reference_card",
+    # cache
+    "invalidate_reference_cache",
+    "invalidate_reference_category",
     # entity-specific enrichment
     "_enrich_aroma_cross_refs",
     "_enrich_blend_cross_refs",
