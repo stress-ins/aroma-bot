@@ -122,10 +122,17 @@ async def _no_cache_js_modules(request, call_next):
     """Force revalidation of ES module files that lack their own version hash."""
     import sys as _sys
     if "schedule-series" in request.url.path:
-        print(f"[MW] {request.method} {request.url.path} headers={dict(request.headers)}", file=_sys.stderr, flush=True)
+        body = await request.body()
+        print(f"[MW] {request.method} {request.url.path} body={body!r}", file=_sys.stderr, flush=True)
     response = await call_next(request)
     if "schedule-series" in request.url.path:
-        print(f"[MW] response status={response.status_code}", file=_sys.stderr, flush=True)
+        # Read response body for debugging
+        resp_body = b""
+        async for chunk in response.body_iterator:
+            resp_body += chunk
+        print(f"[MW] response status={response.status_code} body={resp_body!r}", file=_sys.stderr, flush=True)
+        from starlette.responses import Response
+        return Response(content=resp_body, status_code=response.status_code, headers=dict(response.headers))
     path = request.url.path
     if path.startswith("/static/") and (path.endswith(".js") or path.endswith(".css")):
         response.headers["Cache-Control"] = "no-cache"
