@@ -86,11 +86,12 @@ class TestGenerateContent:
         """Valid content request creates a stub draft and returns it immediately (generation runs in background)."""
         from miniapp_server import app
         client = TestClient(app, raise_server_exceptions=False)
-        resp = client.post(
-            "/api/generate/content",
-            json={"topic": "Lavender for sleep", "goal_key": "trust", "format_key": "instagram"},
-            headers=HEADERS,
-        )
+        with patch("miniapp.api.routers.create.complete_content_generation", new_callable=AsyncMock):
+            resp = client.post(
+                "/api/generate/content",
+                json={"topic": "Lavender for sleep", "goal_key": "trust", "format_key": "instagram"},
+                headers=HEADERS,
+            )
         assert resp.status_code == 200
         data = resp.json()
         assert "draft_id" in data
@@ -117,11 +118,12 @@ class TestGenerateCarousel:
     async def test_valid_carousel_creates_stub(self, team_ready):
         from miniapp_server import app
         client = TestClient(app, raise_server_exceptions=False)
-        resp = client.post(
-            "/api/generate/carousel",
-            json={"topic": "Morning ritual with oils"},
-            headers=HEADERS,
-        )
+        with patch("miniapp.api.routers.create.complete_carousel_generation", new_callable=AsyncMock):
+            resp = client.post(
+                "/api/generate/carousel",
+                json={"topic": "Morning ritual with oils"},
+                headers=HEADERS,
+            )
         assert resp.status_code == 200
         data = resp.json()
         assert "draft_id" in data

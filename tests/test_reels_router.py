@@ -537,6 +537,7 @@ class TestUpgradeToFull:
             patch("miniapp.api.routers.reels._update_draft", new_callable=AsyncMock),
             patch("miniapp.api.routers.reels.set_generation_state", new_callable=AsyncMock),
             patch("miniapp.api.routers.reels.serialize_reels_draft", new_callable=AsyncMock, return_value=SAMPLE_DRAFT),
+            patch("miniapp.api.routers.reels.complete_reels_v2_generation", new_callable=AsyncMock),
         ):
             resp = client.post("/api/reels/r01/upgrade-to-full")
         assert resp.status_code == 200
