@@ -2531,7 +2531,8 @@ body.tg-theme-dark .danger-button {
   body.is-mobile-layout.is-detail-view {
     overflow: hidden;
     height: var(--tg-viewport-stable-height, 100dvh);
-    background: var(--surface);
+    padding-bottom: 0; /* detail-panel has its own padding — body padding creates a visible rectangle */
+    background: var(--bg);
   }
   /* When keyboard is open, constrain to visual viewport so scrollIntoView works */
   body.is-mobile-layout.is-detail-view.is-keyboard-open {
