@@ -74,6 +74,11 @@ export function registerWindowBridge(deps) {
     reuploadVideo,
     proceedToPublish,
     splitReelsClips,
+    notifyWhenReady,
+    gradePreview,
+    gradeAnalyzeAI,
+    gradeApply,
+    startMontage,
     saveContentReviewDraft,
     polishContentDraft,
     openKeywordTopic,
@@ -293,6 +298,13 @@ export function registerWindowBridge(deps) {
   window.reuploadVideo = reuploadVideo;
   window.proceedToPublish = proceedToPublish;
   window.splitReelsClips = splitReelsClips;
+  window.notifyWhenReady = notifyWhenReady;
+  // Color grading
+  window.gradePreview = gradePreview;
+  window.gradeAnalyzeAI = gradeAnalyzeAI;
+  window.gradeApply = gradeApply;
+  // Auto-montage
+  window.startMontage = startMontage;
 
   // Threads-series slot actions
   window.regenSlot = regenSlot;

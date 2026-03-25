@@ -1638,6 +1638,8 @@ const {
   gradePreview,
   gradeAnalyzeAI,
   gradeApply,
+  startMontage,
+  notifyWhenReady,
 } = createReelsModule({
   state,
   reelsNoteSaveTimers,
@@ -2406,6 +2408,8 @@ registerWindowBridge({
   gradePreview,
   gradeAnalyzeAI,
   gradeApply,
+  startMontage,
+  notifyWhenReady,
   approveThreadsSeries,
   regenSlot,
   regenerateSeriesPosts,
