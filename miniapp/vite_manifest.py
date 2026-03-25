@@ -28,10 +28,12 @@ def get_vite_assets() -> dict[str, str]:
     entry = _manifest.get("app.js", {})
     js = f"/static-dist/{entry.get('file', 'assets/app.js')}"
 
-    # CSS may be listed under entry's "css" key or as a separate "style.css" entry
+    # CSS may be listed under entry's "css" key or as a separate styles entry
     css_files = entry.get("css", [])
     if css_files:
         css = f"/static-dist/{css_files[0]}"
+    elif "app.css" in _manifest:
+        css = f"/static-dist/{_manifest['app.css']['file']}"
     elif "style.css" in _manifest:
         css = f"/static-dist/{_manifest['style.css']['file']}"
     else:

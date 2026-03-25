@@ -10,6 +10,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         app: resolve(__dirname, "static/app.js"),
+        styles: resolve(__dirname, "static/app.css"),
       },
       output: {
         entryFileNames: "assets/[name]-[hash].js",
