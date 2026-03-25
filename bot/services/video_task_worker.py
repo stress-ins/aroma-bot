@@ -449,6 +449,7 @@ async def _execute_grade(task) -> dict:
 
 async def _execute_montage(task) -> dict:
     """Execute auto-montage pipeline."""
+    from pathlib import Path as _Path
     from bot.services.video_montage.config import MontageConfig
     from bot.services.video_montage.engine import run_montage
     from bot.services.reels_video import VIDEO_DIR
@@ -468,7 +469,7 @@ async def _execute_montage(task) -> dict:
         raise ValueError("No video to montage")
 
     video_path = VIDEO_DIR / draft_id / video_filename
-    output_path = VIDEO_DIR / draft_id / f"{Path(video_filename).stem}_montage.mp4"
+    output_path = VIDEO_DIR / draft_id / f"{_Path(video_filename).stem}_montage.mp4"
 
     # Build montage config
     montage_config = MontageConfig(
@@ -479,6 +480,7 @@ async def _execute_montage(task) -> dict:
         transitions_enabled=config_data.get("transitions_enabled", True),
         transition_type=config_data.get("transition_type", "fade"),
         subtitles_enabled=config_data.get("subtitles_enabled", True),
+        subtitle_source=config_data.get("subtitle_source", "auto"),
         subtitle_style=config_data.get("subtitle_style", "bottom_bar"),
         music_enabled=config_data.get("music_enabled", False),
         music_track=config_data.get("music_track", ""),
@@ -514,13 +516,13 @@ async def _execute_montage(task) -> dict:
         raise RuntimeError(f"Montage failed: {result.error}")
 
     # Update draft
-    payload["montage_video_path"] = Path(result.output_file).name
+    payload["montage_video_path"] = _Path(result.output_file).name
     payload["montage_features"] = result.features_applied
     payload["montage_duration"] = result.duration
     await update_draft(draft_id, payload=payload)
 
     return {
-        "montage_video_path": Path(result.output_file).name,
+        "montage_video_path": _Path(result.output_file).name,
         "features_applied": result.features_applied,
         "duration": result.duration,
     }
