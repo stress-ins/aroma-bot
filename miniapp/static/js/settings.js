@@ -1223,7 +1223,7 @@ export function createSettingsModule(deps) {
           </div>
 
           <section class="section">
-            <h3>${uiIcon("play-circle")} Worker</h3>` : ""}
+            <h3>${uiIcon("play-circle")} Worker</h3>
             <div style="display:flex;align-items:center;gap:8px;font-size:13px">
               <span style="width:10px;height:10px;border-radius:50%;background:${worker.alive ? "var(--good)" : "var(--danger)"}"></span>
               <span>${worker.alive ? "Работает" : "Остановлен"}</span>
