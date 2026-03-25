@@ -94,6 +94,7 @@ class Settings(BaseSettings):
 
     # n8n integration
     n8n_webhook_secret: str = ""
+    kie_callback_secret: str = ""
     admin_telegram_chat_id: str = ""
 
     # Meta Webhooks (Instagram & Threads real-time)

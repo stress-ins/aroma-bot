@@ -20,6 +20,10 @@ class TeamModel(Base):
     slug: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     created_by: Mapped[int] = mapped_column(BigInteger)  # telegram_id of creator
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    # City for weather context (per-team override)
+    city_name: Mapped[str | None] = mapped_column(String(100), default=None)
+    city_lat: Mapped[float | None] = mapped_column(Float, default=None)
+    city_lon: Mapped[float | None] = mapped_column(Float, default=None)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
         default=lambda: datetime.now(timezone.utc),

@@ -3,6 +3,8 @@
  * Platforms: threads, instagram, telegram.
  * Supports immediate publish and scheduling.
  */
+import { sseQueryString } from "./sse-auth.js";
+
 export function createPublishModule(deps) {
   const { fetchJson, withButtonFeedback, escapeHtml, tagMarkup, uiIcon, showUiNotice, confirmAction, mergeDraftIntoState, renderDraftList, renderDraftDetail } = deps;
 
@@ -135,12 +137,13 @@ export function createPublishModule(deps) {
     `;
   }
 
-  function _startStatusPoll(draftId) {
+  async function _startStatusPoll(draftId) {
     if (_pollTimer) clearInterval(_pollTimer);
     if (_publishEventSource) { _publishEventSource.close(); _publishEventSource = null; }
     loadPublishStatus(draftId);
     if (typeof EventSource !== "undefined") {
-      const es = new EventSource(`/api/drafts/${draftId}/publish-stream${_authQs()}`);
+      const qs = await sseQueryString();
+      const es = new EventSource(`/api/drafts/${draftId}/publish-stream${qs}`);
       _publishEventSource = es;
       es.onmessage = (event) => {
         try {

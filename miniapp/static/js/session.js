@@ -1,3 +1,5 @@
+import { sseQueryString } from "./sse-auth.js";
+
 export function createSessionModule(deps) {
   const {
     state,
@@ -140,7 +142,7 @@ export function createSessionModule(deps) {
     return initData ? { "X-Telegram-Init-Data": initData } : {};
   }
 
-  function scheduleReelsRefresh(draftId, attempts = 90) {
+  async function scheduleReelsRefresh(draftId, attempts = 90) {
     if (!draftId) return;
     // Close any existing SSE connection for a different draft
     if (_reelsEventSource) {
@@ -149,7 +151,7 @@ export function createSessionModule(deps) {
     }
     // Try SSE first, fallback to polling
     if (typeof EventSource !== "undefined") {
-      const qs = authQueryString();
+      const qs = await sseQueryString();
       const url = `/api/reels/${draftId}/stream${qs}`;
       const es = new EventSource(url);
       _reelsEventSource = es;
@@ -208,11 +210,12 @@ export function createSessionModule(deps) {
     return { shouldContinue: draft.generation_pending || (draft.kind === "threads_series" && !posts.length) };
   }
 
-  function scheduleDraftRefresh(draftId, attempts = 90) {
+  async function scheduleDraftRefresh(draftId, attempts = 90) {
     if (!draftId) return;
     if (_draftEventSource) { _draftEventSource.close(); _draftEventSource = null; }
     if (typeof EventSource !== "undefined") {
-      const es = new EventSource(`/api/drafts/${draftId}/stream${authQueryString()}`);
+      const qs = await sseQueryString();
+      const es = new EventSource(`/api/drafts/${draftId}/stream${qs}`);
       _draftEventSource = es;
       es.onmessage = async (event) => {
         try {
@@ -283,11 +286,12 @@ export function createSessionModule(deps) {
     return { shouldContinue: draft.generation_pending || readyCount < slideCount };
   }
 
-  function scheduleCarouselRefresh(draftId, attempts = 90) {
+  async function scheduleCarouselRefresh(draftId, attempts = 90) {
     if (!draftId) return;
     if (_carouselEventSource) { _carouselEventSource.close(); _carouselEventSource = null; }
     if (typeof EventSource !== "undefined") {
-      const es = new EventSource(`/api/carousel/${draftId}/stream${authQueryString()}`);
+      const qs = await sseQueryString();
+      const es = new EventSource(`/api/carousel/${draftId}/stream${qs}`);
       _carouselEventSource = es;
       es.onmessage = async (event) => {
         try {

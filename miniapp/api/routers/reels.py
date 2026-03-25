@@ -24,7 +24,7 @@ from bot.services.miniapp_reels import (
     update_reels_scenario,
 )
 from bot.services.reels_assets import recover_frame_asset, regenerate_reels_frame_asset
-from ..auth import _require_auth, _resolve_init_data, require_tier
+from ..auth import _require_auth, _resolve_init_data, _resolve_sse_auth, require_tier
 from ..deps import require_draft
 from bot.services.drafts_store import get_draft as _get_draft, update_draft as _update_draft
 from ..generation import (
@@ -1498,7 +1498,7 @@ async def clean_video_status(
 # ── SSE stream for real-time generation updates ─────────────────────────
 
 @router.get("/api/reels/{draft_id}/stream")
-async def reels_generation_stream(draft_id: str, _: str = Depends(_resolve_init_data)):
+async def reels_generation_stream(draft_id: str, _: str = Depends(_resolve_sse_auth)):
     """Server-Sent Events stream that pushes generation state changes."""
 
     async def _event_generator():
@@ -1554,7 +1554,7 @@ def _sse_msg(data: dict) -> str:
 # ── SSE stream for video cleaning status ────────────────────────────────
 
 @router.get("/api/reels/{draft_id}/clean-video-stream")
-async def clean_video_stream(draft_id: str, _: str = Depends(_resolve_init_data)):
+async def clean_video_stream(draft_id: str, _: str = Depends(_resolve_sse_auth)):
     """Server-Sent Events stream for video task progress (clean or compose)."""
     from bot.services import video_task_worker
     from bot.services.video_task_store import estimate_time_seconds

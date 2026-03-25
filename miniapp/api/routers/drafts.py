@@ -12,7 +12,7 @@ from bot.services.miniapp_content_review import polish_content_review_draft, upd
 from bot.services.miniapp_presenter import filter_drafts, serialize_draft, serialize_draft_summary
 from bot.services.post_metrics_store import get_latest_metrics_batch
 from config import settings
-from ..auth import TeamContext, _require_auth, _resolve_init_data, _resolve_team_context, _telegram_user_id_from_init_data
+from ..auth import TeamContext, _require_auth, _resolve_init_data, _resolve_sse_auth, _resolve_team_context, _telegram_user_id_from_init_data
 from ..generation._common import get_generation_event, cleanup_generation_event, sse_msg
 from ..models import DraftContentPayload, DraftFeedbackPayload, DraftMovePayload, DraftStatusPayload
 
@@ -223,7 +223,7 @@ async def send_draft_to_chat(
 # ── SSE stream for real-time draft generation updates ───────────────────
 
 @router.get("/api/drafts/{draft_id}/stream")
-async def draft_generation_stream(draft_id: str, _: str = Depends(_resolve_init_data)):
+async def draft_generation_stream(draft_id: str, _: str = Depends(_resolve_sse_auth)):
     """Server-Sent Events stream that pushes draft generation state."""
 
     async def _event_generator():

@@ -20,7 +20,7 @@ from bot.handlers.carousel import _build_pptx
 from bot.services.drafts_store import DraftRecord, get_draft, update_draft
 from bot.services.draft_revisions_store import create_revision
 from bot.services.miniapp_presenter import serialize_draft
-from ..auth import _require_auth, _resolve_init_data, require_tier
+from ..auth import _require_auth, _resolve_init_data, _resolve_sse_auth, require_tier
 from ..deps import require_draft
 from ..generation import complete_carousel_regen_slide, complete_carousel_regenerate_all, set_generation_state
 from ..generation._common import get_generation_event, cleanup_generation_event, sse_msg
@@ -247,7 +247,7 @@ async def regenerate_carousel_all(
 async def carousel_slide_preview(
     draft_id: str,
     slide_index: int,
-    _: str = Depends(_resolve_init_data),
+    _: str = Depends(_resolve_sse_auth),
 ):
     """Generate a PNG preview with text overlaid on the slide image."""
     from bot.agents.carousel_preview_agent import generate_slide_preview
@@ -292,7 +292,7 @@ async def carousel_preview_all(
 # ── PPTX export/import ─────────────────────────────────────────────────────────
 
 @router.get("/api/carousel/{draft_id}/pptx")
-async def carousel_pptx_export(draft_id: str, _: str = Depends(_resolve_init_data)):
+async def carousel_pptx_export(draft_id: str, _: str = Depends(_resolve_sse_auth)):
     draft = await get_draft(draft_id)
     if not draft or draft.kind != "carousel":
         raise HTTPException(status_code=404, detail="carousel_not_found")
@@ -559,7 +559,7 @@ async def carousel_canva_task_status(draft_id: str, _: None = Depends(_require_a
 
 
 @router.get("/api/carousel/{draft_id}/canva/stream")
-async def carousel_canva_stream(draft_id: str, _: str = Depends(_resolve_init_data)):
+async def carousel_canva_stream(draft_id: str, _: str = Depends(_resolve_sse_auth)):
     """SSE stream for Canva task progress."""
     from bot.services import canva_task_worker
 
@@ -617,7 +617,7 @@ async def carousel_canva_stream(draft_id: str, _: str = Depends(_resolve_init_da
 # ── SSE stream for real-time carousel generation updates ────────────────
 
 @router.get("/api/carousel/{draft_id}/stream")
-async def carousel_generation_stream(draft_id: str, _: str = Depends(_resolve_init_data)):
+async def carousel_generation_stream(draft_id: str, _: str = Depends(_resolve_sse_auth)):
     """Server-Sent Events stream that pushes carousel generation state."""
 
     async def _event_generator():

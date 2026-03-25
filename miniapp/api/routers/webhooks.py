@@ -3,8 +3,10 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, BackgroundTasks, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, Request
 from fastapi.responses import JSONResponse
+
+from miniapp.api.auth import _require_kie_callback_auth
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +14,11 @@ router = APIRouter()
 
 
 @router.post("/api/webhooks/kie-callback")
-async def kie_callback(request: Request, background_tasks: BackgroundTasks):
+async def kie_callback(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    _: None = Depends(_require_kie_callback_auth),
+):
     """Receive KIE.ai task completion callback.
 
     KIE sends the same payload shape as their recordInfo poll endpoint.

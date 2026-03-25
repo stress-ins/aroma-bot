@@ -5,6 +5,7 @@ import hmac
 import json
 import logging
 import os
+import secrets
 import time
 import urllib.parse
 from dataclasses import dataclass
@@ -82,14 +83,13 @@ def _require_auth(x_telegram_init_data: str | None = Header(default=None)) -> No
 
 def _resolve_init_data(
     x_telegram_init_data: str | None = Header(default=None),
-    init_data: str | None = Query(default=None),
 ) -> str:
+    """Validate Telegram initData from header only (no query-string fallback)."""
     if os.getenv("AROMA_BYPASS_AUTH") == "1" and os.getenv("AROMA_ENV", "production") in ("test", "dev"):
-        return x_telegram_init_data or init_data or ""
-    candidate = x_telegram_init_data or init_data
-    if not candidate or not _verify_init_data(candidate):
+        return x_telegram_init_data or ""
+    if not x_telegram_init_data or not _verify_init_data(x_telegram_init_data):
         raise HTTPException(status_code=403, detail="forbidden")
-    return candidate
+    return x_telegram_init_data
 
 
 def _require_reference_access(x_telegram_init_data: str | None = Header(default=None)) -> int:
@@ -108,6 +108,60 @@ def _require_webhook_auth(x_webhook_secret: str | None = Header(default=None)) -
     expected = settings.n8n_webhook_secret
     if not expected or not x_webhook_secret or not hmac.compare_digest(x_webhook_secret, expected):
         raise HTTPException(status_code=403, detail="forbidden")
+
+
+def _require_kie_callback_auth(x_kie_secret: str | None = Header(default=None)) -> None:
+    """Validate KIE.ai callback requests via X-Kie-Secret header or query token."""
+    expected = settings.kie_callback_secret
+    if not expected:
+        # If no secret configured, reject all — fail closed
+        raise HTTPException(status_code=403, detail="forbidden")
+    if not x_kie_secret or not hmac.compare_digest(x_kie_secret, expected):
+        raise HTTPException(status_code=403, detail="forbidden")
+
+
+# ---------------------------------------------------------------------------
+# Short-lived SSE tokens (replace init_data in query strings)
+# ---------------------------------------------------------------------------
+_SSE_TOKEN_TTL = 300  # 5 minutes
+_sse_tokens: dict[str, tuple[str, float]] = {}  # token -> (init_data, expires_at)
+
+
+def _cleanup_expired_sse_tokens() -> None:
+    """Remove expired tokens (called lazily on issue/resolve)."""
+    now = time.time()
+    expired = [t for t, (_, exp) in _sse_tokens.items() if now > exp]
+    for t in expired:
+        _sse_tokens.pop(t, None)
+
+
+def issue_sse_token(init_data: str) -> str:
+    """Issue a short-lived opaque token that proxies for init_data on SSE connections."""
+    _cleanup_expired_sse_tokens()
+    token = secrets.token_urlsafe(32)
+    _sse_tokens[token] = (init_data, time.time() + _SSE_TOKEN_TTL)
+    return token
+
+
+def _resolve_sse_auth(
+    x_telegram_init_data: str | None = Header(default=None),
+    token: str | None = Query(default=None),
+) -> str:
+    """Resolve auth for SSE endpoints: prefer header, fall back to short-lived token."""
+    if os.getenv("AROMA_BYPASS_AUTH") == "1" and os.getenv("AROMA_ENV", "production") in ("test", "dev"):
+        return x_telegram_init_data or ""
+    # Try header first (non-EventSource clients)
+    if x_telegram_init_data and _verify_init_data(x_telegram_init_data):
+        return x_telegram_init_data
+    # Try SSE token
+    if token:
+        _cleanup_expired_sse_tokens()
+        entry = _sse_tokens.get(token)
+        if entry:
+            init_data, expires_at = entry
+            if time.time() <= expires_at and _verify_init_data(init_data):
+                return init_data
+    raise HTTPException(status_code=403, detail="forbidden")
 
 
 async def _resolve_telegram_id(
