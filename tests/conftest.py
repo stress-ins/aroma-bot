@@ -42,8 +42,10 @@ import bot.services.video_task_store
 import bot.services.social_trends_store
 import bot.services.past_publications_store
 import bot.services.content_analytics
+import bot.services.analytics_store
 import miniapp.api.routers.plans
 import miniapp.api.routers.misc
+# Note: miniapp.api.routers.analytics uses local import from db.session (already patched)
 
 
 @pytest.fixture(autouse=True, scope="function")
@@ -88,6 +90,7 @@ async def setup_test_db(monkeypatch):
     monkeypatch.setattr(bot.services.social_trends_store, "AsyncSessionLocal", AsyncSessionLocal)
     monkeypatch.setattr(bot.services.past_publications_store, "AsyncSessionLocal", AsyncSessionLocal)
     monkeypatch.setattr(bot.services.content_analytics, "AsyncSessionLocal", AsyncSessionLocal)
+    monkeypatch.setattr(bot.services.analytics_store, "AsyncSessionLocal", AsyncSessionLocal)
     monkeypatch.setattr(miniapp.api.routers.plans, "AsyncSessionLocal", AsyncSessionLocal)
     monkeypatch.setattr(miniapp.api.routers.misc, "AsyncSessionLocal", AsyncSessionLocal)
 
