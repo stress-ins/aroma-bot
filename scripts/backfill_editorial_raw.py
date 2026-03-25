@@ -2,8 +2,8 @@
 """Backfill raw (text-free) images for editorial carousel drafts.
 
 For editorial drafts generated before the raw_filename feature,
-this script finds original image URLs from kie_tasks table,
-re-downloads them, and saves as raw assets.
+re-generates original images from saved prompts via the image API
+and saves them as raw assets.
 
 Usage:
     .venv/bin/python scripts/backfill_editorial_raw.py --dry-run
@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import functools
 import logging
 import sys
 from pathlib import Path
@@ -26,28 +27,13 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 logger = logging.getLogger(__name__)
 
 
-async def _get_kie_tasks_for_draft(draft_id: str) -> list:
-    """Query kie_tasks table for completed tasks of a given draft."""
-    from db.session import AsyncSessionLocal
-    from db.models import KieTaskModel
-    from sqlalchemy import select
-
-    async with AsyncSessionLocal() as session:
-        stmt = (
-            select(KieTaskModel)
-            .where(KieTaskModel.draft_id == draft_id)
-            .where(KieTaskModel.status == "success")
-            .where(KieTaskModel.content_type == "carousel_slide")
-            .order_by(KieTaskModel.id)
-        )
-        result = await session.execute(stmt)
-        return list(result.scalars().all())
-
-
 async def backfill(dry_run: bool = True) -> None:
     drafts = await list_recent_drafts(kind="carousel", limit=500)
     editorial_drafts = [d for d in drafts if d.payload.get("layout_style") == "editorial"]
     logger.info("Found %d editorial drafts out of %d total", len(editorial_drafts), len(drafts))
+
+    if not editorial_drafts:
+        return
 
     updated = 0
     skipped = 0
@@ -55,13 +41,8 @@ async def backfill(dry_run: bool = True) -> None:
 
     for draft in editorial_drafts:
         slide_images = list(draft.payload.get("slide_images", []))
+        img_prompts = list(draft.payload.get("img_prompts", []))
         changed = False
-
-        # Get all KIE tasks for this draft
-        kie_tasks = await _get_kie_tasks_for_draft(draft.draft_id)
-        tasks_by_slot = {}
-        for t in kie_tasks:
-            tasks_by_slot.setdefault(t.slot_key, []).append(t)
 
         for i, item in enumerate(slide_images):
             if not isinstance(item, dict) or not item.get("filename"):
@@ -70,34 +51,41 @@ async def backfill(dry_run: bool = True) -> None:
                 skipped += 1
                 continue
 
-            slot_tasks = tasks_by_slot.get(str(i), [])
-            task = next((t for t in reversed(slot_tasks) if t.image_url), None)
-
-            if not task:
-                logger.warning("Draft %s slide %d: no completed KIE task with image_url, skipping", draft.draft_id, i)
+            prompt = img_prompts[i] if i < len(img_prompts) else ""
+            if not prompt:
+                logger.warning("Draft %s slide %d: no prompt, skipping", draft.draft_id, i)
                 failed += 1
                 continue
 
-            logger.info("Draft %s slide %d: found KIE task %s, url=%s", draft.draft_id, i, task.task_id, task.image_url[:80])
+            logger.info("Draft %s slide %d: regenerating raw image from prompt [%s...]", draft.draft_id, i, prompt[:50])
 
             if dry_run:
-                logger.info("  [DRY RUN] would download and save raw image")
+                logger.info("  [DRY RUN] would regenerate and save raw image")
                 continue
 
             try:
-                from bot.services.gemini_images import _download_image
-                img_bytes = _download_image(task.image_url, f"backfill:{draft.draft_id}:{i}")
-                if not img_bytes:
-                    logger.warning("Draft %s slide %d: download failed", draft.draft_id, i)
+                from bot.services.gemini_images import generate_gemini_image_sync
+                result = await asyncio.get_running_loop().run_in_executor(
+                    None,
+                    functools.partial(
+                        generate_gemini_image_sync,
+                        prompt,
+                        aspect_ratio="4:5",
+                        log_context=f"backfill slide {i + 1} draft {draft.draft_id}",
+                    ),
+                )
+                if not result.image_bytes:
+                    logger.warning("Draft %s slide %d: generation returned no image: %s", draft.draft_id, i, result.error)
                     failed += 1
                     continue
 
                 raw_version = save_carousel_slide_asset(
-                    draft.draft_id, i, img_bytes, prompt=item.get("prompt", "backfill_raw"),
+                    draft.draft_id, i, result.image_bytes, prompt=prompt,
                 )
                 item["raw_filename"] = raw_version["filename"]
                 changed = True
                 logger.info("Draft %s slide %d: saved raw as %s", draft.draft_id, i, raw_version["filename"])
+
             except Exception:
                 logger.exception("Draft %s slide %d: error", draft.draft_id, i)
                 failed += 1
