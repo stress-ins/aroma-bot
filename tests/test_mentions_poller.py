@@ -41,10 +41,10 @@ async def test_poll_saves_new(_mock_threads_client, _mock_store):
     from bot.services.mentions_poller import poll_threads_mentions
 
     polled, saved = await poll_threads_mentions("fake_token")
-    # 2 top-level items (1 mention + 1 thread), each gets 1 reply = 4 saves
-    assert polled == 2
-    assert saved == 4
-    assert _mock_store["save"].call_count == 4
+    # 1 mention from get_mentions (get_threads no longer called) + 1 reply = 2 saves
+    assert polled == 1
+    assert saved == 2
+    assert _mock_store["save"].call_count == 2
 
 
 @pytest.mark.asyncio
@@ -56,7 +56,7 @@ async def test_poll_deduplicates(_mock_threads_client, _mock_store):
     _mock_store["find"].return_value = existing
 
     polled, saved = await poll_threads_mentions("fake_token")
-    assert polled == 2
+    assert polled == 1
     assert saved == 0
     assert _mock_store["save"].call_count == 0
 

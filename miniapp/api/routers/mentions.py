@@ -82,7 +82,21 @@ async def get_mention_endpoint(mention_id: str, _: None = Depends(_require_auth)
 
 @router.post("/api/mentions/ingest")
 async def ingest_mention(payload: MentionIngestPayload, _: None = Depends(_require_webhook_auth)):
-    """Called by n8n / Meta webhooks to ingest a new mention from Telegram/Threads/Instagram."""
+    """Called by n8n / Meta webhooks to ingest a new mention from Telegram/Threads/Instagram.
+
+    Filters out own posts — only external mentions are saved.
+    """
+    # Filter out own posts
+    from config import settings
+    own_usernames: set[str] = set()
+    if settings.threads_username:
+        own_usernames.add(settings.threads_username.lower().lstrip("@"))
+    if settings.instagram_user_id:
+        own_usernames.add(settings.instagram_user_id.lower())
+    author = (payload.author_username or "").lower().lstrip("@")
+    if author and author in own_usernames:
+        return {"mention_id": None, "status": "skipped_own"}
+
     mention_id, created = await save_mention(
         platform=payload.platform,
         external_id=payload.external_id,
