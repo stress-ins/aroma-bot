@@ -1,0 +1,106 @@
+/* ═══════════════════════════════════════
+   SECTION: Mentions
+   ═══════════════════════════════════════ */
+
+/* ── Mentions ────────────────────────────────────────────────────────────── */
+.mention-list { display: flex; flex-direction: column; gap: 10px; }
+.mention-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 12px 14px; cursor: pointer;
+  transition: box-shadow var(--duration-fast);
+}
+.mention-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.mention-meta {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap;
+}
+.mention-platform-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; font-weight: 600; color: var(--muted);
+  background: var(--surface-2); border: 1px solid var(--border);
+  padding: 2px 8px; border-radius: 20px;
+}
+.mention-platform-badge i { width: 12px; height: 12px; }
+.mention-time { font-size: 11px; color: var(--hint); margin-left: auto; }
+.mention-author { font-weight: 600; font-size: 13px; color: var(--text); margin-bottom: 4px; }
+.mention-preview { font-size: 13px; color: var(--muted); line-height: 1.45; }
+.mention-content-text {
+  font-size: 14px; color: var(--text); line-height: 1.55;
+  background: var(--surface-2); border-radius: var(--radius-sm);
+  padding: 10px 12px; margin: 8px 0; border: 1px solid var(--border);
+}
+.mention-context {
+  font-size: 12px; color: var(--hint); border-left: 3px solid var(--border);
+  padding-left: 8px; margin-bottom: 6px; line-height: 1.4;
+}
+.mention-link { font-size: 12px; color: var(--brand); text-decoration: none; }
+.reply-list { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+.reply-option {
+  border: 1px solid var(--border); border-radius: var(--radius-md);
+  padding: 12px 14px; background: var(--surface); transition: border-color var(--duration-fast);
+}
+.reply-option.is-selected { border-color: var(--brand); background: var(--brand-bg); }
+.reply-tone-badge {
+  display: inline-block; font-size: 11px; font-weight: 700;
+  color: var(--brand); background: var(--brand-bg);
+  padding: 2px 8px; border-radius: 20px; margin-bottom: 6px;
+}
+.reply-text { font-size: 13px; color: var(--text); line-height: 1.5; margin-bottom: 6px; }
+.reply-length { font-size: 11px; color: var(--hint); margin-bottom: 8px; }
+.mention-actions { display: flex; gap: 8px; margin: 12px 0; }
+.tag-status-warn {
+  display: inline-block; font-size: 11px; font-weight: 600;
+  background: rgba(180,92,61,0.10); border: 1px solid rgba(180,92,61,0.25);
+  color: var(--brand); padding: 2px 8px; border-radius: 20px;
+}
+.tag-status-ok {
+  display: inline-block; font-size: 11px; font-weight: 600;
+  background: rgba(46,125,79,0.10); border: 1px solid rgba(46,125,79,0.25);
+  color: var(--good); padding: 2px 8px; border-radius: 20px;
+}
+
+.mention-card--dim { opacity: 0.65; }
+
+.primary-button:disabled,
+.secondary-button:disabled {
+  opacity: 0.45;
+  pointer-events: none;
+  filter: grayscale(0.5);
+}
+
+.reply-publish-error { margin-top: 6px; }
+
+/* ── Token management ────────────────────────────────────────────────────── */
+.token-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--radius-md); margin-bottom: 8px;
+}
+.token-platform { font-weight: 600; font-size: 13px; color: var(--text); flex: 1; }
+.token-expiry { font-size: 12px; color: var(--hint); }
+
+/* ── Compact meta chips ─────────────────────────────────────────────────── */
+.meta-chip { display: inline-block; font-size: 12px; line-height: 1.4; }
+.meta-chip--muted { color: var(--hint); }
+.meta-chip--own {
+  background: var(--success, #4CAF50);
+  color: #fff;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  vertical-align: middle;
+}
+.meta-chip--competitor {
+  background: var(--brand-muted, var(--muted));
+  color: var(--text);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  vertical-align: middle;
+}
+.draft-card-badges { display: inline-flex; gap: 4px; flex-wrap: wrap; margin-left: auto; }
+.draft-meta .meta-chip--muted + .tag,
+.draft-meta .tag + .meta-chip--muted { margin-left: 2px; }
+.draft-meta .meta-chip--muted + .meta-chip--muted::before { content: "·"; margin-right: 6px; opacity: 0.5; }
+

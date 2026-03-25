@@ -1,0 +1,95 @@
+/* ═══════════════════════════════════════
+   SECTION: Dark Theme Overrides
+   ═══════════════════════════════════════ */
+
+/* ── Dark-mode overrides for tg-theme-dark class ──────────────────────────
+   When Telegram sets body.tg-theme-dark, CSS vars from @media may not fire
+   (OS and Telegram dark settings can diverge). Override backgrounds and text
+   colors explicitly so cards are readable against a dark shell.              */
+
+body.tg-theme-dark {
+  --bg:           #251e18;
+  --surface:      #251e18;
+  --surface-2:    #2e2720;
+  --surface-3:    #352c24;
+  --border:       rgba(255, 230, 200, 0.10);
+  --text:         #f0e8df;
+  --muted:        #c2aea0;
+  --hint:         #a58f80;
+  --brand-bg:     rgba(var(--brand-rgb), 0.18);
+  --brand-border: rgba(var(--brand-rgb), 0.40);
+  --sage-bg:      rgba(93, 110, 58, 0.18);
+  --bg-rgb:       37, 30, 24;
+  --surface-rgb:  37, 30, 24;
+  --text-on-brand: #ffffff;
+  --warning:       #e8b84d;
+  --brand-active:  var(--brand);
+}
+
+/* Cards / panels that had hardcoded light backgrounds — switch to dark surface */
+body.tg-theme-dark .reels-overview-card {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+body.tg-theme-dark .storyboard-frame {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text);
+}
+
+body.tg-theme-dark .prompt-card {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text);
+}
+
+body.tg-theme-dark .plan-entry-card {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text);
+}
+
+body.tg-theme-dark .section-primary {
+  background:
+    radial-gradient(circle at top left, rgba(var(--brand-rgb), 0.10), transparent 34%),
+    transparent;
+  border-color: rgba(var(--brand-rgb), 0.22);
+  color: var(--text);
+}
+
+body.tg-theme-dark .section-accent {
+  background: transparent;
+  color: var(--text);
+}
+
+body.tg-theme-dark .detail-facts {
+  background: transparent;
+  border-color: rgba(var(--brand-rgb), 0.20);
+  box-shadow: none;
+  color: var(--text);
+}
+
+/* guided-state had hardcoded near-white gradient */
+body.tg-theme-dark .guided-state {
+  background: transparent;
+  border-color: rgba(var(--brand-rgb), 0.18);
+  color: var(--text);
+}
+
+/* reference-badge had rgba(255,255,255,0.56) */
+body.tg-theme-dark .reference-badge {
+  background: var(--surface-2);
+  border-color: var(--border);
+}
+
+body.tg-theme-dark .reference-hero-card.is-theory {
+  background:
+    radial-gradient(circle at top right, rgba(var(--brand-rgb), 0.1), transparent 33%),
+    transparent;
+  border-color: rgba(var(--brand-rgb), 0.2);
+}
+
+/* settings section inputs — dark theme */
+

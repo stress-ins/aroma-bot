@@ -1,0 +1,446 @@
+/* ═══════════════════════════════════════
+   SECTION: Navigation
+   ═══════════════════════════════════════ */
+
+/* ── Toolbar ─────────────────────────────────────────────────────────────── */
+.topbar {
+  display: block;
+}
+
+.topbar-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(circle at top left, rgba(var(--brand-rgb), 0.12), transparent 32%),
+    transparent;
+  box-shadow: var(--shadow-sm);
+}
+
+.topbar-copy {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.topbar-title {
+  font-size: 20px;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  color: var(--text);
+}
+
+.team-switcher {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--surface-raised, var(--surface));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 6px);
+  padding: 3px 8px;
+  max-width: 180px;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239b8678' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 6px center;
+  padding-right: 22px;
+}
+.team-switcher:focus {
+  outline: 2px solid var(--accent, #4f8cff);
+  outline-offset: 1px;
+}
+
+.move-to-team-select {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  background: var(--surface-raised, var(--surface));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md, 10px);
+  padding: 10px 30px 10px 14px;
+  min-height: 44px;
+  width: 100%;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239b8678' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  text-align: center;
+}
+
+.toolbar {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 12px 14px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: sticky;
+  top: var(--tg-content-inset-top, env(safe-area-inset-top, 0px));
+  z-index: 40;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.toolbar:not(:has(> :not([hidden]))) { display: none; }
+.toolbar:has(.tabs:empty) { display: none; }
+
+.topbar + .toolbar {
+  margin-top: 0;
+}
+
+.tabs-wrapper {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+.tabs-wrapper::after {
+  content: "›";
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--muted);
+  background: linear-gradient(to right, transparent, var(--bg) 40%);
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 0.2s;
+}
+.tabs-wrapper.scrolled-end::after {
+  opacity: 0;
+}
+.tabs {
+  display: flex;
+  gap: var(--space-3);
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+}
+.tabs::-webkit-scrollbar { display: none; }
+
+.tab-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  border-radius: 999px;
+  min-height: 40px;
+  padding: 7px 15px;
+  font-size: 14px;
+  cursor: pointer;
+  color: var(--muted);
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.tabs > .tab-button:first-child {
+  margin-left: 0;
+}
+
+.tabs > .tab-button:last-child {
+  margin-right: 0;
+}
+
+.tab-button.active {
+  background: linear-gradient(180deg, rgba(var(--brand-rgb), 0.18), rgba(var(--brand-rgb), 0.1));
+  border-color: var(--brand-border);
+  color: var(--brand);
+  font-weight: 600;
+  box-shadow: inset 0 0 0 1px rgba(var(--brand-rgb), 0.12);
+}
+
+/* Filters row */
+.toolbar > label,
+.search {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--hint);
+}
+
+/* Wrap filters into a responsive grid */
+.toolbar {
+  display: grid;
+  grid-template-rows: auto auto;
+}
+
+/* Tabs row stays full width */
+.tabs { grid-column: 1 / -1; }
+
+/* Filters collapse */
+.filters-collapse {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  flex: 1;
+  min-width: 0;
+}
+
+.filters-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--surface-2, var(--surface));
+  border: 1px solid var(--border);
+  border-radius: var(--radius, 8px);
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.filters-toggle:hover { color: var(--text-primary); }
+
+.filters-toggle .filters-toggle-icon {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.2s ease;
+}
+
+.filters-toggle.is-open .filters-toggle-icon {
+  transform: rotate(180deg);
+}
+
+/* Mobile: 2-column filter grid */
+.toolbar-inner-filters {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+.toolbar-inner-filters > label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.toolbar-inner-filters > label > select,
+.toolbar-inner-filters > label > input {
+  min-width: 0;
+  width: 100%;
+}
+
+/* All labels after tabs become a flex-wrap row */
+.toolbar > label {
+  min-width: 0;
+}
+
+/* Override: toolbar is flex column by default, switch to wrap on wider screens */
+@media (min-width: 500px) {
+  .toolbar {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+.toolbar-inner-filters {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: var(--space-2);
+  }
+}
+
+.toolbar select,
+.toolbar input[type="search"] {
+  width: 100%;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  padding: 7px 10px;
+  font-size: 14px;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s;
+  appearance: auto;
+}
+.toolbar select:focus,
+.toolbar input:focus { border-color: var(--brand-border); }
+
+/* ── Layout ──────────────────────────────────────────────────────────────── */
+.layout {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: var(--space-3);
+  flex: 1;
+  align-items: start;
+}
+
+.detail-panel.is-empty-mobile {
+  display: block;
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  box-shadow: var(--shadow-sm);
+  transition: border-color var(--duration-fast) var(--ease-standard), box-shadow var(--duration-medium) var(--ease-standard), transform var(--duration-medium) var(--ease-standard);
+}
+
+/* Hide all UI until JS bootstrap completes */
+body:not(.app-ready) .topbar,
+body:not(.app-ready) .toolbar,
+body:not(.app-ready) #mainLayout,
+body:not(.app-ready) .bottom-tab-bar {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Smooth reveal after bootstrap */
+.topbar, .toolbar, #mainLayout, .bottom-tab-bar {
+  transition: opacity 0.15s ease;
+}
+
+.boot-fallback {
+  display: grid;
+  gap: 12px;
+}
+
+.boot-fallback-copy {
+  display: grid;
+  gap: 6px;
+}
+
+.boot-fallback h2 {
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.boot-fallback p {
+  color: var(--muted);
+}
+
+.boot-fallback.is-error {
+  border-color: rgba(176, 58, 46, 0.28);
+  background: linear-gradient(180deg, var(--surface) 0%, rgba(176, 58, 46, 0.08) 100%);
+}
+
+.boot-fallback-inline {
+  margin-top: 8px;
+}
+
+/* ── Splash screen ──────────────────────────────────────────────────────── */
+.splash {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  transition: opacity 0.35s ease;
+}
+
+.splash-loader {
+  width: 120px;
+  height: 120px;
+}
+
+.splash-loader .brand-loader-ring {
+  border-width: 2.5px;
+}
+
+.splash-loader .brand-loader-letter {
+  font-size: 54px;
+  letter-spacing: 0;
+  line-height: 1;
+}
+
+body.app-ready .splash {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ── List panel scroll layout ──────────────────────────────────────────── */
+.list-panel {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 180px);
+  overflow: hidden;
+}
+
+.panel-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: var(--space-2);
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: rgba(var(--surface-rgb), 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  flex-shrink: 0;
+}
+.panel-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+/* ── Header tabs (compact sub-switcher) ────────────────────────────────── */
+.header-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.07);
+  border-radius: 20px;
+  padding: 3px;
+  flex-shrink: 0;
+}
+.header-tabs:empty { display: none; }
+
+.header-tab {
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--duration-fast);
+}
+.header-tab.active {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text);
+}
+
+.panel-header h2 {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--text);
+}
+

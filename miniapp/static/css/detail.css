@@ -1,0 +1,100 @@
+/* ═══════════════════════════════════════
+   SECTION: Detail View & Hero
+   ═══════════════════════════════════════ */
+
+/* ── Detail panel ────────────────────────────────────────────────────────── */
+.detail-empty {
+  display: grid;
+  place-items: center;
+  min-height: 200px;
+  color: var(--hint);
+  font-size: 14px;
+  text-align: center;
+  padding: 24px;
+}
+
+.guided-state {
+  display: grid;
+  gap: 14px;
+  width: min(100%, 440px);
+  padding: 22px;
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(var(--brand-rgb), 0.12);
+  background: linear-gradient(180deg, rgba(255, 252, 248, 0.98) 0%, rgba(250, 246, 241, 0.98) 100%);
+  box-shadow: 0 12px 28px rgba(45, 31, 22, 0.06);
+  text-align: left;
+}
+
+.guided-state.tone-soft {
+  border-color: rgba(var(--brand-rgb), 0.12);
+}
+
+.guided-state-copy {
+  display: grid;
+  gap: 8px;
+}
+
+.guided-state h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.guided-state p:last-child {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.guided-state-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.guided-state-actions .secondary-button {
+  min-height: 44px;
+}
+
+.detail-loader-card {
+  display: grid;
+  place-items: center;
+  gap: 14px;
+  flex: 1;
+  min-height: max(220px, 50vh);
+  text-align: center;
+  color: var(--muted);
+}
+
+.detail-loader-card-compact {
+  flex: 0;
+  min-height: auto;
+  padding: 12px 0;
+}
+
+.panel-loader-card {
+  min-height: 180px;
+  padding: 16px 0;
+}
+
+.detail-loader-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.detail-loader-copy strong {
+  color: var(--text);
+  font-size: 15px;
+}
+
+.detail-loader-copy span {
+  font-size: 13px;
+  animation: detail-loader-pulse 2s ease-in-out infinite;
+}
+
+@keyframes detail-loader-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
