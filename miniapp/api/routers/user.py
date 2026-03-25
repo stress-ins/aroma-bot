@@ -15,7 +15,7 @@ from bot.services.subscription_store import (
     list_promo_codes,
 )
 from config import settings
-from ..auth import _resolve_telegram_id
+from ..auth import TeamContext, _resolve_telegram_id, _resolve_team_context
 
 router = APIRouter()
 
@@ -89,9 +89,19 @@ class CityPayload(BaseModel):
 
 
 @router.get("/api/user/city")
-async def get_user_city(telegram_id: int = Depends(_resolve_telegram_id)):
-    from bot.services.brand_settings_store import get_brand_settings
+async def get_user_city(ctx: TeamContext = Depends(_resolve_team_context)):
+    from bot.services.team_store import get_team
 
+    team = await get_team(ctx.team_id)
+    # Per-team city overrides global brand settings
+    if team and team.city_name:
+        return {
+            "city_name": team.city_name,
+            "city_lat": team.city_lat or 55.7558,
+            "city_lon": team.city_lon or 37.6173,
+        }
+    # Fallback to global brand settings
+    from bot.services.brand_settings_store import get_brand_settings
     bs = await get_brand_settings()
     return {
         "city_name": bs.city_name or "Москва",
@@ -103,15 +113,28 @@ async def get_user_city(telegram_id: int = Depends(_resolve_telegram_id)):
 @router.patch("/api/user/city")
 async def update_user_city(
     body: CityPayload,
-    telegram_id: int = Depends(_resolve_telegram_id),
+    ctx: TeamContext = Depends(_resolve_team_context),
 ):
-    from bot.services.brand_settings_store import update_brand_settings
+    from bot.services.team_store import has_role
 
-    await update_brand_settings(
-        city_name=body.city_name.strip(),
-        city_lat=body.city_lat,
-        city_lon=body.city_lon,
-    )
+    if not has_role(ctx.role, "editor"):
+        raise HTTPException(status_code=403, detail="insufficient_role")
+
+    from db.session import AsyncSessionLocal
+    from db.models import TeamModel
+    from sqlalchemy import update
+
+    async with AsyncSessionLocal() as session:
+        await session.execute(
+            update(TeamModel)
+            .where(TeamModel.team_id == ctx.team_id)
+            .values(
+                city_name=body.city_name.strip(),
+                city_lat=body.city_lat,
+                city_lon=body.city_lon,
+            )
+        )
+        await session.commit()
     return {"ok": True, "city_name": body.city_name.strip()}
 
 

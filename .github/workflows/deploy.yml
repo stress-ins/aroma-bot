@@ -11,6 +11,7 @@ jobs:
   deploy:
     if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout tested commit
         uses: actions/checkout@v4
@@ -40,9 +41,9 @@ jobs:
           git remote add vps ssh://root@46.32.186.192/opt/aroma.git
           git push --force vps HEAD:main
 
-      - name: Install Node.js on VPS (if missing)
+      - name: Ensure Node.js on VPS
         run: |
-          ssh root@46.32.186.192 'command -v node >/dev/null 2>&1 || (curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && apt-get install -y nodejs)'
+          ssh root@46.32.186.192 'command -v node >/dev/null 2>&1 || apt-get install -y nodejs'
 
       - name: Install Remotion dependencies
         run: ssh root@46.32.186.192 'cd /opt/aroma/remotion && npm ci --production 2>&1 | tail -5'
@@ -50,19 +51,26 @@ jobs:
       - name: Install Remotion browser (Chromium)
         run: ssh root@46.32.186.192 'cd /opt/aroma/remotion && npx remotion browser ensure 2>&1 | tail -3'
 
+      - name: Harden secrets file permissions
+        run: |
+          ssh root@46.32.186.192 'chmod 600 /opt/aroma/.env /opt/aroma/.env.bak.* /opt/aroma/.instagrapi_session.json 2>/dev/null; echo "permissions fixed"'
+
       - name: Run Alembic migrations
         run: ssh root@46.32.186.192 'cd /opt/aroma && .venv/bin/alembic upgrade head'
 
-      - name: Verify services
+      - name: Restart and verify ALL services
         run: |
+          ssh root@46.32.186.192 'systemctl restart aroma-miniapp'
           ssh root@46.32.186.192 'systemctl is-active aroma-bot'
           ssh root@46.32.186.192 'systemctl is-active threads-oauth'
-          ssh root@46.32.186.192 'systemctl is-active aroma-miniapp && echo "miniapp active" || echo "miniapp not running (skip)"'
+          ssh root@46.32.186.192 'systemctl is-active aroma-miniapp'
+          ssh root@46.32.186.192 'systemctl is-active aroma-monitor && echo "monitor active" || echo "monitor not running (skip)"'
           ssh root@46.32.186.192 'systemctl is-active n8n-aroma && echo "n8n active" || echo "n8n not running (skip)"'
 
       - name: Import n8n workflows
         run: |
           for f in n8n/workflows/*.json; do
+            [ -f "$f" ] || continue
             ssh root@46.32.186.192 "curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost:5678/api/v1/workflows \
               -H 'Content-Type: application/json' \
               -H 'X-N8N-API-KEY: ${{ secrets.N8N_API_KEY }}' \
@@ -80,13 +88,29 @@ jobs:
             exit 1
           '
 
+      - name: Verify nginx config integrity
+        run: ssh root@46.32.186.192 'nginx -t'
+
+  # ── Data enrichment (separate job, non-blocking) ────────────────────
+  enrichment:
+    needs: deploy
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Configure SSH key
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.VPS_DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H 46.32.186.192 >> ~/.ssh/known_hosts
+
       - name: Run cleanup scripts (no AI, safe every deploy)
         run: |
           ssh root@46.32.186.192 'cd /opt/aroma && \
-            echo "=== Cleanup (sequential, foundational) ===" && \
             .venv/bin/python scripts/cleanup_duplicates.py 2>&1 | tail -3 && \
-            .venv/bin/python scripts/cleanup_blend_ingredients.py 2>&1 | tail -3 && \
-            echo "Cleanup complete."' || echo "Cleanup step failed (non-blocking)"
+            .venv/bin/python scripts/cleanup_blend_ingredients.py 2>&1 | tail -3' \
+            || echo "Cleanup step failed (non-blocking)"
 
       - name: Patch oil reflection questions (idempotent, no AI)
         run: |
@@ -103,10 +127,8 @@ jobs:
       - name: Run AI enrichment scripts (idempotent, skip if already done)
         run: |
           ssh root@46.32.186.192 'cd /opt/aroma && \
-            echo "=== AI enrichment (skips already-filled cards, zero cost if all filled) ===" && \
             .venv/bin/python scripts/enrich_name_en.py 2>&1 | tail -3 && \
             .venv/bin/python scripts/generate_name_ru.py 2>&1 | tail -3 & \
             .venv/bin/python scripts/summarize_aroma_fields.py --card-summary 2>&1 | tail -3 & \
             .venv/bin/python scripts/generate_symptom_descriptions.py 2>&1 | tail -3 & \
-            wait && \
-            echo "AI enrichment complete."' || echo "AI enrichment step failed (non-blocking)"
+            wait' || echo "AI enrichment step failed (non-blocking)"

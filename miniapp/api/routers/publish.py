@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 from bot.services.drafts_store import get_draft, list_scheduled_drafts_due, update_draft
 from bot.services.publish_log_store import list_all_logs, list_logs
 from bot.services.publisher import cancel_scheduled, check_status, publish
-from ..auth import TeamContext, _require_auth, _resolve_init_data, _resolve_team_context, require_tier
+from ..auth import TeamContext, _require_auth, _resolve_init_data, _resolve_sse_auth, _resolve_team_context, require_tier
 from ..models import ScheduleSeriesRequest
 
 logger = logging.getLogger(__name__)
@@ -238,7 +238,7 @@ def _publish_sse_msg(data: dict) -> str:
 
 
 @router.get("/api/drafts/{draft_id}/publish-stream")
-async def publish_status_stream(draft_id: str, _: str = Depends(_resolve_init_data)):
+async def publish_status_stream(draft_id: str, _: str = Depends(_resolve_sse_auth)):
     """Server-Sent Events stream that pushes publish status updates."""
 
     async def _event_generator():

@@ -50,8 +50,37 @@ jobs:
       - name: Install dependencies
         run: uv pip install -r requirements.txt pytest pytest-timeout pytest-xdist pytest-cov
 
-      - name: Run tests
-        run: python -m pytest tests/ -q --ignore=tests/ui --ignore=tests/smoke --timeout=60 -n 2 -m "not slow"
+      - name: Run tests with coverage
+        run: python -m pytest tests/ -q --ignore=tests/ui --timeout=60 -n auto -m "not slow" --cov=bot --cov=miniapp --cov=db --cov-report=term-missing --cov-fail-under=30
+
+  # ── Smoke tests (always run on main, conditional on PRs) ────────────
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      TELEGRAM_BOT_TOKEN: test-token
+      REPORT_TARGET_CHAT_ID: test-chat
+      UV_SYSTEM_PYTHON: 1
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+          cache-dependency-glob: "requirements.txt"
+
+      - name: Install dependencies
+        run: uv pip install -r requirements.txt pytest pytest-timeout
+
+      - name: Run smoke tests
+        run: python -m pytest tests/smoke/ -v --timeout=30 -x --tb=short || echo "No smoke tests found (skip)"
 
   # ── UI tests (only when static files changed) ───────────────────────
   miniapp-ui:

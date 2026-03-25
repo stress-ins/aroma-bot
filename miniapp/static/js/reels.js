@@ -1,3 +1,5 @@
+import { sseQueryString } from "./sse-auth.js";
+
 export function createReelsModule(deps) {
   const {
     state,
@@ -1536,11 +1538,6 @@ export function createReelsModule(deps) {
   let _cleanPollTimer = null;
   let _cleanEventSource = null;
 
-  function _cleanAuthQs() {
-    const d = window.Telegram?.WebApp?.initData;
-    return d ? `?init_data=${encodeURIComponent(d)}` : "";
-  }
-
   const CLEAN_STEP_LABELS = {
     preparing: "Подготовка файла…",
     analyzing: "Анализ аудиодорожки…",
@@ -1674,11 +1671,12 @@ export function createReelsModule(deps) {
     else showUiNotice("Очистка не удалась", "error");
   }
 
-  function _startCleanPoll(draftId) {
+  async function _startCleanPoll(draftId) {
     if (_cleanPollTimer) { clearInterval(_cleanPollTimer); _cleanPollTimer = null; }
     if (_cleanEventSource) { _cleanEventSource.close(); _cleanEventSource = null; }
     if (typeof EventSource !== "undefined") {
-      const es = new EventSource(`/api/reels/${draftId}/clean-video-stream${_cleanAuthQs()}`);
+      const qs = await sseQueryString();
+      const es = new EventSource(`/api/reels/${draftId}/clean-video-stream${qs}`);
       _cleanEventSource = es;
       es.onmessage = async (event) => {
         try {

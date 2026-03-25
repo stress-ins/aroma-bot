@@ -118,9 +118,21 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="miniapp-static")
 
 
 @app.middleware("http")
-async def _no_cache_js_modules(request, call_next):
-    """Force revalidation of ES module files that lack their own version hash."""
+async def _security_headers(request, call_next):
+    """Add security headers + force revalidation of JS/CSS modules."""
     response = await call_next(request)
+    # Security headers (supplement nginx — defence in depth)
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+    response.headers.setdefault(
+        "Content-Security-Policy",
+        "default-src 'self'; script-src 'self' https://telegram.org 'unsafe-inline'; "
+        "style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; "
+        "connect-src 'self'; frame-ancestors 'none';",
+    )
+    # Cache control for JS/CSS modules
     path = request.url.path
     if path.startswith("/static/") and (path.endswith(".js") or path.endswith(".css")):
         response.headers["Cache-Control"] = "no-cache"

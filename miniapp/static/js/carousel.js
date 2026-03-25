@@ -1,3 +1,5 @@
+import { sseQueryString } from "./sse-auth.js";
+
 export function createCarouselModule(deps) {
   const {
     state,
@@ -12,7 +14,6 @@ export function createCarouselModule(deps) {
     showRequestError,
     showUiNotice,
     confirmAction,
-    authQueryString,
     isCurrentDraftDetail,
     isPromptDisclosureOpen,
     mergeDraftIntoState,
@@ -482,7 +483,8 @@ export function createCarouselModule(deps) {
     }
     try {
       await withButtonFeedback(button, "Генерирую...", async () => {
-        const previewUrl = `/api/carousel/${draftId}/slides/${slideIndex}/preview${authQueryString()}`;
+        const qs = await sseQueryString();
+        const previewUrl = `/api/carousel/${draftId}/slides/${slideIndex}/preview${qs}`;
         const resp = await fetch(previewUrl, {
           headers: deps.initDataHeaders ? deps.initDataHeaders() : {},
         });
@@ -529,7 +531,8 @@ export function createCarouselModule(deps) {
   }
 
   async function downloadCarouselPptx(draftId, button) {
-    const downloadUrl = `${window.location.origin}/api/carousel/${draftId}/pptx${authQueryString()}`;
+    const qs = await sseQueryString();
+    const downloadUrl = `${window.location.origin}/api/carousel/${draftId}/pptx${qs}`;
     if (button instanceof HTMLElement) {
       button.classList.add("did-complete");
       window.setTimeout(() => button.classList.remove("did-complete"), 900);
@@ -645,16 +648,12 @@ export function createCarouselModule(deps) {
     }
   }
 
-  function _canvaAuthQs() {
-    const d = window.Telegram?.WebApp?.initData;
-    return d ? `?init_data=${encodeURIComponent(d)}` : "";
-  }
-
-  function _startCanvaTaskPoll(draftId, taskType) {
+  async function _startCanvaTaskPoll(draftId, taskType) {
     _stopCanvaPoll();
 
     if (typeof EventSource !== "undefined") {
-      const es = new EventSource(`/api/carousel/${draftId}/canva/stream${_canvaAuthQs()}`);
+      const qs = await sseQueryString();
+      const es = new EventSource(`/api/carousel/${draftId}/canva/stream${qs}`);
       _canvaEventSource = es;
       es.onmessage = (event) => {
         const st = JSON.parse(event.data);

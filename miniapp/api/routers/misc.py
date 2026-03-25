@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sqlalchemy import select, delete
@@ -21,9 +21,19 @@ from bot.services.policy_engine import (
 from db.models import TodoModel
 from db.session import AsyncSessionLocal
 from bot.services.brand_settings_store import get_brand_settings, update_brand_settings
-from ..auth import _require_auth
+from ..auth import _require_auth, issue_sse_token
 
 router = APIRouter()
+
+
+@router.post("/api/auth/sse-token")
+async def create_sse_token(
+    x_telegram_init_data: str | None = Header(default=None),
+    _: None = Depends(_require_auth),
+):
+    """Exchange valid Telegram initData (header) for a short-lived opaque SSE token."""
+    token = issue_sse_token(x_telegram_init_data or "")
+    return {"token": token}
 
 
 class ForbiddenPhrasePayload(BaseModel):
