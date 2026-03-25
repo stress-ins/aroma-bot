@@ -1065,7 +1065,7 @@ export function createReelsModule(deps) {
           <button class="primary-button" type="button" data-action="startMontage" data-args='${JSON.stringify([r.draft_id, null])}' style="margin-top:10px">
             ${actionLabel("sparkle", "Запустить автомонтаж")}
           </button>
-          <div id="montageStatusContainer"></div>
+          <div id="montageStatusContainer">${_renderMontageResult(r)}</div>
         </section>
 
         <section class="section">
@@ -2113,6 +2113,43 @@ export function createReelsModule(deps) {
   }
 
   // ── Auto-montage ────────────────────────────────────────────────────
+
+  function _renderMontageResult(r) {
+    const p = r.payload || {};
+    const montagePath = p.montage_video_path;
+    if (!montagePath) return "";
+
+    const features = p.montage_features || [];
+    const duration = p.montage_duration ? Math.round(p.montage_duration) : 0;
+    const videoUrl = `/generated/reels_video/${r.draft_id}/${montagePath}`;
+
+    const FEATURE_LABELS = {
+      color_grade: "Цветокоррекция",
+      subtitles_from_video: "Субтитры из видео",
+      subtitles_from_script: "Субтитры из сценария",
+      music: "Фоновая музыка",
+      broll: "B-roll вставки",
+      beat_sync: "Подгонка под ритм",
+    };
+
+    const featureChips = features.map(f =>
+      `<span class="meta-chip meta-chip--muted">${FEATURE_LABELS[f] || f}</span>`
+    ).join(" ");
+
+    return `
+      <div class="grade-analysis-result" style="margin-top:10px">
+        <div class="grade-analysis-header">${uiIcon("check")} Монтаж готов</div>
+        <video src="${videoUrl}" controls playsinline preload="metadata"
+          style="width:100%;max-height:300px;border-radius:8px;background:#000;margin:8px 0"></video>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">${featureChips}</div>
+        ${duration ? `<div style="font-size:12px;color:var(--hint);margin-top:4px">Длительность: ${duration} сек</div>` : ""}
+        <div style="margin-top:8px">
+          <a href="${videoUrl}" download class="secondary-button compact" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px">
+            ${uiIcon("download")} Скачать
+          </a>
+        </div>
+      </div>`;
+  }
 
   async function startMontage(draftId, btn) {
     const template = document.getElementById("montageTemplate")?.value || "expert";
