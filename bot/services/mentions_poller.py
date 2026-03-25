@@ -25,27 +25,50 @@ logger = logging.getLogger(__name__)
 
 
 async def poll_threads_mentions(access_token: str, team_id: str | None = None) -> tuple[int, int]:
-    """Poll Threads API, deduplicate, save new mentions. Returns (polled, saved)."""
+    """Poll Threads API for external mentions only. Returns (polled, saved).
+
+    Own posts are NOT ingested as mentions — they belong in social trends.
+    Only external mentions (others mentioning us) and replies from other
+    users are saved.
+    """
     loop = asyncio.get_event_loop()
     client = ThreadsClient(access_token=access_token)
 
+    # Determine own username to filter out own posts
+    own_usernames: set[str] = set()
+    if settings.threads_username:
+        own_usernames.add(settings.threads_username.lower().lstrip("@"))
+    # Also check team brand settings for monitored accounts
+    if team_id:
+        try:
+            from bot.services.brand_settings_store import get_brand_settings
+            brand = await get_brand_settings(team_id)
+            for acc in (brand.threads_accounts or []):
+                uname = (acc.get("username") or "").lower().lstrip("@")
+                if uname:
+                    own_usernames.add(uname)
+        except Exception:
+            pass
+
+    # Only fetch external mentions (not own posts)
     raw_items: list[dict] = []
     try:
         items = await loop.run_in_executor(None, client.get_mentions)
         raw_items.extend(items)
     except Exception:
         logger.warning("mentions_poller: get_mentions failed", exc_info=True)
-    try:
-        items = await loop.run_in_executor(None, client.get_threads)
-        raw_items.extend(items)
-    except Exception:
-        logger.warning("mentions_poller: get_threads failed", exc_info=True)
 
     saved = 0
     for item in raw_items:
         ext_id = item.get("id", "")
         if not ext_id:
             continue
+
+        # Skip own posts
+        author = (item.get("username") or "").lower().lstrip("@")
+        if author and author in own_usernames:
+            continue
+
         existing = await find_mention_by_external_id("threads", ext_id)
         if existing:
             continue
@@ -62,12 +85,16 @@ async def poll_threads_mentions(access_token: str, team_id: str | None = None) -
         )
         saved += 1
 
-        # Also ingest replies for this thread
+        # Also ingest replies from OTHER users for this thread
         try:
             replies = await loop.run_in_executor(None, client.get_replies, ext_id)
             for r in replies:
                 r_id = r.get("id", "")
                 if not r_id:
+                    continue
+                # Skip own replies
+                reply_author = (r.get("username") or "").lower().lstrip("@")
+                if reply_author and reply_author in own_usernames:
                     continue
                 if await find_mention_by_external_id("threads", r_id):
                     continue
