@@ -83,22 +83,39 @@ async def run_montage(
 
         # ── Step 2: Generate subtitles ──
         srt_path = ""
-        if config.subtitles_enabled and (script_text or transcript_words):
+        if config.subtitles_enabled:
             if progress_callback:
                 await progress_callback("subtitles", 25)
 
-            from bot.services.video_montage.subtitles import generate_srt_from_intervals, save_srt
+            source = config.subtitle_source or "auto"
 
-            srt_content = generate_srt_from_intervals(
-                config.keep_intervals,
-                transcript_words=transcript_words,
-                script_text=script_text,
-            )
-            if srt_content:
-                srt_path = str(tmp_dir / "subtitles.srt")
-                save_srt(srt_content, srt_path)
-                features_applied.append("subtitles")
-                logger.info("Subtitles generated: %s", srt_path)
+            # Option: transcribe from video audio
+            if source in ("video", "auto"):
+                from bot.services.video_montage.subtitles import transcribe_video_to_srt
+                if progress_callback:
+                    await progress_callback("transcribing", 28)
+                srt_path = await transcribe_video_to_srt(
+                    current_video,
+                    str(tmp_dir / "subtitles.srt"),
+                )
+                if srt_path:
+                    features_applied.append("subtitles_from_video")
+                    logger.info("Subtitles from video transcription: %s", srt_path)
+
+            # Fallback or explicit script source
+            if not srt_path and (source in ("script", "auto")) and (script_text or transcript_words):
+                from bot.services.video_montage.subtitles import generate_srt_from_intervals, save_srt
+
+                srt_content = generate_srt_from_intervals(
+                    config.keep_intervals,
+                    transcript_words=transcript_words,
+                    script_text=script_text,
+                )
+                if srt_content:
+                    srt_path = str(tmp_dir / "subtitles.srt")
+                    save_srt(srt_content, srt_path)
+                    features_applied.append("subtitles_from_script")
+                    logger.info("Subtitles from script: %s", srt_path)
 
         # ── Step 3: Music + beat detection ──
         music_inputs: list[str] = []

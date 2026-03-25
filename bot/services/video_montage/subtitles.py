@@ -1,8 +1,12 @@
-"""Generate SRT subtitles from reels script/transcript."""
+"""Generate SRT subtitles from reels script/transcript or video audio."""
 from __future__ import annotations
 
+import asyncio
+import json
 import logging
 import re
+import subprocess
+import sys
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -128,3 +132,87 @@ def build_subtitle_filter(
 
     force_style = ",".join(style_parts)
     return f"subtitles='{safe_path}':force_style='{force_style}'"
+
+
+async def transcribe_video_to_srt(
+    video_path: str,
+    output_srt: str,
+    *,
+    model: str = "tiny",
+    language: str = "ru",
+) -> str:
+    """Transcribe video audio with Whisper (subprocess) and generate SRT.
+
+    Runs Whisper as a separate process to avoid OOM in the main server.
+    Returns path to the generated SRT file, or "" on failure.
+    """
+    if not Path(video_path).exists():
+        logger.warning("transcribe: video not found: %s", video_path)
+        return ""
+
+    # Extract audio to temp wav first (Whisper works better with wav)
+    audio_path = str(Path(output_srt).with_suffix(".wav"))
+    extract_cmd = [
+        "ffmpeg", "-y", "-i", video_path,
+        "-vn", "-acodec", "pcm_s16le", "-ar", "16000", "-ac", "1",
+        audio_path,
+    ]
+    proc = await asyncio.create_subprocess_exec(
+        *extract_cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
+    )
+    await proc.communicate()
+    if proc.returncode != 0 or not Path(audio_path).exists():
+        logger.error("transcribe: audio extraction failed (rc=%d)", proc.returncode)
+        return ""
+
+    # Run Whisper via subprocess (isolates memory)
+    whisper_script = f"""
+import whisper, json, sys
+model = whisper.load_model("{model}")
+result = model.transcribe("{audio_path}", language="{language}", word_timestamps=True)
+segments = []
+for seg in result.get("segments", []):
+    segments.append({{"start": seg["start"], "end": seg["end"], "text": seg["text"].strip()}})
+json.dump(segments, sys.stdout, ensure_ascii=False)
+"""
+    whisper_cmd = [sys.executable, "-c", whisper_script]
+    logger.info("transcribe: running Whisper %s on %s", model, video_path)
+
+    proc = await asyncio.create_subprocess_exec(
+        *whisper_cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
+    )
+    stdout, stderr = await proc.communicate()
+
+    # Clean up audio
+    try:
+        Path(audio_path).unlink(missing_ok=True)
+    except Exception:
+        pass
+
+    if proc.returncode != 0:
+        logger.error("transcribe: Whisper failed (rc=%d): %s", proc.returncode, stderr.decode("utf-8", errors="replace")[-300:])
+        return ""
+
+    try:
+        segments = json.loads(stdout.decode("utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        logger.error("transcribe: could not parse Whisper output")
+        return ""
+
+    if not segments:
+        logger.warning("transcribe: no segments found")
+        return ""
+
+    # Build SRT
+    srt_lines: list[str] = []
+    for i, seg in enumerate(segments, 1):
+        start = _format_srt_time(seg["start"])
+        end = _format_srt_time(seg["end"])
+        text = seg["text"].strip()
+        if text:
+            srt_lines.append(f"{i}\n{start} --> {end}\n{text}\n")
+
+    srt_content = "\n".join(srt_lines)
+    Path(output_srt).write_text(srt_content, encoding="utf-8")
+    logger.info("transcribe: generated %d subtitle segments", len(srt_lines))
+    return output_srt

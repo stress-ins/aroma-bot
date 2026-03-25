@@ -1039,7 +1039,14 @@ export function createReelsModule(deps) {
                 <input type="checkbox" id="montageTransitions" checked /> Переходы между фрагментами
               </label>
               <label style="display:flex;align-items:center;gap:8px;font-size:13px">
-                <input type="checkbox" id="montageSubtitles" checked /> Субтитры из сценария
+                <input type="checkbox" id="montageSubtitles" checked /> Субтитры
+              </label>
+              <label class="reels-field-label" style="padding-left:28px;margin-top:-4px">
+                <select id="montageSubtitleSource" class="reels-select" style="font-size:12px;padding:6px 8px">
+                  <option value="auto">Авто (из видео → если нет, из сценария)</option>
+                  <option value="video">Из видео (распознавание речи)</option>
+                  <option value="script">Из сценария рилса</option>
+                </select>
               </label>
               <label style="display:flex;align-items:center;gap:8px;font-size:13px">
                 <input type="checkbox" id="montageMusic" /> Фоновая музыка
@@ -2115,6 +2122,7 @@ export function createReelsModule(deps) {
     if (isCustom) {
       config.transitions_enabled = document.getElementById("montageTransitions")?.checked ?? true;
       config.subtitles_enabled = document.getElementById("montageSubtitles")?.checked ?? true;
+      config.subtitle_source = document.getElementById("montageSubtitleSource")?.value || "auto";
       config.music_enabled = document.getElementById("montageMusic")?.checked ?? false;
       config.broll_enabled = document.getElementById("montageBroll")?.checked ?? false;
       config.beat_sync_enabled = document.getElementById("montageBeatSync")?.checked ?? false;

@@ -30,6 +30,10 @@ class MontageConfig:
     transition_duration: float = 0.3
 
     subtitles_enabled: bool = True
+    subtitle_source: str = "auto"  # auto | script | video
+    #   auto   — use video transcription if available, else script
+    #   script — only from reels script/storyboard
+    #   video  — always transcribe video audio with Whisper
     subtitle_style: str = "bottom_bar"  # bottom_bar | centered | karaoke | minimal
     subtitle_font_size: int = 28
     subtitle_color: str = "white"
