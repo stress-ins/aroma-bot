@@ -24,6 +24,8 @@ def patch_env(monkeypatch):
 @pytest.fixture()
 async def client(tmp_path, monkeypatch):
     db_path = tmp_path / "test.db"
+    # Import all model modules so Base.metadata knows every table
+    import db.models  # noqa: F401
     from db.models import Base
     from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
@@ -36,6 +38,10 @@ async def client(tmp_path, monkeypatch):
     test_engine = create_async_engine(f"sqlite+aiosqlite:///{db_path}", echo=False)
     test_factory = async_sessionmaker(test_engine, expire_on_commit=False)
     monkeypatch.setattr(sess, "AsyncSessionLocal", test_factory)
+
+    # Patch brand_settings preload to avoid lifespan DB issues
+    from bot.services import brand_settings_store
+    monkeypatch.setattr(brand_settings_store, "preload_brand_settings", lambda: None)
 
     from miniapp_server import app
     transport = ASGITransport(app=app)
