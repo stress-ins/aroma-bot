@@ -18,8 +18,7 @@ export default defineConfig({
         assetFileNames: "assets/[name]-[hash][extname]",
       },
     },
-    // Bundle all CSS into a single file
-    cssCodeSplit: false,
+    // CSS is included as a separate entry in rollupOptions.input
   },
   // Dev server proxies API calls to FastAPI
   server: {
