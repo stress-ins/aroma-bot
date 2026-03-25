@@ -52,6 +52,7 @@ from .common import (
 # --- entity-specific enrichment ------------------------------------------------
 from .aroma import _enrich_aroma_cross_refs
 from .blend import _enrich_blend_cross_refs
+from .crystal import _enrich_crystal_cross_refs
 from .symptom import _enrich_symptom_cross_refs
 
 __all__ = [
@@ -102,5 +103,6 @@ __all__ = [
     # entity-specific enrichment
     "_enrich_aroma_cross_refs",
     "_enrich_blend_cross_refs",
+    "_enrich_crystal_cross_refs",
     "_enrich_symptom_cross_refs",
 ]

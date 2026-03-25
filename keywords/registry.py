@@ -49,6 +49,40 @@ TOPICS: list[Topic] = [
         hashtags_en=["#gongbath", "#gongmeditation", "#gonghealing", "#gongsound"],
     ),
     Topic(
+        name="Кристаллотерапия",
+        keywords_ru=[
+            "кристаллотерапия", "литотерапия", "камни для здоровья", "целительные камни",
+            "розовый кварц", "аметист", "горный хрусталь", "турмалин",
+        ],
+        keywords_en=[
+            "crystal therapy", "crystal healing", "lithotherapy", "healing stones",
+            "rose quartz", "amethyst", "clear quartz", "tourmaline",
+        ],
+        hashtags_ru=[
+            "#кристаллотерапия", "#литотерапия", "#целительныекамни", "#розовыйкварц",
+        ],
+        hashtags_en=[
+            "#crystalhealing", "#healingcrystals", "#lithotherapy", "#crystaltherapy",
+        ],
+    ),
+    Topic(
+        name="Звукотерапия",
+        keywords_ru=[
+            "звукотерапия", "звуковые ванны", "поющие чаши", "гонг-баня",
+            "тибетские чаши", "камертон терапия", "бинауральные ритмы",
+        ],
+        keywords_en=[
+            "sound healing", "sound bath", "singing bowls", "gong bath",
+            "tibetan bowls", "tuning fork therapy", "binaural beats",
+        ],
+        hashtags_ru=[
+            "#звукотерапия", "#звуковыеванны", "#поющиечаши", "#гонгбаня",
+        ],
+        hashtags_en=[
+            "#soundhealing", "#soundbath", "#singingbowls", "#binauralbeats",
+        ],
+    ),
+    Topic(
         name="Конкретные масла",
         keywords_ru=[
             "лаванда масло", "бергамот масло", "розмарин масло", "эвкалипт масло",
@@ -87,7 +121,7 @@ GOOGLE_TRENDS_KEYWORDS_EN: list[str] = [
     "sound bath",
     "essential oils",
     "sound healing",
-    "mindfulness",
+    "crystal healing",
 ]
 
 # Google Trends — RU (смежные темы: медитация как широкий контекст)
@@ -105,6 +139,7 @@ REDDIT_SUBREDDITS: list[str] = [
     "Meditation",
     "essentialoils",
     "soundbath",
+    "Crystals",
 ]
 
 # Snapshot of original TOPICS data (before any custom overrides)
