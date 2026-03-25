@@ -40,9 +40,11 @@ def test_handbook_cards_open_in_all_sections(page):
 
     for tab_label, card_name in sections:
         page.get_by_role("tab", name=tab_label).click()
-        page.wait_for_timeout(100)
+        # Wait for cards to load (API fetch + render)
+        page.locator(".reference-card").first.wait_for(state="visible", timeout=5000)
 
         card = page.locator(".reference-card").filter(has_text=card_name).first
+        card.wait_for(state="visible", timeout=3000)
         assert card.is_visible(), f"Card '{card_name}' not found in '{tab_label}' tab"
         card.click()
         page.wait_for_function(
