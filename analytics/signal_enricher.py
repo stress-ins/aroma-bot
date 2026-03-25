@@ -90,7 +90,20 @@ async def calculate_velocity(keyword: str) -> float:
     if score_now is None:
         return 0.0
     if score_7d is None or score_7d == 0:
-        return 0.0
+        # Fallback: use the oldest available signal as baseline
+        async with AsyncSessionLocal() as session:
+            oldest_q = (
+                select(TrendSignal.score_raw)
+                .where(
+                    TrendSignal.keyword == keyword,
+                    TrendSignal.collected_at < now - timedelta(hours=1),
+                )
+                .order_by(TrendSignal.collected_at.asc())
+                .limit(1)
+            )
+            score_7d = (await session.execute(oldest_q)).scalar_one_or_none()
+        if score_7d is None or score_7d == 0:
+            return 0.0
 
     return (score_now - score_7d) / max(score_7d, 1.0)
 
