@@ -120,7 +120,12 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="miniapp-static")
 @app.middleware("http")
 async def _no_cache_js_modules(request, call_next):
     """Force revalidation of ES module files that lack their own version hash."""
+    import sys as _sys
+    if "schedule-series" in request.url.path:
+        print(f"[MW] {request.method} {request.url.path} headers={dict(request.headers)}", file=_sys.stderr, flush=True)
     response = await call_next(request)
+    if "schedule-series" in request.url.path:
+        print(f"[MW] response status={response.status_code}", file=_sys.stderr, flush=True)
     path = request.url.path
     if path.startswith("/static/") and (path.endswith(".js") or path.endswith(".css")):
         response.headers["Cache-Control"] = "no-cache"
