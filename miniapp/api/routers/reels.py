@@ -1025,6 +1025,145 @@ async def grade_analyze(
     }
 
 
+@router.post("/api/reels/{draft_id}/grade-analyze-all")
+async def grade_analyze_all(
+    draft_id: str,
+    _: None = Depends(_require_auth),
+):
+    """Analyze video and return recommendations + preview thumbnails for ALL styles."""
+    import subprocess
+    from bot.services.reels_video import VIDEO_DIR
+
+    draft = await serialize_reels_draft(draft_id)
+    if not draft:
+        raise HTTPException(status_code=404, detail="reels_not_found")
+
+    p = draft.get("payload", {}) if isinstance(draft, dict) else {}
+    video_filename = p.get("cleaned_video_path") or p.get("video_filename") or ""
+    if not video_filename:
+        raise HTTPException(status_code=400, detail="no_video")
+
+    video_path = VIDEO_DIR / draft_id / video_filename
+    if not video_path.exists():
+        raise HTTPException(status_code=400, detail="video_file_missing")
+
+    # Get duration
+    probe = subprocess.run(
+        ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+         "-of", "default=noprint_wrappers=1:nokey=1", str(video_path)],
+        capture_output=True, text=True, timeout=15,
+    )
+    duration = float(probe.stdout.strip()) if probe.returncode == 0 else 10.0
+    mid_ts = duration * 0.5
+
+    # Measure brightness from 3 frames
+    stats = []
+    for pct in (0.2, 0.5, 0.8):
+        ts = duration * pct
+        bright_result = subprocess.run(
+            ["ffmpeg", "-ss", str(ts), "-i", str(video_path),
+             "-vframes", "1", "-vf", "scale=64:64,format=gray",
+             "-f", "rawvideo", "-pix_fmt", "gray", "pipe:1"],
+            capture_output=True, timeout=15,
+        )
+        avg_brightness = 128.0
+        if bright_result.returncode == 0 and bright_result.stdout:
+            pixels = bright_result.stdout
+            avg_brightness = sum(pixels) / len(pixels) if pixels else 128.0
+        stats.append({"timestamp": round(ts, 1), "brightness": round(avg_brightness / 255.0, 3)})
+
+    avg_bright = sum(s["brightness"] for s in stats) / len(stats) if stats else 0.5
+
+    # Style presets
+    STYLE_PRESETS = {
+        "warm_natural": {
+            "brightness": round(max(-0.1, 0.55 - avg_bright) * 0.5, 2),
+            "contrast": 1.1,
+            "saturation": 1.15,
+            "gamma": 1.05 if avg_bright < 0.45 else 0.95,
+            "description": "Тёплый натуральный",
+            "subtitle": "мягкий свет, лёгкая насыщенность",
+        },
+        "luxury_dark": {
+            "brightness": round(max(-0.15, 0.40 - avg_bright) * 0.6, 2),
+            "contrast": 1.35,
+            "saturation": 0.85,
+            "gamma": 0.85,
+            "description": "Тёмный люкс",
+            "subtitle": "глубокие тени, приглушённые цвета",
+        },
+        "fresh_light": {
+            "brightness": round(max(0, 0.65 - avg_bright) * 0.5, 2),
+            "contrast": 0.95,
+            "saturation": 1.1,
+            "gamma": 1.15,
+            "description": "Свежий светлый",
+            "subtitle": "чистота, воздушность",
+        },
+        "moody_cinematic": {
+            "brightness": round(max(-0.12, 0.42 - avg_bright) * 0.5, 2),
+            "contrast": 1.4,
+            "saturation": 0.9,
+            "gamma": 0.8,
+            "description": "Кинематографичный",
+            "subtitle": "контраст, тёмные тона",
+        },
+    }
+
+    preview_dir = VIDEO_DIR / draft_id / "grade_preview"
+    preview_dir.mkdir(parents=True, exist_ok=True)
+
+    # Extract original frame once
+    orig_path = str(preview_dir / "original.jpg")
+    subprocess.run(
+        ["ffmpeg", "-ss", str(mid_ts), "-i", str(video_path),
+         "-vframes", "1", "-q:v", "2", "-y", orig_path],
+        capture_output=True, timeout=15,
+    )
+
+    # Generate preview for each style
+    profiles = []
+    for style_key, preset in STYLE_PRESETS.items():
+        eq_parts = []
+        if preset["brightness"] != 0.0:
+            eq_parts.append(f"brightness={preset['brightness']}")
+        if preset["contrast"] != 1.0:
+            eq_parts.append(f"contrast={preset['contrast']}")
+        if preset["saturation"] != 1.0:
+            eq_parts.append(f"saturation={preset['saturation']}")
+        if preset["gamma"] != 1.0:
+            eq_parts.append(f"gamma={preset['gamma']}")
+
+        vf = f"eq={':'.join(eq_parts)}" if eq_parts else ""
+        thumb_name = f"profile_{style_key}.jpg"
+        thumb_path = str(preview_dir / thumb_name)
+
+        cmd = ["ffmpeg", "-ss", str(mid_ts), "-i", str(video_path),
+               "-vframes", "1", "-q:v", "3", "-vf", f"scale=320:-1{(',' + vf) if vf else ''}",
+               "-y", thumb_path]
+        subprocess.run(cmd, capture_output=True, timeout=15)
+
+        profiles.append({
+            "style": style_key,
+            "name": preset["description"],
+            "subtitle": preset["subtitle"],
+            "recommendations": {
+                "brightness": preset["brightness"],
+                "contrast": preset["contrast"],
+                "saturation": preset["saturation"],
+                "gamma": preset["gamma"],
+            },
+            "preview_url": f"/generated/reels_video/{draft_id}/grade_preview/{thumb_name}",
+        })
+
+    return {
+        "profiles": profiles,
+        "original_url": f"/generated/reels_video/{draft_id}/grade_preview/original.jpg",
+        "measured_brightness": round(avg_bright, 3),
+        "frame_stats": stats,
+    }
+
+
 @router.post("/api/reels/{draft_id}/grade-apply")
 async def grade_apply(
     draft_id: str,
