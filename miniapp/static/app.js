@@ -24,6 +24,7 @@ import { createStockPhotosModule } from "./js/stock_photos.js";
 import { createTeamsModule } from "./js/teams.js";
 import { createTrendsModule } from "./js/trends.js";
 import { createAnalyticsModule } from "./js/analytics.js";
+import { createContentDashboardModule } from "./js/content_dashboard.js";
 
 const state = {
   mode: "content", // 'content' or 'handbook'
@@ -764,6 +765,12 @@ function uiIcon(name) {
     sparkles:   "sparkle",
     "map-pin":  "map-pin",
     "sliders-horizontal": "sliders-horizontal",
+    award:      "trophy",
+    trophy:     "trophy",
+    "trending-up": "trend-up",
+    clapperboard: "film-slate",
+    type:       "text-aa",
+    smartphone: "device-mobile",
   };
   return `<span class="ui-icon ui-icon-${escapeHtml(name)}">${icon(PHOSPHOR_MAP[name] || name, 16)}</span>`;
 }
@@ -1568,12 +1575,26 @@ const archiveModule = createArchiveModule({
 
 window.archiveModule = archiveModule;
 
+// ── Content Dashboard module ──────────────────────────────────────────────
+
+const contentDashboardModule = createContentDashboardModule({
+  state,
+  elements,
+  escapeHtml,
+  uiIcon,
+  fetchJson,
+  renderGuidedState,
+});
+
+window.contentDashboardModule = contentDashboardModule;
+
 function setPlansSubMode(mode) {
   state.plansSubMode = mode;
   if (mode === "mentions") state.selectedMention = null;
   if (mode === "publications") state.contentSubTab = "plans";
   else if (mode === "mentions") state.contentSubTab = "mentions";
   else if (mode === "archive") state.contentSubTab = "archive";
+  else if (mode === "dashboard") state.contentSubTab = "dashboard";
   renderPlans();
   renderContentSubTabs();
 }
@@ -2216,6 +2237,7 @@ const CONTENT_SUB_TABS = [
   { id: "mentions", label: "Упоминания" },
   { id: "publications", label: "Публикации" },
   { id: "archive", label: "Архив" },
+  { id: "dashboard", label: "Аналитика" },
 ];
 
 const _TABS_SHOWING_CONTENT_SUB = new Set(["plans"]);
@@ -2284,6 +2306,10 @@ function switchContentSubTab(subTab) {
     state.plansSubMode = "archive";
     setTab("plans");
     void safeLoadCurrentTab("Не удалось загрузить архив");
+  } else if (subTab === "dashboard") {
+    state.plansSubMode = "dashboard";
+    setTab("plans");
+    void safeLoadCurrentTab("Не удалось загрузить аналитику");
   }
 }
 

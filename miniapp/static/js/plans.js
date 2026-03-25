@@ -505,6 +505,13 @@ export function createPlansModule(deps) {
   function renderPlans() {
     const subMode = state.plansSubMode || "publications";
 
+    if (subMode === "dashboard") {
+      if (window.contentDashboardModule) {
+        window.contentDashboardModule.loadDashboard();
+      }
+      return;
+    }
+
     if (subMode === "archive") {
       if (window.archiveModule) {
         window.archiveModule.loadArchive();
