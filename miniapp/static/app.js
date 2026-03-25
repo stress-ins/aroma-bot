@@ -21,6 +21,7 @@ import { createShellModule } from "./js/shell.js";
 import { createStockPhotosModule } from "./js/stock_photos.js";
 import { createTeamsModule } from "./js/teams.js";
 import { createTrendsModule } from "./js/trends.js";
+import { createAnalyticsModule } from "./js/analytics.js";
 
 const state = {
   mode: "content", // 'content' or 'handbook'
@@ -1328,6 +1329,8 @@ function getInitDataHeaders() {
   return headers;
 }
 
+const analytics = createAnalyticsModule({ getInitDataHeaders });
+
 const {
   interactiveCardAttrs,
   renderDetailLoader,
@@ -2142,6 +2145,7 @@ function setMode(m) {
   clearBackgroundRefreshes();
   state.mode = m;
   document.body.dataset.mode = m;
+  analytics.trackPageView(m, state.tab);
   elements.modeContent.classList.toggle("active", m === "content");
   elements.modeHandbook.classList.toggle("active", m === "handbook");
   elements.settingsButton?.classList.toggle("active", m === "content" && state.tab === "settings");
@@ -2283,6 +2287,7 @@ function setTab(t) {
   clearBackgroundRefreshes();
   state.tab = t;
   document.body.dataset.tab = t;
+  analytics.trackPageView(state.mode, t);
   const titleOverride = _TABS_SHOWING_INSPIRATION_SUB.has(t) ? "Вдохновение" : (_TABS_SHOWING_CONTENT_SUB.has(t) ? "Контент" : null);
   if (elements.topbarTitle) elements.topbarTitle.textContent = titleOverride || (SECTION_TITLES[t] ?? t);
   state.mobileView = "list";
@@ -2559,6 +2564,40 @@ registerWindowBridge({
 
 reelsCallbacks.renderReels = () => { renderReels(); renderDraftList(); };
 reelsCallbacks.renderReelsDetail = renderReelsDetail;
+
+// ── Analytics tracking wrappers for key user actions ──
+{
+  const _origOpenDraft = window.openDraft;
+  window.openDraft = (...args) => {
+    analytics.track("draft_open", "content", { draft_id: args[0] });
+    return _origOpenDraft(...args);
+  };
+  const _origOpenReference = window.openReference;
+  window.openReference = (...args) => {
+    analytics.track("card_view", "reference", { slug: args[0], category: args[1] });
+    return _origOpenReference(...args);
+  };
+  const _origPublishDraft = window.publishDraft;
+  window.publishDraft = (...args) => {
+    analytics.track("publish", "content", { draft_id: args[0] });
+    return _origPublishDraft(...args);
+  };
+  const _origRunSmartSearch = window.runSmartSearch;
+  window.runSmartSearch = (...args) => {
+    analytics.track("search", "navigation", { query: state.referenceSearch });
+    return _origRunSmartSearch(...args);
+  };
+  const _origSubmitBlendConstructor = window.submitBlendConstructor;
+  window.submitBlendConstructor = (...args) => {
+    analytics.track("blend_action", "reference", { action: "submit" });
+    return _origSubmitBlendConstructor(...args);
+  };
+  const _origRenderCreateTool = window.renderCreateTool;
+  window.renderCreateTool = (...args) => {
+    analytics.track("draft_create", "content", { kind: args[0] });
+    return _origRenderCreateTool(...args);
+  };
+}
 
 // Auto-resize for textareas is handled by shell.js bindTextareaAutoExpand()
 function refreshIcons() { /* Phosphor icons are CSS-based, no initialization needed */ }

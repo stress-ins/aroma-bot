@@ -30,6 +30,7 @@ from db.models.analytics import (
     CollectorHealth,
     LlmCacheModel,
     UsageLog,
+    AnalyticsEvent,
 )
 
 from db.models.media import VideoTaskModel, KieTaskModel

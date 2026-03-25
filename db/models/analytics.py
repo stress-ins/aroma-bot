@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from typing import Any
 
-from sqlalchemy import BigInteger, DateTime, Float, ForeignKey, Integer, String, Text, JSON, UniqueConstraint
+from sqlalchemy import BigInteger, DateTime, Float, ForeignKey, Index, Integer, String, Text, JSON, UniqueConstraint
 from sqlalchemy.ext.mutable import MutableDict, MutableList
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -128,3 +128,25 @@ class UsageLog(Base):
     cards_created: Mapped[int] = mapped_column(Integer, default=0)
 
     __table_args__ = (UniqueConstraint("telegram_id", "date"),)
+
+
+class AnalyticsEvent(Base):
+    __tablename__ = "analytics_events"
+    __table_args__ = (
+        Index("ix_analytics_team_event_created", "team_id", "event_name", "created_at"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    team_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("teams.team_id"), nullable=True, index=True,
+    )
+    telegram_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    event_name: Mapped[str] = mapped_column(String(64), index=True)
+    event_category: Mapped[str] = mapped_column(String(32), default="")
+    event_data: Mapped[dict[str, Any]] = mapped_column(
+        MutableDict.as_mutable(JSON), default=dict,
+    )
+    session_id: Mapped[str] = mapped_column(String(36), default="", index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc), index=True,
+    )
