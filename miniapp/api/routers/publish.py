@@ -122,6 +122,8 @@ async def scheduled_posts(ctx: TeamContext = Depends(_resolve_team_context)):
 async def schedule_series(payload: ScheduleSeriesRequest, _: None = Depends(_require_auth)):
     from datetime import date as date_type
 
+    import sys
+    print(f"[SCHEDULE-SERIES] draft_id={payload.draft_id!r} date={payload.date!r} slots={payload.slots!r}", file=sys.stderr, flush=True)
     logger.warning("schedule-series: received draft_id=%r date=%r slots=%r", payload.draft_id, payload.date, payload.slots)
     draft = await get_draft(payload.draft_id)
     if not draft:
