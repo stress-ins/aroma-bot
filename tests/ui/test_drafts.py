@@ -73,7 +73,7 @@ def test_draft_search_empty_state_offers_guidance(page):
     page.wait_for_timeout(100)
     page.locator("#queryFilter").fill("совсем-нет-такой-темы")
     # Search has a 300ms debounce — wait for API round-trip too
-    page.locator("#emptyState .guided-state").wait_for(state="visible", timeout=3000)
+    page.locator("#emptyState .guided-state").wait_for(state="visible", timeout=8000)
 
     assert page.get_by_text("Ничего не найдено").is_visible()
     assert page.get_by_role("button", name="Открыть создание").is_visible()

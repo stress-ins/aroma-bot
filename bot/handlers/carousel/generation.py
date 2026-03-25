@@ -31,45 +31,76 @@ _DEFAULT_FORBIDDEN_VISUAL_MOTIFS = [
     "two cupped hands around one object",
 ]
 
-# Slide narrative roles — used for regen-slide context
-_SLIDE_VISUAL_ROLES = [
-    "hook — powerful first image that stops scrolling",
-    "problem — a relatable moment of stress, overload, or disconnection",
-    "mechanism — body process shown metaphorically, a transitional mood",
-    "insight — moment of clarity, first hint of the brand world",
-    "solution — the sensory practice, the remedy in action",
-    "call to action — warm human invitation",
+# Slide narrative roles — used for regen-slide context.
+# These are templates; actual count is determined by Content Factory.
+_ROLE_POOL = [
+    ("hook", "Hook", "hook — powerful first image that stops scrolling"),
+    ("problem", "Проблема", "problem — a relatable moment of stress, overload, or disconnection"),
+    ("mechanism", "Механизм", "mechanism — body process shown metaphorically, a transitional mood"),
+    ("insight", "Инсайт", "insight — moment of clarity, first hint of the brand world"),
+    ("solution", "Решение", "solution — the sensory practice, the remedy in action"),
+    ("cta", "CTA", "call to action — warm human invitation"),
 ]
 
-_SLIDE_LABELS = [
-    "Слайд 1 — Hook",
-    "Слайд 2 — Проблема",
-    "Слайд 3 — Механизм",
-    "Слайд 4 — Инсайт",
-    "Слайд 5 — Решение",
-    "Слайд 6 — CTA",
-]
+
+def get_slide_roles(total: int) -> list[str]:
+    """Return role keys for *total* slides. First is always hook, last is always cta."""
+    if total <= 0:
+        return []
+    if total == 1:
+        return ["hook"]
+    roles = ["hook"]
+    # Middle roles cycle through pool (skipping hook/cta)
+    middle_pool = [r[0] for r in _ROLE_POOL[1:-1]]
+    for i in range(total - 2):
+        roles.append(middle_pool[i % len(middle_pool)])
+    roles.append("cta")
+    return roles
+
+
+def get_slide_visual_role(index: int, total: int) -> str:
+    """Return visual role description for slide at index."""
+    roles = get_slide_roles(total)
+    if index < len(roles):
+        role_key = roles[index]
+        for key, _, desc in _ROLE_POOL:
+            if key == role_key:
+                return desc
+    return f"supporting slide {index + 1}"
+
+
+def get_slide_label(index: int, total: int) -> str:
+    """Return human-readable label for slide at index."""
+    roles = get_slide_roles(total)
+    if index < len(roles):
+        role_key = roles[index]
+        for key, label, _ in _ROLE_POOL:
+            if key == role_key:
+                return f"Слайд {index + 1} — {label}"
+    return f"Слайд {index + 1}"
 
 # ── Prompts ─────────────────────────────────────────────────────────────────
 _PROMPT_CAROUSEL = """\
 Ты — сценарист карусели для Instagram. Ниша: регуляция нервной системы через \
 сенсорные практики (ароматерапия, медитации, гонг).
-Создай черновик карусели из 5 слайдов по теме: {topic}
+Создай черновик карусели по теме: {topic}
+
+Определи оптимальное количество слайдов (от 4 до 10) исходя из глубины темы. \
+Не добавляй слайды ради количества — каждый должен нести новую мысль.
 
 Требования:
 - Описывай только реалистичные повседневные ситуации. Все детали одного слайда должны быть логически связаны и физически возможны
-- Слайд 1: цепляющий хук, до 60 символов
-- Слайды 2-4: один тезис + 1-2 предложения, до 120 символов на слайд
-- Слайд 5: призыв к действию, до 80 символов
+- Первый слайд: цепляющий хук, до 60 символов
+- Средние слайды: один тезис + 1-2 предложения, до 120 символов на слайд
+- Последний слайд: призыв к действию, до 80 символов
 - Живой язык, от первого лица, без клише и длинных тире
 - Базовый промпт для фото (английский, 15-25 слов): сцена, палитра из темы, освещение, композиция. Без параметров Midjourney.
 
 Формат — строго:
 SLIDE1: [текст]
 SLIDE2: [текст]
-SLIDE3: [текст]
-SLIDE4: [текст]
-SLIDE5: [текст]
+...
+SLIDE{N}: [текст]
 IMG_PROMPT: [промпт]
 """
 
@@ -129,7 +160,7 @@ def _claude_carousel_draft(topic: str, angle: str = "", hook: str = "") -> tuple
         max_tokens=900,
         context="carousel draft",
     )
-    slides = [_fix_dashes(s) for s in _parse_slides(text, count=5)]
+    slides = [_fix_dashes(s) for s in _parse_slides(text)]
     img_prompt = ""
     for line in text.splitlines():
         line = line.strip()
@@ -188,7 +219,7 @@ def _generate_slide_image_prompts_sync(slides: list[str], topic: str, blend_cont
         "- 'кайф от кабриолета' → bright sun, azure sky, warm golden light, vivid saturated colors\n"
         "- 'заземление через аромат' → earth tones, terracotta, sage, warm wood\n"
         "- 'зимний уют' → deep amber, warm burgundy, soft candlelight glow\n\n"
-        "Step 2: Determine each slide's narrative role (hook, problem, mechanism, insight, solution, CTA).\n\n"
+        "Step 2: Determine each slide's narrative role based on its position in the carousel.\n\n"
         "Step 3: Generate one image prompt per slide. Each must:\n"
         "- Be 30-50 words in English\n"
         "- Describe the scene, palette (from your Step 1 analysis), lighting, and composition\n"
@@ -252,7 +283,7 @@ def _generate_slide_image_prompts_sync(slides: list[str], topic: str, blend_cont
 
 
 def _generate_carousel_sync(topic: str, user_forbidden: list[str] | None = None, blend_context: dict | None = None, render_style: str = "overlay") -> tuple[list[str], list[str], str, str]:
-    """Draft -> editor -> 6 refined slides + per-slide image prompts.
+    """Draft -> editor -> refined slides + per-slide image prompts.
 
     Returns (slides, img_prompts, angle, hook).
     """
@@ -437,8 +468,9 @@ def _gemini_slide(prompt: str, key_index: int = 0) -> bytes | None:
 def _regen_slide_text_sync(topic: str, slides: list[str], idx: int) -> str:
     """Ask Claude to rewrite a single slide, aware of its role and neighbours."""
     from bot.services.claude_client import call_claude
-    role = _SLIDE_VISUAL_ROLES[idx] if idx < len(_SLIDE_VISUAL_ROLES) else "supporting slide"
-    label = _SLIDE_LABELS[idx] if idx < len(_SLIDE_LABELS) else f"Слайд {idx + 1}"
+    total = len(slides)
+    role = get_slide_visual_role(idx, total)
+    label = get_slide_label(idx, total)
     others = "\n".join(
         f"Слайд {i + 1}: {s}" for i, s in enumerate(slides) if i != idx
     )

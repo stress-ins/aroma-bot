@@ -21,9 +21,13 @@ def _nav_to_drafts(page):
 
 
 def _nav_to_plans(page):
-    """Navigate to plans via Контент bottom tab."""
+    """Navigate to plans via Контент bottom tab + Планы sub-tab."""
     page.locator("#btnTabContent").click()
     page.wait_for_timeout(300)
+    plans_tab = page.locator(".content-sub-tab", has_text="Планы")
+    if plans_tab.count() > 0:
+        plans_tab.click()
+        page.wait_for_timeout(200)
 
 
 def _nav_to_handbook(page):
@@ -57,6 +61,7 @@ def test_ipad_draft_detail(ipad_dark_page):
 def test_ipad_plan_detail(ipad_dark_page):
     page = ipad_dark_page
     _nav_to_plans(page)
+    page.locator(".plan-card").first.wait_for(state="visible", timeout=10000)
     page.locator(".plan-card").first.click()
     page.wait_for_timeout(100)
     prepare_visual_state(page)

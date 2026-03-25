@@ -41,7 +41,7 @@ async def _show_slide_for_edit(
     images: list[bytes | None],
 ) -> None:
     """Send a single slide (image + text) with edit action buttons."""
-    label = _gen._SLIDE_LABELS[idx] if idx < len(_gen._SLIDE_LABELS) else f"Слайд {idx + 1}"
+    label = _gen.get_slide_label(idx, len(slides))
     text = slides[idx]
     img = images[idx] if idx < len(images) else None
     caption = f"<b>{_html.escape(label)}</b>\n\n{_html.escape(text)}"
@@ -228,7 +228,7 @@ async def _run_image_generation(
     # Send all images in order
     for i, img in enumerate(images):
         if img:
-            label = _gen._SLIDE_LABELS[i] if i < len(_gen._SLIDE_LABELS) else f"Слайд {i + 1}"
+            label = _gen.get_slide_label(i, len(slides))
             caption = f"<b>{_html.escape(label)}</b>\n{_html.escape(slides[i])}"
             passed, reason = qa_results.get(i, (True, ""))
             if not passed and reason and reason.upper() != "OK":
@@ -302,7 +302,7 @@ async def _run_carousel(query_or_message, context: ContextTypes.DEFAULT_TYPE,
 
     lines = []
     for i, s in enumerate(slides):
-        label = _gen._SLIDE_LABELS[i] if i < len(_gen._SLIDE_LABELS) else f"Слайд {i + 1}"
+        label = _gen.get_slide_label(i, len(slides))
         lines.append(f"<b>{_html.escape(label)}</b>\n{_html.escape(s)}")
     slides_body = "\n\n".join(lines)
 
@@ -589,7 +589,7 @@ async def cb_carousel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         # ── Manual: wait for user text ────────────────────────────────────
         if action == "manual":
             context.user_data["ca_awaiting_slide_edit"] = idx
-            label = _gen._SLIDE_LABELS[idx] if idx < len(_gen._SLIDE_LABELS) else f"Слайд {idx + 1}"
+            label = _gen.get_slide_label(idx, len(slides))
             await query.message.reply_text(
                 f"✏️ Введи новый текст для <b>{_html.escape(label)}</b>:\n"
                 f"<i>Просто напиши следующим сообщением</i>",
@@ -626,7 +626,7 @@ async def cb_carousel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
                 await query.message.reply_text("❌ Промт для картинки не найден.")
                 return
             context.user_data["ca_awaiting_img_note"] = {"idx": idx, "skip_existing": False}
-            label = _gen._SLIDE_LABELS[idx] if idx < len(_gen._SLIDE_LABELS) else f"Слайд {idx + 1}"
+            label = _gen.get_slide_label(idx, len(slides))
             await query.message.reply_text(
                 f"✏️ Замечание для картинки <b>{_html.escape(label)}</b>:\n"
                 "<i>Что изменить, добавить или убрать?</i>\n"
@@ -680,7 +680,7 @@ async def cb_carousel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             f"⏳ Скачиваю {len(image_ids)} картинок и собираю PPTX..."
         )
         images: list[bytes | None] = []
-        for file_id in image_ids[:len(_gen._SLIDE_LABELS)]:
+        for file_id in image_ids[:len(slides)]:
             try:
                 tg_file = await context.bot.get_file(file_id)
                 buf = await tg_file.download_as_bytearray()
@@ -816,7 +816,8 @@ async def msg_carousel_photo(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
     photo = update.message.photo[-1]
     ids: list[str] = context.user_data.setdefault("ca_user_image_ids", [])
-    max_slides = len(_gen._SLIDE_LABELS)
+    slides = context.user_data.get("ca_slides", [])
+    max_slides = len(slides) if slides else 10
 
     if len(ids) >= max_slides:
         await update.message.reply_text(
