@@ -5780,15 +5780,15 @@ body.is-mobile-layout .detail-icon-actions button {
 
 /* ── Daily Oil Banner ─────────────────────────────────────────────────── */
 .daily-oil-banner {
-  background: linear-gradient(135deg, rgba(180,92,61,.1), rgba(180,92,61,.03));
-  border: 1px solid rgba(180,92,61,.2);
+  background: linear-gradient(135deg, rgba(var(--brand-rgb),.12), rgba(var(--brand-rgb),.03));
+  border: 1px solid rgba(var(--brand-rgb),.2);
   border-radius: var(--radius-lg);
   padding: var(--space-4) var(--space-5);
   margin-bottom: var(--space-4);
   cursor: pointer;
   transition: box-shadow var(--duration-fast) var(--ease-standard), transform var(--duration-fast);
 }
-.daily-oil-banner:hover { box-shadow: 0 4px 16px rgba(180,92,61,.15); }
+.daily-oil-banner:hover { box-shadow: 0 4px 16px rgba(var(--brand-rgb),.15); }
 .daily-oil-banner:active { transform: scale(0.98); }
 .daily-oil-header { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2); }
 .daily-oil-icon { width: 18px; height: 18px; color: var(--brand); }
