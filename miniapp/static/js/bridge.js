@@ -87,6 +87,8 @@ export function registerWindowBridge(deps) {
     searchStockPhotos,
     selectStockPhoto,
     uploadDraftPhoto,
+    adminResetStuck,
+    adminRestartWorker,
     saveContentReviewDraft,
     polishContentDraft,
     openKeywordTopic,
@@ -314,6 +316,9 @@ export function registerWindowBridge(deps) {
   window.gradeApply = gradeApply;
   // Auto-montage
   window.startMontage = startMontage;
+  // Admin dashboard
+  window.adminResetStuck = adminResetStuck;
+  window.adminRestartWorker = adminRestartWorker;
   // Missing actions
   window.refreshDraftMetrics = refreshDraftMetrics;
   window.saveSeriesPost = saveSeriesPost;
@@ -460,7 +465,7 @@ export function registerWindowBridge(deps) {
   };
 
   window.openSettingsSection = async (section) => {
-    const valid = ["keywords", "brand", "accounts", "status", "team", "promo", "monitored", "hashtags", "theme", "city"];
+    const valid = ["keywords", "brand", "accounts", "status", "team", "promo", "monitored", "hashtags", "theme", "city", "admin_dashboard"];
     state.settingsSection = valid.includes(section) ? section : "status";
     state.settingsInDetail = true;
     if (state.tab !== "settings") {

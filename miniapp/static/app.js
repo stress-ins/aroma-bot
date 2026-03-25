@@ -731,6 +731,13 @@ function uiIcon(name) {
     settings:   "gear-six",
     grid:       "grid-four",
     stop:       "stop",
+    gauge:      "gauge",
+    cpu:        "cpu",
+    "arrow-counter-clockwise": "arrow-counter-clockwise",
+    "clock-counter-clockwise": "clock-counter-clockwise",
+    "play-circle": "play-circle",
+    brain:      "brain",
+    stack:      "stack",
     list:       "rows",
     "chevron-down": "caret-down",
     "chevron-up": "caret-up",
@@ -1960,6 +1967,8 @@ const { renderBrand: renderBrandImpl, loadForbiddenPhrases: loadForbiddenPhrases
   createNewTeam, createTeamInvite, removeTeamMember,
   activatePromo, generatePromos,
   selectCity,
+  adminResetStuck,
+  adminRestartWorker,
 } = _settingsMod);
 
 let selectTrendsPlatform, selectTrendsPeriod, refreshTrends, openTrendsPost, createFromInsight, addMonitoredAccount, removeMonitoredAccount, generateTrendCards, createFromTrendCard;
@@ -2452,6 +2461,8 @@ registerWindowBridge({
   activatePromo,
   generatePromos,
   selectCity,
+  adminResetStuck,
+  adminRestartWorker,
   goBackToSettings,
   setPlanStatusFilter,
   setPlanPlatformFilter,
