@@ -5,7 +5,7 @@ import logging
 import asyncio
 import json
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Query, UploadFile
 from fastapi.responses import JSONResponse, StreamingResponse
 
 from bot.services.miniapp_reels import (
@@ -726,13 +726,25 @@ async def reels_preview_frames(
 
 @router.post("/api/reels/notify-when-ready")
 async def reels_notify_when_ready(
-    telegram_id: int = Depends(_require_auth),
+    x_telegram_init_data: str | None = Header(default=None),
 ):
     """Subscribe current user to Telegram notification when video task completes."""
+    from miniapp.api.auth import _telegram_user_id_from_init_data, _verify_init_data
     from bot.services.video_task_worker import subscribe_notification
+    import os
+
+    # Extract telegram_id from init data
+    if os.getenv("AROMA_BYPASS_AUTH") == "1":
+        telegram_id = 12345
+    else:
+        if not x_telegram_init_data or not _verify_init_data(x_telegram_init_data):
+            raise HTTPException(status_code=403, detail="forbidden")
+        telegram_id = _telegram_user_id_from_init_data(x_telegram_init_data)
+        if not telegram_id:
+            raise HTTPException(status_code=400, detail="no_user_id")
 
     # Subscribe to all active tasks
-    from bot.services.video_task_store import AsyncSessionLocal
+    from db.session import AsyncSessionLocal
     from db.models import VideoTaskModel
     from sqlalchemy import select
 
@@ -744,10 +756,10 @@ async def reels_notify_when_ready(
         draft_ids = [r[0] for r in result.all()]
 
     if not draft_ids:
-        raise HTTPException(status_code=404, detail="no_active_tasks")
+        return {"subscribed": 0, "message": "no_active_tasks"}
 
     for did in draft_ids:
-        subscribe_notification(did, int(telegram_id))
+        subscribe_notification(did, telegram_id)
 
     return {"subscribed": len(draft_ids)}
 
