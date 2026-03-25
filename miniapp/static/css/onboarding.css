@@ -495,3 +495,69 @@
 .plan-card-metrics-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; color: var(--muted); margin-top: var(--space-1); }
 .plan-card-metrics-badge i, .plan-card-metrics-badge svg { width: 12px; height: 12px; }
 
+
+.onboarding-progress {
+  font-size: 12px; font-weight: 600; color: var(--hint);
+  letter-spacing: 0.04em; text-transform: uppercase;
+  margin-bottom: var(--space-1);
+}
+
+/* ── Walkthrough (interactive spotlight tour) ─────────────────────────── */
+.walkthrough-overlay {
+  position: fixed; inset: 0; z-index: 9600;
+  background: rgba(0, 0, 0, 0.65);
+  animation: walkthroughFadeIn 0.25s ease;
+}
+.walkthrough-overlay.is-leaving { animation: walkthroughFadeOut 0.3s ease forwards; }
+@keyframes walkthroughFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes walkthroughFadeOut { from { opacity: 1; } to { opacity: 0; } }
+
+.walkthrough-spotlight {
+  position: fixed;
+  border-radius: var(--radius-md);
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.65);
+  z-index: 9601;
+  pointer-events: none;
+  transition: top 0.3s ease, left 0.3s ease, width 0.3s ease, height 0.3s ease;
+}
+
+.walkthrough-tooltip {
+  position: fixed;
+  z-index: 9602;
+  width: 288px;
+  padding: var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  animation: walkthroughTooltipIn 0.25s ease;
+}
+@keyframes walkthroughTooltipIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.walkthrough-tooltip-above {
+  animation-name: walkthroughTooltipInAbove;
+}
+@keyframes walkthroughTooltipInAbove {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.walkthrough-tooltip-title {
+  font-size: 16px; font-weight: 700; color: var(--text);
+  margin-bottom: var(--space-1);
+}
+.walkthrough-tooltip-body {
+  font-size: 14px; line-height: 1.5; color: var(--muted);
+  margin-bottom: var(--space-3);
+}
+.walkthrough-tooltip-actions {
+  display: flex; gap: var(--space-2); align-items: center;
+}
+.walkthrough-tooltip-actions .primary-button {
+  flex: 1; justify-content: center;
+}
+.walkthrough-tooltip-actions .ghost-button {
+  font-size: 13px; white-space: nowrap;
+}
+
