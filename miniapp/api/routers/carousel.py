@@ -35,6 +35,17 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+def _load_brand_avatar(payload: dict) -> bytes | None:
+    """Load avatar bytes from brand_avatar_path in draft payload."""
+    from pathlib import Path
+    avatar_path = payload.get("brand_avatar_path")
+    if avatar_path:
+        p = Path(avatar_path)
+        if p.exists():
+            return p.read_bytes()
+    return None
+
+
 @router.get("/api/carousel/{draft_id}")
 async def get_carousel(
     background_tasks: BackgroundTasks,
@@ -295,8 +306,12 @@ async def carousel_pptx_export(draft_id: str, _: str = Depends(_resolve_init_dat
         accent = draft.payload.get("accent_color", [138, 92, 246])
         accent_rgb = tuple(accent) if isinstance(accent, list) and len(accent) == 3 else (138, 92, 246)
         username = draft.payload.get("brand_username", "")
+        _avatar_bytes = _load_brand_avatar(draft.payload)
         pptx_bytes = await asyncio.get_running_loop().run_in_executor(
-            None, build_editorial_pptx, slides, raw_images or [], accent_rgb, (18, 18, 22), username,
+            None,
+            lambda: build_editorial_pptx(
+                slides, raw_images or [], accent_rgb, (18, 18, 22), username, _avatar_bytes,
+            ),
         )
     else:
         images = load_carousel_slide_images(draft_id, list(draft.payload.get("slide_images", [])))
@@ -425,8 +440,12 @@ async def carousel_canva_export(draft_id: str, _: None = Depends(_require_auth))
         accent = draft.payload.get("accent_color", [138, 92, 246])
         accent_rgb = tuple(accent) if isinstance(accent, list) and len(accent) == 3 else (138, 92, 246)
         username = draft.payload.get("brand_username", "")
+        _avatar_bytes = _load_brand_avatar(draft.payload)
         pptx_bytes = await asyncio.get_running_loop().run_in_executor(
-            None, build_editorial_pptx, slides, raw_images or [], accent_rgb, (18, 18, 22), username,
+            None,
+            lambda: build_editorial_pptx(
+                slides, raw_images or [], accent_rgb, (18, 18, 22), username, _avatar_bytes,
+            ),
         )
     else:
         images = load_carousel_slide_images(draft_id, list(draft.payload.get("slide_images", [])))
