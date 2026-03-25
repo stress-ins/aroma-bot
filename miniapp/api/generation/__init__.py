@@ -25,6 +25,10 @@ from .reels import complete_reels_v2_regen_frame as complete_reels_v2_regen_fram
 from .reels import complete_reels_v2_regen_scenario_only as complete_reels_v2_regen_scenario_only
 from .repurpose import complete_repurpose_generation as complete_repurpose_generation
 from .series import complete_series_generation as complete_series_generation
+from .youtube import complete_youtube_generation as complete_youtube_generation
+from .youtube import complete_youtube_generate_metadata as complete_youtube_generate_metadata
+from .youtube import complete_youtube_generate_thumbnail as complete_youtube_generate_thumbnail
+from .youtube import complete_youtube_regen_script as complete_youtube_regen_script
 
 __all__ = [
     "complete_carousel_generation",
@@ -44,6 +48,10 @@ __all__ = [
     "complete_repurpose_generation",
     "complete_series_generation",
     "complete_threads_series_generation",
+    "complete_youtube_generation",
+    "complete_youtube_generate_metadata",
+    "complete_youtube_generate_thumbnail",
+    "complete_youtube_regen_script",
     "generate_blend_construct",
     "set_generation_state",
 ]

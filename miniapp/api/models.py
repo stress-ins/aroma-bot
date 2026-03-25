@@ -104,6 +104,27 @@ class ReelsRegenFramePayload(BaseModel):
     prompt: str | None = Field(default=None)
 
 
+class CreateYouTubePayload(BaseModel):
+    topic: str = Field(default="")
+    subformat: str = Field(default="talking_head")  # talking_head | listicle | podcast
+    goal: str = Field(default="trust")
+    emotion: str = Field(default="calm")
+    duration_target: int = Field(default=10)  # minutes
+    item_count: int = Field(default=7)  # for listicle
+    question_count: int = Field(default=6)  # for podcast
+    guest_description: str = Field(default="")  # for podcast
+
+
+class YouTubeThumbnailPayload(BaseModel):
+    mode: str = Field(default="prompt")  # prompt | photo_based | upload
+    revision_note: str = Field(default="")
+
+
+class YouTubeMetadataPayload(BaseModel):
+    """Trigger metadata generation after montage."""
+    pass
+
+
 class CreateCarouselPayload(BaseModel):
     topic: str = Field(default="")
     blend_context: BlendContext | None = Field(default=None)

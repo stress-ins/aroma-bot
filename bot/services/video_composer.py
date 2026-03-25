@@ -1,4 +1,7 @@
-"""Video composer — Ken Burns effect + crossfade transitions + text overlays via FFmpeg."""
+"""Video composer — Ken Burns effect + crossfade transitions + text overlays via FFmpeg.
+
+Supports both portrait (9:16 for Reels) and landscape (16:9 for YouTube) formats.
+"""
 from __future__ import annotations
 
 import asyncio
@@ -6,24 +9,47 @@ import logging
 import math
 import shutil
 import tempfile
+from dataclasses import dataclass
 from pathlib import Path
 from uuid import uuid4
 
 logger = logging.getLogger(__name__)
 
-# Output specs (match reels_video.py constants)
-OUT_WIDTH = 1080
-OUT_HEIGHT = 1920
+
+# ---------------------------------------------------------------------------
+# Format presets
+# ---------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class VideoFormat:
+    """Output format specification."""
+    width: int
+    height: int
+    kb_scale: float = 1.20
+
+    @property
+    def kb_width(self) -> int:
+        w = int(self.width * self.kb_scale)
+        return w + (w % 2)  # ensure even
+
+    @property
+    def kb_height(self) -> int:
+        h = int(self.height * self.kb_scale)
+        return h + (h % 2)  # ensure even
+
+
+# Predefined formats
+FORMAT_PORTRAIT = VideoFormat(width=1080, height=1920)   # 9:16 Reels/Shorts
+FORMAT_LANDSCAPE = VideoFormat(width=1920, height=1080)  # 16:9 YouTube
+
+# Default (backward compat)
+OUT_WIDTH = FORMAT_PORTRAIT.width
+OUT_HEIGHT = FORMAT_PORTRAIT.height
 TARGET_RATIO = 9 / 16
 
-# Ken Burns headroom: scale source to 120% so we can pan/zoom
-KB_SCALE = 1.20
-KB_WIDTH = int(OUT_WIDTH * KB_SCALE)   # 1296
-KB_HEIGHT = int(OUT_HEIGHT * KB_SCALE)  # 2304
-
-# Ensure even dimensions (required by H.264)
-KB_WIDTH = KB_WIDTH + (KB_WIDTH % 2)
-KB_HEIGHT = KB_HEIGHT + (KB_HEIGHT % 2)
+KB_SCALE = FORMAT_PORTRAIT.kb_scale
+KB_WIDTH = FORMAT_PORTRAIT.kb_width
+KB_HEIGHT = FORMAT_PORTRAIT.kb_height
 
 DEFAULT_FRAME_DURATION = 7.5
 DEFAULT_CROSSFADE = 0.5
@@ -66,7 +92,12 @@ def _compute_durations(
     return [per_frame] * n_frames
 
 
-def _kb_filter(index: int, duration: float, fps: int = FPS) -> str:
+def _kb_filter(
+    index: int,
+    duration: float,
+    fps: int = FPS,
+    fmt: VideoFormat | None = None,
+) -> str:
     """Build a Ken Burns zoompan filter expression for a single frame.
 
     Alternates between 4 motion types:
@@ -76,16 +107,18 @@ def _kb_filter(index: int, duration: float, fps: int = FPS) -> str:
     3 - pan right to left
 
     Uses the ``zoompan`` filter which is designed for Ken Burns effects.
-    The source is already scaled to KB_WIDTH x KB_HEIGHT.
-    zoompan outputs OUT_WIDTH x OUT_HEIGHT.
+    The source is already scaled to KB size; zoompan outputs final size.
     """
+    if fmt is None:
+        fmt = FORMAT_PORTRAIT
+
     total_frames = int(math.ceil(duration * fps))
     motion = index % 4
 
     # zoom range: 1.0 means showing full KB image scaled to output,
-    # KB_SCALE (1.2) means fully zoomed in so output = original OUT size
+    # kb_scale (1.2) means fully zoomed in so output = original OUT size
     z_min = 1.0
-    z_max = KB_SCALE  # 1.2
+    z_max = fmt.kb_scale
 
     if motion == 0:
         # Zoom in: 1.0 -> 1.2
@@ -113,7 +146,7 @@ def _kb_filter(index: int, duration: float, fps: int = FPS) -> str:
 
     return (
         f"zoompan=z='{z_expr}':x='{x_expr}':y='{y_expr}'"
-        f":d={total_frames}:s={OUT_WIDTH}x{OUT_HEIGHT}:fps={fps}"
+        f":d={total_frames}:s={fmt.width}x{fmt.height}:fps={fps}"
     )
 
 
@@ -143,8 +176,13 @@ async def compose_video_from_frames(
     output_path: Path | None = None,
     total_duration: float = DEFAULT_TOTAL_DURATION,
     crossfade: float = DEFAULT_CROSSFADE,
+    video_format: VideoFormat | None = None,
 ) -> Path:
     """Compose Ken Burns video from still images with transitions and text overlays.
+
+    Args:
+        video_format: Output format. Defaults to FORMAT_PORTRAIT (9:16).
+                      Use FORMAT_LANDSCAPE for YouTube (16:9).
 
     Returns path to the output MP4 file.
 
@@ -156,6 +194,7 @@ async def compose_video_from_frames(
     if not await check_ffmpeg_available():
         raise RuntimeError("ffmpeg is not installed or not found in PATH")
 
+    fmt = video_format or FORMAT_PORTRAIT
     n = len(frame_paths)
     durs = _compute_durations(n, durations, total_duration, crossfade)
 
@@ -187,11 +226,11 @@ async def compose_video_from_frames(
 
     # Step 1: scale + Ken Burns + format for each input
     for i in range(n):
-        kb = _kb_filter(i, durs[i])
-        # Scale to KB size, pad to fill, then zoompan produces OUT_WIDTH x OUT_HEIGHT
+        kb = _kb_filter(i, durs[i], fmt=fmt)
+        # Scale to KB size, pad to fill, then zoompan produces output size
         base = (
-            f"[{i}:v]scale={KB_WIDTH}:{KB_HEIGHT}:force_original_aspect_ratio=decrease,"
-            f"pad={KB_WIDTH}:{KB_HEIGHT}:(ow-iw)/2:(oh-ih)/2:color=black,"
+            f"[{i}:v]scale={fmt.kb_width}:{fmt.kb_height}:force_original_aspect_ratio=decrease,"
+            f"pad={fmt.kb_width}:{fmt.kb_height}:(ow-iw)/2:(oh-ih)/2:color=black,"
             f"setsar=1,{kb},"
             f"format=yuv420p"
         )
