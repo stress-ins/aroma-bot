@@ -21,17 +21,22 @@ def build_editorial_pptx(
     accent_color: tuple[int, int, int] = (138, 92, 246),
     bg_color: tuple[int, int, int] = (18, 18, 22),
     username: str = "",
+    avatar_bytes: bytes | None = None,
 ) -> bytes:
-    """Build PPTX with editorial layout: photo top 55%, solid bg bottom 45%, editable text.
+    """Build PPTX with editorial layout: photo top 55%, gradient transition, editable text.
 
     Uses raw (clean) images — text is NOT burnt into the image.
     Text is placed as an editable text box in the bottom section.
+    Gradient between photo and text is a separate shape (editable in Canva).
+    Avatar + username bar under the photo. "СВАЙПАЙ >>" on hook slide.
     """
     from PIL import Image
     from pptx import Presentation
     from pptx.util import Emu, Pt
     from pptx.dml.color import RGBColor
     from pptx.enum.text import PP_ALIGN
+    from pptx.oxml.ns import qn as _qn
+    from lxml import etree as _etree
 
     from bot.handlers.carousel import (
         _embed_font_in_pptx,
@@ -43,10 +48,12 @@ def build_editorial_pptx(
     SLIDE_H = 1350 * 9525  # EMU
     PHOTO_FRAC = 0.55
     photo_h_emu = int(SLIDE_H * PHOTO_FRAC)
+    GRADIENT_H_FRAC = 0.09  # gradient overlay height (~120px at 1350)
 
     BG_RGB = RGBColor(*bg_color)
     WHITE = RGBColor(0xFF, 0xFF, 0xFF)
     ACCENT = RGBColor(*accent_color)
+    MUTED = RGBColor(200, 200, 210)
 
     prs = Presentation()
     prs.slide_width = Emu(SLIDE_W)
@@ -61,6 +68,7 @@ def build_editorial_pptx(
             text = str(text)
 
         slide = prs.slides.add_slide(blank)
+        is_hook = i == 0
 
         # Solid background for entire slide
         bg_shape = slide.shapes.add_shape(
@@ -70,66 +78,177 @@ def build_editorial_pptx(
         bg_shape.fill.fore_color.rgb = BG_RGB
         bg_shape.line.fill.background()
 
-        # Photo at top (cropped to cover width × photo_h)
+        # Photo at top — contain (fit without cropping)
         img_bytes = images[i] if i < len(images) else None
         if img_bytes:
             try:
                 img = Image.open(io.BytesIO(img_bytes))
                 iw, ih = img.size
-                # Cover crop to 1080 × (1350*0.55)
                 target_w = 1080
                 target_h = int(1350 * PHOTO_FRAC)
-                tr = target_w / target_h
-                pr = iw / ih
-                if pr > tr:
-                    new_h = target_h
-                    new_w = int(iw * target_h / ih)
-                else:
-                    new_w = target_w
-                    new_h = int(ih * target_w / iw)
+                # Contain: scale to fit within target, preserving aspect ratio
+                scale = min(target_w / iw, target_h / ih)
+                new_w = int(iw * scale)
+                new_h = int(ih * scale)
                 img = img.resize((new_w, new_h), Image.LANCZOS)
-                lc = (new_w - target_w) // 2
-                tc = (new_h - target_h) // 2
-                img = img.crop((lc, tc, lc + target_w, tc + target_h))
+                # Center on bg-colored canvas
+                canvas = Image.new("RGB", (target_w, target_h), bg_color)
+                paste_x = (target_w - new_w) // 2
+                paste_y = (target_h - new_h) // 2
+                canvas.paste(img, (paste_x, paste_y))
                 buf = io.BytesIO()
-                img.save(buf, format="PNG")
-                cropped_bytes = buf.getvalue()
+                canvas.save(buf, format="PNG")
+                fitted_bytes = buf.getvalue()
             except Exception:
-                cropped_bytes = img_bytes
+                fitted_bytes = img_bytes
 
             slide.shapes.add_picture(
-                io.BytesIO(cropped_bytes),
+                io.BytesIO(fitted_bytes),
                 Emu(0), Emu(0),
                 Emu(SLIDE_W), Emu(photo_h_emu),
             )
 
-        # Text area in bottom 45%
-        pad_x = Emu(int(SLIDE_W * 0.044))  # ~48px at 1080
-        text_top = Emu(photo_h_emu + int(SLIDE_H * 0.02))
-        text_h = Emu(SLIDE_H - photo_h_emu - int(SLIDE_H * 0.05))
-        text_w = Emu(SLIDE_W) - pad_x * 2
+            # ── Gradient overlay (photo → bg transition) — editable shape ──
+            grad_h = int(SLIDE_H * GRADIENT_H_FRAC)
+            grad_top = photo_h_emu - grad_h
+            grad_shape = slide.shapes.add_shape(
+                1, Emu(0), Emu(grad_top), Emu(SLIDE_W), Emu(grad_h),
+            )
+            grad_shape.line.fill.background()
+            # Build gradient fill XML: transparent at top → bg_color at bottom
+            sp_pr = grad_shape._element.spPr
+            # Remove any default fill
+            for old_fill in sp_pr.findall(_qn("a:solidFill")) + sp_pr.findall(_qn("a:noFill")):
+                sp_pr.remove(old_fill)
+            grad_fill = _etree.SubElement(sp_pr, _qn("a:gradFill"))
+            grad_fill.set("flip", "none")
+            grad_fill.set("rotWithShape", "1")
+            gs_lst = _etree.SubElement(grad_fill, _qn("a:gsLst"))
+            # Stop 1: fully transparent bg_color at top (pos=0)
+            gs1 = _etree.SubElement(gs_lst, _qn("a:gs"))
+            gs1.set("pos", "0")
+            clr1 = _etree.SubElement(gs1, _qn("a:srgbClr"))
+            clr1.set("val", f"{bg_color[0]:02X}{bg_color[1]:02X}{bg_color[2]:02X}")
+            alpha1 = _etree.SubElement(clr1, _qn("a:alpha"))
+            alpha1.set("val", "0")
+            # Stop 2: fully opaque bg_color at bottom (pos=100000)
+            gs2 = _etree.SubElement(gs_lst, _qn("a:gs"))
+            gs2.set("pos", "100000")
+            clr2 = _etree.SubElement(gs2, _qn("a:srgbClr"))
+            clr2.set("val", f"{bg_color[0]:02X}{bg_color[1]:02X}{bg_color[2]:02X}")
+            alpha2 = _etree.SubElement(clr2, _qn("a:alpha"))
+            alpha2.set("val", "100000")
+            # Linear gradient top→bottom
+            lin = _etree.SubElement(grad_fill, _qn("a:lin"))
+            lin.set("ang", "5400000")  # 90 degrees = top to bottom
+            lin.set("scaled", "1")
 
-        # Username bar
+        # ── Avatar + username bar ──
+        pad_x = Emu(int(SLIDE_W * 0.044))  # ~48px at 1080
+        bar_top = Emu(photo_h_emu + int(SLIDE_H * 0.01))
+        avatar_size_px = 48
+        avatar_size_emu = avatar_size_px * 9525
+
         if username:
-            ubox = slide.shapes.add_textbox(pad_x, Emu(photo_h_emu + int(SLIDE_H * 0.01)), text_w, Emu(int(SLIDE_H * 0.03)))
+            avatar_x = pad_x
+            avatar_y = bar_top
+
+            if avatar_bytes:
+                # Circular avatar from image
+                try:
+                    av = Image.open(io.BytesIO(avatar_bytes)).convert("RGBA")
+                    av = av.resize((avatar_size_px, avatar_size_px), Image.LANCZOS)
+                    # Create circular mask
+                    from PIL import ImageDraw as _ImageDraw
+                    mask = Image.new("L", (avatar_size_px, avatar_size_px), 0)
+                    md = _ImageDraw.Draw(mask)
+                    md.ellipse((0, 0, avatar_size_px, avatar_size_px), fill=255)
+                    # Apply mask
+                    output = Image.new("RGBA", (avatar_size_px, avatar_size_px), (0, 0, 0, 0))
+                    output.paste(av, (0, 0), mask)
+                    abuf = io.BytesIO()
+                    output.save(abuf, format="PNG")
+                    slide.shapes.add_picture(
+                        io.BytesIO(abuf.getvalue()),
+                        avatar_x, avatar_y,
+                        Emu(avatar_size_emu), Emu(avatar_size_emu),
+                    )
+                except Exception:
+                    avatar_bytes = None  # fall through to placeholder
+
+            if not avatar_bytes:
+                # Placeholder circle with initial letter
+                circle = slide.shapes.add_shape(
+                    9,  # MSO_SHAPE.OVAL
+                    avatar_x, avatar_y,
+                    Emu(avatar_size_emu), Emu(avatar_size_emu),
+                )
+                circle.fill.solid()
+                circle.fill.fore_color.rgb = ACCENT
+                circle.line.fill.background()
+                # Add initial letter inside
+                ctf = circle.text_frame
+                ctf.word_wrap = False
+                cp = ctf.paragraphs[0]
+                cp.alignment = PP_ALIGN.CENTER
+                cr = cp.add_run()
+                cr.text = username[0].upper()
+                cr.font.name = _FONT_NAME
+                cr.font.size = Pt(20)
+                cr.font.bold = True
+                cr.font.color.rgb = WHITE
+
+            # Dash line + username text
+            name_x = Emu(int(pad_x) + avatar_size_emu + int(SLIDE_W * 0.013))
+            # Dash
+            dash_box = slide.shapes.add_textbox(
+                name_x, avatar_y, Emu(int(SLIDE_W * 0.04)), Emu(avatar_size_emu),
+            )
+            dash_box.fill.background()
+            dtf = dash_box.text_frame
+            dtf.word_wrap = False
+            dp = dtf.paragraphs[0]
+            dp.alignment = PP_ALIGN.CENTER
+            dr = dp.add_run()
+            dr.text = "—"
+            dr.font.name = _FONT_NAME
+            dr.font.size = Pt(16)
+            dr.font.color.rgb = RGBColor(100, 100, 110)
+
+            # Username text
+            uname_x = Emu(int(name_x) + int(SLIDE_W * 0.045))
+            ubox = slide.shapes.add_textbox(
+                uname_x, avatar_y, Emu(SLIDE_W - int(uname_x) - int(pad_x)),
+                Emu(avatar_size_emu),
+            )
             ubox.fill.background()
             utf = ubox.text_frame
-            utf.word_wrap = True
+            utf.word_wrap = False
             up = utf.paragraphs[0]
             up.alignment = PP_ALIGN.LEFT
             ur = up.add_run()
             ur.text = username
             ur.font.name = _FONT_NAME
             ur.font.size = Pt(14)
-            ur.font.color.rgb = RGBColor(200, 200, 210)
-            text_top = Emu(photo_h_emu + int(SLIDE_H * 0.045))
-            text_h = Emu(SLIDE_H - photo_h_emu - int(SLIDE_H * 0.07))
+            ur.font.color.rgb = MUTED
 
-        # Main text box (editable!)
+            text_top = Emu(photo_h_emu + int(SLIDE_H * 0.055))
+            text_h = Emu(SLIDE_H - photo_h_emu - int(SLIDE_H * 0.08))
+        else:
+            text_top = Emu(photo_h_emu + int(SLIDE_H * 0.02))
+            text_h = Emu(SLIDE_H - photo_h_emu - int(SLIDE_H * 0.05))
+
+        text_w = Emu(SLIDE_W) - pad_x * 2
+
+        # ── Main text box (editable!) ──
         is_bullet = "\n•" in text or "\n-" in text or "\n*" in text
         display_text = text if is_bullet else text.upper()
 
-        txBox = slide.shapes.add_textbox(pad_x, text_top, text_w, text_h)
+        # Reserve space for swipe indicator
+        swipe_reserve = int(SLIDE_H * 0.05) if is_hook else 0
+        actual_text_h = Emu(int(text_h) - swipe_reserve)
+
+        txBox = slide.shapes.add_textbox(pad_x, text_top, text_w, actual_text_h)
         txBox.fill.background()
         tf = txBox.text_frame
         tf.word_wrap = True
@@ -155,6 +274,29 @@ def build_editorial_pptx(
         r_txt.font.size = Pt(font_size)
         r_txt.font.bold = True
         r_txt.font.color.rgb = WHITE
+
+        # ── "СВАЙПАЙ >>" on hook slide ──
+        if is_hook:
+            swipe_top = Emu(SLIDE_H - int(SLIDE_H * 0.045))
+            swipe_box = slide.shapes.add_textbox(
+                Emu(0), swipe_top, Emu(SLIDE_W), Emu(int(SLIDE_H * 0.035)),
+            )
+            swipe_box.fill.background()
+            stf = swipe_box.text_frame
+            stf.word_wrap = False
+            sp = stf.paragraphs[0]
+            sp.alignment = PP_ALIGN.CENTER
+            sr = sp.add_run()
+            sr.text = "СВАЙПАЙ  >>"
+            sr.font.name = _FONT_NAME
+            sr.font.size = Pt(18)
+            sr.font.bold = False
+            # Dimmed accent color
+            sr.font.color.rgb = RGBColor(
+                min(255, accent_color[0] // 2 + 70),
+                min(255, accent_color[1] // 2 + 70),
+                min(255, accent_color[2] // 2 + 70),
+            )
 
     out = io.BytesIO()
     prs.save(out)
