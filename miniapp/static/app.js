@@ -730,6 +730,7 @@ function uiIcon(name) {
     lightbulb:  "lightbulb",
     settings:   "gear-six",
     grid:       "grid-four",
+    stop:       "stop",
     list:       "rows",
     "chevron-down": "caret-down",
     "chevron-up": "caret-up",
