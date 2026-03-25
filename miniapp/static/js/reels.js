@@ -2259,10 +2259,6 @@ export function createReelsModule(deps) {
       }
     }
 
-    // Open manual details to show updated sliders
-    const details = document.getElementById("gradeManualDetails");
-    if (details) details.open = true;
-
     // Auto-trigger preview
     gradePreview(draftId, null);
     showUiNotice("Профиль применён, загружаю предпросмотр…", "success");
