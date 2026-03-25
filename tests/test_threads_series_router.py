@@ -9,7 +9,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from bot.services.drafts_store import DraftRecord
-from miniapp.api.auth import _require_auth
+from miniapp.api.auth import TeamContext, _resolve_team_context
 from miniapp.api.routers.threads_series import router
 
 
@@ -55,12 +55,16 @@ def _serialized_draft(draft: DraftRecord) -> dict:
     }
 
 
+def _fake_team_context():
+    return TeamContext(telegram_id=12345, team_id="test-team", role="owner")
+
+
 @pytest.fixture
 def ts_app():
     """FastAPI app with threads_series router and auth bypassed."""
     app = FastAPI()
     app.include_router(router)
-    app.dependency_overrides[_require_auth] = lambda: None
+    app.dependency_overrides[_resolve_team_context] = _fake_team_context
     yield app
 
 

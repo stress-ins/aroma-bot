@@ -16,7 +16,7 @@ from bot.services.past_publications_store import (
     list_publications,
     update_publication,
 )
-from ..auth import TeamContext, _require_auth, _resolve_team_context
+from ..auth import TeamContext, _resolve_team_context
 
 logger = logging.getLogger(__name__)
 
@@ -67,10 +67,12 @@ async def archive_stats(ctx: TeamContext = Depends(_resolve_team_context)):
 # ── Detail ─────────────────────────────────────────────────────────────────
 
 @router.get("/api/archive/{pub_id}")
-async def get_archive_item(pub_id: str, _: None = Depends(_require_auth)):
+async def get_archive_item(pub_id: str, ctx: TeamContext = Depends(_resolve_team_context)):
     pub = await get_publication(pub_id)
     if not pub:
         raise HTTPException(status_code=404, detail="publication_not_found")
+    if pub.team_id and pub.team_id != ctx.team_id:
+        raise HTTPException(status_code=403, detail="team_mismatch")
     return _serialize(pub)
 
 
@@ -137,7 +139,13 @@ async def import_from_url(body: dict, ctx: TeamContext = Depends(_resolve_team_c
 # ── Update ─────────────────────────────────────────────────────────────────
 
 @router.put("/api/archive/{pub_id}")
-async def update_archive_item(pub_id: str, body: dict, _: None = Depends(_require_auth)):
+async def update_archive_item(pub_id: str, body: dict, ctx: TeamContext = Depends(_resolve_team_context)):
+    pub = await get_publication(pub_id)
+    if not pub:
+        raise HTTPException(status_code=404, detail="publication_not_found")
+    if pub.team_id and pub.team_id != ctx.team_id:
+        raise HTTPException(status_code=403, detail="team_mismatch")
+
     published_at_raw = body.pop("published_at", None)
     if published_at_raw is not None:
         try:
@@ -154,7 +162,12 @@ async def update_archive_item(pub_id: str, body: dict, _: None = Depends(_requir
 # ── Delete ─────────────────────────────────────────────────────────────────
 
 @router.delete("/api/archive/{pub_id}")
-async def delete_archive_item(pub_id: str, _: None = Depends(_require_auth)):
+async def delete_archive_item(pub_id: str, ctx: TeamContext = Depends(_resolve_team_context)):
+    pub = await get_publication(pub_id)
+    if not pub:
+        raise HTTPException(status_code=404, detail="publication_not_found")
+    if pub.team_id and pub.team_id != ctx.team_id:
+        raise HTTPException(status_code=403, detail="team_mismatch")
     deleted = await delete_publication(pub_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="publication_not_found")

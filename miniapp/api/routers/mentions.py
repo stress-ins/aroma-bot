@@ -20,7 +20,7 @@ from bot.services.mentions_store import (
     save_replies,
     select_reply,
 )
-from ..auth import TeamContext, _require_auth, _require_webhook_auth, _resolve_team_context
+from ..auth import TeamContext, _require_webhook_auth, _resolve_team_context
 from ..models import MentionDetailResponse, MentionIngestPayload, MentionListResponse, MentionReplyResponse, MentionReplySelectPayload
 
 logger = logging.getLogger(__name__)
@@ -72,10 +72,12 @@ async def list_mentions_endpoint(
 
 
 @router.get("/api/mentions/{mention_id}")
-async def get_mention_endpoint(mention_id: str, _: None = Depends(_require_auth)):
+async def get_mention_endpoint(mention_id: str, ctx: TeamContext = Depends(_resolve_team_context)):
     mention = await get_mention(mention_id)
     if not mention:
         raise HTTPException(status_code=404, detail="mention_not_found")
+    if mention.team_id and mention.team_id != ctx.team_id:
+        raise HTTPException(status_code=403, detail="team_mismatch")
     replies = await list_replies(mention_id)
     return _serialize_mention(mention, replies)
 
@@ -138,10 +140,12 @@ async def _notify_admin(mention_id: str, payload: MentionIngestPayload) -> None:
 
 
 @router.post("/api/mentions/{mention_id}/generate-replies")
-async def generate_replies_endpoint(mention_id: str, _: None = Depends(_require_auth)):
+async def generate_replies_endpoint(mention_id: str, ctx: TeamContext = Depends(_resolve_team_context)):
     mention = await get_mention(mention_id)
     if not mention:
         raise HTTPException(status_code=404, detail="mention_not_found")
+    if mention.team_id and mention.team_id != ctx.team_id:
+        raise HTTPException(status_code=403, detail="team_mismatch")
 
     loop = asyncio.get_event_loop()
     from bot.agents.mentions_agent import generate_replies_sync
@@ -162,11 +166,13 @@ async def generate_replies_endpoint(mention_id: str, _: None = Depends(_require_
 async def publish_reply_endpoint(
     mention_id: str,
     payload: MentionReplySelectPayload,
-    _: None = Depends(_require_auth),
+    ctx: TeamContext = Depends(_resolve_team_context),
 ):
     mention = await get_mention(mention_id)
     if not mention:
         raise HTTPException(status_code=404, detail="mention_not_found")
+    if mention.team_id and mention.team_id != ctx.team_id:
+        raise HTTPException(status_code=403, detail="team_mismatch")
 
     replies = await list_replies(mention_id)
     reply = next((r for r in replies if r.reply_id == payload.reply_id), None)
@@ -237,7 +243,7 @@ async def _publish_reply_to_platform(mention, content: str) -> None:
 
 
 @router.post("/api/mentions/poll-threads")
-async def poll_threads_endpoint(_: None = Depends(_require_auth)):
+async def poll_threads_endpoint(ctx: TeamContext = Depends(_resolve_team_context)):
     """Manually poll Threads API for new mentions and replies."""
     from config import settings
     from bot.services.mentions_poller import poll_threads_mentions
@@ -261,9 +267,11 @@ async def poll_comments_endpoint(ctx: TeamContext = Depends(_resolve_team_contex
 
 
 @router.patch("/api/mentions/{mention_id}/ignore")
-async def ignore_mention_endpoint(mention_id: str, _: None = Depends(_require_auth)):
+async def ignore_mention_endpoint(mention_id: str, ctx: TeamContext = Depends(_resolve_team_context)):
     mention = await get_mention(mention_id)
     if not mention:
         raise HTTPException(status_code=404, detail="mention_not_found")
+    if mention.team_id and mention.team_id != ctx.team_id:
+        raise HTTPException(status_code=403, detail="team_mismatch")
     await ignore_mention(mention_id)
     return {"mention_id": mention_id, "status": "ignored"}

@@ -14,6 +14,7 @@ from bot.services.drafts_store import get_draft, list_scheduled_drafts_due, upda
 from bot.services.publish_log_store import list_all_logs, list_logs
 from bot.services.publisher import cancel_scheduled, check_status, publish
 from ..auth import TeamContext, _require_auth, _resolve_init_data, _resolve_sse_auth, _resolve_team_context, require_tier
+from ..deps import verify_team_draft
 from ..models import ScheduleSeriesRequest
 
 logger = logging.getLogger(__name__)
@@ -27,10 +28,11 @@ class PublishPayload(BaseModel):
 
 
 @router.post("/api/drafts/{draft_id}/publish", dependencies=[Depends(require_tier("expert"))])
-async def publish_draft(draft_id: str, payload: PublishPayload, _: None = Depends(_require_auth)):
+async def publish_draft(draft_id: str, payload: PublishPayload, ctx: TeamContext = Depends(_resolve_team_context)):
     draft = await get_draft(draft_id)
     if not draft:
         raise HTTPException(status_code=404, detail="draft_not_found")
+    verify_team_draft(draft, ctx)
     if draft.status != "approved":
         raise HTTPException(status_code=400, detail="draft_must_be_approved")
     if not payload.platforms:
@@ -64,10 +66,11 @@ async def publish_draft(draft_id: str, payload: PublishPayload, _: None = Depend
 
 
 @router.get("/api/drafts/{draft_id}/publish-status")
-async def publish_status(draft_id: str, _: None = Depends(_require_auth)):
+async def publish_status(draft_id: str, ctx: TeamContext = Depends(_resolve_team_context)):
     draft = await get_draft(draft_id)
     if not draft:
         raise HTTPException(status_code=404, detail="draft_not_found")
+    verify_team_draft(draft, ctx)
 
     logs = await list_logs(draft_id)
     remote_status = await check_status(draft_id)
@@ -75,10 +78,11 @@ async def publish_status(draft_id: str, _: None = Depends(_require_auth)):
 
 
 @router.delete("/api/drafts/{draft_id}/publish-schedule")
-async def cancel_publish_schedule(draft_id: str, _: None = Depends(_require_auth)):
+async def cancel_publish_schedule(draft_id: str, ctx: TeamContext = Depends(_resolve_team_context)):
     draft = await get_draft(draft_id)
     if not draft:
         raise HTTPException(status_code=404, detail="draft_not_found")
+    verify_team_draft(draft, ctx)
     if draft.status != "scheduled":
         raise HTTPException(status_code=400, detail="draft_not_scheduled")
 
@@ -106,7 +110,7 @@ async def scheduled_posts(ctx: TeamContext = Depends(_resolve_team_context)):
 
 
 @router.post("/api/publish/schedule-series")
-async def schedule_series(payload: ScheduleSeriesRequest, _: None = Depends(_require_auth)):
+async def schedule_series(payload: ScheduleSeriesRequest, ctx: TeamContext = Depends(_resolve_team_context)):
     from datetime import date as date_type
 
     logger.info("schedule-series: draft_id=%r date=%r slots=%r", payload.draft_id, payload.date, payload.slots)
@@ -114,6 +118,7 @@ async def schedule_series(payload: ScheduleSeriesRequest, _: None = Depends(_req
     if not draft:
         logger.warning("schedule-series: draft NOT FOUND, draft_id=%r (len=%d)", payload.draft_id, len(payload.draft_id))
         raise HTTPException(status_code=404, detail="draft_not_found")
+    verify_team_draft(draft, ctx)
     if draft.kind != "threads_series":
         logger.warning("schedule-series: wrong kind %r for draft %s", draft.kind, payload.draft_id)
         raise HTTPException(status_code=400, detail="draft_kind_mismatch")
@@ -177,11 +182,12 @@ async def publish_history(limit: int = 50, ctx: TeamContext = Depends(_resolve_t
 
 # Dynamic route MUST come after all static /api/publish/* routes
 @router.post("/api/publish/{item_id}")
-async def publish_by_id(item_id: str, _: None = Depends(_require_auth)):
+async def publish_by_id(item_id: str, ctx: TeamContext = Depends(_resolve_team_context)):
     """Immediate publish endpoint (used by scheduler internally)."""
     draft = await get_draft(item_id)
     if not draft:
         raise HTTPException(status_code=404, detail="draft_not_found")
+    verify_team_draft(draft, ctx)
     if draft.status not in ("scheduled", "approved"):
         raise HTTPException(status_code=400, detail="draft_not_ready")
     platforms = draft.publish_platforms or ["threads"]
@@ -193,13 +199,14 @@ async def publish_by_id(item_id: str, _: None = Depends(_require_auth)):
 
 
 @router.get("/api/drafts/{draft_id}/metrics")
-async def draft_metrics(draft_id: str, _: None = Depends(_require_auth)):
+async def draft_metrics(draft_id: str, ctx: TeamContext = Depends(_resolve_team_context)):
     """Return latest engagement metrics for a published draft."""
     from bot.services.post_metrics_store import get_latest_metrics
 
     draft = await get_draft(draft_id)
     if not draft:
         raise HTTPException(status_code=404, detail="draft_not_found")
+    verify_team_draft(draft, ctx)
     metrics = await get_latest_metrics(draft_id)
     return {"draft_id": draft_id, "metrics": metrics}
 
@@ -208,7 +215,7 @@ async def draft_metrics(draft_id: str, _: None = Depends(_require_auth)):
 async def draft_metrics_history(
     draft_id: str,
     platform: str = "threads",
-    _: None = Depends(_require_auth),
+    ctx: TeamContext = Depends(_resolve_team_context),
 ):
     """Return metrics history (all snapshots) for engagement trend."""
     from bot.services.post_metrics_store import get_metrics_history
@@ -218,13 +225,14 @@ async def draft_metrics_history(
 
 
 @router.post("/api/drafts/{draft_id}/metrics/refresh")
-async def refresh_draft_metrics(draft_id: str, _: None = Depends(_require_auth)):
+async def refresh_draft_metrics(draft_id: str, ctx: TeamContext = Depends(_resolve_team_context)):
     """Manually trigger a fresh metrics fetch for a draft."""
     from bot.services.metrics_fetcher import fetch_metrics_for_draft
 
     draft = await get_draft(draft_id)
     if not draft:
         raise HTTPException(status_code=404, detail="draft_not_found")
+    verify_team_draft(draft, ctx)
     if draft.status != "published":
         raise HTTPException(status_code=400, detail="draft_not_published")
     result = await fetch_metrics_for_draft(draft_id)

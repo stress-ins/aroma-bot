@@ -11,7 +11,8 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from bot.services.drafts_store import get_draft, update_draft
 from bot.services.miniapp_presenter import serialize_draft
-from ..auth import _require_auth
+from ..auth import TeamContext, _resolve_team_context
+from ..deps import verify_team_draft
 from ..models import ThreadsSlotPatchRequest, ThreadsSlotRegenRequest
 
 logger = logging.getLogger(__name__)
@@ -79,10 +80,11 @@ def _require_threads_series(draft):
 async def patch_slot(
     draft_id: str,
     payload: ThreadsSlotPatchRequest,
-    _: None = Depends(_require_auth),
+    ctx: TeamContext = Depends(_resolve_team_context),
 ):
     draft = await get_draft(draft_id)
     _require_threads_series(draft)
+    verify_team_draft(draft, ctx)
 
     p = dict(draft.payload or {})
     posts = list(p.get("threads_posts", []))
@@ -109,10 +111,11 @@ async def patch_slot(
 async def regen_slot(
     draft_id: str,
     payload: ThreadsSlotRegenRequest,
-    _: None = Depends(_require_auth),
+    ctx: TeamContext = Depends(_resolve_team_context),
 ):
     draft = await get_draft(draft_id)
     _require_threads_series(draft)
+    verify_team_draft(draft, ctx)
 
     p = dict(draft.payload or {})
     posts = list(p.get("threads_posts", []))
@@ -218,10 +221,11 @@ async def _regen_slot_text(topic: str, goal_key: str, slot: str, note: str | Non
 async def slot_history(
     draft_id: str,
     slot: str,
-    _: None = Depends(_require_auth),
+    ctx: TeamContext = Depends(_resolve_team_context),
 ):
     draft = await get_draft(draft_id)
     _require_threads_series(draft)
+    verify_team_draft(draft, ctx)
 
     posts = (draft.payload or {}).get("threads_posts", [])
     slot_post = next((p for p in posts if p["slot"] == slot), None)
@@ -232,10 +236,11 @@ async def slot_history(
 
 
 @router.post("/api/threads-series/{draft_id}/regenerate-posts")
-async def regenerate_posts(draft_id: str, _: None = Depends(_require_auth)):
+async def regenerate_posts(draft_id: str, ctx: TeamContext = Depends(_resolve_team_context)):
     """Regenerate all posts for a threads_series with empty threads_posts."""
     draft = await get_draft(draft_id)
     _require_threads_series(draft)
+    verify_team_draft(draft, ctx)
 
     from bot.services.miniapp_generator import build_threads_series_payload
     from bot.agents import generate_content_draft
@@ -262,9 +267,10 @@ async def regenerate_posts(draft_id: str, _: None = Depends(_require_auth)):
 
 
 @router.post("/api/threads-series/{draft_id}/approve")
-async def approve_series(draft_id: str, _: None = Depends(_require_auth)):
+async def approve_series(draft_id: str, ctx: TeamContext = Depends(_resolve_team_context)):
     draft = await get_draft(draft_id)
     _require_threads_series(draft)
+    verify_team_draft(draft, ctx)
 
     posts = (draft.payload or {}).get("threads_posts", [])
     if not posts:
@@ -278,13 +284,14 @@ async def approve_series(draft_id: str, _: None = Depends(_require_auth)):
 
 @router.post("/api/threads-series/{draft_id}/slots/{slot}/publish-now")
 async def publish_slot_now(
-    draft_id: str, slot: str, _: None = Depends(_require_auth),
+    draft_id: str, slot: str, ctx: TeamContext = Depends(_resolve_team_context),
 ):
     """Publish a single slot of a threads_series immediately."""
     from bot.services.publisher import publish_threads_series_slot
 
     draft = await get_draft(draft_id)
     _require_threads_series(draft)
+    verify_team_draft(draft, ctx)
     if draft.status not in ("approved", "scheduled"):
         raise HTTPException(
             status_code=400, detail="draft_must_be_approved_or_scheduled",
@@ -302,12 +309,13 @@ async def publish_slot_now(
 
 
 @router.post("/api/threads-series/{draft_id}/publish-now")
-async def publish_series_now(draft_id: str, _: None = Depends(_require_auth)):
+async def publish_series_now(draft_id: str, ctx: TeamContext = Depends(_resolve_team_context)):
     """Publish ALL posts of a threads_series immediately with 30s pauses."""
     from bot.services.publisher import publish_threads_series_slot
 
     draft = await get_draft(draft_id)
     _require_threads_series(draft)
+    verify_team_draft(draft, ctx)
     if draft.status not in ("approved", "scheduled"):
         raise HTTPException(
             status_code=400, detail="draft_must_be_approved_or_scheduled",
