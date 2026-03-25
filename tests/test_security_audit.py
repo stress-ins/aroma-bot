@@ -39,11 +39,15 @@ async def client(tmp_path, monkeypatch):
     test_factory = async_sessionmaker(test_engine, expire_on_commit=False)
     monkeypatch.setattr(sess, "AsyncSessionLocal", test_factory)
 
-    # Patch brand_settings preload to avoid lifespan DB issues
-    from bot.services import brand_settings_store
-    monkeypatch.setattr(brand_settings_store, "preload_brand_settings", lambda: None)
+    # Replace the full lifespan to avoid DB calls and infinite background loops on CI
+    from contextlib import asynccontextmanager as _acm
+
+    @_acm
+    async def _test_lifespan(app):
+        yield
 
     from miniapp_server import app
+    app.router.lifespan_context = _test_lifespan
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
