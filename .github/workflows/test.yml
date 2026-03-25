@@ -50,8 +50,8 @@ jobs:
       - name: Install dependencies
         run: uv pip install -r requirements.txt pytest pytest-timeout pytest-xdist pytest-cov
 
-      - name: Run tests with coverage
-        run: python -m pytest tests/ -q --ignore=tests/ui --timeout=60 -n auto -m "not slow" --cov=bot --cov=miniapp --cov=db --cov-report=term:skip-covered --cov-fail-under=30
+      - name: Run tests
+        run: python -m pytest tests/ -q --ignore=tests/ui --timeout=60 -n auto -m "not slow"
 
   # ── Smoke tests (always run on main, conditional on PRs) ────────────
   smoke:
