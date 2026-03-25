@@ -27,11 +27,12 @@ jobs:
   # ── Backend tests (always run) ──────────────────────────────────────
   pytest:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     env:
       TELEGRAM_BOT_TOKEN: test-token
       REPORT_TARGET_CHAT_ID: test-chat
       UV_SYSTEM_PYTHON: 1
+      UV_CACHE_DIR: /tmp/uv-cache
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -87,11 +88,12 @@ jobs:
     needs: changes
     if: needs.changes.outputs.ui == 'true' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 12
     env:
       TELEGRAM_BOT_TOKEN: test-token
       REPORT_TARGET_CHAT_ID: test-chat
       UV_SYSTEM_PYTHON: 1
+      UV_CACHE_DIR: /tmp/uv-cache
     steps:
       - name: Checkout
         uses: actions/checkout@v4
