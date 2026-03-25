@@ -2528,6 +2528,8 @@ registerWindowBridge({
   coherenceCheck,
   generateTrendCards,
   createFromTrendCard,
+  refreshDraftMetrics,
+  shareBlend,
   // Stock photo picker
   searchStockPhotos: (...a) => _stockPhotosMod.searchStockPhotos(...a),
   selectStockPhoto: (...a) => _stockPhotosMod.selectStockPhoto(...a),
