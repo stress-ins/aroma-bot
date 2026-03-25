@@ -58,6 +58,9 @@ jobs:
       - name: Run Alembic migrations
         run: ssh root@46.32.186.192 'cd /opt/aroma && .venv/bin/alembic upgrade head'
 
+      - name: Ensure runtime directories exist
+        run: ssh root@46.32.186.192 'mkdir -p /opt/aroma/data /opt/aroma/generated /opt/aroma/assets'
+
       - name: Restart and verify ALL services
         run: |
           ssh root@46.32.186.192 'systemctl restart aroma-miniapp'

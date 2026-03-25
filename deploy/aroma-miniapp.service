@@ -24,7 +24,7 @@ NoNewPrivileges=yes
 PrivateTmp=yes
 ProtectHome=yes
 ProtectSystem=strict
-ReadWritePaths=/opt/aroma/data /opt/aroma/generated /opt/aroma/assets /tmp
+ReadWritePaths=/opt/aroma /tmp
 
 [Install]
 WantedBy=multi-user.target
