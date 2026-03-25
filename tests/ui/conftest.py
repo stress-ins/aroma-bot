@@ -324,6 +324,7 @@ def _create_page(browser, miniapp_server, *, viewport, is_mobile, dark=False):
     page.on("pageerror", lambda err: print(f"\nBROWSER ERROR: {err}"))
     context.add_init_script(_TELEGRAM_JS_STUB)
     context.add_init_script("localStorage.setItem('aroma_onboarded', '1')")
+    context.add_init_script("localStorage.setItem('aroma_walkthrough_done', '1')")
     if dark:
         context.add_init_script(
             "document.addEventListener('DOMContentLoaded',"
