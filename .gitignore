@@ -22,6 +22,9 @@ venv/
 data/oil_pdfs/
 miniapp.zip
 
+# Vite build output
+miniapp/static-dist/
+
 # Playwright (Node.js)
 miniapp/node_modules/
 miniapp/playwright-report/

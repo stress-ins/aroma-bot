@@ -1,3 +1,4 @@
+import "./app.css";
 import { registerWindowBridge } from "./js/bridge.js";
 import { createCarouselModule } from "./js/carousel.js";
 import { createContentModule } from "./js/content.js";

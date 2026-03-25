@@ -117,8 +117,9 @@ class TestThreadsPrompts:
             p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/api").rglob("*.py"))
         )
 
-        assert "app.css?v=4" in index_html or "app.css?v=__ASSET_VERSION__" in index_html
-        assert "app.js?v=4" in index_html or "app.js?v=__ASSET_VERSION__" in index_html
+        # Vite migration: HTML uses __VITE_CSS__/__VITE_JS__ placeholders
+        assert "__VITE_CSS__" in index_html or "app.css?v=__ASSET_VERSION__" in index_html
+        assert "__VITE_JS__" in index_html or "app.js?v=__ASSET_VERSION__" in index_html
         assert "Cache-Control" in server_py
         assert "no-store, max-age=0" in server_py
 
