@@ -136,40 +136,54 @@ export function createCreateModule(deps) {
 
   function renderCreate() {
     elements.listTitle.textContent = "Инструменты";
-    elements.draftCount.textContent = "5 типов";
+    elements.draftCount.textContent = "";
     setEmptyState(true);
+
+    const _cc = (tool, label) => state.selectedCreateTool === tool ? " active" : "";
 
     elements.draftList.innerHTML = `
       <div class="create-list">
-        <article ${interactiveCardAttrs("Выбрать инструмент Пост для соцсетей")} class="create-card${state.selectedCreateTool === "content" ? " active" : ""} interactive-card" data-tool="content" data-action="renderCreateTool" data-args='["content"]'>
+        <div class="create-group-label">Текст</div>
+        <article ${interactiveCardAttrs("Выбрать инструмент Пост для соцсетей")} class="create-card${_cc("content")} interactive-card" data-tool="content" data-action="renderCreateTool" data-args='["content"]'>
           <div class="draft-kind">${contentKindIcon("content")}<span>контент</span></div>
           <h3 class="draft-topic">Пост для соцсетей</h3>
           <div class="draft-preview">Instagram или Telegram.</div>
         </article>
-        <article ${interactiveCardAttrs("Выбрать инструмент Сценарий и раскадровка")} class="create-card${state.selectedCreateTool === "reels" ? " active" : ""} interactive-card" data-tool="reels" data-action="renderCreateTool" data-args='["reels"]'>
-          <div class="draft-kind">${contentKindIcon("reels")}<span>рилсы</span></div>
-          <h3 class="draft-topic">Сценарий + раскадровка</h3>
-          <div class="draft-preview">Сценарий и 4 кадра визуализации.</div>
-        </article>
-        <article ${interactiveCardAttrs("Выбрать инструмент Контент-план")} class="create-card${state.selectedCreateTool === "plan" ? " active" : ""} interactive-card" data-tool="plan" data-action="renderCreateTool" data-args='["plan"]'>
-          <div class="draft-kind">${contentKindIcon("plan")}<span>план</span></div>
-          <h3 class="draft-topic">Контент-план</h3>
-          <div class="draft-preview">Сбор трендов и план на неделю.</div>
-        </article>
-        <article ${interactiveCardAttrs("Выбрать инструмент Карусель")} class="create-card${state.selectedCreateTool === "carousel" ? " active" : ""} interactive-card" data-tool="carousel" data-action="renderCreateTool" data-args='["carousel"]'>
-          <div class="draft-kind">${contentKindIcon("carousel")}<span>карусель</span></div>
-          <h3 class="draft-topic">Карусель</h3>
-          <div class="draft-preview">5 слайдов с промптами для картинок.</div>
-        </article>
-        <article ${interactiveCardAttrs("Выбрать инструмент Серия Threads")} class="create-card${state.selectedCreateTool === "threads_series" ? " active" : ""} interactive-card" data-tool="threads_series" data-action="renderCreateTool" data-args='["threads_series"]'>
+        <article ${interactiveCardAttrs("Выбрать инструмент Серия Threads")} class="create-card${_cc("threads_series")} interactive-card" data-tool="threads_series" data-action="renderCreateTool" data-args='["threads_series"]'>
           <div class="draft-kind">${contentKindIcon("threads_series")}<span>серия</span></div>
           <h3 class="draft-topic">Серия Threads</h3>
           <div class="draft-preview">Три поста: утро / день / вечер.</div>
         </article>
-        <article ${interactiveCardAttrs("Выбрать инструмент Контент-серия")} class="create-card${state.selectedCreateTool === "content_series" ? " active" : ""} interactive-card" data-tool="content_series" data-action="renderCreateTool" data-args='["content_series"]'>
+        <article ${interactiveCardAttrs("Выбрать инструмент Контент-серия")} class="create-card${_cc("content_series")} interactive-card" data-tool="content_series" data-action="renderCreateTool" data-args='["content_series"]'>
           <div class="draft-kind">${contentKindIcon("content_series")}<span>серия</span></div>
           <h3 class="draft-topic">Контент-серия</h3>
           <div class="draft-preview">5-7 постов с единой темой.</div>
+        </article>
+
+        <div class="create-group-label">Видео</div>
+        <article ${interactiveCardAttrs("Выбрать инструмент Сценарий и раскадровка")} class="create-card${_cc("reels")} interactive-card" data-tool="reels" data-action="renderCreateTool" data-args='["reels"]'>
+          <div class="draft-kind">${contentKindIcon("reels")}<span>рилсы</span></div>
+          <h3 class="draft-topic">Сценарий + раскадровка</h3>
+          <div class="draft-preview">Сценарий и 4 кадра визуализации.</div>
+        </article>
+        <article ${interactiveCardAttrs("Выбрать инструмент YouTube-видео")} class="create-card${_cc("youtube")} interactive-card" data-tool="youtube" data-action="renderCreateTool" data-args='["youtube"]'>
+          <div class="draft-kind">${contentKindIcon("youtube_video")}<span>youtube</span></div>
+          <h3 class="draft-topic">YouTube-видео</h3>
+          <div class="draft-preview">Сценарий, B-roll, обложка, описание.</div>
+        </article>
+
+        <div class="create-group-label">Визуал</div>
+        <article ${interactiveCardAttrs("Выбрать инструмент Карусель")} class="create-card${_cc("carousel")} interactive-card" data-tool="carousel" data-action="renderCreateTool" data-args='["carousel"]'>
+          <div class="draft-kind">${contentKindIcon("carousel")}<span>карусель</span></div>
+          <h3 class="draft-topic">Карусель</h3>
+          <div class="draft-preview">5 слайдов с промптами для картинок.</div>
+        </article>
+
+        <div class="create-group-label">Планирование</div>
+        <article ${interactiveCardAttrs("Выбрать инструмент Контент-план")} class="create-card${_cc("plan")} interactive-card" data-tool="plan" data-action="renderCreateTool" data-args='["plan"]'>
+          <div class="draft-kind">${contentKindIcon("plan")}<span>план</span></div>
+          <h3 class="draft-topic">Контент-план</h3>
+          <div class="draft-preview">Сбор трендов и план на неделю.</div>
         </article>
       </div>
     `;
@@ -350,6 +364,52 @@ export function createCreateModule(deps) {
               </label>
             </div>
             <button class="primary-button" type="submit">Создать серию</button>
+          </form>
+        </section>
+      `;
+    } else if (toolId === "youtube") {
+      formHtml = `
+        <section class="section create-tool-panel">
+          <h3>Создать YouTube-видео</h3>
+          <form class="create-form" data-create-youtube>
+            <label>Тема<textarea name="topic" placeholder="Например: 5 масел для глубокого сна"></textarea></label>
+            <p class="field-help">Тема станет основой сценария. Чем конкретнее — тем лучше результат.</p>
+            <div class="field-grid">
+              <label>Формат
+                <select name="subformat">
+                  <option value="talking_head">Talking Head (один спикер)</option>
+                  <option value="listicle">Listicle / Top-N</option>
+                  <option value="podcast">Подкаст / Интервью</option>
+                </select>
+              </label>
+              <label>Цель
+                <select name="goal">
+                  <option value="trust">Доверие</option>
+                  <option value="authority">Экспертность</option>
+                  <option value="engagement">Вовлечённость</option>
+                  <option value="sales">Продажи</option>
+                </select>
+              </label>
+              <label>Эмоция
+                <select name="emotion">
+                  <option value="calm">Спокойствие</option>
+                  <option value="curiosity">Любопытство</option>
+                  <option value="inspiration">Вдохновение</option>
+                  <option value="joy">Радость</option>
+                  <option value="trust">Доверие</option>
+                </select>
+              </label>
+              <label>Длительность
+                <select name="duration_target">
+                  <option value="5">5 мин</option>
+                  <option value="10" selected>10 мин</option>
+                  <option value="15">15 мин</option>
+                  <option value="20">20 мин</option>
+                  <option value="30">30 мин</option>
+                </select>
+              </label>
+            </div>
+            <button class="primary-button" type="submit">Создать сценарий</button>
           </form>
         </section>
       `;
@@ -615,6 +675,36 @@ export function createCreateModule(deps) {
           throw error;
         }
       } });
+    }
+
+    // ── YouTube form ────────────────────────────────────────────────
+    const youtubeForm = elements.draftDetail.querySelector("[data-create-youtube]");
+    if (youtubeForm) {
+      youtubeForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const topic = youtubeForm.querySelector("textarea[name='topic']")?.value?.trim();
+        if (!topic) return;
+        const subformat = youtubeForm.querySelector("select[name='subformat']")?.value || "talking_head";
+        const goal = youtubeForm.querySelector("select[name='goal']")?.value || "trust";
+        const emotion = youtubeForm.querySelector("select[name='emotion']")?.value || "calm";
+        const duration_target = parseInt(youtubeForm.querySelector("select[name='duration_target']")?.value || "10", 10);
+        const pending = openPendingDraftCreation("youtube_video", topic);
+        try {
+          const draft = await fetchJson("/api/generate/youtube", {
+            method: "POST",
+            timeout: 90000,
+            body: JSON.stringify({ topic, subformat, goal, emotion, duration_target }),
+          });
+          finalizePendingDraftCreation(draft);
+          await openDraft(draft.draft_id);
+        } catch (error) {
+          if (error?.message === "request_timeout") {
+            await recoverPendingDraftCreation("youtube_video", topic, pending.draft_id);
+            return;
+          }
+          throw error;
+        }
+      });
     }
   }
 
