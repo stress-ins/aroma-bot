@@ -1411,6 +1411,8 @@ const {
   renderEmptyDetail: () => renderEmptyDetail(),
   renderDetailError,
   hasPendingCarouselOperations: (draftId) => hasPendingCarouselOperations(draftId),
+  setCarouselSlideOperation: (draftId, idx, val) => setCarouselSlideOperation(draftId, idx, val),
+  clearAllCarouselOperations: (draftId) => clearAllCarouselOperations(draftId),
   isEditingDetailForm,
   syncMobileNavigation,
   enterDetailView,
@@ -1421,6 +1423,8 @@ const {
 const {
   bufferedCarouselNote,
   hasPendingCarouselOperations,
+  clearAllCarouselOperations,
+  setCarouselSlideOperation,
   renderSlides,
   saveCarouselSlideText,
   handleCarouselSlideNoteInput,

@@ -54,6 +54,13 @@ export function createCarouselModule(deps) {
     return Object.keys(state.pendingCarouselOps).some((key) => key.startsWith(prefix));
   }
 
+  function clearAllCarouselOperations(draftId) {
+    const prefix = draftId ? `${draftId}:` : "";
+    for (const key of Object.keys(state.pendingCarouselOps)) {
+      if (key.startsWith(prefix)) delete state.pendingCarouselOps[key];
+    }
+  }
+
   function carouselSlideStatusMarkup(draftId, index, hasImage) {
     const operation = carouselSlideOperation(draftId, index);
     if (operation) {
@@ -387,6 +394,14 @@ export function createCarouselModule(deps) {
 
   async function regenerateCarouselAll(draftId, button) {
     try {
+      // Mark all slides as pending before sending request
+      const currentPayload = state.selected?.payload || {};
+      const slideCount = (currentPayload.slides || currentPayload.img_prompts || []).length;
+      for (let i = 0; i < slideCount; i++) {
+        setCarouselSlideOperation(draftId, i, "Перегенерирую картинку…");
+      }
+      if (isCurrentDraftDetail(draftId) && state.selected) renderDraftDetail(state.selected);
+
       await withButtonFeedback(button, "Запускаю...", async () => {
         const draft = await fetchJson(`/api/carousel/${draftId}/regenerate-all`, {
           method: "POST",
@@ -401,6 +416,12 @@ export function createCarouselModule(deps) {
         scheduleCarouselRefresh(draft.draft_id);
       }, "Запущено");
     } catch (error) {
+      // Clear slide operations on error
+      const currentPayload = state.selected?.payload || {};
+      const slideCount = (currentPayload.slides || currentPayload.img_prompts || []).length;
+      for (let i = 0; i < slideCount; i++) {
+        setCarouselSlideOperation(draftId, i, "");
+      }
       showRequestError("Не удалось запустить перегенерацию всех картинок", error);
     }
   }
@@ -727,6 +748,7 @@ export function createCarouselModule(deps) {
     carouselSlideOperation,
     setCarouselSlideOperation,
     hasPendingCarouselOperations,
+    clearAllCarouselOperations,
     renderSlides,
     setSlidesViewMode,
     saveCarouselSlideText,
