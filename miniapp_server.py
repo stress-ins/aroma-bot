@@ -169,6 +169,10 @@ def _setup_mounts_and_routers():
     CONTENT_ASSETS_DIR.mkdir(parents=True, exist_ok=True)
     app.mount("/generated/content_assets", StaticFiles(directory=CONTENT_ASSETS_DIR), name="content-generated-assets")
 
+    MUSIC_DIR = Path(__file__).parent / "assets" / "music"
+    MUSIC_DIR.mkdir(parents=True, exist_ok=True)
+    app.mount("/generated/music", StaticFiles(directory=MUSIC_DIR), name="music-library")
+
     for _router in (
         archive.router, blend_constructor.router, drafts.router, carousel.router, reels.router,
         plans.router, rag.router, recommendations.router, references.router, create.router,

@@ -1053,6 +1053,24 @@ export function createReelsModule(deps) {
               <label style="display:flex;align-items:center;gap:8px;font-size:13px">
                 <input type="checkbox" id="montageMusic" /> Фоновая музыка
               </label>
+              <div id="montageMusicOptions" style="padding-left:28px;margin-top:-4px;display:flex;flex-direction:column;gap:6px">
+                <label class="reels-field-label">
+                  <select id="montageMusicTrack" class="reels-select" style="font-size:12px;padding:6px 8px">
+                    <option value="calm_ambient">Спокойный эмбиент</option>
+                    <option value="warm_acoustic">Тёплая акустика</option>
+                    <option value="gentle_piano" selected>Мягкое пианино</option>
+                    <option value="energetic_beat">Энергичный бит</option>
+                    <option value="mysterious_pad">Таинственный пад</option>
+                  </select>
+                </label>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <button class="secondary-button compact" type="button" id="montageMusicPreviewBtn" style="font-size:12px">
+                    ${uiIcon("play")} Прослушать
+                  </button>
+                  <audio id="montageMusicAudio" preload="none" style="display:none"></audio>
+                  <span id="montageMusicStatus" style="font-size:11px;color:var(--hint)"></span>
+                </div>
+              </div>
               <label style="display:flex;align-items:center;gap:8px;font-size:13px">
                 <input type="checkbox" id="montageBroll" /> B-roll вставки (AI-кадры)
               </label>
@@ -2162,6 +2180,7 @@ export function createReelsModule(deps) {
       config.subtitles_enabled = document.getElementById("montageSubtitles")?.checked ?? true;
       config.subtitle_source = document.getElementById("montageSubtitleSource")?.value || "auto";
       config.music_enabled = document.getElementById("montageMusic")?.checked ?? false;
+      config.music_track = document.getElementById("montageMusicTrack")?.value || "gentle_piano";
       config.broll_enabled = document.getElementById("montageBroll")?.checked ?? false;
       config.beat_sync_enabled = document.getElementById("montageBeatSync")?.checked ?? false;
       config.color_grade_enabled = document.getElementById("montageColorGrade")?.checked ?? true;
@@ -2385,6 +2404,50 @@ export function createReelsModule(deps) {
     if (e.target?.id === "montageTemplate") {
       const opts = document.getElementById("montageCustomOptions");
       if (opts) opts.style.display = e.target.value === "custom" ? "block" : "none";
+    }
+    // Music checkbox → show/hide track selector
+    if (e.target?.id === "montageMusic") {
+      const opts = document.getElementById("montageMusicOptions");
+      if (opts) opts.style.display = e.target.checked ? "flex" : "none";
+    }
+  });
+
+  // Music preview player
+  document.body.addEventListener("click", (e) => {
+    if (e.target?.id === "montageMusicPreviewBtn" || e.target?.closest("#montageMusicPreviewBtn")) {
+      const audio = document.getElementById("montageMusicAudio");
+      const btn = document.getElementById("montageMusicPreviewBtn");
+      const status = document.getElementById("montageMusicStatus");
+      const track = document.getElementById("montageMusicTrack")?.value || "gentle_piano";
+
+      if (!audio || !btn) return;
+
+      if (!audio.paused) {
+        audio.pause();
+        audio.currentTime = 0;
+        btn.innerHTML = `${uiIcon("play")} Прослушать`;
+        if (status) status.textContent = "";
+        return;
+      }
+
+      audio.src = `/generated/music/${track}.mp3`;
+      audio.volume = 0.5;
+      btn.innerHTML = `${uiIcon("stop")} Стоп`;
+      if (status) status.textContent = "Загрузка…";
+
+      audio.oncanplay = () => { if (status) status.textContent = "Играет"; };
+      audio.onended = () => {
+        btn.innerHTML = `${uiIcon("play")} Прослушать`;
+        if (status) status.textContent = "";
+      };
+      audio.onerror = () => {
+        btn.innerHTML = `${uiIcon("play")} Прослушать`;
+        if (status) status.textContent = "Ошибка загрузки";
+      };
+      audio.play().catch(() => {
+        btn.innerHTML = `${uiIcon("play")} Прослушать`;
+        if (status) status.textContent = "Не удалось воспроизвести";
+      });
     }
   });
 

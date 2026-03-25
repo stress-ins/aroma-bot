@@ -8,12 +8,21 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-# Built-in royalty-free music library (paths relative to assets/)
+# Built-in royalty-free music library (paths relative to project root)
 MUSIC_LIBRARY = {
     "calm_ambient": "assets/music/calm_ambient.mp3",
-    "warm_piano": "assets/music/warm_piano.mp3",
-    "upbeat_light": "assets/music/upbeat_light.mp3",
-    "cinematic_dark": "assets/music/cinematic_dark.mp3",
+    "warm_acoustic": "assets/music/warm_acoustic.mp3",
+    "gentle_piano": "assets/music/gentle_piano.mp3",
+    "energetic_beat": "assets/music/energetic_beat.mp3",
+    "mysterious_pad": "assets/music/mysterious_pad.mp3",
+}
+
+MUSIC_LABELS = {
+    "calm_ambient": "Спокойный эмбиент",
+    "warm_acoustic": "Тёплая акустика",
+    "gentle_piano": "Мягкое пианино",
+    "energetic_beat": "Энергичный бит",
+    "mysterious_pad": "Таинственный пад",
 }
 
 
