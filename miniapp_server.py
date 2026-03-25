@@ -128,8 +128,11 @@ async def _security_headers(request, call_next):
     response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
     response.headers.setdefault(
         "Content-Security-Policy",
-        "default-src 'self'; script-src 'self' https://telegram.org 'unsafe-inline'; "
-        "style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; "
+        "default-src 'self'; "
+        "script-src 'self' https://telegram.org 'unsafe-inline'; "
+        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+        "font-src 'self' https://cdn.jsdelivr.net; "
+        "img-src 'self' data: blob: https:; "
         "connect-src 'self'; frame-ancestors 'none';",
     )
     # Cache control for JS/CSS modules
