@@ -39,6 +39,16 @@ def _get_img2img_model() -> str:
 
 logger = logging.getLogger(__name__)
 
+
+def _load_brand_avatar_bytes(payload: dict) -> bytes | None:
+    """Load avatar bytes from brand_avatar_path in draft payload."""
+    avatar_path = payload.get("brand_avatar_path")
+    if avatar_path:
+        p = Path(avatar_path)
+        if p.exists():
+            return p.read_bytes()
+    return None
+
 CAROUSEL_ASSETS_DIR = Path(
     os.getenv(
         "AROMA_CAROUSEL_ASSETS_DIR",
@@ -204,6 +214,7 @@ async def populate_carousel_slide_assets(draft_id: str, layout_style: str = "ove
                     accent = draft.payload.get("accent_color", [138, 92, 246])
                     accent_rgb = tuple(accent) if isinstance(accent, list) and len(accent) == 3 else (138, 92, 246)
                     brand_user = draft.payload.get("brand_username", "")
+                    avatar_bytes = _load_brand_avatar_bytes(draft.payload)
                     is_hook = i == 0
                     is_bullet = "\n•" in slide_text or "\n-" in slide_text or "\n*" in slide_text
                     try:
@@ -214,6 +225,7 @@ async def populate_carousel_slide_assets(draft_id: str, layout_style: str = "ove
                             slide_index=i,
                             accent_color=accent_rgb,
                             username=brand_user,
+                            avatar_bytes=avatar_bytes,
                             is_hook=is_hook,
                             is_bullet_list=is_bullet,
                         )

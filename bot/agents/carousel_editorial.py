@@ -194,23 +194,18 @@ def render_editorial_png(
     canvas = Image.new("RGB", (w, h), bg_color)
     draw = ImageDraw.Draw(canvas)
 
-    # ── Place photo at top ──
+    # ── Place photo at top (contain — no cropping) ──
     if img_bytes:
         photo = Image.open(io.BytesIO(img_bytes)).convert("RGB")
-        # Cover crop to width × photo_h
-        pr = photo.width / photo.height
-        tr = w / photo_h
-        if pr > tr:
-            new_h = photo_h
-            new_w = int(photo.width * photo_h / photo.height)
-        else:
-            new_w = w
-            new_h = int(photo.height * w / photo.width)
+        # Contain: scale to fit within w × photo_h, preserve aspect ratio
+        scale = min(w / photo.width, photo_h / photo.height)
+        new_w = int(photo.width * scale)
+        new_h = int(photo.height * scale)
         photo = photo.resize((new_w, new_h), Image.LANCZOS)
-        lc = (new_w - w) // 2
-        tc = (new_h - photo_h) // 2
-        photo = photo.crop((lc, tc, lc + w, tc + photo_h))
-        canvas.paste(photo, (0, 0))
+        # Center on bg-colored area
+        paste_x = (w - new_w) // 2
+        paste_y = (photo_h - new_h) // 2
+        canvas.paste(photo, (paste_x, paste_y))
 
         # Soft gradient transition from photo to bg (longer for smoother blend)
         gradient_h = int(120 * h / 1350)

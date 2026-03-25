@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import html as _html
 
-from bot.handlers.carousel.generation import _SLIDE_LABELS
+from bot.handlers.carousel.generation import get_slide_label
 
 
 def _make_slide_prompts_with_text(img_prompts: list[str], slides: list[str]) -> str:
@@ -40,7 +40,7 @@ def _format_for_canva(slides: list[str]) -> str:
     """HTML-formatted — send with parse_mode=HTML."""
     parts = ["<b>📋 Тексты для Canva:</b>\n"]
     for i, slide in enumerate(slides):
-        label = _SLIDE_LABELS[i] if i < len(_SLIDE_LABELS) else f"Слайд {i + 1}"
+        label = get_slide_label(i, len(slides))
         parts.append(f"<b>{_html.escape(label)}</b>\n<pre>{_html.escape(slide)}</pre>")
     parts.append(
         "\n💡 Используй фоны из Nana Banana (без текста), "

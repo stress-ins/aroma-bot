@@ -14,16 +14,12 @@ _EDITOR_PROMPT = """\
 Ты — главред контента для Instagram с 10-летним опытом в нише wellbeing и психологии.
 Цель карусели: человек дочитывает и думает «хочу попробовать» — пишет в ДМ или сохраняет.
 
-Структура 6 слайдов:
-SLIDE1 — Hook: первая строка останавливает скролл. Факт, провокация или \
+В черновике {slide_count} слайдов. Сохрани это количество. Структура:
+- Первый слайд — Hook: первая строка останавливает скролл. Факт, провокация или \
   узнаваемая ситуация. Не вопрос «А вы знали, что...».
-SLIDE2 — Проблема: конкретная ситуация из жизни, не абстракция. «Голова не \
-  крутится до ночи» — да. «Стресс мешает нам жить» — нет.
-SLIDE3 — Механизм: почему так происходит — просто, телесно, без науки и \
-  без «парасимпатика активируется».
-SLIDE4 — Инсайт: момент «ага». Переключение угла зрения. Не вывод, а открытие.
-SLIDE5 — Решение: конкретная практика или шаг. Без обещаний «изменит всё».
-SLIDE6 — CTA: человеческое приглашение, не рекламная фраза. CTA может быть разным, \
+- Средние слайды — раскрытие темы: проблема, механизм, инсайт, решение — в зависимости \
+  от количества слайдов. Каждый слайд = одна мысль, конкретная ситуация из жизни.
+- Последний слайд — CTA: человеческое приглашение, не рекламная фраза. CTA может быть разным, \
   но должен звучать по-русски и по-человечески. «Если хочешь попробовать, напиши», \
   «Если откликается, расскажу подробнее» — да. «Записывайся прямо сейчас!» — нет.
 
@@ -84,12 +80,7 @@ SLIDE6 — CTA: человеческое приглашение, не рекла
 {raw_slides}
 
 Верни строго в формате (ничего кроме этого):
-SLIDE1: [текст]
-SLIDE2: [текст]
-SLIDE3: [текст]
-SLIDE4: [текст]
-SLIDE5: [текст]
-SLIDE6: [текст]
+{slide_format}
 """
 
 
@@ -112,13 +103,16 @@ def _render_forbidden_phrases_block() -> str:
     return "\n".join(f"- {item}" for item in _forbidden_phrases())
 
 
-def _build_editor_prompt(topic: str, raw_slides: str) -> str:
+def _build_editor_prompt(topic: str, raw_slides: str, slide_count: int = 6) -> str:
+    slide_format = "\n".join(f"SLIDE{i}: [текст]" for i in range(1, slide_count + 1))
     return _EDITOR_PROMPT.format(
         brand_context=get_brand_context(),
         topic=topic,
         raw_slides=raw_slides,
         forbidden_phrases=_render_forbidden_phrases_block(),
         human_writing_rules=HUMAN_WRITING_RULES,
+        slide_count=slide_count,
+        slide_format=slide_format,
     )
 
 
@@ -130,8 +124,9 @@ def _sanitize_slide_text(text: str) -> str:
 def edit_carousel_sync(raw_slides: list[str], topic: str, user_forbidden: list[str] | None = None) -> list[str]:
     from bot.services.claude_client import call_claude
 
+    slide_count = len(raw_slides)
     raw_text = "\n".join(f"Слайд {i + 1}: {s}" for i, s in enumerate(raw_slides))
-    prompt = _build_editor_prompt(topic=topic, raw_slides=raw_text)
+    prompt = _build_editor_prompt(topic=topic, raw_slides=raw_text, slide_count=slide_count)
     if user_forbidden:
         extra = "\n".join(f"- {p}" for p in user_forbidden)
         prompt += f"\n\nДополнительные запрещённые фразы (указаны пользователем):\n{extra}"
@@ -142,10 +137,10 @@ def edit_carousel_sync(raw_slides: list[str], topic: str, user_forbidden: list[s
         context="carousel editor",
     )
 
-    slides = [humanize(_sanitize_slide_text(item), "instagram") for item in _parse_slides(text, count=6)]
+    slides = [humanize(_sanitize_slide_text(item), "instagram") for item in _parse_slides(text, count=slide_count)]
 
     # Fallback: return originals if parsing failed
-    return slides[:6] if len(slides) >= 4 else raw_slides
+    return slides[:slide_count] if len(slides) >= max(4, slide_count - 1) else raw_slides
 
 
 def _normalize_line(line: str) -> str:
@@ -158,17 +153,32 @@ def _normalize_line(line: str) -> str:
     return s
 
 
-def _parse_slides(text: str, count: int = 6) -> list[str]:
-    """Parse SLIDE1: ... SLIDE{count}: blocks, handling multi-line content
-    and common Claude formatting variations (bold markers, spaces in numbers)."""
+def _parse_slides(text: str, count: int | None = None) -> list[str]:
+    """Parse SLIDE1: ... SLIDE{N}: blocks, handling multi-line content
+    and common Claude formatting variations (bold markers, spaces in numbers).
+
+    When *count* is None (default), auto-detects how many slides the LLM returned.
+    When *count* is given, parses exactly that many (backwards compat).
+    """
     import re
+
+    # Auto-detect max slide number if count not specified
+    max_slide = count or 0
+    if not count:
+        for line in text.splitlines():
+            stripped = _normalize_line(line).upper()
+            m = re.match(r"SLIDE\s*(\d+)\s*:", stripped)
+            if m:
+                max_slide = max(max_slide, int(m.group(1)))
+        max_slide = max(max_slide, 1)
+
     slots: dict[int, list[str]] = {}
     current: int | None = None
 
     for line in text.splitlines():
         stripped = _normalize_line(line)
         matched = False
-        for i in range(1, count + 1):
+        for i in range(1, max_slide + 1):
             # Match SLIDE1: or SLIDE 1: (with optional space)
             prefix = f"SLIDE{i}:"
             prefix_spaced = f"SLIDE {i}:"
@@ -190,7 +200,7 @@ def _parse_slides(text: str, count: int = 6) -> list[str]:
                 slots[current].append(stripped)
 
     result = []
-    for i in range(1, count + 1):
+    for i in range(1, max_slide + 1):
         if i in slots:
             result.append(" ".join(slots[i]))
     return result

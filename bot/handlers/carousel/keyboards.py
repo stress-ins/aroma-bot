@@ -6,7 +6,7 @@ import logging
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 
-from bot.handlers.carousel.generation import _SLIDE_LABELS
+from bot.handlers.carousel.generation import get_slide_label
 
 logger = logging.getLogger(__name__)
 
@@ -44,10 +44,10 @@ def _canva_buttons() -> InlineKeyboardMarkup:
     ]])
 
 
-def _pptx_from_my_images_button(count: int) -> InlineKeyboardMarkup:
+def _pptx_from_my_images_button(count: int, total: int = 6) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([[
         InlineKeyboardButton(
-            f"📄 Собрать PPTX ({count}/{len(_SLIDE_LABELS)} картинок)",
+            f"📄 Собрать PPTX ({count}/{total} картинок)",
             callback_data="ca:pptx:userimages",
         )
     ]])

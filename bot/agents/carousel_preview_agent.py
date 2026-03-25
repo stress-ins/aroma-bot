@@ -15,6 +15,8 @@ from bot.services.claude_client import call_claude
 logger = logging.getLogger(__name__)
 
 # ── Constants ──────────────────────────────────────────────────────────────────
+# Legacy fixed list kept for backwards compat in tests / imports.
+# Runtime code should use get_slide_roles(total) from generation module.
 SLIDE_ROLES = ["hook", "problem", "mechanism", "insight", "solution", "cta"]
 ROLE_PLACEMENT_PREFS: dict[str, str] = {
     "hook": "bottom",
@@ -26,6 +28,16 @@ ROLE_PLACEMENT_PREFS: dict[str, str] = {
 }
 
 _FONT_PATH = Path(__file__).parent.parent.parent / "assets" / "fonts" / "DeldedaOpen.ttf"
+
+
+def _load_brand_avatar_bytes(payload: dict) -> bytes | None:
+    """Load avatar bytes from brand_avatar_path in draft payload."""
+    avatar_path = payload.get("brand_avatar_path")
+    if avatar_path:
+        p = Path(avatar_path)
+        if p.exists():
+            return p.read_bytes()
+    return None
 _CORRECTIONS_LOG = Path(__file__).parent.parent.parent / "data" / "placement_corrections_log.jsonl"
 
 # Grid for monotone region search
@@ -359,9 +371,12 @@ def analyze_text_placement(
     img_bytes: bytes,
     slide_index: int,
     bias: dict | None = None,
+    total_slides: int = 6,
 ) -> dict:
     """Find optimal text zone and pick organic color."""
-    role = SLIDE_ROLES[slide_index] if slide_index < len(SLIDE_ROLES) else "unknown"
+    from bot.handlers.carousel.generation import get_slide_roles
+    _roles = get_slide_roles(total_slides)
+    role = _roles[slide_index] if slide_index < len(_roles) else "unknown"
     preferred = ROLE_PLACEMENT_PREFS.get(role)
 
     logger.info("Analyzing slide %d (role=%s, preferred=%s)", slide_index, role, preferred)
@@ -658,9 +673,15 @@ async def generate_slide_preview(draft_id: str, slide_index: int) -> bytes:
         accent = draft.payload.get("accent_color", [138, 92, 246])
         accent_rgb = tuple(accent) if isinstance(accent, list) and len(accent) == 3 else (138, 92, 246)
         username = draft.payload.get("brand_username", "")
-        role = SLIDE_ROLES[slide_index] if slide_index < len(SLIDE_ROLES) else "unknown"
+        total_slides = len(draft.payload.get("slides", []))
+        from bot.handlers.carousel.generation import get_slide_roles
+        _roles = get_slide_roles(total_slides)
+        role = _roles[slide_index] if slide_index < len(_roles) else "unknown"
         is_hook = role == "hook"
         is_bullet = "\n•" in text or "\n-" in text or "\n*" in text
+
+        # Load avatar
+        avatar_bytes = _load_brand_avatar_bytes(draft.payload)
 
         loop = asyncio.get_running_loop()
         preview = await loop.run_in_executor(
@@ -671,6 +692,7 @@ async def generate_slide_preview(draft_id: str, slide_index: int) -> bytes:
                 bg_color=(18, 18, 22),
                 size=(1080, 1350),
                 username=username,
+                avatar_bytes=avatar_bytes,
                 is_hook=is_hook,
                 is_bullet_list=is_bullet,
             ),
@@ -685,11 +707,14 @@ async def generate_slide_preview(draft_id: str, slide_index: int) -> bytes:
         raise ValueError(f"No image for slide {slide_index}")
 
     from bot.agents.carousel_export_agent import get_aggregate_bias
-    role = SLIDE_ROLES[slide_index] if slide_index < len(SLIDE_ROLES) else "unknown"
+    total_slides = len(draft.payload.get("slides", []))
+    from bot.handlers.carousel.generation import get_slide_roles as _gsr
+    _roles = _gsr(total_slides)
+    role = _roles[slide_index] if slide_index < len(_roles) else "unknown"
     bias = get_aggregate_bias(role)
 
     loop = asyncio.get_running_loop()
-    placement = await loop.run_in_executor(None, analyze_text_placement, img_bytes, slide_index, bias or None)
+    placement = await loop.run_in_executor(None, analyze_text_placement, img_bytes, slide_index, bias or None, total_slides)
 
     payload = dict(draft.payload)
     placement_data = payload.get("placement_data", {})

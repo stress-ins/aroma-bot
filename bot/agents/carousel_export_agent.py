@@ -78,34 +78,27 @@ def build_editorial_pptx(
         bg_shape.fill.fore_color.rgb = BG_RGB
         bg_shape.line.fill.background()
 
-        # Photo at top — contain (fit without cropping)
+        # Photo at top — scale to full slide width, preserve aspect ratio.
+        # Image may extend beyond photo_h; user can move/resize in Canva.
         img_bytes = images[i] if i < len(images) else None
         if img_bytes:
             try:
                 img = Image.open(io.BytesIO(img_bytes))
                 iw, ih = img.size
-                target_w = 1080
-                target_h = int(1350 * PHOTO_FRAC)
-                # Contain: scale to fit within target, preserving aspect ratio
-                scale = min(target_w / iw, target_h / ih)
-                new_w = int(iw * scale)
+                # Scale to full slide width, keep aspect ratio
+                scale = 1080 / iw
+                new_w = 1080
                 new_h = int(ih * scale)
-                img = img.resize((new_w, new_h), Image.LANCZOS)
-                # Center on bg-colored canvas
-                canvas = Image.new("RGB", (target_w, target_h), bg_color)
-                paste_x = (target_w - new_w) // 2
-                paste_y = (target_h - new_h) // 2
-                canvas.paste(img, (paste_x, paste_y))
-                buf = io.BytesIO()
-                canvas.save(buf, format="PNG")
-                fitted_bytes = buf.getvalue()
+                pic_w_emu = Emu(SLIDE_W)
+                pic_h_emu = Emu(new_h * 9525)
             except Exception:
-                fitted_bytes = img_bytes
+                pic_w_emu = Emu(SLIDE_W)
+                pic_h_emu = Emu(photo_h_emu)
 
             slide.shapes.add_picture(
-                io.BytesIO(fitted_bytes),
+                io.BytesIO(img_bytes),
                 Emu(0), Emu(0),
-                Emu(SLIDE_W), Emu(photo_h_emu),
+                pic_w_emu, pic_h_emu,
             )
 
             # ── Gradient overlay (photo → bg transition) — editable shape ──
@@ -266,14 +259,20 @@ def build_editorial_pptx(
         else:
             font_size = 24
 
+        # Parse text into highlighted segments for accent coloring
+        from bot.agents.carousel_editorial import _parse_highlighted_text
+        uppercased = not is_bullet
+        segments = _parse_highlighted_text(display_text, skip_caps_highlight=uppercased)
+
         p_txt = tf.paragraphs[0]
         p_txt.alignment = PP_ALIGN.CENTER if not is_bullet else PP_ALIGN.LEFT
-        r_txt = p_txt.add_run()
-        r_txt.text = display_text
-        r_txt.font.name = _FONT_NAME
-        r_txt.font.size = Pt(font_size)
-        r_txt.font.bold = True
-        r_txt.font.color.rgb = WHITE
+        for seg_text, is_hl in segments:
+            r = p_txt.add_run()
+            r.text = seg_text
+            r.font.name = _FONT_NAME
+            r.font.size = Pt(font_size)
+            r.font.bold = True
+            r.font.color.rgb = ACCENT if is_hl else WHITE
 
         # ── "СВАЙПАЙ >>" on hook slide ──
         if is_hook:
@@ -457,8 +456,10 @@ def compute_corrections(
     actual: list[dict | None],
 ) -> list[dict]:
     """Compute deltas between proposed and actual placement for each slide."""
-    from bot.agents.carousel_preview_agent import SLIDE_ROLES
+    from bot.handlers.carousel.generation import get_slide_roles
 
+    total = max(len(proposed), len(actual))
+    _roles = get_slide_roles(total)
     corrections: list[dict] = []
     for i in range(min(len(proposed), len(actual))):
         p = proposed[i]
@@ -469,7 +470,7 @@ def compute_corrections(
         for key in ("top", "left", "width", "height"):
             if key in p and key in a:
                 delta[key] = round(a[key] - p[key], 4)
-        role = SLIDE_ROLES[i] if i < len(SLIDE_ROLES) else "unknown"
+        role = _roles[i] if i < len(_roles) else "unknown"
         corrections.append({"slide_index": i, "role": role, "delta": delta})
     return corrections
 

@@ -150,6 +150,13 @@ async def _save_carousel_callback(task, img_bytes: bytes) -> None:
         accent = draft.payload.get("accent_color", [138, 92, 246])
         accent_rgb = tuple(accent) if isinstance(accent, list) and len(accent) == 3 else (138, 92, 246)
         brand_user = draft.payload.get("brand_username", "")
+        avatar_bytes = None
+        avatar_path = draft.payload.get("brand_avatar_path")
+        if avatar_path:
+            from pathlib import Path as _Path
+            _ap = _Path(avatar_path)
+            if _ap.exists():
+                avatar_bytes = _ap.read_bytes()
         is_hook = slide_index == 0
         is_bullet = "\n•" in slide_text or "\n-" in slide_text or "\n*" in slide_text
         try:
@@ -159,6 +166,7 @@ async def _save_carousel_callback(task, img_bytes: bytes) -> None:
                 slide_index=slide_index,
                 accent_color=accent_rgb,
                 username=brand_user,
+                avatar_bytes=avatar_bytes,
                 is_hook=is_hook,
                 is_bullet_list=is_bullet,
             )
