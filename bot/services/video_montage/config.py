@@ -53,6 +53,9 @@ class MontageConfig:
     beat_sync_enabled: bool = False  # align cuts to music beats
     beat_tolerance: float = 0.3      # seconds tolerance for beat alignment
 
+    audio_normalize: bool = True     # normalize speech to -16 dB LUFS
+    audio_target_lufs: float = -16.0 # target loudness (Instagram standard)
+
     color_grade_enabled: bool = False
     color_grade_vf: str = ""        # FFmpeg -vf string from video_grader
 

@@ -769,6 +769,7 @@ async def start_montage(
     broll_enabled: bool = False,
     beat_sync_enabled: bool = False,
     color_grade_enabled: bool = False,
+    audio_normalize: bool = True,
     _: None = Depends(_require_auth),
 ):
     """Queue auto-montage task for a reels draft."""
@@ -814,6 +815,7 @@ async def start_montage(
         "beat_sync_enabled": beat_sync_enabled,
         "color_grade_enabled": color_grade_enabled,
         "color_grade_vf": p.get("grade_vf_string", ""),
+        "audio_normalize": audio_normalize,
     }
 
     task = await enqueue_task(draft_id, "montage", config, video_duration=video_duration)

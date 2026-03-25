@@ -187,6 +187,7 @@ async def run_montage(
 
         # Strategy: apply all filters in one pass where possible
         vf_filters: list[str] = []
+        af_filters: list[str] = []
 
         # Subtitle filter
         if srt_path:
@@ -200,33 +201,53 @@ async def run_montage(
             )
             vf_filters.append(sub_filter)
 
+        # Audio normalization — bring speech to target LUFS (standard for reels/stories)
+        if config.audio_normalize:
+            target = config.audio_target_lufs if hasattr(config, "audio_target_lufs") else -16.0
+            af_filters.append(f"loudnorm=I={target}:TP=-1.5:LRA=11")
+            features_applied.append("audio_normalization")
+
         # Build command
         cmd = ["ffmpeg", "-y", "-i", current_video]
         cmd.extend(music_inputs)
 
         filter_complex_parts: list[str] = []
+        af_chain = ",".join(af_filters) if af_filters else ""
 
-        # Video filters
-        if vf_filters:
-            vf_chain = ",".join(vf_filters)
+        # Video + audio filters
+        if vf_filters or music_filter:
+            vf_chain = ",".join(vf_filters) if vf_filters else ""
+
             if music_filter:
-                # Both video and audio filters
-                filter_complex_parts.append(f"[0:v]{vf_chain}[vout]")
-                filter_complex_parts.append(music_filter)
+                # Music mixing replaces simple audio filter
+                if vf_chain:
+                    filter_complex_parts.append(f"[0:v]{vf_chain}[vout]")
+                # Normalize speech before mixing with music
+                filter_complex_parts.append(f"[0:a]{af_chain}[speech]" if af_chain else "")
+                # Replace [0:a] with [speech] in music filter
+                adjusted_music = music_filter.replace("[0:a]", "[speech]") if af_chain else music_filter
+                filter_complex_parts.append(adjusted_music)
+                filter_complex_parts = [p for p in filter_complex_parts if p]
                 cmd.extend(["-filter_complex", ";".join(filter_complex_parts)])
-                cmd.extend(["-map", "[vout]", "-map", "[aout]"])
+                if vf_chain:
+                    cmd.extend(["-map", "[vout]", "-map", "[aout]"])
+                else:
+                    cmd.extend(["-map", "0:v", "-map", "[aout]"])
             else:
-                cmd.extend(["-vf", vf_chain])
-        elif music_filter:
-            cmd.extend(["-filter_complex", music_filter])
-            cmd.extend(["-map", "0:v", "-map", "[aout]"])
+                if vf_chain:
+                    cmd.extend(["-vf", vf_chain])
+                if af_chain:
+                    cmd.extend(["-af", af_chain])
+        elif af_chain:
+            cmd.extend(["-af", af_chain])
 
         cmd.extend([
             "-c:v", config.video_codec,
             "-preset", config.preset,
             "-crf", str(config.crf),
             "-c:a", config.audio_codec,
-            "-b:a", "128k",
+            "-b:a", "192k",
+            "-ar", "48000",
             "-movflags", "+faststart",
             output_file,
         ])
