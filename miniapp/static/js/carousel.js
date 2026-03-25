@@ -321,12 +321,47 @@ export function createCarouselModule(deps) {
       mergeDraftIntoState(draft);
       renderDraftList();
       if (isCurrentDraftDetail(draft.draft_id)) renderDraftDetail(draft);
+      // Auto-refresh preview in background
+      _refreshSlidePreview(draftId, slideIndex);
     };
     if (button instanceof HTMLElement) {
       await withButtonFeedback(button, "Сохраняю...", apply, "Сохранено");
       return;
     }
     await apply();
+  }
+
+  /** Fetch fresh preview PNG and update the slide image in-place. */
+  async function _refreshSlidePreview(draftId, slideIndex) {
+    try {
+      setCarouselSlideOperation(draftId, slideIndex, "Обновляю превью…");
+      const draft = state.selected;
+      if (isCurrentDraftDetail(draftId) && draft) renderDraftDetail(draft);
+
+      const previewUrl = `/api/carousel/${draftId}/slides/${slideIndex}/preview${authQueryString()}`;
+      const resp = await fetch(previewUrl, {
+        headers: deps.initDataHeaders ? deps.initDataHeaders() : {},
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const blob = await resp.blob();
+      const objectUrl = URL.createObjectURL(blob);
+
+      // Update slide_images in state so the new image persists across re-renders
+      const current = state.selected;
+      if (current && current.draft_id === draftId) {
+        const imgs = current.payload?.slide_images || [];
+        if (imgs[slideIndex]) {
+          imgs[slideIndex] = { ...imgs[slideIndex], url: objectUrl };
+        }
+      }
+    } catch (err) {
+      // Preview refresh is best-effort — don't block the user
+      console.warn("Auto-refresh preview failed:", err);
+    } finally {
+      setCarouselSlideOperation(draftId, slideIndex, "");
+      const draft = state.selected;
+      if (isCurrentDraftDetail(draftId) && draft) renderDraftDetail(draft);
+    }
   }
 
   async function persistCarouselSlideNote(draftId, slideIndex, note) {
