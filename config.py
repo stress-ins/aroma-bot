@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     yandex_client_id: str = ""
     yandex_client_secret: str = ""
     tiktok_ms_token: str = ""
+    tiktok_client_key: str = ""
+    tiktok_client_secret: str = ""
     gemini_api_key: str = ""  # deprecated, kept for .env compat
     nana_banana_api_key: str = ""
     kie_ai_api_key: str = ""

@@ -84,6 +84,42 @@ async def publish_threads_series_slot(draft_id: str, slot: str) -> dict[str, Any
     return {"status": "ok", "slot": slot, "external_id": result.get("id", "")}
 
 
+async def _tiktok_publish(draft_id: str) -> dict[str, Any]:
+    """Publish a draft to TikTok. Requires video content."""
+    from bot.services.tiktok_publisher import publish_to_tiktok
+    from bot.services.meta_publisher import _get_public_image_url
+
+    draft = await get_draft(draft_id)
+    if not draft:
+        return {"status": "failed", "error": "draft_not_found"}
+
+    payload = dict(draft.payload or {})
+
+    # Extract video URL
+    video_url = ""
+    video_info = payload.get("video") or {}
+    if isinstance(video_info, dict):
+        video_url = video_info.get("public_url") or video_info.get("url") or ""
+    if not video_url:
+        video_url = payload.get("video_url", "")
+
+    if not video_url:
+        return {"status": "failed", "error": "tiktok_requires_video"}
+
+    caption = _draft_text(payload, draft.kind or "tiktok")
+
+    try:
+        result = await publish_to_tiktok(caption, video_url)
+        logger.info("Published to TikTok: draft=%s result=%s", draft_id, result)
+        return {
+            "status": "success",
+            "external_id": result.get("publish_id", ""),
+        }
+    except Exception as exc:
+        logger.error("TikTok publish failed for draft %s: %s", draft_id, exc)
+        return {"status": "failed", "error": str(exc)}
+
+
 async def publish(
     draft_id: str,
     platforms: list[str],
@@ -124,6 +160,9 @@ async def publish(
     if "telegram" in platforms and telegram_bot and telegram_chat_id:
         result = await _telegram_publish(draft_id, telegram_bot, telegram_chat_id)
         results["telegram"] = result
+
+    if "tiktok" in platforms:
+        results["tiktok"] = await _tiktok_publish(draft_id)
 
     # Update draft metadata (external_ids, status, platforms) for backward compat
     draft = await get_draft(draft_id)

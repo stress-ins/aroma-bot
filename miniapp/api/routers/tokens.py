@@ -53,7 +53,7 @@ async def update_token(
     payload: TokenUpdatePayload,
     _: None = Depends(_require_webhook_auth),
 ):
-    if platform not in ("threads", "instagram", "canva", "youtube"):
+    if platform not in ("threads", "instagram", "canva", "youtube", "tiktok"):
         raise HTTPException(status_code=400, detail="unsupported_platform")
 
     expires_at: datetime | None = None
@@ -71,7 +71,7 @@ async def update_token(
 
 @router.post("/api/tokens/{platform}/refresh")
 async def refresh_token(platform: str, _: None = Depends(_require_webhook_auth)):
-    if platform not in ("threads", "instagram", "canva", "youtube"):
+    if platform not in ("threads", "instagram", "canva", "youtube", "tiktok"):
         raise HTTPException(status_code=400, detail="unsupported_platform")
 
     token_record = await get_token(platform)
@@ -83,6 +83,9 @@ async def refresh_token(platform: str, _: None = Depends(_require_webhook_auth))
 
     if platform == "youtube":
         return await _refresh_youtube(token_record)
+
+    if platform == "tiktok":
+        return await _refresh_tiktok(token_record)
 
     refresh_url = _REFRESH_URLS[platform]
     grant_type = _GRANT_TYPES[platform]
@@ -172,6 +175,40 @@ async def _refresh_canva(token_record) -> dict:
 
     updated = await upsert_token(
         "canva",
+        str(result["access_token"]),
+        expires_at,
+        refresh_token=str(result.get("refresh_token", "")),
+    )
+    return {**_serialize_token(updated), "refreshed": True}
+
+
+async def _refresh_tiktok(token_record) -> dict:
+    """Refresh TikTok token using refresh_token."""
+    if not token_record.refresh_token:
+        raise HTTPException(
+            status_code=400,
+            detail="no_refresh_token — переподключите TikTok в Настройки → Аккаунты",
+        )
+    if not settings.tiktok_client_key or not settings.tiktok_client_secret:
+        raise HTTPException(status_code=500, detail="tiktok_client_key/secret not configured")
+
+    try:
+        from bot.services.social_oauth import refresh_tiktok_token
+        result = refresh_tiktok_token(
+            refresh_token=token_record.refresh_token,
+            client_key=settings.tiktok_client_key,
+            client_secret=settings.tiktok_client_secret,
+        )
+    except Exception as exc:
+        logger.error("TikTok token refresh failed: %s", exc)
+        raise HTTPException(status_code=502, detail=f"refresh_failed: {exc}")
+
+    expires_at = None
+    if result.get("expires_in"):
+        expires_at = datetime.now(timezone.utc) + timedelta(seconds=int(result["expires_in"]))
+
+    updated = await upsert_token(
+        "tiktok",
         str(result["access_token"]),
         expires_at,
         refresh_token=str(result.get("refresh_token", "")),
