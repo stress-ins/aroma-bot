@@ -112,6 +112,7 @@ export function createSettingsModule(deps) {
         ${settingsMenuRow("paint-brush", "#FF9500", "Цветовая тема", "theme", null)}
         ${settingsMenuRow("map-pin", "#FF6B6B", "Город", "city", null)}
         ${settingsMenuRow("activity", "#FF3B30", "Источники данных", "status", enabledCount)}
+        ${settingsMenuRow("gauge", "#8E8E93", "Очереди", "admin_dashboard", null)}
       </div>
     </div>`;
 
@@ -423,6 +424,10 @@ export function createSettingsModule(deps) {
       }
       if (state.settingsSection === "city") {
         await renderCity();
+        return;
+      }
+      if (state.settingsSection === "admin_dashboard") {
+        await renderAdminDashboard();
         return;
       }
     }
@@ -1136,6 +1141,148 @@ export function createSettingsModule(deps) {
     }
   }
 
+  // ── Admin Dashboard ──────────────────────────────────────────────────────
+
+  async function renderAdminDashboard() {
+    elements.draftDetail.innerHTML = `<div class="detail-loader"><div class="loader"></div> Загрузка…</div>`;
+    enterDetailView();
+    syncMobileNavigation();
+
+    try {
+      const data = await fetchJson("/api/admin/dashboard");
+      const q = data.video_queue || {};
+      const mem = data.memory || {};
+      const disk = data.disk || {};
+      const llm = data.llm || {};
+      const worker = data.worker || {};
+      const isAdmin = data.is_admin || false;
+
+      // Video queue summary
+      const byStatus = q.by_status || {};
+      const statusRows = Object.entries(byStatus).map(([status, types]) => {
+        const total = Object.values(types).reduce((s, v) => s + v, 0);
+        const detail = Object.entries(types).map(([t, c]) => `${t}: ${c}`).join(", ");
+        const color = { pending: "var(--brand)", running: "#4a90d9", completed: "var(--good)", failed: "var(--danger, #e53935)" }[status] || "var(--hint)";
+        return `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)">
+          <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};margin-right:6px"></span>${escapeHtml(status)}</span>
+          <span style="color:var(--hint);font-size:12px">${detail} (${total})</span>
+        </div>`;
+      }).join("");
+
+      // Recent tasks
+      const recent = (q.recent || []).slice(0, 10).map(t => {
+        const statusColor = { pending: "var(--brand)", running: "#4a90d9", completed: "var(--good)", failed: "var(--danger)" }[t.status] || "var(--hint)";
+        return `<div style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid var(--border);font-size:12px;align-items:center">
+          <span style="min-width:50px;color:var(--hint)">#${escapeHtml(t.draft_id)}</span>
+          <span style="min-width:55px">${escapeHtml(t.type)}</span>
+          <span style="color:${statusColor};font-weight:600;min-width:65px">${escapeHtml(t.status)}</span>
+          <span style="color:var(--hint);flex:1">${t.step ? escapeHtml(t.step) : ""} ${t.progress ? t.progress + "%" : ""}</span>
+          <span style="color:var(--muted)">${t.duration_sec ? t.duration_sec + "с" : ""}</span>
+        </div>`;
+      }).join("");
+
+      // Memory bar
+      const ramPct = mem.ram_percent || 0;
+      const ramBar = `<div style="display:flex;align-items:center;gap:8px;margin:4px 0">
+        <span style="min-width:40px;font-size:12px;color:var(--hint)">RAM</span>
+        <div style="flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden">
+          <div style="width:${ramPct}%;height:100%;background:${ramPct > 80 ? "var(--danger)" : "var(--brand)"};border-radius:4px"></div>
+        </div>
+        <span style="min-width:90px;font-size:11px;color:var(--hint)">${mem.ram_used_mb || 0}/${mem.ram_total_mb || 0} МБ</span>
+      </div>`;
+
+      const swapPct = mem.swap_percent || 0;
+      const swapBar = `<div style="display:flex;align-items:center;gap:8px;margin:4px 0">
+        <span style="min-width:40px;font-size:12px;color:var(--hint)">Swap</span>
+        <div style="flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden">
+          <div style="width:${swapPct}%;height:100%;background:${swapPct > 50 ? "#f59e0b" : "var(--brand)"};border-radius:4px"></div>
+        </div>
+        <span style="min-width:90px;font-size:11px;color:var(--hint)">${mem.swap_used_mb || 0}/${mem.swap_total_mb || 0} МБ</span>
+      </div>`;
+
+      const diskPct = disk.percent || 0;
+      const diskBar = `<div style="display:flex;align-items:center;gap:8px;margin:4px 0">
+        <span style="min-width:40px;font-size:12px;color:var(--hint)">Диск</span>
+        <div style="flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden">
+          <div style="width:${diskPct}%;height:100%;background:${diskPct > 85 ? "var(--danger)" : "var(--brand)"};border-radius:4px"></div>
+        </div>
+        <span style="min-width:90px;font-size:11px;color:var(--hint)">${disk.used_gb || 0}/${disk.total_gb || 0} ГБ</span>
+      </div>`;
+
+      elements.draftDetail.innerHTML = `
+        <div class="detail-grid">
+          ${renderBackButton()}
+          <div class="detail-top">
+            <p class="eyebrow">${uiIcon("gauge")}<span>Очереди</span></p>
+            <h2 class="detail-title">Обработка видео</h2>
+          </div>
+
+          <section class="section">
+            <h3>${uiIcon("play-circle")} Worker</h3>` : ""}
+            <div style="display:flex;align-items:center;gap:8px;font-size:13px">
+              <span style="width:10px;height:10px;border-radius:50%;background:${worker.alive ? "var(--good)" : "var(--danger)"}"></span>
+              <span>${worker.alive ? "Работает" : "Остановлен"}</span>
+            </div>
+            <div style="font-size:12px;color:var(--hint);margin-top:4px">Активных задач: ${q.active || 0}</div>
+          </section>
+
+          <section class="section">
+            <h3>${uiIcon("stack")} Очередь видео</h3>
+            ${statusRows || '<div style="font-size:13px;color:var(--hint)">Нет задач</div>'}
+          </section>
+
+          <section class="section">
+            <h3>${uiIcon("clock-counter-clockwise")} Последние задачи</h3>
+            <div style="font-size:13px">${recent || '<div style="color:var(--hint)">Нет задач</div>'}</div>
+          </section>
+
+          ${isAdmin ? `
+          <section class="section">
+            <h3>${uiIcon("brain")} LLM запросы</h3>
+            <div style="font-size:13px">Сегодня: <strong>${llm.today || 0}</strong> · Всего: ${llm.total || 0}</div>
+          </section>
+
+          <section class="section">
+            <h3>${uiIcon("cpu")} Ресурсы</h3>
+            ${ramBar}${swapBar}${diskBar}
+          </section>
+
+          <section class="section">
+            <div class="actions-row" style="gap:8px">
+              <button class="secondary-button compact" type="button" data-action="adminResetStuck" data-args='[null]'>
+                ${uiIcon("arrow-counter-clockwise")} Сбросить залипшие
+              </button>
+              <button class="secondary-button compact" type="button" data-action="adminRestartWorker" data-args='[null]'>
+                ${uiIcon("play")} Перезапустить worker
+              </button>
+            </div>
+          </section>` : ""}
+        </div>`;
+    } catch (e) {
+      elements.draftDetail.innerHTML = `<div class="detail-empty">${renderGuidedState({
+        title: "Доступ запрещён",
+        body: e.message || "Нет прав администратора",
+      })}</div>`;
+    }
+    syncMobileNavigation();
+  }
+
+  async function adminResetStuck(_btn) {
+    try {
+      const res = await fetchJson("/api/admin/reset-stuck-tasks", { method: "POST" });
+      showUiNotice(`Сброшено задач: ${res.reset}`, "success");
+      await renderAdminDashboard();
+    } catch (e) { showUiNotice("Ошибка: " + (e.message || ""), "error"); }
+  }
+
+  async function adminRestartWorker(_btn) {
+    try {
+      await fetchJson("/api/admin/restart-worker", { method: "POST" });
+      showUiNotice("Worker перезапущен", "success");
+      await renderAdminDashboard();
+    } catch (e) { showUiNotice("Ошибка: " + (e.message || ""), "error"); }
+  }
+
   // ── Team management ──────────────────────────────────────────────────────
 
   async function renderTeam() {
@@ -1525,5 +1672,8 @@ export function createSettingsModule(deps) {
     renderTheme,
     renderCity,
     selectCity,
+    renderAdminDashboard,
+    adminResetStuck,
+    adminRestartWorker,
   };
 }

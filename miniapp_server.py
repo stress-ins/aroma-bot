@@ -144,7 +144,7 @@ def _setup_mounts_and_routers():
     from bot.services.reels_assets import ASSETS_DIR
     from bot.services.carousel_assets import CAROUSEL_ASSETS_DIR
     from miniapp.api.routers import (
-        archive, blend_constructor, carousel, create, drafts, hashtags, keywords,
+        admin, archive, blend_constructor, carousel, create, drafts, hashtags, keywords,
         mentions, misc, plans, publish, rag, recommendations, references, reels,
         repurpose, schedule, series, social, social_trends, stock_photos, teams,
         thread_monitor, threads_series, tokens, tone, trend_cards, trends,
@@ -174,7 +174,7 @@ def _setup_mounts_and_routers():
     app.mount("/generated/music", StaticFiles(directory=MUSIC_DIR), name="music-library")
 
     for _router in (
-        archive.router, blend_constructor.router, drafts.router, carousel.router, reels.router,
+        admin.router, archive.router, blend_constructor.router, drafts.router, carousel.router, reels.router,
         plans.router, rag.router, recommendations.router, references.router, create.router,
         hashtags.router, keywords.router, misc.router, publish.router, repurpose.router,
         schedule.router, series.router, social.router, social_trends.router, teams.router,
