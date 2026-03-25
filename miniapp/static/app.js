@@ -834,6 +834,7 @@ function contentKindIcon(kind) {
     reels_v2:       "reel",
     carousel:       "layers",
     content_series: "pencil",
+    youtube_video:  "video",
     instagram:      "instagram",
     telegram:       "telegram",
   };

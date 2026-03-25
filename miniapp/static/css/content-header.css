@@ -22,6 +22,7 @@
 }
 
 .topbar-nav-tabs:empty { display: none; }
+.topbar-nav-row:has(.topbar-nav-tabs:empty) { display: none; }
 
 /* Reuse .header-tab styles, active gets accent color */
 .topbar-nav-tabs .header-tab.active {
