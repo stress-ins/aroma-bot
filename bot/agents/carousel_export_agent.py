@@ -13,6 +13,154 @@ logger = logging.getLogger(__name__)
 _CORRECTIONS_LOG = Path(__file__).parent.parent.parent / "data" / "placement_corrections_log.jsonl"
 
 
+# ── 0. Build PPTX for editorial layout (text as editable layer) ──────────────
+
+def build_editorial_pptx(
+    slides: list[str],
+    images: list[bytes | None],
+    accent_color: tuple[int, int, int] = (138, 92, 246),
+    bg_color: tuple[int, int, int] = (18, 18, 22),
+    username: str = "",
+) -> bytes:
+    """Build PPTX with editorial layout: photo top 55%, solid bg bottom 45%, editable text.
+
+    Uses raw (clean) images — text is NOT burnt into the image.
+    Text is placed as an editable text box in the bottom section.
+    """
+    from PIL import Image
+    from pptx import Presentation
+    from pptx.util import Emu, Pt
+    from pptx.dml.color import RGBColor
+    from pptx.enum.text import PP_ALIGN
+
+    from bot.handlers.carousel import (
+        _embed_font_in_pptx,
+        _FONT_NAME,
+    )
+
+    # Slide dimensions: 1080×1350 (4:5 ratio)
+    SLIDE_W = 1080 * 9525  # EMU
+    SLIDE_H = 1350 * 9525  # EMU
+    PHOTO_FRAC = 0.55
+    photo_h_emu = int(SLIDE_H * PHOTO_FRAC)
+
+    BG_RGB = RGBColor(*bg_color)
+    WHITE = RGBColor(0xFF, 0xFF, 0xFF)
+    ACCENT = RGBColor(*accent_color)
+
+    prs = Presentation()
+    prs.slide_width = Emu(SLIDE_W)
+    prs.slide_height = Emu(SLIDE_H)
+    blank = prs.slide_layouts[6]
+
+    for i, raw_text in enumerate(slides):
+        text = raw_text
+        if isinstance(text, list):
+            text = "\n".join(str(item) for item in text)
+        elif not isinstance(text, str):
+            text = str(text)
+
+        slide = prs.slides.add_slide(blank)
+
+        # Solid background for entire slide
+        bg_shape = slide.shapes.add_shape(
+            1, Emu(0), Emu(0), Emu(SLIDE_W), Emu(SLIDE_H),
+        )
+        bg_shape.fill.solid()
+        bg_shape.fill.fore_color.rgb = BG_RGB
+        bg_shape.line.fill.background()
+
+        # Photo at top (cropped to cover width × photo_h)
+        img_bytes = images[i] if i < len(images) else None
+        if img_bytes:
+            try:
+                img = Image.open(io.BytesIO(img_bytes))
+                iw, ih = img.size
+                # Cover crop to 1080 × (1350*0.55)
+                target_w = 1080
+                target_h = int(1350 * PHOTO_FRAC)
+                tr = target_w / target_h
+                pr = iw / ih
+                if pr > tr:
+                    new_h = target_h
+                    new_w = int(iw * target_h / ih)
+                else:
+                    new_w = target_w
+                    new_h = int(ih * target_w / iw)
+                img = img.resize((new_w, new_h), Image.LANCZOS)
+                lc = (new_w - target_w) // 2
+                tc = (new_h - target_h) // 2
+                img = img.crop((lc, tc, lc + target_w, tc + target_h))
+                buf = io.BytesIO()
+                img.save(buf, format="PNG")
+                cropped_bytes = buf.getvalue()
+            except Exception:
+                cropped_bytes = img_bytes
+
+            slide.shapes.add_picture(
+                io.BytesIO(cropped_bytes),
+                Emu(0), Emu(0),
+                Emu(SLIDE_W), Emu(photo_h_emu),
+            )
+
+        # Text area in bottom 45%
+        pad_x = Emu(int(SLIDE_W * 0.044))  # ~48px at 1080
+        text_top = Emu(photo_h_emu + int(SLIDE_H * 0.02))
+        text_h = Emu(SLIDE_H - photo_h_emu - int(SLIDE_H * 0.05))
+        text_w = Emu(SLIDE_W) - pad_x * 2
+
+        # Username bar
+        if username:
+            ubox = slide.shapes.add_textbox(pad_x, Emu(photo_h_emu + int(SLIDE_H * 0.01)), text_w, Emu(int(SLIDE_H * 0.03)))
+            ubox.fill.background()
+            utf = ubox.text_frame
+            utf.word_wrap = True
+            up = utf.paragraphs[0]
+            up.alignment = PP_ALIGN.LEFT
+            ur = up.add_run()
+            ur.text = username
+            ur.font.name = _FONT_NAME
+            ur.font.size = Pt(14)
+            ur.font.color.rgb = RGBColor(200, 200, 210)
+            text_top = Emu(photo_h_emu + int(SLIDE_H * 0.045))
+            text_h = Emu(SLIDE_H - photo_h_emu - int(SLIDE_H * 0.07))
+
+        # Main text box (editable!)
+        is_bullet = "\n•" in text or "\n-" in text or "\n*" in text
+        display_text = text if is_bullet else text.upper()
+
+        txBox = slide.shapes.add_textbox(pad_x, text_top, text_w, text_h)
+        txBox.fill.background()
+        tf = txBox.text_frame
+        tf.word_wrap = True
+
+        # Determine font size
+        char_count = len(text)
+        if is_bullet:
+            font_size = 22
+        elif char_count <= 40:
+            font_size = 44
+        elif char_count <= 80:
+            font_size = 36
+        elif char_count <= 150:
+            font_size = 30
+        else:
+            font_size = 24
+
+        p_txt = tf.paragraphs[0]
+        p_txt.alignment = PP_ALIGN.CENTER if not is_bullet else PP_ALIGN.LEFT
+        r_txt = p_txt.add_run()
+        r_txt.text = display_text
+        r_txt.font.name = _FONT_NAME
+        r_txt.font.size = Pt(font_size)
+        r_txt.font.bold = True
+        r_txt.font.color.rgb = WHITE
+
+    out = io.BytesIO()
+    prs.save(out)
+    return _embed_font_in_pptx(out.getvalue())
+
+
 # ── 1. Build PPTX from placement data ─────────────────────────────────────────
 
 def build_pptx_from_placement(
