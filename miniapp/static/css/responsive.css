@@ -1,0 +1,297 @@
+/* ═══════════════════════════════════════
+   SECTION: Mobile Layout & Responsive
+   ═══════════════════════════════════════ */
+
+/* ── Safe Area Insets (Dynamic Island, Telegram chrome) ─────────────────── */
+/* --tg-content-inset-top is set by JS from Telegram.WebApp.contentSafeAreaInset.top.  */
+/* It includes both the iPhone notch/Dynamic Island AND the Telegram close bar height.  */
+/* Fallback: env(safe-area-inset-top) for older Telegram versions (no contentSafeArea) */
+.shell {
+  padding-top: var(--tg-content-inset-top, env(safe-area-inset-top, 0px));
+}
+
+/* ── Mobile Layout Fixes ─────────────────────────────────────────────────── */
+@media (max-width: 760px) {
+  body.is-mobile-layout {
+    padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* When soft keyboard is open: hide the bottom nav so it can't overlap focused fields.
+     padding-bottom also removed — nav space is no longer needed. */
+  body.is-mobile-layout.is-keyboard-open {
+    padding-bottom: 0;
+  }
+  body.is-keyboard-open .bottom-tab-bar {
+    display: none;
+  }
+
+  .detail-title {
+    font-size: 19px;
+  }
+
+  /* Reduce horizontal padding on cards/panels for more text space */
+  .panel { padding: var(--space-4) 10px; }
+  body.is-mobile-layout .detail-top { padding: var(--space-3) 10px; }
+  .filter-chips { padding-left: 10px; padding-right: 10px; }
+  body.is-mobile-layout .draft-detail { padding-left: 8px; padding-right: 8px; }
+
+  .back-button.visible {
+    display: inline-flex;
+  }
+
+  body.is-mobile-layout .back-button.visible {
+    position: sticky;
+    top: calc(var(--tg-content-inset-top, env(safe-area-inset-top, 0px)) + 52px);
+    z-index: 45;
+    background: rgba(245, 240, 232, 0.72);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 999px;
+    padding: 6px 14px;
+    margin-bottom: 8px;
+  }
+
+  /* In detail view the topbar-main is hidden, so back button sticks right at the top */
+  /* Lock viewport so only the detail-panel scrolls */
+  body.is-mobile-layout.is-detail-view {
+    overflow: hidden;
+    height: var(--tg-viewport-stable-height, 100dvh);
+    padding-bottom: 0; /* detail-panel has its own padding — body padding creates a visible rectangle */
+    background: var(--bg);
+  }
+  /* When keyboard is open, constrain to visual viewport so scrollIntoView works */
+  body.is-mobile-layout.is-detail-view.is-keyboard-open {
+    height: var(--vv-height, 100dvh);
+  }
+  body.is-mobile-layout.is-detail-view .shell {
+    height: 100%;
+    min-height: 0;   /* override base min-height: viewport */
+    overflow: hidden;
+    padding-top: 0;  /* topbar-nav-row is hidden in detail view — no gap needed */
+  }
+  body.is-mobile-layout.is-detail-view .layout {
+    min-height: 0;   /* allow flex shrink */
+  }
+  body.is-mobile-layout.is-detail-view .topbar-main {
+    display: none;
+  }
+  body.is-mobile-layout.is-detail-view .back-button.visible {
+    top: var(--tg-content-inset-top, env(safe-area-inset-top, 0px));
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  body.is-mobile-layout.is-detail-view .detail-panel {
+    /* Stretch to fill the grid cell so overflow-y creates a real scroll container.
+       The height is constrained by body→shell→layout flex chain above. */
+    align-self: stretch;
+    min-height: 0;
+    padding-top: var(--tg-content-inset-top, env(safe-area-inset-top, 0px));
+    padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
+    padding-left: 8px;
+    padding-right: 8px;
+    overflow-y: auto;
+    /* Full-screen scroll container — no card frame so it doesn't look "cut off" */
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+  }
+
+  /* Bottom fade removed — padding-bottom on detail-panel handles tab bar gap */
+
+  body.is-mobile-layout.is-detail-view .detail-grid .section {
+    scroll-margin-top: calc(52px + var(--tg-content-inset-top, env(safe-area-inset-top, 0px)));
+  }
+
+  /* ── Detail-view: edge-to-edge on mobile ──────────────────────────────── */
+  body.is-mobile-layout .detail-grid {
+    padding-left: 0;
+    padding-right: 0;
+    max-width: 100%;
+    width: 100%;
+  }
+
+  /* All direct children get horizontal padding for content readability */
+  body.is-mobile-layout .detail-grid > * {
+    padding-left: var(--space-3);
+    padding-right: var(--space-3);
+  }
+
+  /* Edge-to-edge sections — no padding */
+  body.is-mobile-layout .detail-grid > .detail-hero,
+  body.is-mobile-layout .detail-grid > .aroma-image {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  /* Blend expert cards and actions: inset with margin so border doesn't hug the screen edge */
+  body.is-mobile-layout .detail-grid > .blend-expert-card,
+  body.is-mobile-layout .detail-grid > .blend-actions-stack,
+  body.is-mobile-layout .detail-grid > .blend-warn {
+    margin-left: var(--space-3);
+    margin-right: var(--space-3);
+    padding-left: 11px;
+    padding-right: 11px;
+  }
+
+  /* Sections keep their full card styling (border + radius from base .section) */
+  body.is-mobile-layout .detail-grid .section {
+    position: relative;
+  }
+  body.is-mobile-layout .detail-grid .section::after {
+    display: none; /* Use base border-bottom instead of inset pseudo-divider */
+  }
+  body.is-mobile-layout .detail-grid .section-placeholder::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: var(--space-3);
+    right: var(--space-3);
+    height: 1px;
+    background: var(--border);
+  }
+
+  body.is-mobile-layout .detail-grid .section.is-card::after {
+    display: none;
+  }
+
+  /* Exception: card-style sections keep inset + rounded corners */
+  body.is-mobile-layout .detail-grid .section.is-card {
+    border-radius: var(--radius-md);
+    margin: 0 var(--space-3) 10px;
+    border: 1px solid var(--border);
+  }
+
+  .bottom-tab-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: block;
+    padding: 10px 10px calc(10px + env(safe-area-inset-bottom, 0px));
+    z-index: 30;
+    pointer-events: none;
+    background: transparent;
+  }
+
+  .bottom-tab-bar .bottom-tab-bar-inner {
+    pointer-events: auto;
+  }
+
+  body.is-mobile-layout .list-panel .panel-header {
+    padding: var(--space-2) var(--space-3);
+    margin: 0 6px 8px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+  }
+  /* Hide panel-header when filters are hidden AND counter is empty (settings, trends) */
+  body.is-mobile-layout .list-panel .panel-header:has(#filtersContainer[hidden]):has(.panel-count:empty) {
+    display: none;
+  }
+
+  body.is-mobile-layout .list-panel:has(.guided-state) {
+    flex: 0 1 auto;
+  }
+
+  body.is-mobile-layout .list-panel {
+    max-height: calc(var(--tg-viewport-stable-height, 100dvh) - 160px);
+    /* Remove card frame on mobile — content should flow edge-to-edge */
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+    padding-top: 0;
+  }
+
+  .list-panel {
+    transition: opacity var(--duration-medium, 180ms) var(--ease-standard, ease),
+                transform var(--duration-medium, 180ms) var(--ease-standard, ease);
+  }
+
+  .list-panel.hidden-mobile {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(-30px);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+  }
+  .list-panel:not(.hidden-mobile) {
+    opacity: 1;
+    transform: none;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+  }
+
+  .detail-panel.hidden-mobile {
+    display: none !important;
+  }
+
+  .shell {
+    padding: 8px;
+  }
+
+  .topbar-main {
+    padding: var(--space-3);
+  }
+
+  .topbar-title {
+    font-size: 18px;
+  }
+
+  .create-tool-panel {
+    padding: 26px 20px;
+    border-radius: 22px;
+  }
+
+  .create-tool-panel h3 {
+    font-size: 14px;
+    margin-bottom: 16px;
+  }
+
+  .create-tool-panel .create-form {
+    gap: 12px;
+  }
+
+  .create-tool-panel .create-form label {
+    gap: 6px;
+    font-size: 14px;
+  }
+
+  .create-tool-panel .create-form textarea,
+  .create-tool-panel .create-form select,
+  .create-tool-panel .create-form input {
+    padding: 14px 14px;
+    font-size: 18px;
+    border-radius: 14px;
+  }
+
+  .create-tool-panel .create-form textarea {
+    min-height: 132px;
+  }
+
+  .create-tool-panel .primary-button {
+    min-height: 62px;
+    font-size: 18px;
+  }
+
+  .tab-button,
+  .mode-button,
+  .back-button,
+  .secondary-button,
+  .status-button,
+  .feedback-button,
+  .primary-button {
+    min-height: 44px;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  body.is-mobile-layout .back-button.visible {
+    background: rgba(var(--bg-rgb), 0.72);
+  }
+}
+body.tg-theme-dark.is-mobile-layout .back-button.visible {
+  background: rgba(var(--bg-rgb), 0.72);
+}
+

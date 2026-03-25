@@ -1,0 +1,75 @@
+/* ═══════════════════════════════════════
+   SECTION: Recommendations
+   ═══════════════════════════════════════ */
+
+/* -- Recommendations Wizard -- */
+.reco-cta-btn { display: block; width: 100%; padding: 10px var(--space-4); margin-top: var(--space-2); background: var(--brand-bg); color: var(--brand); border: 1px solid var(--brand-border); border-radius: 99px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.reco-cta-btn:hover { background: rgba(var(--brand-rgb), 0.18); }
+.reco-wizard { padding: var(--space-4); }
+.reco-progress { display: flex; gap: 6px; justify-content: center; margin-bottom: var(--space-4); }
+.reco-progress-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); }
+.reco-progress-dot.active { background: var(--brand); }
+.reco-step-title { font-size: 18px; font-weight: 700; margin-bottom: var(--space-4); color: var(--text); text-align: center; }
+.reco-step { margin-bottom: var(--space-4); }
+.reco-hint { font-size: 13px; color: var(--muted); margin-bottom: var(--space-3); }
+.reco-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); justify-content: center; }
+.reco-chip { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; color: var(--text); cursor: pointer; flex: 1 1 calc(50% - var(--space-2)); justify-content: center; }
+.reco-chip:hover { background: var(--surface-3); }
+.reco-chip.active { background: var(--brand-bg); border-color: var(--brand-border); color: var(--brand); font-weight: 600; }
+.reco-chip-icon { width: 16px; height: 16px; }
+.reco-textarea { width: 100%; min-height: 80px; padding: var(--space-3); background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; color: var(--text); resize: vertical; font-family: var(--font-ui); }
+.reco-textarea::placeholder { color: var(--hint); }
+.reco-nav { display: flex; gap: var(--space-3); justify-content: flex-end; }
+.reco-next-btn, .reco-submit-btn { padding: 10px 24px; background: var(--brand); color: var(--text-on-brand); border: none; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; cursor: pointer; }
+.reco-next-btn:disabled, .reco-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.reco-loading { display: flex; justify-content: center; align-items: center; min-height: 200px; }
+.reco-results { display: flex; flex-direction: column; gap: var(--space-4); }
+.reco-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; }
+.reco-card-image { width: 100%; height: 160px; object-fit: cover; }
+.reco-card-body { padding: var(--space-4); }
+.reco-card-title { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: var(--space-2); }
+.reco-card-reason { font-size: 14px; color: var(--muted); margin-bottom: var(--space-3); line-height: 1.5; }
+.reco-card-practice { font-size: 13px; color: var(--text); margin-bottom: var(--space-3); line-height: 1.5; }
+.reco-card-practice strong { display: block; margin-bottom: var(--space-1); color: var(--sage); font-size: 12px; text-transform: uppercase; letter-spacing: 0.03em; }
+.reco-card-practice p { margin: 0; }
+.reco-card-actions { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+.reco-card-btn { padding: 8px 14px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; cursor: pointer; border: none; }
+.reco-card-btn:hover { opacity: 0.85; }
+.reco-card-btn-detail { background: var(--brand-bg); color: var(--brand); }
+.reco-card-btn-blend { background: var(--sage-bg); color: var(--sage); }
+.reco-general-advice { background: var(--surface-2); border-radius: var(--radius-sm); padding: var(--space-4); font-size: 14px; color: var(--muted); line-height: 1.5; }
+.reco-general-advice p { margin: 0; }
+.reco-restart-btn { display: block; width: 100%; padding: 10px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; color: var(--text); cursor: pointer; text-align: center; }
+.reco-restart-btn:hover { background: var(--surface-3); }
+
+/* ── Blend Constructor Form ───────────────────────────────────────────── */
+.blend-constructor-form .chip-list,
+.blend-constructor-form .radio-row { gap: 8px; justify-content: center; }
+.blend-constructor-form .chip-selectable { flex: 1 0 auto; text-align: center; border-radius: var(--radius-sm); }
+.blend-constructor-form .primary-button { width: 100%; }
+.blend-constructor-form .field-textarea,
+.blend-constructor-form .field-input { width: 100%; box-sizing: border-box; }
+
+/* ── Daily Oil Banner ─────────────────────────────────────────────────── */
+.daily-oil-banner {
+  background: linear-gradient(135deg, rgba(var(--brand-rgb),.12), rgba(var(--brand-rgb),.03));
+  border: 1px solid rgba(var(--brand-rgb),.2);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-5);
+  margin-bottom: var(--space-4);
+  cursor: pointer;
+  transition: box-shadow var(--duration-fast) var(--ease-standard), transform var(--duration-fast);
+}
+.daily-oil-banner:hover { box-shadow: 0 4px 16px rgba(var(--brand-rgb),.15); }
+.daily-oil-banner:active { transform: scale(0.98); }
+.daily-oil-header { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2); }
+.daily-oil-icon { width: 18px; height: 18px; color: var(--brand); }
+.daily-oil-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--brand); }
+.daily-oil-name { margin: 0 0 var(--space-2); font-size: 20px; font-weight: 700; color: var(--text); }
+.daily-oil-reason { margin: 0 0 var(--space-2); font-size: 13px; line-height: 1.4; color: var(--brand); font-style: italic; }
+.daily-oil-fact { margin: 0 0 var(--space-2); font-size: 14px; line-height: 1.5; color: var(--muted); }
+.daily-oil-practice { margin: 0 0 var(--space-2); font-size: 14px; line-height: 1.5; color: var(--text); }
+.daily-oil-practice strong { color: var(--sage); }
+.daily-oil-cta { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; color: var(--brand); margin-top: var(--space-1); }
+.daily-oil-cta i { width: 14px; height: 14px; }
+

@@ -1,0 +1,77 @@
+/* ═══════════════════════════════════════
+   SECTION: Settings
+   ═══════════════════════════════════════ */
+
+.settings-section input[type="text"],
+.settings-section input[type="password"],
+.settings-section textarea {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: inherit;
+  width: 100%;
+  box-sizing: border-box;
+}
+.settings-section input[type="text"]:focus,
+.settings-section input[type="password"]:focus,
+.settings-section textarea:focus {
+  border-color: var(--brand-border);
+  outline: none;
+}
+
+/* draft-textarea used for inline inputs in settings */
+.draft-textarea {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: inherit;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* content-review elements had hardcoded white backgrounds */
+body.tg-theme-dark .content-review-highlight textarea {
+  background: var(--surface-2);
+}
+
+body.tg-theme-dark .content-review-lead {
+  background: var(--surface-2);
+  border-color: rgba(var(--brand-rgb), 0.22);
+  box-shadow: none;
+}
+
+/* text nodes inside dark cards — inherit from parent color */
+body.tg-theme-dark .reels-overview-card strong,
+body.tg-theme-dark .storyboard-frame strong,
+body.tg-theme-dark .section-heading p,
+body.tg-theme-dark .detail-loader-card,
+body.tg-theme-dark .detail-loader-copy strong,
+body.tg-theme-dark .detail-loader-copy span,
+body.tg-theme-dark .detail-fact-label,
+body.tg-theme-dark .detail-fact-value,
+body.tg-theme-dark .reels-frame-section-value,
+body.tg-theme-dark .reels-frame-section-value p,
+body.tg-theme-dark .reels-frame-section-value li,
+body.tg-theme-dark .detail-preview,
+body.tg-theme-dark .detail-markdown,
+body.tg-theme-dark .detail-markdown p,
+body.tg-theme-dark .detail-markdown li,
+body.tg-theme-dark .detail-markdown h3,
+body.tg-theme-dark .detail-markdown h4,
+body.tg-theme-dark .detail-markdown h5 {
+  color: inherit;
+}
+
+/* Dark-mode contrast fixes for tinted buttons */
+body.tg-theme-dark .filter-chip.active {
+  background: rgba(var(--brand-rgb), 0.28);
+  color: var(--text);
+  border-color: rgba(var(--brand-rgb), 0.50);
+}
+body.tg-theme-dark .danger-button {
+  background: rgba(176, 58, 46, 0.15);
+  color: #e27266;
+  border-color: rgba(176, 58, 46, 0.40);
+}
+

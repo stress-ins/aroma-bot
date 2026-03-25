@@ -1,0 +1,248 @@
+/* ═══════════════════════════════════════
+   SECTION: Archive
+   ═══════════════════════════════════════ */
+
+.archive-card {
+  border-left: 3px solid var(--sage, var(--brand));
+}
+
+.archive-card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.archive-card-left { flex: 1; min-width: 0; }
+
+.archive-card-kind {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.archive-card-date {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  margin-left: auto;
+}
+
+.archive-card-title {
+  font-weight: 500;
+  margin-top: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.archive-card-metrics {
+  font-size: var(--text-xs);
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.archive-card-metrics svg { width: 12px; height: 12px; }
+
+.archive-score-badge {
+  margin-left: auto;
+  font-weight: 600;
+  color: var(--brand);
+}
+
+/* ── Archive stats ──────────────────────────────────────────────────────── */
+
+.archive-stats {
+  margin: 0 12px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.archive-stats-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.archive-stats-body {
+  padding: 8px 12px 12px;
+  border-top: 1px solid var(--border);
+}
+
+.archive-stat-row {
+  display: flex;
+  gap: 8px;
+  font-size: var(--text-sm);
+  color: var(--fg);
+}
+
+/* ── Score stars ─────────────────────────────────────────────────────────── */
+
+.score-stars-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+  gap: 8px;
+}
+
+.score-label {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.score-label-name {
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+.score-label-hint {
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+
+.score-stars {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.score-star-btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--surface-3, var(--border));
+  transition: color var(--transition-fast);
+}
+
+.score-star-btn svg { width: 20px; height: 20px; }
+
+.score-star-btn.score-star--filled { color: var(--brand); }
+
+.score-star {
+  display: inline-flex;
+  align-items: center;
+  color: var(--surface-3, var(--border));
+}
+
+.score-star svg { width: 14px; height: 14px; }
+
+.score-star.score-star--filled { color: var(--brand); }
+
+.score-avg {
+  text-align: right;
+  font-weight: 600;
+  font-size: var(--text-sm);
+  color: var(--brand);
+  padding: 4px 0;
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+}
+
+/* ── Metrics grid ───────────────────────────────────────────────────────── */
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.metric-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-sm);
+}
+
+.metric-item svg { width: 14px; height: 14px; color: var(--muted); }
+
+.metric-input-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.metric-input-item label {
+  font-size: var(--text-xs);
+  color: var(--muted);
+  font-weight: 500;
+}
+
+/* ── Archive tag ────────────────────────────────────────────────────────── */
+
+.tag-status-archive {
+  background: color-mix(in srgb, var(--brand) 12%, transparent);
+  color: var(--brand);
+}
+
+/* ── Form divider ───────────────────────────────────────────────────────── */
+
+.divider-label {
+  text-align: center;
+  font-size: var(--text-xs);
+  color: var(--muted);
+  padding: 12px 0 4px;
+  position: relative;
+}
+
+.divider-label::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background: var(--border);
+}
+
+.divider-label span,
+.divider-label {
+  position: relative;
+  background: var(--bg);
+  padding: 0 12px;
+}
+
+/* ── Audit fixes 2026-03-23 ───────────────────────────────────────────── */
+
+/* Fix: section headings should wrap, not truncate */
+.section h3 {
+  min-width: 0;
+  white-space: normal;
+  word-break: break-word;
+}
+
+/* Fix: paywall modal needs bottom safe area for navigation bar */
+.paywall-modal-backdrop {
+  padding-bottom: 80px;
+}
+
+/* Fix: stepper dots too small for touch (< 44px target) */
+.reels-step {
+  min-height: 44px;
+  min-width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+

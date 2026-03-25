@@ -1,0 +1,37 @@
+/* ═══════════════════════════════════════
+   SECTION: Tags & Badges
+   ═══════════════════════════════════════ */
+
+/* ── Tags ────────────────────────────────────────────────────────────────── */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 999px;
+  padding: 5px 10px;
+  min-height: 26px;
+  background: rgba(93, 110, 58, 0.10);
+  color: var(--sage);
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+.tag-status-positive { background: rgba(46, 125, 79, 0.12); color: var(--good); border-color: rgba(46, 125, 79, 0.18); }
+.tag-status-negative { background: rgba(176, 58, 46, 0.12); color: var(--bad); border-color: rgba(176, 58, 46, 0.18); }
+.tag-status-review { background: rgba(var(--brand-rgb), 0.12); color: var(--brand); border-color: rgba(var(--brand-rgb), 0.2); }
+.tag-status-neutral {
+  display: inline-block; font-size: 11px; font-weight: 600;
+  background: rgba(107, 90, 78, 0.12); border: 1px solid rgba(107, 90, 78, 0.16);
+  color: var(--muted); padding: 2px 8px; border-radius: 20px;
+}
+.tag-feedback-worked { background: rgba(46, 125, 79, 0.1); color: var(--good); border-color: rgba(46, 125, 79, 0.16); }
+.tag-feedback-missed { background: rgba(176, 58, 46, 0.1); color: var(--bad); border-color: rgba(176, 58, 46, 0.16); }
+.tag-feedback-neutral { background: rgba(107, 90, 78, 0.1); color: var(--muted); border-color: rgba(107, 90, 78, 0.16); }
+.tag-source-plan { background: rgba(93, 110, 58, 0.12); color: var(--sage); border-color: rgba(93, 110, 58, 0.18); }
+.tag-source-content { background: rgba(28, 21, 16, 0.06); color: var(--text); border-color: rgba(28, 21, 16, 0.08); }
+.tag-source-miniapp { background: rgba(var(--brand-rgb), 0.08); color: var(--brand); border-color: rgba(var(--brand-rgb), 0.16); }
+.tag-source-neutral { background: rgba(107, 90, 78, 0.1); color: var(--muted); border-color: rgba(107, 90, 78, 0.16); }
+.tag-progress,
+.tag-pending { color: #b8860b; background: rgba(184, 134, 11, 0.12); border-color: rgba(184, 134, 11, 0.20); }
+

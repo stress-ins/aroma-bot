@@ -1,0 +1,92 @@
+/* ═══════════════════════════════════════
+   SECTION: Touch & Selection
+   Prevent native text selection on interactive elements (mobile long-press)
+   ═══════════════════════════════════════ */
+
+button,
+a,
+[role="button"],
+[role="tab"],
+[role="menuitem"],
+label,
+summary {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+.bottom-tab-bar,
+.bottom-tab-btn,
+.tab-button {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.interactive-card,
+.draft-card,
+.create-card,
+.plan-card,
+.plan-entry-card,
+.reels-card,
+.reference-card {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.date-picker-btn,
+.topbar,
+.topbar-main,
+.brand-loader,
+.detail-loader-card,
+.panel-loader-card,
+.boot-fallback,
+.preview-modal-header,
+.preview-modal-backdrop,
+.canva-design-item,
+.filter-chips,
+.filter-chip,
+.detail-empty,
+.guided-state,
+.overview-card-footer,
+.draft-meta,
+.draft-kind,
+.badge,
+.status-tag,
+.back-button,
+.fab-button,
+h1, h2, h3, h4 {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+svg,
+.ph {
+  -webkit-user-select: none;
+  user-select: none;
+  pointer-events: none;
+  -webkit-touch-callout: none;
+}
+
+/* ── Content that MUST remain selectable ───────────────────────────── */
+input[type="text"],
+input[type="number"],
+input[type="email"],
+input[type="search"],
+textarea,
+[contenteditable] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+p,
+.detail-preview,
+.detail-markdown,
+.draft-preview {
+  -webkit-user-select: text;
+  user-select: text;
+}
+

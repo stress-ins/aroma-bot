@@ -40,6 +40,16 @@ def _miniapp_static_text(*relative_parts: str) -> str:
     return Path("miniapp", "static", *relative_parts).read_text(encoding="utf-8")
 
 
+def _read_full_css() -> str:
+    """Read app.css and all component CSS files under css/ directory."""
+    css_dir = Path("miniapp/static/css")
+    parts = [Path("miniapp/static/app.css").read_text(encoding="utf-8")]
+    if css_dir.is_dir():
+        for p in sorted(css_dir.glob("*.css")):
+            parts.append(p.read_text(encoding="utf-8"))
+    return "\n".join(parts)
+
+
 def _miniapp_js_bundle() -> str:
     return " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
 
@@ -1318,7 +1328,7 @@ class TestMiniAppRussianLocale:
 
     def test_tab_switching_uses_native_click_and_touch_action(self):
         app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
-        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        app_css = _read_full_css()
 
         # We use standard click now, but ensure tabs switching logic is there
         assert 'addEventListener("click"' in app_js
@@ -1330,7 +1340,7 @@ class TestMiniAppRussianLocale:
     def test_swipe_back_hint_without_panel_shift(self):
         """Swipe-back moves panel with finger (translateX) and shows ready indicator at threshold."""
         shell_js = _miniapp_static_text("js", "shell.js")
-        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        app_css = _read_full_css()
         assert "function bindSwipeBack" in shell_js
         assert "isInteractiveTarget(event.target)" in shell_js
         assert "const edgeSwipe = touch.clientX < 44;" in shell_js
@@ -1349,7 +1359,7 @@ class TestMiniAppRussianLocale:
         app_js = _miniapp_static_text("app.js")
         core_js = _miniapp_static_text("js", "core.js")
         runtime_js = _miniapp_static_text("js", "runtime.js")
-        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        app_css = _read_full_css()
 
         assert "function showBootFallback" in core_js
         assert "function hideBootFallback" in core_js
@@ -1382,7 +1392,7 @@ class TestMiniAppRussianLocale:
 
     def test_handbook_concepts_have_meta_and_render_course_fields(self):
         app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
-        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        app_css = _read_full_css()
 
         assert 'category: "concept"' in app_js
         assert 'searchLabel: "Поиск темы"' in app_js
@@ -1416,7 +1426,7 @@ class TestMiniAppRussianLocale:
         assert "function stripMarkdown" in app_js
 
     def test_content_cards_force_left_alignment_and_mobile_button_stack(self):
-        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        app_css = _read_full_css()
 
         assert "text-align: left;" in app_css
         assert "flex: 1 1 100%;" in app_css
@@ -1430,7 +1440,7 @@ class TestMiniAppRussianLocale:
         assert "hasActiveTextSelection()" in shell_js
 
     def test_draft_cards_have_stronger_readability_styles(self):
-        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        app_css = _read_full_css()
         app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
 
         assert ".kind-glyph" in app_css
@@ -1441,7 +1451,7 @@ class TestMiniAppRussianLocale:
 
     def test_telegram_dark_theme_uses_body_class_for_bottom_nav(self):
         source = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
-        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        app_css = _read_full_css()
 
         assert 'document.body.classList.toggle("tg-theme-dark", tg.colorScheme === "dark");' in source
         assert "body.tg-theme-dark .bottom-tab-bar-inner" in app_css
@@ -1451,7 +1461,7 @@ class TestMiniAppRussianLocale:
         assert 'iconMap[normalized] || "note"' in source
 
     def test_create_tool_panel_is_scaled_up_for_mobile(self):
-        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        app_css = _read_full_css()
         app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
 
         assert "create-tool-panel" in app_js
@@ -1461,7 +1471,7 @@ class TestMiniAppRussianLocale:
         assert "min-height: 62px;" in app_css
 
     def test_create_cards_use_icons_and_top_switcher_gap_is_balanced(self):
-        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        app_css = _read_full_css()
         app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
 
         assert '".topbar + .toolbar"' in app_css or ".topbar + .toolbar" in app_css
@@ -1473,7 +1483,7 @@ class TestMiniAppRussianLocale:
         assert 'contentKindIcon("plan")' in app_js
 
     def test_mobile_shell_moves_primary_navigation_to_bottom_bar(self):
-        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        app_css = _read_full_css()
         html = Path("miniapp/index.html").read_text(encoding="utf-8")
 
         # On mobile the topbar-main is now sticky (shows section title) rather than hidden;
@@ -1505,7 +1515,7 @@ class TestMiniAppRussianLocale:
         - session.js must apply TG_HEADER_FALLBACK so content doesn't go under
           Telegram header on older Bot API versions without contentSafeAreaInset
         """
-        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        app_css = _read_full_css()
         html = Path("miniapp/index.html").read_text(encoding="utf-8")
         session_js = Path("miniapp/static/js/session.js").read_text(encoding="utf-8")
         shell_js = Path("miniapp/static/js/shell.js").read_text(encoding="utf-8")
@@ -1629,7 +1639,7 @@ class TestMiniAppRussianLocale:
 
     def test_content_review_detail_supports_editing_polish_and_feedback(self):
         app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
-        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        app_css = _read_full_css()
         server_py = Path("miniapp_server.py").read_text(encoding="utf-8") + "".join(
             p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/api").rglob("*.py"))
         )
@@ -1671,7 +1681,7 @@ class TestMiniAppRussianLocale:
 
     def test_keywords_detail_supports_editing_and_ui_notices(self):
         app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
-        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        app_css = _read_full_css()
         server_py = Path("miniapp_server.py").read_text(encoding="utf-8") + "".join(
             p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/api").rglob("*.py"))
         )
@@ -1695,7 +1705,7 @@ class TestMiniAppRussianLocale:
 
     def test_guided_states_cover_empty_and_onboarding_paths(self):
         app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
-        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        app_css = _read_full_css()
         html = Path("miniapp/index.html").read_text(encoding="utf-8")
 
         assert "function renderGuidedState" in app_js
@@ -1711,7 +1721,7 @@ class TestMiniAppRussianLocale:
         assert "Откройте раздел или карточку слева" in html
 
     def test_primary_controls_use_comfortable_size_tokens(self):
-        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        app_css = _read_full_css()
 
         assert "min-height: 40px;" in app_css
         assert "min-height: 44px;" in app_css
@@ -1744,7 +1754,7 @@ class TestMiniAppRussianLocale:
 
     def test_buttons_have_loading_feedback_animation(self):
         app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
-        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        app_css = _read_full_css()
 
         assert "function withButtonFeedback" in app_js
         assert "button-spinner" in app_css
@@ -1753,7 +1763,7 @@ class TestMiniAppRussianLocale:
 
     def test_detail_opening_uses_branded_a_loader(self):
         app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
-        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        app_css = _read_full_css()
 
         assert "function renderDetailLoader" in app_js
         assert "Открываю черновик" in app_js
@@ -1763,7 +1773,7 @@ class TestMiniAppRussianLocale:
 
     def test_drafts_tab_uses_inline_a_loader_and_timeout_state(self):
         app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
-        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        app_css = _read_full_css()
         server_py = Path("miniapp_server.py").read_text(encoding="utf-8") + "".join(
             p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/api").rglob("*.py"))
         )
@@ -1792,7 +1802,7 @@ class TestMiniAppRussianLocale:
 
     def test_detail_buttons_have_visual_feedback_and_notes_survive_refresh(self):
         app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
-        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        app_css = _read_full_css()
 
         assert "function isEditingDetailForm()" in app_js
         assert "if (!isEditingDetailForm()) renderReelsDetail(reel);" in app_js
@@ -1814,7 +1824,7 @@ class TestMiniAppRussianLocale:
 
     def test_pending_drafts_are_marked_as_generating(self):
         app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
-        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        app_css = _read_full_css()
         presenter_py = Path("bot/services/miniapp_presenter.py").read_text(encoding="utf-8")
 
         assert '"generation_pending": generation_pending' in presenter_py
@@ -1826,7 +1836,7 @@ class TestMiniAppRussianLocale:
 
     def test_draft_detail_uses_editorial_hero_and_primary_review_layout(self):
         app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
-        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        app_css = _read_full_css()
 
         assert "function draftHeroSummary" in app_js
         assert "detail-fact-label" in app_js
@@ -1841,7 +1851,7 @@ class TestMiniAppRussianLocale:
 
     def test_overview_lists_share_card_shell_and_human_source_labels(self):
         app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
-        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        app_css = _read_full_css()
 
         assert "function sourceLabel(value)" in app_js
         assert 'return "Из плана";' in app_js
@@ -1856,7 +1866,7 @@ class TestMiniAppRussianLocale:
 
     def test_interaction_layer_has_motion_tokens_and_reduced_motion_guard(self):
         app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
-        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        app_css = _read_full_css()
 
         assert "--duration-fast" in app_css
         assert "--ease-standard" in app_css
@@ -1870,7 +1880,7 @@ class TestMiniAppRussianLocale:
 
     def test_guided_states_cover_empty_and_onboarding_paths(self):
         app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
-        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        app_css = _read_full_css()
 
         assert "function renderGuidedState" in app_js
         assert "Выберите формат для старта" in app_js
@@ -1887,7 +1897,7 @@ class TestMiniAppRussianLocale:
         shell_js = _miniapp_static_text("js", "shell.js")
         create_js = _miniapp_static_text("js", "create.js")
         drafts_js = _miniapp_static_text("js", "drafts.js")
-        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        app_css = _read_full_css()
 
         assert "function interactiveCardAttrs(label)" in core_js
         assert "function bindCardKeyboardActivation()" in shell_js
@@ -1911,7 +1921,7 @@ class TestMiniAppRussianLocale:
         assert "window.visualViewport?.height" in shell_js
         assert "viewport.addEventListener(\"resize\", handleViewportChange);" in shell_js
         assert "bindKeyboardViewportAssist();" in app_js
-        assert "scroll-margin-bottom: 180px;" in Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        assert "scroll-margin-bottom: 180px;" in _read_full_css()
         assert 'await openDraft(draft.draft_id)' in create_js
 
     def test_create_flow_uses_pending_card_and_timeout_recovery(self):

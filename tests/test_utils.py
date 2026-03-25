@@ -14,6 +14,16 @@ def _miniapp_static_text(*relative_parts: str) -> str:
     return Path("miniapp", "static", *relative_parts).read_text(encoding="utf-8")
 
 
+def _read_full_css() -> str:
+    """Read app.css and all component CSS files under css/ directory."""
+    css_dir = Path("miniapp/static/css")
+    parts = [Path("miniapp/static/app.css").read_text(encoding="utf-8")]
+    if css_dir.is_dir():
+        for p in sorted(css_dir.glob("*.css")):
+            parts.append(p.read_text(encoding="utf-8"))
+    return "\n".join(parts)
+
+
 def _miniapp_js_bundle() -> str:
     return " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
 
@@ -715,18 +725,18 @@ class TestDarkThemeCSSReadability:
     """Verify that key light cards stay readable under body.tg-theme-dark."""
 
     def test_storyboard_frame_has_explicit_dark_theme_override(self):
-        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        app_css = _read_full_css()
         assert "body.tg-theme-dark .storyboard-frame" in app_css
 
     def test_section_accent_has_explicit_dark_theme_override(self):
-        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        app_css = _read_full_css()
         assert "body.tg-theme-dark .section-accent" in app_css
 
     def test_concept_card_uses_hardcoded_light_colors_making_it_safe_in_dark_mode(self):
         """concept-card uses explicit light background gradient and dark text, so it
         stays readable regardless of the OS/Telegram dark theme.
         This is intentional — cards are always light-on-light-background."""
-        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        app_css = _read_full_css()
         # The card must define its own background (not rely on --bg which flips dark)
         assert "linear-gradient" in app_css.split(".concept-card {")[1].split("}")[0]
         # The card must have explicit text color (not rely on var(--text))
@@ -736,7 +746,7 @@ class TestDarkThemeCSSReadability:
     def test_concept_card_preview_inherits_card_color(self):
         """concept-card .draft-preview must use color: inherit so it inherits the
         card-level dark text, not override with a potentially invisible value."""
-        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        app_css = _read_full_css()
         assert ".concept-card .draft-preview" in app_css
         preview_block = app_css.split(".concept-card .draft-preview {")[1].split("}")[0]
         assert "color: inherit;" in preview_block
@@ -744,11 +754,11 @@ class TestDarkThemeCSSReadability:
     def test_detail_markdown_text_is_whitelisted_for_dark_mode_color(self):
         """detail-markdown elements must have their color reset in dark mode so
         inherited dark text does not go invisible on dark backgrounds."""
-        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        app_css = _read_full_css()
         assert "body.tg-theme-dark .detail-markdown" in app_css
 
     def test_detail_preview_text_is_whitelisted_for_dark_mode_color(self):
-        app_css = Path("miniapp/static/app.css").read_text(encoding="utf-8")
+        app_css = _read_full_css()
         assert "body.tg-theme-dark .detail-preview" in app_css
 
 
@@ -844,11 +854,11 @@ class TestForbiddenPhrasesAssets:
         assert "aromaCardIcon" in js
 
     def test_dark_mode_concept_card_rule_exists_in_css(self):
-        css = _miniapp_static_text("app.css")
+        css = _read_full_css()
         assert "tg-theme-dark .concept-card" in css
 
     def test_code_block_class_exists_in_css(self):
-        css = _miniapp_static_text("app.css")
+        css = _read_full_css()
         assert ".code-block" in css
 
     def test_forbidden_phrases_section_in_settings_js(self):
@@ -858,7 +868,7 @@ class TestForbiddenPhrasesAssets:
         assert "removeForbiddenPhrase" in js
 
     def test_actions_row_pair_class_in_css(self):
-        css = _miniapp_static_text("app.css")
+        css = _read_full_css()
         assert "actions-row-pair" in css
 
 
@@ -898,7 +908,7 @@ class TestHandbookPdfImport:
         assert '"blends"' in js
 
     def test_app_css_has_crossref_chip_styles(self):
-        css = _miniapp_static_text("app.css")
+        css = _read_full_css()
         assert ".crossref-chips" in css
         assert ".crossref-chip" in css
         assert ".crossref-chip--plain" in css
@@ -922,7 +932,7 @@ class TestHandbookPdfImport:
         assert "conceptTypeMeta" in js
 
     def test_app_css_has_concept_kind_mark_style(self):
-        css = _miniapp_static_text("app.css")
+        css = _read_full_css()
         assert ".concept-kind-mark" in css
         assert ".concept-card::before" in css
 

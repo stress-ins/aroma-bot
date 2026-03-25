@@ -1,0 +1,38 @@
+/* ═══════════════════════════════════════
+   SECTION: Tablet (761–1024px) — iPad
+   Show bottom tab bar + narrower list panel
+   ═══════════════════════════════════════ */
+@media (min-width: 761px) and (max-width: 1024px) {
+  .bottom-tab-bar {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    display: block;
+    padding: 10px 10px calc(10px + env(safe-area-inset-bottom, 0px));
+    z-index: 30;
+    pointer-events: none;
+    background: transparent;
+  }
+  .bottom-tab-bar .bottom-tab-bar-inner { pointer-events: auto; }
+
+  body { padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
+
+  .layout { grid-template-columns: 300px 1fr; }
+
+  .mode-selector { max-width: 320px; }
+}
+
+@media (min-width: 761px) and (max-width: 1024px) {
+  body.tg-theme-dark .bottom-tab-bar-inner {
+    background: var(--surface);
+    border-color: rgba(255, 230, 200, 0.12);
+    box-shadow: none;
+  }
+
+  /* detail-panel::after spacer removed — padding-bottom on .detail-panel handles tab bar gap */
+
+  .slides-grid .slides-swiper-track,
+  .slides-grid .slides-grid-track {
+    grid-template-columns: 1fr;
+  }
+}
+
