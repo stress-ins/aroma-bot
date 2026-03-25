@@ -174,11 +174,23 @@ def humanize_llm(text: str, platform: str = "") -> str:
             system=_HUMANIZER_LLM_SYSTEM,
             context=f"humanizer-llm ({platform})" if platform else "humanizer-llm",
         )
-        # Sanity check: result should not be drastically shorter or empty
-        if result and len(result) > len(text) * 0.3:
-            return result
-        logger.warning("humanize_llm: result too short (%d vs %d), keeping original", len(result), len(text))
-        return text
+        # Sanity checks
+        if not result or len(result) < len(text) * 0.3:
+            logger.warning("humanize_llm: result too short (%d vs %d), keeping original", len(result or ""), len(text))
+            return text
+
+        # Guard: LLM sometimes returns analysis/commentary instead of rewritten text
+        _ANALYSIS_MARKERS = ("# Анализ", "## ✓", "## ⚠", "## Рекомендация", "## Подтвержденное", "## Требует уточнения", "**Противопоказания", "**Для диффузора")
+        if any(marker in result for marker in _ANALYSIS_MARKERS):
+            logger.warning("humanize_llm: result contains analysis markers, keeping original")
+            return text
+
+        # Guard: result much longer than input = likely added commentary
+        if len(result) > len(text) * 2.5:
+            logger.warning("humanize_llm: result too long (%d vs %d), keeping original", len(result), len(text))
+            return text
+
+        return result
     except Exception:
         logger.exception("humanize_llm: LLM call failed, keeping original text")
         return text
