@@ -11,6 +11,8 @@ export function createSessionModule(deps) {
     renderEmptyDetail,
     renderDetailError,
     hasPendingCarouselOperations,
+    setCarouselSlideOperation,
+    clearAllCarouselOperations,
     isEditingDetailForm,
     syncMobileNavigation,
     enterDetailView,
@@ -253,8 +255,16 @@ export function createSessionModule(deps) {
     slideImages.forEach((img, idx) => {
       if (img?.url && !prevImages[idx]?.url) {
         state.openPromptPanels[`carousel:${draftId}:${idx}`] = false;
+        // Clear pending operation when image becomes ready
+        if (typeof setCarouselSlideOperation === "function") {
+          setCarouselSlideOperation(draftId, idx, "");
+        }
       }
     });
+    // Clear all pending operations when generation is fully done
+    if (!draft.generation_pending && typeof clearAllCarouselOperations === "function") {
+      clearAllCarouselOperations(draftId);
+    }
     state.drafts = state.drafts.map((item) => item.draft_id === draft.draft_id ? { ...item, ...draft } : item);
     if (isCurrentDraftDetail(draft.draft_id)) {
       const prev = state.selected;
