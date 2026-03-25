@@ -496,6 +496,7 @@ export function registerWindowBridge(deps) {
   };
 
   window._scheduleThreadsSeriesFromBtn = function(el) {
+    console.log("[schedule] el:", el, "draftId:", el?.dataset?.draftId, "date:", el?.dataset?.date);
     scheduleThreadsSeries(el.dataset.draftId, el.dataset.date, ["morning", "day", "evening"], el);
   };
 

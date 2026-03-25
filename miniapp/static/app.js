@@ -1010,6 +1010,7 @@ async function showSlotHistory(draftId, slot) {
 }
 
 async function scheduleThreadsSeries(draftId, date, slots, btn) {
+  console.log("[scheduleThreadsSeries] draftId:", draftId, "date:", date, "btn:", btn?.id);
   if (!draftId || !date) {
     showUiNotice("Не выбран черновик или дата", "error");
     return;
