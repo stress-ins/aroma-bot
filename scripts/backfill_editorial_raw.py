@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Backfill raw (text-free) images for editorial carousel drafts.
 
-For editorial drafts that were generated before the raw_filename feature,
-this script re-downloads original images from KIE Playground API and saves
-them as raw assets, then updates the draft payload with raw_filename.
+For editorial drafts generated before the raw_filename feature,
+this script finds original image URLs from kie_tasks table,
+re-downloads them, and saves as raw assets.
 
 Usage:
     .venv/bin/python scripts/backfill_editorial_raw.py --dry-run
@@ -19,11 +19,29 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from bot.services.drafts_store import list_recent_drafts, update_draft, get_draft
-from bot.services.carousel_assets import save_carousel_slide_asset, CAROUSEL_ASSETS_DIR
+from bot.services.drafts_store import list_recent_drafts, update_draft
+from bot.services.carousel_assets import save_carousel_slide_asset
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
+
+
+async def _get_kie_tasks_for_draft(draft_id: str) -> list:
+    """Query kie_tasks table for completed tasks of a given draft."""
+    from db.session import AsyncSessionLocal
+    from db.models import KieTaskModel
+    from sqlalchemy import select
+
+    async with AsyncSessionLocal() as session:
+        stmt = (
+            select(KieTaskModel)
+            .where(KieTaskModel.draft_id == draft_id)
+            .where(KieTaskModel.status == "success")
+            .where(KieTaskModel.content_type == "carousel_slide")
+            .order_by(KieTaskModel.id)
+        )
+        result = await session.execute(stmt)
+        return list(result.scalars().all())
 
 
 async def backfill(dry_run: bool = True) -> None:
@@ -39,6 +57,12 @@ async def backfill(dry_run: bool = True) -> None:
         slide_images = list(draft.payload.get("slide_images", []))
         changed = False
 
+        # Get all KIE tasks for this draft
+        kie_tasks = await _get_kie_tasks_for_draft(draft.draft_id)
+        tasks_by_slot = {}
+        for t in kie_tasks:
+            tasks_by_slot.setdefault(t.slot_key, []).append(t)
+
         for i, item in enumerate(slide_images):
             if not isinstance(item, dict) or not item.get("filename"):
                 continue
@@ -46,24 +70,21 @@ async def backfill(dry_run: bool = True) -> None:
                 skipped += 1
                 continue
 
-            # Try to find raw image via KIE task store
+            slot_tasks = tasks_by_slot.get(str(i), [])
+            task = next((t for t in reversed(slot_tasks) if t.image_url), None)
+
+            if not task:
+                logger.warning("Draft %s slide %d: no completed KIE task with image_url, skipping", draft.draft_id, i)
+                failed += 1
+                continue
+
+            logger.info("Draft %s slide %d: found KIE task %s, url=%s", draft.draft_id, i, task.task_id, task.image_url[:80])
+
+            if dry_run:
+                logger.info("  [DRY RUN] would download and save raw image")
+                continue
+
             try:
-                from bot.services.kie_task_store import get_tasks_for_draft
-                tasks = await get_tasks_for_draft(draft.draft_id)
-                slide_tasks = [t for t in tasks if t.slot_key == str(i) and t.image_url]
-
-                if not slide_tasks:
-                    logger.warning("Draft %s slide %d: no KIE task found, skipping", draft.draft_id, i)
-                    failed += 1
-                    continue
-
-                task = slide_tasks[-1]  # latest completed task
-                logger.info("Draft %s slide %d: re-downloading from %s", draft.draft_id, i, task.image_url[:80])
-
-                if dry_run:
-                    logger.info("  [DRY RUN] would download and save raw image")
-                    continue
-
                 from bot.services.gemini_images import _download_image
                 img_bytes = _download_image(task.image_url, f"backfill:{draft.draft_id}:{i}")
                 if not img_bytes:
@@ -77,7 +98,6 @@ async def backfill(dry_run: bool = True) -> None:
                 item["raw_filename"] = raw_version["filename"]
                 changed = True
                 logger.info("Draft %s slide %d: saved raw as %s", draft.draft_id, i, raw_version["filename"])
-
             except Exception:
                 logger.exception("Draft %s slide %d: error", draft.draft_id, i)
                 failed += 1
