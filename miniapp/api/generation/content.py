@@ -4,10 +4,7 @@ from __future__ import annotations
 from bot.services.drafts_store import update_draft
 
 from ._common import set_generation_state
-
-import logging
-
-logger = logging.getLogger(__name__)
+from .common import fetch_rag_context, prefetch_stock_photos
 
 
 async def complete_content_generation(
@@ -22,15 +19,7 @@ async def complete_content_generation(
         from bot.agents import generate_content_draft
         from bot.services.miniapp_generator import build_content_payload
 
-        # RAG: retrieve relevant knowledge base context
-        rag_context = ""
-        try:
-            from bot.services.rag import retrieve_relevant_cards, format_rag_context
-            cards = await retrieve_relevant_cards(topic, max_items=5)
-            rag_context = format_rag_context(cards)
-        except Exception:
-            logger.warning("complete_content_generation: suppressed exception", exc_info=True)
-            pass  # Graceful fallback: generate without RAG
+        rag_context = await fetch_rag_context(topic)
 
         draft_obj = await generate_content_draft(topic, goal_key, format_key, blend_context=blend_context, rag_context=rag_context)
         content_payload = build_content_payload(draft_obj, goal_key=goal_key, format_key=format_key)
@@ -43,21 +32,9 @@ async def complete_content_generation(
 
         # Pre-search stock photos if keywords were generated
         stock_kw = content_payload.get("stock_keywords") or []
-        if stock_kw:
-            try:
-                from bot.services.stock_photos import search_stock_photos
-                from config import Settings
-                _cfg = Settings()
-                photos = await search_stock_photos(
-                    stock_kw,
-                    unsplash_key=_cfg.unsplash_access_key,
-                    pexels_key=_cfg.pexels_api_key,
-                )
-                if photos:
-                    content_payload["stock_suggestions"] = [p.to_dict() for p in photos[:9]]
-            except Exception:
-                logger.warning("content: suppressed exception", exc_info=True)
-                pass  # Graceful — UI will do lazy search
+        photos = await prefetch_stock_photos(stock_kw)
+        if photos:
+            content_payload["stock_suggestions"] = [p.to_dict() for p in photos[:9]]
 
         await update_draft(draft_id, payload=content_payload, status="draft")
     except Exception as exc:
@@ -93,7 +70,6 @@ async def _build_threads_extra_context(team_id: str | None, topic: str) -> tuple
                     extra_parts.append("## Актуальные тренды (последние 7 дней)\n" + "\n".join(trends_lines))
                     metadata["trend_source"] = True
         except Exception:
-            logger.warning("_build_threads_extra_context: suppressed exception", exc_info=True)
             pass
 
     # Handbook facts: search oils matching topic keywords
@@ -124,7 +100,6 @@ async def _build_threads_extra_context(team_id: str | None, topic: str) -> tuple
                     extra_parts.append("## Релевантные факты из справочника\n" + "\n".join(facts_lines))
                     metadata["handbook_source"] = True
     except Exception:
-        logger.warning("content: suppressed exception", exc_info=True)
         pass
 
     return "\n\n".join(extra_parts), metadata
@@ -149,15 +124,7 @@ async def complete_threads_series_generation(
         if extra_context:
             enriched_topic = f"{topic}\n\n{extra_context}\n\nИнструкция: утренний пост может отталкиваться от тренда, дневной — от факта из справочника, вечерний — от личного опыта."
 
-        # RAG: retrieve relevant knowledge base context
-        rag_context = ""
-        try:
-            from bot.services.rag import retrieve_relevant_cards, format_rag_context
-            cards = await retrieve_relevant_cards(topic, max_items=5)
-            rag_context = format_rag_context(cards)
-        except Exception:
-            logger.warning("complete_threads_series_generation: suppressed exception", exc_info=True)
-            pass
+        rag_context = await fetch_rag_context(topic)
 
         draft_obj = await generate_content_draft(enriched_topic, goal_key, "threads_series", blend_context=blend_context, rag_context=rag_context)
         ts_payload = build_threads_series_payload(draft_obj, goal_key=goal_key, emotion=emotion)
