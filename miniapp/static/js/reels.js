@@ -1009,8 +1009,8 @@ export function createReelsModule(deps) {
             <button class="secondary-button compact" type="button" data-action="gradePreview" data-args='${JSON.stringify([r.draft_id, null])}'>
               ${actionLabel("eye", "Предпросмотр кадра")}
             </button>
-            <button class="secondary-button compact" type="button" data-action="gradeAnalyzeAI" data-args='${JSON.stringify([r.draft_id, null])}'>
-              ${actionLabel("sparkle", "AI-анализ и коррекция")}
+            <button class="secondary-button compact" type="button" data-action="gradeByProfile" data-args='${JSON.stringify([r.draft_id, null])}'>
+              ${actionLabel("palette", "Подобрать по профилю")}
             </button>
             <button class="primary-button compact" type="button" data-action="gradeApply" data-args='${JSON.stringify([r.draft_id, null])}'>
               ${actionLabel("check", "Применить коррекцию")}
@@ -2197,36 +2197,26 @@ export function createReelsModule(deps) {
     if (btn) { btn.disabled = false; btn.innerHTML = `${actionLabel("eye", "Предпросмотр кадра")}`; }
   }
 
-  async function gradeAnalyzeAI(draftId, btn) {
+  async function gradeByProfile(draftId, btn) {
     const style = document.getElementById("gradeStyle")?.value || "warm_natural";
-    if (btn) { btn.disabled = true; btn.innerHTML = `${uiIcon("sparkle")} Анализ…`; }
+    if (btn) { btn.disabled = true; btn.innerHTML = `${uiIcon("palette")} Анализирую…`; }
     const statusEl = document.getElementById("gradeStatusContainer");
-    if (statusEl) statusEl.innerHTML = `
-      <div class="reels-progress-container">
-        <div class="reels-progress-header">
-          <span class="button-spinner"></span>
-          <span class="reels-progress-label">Claude Vision анализирует кадры…</span>
-        </div>
-        <div class="reels-progress-bar-track"><div class="reels-progress-bar-fill reels-progress-bar-fill--indeterminate"></div></div>
-        <div class="reels-progress-footer"><span>~15-30 сек</span></div>
-      </div>`;
 
     try {
-      const res = await fetchJson(`/api/reels/${draftId}/grade-analyze?style=${style}`, { method: "POST", timeout: 60000 });
+      const res = await fetchJson(`/api/reels/${draftId}/grade-analyze?style=${style}`, { method: "POST", timeout: 30000 });
 
       // Apply recommended values to sliders
-      for (const rec of (res.recommendations || [])) {
-        const match = rec.ffmpeg_filter.match(/eq=([^,]+)/);
-        if (!match) continue;
-        const parts = match[1].split(":");
-        for (const part of parts) {
-          const [key, val] = part.split("=");
-          const slider = document.getElementById({
-            brightness: "gradeBrightness",
-            contrast: "gradeContrast",
-            saturation: "gradeSaturation",
-            gamma: "gradeGamma",
-          }[key]);
+      const recs = res.recommendations || {};
+      const sliderMap = {
+        brightness: "gradeBrightness",
+        contrast: "gradeContrast",
+        saturation: "gradeSaturation",
+        gamma: "gradeGamma",
+      };
+      for (const [key, sliderId] of Object.entries(sliderMap)) {
+        const val = recs[key];
+        if (val != null) {
+          const slider = document.getElementById(sliderId);
           if (slider) {
             slider.value = val;
             slider.dispatchEvent(new Event("input", { bubbles: true }));
@@ -2234,30 +2224,35 @@ export function createReelsModule(deps) {
         }
       }
 
-      // Show analysis results
+      // Show analysis
       if (statusEl) {
-        const issues = (res.dominant_issues || []).map(i => `<li>${escapeHtml(i)}</li>`).join("");
-        const recs = (res.recommendations || []).map(r =>
-          `<div class="grade-rec-item">
-            <span class="grade-rec-priority grade-rec-priority--${r.priority}">${r.priority.toUpperCase()}</span>
-            <span>${escapeHtml(r.parameter)}: ${escapeHtml(r.suggestion)}</span>
-          </div>`
-        ).join("");
+        const bright = res.measured_brightness;
+        const brightLabel = bright < 0.35 ? "тёмное" : bright < 0.55 ? "нормальное" : "светлое";
+        const bars = (res.frame_stats || []).map(f => {
+          const w = Math.round(f.brightness * 100);
+          return `<div style="display:flex;align-items:center;gap:6px;font-size:12px">
+            <span style="min-width:40px;color:var(--hint)">${f.timestamp}с</span>
+            <div style="flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden">
+              <div style="width:${w}%;height:100%;background:var(--brand);border-radius:3px"></div>
+            </div>
+            <span style="min-width:30px;color:var(--hint)">${(f.brightness * 100).toFixed(0)}%</span>
+          </div>`;
+        }).join("");
+
         statusEl.innerHTML = `
           <div class="grade-analysis-result">
-            <div class="grade-analysis-header">${uiIcon("sparkle")} Анализ (${Math.round(res.confidence * 100)}% уверенность)</div>
-            <p class="grade-analysis-text">${escapeHtml(res.overall_assessment)}</p>
-            ${issues ? `<ul class="grade-issues">${issues}</ul>` : ""}
-            ${recs ? `<div class="grade-recs">${recs}</div>` : ""}
-            ${res.ffmpeg_vf_string ? `<div class="grade-vf-string">${escapeHtml(res.ffmpeg_vf_string)}</div>` : ""}
+            <div class="grade-analysis-header">${uiIcon("palette")} ${escapeHtml(res.description)}</div>
+            <p class="grade-analysis-text">Среднее освещение: <strong>${brightLabel}</strong> (${(bright * 100).toFixed(0)}%)</p>
+            <div style="display:flex;flex-direction:column;gap:4px;margin-top:6px">${bars}</div>
+            <p class="grade-analysis-text" style="margin-top:8px">Ползунки выставлены под профиль <strong>${escapeHtml(style)}</strong>. Нажмите «Предпросмотр» чтобы увидеть результат.</p>
           </div>`;
       }
-      showUiNotice("AI-анализ завершён. Ползунки обновлены.", "success");
+      showUiNotice("Ползунки выставлены по профилю", "success");
     } catch (e) {
-      showUiNotice("AI-анализ не удался: " + (e.message || ""), "error");
+      showUiNotice("Не удалось проанализировать: " + (e.message || ""), "error");
       if (statusEl) statusEl.innerHTML = "";
     }
-    if (btn) { btn.disabled = false; btn.innerHTML = `${actionLabel("sparkle", "AI-анализ и коррекция")}`; }
+    if (btn) { btn.disabled = false; btn.innerHTML = `${actionLabel("palette", "Подобрать по профилю")}`; }
   }
 
   async function gradeApply(draftId, btn) {
@@ -2402,7 +2397,7 @@ export function createReelsModule(deps) {
     startMontage,
     // Color grading
     gradePreview,
-    gradeAnalyzeAI,
+    gradeByProfile,
     gradeApply,
     // Screen 5 video tools
     jumpToReelsStep,

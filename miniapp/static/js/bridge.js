@@ -76,7 +76,7 @@ export function registerWindowBridge(deps) {
     splitReelsClips,
     notifyWhenReady,
     gradePreview,
-    gradeAnalyzeAI,
+    gradeByProfile,
     gradeApply,
     startMontage,
     refreshDraftMetrics,
@@ -308,7 +308,7 @@ export function registerWindowBridge(deps) {
   window.notifyWhenReady = notifyWhenReady;
   // Color grading
   window.gradePreview = gradePreview;
-  window.gradeAnalyzeAI = gradeAnalyzeAI;
+  window.gradeByProfile = gradeByProfile;
   window.gradeApply = gradeApply;
   // Auto-montage
   window.startMontage = startMontage;

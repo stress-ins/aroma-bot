@@ -915,14 +915,13 @@ async def grade_preview_frame(
 
 
 @router.post("/api/reels/{draft_id}/grade-analyze")
-async def grade_analyze_ai(
+async def grade_analyze(
     draft_id: str,
     style: str = "warm_natural",
     _: None = Depends(_require_auth),
 ):
-    """Run Claude Vision analysis on video frames and return recommendations."""
-    from bot.services.video_grader.config import GraderConfig
-    from bot.services.video_grader.session import GraderSession
+    """Analyze video frame stats via ffprobe and recommend corrections for given style."""
+    import subprocess
     from bot.services.reels_video import VIDEO_DIR
 
     draft = await serialize_reels_draft(draft_id)
@@ -935,37 +934,94 @@ async def grade_analyze_ai(
         raise HTTPException(status_code=400, detail="no_video")
 
     video_path = VIDEO_DIR / draft_id / video_filename
-    config = GraderConfig(
-        input_file=str(video_path),
-        target_style=style,
-        frame_output_dir=str(VIDEO_DIR / draft_id / "grader_frames"),
-        frame_count=4,
-        save_report=False,
-    )
+    if not video_path.exists():
+        raise HTTPException(status_code=400, detail="video_file_missing")
 
-    session = GraderSession(config)
-    try:
-        analysis = await session.run_analysis()
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"analysis_failed: {str(exc)[:200]}")
+    # Get duration for mid-frame
+    probe = subprocess.run(
+        ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+         "-of", "default=noprint_wrappers=1:nokey=1", str(video_path)],
+        capture_output=True, text=True, timeout=15,
+    )
+    duration = float(probe.stdout.strip()) if probe.returncode == 0 else 10.0
+
+    # Analyze 3 frames: 20%, 50%, 80%
+    stats = []
+    for pct in (0.2, 0.5, 0.8):
+        ts = duration * pct
+        result = subprocess.run(
+            ["ffprobe", "-v", "error", "-select_streams", "v:0",
+             "-read_intervals", f"%{ts:.1f}%+#1",
+             "-show_entries", "frame=pkt_pts_time",
+             "-show_entries", "frame_tags=lavfi.signalstats.YAVG,lavfi.signalstats.YMIN,lavfi.signalstats.YMAX,lavfi.signalstats.SATAVG",
+             "-f", "lavfi", "-i", f"movie='{str(video_path)}',signalstats",
+             "-of", "csv=p=0", "-frames:v", "1"],
+            capture_output=True, text=True, timeout=30,
+        )
+        # Fallback: use simpler brightness measurement
+        bright_result = subprocess.run(
+            ["ffmpeg", "-ss", str(ts), "-i", str(video_path),
+             "-vframes", "1", "-vf", "scale=64:64,format=gray",
+             "-f", "rawvideo", "-pix_fmt", "gray", "pipe:1"],
+            capture_output=True, timeout=15,
+        )
+        avg_brightness = 128.0
+        if bright_result.returncode == 0 and bright_result.stdout:
+            pixels = bright_result.stdout
+            avg_brightness = sum(pixels) / len(pixels) if pixels else 128.0
+
+        stats.append({
+            "timestamp": round(ts, 1),
+            "brightness": round(avg_brightness / 255.0, 3),
+        })
+
+    avg_bright = sum(s["brightness"] for s in stats) / len(stats) if stats else 0.5
+
+    # Style presets — corrections based on measured brightness
+    STYLE_PRESETS = {
+        "warm_natural": {
+            "brightness": round(max(-0.1, 0.55 - avg_bright) * 0.5, 2),
+            "contrast": 1.1,
+            "saturation": 1.15,
+            "gamma": 1.05 if avg_bright < 0.45 else 0.95,
+            "description": "Тёплый натуральный — мягкий свет, лёгкая насыщенность",
+        },
+        "luxury_dark": {
+            "brightness": round(max(-0.15, 0.40 - avg_bright) * 0.6, 2),
+            "contrast": 1.35,
+            "saturation": 0.85,
+            "gamma": 0.85,
+            "description": "Тёмный люкс — глубокие тени, приглушённые цвета",
+        },
+        "fresh_light": {
+            "brightness": round(max(0, 0.65 - avg_bright) * 0.5, 2),
+            "contrast": 0.95,
+            "saturation": 1.1,
+            "gamma": 1.15,
+            "description": "Свежий светлый — чистота, воздушность",
+        },
+        "moody_cinematic": {
+            "brightness": round(max(-0.12, 0.42 - avg_bright) * 0.5, 2),
+            "contrast": 1.4,
+            "saturation": 0.9,
+            "gamma": 0.8,
+            "description": "Кинематографичный — контраст, тёмные тона",
+        },
+    }
+
+    preset = STYLE_PRESETS.get(style, STYLE_PRESETS["warm_natural"])
 
     return {
-        "overall_assessment": analysis.overall_assessment,
-        "dominant_issues": analysis.dominant_issues,
-        "mood_tags": analysis.mood_tags,
-        "target_mood_tags": analysis.target_mood_tags,
-        "confidence": analysis.confidence,
-        "recommendations": [
-            {
-                "parameter": r.parameter,
-                "current_state": r.current_state,
-                "suggestion": r.suggestion,
-                "ffmpeg_filter": r.ffmpeg_filter,
-                "priority": r.priority,
-            }
-            for r in analysis.recommendations
-        ],
-        "ffmpeg_vf_string": analysis.ffmpeg_vf_string,
+        "style": style,
+        "description": preset["description"],
+        "measured_brightness": round(avg_bright, 3),
+        "recommendations": {
+            "brightness": preset["brightness"],
+            "contrast": preset["contrast"],
+            "saturation": preset["saturation"],
+            "gamma": preset["gamma"],
+        },
+        "frame_stats": stats,
     }
 
 
