@@ -1062,6 +1062,9 @@ export function createReelsModule(deps) {
               <label style="display:flex;align-items:center;gap:8px;font-size:13px">
                 <input type="checkbox" id="montageColorGrade" checked /> Применить цветокоррекцию
               </label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px">
+                <input type="checkbox" id="montageNormalize" checked /> Нормализация громкости (-16 дБ)
+              </label>
             </div>
           </div>
           <button class="primary-button" type="button" data-action="startMontage" data-args='${JSON.stringify([r.draft_id, null])}' style="margin-top:10px">
@@ -2162,6 +2165,7 @@ export function createReelsModule(deps) {
       config.broll_enabled = document.getElementById("montageBroll")?.checked ?? false;
       config.beat_sync_enabled = document.getElementById("montageBeatSync")?.checked ?? false;
       config.color_grade_enabled = document.getElementById("montageColorGrade")?.checked ?? true;
+      config.audio_normalize = document.getElementById("montageNormalize")?.checked ?? true;
     }
 
     if (btn) { btn.disabled = true; btn.innerHTML = `${uiIcon("sparkle")} Запускаю…`; }

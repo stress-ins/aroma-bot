@@ -490,6 +490,7 @@ async def _execute_montage(task) -> dict:
         beat_sync_enabled=config_data.get("beat_sync_enabled", False),
         color_grade_enabled=config_data.get("color_grade_enabled", False),
         color_grade_vf=config_data.get("color_grade_vf", payload.get("grade_vf_string", "")),
+        audio_normalize=config_data.get("audio_normalize", True),
         output_path=str(output_path),
     )
     montage_config.apply_template()
