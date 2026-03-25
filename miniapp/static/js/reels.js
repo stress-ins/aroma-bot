@@ -893,7 +893,7 @@ export function createReelsModule(deps) {
               style="width:100%;max-height:300px;border-radius:8px;background:#000"></video>
           </div>
           <div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap">
-            <a href="${cleanedVideoUrl}" download style="color:var(--brand);font-size:13px">${uiIcon("download")} Скачать очищенное</a>
+            <a href="${cleanedVideoUrl}" download class="secondary-button compact" style="text-decoration:none">${uiIcon("download")} Скачать очищенное</a>
             <button class="secondary-button compact" type="button" data-action="splitReelsClips" data-args='${JSON.stringify([r.draft_id, null])}'>
               ${uiIcon("scissors")} Нарезать на клипы
             </button>
@@ -976,42 +976,44 @@ export function createReelsModule(deps) {
 
         <section class="section">
           <h3>${sectionHeadingIcon("color-grade")}Цветокоррекция</h3>
+
+          <button class="secondary-button" type="button" data-action="gradeShowProfiles" data-args='${JSON.stringify([r.draft_id, null])}' style="width:100%;margin-bottom:8px">
+            ${actionLabel("palette", "Подобрать по профилям")}
+          </button>
+          <div id="gradeProfilesGrid"></div>
+
           <div id="graderPreviewContainer"></div>
-          <div class="reels-form-fields" style="margin-top:8px">
-            <label class="reels-field-label">Яркость
-              <input type="range" id="gradeBrightness" min="-0.3" max="0.3" step="0.01" value="0" style="width:100%" />
-              <span id="gradeBrightnessVal" style="font-size:12px;color:var(--hint)">0</span>
-            </label>
-            <label class="reels-field-label">Контраст
-              <input type="range" id="gradeContrast" min="0.5" max="2.0" step="0.05" value="1.0" style="width:100%" />
-              <span id="gradeContrastVal" style="font-size:12px;color:var(--hint)">1.0</span>
-            </label>
-            <label class="reels-field-label">Насыщенность
-              <input type="range" id="gradeSaturation" min="0.0" max="2.0" step="0.05" value="1.0" style="width:100%" />
-              <span id="gradeSaturationVal" style="font-size:12px;color:var(--hint)">1.0</span>
-            </label>
-            <label class="reels-field-label">Гамма
-              <input type="range" id="gradeGamma" min="0.5" max="2.0" step="0.05" value="1.0" style="width:100%" />
-              <span id="gradeGammaVal" style="font-size:12px;color:var(--hint)">1.0</span>
-            </label>
-          </div>
-          <div class="reels-form-fields" style="margin-top:8px">
-            <label class="reels-field-label">Стиль AI-коррекции
-              <select id="gradeStyle" class="reels-select">
-                <option value="warm_natural">Тёплый натуральный</option>
-                <option value="luxury_dark">Тёмный люкс</option>
-                <option value="fresh_light">Свежий светлый</option>
-                <option value="moody_cinematic">Кинематографичный</option>
-              </select>
-            </label>
-          </div>
-          <div class="actions-row" style="margin-top:8px;flex-wrap:wrap;gap:8px">
-            <button class="secondary-button compact" type="button" data-action="gradePreview" data-args='${JSON.stringify([r.draft_id, null])}'>
-              ${actionLabel("eye", "Предпросмотр кадра")}
-            </button>
-            <button class="secondary-button compact" type="button" data-action="gradeByProfile" data-args='${JSON.stringify([r.draft_id, null])}'>
-              ${actionLabel("palette", "Подобрать по профилю")}
-            </button>
+
+          <details id="gradeManualDetails" style="margin-top:8px">
+            <summary style="cursor:pointer;font-size:14px;font-weight:600;color:var(--text);padding:8px 0">
+              ${uiIcon("sliders-horizontal")} Ручная настройка
+            </summary>
+            <div class="reels-form-fields" style="margin-top:8px">
+              <label class="reels-field-label">Яркость
+                <input type="range" id="gradeBrightness" min="-0.3" max="0.3" step="0.01" value="0" style="width:100%" />
+                <span id="gradeBrightnessVal" style="font-size:12px;color:var(--hint)">0</span>
+              </label>
+              <label class="reels-field-label">Контраст
+                <input type="range" id="gradeContrast" min="0.5" max="2.0" step="0.05" value="1.0" style="width:100%" />
+                <span id="gradeContrastVal" style="font-size:12px;color:var(--hint)">1.0</span>
+              </label>
+              <label class="reels-field-label">Насыщенность
+                <input type="range" id="gradeSaturation" min="0.0" max="2.0" step="0.05" value="1.0" style="width:100%" />
+                <span id="gradeSaturationVal" style="font-size:12px;color:var(--hint)">1.0</span>
+              </label>
+              <label class="reels-field-label">Гамма
+                <input type="range" id="gradeGamma" min="0.5" max="2.0" step="0.05" value="1.0" style="width:100%" />
+                <span id="gradeGammaVal" style="font-size:12px;color:var(--hint)">1.0</span>
+              </label>
+            </div>
+            <div class="actions-row" style="margin-top:8px;flex-wrap:wrap;gap:8px">
+              <button class="secondary-button compact" type="button" data-action="gradePreview" data-args='${JSON.stringify([r.draft_id, null])}'>
+                ${actionLabel("eye", "Предпросмотр кадра")}
+              </button>
+            </div>
+          </details>
+
+          <div class="actions-row" style="margin-top:12px;flex-wrap:wrap;gap:8px">
             <button class="primary-button compact" type="button" data-action="gradeApply" data-args='${JSON.stringify([r.draft_id, null])}'>
               ${actionLabel("check", "Применить коррекцию")}
             </button>
@@ -2189,7 +2191,8 @@ export function createReelsModule(deps) {
               <img src="${res.corrected_url}?t=${ts}" alt="Corrected" />
             </div>
           </div>
-          ${res.vf_string ? `<div class="grade-vf-string">${escapeHtml(res.vf_string)}</div>` : ""}`;
+`;
+
       }
     } catch (e) {
       showUiNotice("Не удалось создать предпросмотр", "error");
@@ -2197,62 +2200,72 @@ export function createReelsModule(deps) {
     if (btn) { btn.disabled = false; btn.innerHTML = `${actionLabel("eye", "Предпросмотр кадра")}`; }
   }
 
-  async function gradeByProfile(draftId, btn) {
-    const style = document.getElementById("gradeStyle")?.value || "warm_natural";
-    if (btn) { btn.disabled = true; btn.innerHTML = `${uiIcon("palette")} Анализирую…`; }
-    const statusEl = document.getElementById("gradeStatusContainer");
+  async function gradeShowProfiles(draftId, btn) {
+    if (btn) { btn.disabled = true; btn.innerHTML = `${uiIcon("palette")} Анализирую видео…`; }
+    const grid = document.getElementById("gradeProfilesGrid");
 
     try {
-      const res = await fetchJson(`/api/reels/${draftId}/grade-analyze?style=${style}`, { method: "POST", timeout: 30000 });
+      const res = await fetchJson(`/api/reels/${draftId}/grade-analyze-all`, { method: "POST", timeout: 60000 });
+      const profiles = res.profiles || [];
+      const ts = Date.now();
 
-      // Apply recommended values to sliders
-      const recs = res.recommendations || {};
-      const sliderMap = {
-        brightness: "gradeBrightness",
-        contrast: "gradeContrast",
-        saturation: "gradeSaturation",
-        gamma: "gradeGamma",
-      };
-      for (const [key, sliderId] of Object.entries(sliderMap)) {
-        const val = recs[key];
-        if (val != null) {
-          const slider = document.getElementById(sliderId);
-          if (slider) {
-            slider.value = val;
-            slider.dispatchEvent(new Event("input", { bubbles: true }));
-          }
-        }
-      }
-
-      // Show analysis
-      if (statusEl) {
-        const bright = res.measured_brightness;
-        const brightLabel = bright < 0.35 ? "тёмное" : bright < 0.55 ? "нормальное" : "светлое";
-        const bars = (res.frame_stats || []).map(f => {
-          const w = Math.round(f.brightness * 100);
-          return `<div style="display:flex;align-items:center;gap:6px;font-size:12px">
-            <span style="min-width:40px;color:var(--hint)">${f.timestamp}с</span>
-            <div style="flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden">
-              <div style="width:${w}%;height:100%;background:var(--brand);border-radius:3px"></div>
-            </div>
-            <span style="min-width:30px;color:var(--hint)">${(f.brightness * 100).toFixed(0)}%</span>
-          </div>`;
-        }).join("");
-
-        statusEl.innerHTML = `
-          <div class="grade-analysis-result">
-            <div class="grade-analysis-header">${uiIcon("palette")} ${escapeHtml(res.description)}</div>
-            <p class="grade-analysis-text">Среднее освещение: <strong>${brightLabel}</strong> (${(bright * 100).toFixed(0)}%)</p>
-            <div style="display:flex;flex-direction:column;gap:4px;margin-top:6px">${bars}</div>
-            <p class="grade-analysis-text" style="margin-top:8px">Ползунки выставлены под профиль <strong>${escapeHtml(style)}</strong>. Нажмите «Предпросмотр» чтобы увидеть результат.</p>
+      if (grid) {
+        grid.innerHTML = `
+          <div class="grade-profiles-container">
+            ${profiles.map(p => `
+              <div class="grade-profile-card" data-action="gradeSelectProfile"
+                   data-args='${JSON.stringify([draftId, p.style, JSON.stringify(p.recommendations), null])}'>
+                <img src="${p.preview_url}?t=${ts}" alt="${escapeHtml(p.name)}" class="grade-profile-thumb" />
+                <div class="grade-profile-info">
+                  <div class="grade-profile-name">${escapeHtml(p.name)}</div>
+                  <div class="grade-profile-subtitle">${escapeHtml(p.subtitle)}</div>
+                </div>
+              </div>
+            `).join("")}
           </div>`;
       }
-      showUiNotice("Ползунки выставлены по профилю", "success");
     } catch (e) {
       showUiNotice("Не удалось проанализировать: " + (e.message || ""), "error");
-      if (statusEl) statusEl.innerHTML = "";
     }
-    if (btn) { btn.disabled = false; btn.innerHTML = `${actionLabel("palette", "Подобрать по профилю")}`; }
+    if (btn) { btn.disabled = false; btn.innerHTML = `${actionLabel("palette", "Подобрать по профилям")}`; }
+  }
+
+  function gradeSelectProfile(draftId, style, recsJson, btn) {
+    const recs = typeof recsJson === "string" ? JSON.parse(recsJson) : recsJson;
+
+    // Highlight selected card
+    const cards = document.querySelectorAll(".grade-profile-card");
+    cards.forEach(c => c.classList.remove("selected"));
+    if (btn && btn.closest) {
+      const card = btn.closest(".grade-profile-card") || btn;
+      card.classList.add("selected");
+    }
+
+    // Apply recommended values to sliders
+    const sliderMap = {
+      brightness: "gradeBrightness",
+      contrast: "gradeContrast",
+      saturation: "gradeSaturation",
+      gamma: "gradeGamma",
+    };
+    for (const [key, sliderId] of Object.entries(sliderMap)) {
+      const val = recs[key];
+      if (val != null) {
+        const slider = document.getElementById(sliderId);
+        if (slider) {
+          slider.value = val;
+          slider.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+      }
+    }
+
+    // Open manual details to show updated sliders
+    const details = document.getElementById("gradeManualDetails");
+    if (details) details.open = true;
+
+    // Auto-trigger preview
+    gradePreview(draftId, null);
+    showUiNotice("Профиль применён, загружаю предпросмотр…", "success");
   }
 
   async function gradeApply(draftId, btn) {
@@ -2397,7 +2410,8 @@ export function createReelsModule(deps) {
     startMontage,
     // Color grading
     gradePreview,
-    gradeByProfile,
+    gradeShowProfiles,
+    gradeSelectProfile,
     gradeApply,
     // Screen 5 video tools
     jumpToReelsStep,

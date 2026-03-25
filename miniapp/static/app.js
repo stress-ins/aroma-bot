@@ -751,6 +751,7 @@ function uiIcon(name) {
     "copy-plus": "copy",
     sparkles:   "sparkle",
     "map-pin":  "map-pin",
+    "sliders-horizontal": "sliders-horizontal",
   };
   return `<span class="ui-icon ui-icon-${escapeHtml(name)}">${icon(PHOSPHOR_MAP[name] || name, 16)}</span>`;
 }
@@ -1637,7 +1638,8 @@ const {
   reuploadVideo,
   proceedToPublish,
   gradePreview,
-  gradeByProfile,
+  gradeShowProfiles,
+  gradeSelectProfile,
   gradeApply,
   startMontage,
   notifyWhenReady,
@@ -2407,7 +2409,8 @@ registerWindowBridge({
   reuploadVideo,
   proceedToPublish,
   gradePreview,
-  gradeByProfile,
+  gradeShowProfiles,
+  gradeSelectProfile,
   gradeApply,
   startMontage,
   notifyWhenReady,
