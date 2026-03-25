@@ -13,8 +13,8 @@ from bot.services.miniapp_presenter import serialize_draft
 from bot.services.miniapp_reels import serialize_reels_draft
 from config import settings
 from ..auth import TeamContext, _check_content_limit, _require_auth, _resolve_team_context, require_tier
-from ..generation import complete_carousel_generation, complete_content_generation, complete_reels_lightweight_generation, complete_reels_v2_generation, complete_series_generation, complete_threads_series_generation
-from ..models import ContentSeriesCreateRequest, CreateCarouselPayload, CreateContentPayload, CreateReelsV2Payload, SuggestTopicsRequest, ThreadsSeriesCreateRequest
+from ..generation import complete_carousel_generation, complete_content_generation, complete_reels_lightweight_generation, complete_reels_v2_generation, complete_series_generation, complete_threads_series_generation, complete_youtube_generation, complete_youtube_generate_thumbnail, complete_youtube_generate_metadata, complete_youtube_regen_script
+from ..models import ContentSeriesCreateRequest, CreateCarouselPayload, CreateContentPayload, CreateReelsV2Payload, CreateYouTubePayload, YouTubeThumbnailPayload, SuggestTopicsRequest, ThreadsSeriesCreateRequest
 
 router = APIRouter()
 
@@ -244,3 +244,106 @@ async def generate_content_series(
         saved.draft_id, topic, goal_key, format_key, post_count, template_key,
     )
     return await serialize_draft(saved)
+
+
+@router.post("/api/generate/youtube", dependencies=[Depends(require_tier("expert")), Depends(_check_content_limit)])
+async def generate_youtube(
+    payload: CreateYouTubePayload,
+    background_tasks: BackgroundTasks,
+    ctx: TeamContext = Depends(_resolve_team_context),
+):
+    topic = _validate_topic(payload)
+    subformat = payload.subformat.strip().lower()
+    if subformat not in ("talking_head", "listicle", "podcast"):
+        raise HTTPException(status_code=400, detail="invalid_subformat")
+
+    goal = payload.goal.strip().lower() or "trust"
+    emotion = payload.emotion.strip().lower() or "calm"
+    duration_target = max(3, min(60, payload.duration_target))
+
+    youtube_payload: dict = {
+        "subformat": subformat,
+        "goal": goal,
+        "emotion": emotion,
+        "duration_target": duration_target,
+        "title": "",
+        "sections": [],
+        "broll_map": [],
+        "thumbnail": {},
+        "metadata": {},
+        "generation_pending": True,
+        "generation_stage": "script",
+        "generation_message": "Создаю сценарий YouTube-видео.",
+    }
+    saved = await save_draft(
+        kind="youtube_video",
+        topic=topic,
+        source="/miniapp",
+        payload=youtube_payload,
+        team_id=ctx.team_id,
+        created_by=ctx.telegram_id,
+    )
+    background_tasks.add_task(
+        complete_youtube_generation,
+        saved.draft_id,
+        topic,
+        subformat,
+        goal,
+        emotion,
+        duration_target,
+        item_count=payload.item_count,
+        question_count=payload.question_count,
+        guest_description=payload.guest_description,
+    )
+    return await serialize_draft(saved)
+
+
+@router.post("/api/youtube/{draft_id}/regen-script", dependencies=[Depends(require_tier("expert"))])
+async def youtube_regen_script(
+    draft_id: str,
+    background_tasks: BackgroundTasks,
+    _auth=Depends(_require_auth),
+):
+    from bot.services.drafts_store import get_draft as _get
+    draft = await _get(draft_id)
+    if not draft or draft.kind != "youtube_video":
+        raise HTTPException(status_code=404, detail="draft_not_found")
+
+    background_tasks.add_task(complete_youtube_regen_script, draft_id)
+    return {"ok": True, "draft_id": draft_id}
+
+
+@router.post("/api/youtube/{draft_id}/thumbnail", dependencies=[Depends(require_tier("expert"))])
+async def youtube_thumbnail(
+    draft_id: str,
+    payload: YouTubeThumbnailPayload,
+    background_tasks: BackgroundTasks,
+    _auth=Depends(_require_auth),
+):
+    from bot.services.drafts_store import get_draft as _get
+    draft = await _get(draft_id)
+    if not draft or draft.kind != "youtube_video":
+        raise HTTPException(status_code=404, detail="draft_not_found")
+
+    background_tasks.add_task(
+        complete_youtube_generate_thumbnail,
+        draft_id,
+        mode=payload.mode,
+        revision_note=payload.revision_note,
+    )
+    return {"ok": True, "draft_id": draft_id}
+
+
+@router.post("/api/youtube/{draft_id}/metadata", dependencies=[Depends(require_tier("expert"))])
+async def youtube_metadata(
+    draft_id: str,
+    background_tasks: BackgroundTasks,
+    _auth=Depends(_require_auth),
+):
+    from bot.services.drafts_store import get_draft as _get
+    draft = await _get(draft_id)
+    if not draft or draft.kind != "youtube_video":
+        raise HTTPException(status_code=404, detail="draft_not_found")
+
+    background_tasks.add_task(complete_youtube_generate_metadata, draft_id)
+    return {"ok": True, "draft_id": draft_id}
