@@ -7,6 +7,10 @@ from dataclasses import dataclass, field
 
 from PIL import Image
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 @dataclass
 class ValidationResult:
@@ -85,6 +89,7 @@ def validate_uploaded_photo(image_bytes: bytes) -> ValidationResult:
     try:
         _check_quality(img, result)
     except ImportError:
+        logger.warning("image_validation: suppressed exception", exc_info=True)
         pass  # numpy not available — skip quality checks
 
     return result

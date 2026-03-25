@@ -169,6 +169,7 @@ async def _build_day_context(target_date: str) -> dict:
         city_lat = getattr(settings, "city_lat", 55.7558) or 55.7558
         city_lon = getattr(settings, "city_lon", 37.6173) or 37.6173
     except Exception:
+        logger.warning("_build_day_context: get_brand_settings failed", exc_info=True)
         pass
 
     ctx: dict = {

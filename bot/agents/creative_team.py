@@ -9,6 +9,10 @@ from bot.services.brand_settings_store import get_brand_settings_cached
 from bot.services.humanizer import humanize, humanize_llm
 from bot.services.policy_engine import enforce_policy
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 _EDITOR_SYSTEM = """\
 {brand_context}
@@ -105,6 +109,7 @@ def edit_post_sync(raw: str, topic: str, platform: str = "default", user_forbidd
         if not audit.get("passed", True) and audit.get("cleaned_text"):
             humanized = audit["cleaned_text"]
     except Exception:
+        logger.warning("creative_team: suppressed exception", exc_info=True)
         pass  # Never let brand guardian break the pipeline
 
     return humanized
@@ -136,6 +141,7 @@ def edit_post_with_optimization_sync(
             content_type=content_type,
         )
     except Exception:
+        logger.warning("edit_post_with_optimization_sync: suppressed exception", exc_info=True)
         pass  # Never let platform optimizer break the pipeline
 
     return {

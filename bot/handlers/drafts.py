@@ -10,6 +10,10 @@ from bot.handlers.reels import _review_keyboard, _reels_result_text
 from bot.services.drafts_store import get_draft, list_recent_drafts, update_draft
 from bot.services.mini_app import append_mini_app_button, build_mini_app_markup
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 def _feedback_label(feedback: str) -> str:
     return {
@@ -166,6 +170,7 @@ async def cb_drafts(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     try:
         await query.message.edit_reply_markup(_feedback_keyboard(draft_id, feedback))
     except Exception:
+        logger.warning("cb_drafts: query failed", exc_info=True)
         pass
 
 

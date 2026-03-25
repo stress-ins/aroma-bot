@@ -3,6 +3,10 @@ from __future__ import annotations
 
 from bot.services.brand_settings_store import get_brand_settings_cached
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 # ── Brand context (берётся из БД, с fallback) ──────────────────────────────
 _BRAND_CONTEXT_DEFAULT = """\
 Ты работаешь с брендом специалиста по регуляции нервной системы через сенсорные практики.
@@ -29,6 +33,7 @@ def get_brand_context() -> str:
         if bs and bs.brand_voice and len(bs.brand_voice.strip()) > 50:
             return bs.brand_voice.strip()
     except Exception:
+        logger.warning("get_brand_context: get_brand_settings_cached failed", exc_info=True)
         pass
     return _BRAND_CONTEXT_DEFAULT
 

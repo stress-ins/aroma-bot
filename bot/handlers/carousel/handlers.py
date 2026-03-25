@@ -115,12 +115,14 @@ async def _run_image_generation(
                 f"🖼 Картинки: {icons} {done_count}/{len(indices)}"
             )
         except Exception:
+            logger.warning("gen_one: progress_msg failed", exc_info=True)
             pass
     await asyncio.gather(*[gen_one(i) for i in indices])
 
     try:
         await progress_msg.delete()
     except Exception:
+        logger.warning("gen_one: progress_msg failed", exc_info=True)
         pass
 
     context.user_data["ca_gemini_images"] = images
@@ -156,6 +158,7 @@ async def _run_image_generation(
                     f"🔍 Проверяю: {''.join(qa_icons)} {qa_done}/{len(generated_indices)}"
                 )
             except Exception:
+                logger.warning("qa_one: qa_progress failed", exc_info=True)
                 pass
 
         await asyncio.gather(*[qa_one(i) for i in generated_indices])
@@ -175,6 +178,7 @@ async def _run_image_generation(
                     f"🔄 Перерендер: {''.join(qa_icons)} — исправляю {len(failed_qa)} сл."
                 )
             except Exception:
+                logger.warning("handlers: suppressed exception", exc_info=True)
                 pass
 
             regen_done = 0
@@ -190,6 +194,7 @@ async def _run_image_generation(
                         f"🔄 Перерендер: {''.join(qa_icons)} {regen_done}/{len(failed_qa)}"
                     )
                 except Exception:
+                    logger.warning("regen_one: qa_progress failed", exc_info=True)
                     pass
 
             await asyncio.gather(*[regen_one(i) for i in failed_qa])
@@ -212,6 +217,7 @@ async def _run_image_generation(
                         f"🔍 Повторная проверка: {''.join(qa_icons)} {qa2_done}/{len(regenned)}"
                     )
                 except Exception:
+                    logger.warning("qa_two: qa_progress failed", exc_info=True)
                     pass
 
             if regenned:
@@ -223,6 +229,7 @@ async def _run_image_generation(
         try:
             await qa_progress.delete()
         except Exception:
+            logger.warning("qa_two: qa_progress failed", exc_info=True)
             pass
 
     # Send all images in order
@@ -236,6 +243,7 @@ async def _run_image_generation(
             try:
                 await msg.reply_photo(photo=img, caption=caption, parse_mode="HTML")
             except Exception:
+                logger.warning("handlers: suppressed exception", exc_info=True)
                 pass
 
     if not has_failed:
@@ -318,6 +326,7 @@ async def _run_carousel(query_or_message, context: ContextTypes.DEFAULT_TYPE,
             try:
                 await status_msg.delete()
             except Exception:
+                logger.warning("handlers: suppressed exception", exc_info=True)
                 pass
             await target.reply_text(full_text, parse_mode="HTML", reply_markup=keyboard)
     else:
@@ -331,6 +340,7 @@ async def _run_carousel(query_or_message, context: ContextTypes.DEFAULT_TYPE,
             try:
                 await status_msg.delete()
             except Exception:
+                logger.warning("handlers: suppressed exception", exc_info=True)
                 pass
             await target.reply_text(part1, parse_mode="HTML")
         await target.reply_text(part2, parse_mode="HTML", reply_markup=keyboard)

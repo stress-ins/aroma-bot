@@ -127,6 +127,7 @@ def filter_fresh_items(
         try:
             pub_date = _parse_date(pub_date_str)
         except (ValueError, TypeError):
+            logger.warning("filter_fresh_items: _parse_date failed", exc_info=True)
             continue
         if pub_date >= cutoff:
             fresh.append(item)
@@ -138,6 +139,7 @@ def _parse_date(date_str: str) -> datetime:
     try:
         return parsedate_to_datetime(date_str)
     except (ValueError, TypeError):
+        logger.warning("_parse_date: parsedate_to_datetime failed", exc_info=True)
         pass
     # ISO 8601 fallback (Atom feeds)
     dt = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
@@ -152,6 +154,7 @@ def _format_notification(feed_name: str, emoji: str, item: dict[str, str]) -> st
         dt = _parse_date(pub_date)
         pub_date = dt.strftime("%Y-%m-%d %H:%M UTC")
     except (ValueError, TypeError):
+        logger.warning("_format_notification: _parse_date failed", exc_info=True)
         pass
     lines = [
         f"\u26a0\ufe0f {feed_name} — incident",

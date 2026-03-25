@@ -158,6 +158,7 @@ def call_claude(
                     daemon=True,
                 ).start()
             except Exception:
+                logger.warning("claude_client: suppressed exception", exc_info=True)
                 pass  # Never let logging break the LLM call
 
             return text
@@ -281,6 +282,7 @@ def _call_replicate_claude(
             daemon=True,
         ).start()
     except Exception:
+        logger.warning("claude_client: suppressed exception", exc_info=True)
         pass
 
     return text
@@ -370,6 +372,7 @@ def _call_replicate_gemini_vision(
             daemon=True,
         ).start()
     except Exception:
+        logger.warning("claude_client: suppressed exception", exc_info=True)
         pass
 
     return text

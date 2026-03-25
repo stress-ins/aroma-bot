@@ -16,6 +16,10 @@ from ..auth import TeamContext, _require_auth, _resolve_init_data, _resolve_sse_
 from ..generation._common import get_generation_event, cleanup_generation_event, sse_msg
 from ..models import DraftContentPayload, DraftFeedbackPayload, DraftMovePayload, DraftStatusPayload
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
 
 
@@ -252,6 +256,7 @@ async def draft_generation_stream(draft_id: str, _: str = Depends(_resolve_sse_a
                 try:
                     await asyncio.wait_for(evt.wait(), timeout=3.0)
                 except asyncio.TimeoutError:
+                    logger.warning("_event_generator: asyncio failed", exc_info=True)
                     pass
         finally:
             cleanup_generation_event(draft_id)

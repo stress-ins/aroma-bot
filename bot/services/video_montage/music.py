@@ -84,6 +84,7 @@ def detect_beats(music_path: str) -> list[float]:
                 ts = float(line.split("silence_end:")[1].split("|")[0].strip())
                 beats.append(ts)
             except (ValueError, IndexError):
+                logger.warning("detect_beats: float failed", exc_info=True)
                 pass
 
     logger.info("Detected %d beats in %s", len(beats), music_path)

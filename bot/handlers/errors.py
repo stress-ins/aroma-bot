@@ -26,6 +26,7 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> N
                 "⚠️ Произошла ошибка. Попробуй ещё раз позже."
             )
         except Exception:
+            logger.warning("error_handler: update failed", exc_info=True)
             pass
 
     # Notify owner via monitor bot
@@ -48,4 +49,5 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> N
         )
         notify_owner(msg)
     except Exception:
+        logger.warning("errors: suppressed exception", exc_info=True)
         pass

@@ -5,6 +5,10 @@ from bot.services.drafts_store import update_draft
 
 from ._common import set_generation_state
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 async def complete_content_generation(
     draft_id: str,
@@ -25,6 +29,7 @@ async def complete_content_generation(
             cards = await retrieve_relevant_cards(topic, max_items=5)
             rag_context = format_rag_context(cards)
         except Exception:
+            logger.warning("complete_content_generation: suppressed exception", exc_info=True)
             pass  # Graceful fallback: generate without RAG
 
         draft_obj = await generate_content_draft(topic, goal_key, format_key, blend_context=blend_context, rag_context=rag_context)
@@ -51,6 +56,7 @@ async def complete_content_generation(
                 if photos:
                     content_payload["stock_suggestions"] = [p.to_dict() for p in photos[:9]]
             except Exception:
+                logger.warning("content: suppressed exception", exc_info=True)
                 pass  # Graceful — UI will do lazy search
 
         await update_draft(draft_id, payload=content_payload, status="draft")
@@ -87,6 +93,7 @@ async def _build_threads_extra_context(team_id: str | None, topic: str) -> tuple
                     extra_parts.append("## Актуальные тренды (последние 7 дней)\n" + "\n".join(trends_lines))
                     metadata["trend_source"] = True
         except Exception:
+            logger.warning("_build_threads_extra_context: suppressed exception", exc_info=True)
             pass
 
     # Handbook facts: search oils matching topic keywords
@@ -117,6 +124,7 @@ async def _build_threads_extra_context(team_id: str | None, topic: str) -> tuple
                     extra_parts.append("## Релевантные факты из справочника\n" + "\n".join(facts_lines))
                     metadata["handbook_source"] = True
     except Exception:
+        logger.warning("content: suppressed exception", exc_info=True)
         pass
 
     return "\n\n".join(extra_parts), metadata
@@ -148,6 +156,7 @@ async def complete_threads_series_generation(
             cards = await retrieve_relevant_cards(topic, max_items=5)
             rag_context = format_rag_context(cards)
         except Exception:
+            logger.warning("complete_threads_series_generation: suppressed exception", exc_info=True)
             pass
 
         draft_obj = await generate_content_draft(enriched_topic, goal_key, "threads_series", blend_context=blend_context, rag_context=rag_context)

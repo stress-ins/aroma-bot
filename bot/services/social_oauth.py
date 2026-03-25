@@ -12,6 +12,10 @@ from urllib.parse import urlencode
 
 import httpx
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 THREADS_AUTHORIZE_URL = "https://www.threads.net/oauth/authorize"
 THREADS_TOKEN_URL = "https://graph.threads.net/oauth/access_token"
@@ -252,6 +256,7 @@ def exchange_instagram_code(
             username = str(profile_payload.get("username", "")).strip()
             user_id = str(profile_payload.get("user_id") or profile_payload.get("id") or user_id).strip()
         except OAuthExchangeError:
+            logger.warning("social_oauth: suppressed exception", exc_info=True)
             pass
 
         if not user_id:
@@ -351,6 +356,7 @@ def exchange_canva_code(
                 (name_payload.get("profile") or {}).get("display_name", "")
             ).strip()
         except Exception:
+            logger.warning("social_oauth: suppressed exception", exc_info=True)
             pass
         # Fallback: extract user_id from access_token JWT sub claim
         if not user_id:
@@ -359,6 +365,7 @@ def exchange_canva_code(
                 claims = json.loads(_urlsafe_b64decode(jwt_body).decode("utf-8"))
                 user_id = str(claims.get("sub", "")).strip()
             except Exception:
+                logger.warning("social_oauth: suppressed exception", exc_info=True)
                 pass
         if not user_id:
             raise OAuthExchangeError(f"Canva profile lookup did not return user id: {profile_payload}")

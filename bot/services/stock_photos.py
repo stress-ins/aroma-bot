@@ -8,6 +8,9 @@ from dataclasses import asdict, dataclass
 
 import httpx
 
+
+logger = logging.getLogger(__name__)
+
 log = logging.getLogger(__name__)
 
 _UNSPLASH_BASE = "https://api.unsplash.com"
@@ -95,6 +98,7 @@ async def download_stock_photo(
                     params={"client_id": unsplash_key},
                 )
             except Exception:
+                logger.warning("download_stock_photo: client failed", exc_info=True)
                 pass  # best-effort tracking
 
         resp = await client.get(url)

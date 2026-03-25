@@ -166,6 +166,7 @@ async def compose_video_remotion(
     try:
         props_file.unlink(missing_ok=True)
     except OSError:
+        logger.warning("remotion_renderer: suppressed exception", exc_info=True)
         pass
 
     if proc.returncode != 0:
@@ -284,6 +285,7 @@ async def render_still(
     try:
         props_file.unlink(missing_ok=True)
     except OSError:
+        logger.warning("remotion_renderer: suppressed exception", exc_info=True)
         pass
 
     return results
