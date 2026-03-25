@@ -1,8 +1,19 @@
 import pytest
+from contextlib import asynccontextmanager
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy.pool import StaticPool
 from db.models import Base
 import db.session
+
+# ── Replace miniapp lifespan globally to prevent infinite background workers ──
+# Must happen at import time (before any test imports miniapp_server.app)
+
+@asynccontextmanager
+async def _noop_lifespan(app):
+    yield
+
+import miniapp_server  # noqa: E402
+miniapp_server.app.router.lifespan_context = _noop_lifespan
 import bot.services.drafts_store
 import bot.services.plans_store
 import bot.services.miniapp_references

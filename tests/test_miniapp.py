@@ -672,11 +672,18 @@ class TestMiniAppApi:
             calls["list_recent_drafts"] += 1
             return []
 
+        async def _noop():
+            pass
+
         import bot.services.drafts_store as _ds
+        import bot.services.video_task_worker as _vw
+        import bot.services.canva_task_worker as _cw
         monkeypatch.setattr(miniapp_server, "_acquire_startup_recovery_lock", lambda: None)
         monkeypatch.setattr(_ds, "list_recent_drafts", _fake_list_recent_drafts)
+        monkeypatch.setattr(_vw, "start_worker", _noop)
+        monkeypatch.setattr(_cw, "start_worker", _noop)
 
-        async with miniapp_server.app.router.lifespan_context(miniapp_server.app):
+        async with miniapp_server._lifespan(miniapp_server.app):
             pass
 
         assert calls["list_recent_drafts"] == 0
