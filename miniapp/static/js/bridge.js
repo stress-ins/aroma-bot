@@ -79,6 +79,13 @@ export function registerWindowBridge(deps) {
     gradeAnalyzeAI,
     gradeApply,
     startMontage,
+    refreshDraftMetrics,
+    saveSeriesPost,
+    selectCity,
+    shareBlend,
+    searchStockPhotos,
+    selectStockPhoto,
+    uploadDraftPhoto,
     saveContentReviewDraft,
     polishContentDraft,
     openKeywordTopic,
@@ -305,6 +312,14 @@ export function registerWindowBridge(deps) {
   window.gradeApply = gradeApply;
   // Auto-montage
   window.startMontage = startMontage;
+  // Missing actions
+  window.refreshDraftMetrics = refreshDraftMetrics;
+  window.saveSeriesPost = saveSeriesPost;
+  window.selectCity = selectCity;
+  window.shareBlend = shareBlend;
+  window.searchStockPhotos = searchStockPhotos;
+  window.selectStockPhoto = selectStockPhoto;
+  window.uploadDraftPhoto = uploadDraftPhoto;
 
   // Threads-series slot actions
   window.regenSlot = regenSlot;
