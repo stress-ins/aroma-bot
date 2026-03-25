@@ -726,14 +726,10 @@ async def reels_preview_frames(
 
 @router.post("/api/reels/notify-when-ready")
 async def reels_notify_when_ready(
-    user_data: dict = Depends(_resolve_init_data),
+    telegram_id: int = Depends(_require_auth),
 ):
     """Subscribe current user to Telegram notification when video task completes."""
     from bot.services.video_task_worker import subscribe_notification
-
-    telegram_id = user_data.get("id") or user_data.get("user_id")
-    if not telegram_id:
-        raise HTTPException(status_code=400, detail="no_user_id")
 
     # Subscribe to all active tasks
     from bot.services.video_task_store import AsyncSessionLocal

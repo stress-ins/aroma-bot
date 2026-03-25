@@ -211,6 +211,10 @@ async def _poll_job(access_token: str, url: str) -> dict[str, Any]:
         await asyncio.sleep(POLL_INTERVAL)
         async with httpx.AsyncClient(timeout=POLL_TIMEOUT_CFG) as client:
             resp = await client.get(url, headers={"Authorization": f"Bearer {access_token}"})
+        if resp.status_code >= 500:
+            # Canva server error — retry silently (transient)
+            logger.warning("Canva poll got %d, retrying...", resp.status_code)
+            continue
         if resp.status_code >= 400:
             logger.error("Canva job poll failed: %s %s", resp.status_code, resp.text[:200])
             raise CanvaAPIError(f"Canva job poll failed: {resp.status_code} {resp.text[:200]}")
