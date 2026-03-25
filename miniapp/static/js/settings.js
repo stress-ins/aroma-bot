@@ -1157,14 +1157,19 @@ export function createSettingsModule(deps) {
       const worker = data.worker || {};
       const isAdmin = data.is_admin || false;
 
+      // Labels
+      const STATUS_RU = { pending: "В очереди", running: "Выполняется", completed: "Готово", failed: "Ошибка", cancelled: "Отменено" };
+      const TYPE_RU = { clean: "Очистка", montage: "Монтаж", grade: "Цветокоррекция", compose: "Сборка", canva_export: "Canva" };
+      const STEP_RU = { preparing: "Подготовка", analyzing: "Анализ", transcribing: "Транскрипция", detecting_silence: "Поиск пауз", processing: "Обработка", assembling: "Сборка", encoding: "Кодирование", grading: "Коррекция", subtitles: "Субтитры", music: "Музыка", broll: "B-roll", color_grading: "Цвет", done: "Готово", queued: "В очереди", saving: "Сохранение", rendering: "Рендеринг" };
+
       // Video queue summary
       const byStatus = q.by_status || {};
       const statusRows = Object.entries(byStatus).map(([status, types]) => {
         const total = Object.values(types).reduce((s, v) => s + v, 0);
-        const detail = Object.entries(types).map(([t, c]) => `${t}: ${c}`).join(", ");
+        const detail = Object.entries(types).map(([t, c]) => `${TYPE_RU[t] || t}: ${c}`).join(", ");
         const color = { pending: "var(--brand)", running: "#4a90d9", completed: "var(--good)", failed: "var(--danger, #e53935)" }[status] || "var(--hint)";
         return `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)">
-          <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};margin-right:6px"></span>${escapeHtml(status)}</span>
+          <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};margin-right:6px"></span>${escapeHtml(STATUS_RU[status] || status)}</span>
           <span style="color:var(--hint);font-size:12px">${detail} (${total})</span>
         </div>`;
       }).join("");
@@ -1174,9 +1179,9 @@ export function createSettingsModule(deps) {
         const statusColor = { pending: "var(--brand)", running: "#4a90d9", completed: "var(--good)", failed: "var(--danger)" }[t.status] || "var(--hint)";
         return `<div style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid var(--border);font-size:12px;align-items:center">
           <span style="min-width:50px;color:var(--hint)">#${escapeHtml(t.draft_id)}</span>
-          <span style="min-width:55px">${escapeHtml(t.type)}</span>
-          <span style="color:${statusColor};font-weight:600;min-width:65px">${escapeHtml(t.status)}</span>
-          <span style="color:var(--hint);flex:1">${t.step ? escapeHtml(t.step) : ""} ${t.progress ? t.progress + "%" : ""}</span>
+          <span style="min-width:55px">${escapeHtml(TYPE_RU[t.type] || t.type)}</span>
+          <span style="color:${statusColor};font-weight:600;min-width:65px">${escapeHtml(STATUS_RU[t.status] || t.status)}</span>
+          <span style="color:var(--hint);flex:1">${t.step ? escapeHtml(STEP_RU[t.step] || t.step) : ""} ${t.progress ? t.progress + "%" : ""}</span>
           <span style="color:var(--muted)">${t.duration_sec ? t.duration_sec + "с" : ""}</span>
         </div>`;
       }).join("");
@@ -1223,7 +1228,7 @@ export function createSettingsModule(deps) {
               <span style="width:10px;height:10px;border-radius:50%;background:${worker.alive ? "var(--good)" : "var(--danger)"}"></span>
               <span>${worker.alive ? "Работает" : "Остановлен"}</span>
             </div>
-            <div style="font-size:12px;color:var(--hint);margin-top:4px">Активных задач: ${q.active || 0}</div>
+            <div style="font-size:12px;color:var(--hint);margin-top:4px">Задач в работе: ${q.active || 0}</div>
           </section>
 
           <section class="section">
