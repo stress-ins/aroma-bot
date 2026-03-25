@@ -86,19 +86,6 @@ async def cancel_publish_schedule(draft_id: str, _: None = Depends(_require_auth
     return {"draft_id": draft_id, "results": results}
 
 
-@router.post("/api/publish/{item_id}")
-async def publish_by_id(item_id: str, _: None = Depends(_require_auth)):
-    """Immediate publish endpoint (used by scheduler internally)."""
-    draft = await get_draft(item_id)
-    if not draft:
-        raise HTTPException(status_code=404, detail="draft_not_found")
-    if draft.status not in ("scheduled", "approved"):
-        raise HTTPException(status_code=400, detail="draft_not_ready")
-    platforms = draft.publish_platforms or ["threads"]
-    results = await publish(item_id, platforms)
-    return {"draft_id": item_id, "results": results}
-
-
 @router.get("/api/publish/scheduled")
 async def scheduled_posts(ctx: TeamContext = Depends(_resolve_team_context)):
     from bot.services.drafts_store import list_recent_drafts
@@ -122,9 +109,7 @@ async def scheduled_posts(ctx: TeamContext = Depends(_resolve_team_context)):
 async def schedule_series(payload: ScheduleSeriesRequest, _: None = Depends(_require_auth)):
     from datetime import date as date_type
 
-    import sys
-    print(f"[SCHEDULE-SERIES] draft_id={payload.draft_id!r} date={payload.date!r} slots={payload.slots!r}", file=sys.stderr, flush=True)
-    logger.warning("schedule-series: received draft_id=%r date=%r slots=%r", payload.draft_id, payload.date, payload.slots)
+    logger.info("schedule-series: draft_id=%r date=%r slots=%r", payload.draft_id, payload.date, payload.slots)
     draft = await get_draft(payload.draft_id)
     if not draft:
         logger.warning("schedule-series: draft NOT FOUND, draft_id=%r (len=%d)", payload.draft_id, len(payload.draft_id))
@@ -188,6 +173,20 @@ async def schedule_series(payload: ScheduleSeriesRequest, _: None = Depends(_req
 async def publish_history(limit: int = 50, ctx: TeamContext = Depends(_resolve_team_context)):
     logs = await list_all_logs(limit=limit, team_id=ctx.team_id)
     return {"items": logs}
+
+
+# Dynamic route MUST come after all static /api/publish/* routes
+@router.post("/api/publish/{item_id}")
+async def publish_by_id(item_id: str, _: None = Depends(_require_auth)):
+    """Immediate publish endpoint (used by scheduler internally)."""
+    draft = await get_draft(item_id)
+    if not draft:
+        raise HTTPException(status_code=404, detail="draft_not_found")
+    if draft.status not in ("scheduled", "approved"):
+        raise HTTPException(status_code=400, detail="draft_not_ready")
+    platforms = draft.publish_platforms or ["threads"]
+    results = await publish(item_id, platforms)
+    return {"draft_id": item_id, "results": results}
 
 
 # ── Metrics ───────────────────────────────────────────────────────────────
