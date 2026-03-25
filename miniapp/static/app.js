@@ -2092,6 +2092,7 @@ window._currentTabRefresh = () => {
 };
 
 const onboarding = createOnboardingModule({ state, icon });
+window.resetOnboarding = onboarding.resetOnboarding;
 
 ({
   loadInbox,
