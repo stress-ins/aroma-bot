@@ -11,7 +11,8 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Path
 from bot.services.drafts_store import get_draft, update_draft
 from bot.services.miniapp_presenter import serialize_draft
 
-from ..auth import _require_auth, require_tier
+from ..auth import TeamContext, _resolve_team_context, require_tier
+from ..deps import verify_team_draft
 from ..models import SeriesPostPatchRequest, SeriesRegenPostRequest
 
 logger = logging.getLogger(__name__)
@@ -27,23 +28,26 @@ def _require_content_series(draft):
     return draft
 
 
-@router.get("/api/series/{draft_id}", dependencies=[Depends(_require_auth)])
-async def get_series(draft_id: str):
+@router.get("/api/series/{draft_id}")
+async def get_series(draft_id: str, ctx: TeamContext = Depends(_resolve_team_context)):
     """Get content series details."""
     draft = await get_draft(draft_id)
     _require_content_series(draft)
+    verify_team_draft(draft, ctx)
     return await serialize_draft(draft)
 
 
 @router.patch("/api/series/{draft_id}/post/{index}", dependencies=[Depends(require_tier("expert"))])
 async def patch_series_post(
     draft_id: str,
+    ctx: TeamContext = Depends(_resolve_team_context),
     index: int = Path(..., ge=0, le=6),
     body: SeriesPostPatchRequest = ...,
 ):
     """Edit a single post in the series."""
     draft = await get_draft(draft_id)
     _require_content_series(draft)
+    verify_team_draft(draft, ctx)
 
     payload = draft.payload or {}
     posts = payload.get("series_posts", [])
@@ -80,12 +84,14 @@ async def patch_series_post(
 @router.post("/api/series/{draft_id}/regen-post/{index}", dependencies=[Depends(require_tier("expert"))])
 async def regen_series_post(
     draft_id: str,
+    ctx: TeamContext = Depends(_resolve_team_context),
     index: int = Path(..., ge=0, le=6),
     body: SeriesRegenPostRequest = SeriesRegenPostRequest(),
 ):
     """Regenerate a single post in the series."""
     draft = await get_draft(draft_id)
     _require_content_series(draft)
+    verify_team_draft(draft, ctx)
 
     payload = draft.payload or {}
     posts = payload.get("series_posts", [])
@@ -182,12 +188,14 @@ def _regen_single_post(
 async def regen_all_posts(
     draft_id: str,
     background_tasks: BackgroundTasks,
+    ctx: TeamContext = Depends(_resolve_team_context),
 ):
     """Regenerate all posts in the series."""
     from ..generation import complete_series_generation
 
     draft = await get_draft(draft_id)
     _require_content_series(draft)
+    verify_team_draft(draft, ctx)
 
     payload = draft.payload or {}
 
@@ -211,12 +219,13 @@ async def regen_all_posts(
 
 
 @router.post("/api/series/{draft_id}/coherence-check", dependencies=[Depends(require_tier("expert"))])
-async def coherence_check(draft_id: str):
+async def coherence_check(draft_id: str, ctx: TeamContext = Depends(_resolve_team_context)):
     """Run coherence check on the series."""
     from bot.agents.series_coherence import check_coherence_sync
 
     draft = await get_draft(draft_id)
     _require_content_series(draft)
+    verify_team_draft(draft, ctx)
 
     payload = draft.payload or {}
     posts = payload.get("series_posts", [])
@@ -237,17 +246,18 @@ async def coherence_check(draft_id: str):
 
 
 @router.post("/api/series/{draft_id}/approve", dependencies=[Depends(require_tier("expert"))])
-async def approve_series(draft_id: str):
+async def approve_series(draft_id: str, ctx: TeamContext = Depends(_resolve_team_context)):
     """Approve the entire series."""
     draft = await get_draft(draft_id)
     _require_content_series(draft)
+    verify_team_draft(draft, ctx)
 
     await update_draft(draft_id, status="approved")
     updated = await get_draft(draft_id)
     return await serialize_draft(updated)
 
 
-@router.get("/api/series/templates", dependencies=[Depends(_require_auth)])
+@router.get("/api/series/templates", dependencies=[Depends(_resolve_team_context)])
 async def list_templates():
     """List available series templates."""
     from miniapp.api.generation.series import get_series_templates
