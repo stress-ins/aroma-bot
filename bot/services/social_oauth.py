@@ -42,7 +42,6 @@ INSTAGRAM_DEFAULT_SCOPES = (
     "instagram_business_manage_comments",
     "instagram_business_manage_insights",
     "instagram_business_manage_messages",
-    "instagram_business_manage",
 )
 
 YOUTUBE_AUTHORIZE_URL = "https://accounts.google.com/o/oauth2/v2/auth"
