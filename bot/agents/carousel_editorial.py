@@ -170,35 +170,35 @@ def _draw_rich_line(
         cx += int(ww)
 
 
-def _draw_pike(draw, x_tip, cy, direction="left", length=100, height=8, color=(255, 255, 255)):
-    """Draw a tapered pike/spear shape with rounded inner end.
+_DIVIDERS_DIR = Path(__file__).parent.parent.parent / "assets" / "carousel_dividers"
+_SWIPE_ARROW_PATH = Path(__file__).parent.parent.parent / "assets" / "carousel_swipe" / "swipe_arrow.png"
 
-    direction='left'  — tip points left, rounded end on right (left pike)
-    direction='right' — tip points right, rounded end on left (right pike)
-    """
-    half_h = height // 2
-    r = 4  # corner radius of the flat/rounded end
+DIVIDER_STYLES = [
+    "divider_01_pike_thick", "divider_02_pike_thin", "divider_03_wave",
+    "divider_04_wave_sharp", "divider_05_bold", "divider_06_arrow_line",
+    "divider_07_medium", "divider_08_tall", "divider_09_round",
+    "divider_10_rounder", "divider_11_line_dots", "divider_12_asymm",
+]
+DEFAULT_DIVIDER = "divider_06_arrow_line"
 
-    if direction == "left":
-        flat_x = x_tip + length
-        draw.polygon([
-            (x_tip, cy),
-            (flat_x - r, cy - half_h),
-            (flat_x, cy - half_h),
-            (flat_x, cy + half_h),
-            (flat_x - r, cy + half_h),
-        ], fill=color)
-        draw.ellipse((flat_x - r * 2, cy - half_h, flat_x, cy + half_h), fill=color)
-    else:  # right
-        flat_x = x_tip - length
-        draw.polygon([
-            (x_tip, cy),
-            (flat_x + r, cy - half_h),
-            (flat_x, cy - half_h),
-            (flat_x, cy + half_h),
-            (flat_x + r, cy + half_h),
-        ], fill=color)
-        draw.ellipse((flat_x, cy - half_h, flat_x + r * 2, cy + half_h), fill=color)
+
+def _load_divider_png(style: str = DEFAULT_DIVIDER):
+    """Load a divider PNG template (RGBA with transparent center gap)."""
+    from PIL import Image
+    path = _DIVIDERS_DIR / f"{style}.png"
+    if not path.exists():
+        path = _DIVIDERS_DIR / f"{DEFAULT_DIVIDER}.png"
+    if not path.exists():
+        return None
+    return Image.open(path).convert("RGBA")
+
+
+def _load_swipe_arrow():
+    """Load swipe arrow PNG (black on white/transparent)."""
+    from PIL import Image
+    if not _SWIPE_ARROW_PATH.exists():
+        return None
+    return Image.open(_SWIPE_ARROW_PATH).convert("RGBA")
 
 
 def _draw_avatar_placeholder(draw, x, y, diameter, username, accent_color):
@@ -226,6 +226,7 @@ def render_editorial_png(
     avatar_bytes: bytes | None = None,
     is_hook: bool = False,
     is_bullet_list: bool = False,
+    divider_style: str = DEFAULT_DIVIDER,
 ) -> bytes:
     """Render editorial-style slide: photo top, solid bg + highlighted text bottom."""
     from PIL import Image, ImageDraw, ImageFilter
@@ -270,19 +271,13 @@ def render_editorial_png(
 
     PAD = 48
 
-    # ── Author Divider: [◀▬▬] [avatar] username [▬▬▶] ──
+    # ── Author Divider: PNG template + avatar + username ──
     bar_y = photo_h + 18 if img_bytes else 40
 
     if username:
-        _AD = {
-            "pike_length": 100, "pike_height": 8, "pike_color": (255, 255, 255),
-            "avatar_diameter": 40, "gap_pike_avatar": 6,
-            "font_size": 13, "font_color": (255, 255, 255),
-        }
-        ad_d = _AD["avatar_diameter"]
-        pike_len = _AD["pike_length"]
-        gap_pa = _AD["gap_pike_avatar"]
-        ufont = _load_font(_AD["font_size"])
+        AVATAR_D = 40
+        FONT_SIZE = 13
+        ufont = _load_font(FONT_SIZE)
 
         try:
             uname_w = int(draw.textlength(username, font=ufont))
@@ -290,45 +285,47 @@ def render_editorial_png(
             bbox = draw.textbbox((0, 0), username, font=ufont)
             uname_w = bbox[2] - bbox[0]
 
-        # Layout: [pike] [gap] [avatar] [gap] [username] [gap] [pike]
-        gap_name = 6
-        total_w = pike_len + gap_pa + ad_d + gap_name + uname_w + gap_pa + pike_len
-        cx = w // 2
-        center_y = bar_y + ad_d // 2
+        divider_img = _load_divider_png(divider_style)
+        if divider_img:
+            # Scale divider to ~60% of slide width, keep aspect ratio
+            target_div_w = int(w * 0.60)
+            div_scale = target_div_w / divider_img.width
+            div_w = target_div_w
+            div_h = int(divider_img.height * div_scale)
+            divider_img = divider_img.resize((div_w, div_h), Image.LANCZOS)
 
-        # Compute positions from center
-        left_edge = cx - total_w // 2
+            # Center divider horizontally
+            div_x = (w - div_w) // 2
+            div_y = bar_y
+            canvas.paste(divider_img, (div_x, div_y), divider_img)
 
-        # Left pike — tip points left (outward)
-        _draw_pike(draw, x_tip=left_edge, cy=center_y, direction="left",
-                   length=pike_len, height=_AD["pike_height"], color=_AD["pike_color"])
+            # Avatar in center of divider gap
+            center_y = div_y + div_h // 2
+            av_x = (w - AVATAR_D) // 2
+            av_y = center_y - AVATAR_D // 2
+            if avatar_bytes:
+                try:
+                    av = Image.open(io.BytesIO(avatar_bytes)).convert("RGB")
+                    av = av.resize((AVATAR_D, AVATAR_D), Image.LANCZOS)
+                    mask = Image.new("L", (AVATAR_D, AVATAR_D), 0)
+                    ImageDraw.Draw(mask).ellipse((0, 0, AVATAR_D, AVATAR_D), fill=255)
+                    canvas.paste(av, (av_x, av_y), mask)
+                except Exception:
+                    _draw_avatar_placeholder(draw, av_x, av_y, AVATAR_D, username, accent_color)
+            else:
+                _draw_avatar_placeholder(draw, av_x, av_y, AVATAR_D, username, accent_color)
 
-        # Avatar
-        av_x = left_edge + pike_len + gap_pa
-        av_y = bar_y
-        if avatar_bytes:
-            try:
-                av = Image.open(io.BytesIO(avatar_bytes)).convert("RGB")
-                av = av.resize((ad_d, ad_d), Image.LANCZOS)
-                mask = Image.new("L", (ad_d, ad_d), 0)
-                ImageDraw.Draw(mask).ellipse((0, 0, ad_d, ad_d), fill=255)
-                canvas.paste(av, (av_x, av_y), mask)
-            except Exception:
-                _draw_avatar_placeholder(draw, av_x, av_y, ad_d, username, accent_color)
+            # Username below divider
+            name_x = (w - uname_w) // 2
+            name_y = div_y + div_h + 4
+            draw.text((name_x, name_y), username, font=ufont, fill=(255, 255, 255))
+
+            bar_y = name_y + FONT_SIZE + 12
         else:
-            _draw_avatar_placeholder(draw, av_x, av_y, ad_d, username, accent_color)
-
-        # Username
-        name_x = av_x + ad_d + gap_name
-        name_y = center_y - _AD["font_size"] // 2
-        draw.text((name_x, name_y), username, font=ufont, fill=_AD["font_color"])
-
-        # Right pike — tip points right (outward)
-        right_pike_tip = name_x + uname_w + gap_pa + pike_len
-        _draw_pike(draw, x_tip=right_pike_tip, cy=center_y, direction="right",
-                   length=pike_len, height=_AD["pike_height"], color=_AD["pike_color"])
-
-        bar_y += ad_d + 20
+            # Fallback: just username centered
+            name_x = (w - uname_w) // 2
+            draw.text((name_x, bar_y), username, font=ufont, fill=(255, 255, 255))
+            bar_y += FONT_SIZE + 20
 
     # ── Parse and render text ──
     # Uppercase transformation for headlines (not bullet body)
@@ -432,46 +429,37 @@ def render_editorial_png(
                             (255, 255, 255), accent_color, "center", PAD, usable_w)
             text_y += line_h
 
-    # ── Swipe CTA: СВАЙПАЙ ————▶ (filled triangle) ──
+    # ── Swipe CTA: PNG arrow image ──
     if is_hook:
-        _SC = {
-            "text": "СВАЙПАЙ", "font_size": 14, "font_color": (255, 255, 255),
-            "arrow_line_length": 38, "arrow_line_thickness": 2,
-            "arrow_triangle_width": 20, "arrow_triangle_height": 10,
-            "gap_text_arrow": 10, "margin_bottom": 28,
-        }
-        cta_font = _load_font(_SC["font_size"])
-        cta_text = _SC["text"]
-        try:
-            cta_tw = int(draw.textlength(cta_text, font=cta_font))
-        except AttributeError:
-            cta_tw = _SC["font_size"] * len(cta_text)
+        from PIL import ImageOps
+        arrow_img = _load_swipe_arrow()
+        if arrow_img:
+            # Invert black arrow to white for dark background
+            r, g, b, a = arrow_img.split()
+            rgb = Image.merge("RGB", (r, g, b))
+            rgb = ImageOps.invert(rgb)
+            arrow_img = Image.merge("RGBA", (*rgb.split(), a))
 
-        arrow_total = _SC["arrow_line_length"] + _SC["arrow_triangle_width"]
-        total_cta_w = cta_tw + _SC["gap_text_arrow"] + arrow_total
-        cta_x = (w - total_cta_w) // 2
-        cta_y = h - _SC["margin_bottom"]
-        arrow_y = cta_y - _SC["font_size"] // 2
+            # Scale arrow to ~120px wide
+            arrow_target_w = 120
+            ar_scale = arrow_target_w / arrow_img.width
+            ar_w = arrow_target_w
+            ar_h = int(arrow_img.height * ar_scale)
+            arrow_img = arrow_img.resize((ar_w, ar_h), Image.LANCZOS)
 
-        # Text
-        draw.text((cta_x, cta_y - _SC["font_size"]), cta_text,
-                  font=cta_font, fill=_SC["font_color"])
-
-        # Arrow: thin line + filled triangle
-        ax = cta_x + cta_tw + _SC["gap_text_arrow"]
-        line_end = ax + _SC["arrow_line_length"]
-        draw.line([(ax, arrow_y), (line_end, arrow_y)],
-                  fill=_SC["font_color"], width=_SC["arrow_line_thickness"])
-
-        # Filled triangle pike (slight overlap with line)
-        tri_x = line_end - 2
-        tri_w = _SC["arrow_triangle_width"]
-        tri_hh = _SC["arrow_triangle_height"] // 2
-        draw.polygon([
-            (tri_x, arrow_y - tri_hh),
-            (tri_x + tri_w, arrow_y),
-            (tri_x, arrow_y + tri_hh),
-        ], fill=_SC["font_color"])
+            ar_x = (w - ar_w) // 2
+            ar_y = h - 28 - ar_h
+            canvas.paste(arrow_img, (ar_x, ar_y), arrow_img)
+        else:
+            # Fallback: text-only CTA
+            cta_font = _load_font(14)
+            cta_text = "СВАЙПАЙ  >>"
+            try:
+                cta_tw = int(draw.textlength(cta_text, font=cta_font))
+            except AttributeError:
+                cta_tw = 100
+            draw.text(((w - cta_tw) // 2, h - 42), cta_text,
+                      font=cta_font, fill=(255, 255, 255))
 
     buf = io.BytesIO()
     canvas.save(buf, format="PNG", quality=92)

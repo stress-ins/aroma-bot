@@ -693,6 +693,8 @@ async def generate_slide_preview(draft_id: str, slide_index: int) -> bytes:
         # Load avatar
         avatar_bytes = _load_brand_avatar_bytes(draft.payload)
 
+        divider_style = draft.payload.get("divider_style", "divider_06_arrow_line")
+
         loop = asyncio.get_running_loop()
         preview = await loop.run_in_executor(
             None, lambda: render_editorial_png(
@@ -705,6 +707,7 @@ async def generate_slide_preview(draft_id: str, slide_index: int) -> bytes:
                 avatar_bytes=avatar_bytes,
                 is_hook=is_hook,
                 is_bullet_list=is_bullet,
+                divider_style=divider_style,
             ),
         )
         return preview
