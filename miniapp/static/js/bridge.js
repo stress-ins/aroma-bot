@@ -31,6 +31,7 @@ export function registerWindowBridge(deps) {
     carouselSwiperGoTo,
     setSlidesViewMode,
     setDividerStyle,
+    downloadSlideImage,
     uploadSlideImage,
     downloadCarouselPptx,
     importCarouselPptx,
@@ -323,6 +324,7 @@ export function registerWindowBridge(deps) {
   window.carouselSwiperGoTo = carouselSwiperGoTo;
   window.setSlidesViewMode = setSlidesViewMode;
   window.setDividerStyle = setDividerStyle;
+  window.downloadSlideImage = downloadSlideImage;
   window.uploadSlideImage = uploadSlideImage;
   window.downloadCarouselPptx = downloadCarouselPptx;
   window.importCarouselPptx = importCarouselPptx;
