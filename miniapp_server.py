@@ -122,6 +122,11 @@ if STATIC_DIST_DIR.exists():
 # Serve raw source files (fonts, images, and dev-mode fallback)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="miniapp-static")
 
+# Serve carousel template assets (dividers, swipe arrows)
+_CAROUSEL_ASSETS_DIR = Path(__file__).parent / "assets"
+if _CAROUSEL_ASSETS_DIR.exists():
+    app.mount("/assets", StaticFiles(directory=_CAROUSEL_ASSETS_DIR), name="carousel-assets")
+
 
 @app.middleware("http")
 async def _security_headers(request, call_next):

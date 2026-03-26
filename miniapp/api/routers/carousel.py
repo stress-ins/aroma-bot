@@ -241,6 +241,43 @@ async def regenerate_carousel_all(
     return await serialize_draft(refreshed)
 
 
+# ── Divider style ─────────────────────────────────────────────────────────────
+
+@router.get("/api/carousel/divider-styles")
+async def list_divider_styles():
+    """List available divider styles with preview thumbnails."""
+    from bot.agents.carousel_editorial import DIVIDER_STYLES, DEFAULT_DIVIDER
+    return {
+        "styles": DIVIDER_STYLES,
+        "default": DEFAULT_DIVIDER,
+    }
+
+
+class DividerStylePayload(BaseModel):
+    style: str
+
+
+@router.patch("/api/carousel/{draft_id}/divider-style")
+async def set_divider_style(
+    draft_id: str,
+    body: DividerStylePayload,
+    _: None = Depends(_require_auth),
+):
+    """Set divider style for carousel draft."""
+    from bot.agents.carousel_editorial import DIVIDER_STYLES
+    if body.style not in DIVIDER_STYLES:
+        raise HTTPException(status_code=400, detail="invalid_divider_style")
+    draft = await get_draft(draft_id)
+    if not draft or draft.kind != "carousel":
+        raise HTTPException(status_code=404, detail="carousel_not_found")
+    payload = dict(draft.payload)
+    payload["divider_style"] = body.style
+    updated = await update_draft(draft_id, payload=payload)
+    if not updated:
+        raise HTTPException(status_code=500, detail="update_failed")
+    return await serialize_draft(updated)
+
+
 # ── Preview endpoints ──────────────────────────────────────────────────────────
 
 @router.get("/api/carousel/{draft_id}/slides/{slide_index}/preview")

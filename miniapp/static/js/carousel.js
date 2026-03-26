@@ -293,10 +293,40 @@ export function createCarouselModule(deps) {
          </div>`
       : "";
 
+    // Divider style picker (editorial only)
+    const currentDivider = draft?.payload?.divider_style || "divider_06_arrow_line";
+    const dividerPicker = layoutStyle === "editorial" ? `
+      <div class="divider-picker">
+        <label class="divider-picker-label">${uiIcon("sparkles")}<span>Разделитель</span></label>
+        <div class="divider-picker-grid">
+          ${[
+            ["divider_01_pike_thick", "Толстые пики"],
+            ["divider_02_pike_thin", "Тонкие пики"],
+            ["divider_03_wave", "Волна"],
+            ["divider_04_wave_sharp", "Острая волна"],
+            ["divider_05_bold", "Жирный"],
+            ["divider_06_arrow_line", "Стрелки"],
+            ["divider_07_medium", "Средний"],
+            ["divider_08_tall", "Высокий"],
+            ["divider_09_round", "Круглый"],
+            ["divider_10_rounder", "Закруглённый"],
+            ["divider_11_line_dots", "Линия+точки"],
+            ["divider_12_asymm", "Асимметрия"],
+          ].map(([id, label]) => `
+            <button class="divider-option${id === currentDivider ? " is-active" : ""}" type="button"
+              data-action="setDividerStyle" data-args='${JSON.stringify([draftId, id])}'
+              title="${escapeHtml(label)}">
+              <img src="/assets/carousel_dividers/${id}.png" alt="${escapeHtml(label)}" />
+            </button>
+          `).join("")}
+        </div>
+      </div>` : "";
+
     return `
       <section class="section">
         <h3>${uiIcon("slides")}${header}</h3>
         ${avatarBanner}
+        ${dividerPicker}
         ${viewToggle}
         <div class="slides-swiper${isGrid ? " slides-grid" : ""}">
           <div class="slides-swiper-track${isGrid ? " slides-grid-track" : ""}" style="${isGrid ? "" : `transform:translateX(-${idx * 100}%)`}">
@@ -799,6 +829,20 @@ export function createCarouselModule(deps) {
     }
   }
 
+  async function setDividerStyle(draftId, style) {
+    try {
+      const data = await fetchJson(`/api/carousel/${draftId}/divider-style`, {
+        method: "PATCH",
+        body: JSON.stringify({ style }),
+      });
+      mergeDraftIntoState(data);
+      if (isCurrentDraftDetail(draftId)) renderDraftDetail(state.selected);
+      showUiNotice("Разделитель обновлён", "success");
+    } catch (err) {
+      showRequestError("Не удалось сменить разделитель", err);
+    }
+  }
+
   return {
     slideNoteId,
     slideTextId,
@@ -809,6 +853,7 @@ export function createCarouselModule(deps) {
     clearAllCarouselOperations,
     renderSlides,
     setSlidesViewMode,
+    setDividerStyle,
     saveCarouselSlideText,
     handleCarouselSlideNoteInput,
     regenerateCarouselSlide,
