@@ -1464,8 +1464,9 @@ export function createSettingsModule(deps) {
       const formData = new FormData();
       formData.append("file", file);
       try {
-        const headers = deps.initDataHeaders ? deps.initDataHeaders() : {};
-        headers["X-Team-Id"] = teamId;
+        const headers = { "X-Team-Id": teamId };
+        const initData = window.Telegram?.WebApp?.initData;
+        if (initData) headers["X-Telegram-Init-Data"] = initData;
         const resp = await fetch(`/api/teams/${teamId}/avatar`, {
           method: "POST",
           headers,
