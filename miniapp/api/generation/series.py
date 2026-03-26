@@ -8,6 +8,8 @@ import logging
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+from .common import fetch_rag_context
+
 from bot.services.drafts_store import update_draft
 
 from ._common import set_generation_state
@@ -160,15 +162,7 @@ async def complete_series_generation(
             message="Создаю план серии...",
         )
 
-        # RAG context
-        rag_context = ""
-        try:
-            from bot.services.rag import retrieve_relevant_cards, format_rag_context
-            cards = await retrieve_relevant_cards(topic, max_items=5)
-            rag_context = format_rag_context(cards)
-        except Exception:
-            logger.warning("complete_series_generation: suppressed exception", exc_info=True)
-            pass
+        rag_context = await fetch_rag_context(topic)
 
         await set_generation_state(
             draft_id, pending=True, stage="writing",
