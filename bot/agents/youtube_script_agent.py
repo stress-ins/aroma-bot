@@ -344,15 +344,31 @@ def generate_youtube_script_sync(
     else:
         raise ValueError(f"Unknown subformat: {subformat!r}")
 
-    raw = call_claude(
-        messages=[{"role": "user", "content": prompt}],
-        max_tokens=max_tokens,
-        context=f"youtube script ({subformat})",
-    )
-    raw = humanize(raw)
+    script = YouTubeScript(title="", subformat=subformat, sections=[], music_mood="", duration_target=duration_target)
 
-    script = _parse_youtube_script(raw, subformat)
-    script.duration_target = duration_target
+    for attempt in range(2):
+        raw = call_claude(
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=max_tokens,
+            context=f"youtube script ({subformat})",
+        )
+        raw = humanize(raw)
+        logger.info(
+            "YouTube script raw response (attempt %d, %d chars): %s",
+            attempt + 1, len(raw), raw[:500],
+        )
+
+        script = _parse_youtube_script(raw, subformat)
+        script.duration_target = duration_target
+
+        if script.sections:
+            break
+        logger.warning(
+            "YouTube script parse returned 0 sections on attempt %d. "
+            "Raw response preview: %s",
+            attempt + 1, raw[:800],
+        )
+
     return script
 
 

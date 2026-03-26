@@ -100,7 +100,14 @@ async def complete_reels_v2_generation(
         )
 
         if not getattr(draft_obj, "concept", None):
-            logger.error("reels_v2 generation returned empty concept: draft_id=%s", draft_id)
+            logger.error(
+                "reels_v2 generation returned empty concept: draft_id=%s "
+                "hook=%r scenario_len=%d caption_len=%d",
+                draft_id,
+                getattr(draft_obj, "hook", "")[:50],
+                len(getattr(draft_obj, "scenario", "") or ""),
+                len(getattr(draft_obj, "caption", "") or ""),
+            )
             await set_generation_state(
                 draft_id,
                 pending=False,

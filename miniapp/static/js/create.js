@@ -167,7 +167,7 @@ export function createCreateModule(deps) {
           <div class="draft-preview">Сценарий и 4 кадра визуализации.</div>
         </article>
         <article ${interactiveCardAttrs("Выбрать инструмент YouTube-видео")} class="create-card${_cc("youtube")} interactive-card" data-tool="youtube" data-action="renderCreateTool" data-args='["youtube"]'>
-          <div class="draft-kind">${contentKindIcon("youtube_video")}<span>youtube</span></div>
+          <div class="draft-kind">${contentKindIcon("youtube_video")}<span>YouTube видео</span></div>
           <h3 class="draft-topic">YouTube-видео</h3>
           <div class="draft-preview">Сценарий, B-roll, обложка, описание.</div>
         </article>
