@@ -282,9 +282,21 @@ export function createCarouselModule(deps) {
       }
     });
 
+    // Avatar warning banner
+    const draft = state.selected;
+    const hasAvatar = Boolean(draft?.payload?.brand_avatar_path);
+    const layoutStyle = draft?.payload?.layout_style || "overlay";
+    const avatarBanner = (!hasAvatar && layoutStyle === "editorial")
+      ? `<div class="notice-banner notice-warning">
+           ${uiIcon("alert-circle")}
+           <span>Аватарка не загружена — на слайдах будет заглушка. <button class="link-button" data-action="openSettingsSection" data-args='["team"]'>Загрузить в настройках команды</button></span>
+         </div>`
+      : "";
+
     return `
       <section class="section">
         <h3>${uiIcon("slides")}${header}</h3>
+        ${avatarBanner}
         ${viewToggle}
         <div class="slides-swiper${isGrid ? " slides-grid" : ""}">
           <div class="slides-swiper-track${isGrid ? " slides-grid-track" : ""}" style="${isGrid ? "" : `transform:translateX(-${idx * 100}%)`}">

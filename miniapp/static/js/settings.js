@@ -1356,10 +1356,24 @@ export function createSettingsModule(deps) {
             </div>`
           : "";
 
+        // Avatar section
+        const avatarHtml = detail.has_avatar
+          ? `<div class="team-avatar-section">
+               <img src="${escapeHtml(detail.avatar_url)}" alt="Аватарка" class="team-avatar-preview" />
+               ${isOwner ? `<button class="secondary-button" type="button" data-action="uploadTeamAvatar" data-args='${JSON.stringify([t.team_id])}'>${uiIcon("upload")}<span>Заменить аватарку</span></button>` : ""}
+             </div>`
+          : isOwner
+            ? `<div class="team-avatar-section">
+                 <p class="settings-hint">Аватарка не загружена — она используется на слайдах карусели.</p>
+                 <button class="primary-button" type="button" data-action="uploadTeamAvatar" data-args='${JSON.stringify([t.team_id])}'>${uiIcon("upload")}<span>Загрузить аватарку</span></button>
+               </div>`
+            : "";
+
         html += `
           <section class="section settings-section">
             <h3>${uiIcon("users")}<span>${escapeHtml(t.name)}</span></h3>
             <p class="settings-hint">Ваша роль: <strong>${escapeHtml(roleLabels[detail.role] || detail.role)}</strong></p>
+            ${avatarHtml}
             <div class="team-members-list">${membersHtml}</div>
             ${connectedAccountsHtml}
             <div id="inviteResult-${t.team_id}"></div>
@@ -1434,6 +1448,35 @@ export function createSettingsModule(deps) {
     } catch (_err) {
       showUiNotice("Не удалось удалить участника", "error");
     }
+  }
+
+  async function uploadTeamAvatar(teamId) {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/jpeg,image/png,image/webp";
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      if (file.size > 2 * 1024 * 1024) {
+        showUiNotice("Файл слишком большой (макс. 2 МБ)", "error");
+        return;
+      }
+      const formData = new FormData();
+      formData.append("file", file);
+      try {
+        const resp = await fetch(`/api/teams/${teamId}/avatar${window._authQueryString?.() || ""}`, {
+          method: "POST",
+          headers: deps.initDataHeaders ? deps.initDataHeaders() : {},
+          body: formData,
+        });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        showUiNotice("Аватарка загружена", "success");
+        renderTeam();
+      } catch (_err) {
+        showUiNotice("Не удалось загрузить аватарку", "error");
+      }
+    };
+    input.click();
   }
 
   // ── Promo code activation + admin management ─────────────────────────────
@@ -1670,6 +1713,7 @@ export function createSettingsModule(deps) {
     createNewTeam,
     createTeamInvite,
     removeTeamMember,
+    uploadTeamAvatar,
     renderPromo,
     activatePromo,
     generatePromos,
