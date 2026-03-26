@@ -1192,6 +1192,22 @@ export function createReferencesModule(deps) {
     renderReferences();
   }
 
+  function createContentFromDailyOil(oilJson) {
+    try {
+      const oil = JSON.parse(oilJson);
+      const ctx = {
+        oil_name: oil.name || "",
+        oil_slug: oil.slug || "",
+        reason: oil.reason || "",
+        fact: oil.fact || "",
+        daily_practice: oil.daily_practice || "",
+        date: oil.date || new Date().toISOString().slice(0, 10),
+      };
+      sessionStorage.setItem("daily_oil_context", JSON.stringify(ctx));
+    } catch { /* ignore parse errors */ }
+    if (typeof window.openCreateTool === "function") window.openCreateTool("content");
+  }
+
   function createContentFromOil(oilName) {
     if (typeof window.openCreateTool === "function") window.openCreateTool("content");
     let attempts = 0;
@@ -1300,7 +1316,11 @@ export function createReferencesModule(deps) {
           <h3 class="daily-oil-name">${escapeHtml(oil.name)}</h3>
           ${oil.reason ? `<p class="daily-oil-reason"><i class="ph ph-lightbulb" style="font-size:14px;vertical-align:-2px;margin-right:4px"></i>${escapeHtml(oil.reason)}</p>` : ""}
           <span class="daily-oil-cta">\u0423\u0437\u043d\u0430\u0442\u044c \u0431\u043e\u043b\u044c\u0448\u0435 <i class="ph ph-caret-right"></i></span>
-        </div>`;
+        </div>
+        <button class="primary-button daily-oil-create-btn" type="button" data-action="createContentFromDailyOil" data-args='${JSON.stringify([JSON.stringify(oil)])}'>
+          <i class="ph ph-plus" style="font-size:16px"></i>
+          <span>\u0421\u043e\u0437\u0434\u0430\u0442\u044c \u043a\u043e\u043d\u0442\u0435\u043d\u0442 \u043f\u043e \u043c\u0430\u0441\u043b\u0443 \u0434\u043d\u044f</span>
+        </button>`;
     } catch {
       el.innerHTML = "";
     }
@@ -1322,6 +1342,7 @@ export function createReferencesModule(deps) {
     runSmartSearch,
     clearSmartSearch,
     createContentFromOil,
+    createContentFromDailyOil,
     toggleReferenceFilters,
   };
 }

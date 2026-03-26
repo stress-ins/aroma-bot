@@ -72,4 +72,13 @@
 .daily-oil-practice strong { color: var(--sage); }
 .daily-oil-cta { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; color: var(--brand); margin-top: var(--space-1); }
 .daily-oil-cta i { width: 14px; height: 14px; }
+.daily-oil-create-btn {
+  width: 100%;
+  margin-top: var(--space-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font-size: 14px;
+}
 

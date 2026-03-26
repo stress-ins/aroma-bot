@@ -64,11 +64,21 @@ class BlendContext(BaseModel):
     tags: list[str] = Field(default_factory=list)
 
 
+class DailyOilContext(BaseModel):
+    oil_name: str = Field(default="")
+    oil_slug: str = Field(default="")
+    reason: str = Field(default="")
+    fact: str = Field(default="")
+    daily_practice: str = Field(default="")
+    date: str = Field(default="")
+
+
 class CreateContentPayload(BaseModel):
     topic: str = Field(default="")
     goal_key: str = Field(default="")
     format_key: str = Field(default="")
     blend_context: BlendContext | None = Field(default=None)
+    daily_oil_context: DailyOilContext | None = Field(default=None)
 
 
 class CreateReelsPayload(BaseModel):
@@ -81,6 +91,7 @@ class CreateReelsV2Payload(BaseModel):
     emotion: str = Field(default="calm")
     lightweight: bool = Field(default=False)
     blend_context: BlendContext | None = Field(default=None)
+    daily_oil_context: DailyOilContext | None = Field(default=None)
 
 
 class ReelsFramePatchPayload(BaseModel):
@@ -128,6 +139,7 @@ class YouTubeMetadataPayload(BaseModel):
 class CreateCarouselPayload(BaseModel):
     topic: str = Field(default="")
     blend_context: BlendContext | None = Field(default=None)
+    daily_oil_context: DailyOilContext | None = Field(default=None)
     layout_style: str = Field(default="overlay")  # "overlay" | "editorial"
 
 
@@ -156,6 +168,7 @@ class ThreadsSeriesCreateRequest(BaseModel):
     goal_key: str = Field(default="trust")
     emotion: str = Field(default="")
     blend_context: BlendContext | None = Field(default=None)
+    daily_oil_context: DailyOilContext | None = Field(default=None)
 
 
 class ThreadsSlotPatchRequest(BaseModel):

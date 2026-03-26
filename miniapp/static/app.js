@@ -1773,6 +1773,7 @@ const {
   runSmartSearch,
   clearSmartSearch,
   createContentFromOil,
+  createContentFromDailyOil,
   toggleReferenceFilters,
 } = createReferencesModule({
   state,
@@ -2558,6 +2559,7 @@ registerWindowBridge({
   runSmartSearch,
   clearSmartSearch,
   createContentFromOil,
+  createContentFromDailyOil,
   toggleReferenceFilters,
   openBlendConstructor,
   addRecoOilToBlend,

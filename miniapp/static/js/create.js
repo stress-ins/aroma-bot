@@ -224,6 +224,20 @@ export function createCreateModule(deps) {
       } catch (_e) { /* ignore */ }
     }
 
+    let dailyOilBannerHtml = "";
+    if (_blendTools.includes(toolId)) {
+      try {
+        const doRaw = sessionStorage.getItem("daily_oil_context");
+        if (doRaw) {
+          const doc = JSON.parse(doRaw);
+          dailyOilBannerHtml = `<div class="blend-context-banner daily-oil-context-banner">
+            <div class="blend-context-banner-body"><i class="ph ph-sparkle" style="font-size:14px;vertical-align:-2px;margin-right:4px"></i><strong>${escapeHtml(doc.oil_name || "Масло дня")}</strong> · ${escapeHtml((doc.reason || "").slice(0, 60))}</div>
+            <button type="button" class="blend-context-banner-dismiss" data-action="_dismissDailyOilContext" aria-label="Убрать контекст">&times;</button>
+          </div>`;
+        }
+      } catch (_e) { /* ignore */ }
+    }
+
     let formHtml = "";
     if (toolId === "content") {
       formHtml = `
@@ -454,9 +468,10 @@ export function createCreateModule(deps) {
       `;
     }
 
-    // Inject blend context banner before <form> inside the section
-    if (blendBannerHtml && formHtml) {
-      formHtml = formHtml.replace(/<form /, blendBannerHtml + "<form ");
+    // Inject context banners before <form> inside the section
+    const contextBanners = blendBannerHtml + dailyOilBannerHtml;
+    if (contextBanners && formHtml) {
+      formHtml = formHtml.replace(/<form /, contextBanners + "<form ");
     }
 
     elements.draftDetail.innerHTML = `
@@ -482,14 +497,18 @@ export function createCreateModule(deps) {
       const bcRaw = sessionStorage.getItem("blend_create_context");
       let blend_context = null;
       if (bcRaw) { try { blend_context = JSON.parse(bcRaw); } catch(_e) {} }
+      const doRaw = sessionStorage.getItem("daily_oil_context");
+      let daily_oil_context = null;
+      if (doRaw) { try { daily_oil_context = JSON.parse(doRaw); } catch(_e) {} }
       const pending = openPendingDraftCreation(format, topic);
       try {
         const draft = await fetchJson("/api/generate/content", {
           method: "POST",
           timeout: 45000,
-          body: JSON.stringify({ topic, goal_key: goal, format_key: format, blend_context }),
+          body: JSON.stringify({ topic, goal_key: goal, format_key: format, blend_context, daily_oil_context }),
         });
         sessionStorage.removeItem("blend_create_context");
+        sessionStorage.removeItem("daily_oil_context");
         finalizePendingDraftCreation(draft);
         await openDraft(draft.draft_id);
       } catch (error) {
@@ -515,15 +534,19 @@ export function createCreateModule(deps) {
       const bcRaw = sessionStorage.getItem("blend_create_context");
       let blend_context = null;
       if (bcRaw) { try { blend_context = JSON.parse(bcRaw); } catch(_e) {} }
+      const doRaw = sessionStorage.getItem("daily_oil_context");
+      let daily_oil_context = null;
+      if (doRaw) { try { daily_oil_context = JSON.parse(doRaw); } catch(_e) {} }
       const requestStartedAt = Date.now();
       const pending = openPendingReelsCreation(topic);
       try {
         const reel = await fetchJson("/api/generate/reels", {
           method: "POST",
           timeout: 45000,
-          body: JSON.stringify({ topic, goal, emotion, lightweight, blend_context }),
+          body: JSON.stringify({ topic, goal, emotion, lightweight, blend_context, daily_oil_context }),
         });
         sessionStorage.removeItem("blend_create_context");
+        sessionStorage.removeItem("daily_oil_context");
         finalizePendingReelsCreation(reel);
       } catch (error) {
         if (error?.message === "request_timeout") {
@@ -575,15 +598,19 @@ export function createCreateModule(deps) {
       const bcRaw = sessionStorage.getItem("blend_create_context");
       let blend_context = null;
       if (bcRaw) { try { blend_context = JSON.parse(bcRaw); } catch(_e) {} }
+      const doRaw = sessionStorage.getItem("daily_oil_context");
+      let daily_oil_context = null;
+      if (doRaw) { try { daily_oil_context = JSON.parse(doRaw); } catch(_e) {} }
       const layoutStyle = carouselForm.querySelector('[name="layout_style"]:checked')?.value || "overlay";
       const pending = openPendingDraftCreation("carousel", topic);
       try {
         const draft = await fetchJson("/api/generate/carousel", {
           method: "POST",
           timeout: 45000,
-          body: JSON.stringify({ topic, blend_context, layout_style: layoutStyle }),
+          body: JSON.stringify({ topic, blend_context, daily_oil_context, layout_style: layoutStyle }),
         });
         sessionStorage.removeItem("blend_create_context");
+        sessionStorage.removeItem("daily_oil_context");
         finalizePendingDraftCreation(draft);
         await openDraft(draft.draft_id);
       } catch (error) {
@@ -608,14 +635,18 @@ export function createCreateModule(deps) {
       const bcRaw = sessionStorage.getItem("blend_create_context");
       let blend_context = null;
       if (bcRaw) { try { blend_context = JSON.parse(bcRaw); } catch(_e) {} }
+      const doRaw = sessionStorage.getItem("daily_oil_context");
+      let daily_oil_context = null;
+      if (doRaw) { try { daily_oil_context = JSON.parse(doRaw); } catch(_e) {} }
       const pending = openPendingDraftCreation("threads_series", topic);
       try {
         const draft = await fetchJson("/api/generate/threads-series", {
           method: "POST",
           timeout: 60000,
-          body: JSON.stringify({ topic, goal_key, emotion, blend_context }),
+          body: JSON.stringify({ topic, goal_key, emotion, blend_context, daily_oil_context }),
         });
         sessionStorage.removeItem("blend_create_context");
+        sessionStorage.removeItem("daily_oil_context");
         finalizePendingDraftCreation(draft);
         await openDraft(draft.draft_id);
       } catch (error) {
