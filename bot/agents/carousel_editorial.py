@@ -226,6 +226,29 @@ def render_editorial_png(
 
     PAD = 48
 
+    # ── Zigzag divider between photo and text area ──
+    if img_bytes:
+        divider_y = photo_h + 4
+        tooth_w = 18  # width of each triangle tooth
+        tooth_h = 8   # height of tooth peak
+        divider_color = (200, 200, 210)
+        x = PAD
+        while x < w - PAD:
+            peak_x = x + tooth_w // 2
+            end_x = min(x + tooth_w, w - PAD)
+            # Draw rounded triangle: up-peak
+            draw.polygon(
+                [(x, divider_y + tooth_h), (peak_x, divider_y), (end_x, divider_y + tooth_h)],
+                fill=divider_color,
+            )
+            # Round the peak with a small ellipse
+            r = 3
+            draw.ellipse(
+                (peak_x - r, divider_y - r, peak_x + r, divider_y + r),
+                fill=divider_color,
+            )
+            x += tooth_w
+
     # ── Avatar + username bar (centered) ──
     bar_y = photo_h + 18 if img_bytes else 40
 
