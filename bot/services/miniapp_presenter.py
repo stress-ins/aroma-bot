@@ -57,6 +57,24 @@ def payload_preview(kind: str, payload: dict[str, Any]) -> str:
                 return first_text[:220]
         return str(payload.get("angle", "")).strip()[:220]
 
+    if kind == "youtube_video":
+        title = str(payload.get("title", "")).strip()
+        sections = payload.get("sections", [])
+        subformat = payload.get("subformat", "")
+        subformat_labels = {"talking_head": "Talking Head", "listicle": "Listicle", "podcast": "Подкаст"}
+        parts = []
+        if subformat:
+            parts.append(subformat_labels.get(subformat, subformat))
+        dur = payload.get("duration_target")
+        if dur:
+            parts.append(f"~{dur} мин")
+        if sections:
+            parts.append(f"{len(sections)} секций")
+        meta = " · ".join(parts)
+        if title:
+            return f"{meta}: {title}"[:220] if meta else title[:220]
+        return meta[:220] if meta else ""
+
     # For carousels, prefer hook/angle (concept summary) over individual slide text
     if kind == "carousel":
         for key in ("hook", "angle"):

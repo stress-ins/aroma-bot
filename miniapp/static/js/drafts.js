@@ -701,7 +701,8 @@ export function createDraftsModule(deps) {
           <div class="youtube-broll-item">
             <span class="youtube-broll-time">${escapeHtml(b.timestamp || "")}</span>
             <span class="youtube-broll-desc">${escapeHtml(b.description || "")}</span>
-            ${b.search_keywords?.length ? `<div class="youtube-broll-kw">${b.search_keywords.map(k => `<span class="keyword-chip keyword-chip--small">${escapeHtml(k)}</span>`).join(" ")}</div>` : ""}
+            ${b.camera_motion ? `<span class="keyword-chip keyword-chip--small">${escapeHtml(b.camera_motion)}</span>` : ""}
+            ${b.mood ? `<span class="keyword-chip keyword-chip--small">${escapeHtml(b.mood)}</span>` : ""}
           </div>
         `).join("")}</div>
       </section>
