@@ -628,6 +628,42 @@ export function registerWindowBridge(deps) {
   window.toggleCoachingSummary = toggleCoachingSummary;
   window.loadPostCoaching = loadPostCoaching;
 
+  // ── Progressive image loading (blur-up) ─────────────────────────────────
+  // When a .progressive-img__full image loads, check if it was showing a thumb.
+  // If so, load the full-quality image in the background and swap when ready.
+  document.addEventListener("load", (e) => {
+    const img = e.target;
+    if (!img.matches) return;
+    // Simple progressive: img with data-full loads thumb first, then upgrades
+    if (img.matches(".progressive-carousel-img[data-full]")) {
+      const fullSrc = img.dataset.full;
+      if (fullSrc && !img.src.includes(fullSrc.split("/").pop())) {
+        const loader = new Image();
+        loader.onload = () => { img.src = fullSrc; };
+        loader.src = fullSrc;
+      }
+      return;
+    }
+    if (!img.matches(".progressive-img__full")) return;
+    const fullSrc = img.dataset.full;
+    if (!fullSrc || img.src.includes(fullSrc.split("/").pop())) {
+      // Already showing full — just reveal
+      img.classList.add("is-loaded");
+      return;
+    }
+    // Currently showing thumb — load full in background
+    const loader = new Image();
+    loader.onload = () => {
+      img.src = fullSrc;
+      img.classList.add("is-loaded");
+    };
+    loader.onerror = () => {
+      // Thumb is fine as fallback
+      img.classList.add("is-loaded");
+    };
+    loader.src = fullSrc;
+  }, true); // capture phase to catch img load events
+
   // ── Global event delegation ────────────────────────────────────────────────
   // Replaces inline onclick/onchange/oninput/onkeydown attributes.
   // Convention:

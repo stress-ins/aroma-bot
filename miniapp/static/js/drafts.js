@@ -69,7 +69,7 @@ export function createDraftsModule(deps) {
     const imgs = (p.slide_images || []).filter(Boolean);
     if (!imgs.length) return "";
     const thumbs = imgs.slice(0, 5).map((img, i) =>
-      `<img src="${escapeHtml(img.url)}" alt="Слайд ${i + 1}" class="canva-hero-thumb" data-action="openImageFullscreen" data-args='${JSON.stringify([img.url, `Слайд ${i + 1}`])}' />`
+      `<img src="${escapeHtml(img.thumb_url || img.url)}" alt="Слайд ${i + 1}" class="canva-hero-thumb" data-action="openImageFullscreen" data-args='${JSON.stringify([img.url, `Слайд ${i + 1}`])}' />`
     ).join("");
     const extra = imgs.length > 5 ? `<span class="canva-hero-extra">+${imgs.length - 5}</span>` : "";
     return `<div class="canva-hero-strip">${thumbs}${extra}</div>`;

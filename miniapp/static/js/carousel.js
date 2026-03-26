@@ -94,7 +94,7 @@ export function createCarouselModule(deps) {
                   data-action="selectCarouselSlideVersion" data-args='${JSON.stringify([draftId, slideIndex, versionIndex, null])}'
                   aria-label="${isCurrent ? "Текущая версия" : "Сделать текущей"}"
                 >
-                  <img src="${escapeHtml(version.url || "")}" alt="Версия ${versionIndex + 1} для слайда ${slideIndex + 1}" />
+                  <img src="${escapeHtml(version.thumb_url || version.url || "")}" alt="Версия ${versionIndex + 1} для слайда ${slideIndex + 1}" />
                 </button>
                 <div class="slide-version-meta">
                   <span>${isCurrent ? "Текущая" : `Версия ${versionIndex + 1}`}</span>
@@ -223,10 +223,11 @@ export function createCarouselModule(deps) {
       const versions = Array.isArray(versionItems[index]) ? versionItems[index] : [];
       const genFailed = !img?.url && state.selected?.generation_stage === "error" && !state.selected?.generation_pending;
       const slideOp = carouselSlideOperation(draftId, index);
+      const _slideSrc = img?.thumb_url || img?.url;
       const imgHtml = slideOp && img?.url
-        ? `<div class="carousel-slide-image-wrap carousel-slide-regenerating"><img src="${escapeHtml(img.url)}" alt="Слайд ${index + 1}" /><div class="carousel-slide-loading-overlay"><span class="button-spinner" aria-hidden="true"></span></div></div>`
+        ? `<div class="carousel-slide-image-wrap carousel-slide-regenerating"><img src="${escapeHtml(_slideSrc)}" data-full="${escapeHtml(img.url)}" alt="Слайд ${index + 1}" class="progressive-carousel-img" /><div class="carousel-slide-loading-overlay"><span class="button-spinner" aria-hidden="true"></span></div></div>`
         : img?.url
-        ? `<div class="carousel-slide-image-wrap"><img src="${escapeHtml(img.url)}" alt="Слайд ${index + 1}" style="cursor:pointer" data-action="openImageFullscreen" data-args='${JSON.stringify([img.url, `Слайд ${index + 1}`])}' /></div>`
+        ? `<div class="carousel-slide-image-wrap"><img src="${escapeHtml(_slideSrc)}" data-full="${escapeHtml(img.url)}" alt="Слайд ${index + 1}" class="progressive-carousel-img" style="cursor:pointer" data-action="openImageFullscreen" data-args='${JSON.stringify([img.url, `Слайд ${index + 1}`])}' /></div>`
         : genFailed
           ? `<div class="carousel-slide-image-wrap"><div class="frame-loading"><div class="frame-loading-inner"><i class="ph ph-warning"></i><span>Не удалось сгенерировать картинку. Нажмите «Новый вариант» чтобы попробовать снова.</span></div></div></div>`
           : `<div class="carousel-slide-image-wrap"><div class="frame-loading"><div class="frame-loading-inner"><span class="button-spinner" aria-hidden="true"></span><span>Изображение ещё готовится</span></div></div></div>`;

@@ -834,6 +834,22 @@ function tagMarkup(label, tone = "neutral") {
   return `<span class="tag tag-${safeTone}">${escapeHtml(label)}</span>`;
 }
 
+/**
+ * Render a progressive-loading image with LQIP blur-up.
+ * Falls back gracefully: if no lqip/thumb, renders a plain <img>.
+ */
+function progressiveImg(src, { thumb, lqip, alt = "", cls = "", loading = "lazy" } = {}) {
+  if (!src) return "";
+  if (!lqip && !thumb) {
+    return `<img src="${escapeHtml(src)}" alt="${escapeHtml(alt)}" class="${escapeHtml(cls)}" loading="${loading}">`;
+  }
+  const initialSrc = thumb || src;
+  return `<div class="progressive-img ${escapeHtml(cls)}">` +
+    (lqip ? `<img class="progressive-img__lqip" src="${escapeHtml(lqip)}" alt="" aria-hidden="true">` : "") +
+    `<img class="progressive-img__full" src="${escapeHtml(initialSrc)}" data-full="${escapeHtml(src)}" alt="${escapeHtml(alt)}" loading="${loading}">` +
+    `</div>`;
+}
+
 function contentKindIcon(kind) {
   const iconMap = {
     content:        "note",
@@ -1513,6 +1529,7 @@ const {
   tagMarkup,
   interactiveCardAttrs,
   contentKindIcon,
+  progressiveImg,
   kindLabel,
   sourceLabel,
   sourceTone,
@@ -1586,6 +1603,7 @@ const calendarModule = createCalendarModule({
   escapeHtml,
   uiIcon,
   contentKindIcon,
+  progressiveImg,
   kindLabel,
   fetchJson,
   showUiNotice,
@@ -1887,6 +1905,7 @@ const {
   tagMarkup,
   kindLabel,
   contentKindIcon,
+  progressiveImg,
   formatPlanDate,
   statusLabel,
   statusTone,
@@ -1942,6 +1961,7 @@ const _stockPhotosMod = createStockPhotosModule({
   actionLabel,
   tagMarkup,
   contentKindIcon,
+  progressiveImg,
   kindLabel,
   sourceLabel,
   sourceTone,
@@ -2053,6 +2073,7 @@ let selectTrendsPlatform, selectTrendsPeriod, refreshTrends, openTrendsPost, cre
   uiIcon,
   interactiveCardAttrs,
   contentKindIcon,
+  progressiveImg,
   renderGuidedState,
   renderBackButton,
   setEmptyState,
@@ -2157,6 +2178,7 @@ window.resetOnboarding = onboarding.resetOnboarding;
   renderDetailError,
   interactiveCardAttrs,
   contentKindIcon,
+  progressiveImg,
   kindLabel,
   sourceLabel,
   sourceTone,
