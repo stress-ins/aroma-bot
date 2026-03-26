@@ -224,11 +224,7 @@ def render_editorial_png(
             gradient.split()[3],
         ), (0, photo_h - gradient_h))
 
-    # ── Divider line between photo and text ──
     PAD = 48
-    if img_bytes:
-        divider_y = photo_h + 6
-        draw.line([(PAD, divider_y), (w - PAD, divider_y)], fill=(80, 80, 90), width=1)
 
     # ── Avatar + username bar (centered) ──
     bar_y = photo_h + 18 if img_bytes else 40
@@ -247,33 +243,50 @@ def render_editorial_png(
             bbox = draw.textbbox((0, 0), username, font=ufont)
             uname_w = bbox[2] - bbox[0]
 
-        if avatar_bytes:
-            total_bar_w = avatar_size + gap_avatar_dash + dash_w + gap_dash_text + uname_w
-            ax = (w - total_bar_w) // 2
-            ay = bar_y
+        total_bar_w = avatar_size + gap_avatar_dash + dash_w + gap_dash_text + uname_w
+        ax = (w - total_bar_w) // 2
+        ay = bar_y
 
+        if avatar_bytes:
             try:
                 av = Image.open(io.BytesIO(avatar_bytes)).convert("RGB")
                 av = av.resize((avatar_size, avatar_size), Image.LANCZOS)
-                # Circular mask
                 mask = Image.new("L", (avatar_size, avatar_size), 0)
                 md = ImageDraw.Draw(mask)
                 md.ellipse((0, 0, avatar_size, avatar_size), fill=255)
                 canvas.paste(av, (ax, ay), mask)
             except Exception:
+                # Fallback: colored circle with first letter
                 draw.ellipse((ax, ay, ax + avatar_size, ay + avatar_size),
-                             fill=(60, 60, 70))
-
-            ux = ax + avatar_size + gap_avatar_dash
-            dash_y = ay + avatar_size // 2
-            draw.line([(ux, dash_y), (ux + dash_w, dash_y)],
-                      fill=(100, 100, 110), width=2)
-            draw.text((ux + dash_w + gap_dash_text, ay + 12), username,
-                      font=ufont, fill=(200, 200, 210))
+                             fill=tuple(accent_color))
+                letter = username[0].upper()
+                lf = _load_font(26)
+                try:
+                    lw = int(draw.textlength(letter, font=lf))
+                except AttributeError:
+                    lw = 16
+                draw.text((ax + (avatar_size - lw) // 2, ay + 8), letter,
+                          font=lf, fill=(255, 255, 255))
         else:
-            # No avatar — center just the username
-            ux = (w - uname_w) // 2
-            draw.text((ux, bar_y + 12), username, font=ufont, fill=(200, 200, 210))
+            # No avatar photo — draw accent-colored circle with first letter
+            draw.ellipse((ax, ay, ax + avatar_size, ay + avatar_size),
+                         fill=tuple(accent_color))
+            letter = username[0].upper()
+            lf = _load_font(26)
+            try:
+                lw = int(draw.textlength(letter, font=lf))
+            except AttributeError:
+                lw = 16
+            draw.text((ax + (avatar_size - lw) // 2, ay + 8), letter,
+                      font=lf, fill=(255, 255, 255))
+
+        # Dash line between avatar and username (like reference)
+        ux = ax + avatar_size + gap_avatar_dash
+        dash_y = ay + avatar_size // 2
+        draw.line([(ux, dash_y), (ux + dash_w, dash_y)],
+                  fill=(180, 180, 190), width=2)
+        draw.text((ux + dash_w + gap_dash_text, ay + 12), username,
+                  font=ufont, fill=(220, 220, 230))
 
         bar_y += avatar_size + 24
 
