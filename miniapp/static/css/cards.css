@@ -198,16 +198,24 @@
   color: var(--brand); margin-bottom: 6px; display: flex; align-items: center; gap: 4px;
 }
 .youtube-speaker-text {
-  font-size: 14px; line-height: 1.6; color: var(--text); white-space: pre-wrap;
+  font-size: 14px; line-height: 1.6; color: var(--text); white-space: pre-wrap; text-align: left;
 }
-.youtube-section-screen { font-size: 12px; color: var(--muted); margin-top: 6px; display: flex; align-items: center; gap: 4px; }
-.youtube-section-broll { font-size: 12px; color: var(--brand); margin-top: 4px; display: flex; align-items: center; gap: 4px; }
-.youtube-section-followup { font-size: 12px; color: var(--muted); margin-top: 4px; display: flex; align-items: center; gap: 4px; }
-.youtube-section-points { font-size: 12px; margin-top: 6px; }
+.youtube-copy-btn {
+  display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px;
+  font-size: 11px; color: var(--muted); background: transparent;
+  border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; margin-top: 6px;
+}
+.youtube-copy-btn:active { background: var(--surface); }
+.youtube-copy-all-row { margin-top: 14px; display: flex; justify-content: center; }
+.youtube-section-screen { font-size: 12px; color: var(--muted); margin-top: 6px; display: flex; align-items: flex-start; gap: 4px; text-align: left; }
+.youtube-section-broll { font-size: 12px; color: var(--brand); margin-top: 4px; display: flex; align-items: flex-start; gap: 4px; text-align: left; }
+.youtube-section-followup { font-size: 12px; color: var(--muted); margin-top: 4px; display: flex; align-items: flex-start; gap: 4px; text-align: left; }
+.youtube-section-points { font-size: 12px; margin-top: 6px; text-align: left; }
 .youtube-section-points ul { margin: 4px 0 0 16px; padding: 0; }
-.youtube-broll-list { display: flex; flex-direction: column; gap: 8px; }
-.youtube-broll-item { display: flex; flex-wrap: wrap; gap: 6px; align-items: baseline; font-size: 13px; }
-.youtube-broll-time { color: var(--brand); font-weight: 600; min-width: 40px; }
+.youtube-broll-list { display: flex; flex-direction: column; gap: 12px; }
+.youtube-broll-item { display: grid; grid-template-columns: 40px 1fr; gap: 8px; font-size: 13px; text-align: left; }
+.youtube-broll-chips { display: flex; flex-wrap: wrap; gap: 4px; grid-column: 2; }
+.youtube-broll-time { color: var(--brand); font-weight: 600; }
 .youtube-broll-desc { flex: 1; min-width: 200px; }
 .youtube-broll-kw { display: flex; flex-wrap: wrap; gap: 4px; width: 100%; }
 .youtube-thumbnail-preview { width: 100%; max-width: 640px; border-radius: var(--radius-md); }

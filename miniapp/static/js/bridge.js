@@ -286,6 +286,30 @@ export function registerWindowBridge(deps) {
       setTimeout(() => openDraft(draftId), 3000);
     } catch (e) { showRequestError(e); }
   };
+  window.youtubeCopySection = function(sectionIndex) {
+    const d = state.selected;
+    if (!d?.payload?.sections?.[sectionIndex]) return;
+    const s = d.payload.sections[sectionIndex];
+    const text = s.speaker_text || s.host_text || "";
+    if (text) {
+      navigator.clipboard.writeText(text).then(() => showUiNotice("Текст скопирован")).catch(() => {});
+    }
+  };
+  window.youtubeCopyAllText = function() {
+    const d = state.selected;
+    const sections = d?.payload?.sections || [];
+    const allText = sections
+      .map(s => {
+        const label = s.label || s.section_type || "";
+        const text = s.speaker_text || s.host_text || "";
+        return text ? `[${label}]\n${text}` : "";
+      })
+      .filter(Boolean)
+      .join("\n\n---\n\n");
+    if (allText) {
+      navigator.clipboard.writeText(allText).then(() => showUiNotice("Весь текст скопирован")).catch(() => {});
+    }
+  };
 
   window.saveCarouselSlideText = saveCarouselSlideText;
   window.regenerateCarouselSlide = regenerateCarouselSlide;
