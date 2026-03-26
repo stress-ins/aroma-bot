@@ -239,14 +239,16 @@ def render_editorial_png(
     canvas = Image.new("RGB", (w, h), bg_color)
     draw = ImageDraw.Draw(canvas)
 
-    # ── Layer 1: Photo — fit-width, NO crop, overflow allowed ──
+    # ── Layer 1: Photo — fit-width, crop to photo zone ──
     if img_bytes:
         photo = Image.open(io.BytesIO(img_bytes)).convert("RGB")
         scale = w / photo.width
         new_w = w
         new_h = int(photo.height * scale)
         photo = photo.resize((new_w, new_h), Image.LANCZOS)
-        # Paste from top (y=0), no crop — photo may overflow past dark_rect_top
+        if new_h > photo_h:
+            # Crop from top (show upper part of photo, more natural)
+            photo = photo.crop((0, 0, new_w, photo_h))
         canvas.paste(photo, (0, 0))
 
     # ── Layer 2: Dark rect — bottom 50% ──
@@ -274,7 +276,7 @@ def render_editorial_png(
     if username:
         _AD = {
             "pike_length": 100, "pike_height": 8, "pike_color": (255, 255, 255),
-            "avatar_diameter": 30, "gap_pike_avatar": 6,
+            "avatar_diameter": 40, "gap_pike_avatar": 6,
             "font_size": 13, "font_color": (255, 255, 255),
         }
         ad_d = _AD["avatar_diameter"]

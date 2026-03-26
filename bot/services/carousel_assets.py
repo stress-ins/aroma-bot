@@ -41,12 +41,17 @@ logger = logging.getLogger(__name__)
 
 
 def _load_brand_avatar_bytes(payload: dict) -> bytes | None:
-    """Load avatar bytes from brand_avatar_path in draft payload."""
+    """Load avatar bytes from brand_avatar_path or team avatar fallback."""
     avatar_path = payload.get("brand_avatar_path")
     if avatar_path:
         p = Path(avatar_path)
         if p.exists():
             return p.read_bytes()
+    # Fallback: any team avatar uploaded via settings
+    avatars_dir = Path("data/avatars")
+    if avatars_dir.exists():
+        for f in avatars_dir.glob("team_*.jpg"):
+            return f.read_bytes()
     return None
 
 CAROUSEL_ASSETS_DIR = Path(

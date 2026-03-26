@@ -30,13 +30,23 @@ ROLE_PLACEMENT_PREFS: dict[str, str] = {
 _FONT_PATH = Path(__file__).parent.parent.parent / "assets" / "fonts" / "DeldedaOpen.ttf"
 
 
-def _load_brand_avatar_bytes(payload: dict) -> bytes | None:
-    """Load avatar bytes from brand_avatar_path in draft payload."""
+def _load_brand_avatar_bytes(payload: dict, *, team_id: str | None = None) -> bytes | None:
+    """Load avatar bytes from brand_avatar_path or team avatar fallback."""
     avatar_path = payload.get("brand_avatar_path")
     if avatar_path:
         p = Path(avatar_path)
         if p.exists():
             return p.read_bytes()
+    # Fallback: team avatar uploaded via settings
+    if team_id:
+        team_avatar = Path("data/avatars") / f"team_{team_id}.jpg"
+        if team_avatar.exists():
+            return team_avatar.read_bytes()
+    # Fallback: any team avatar in data/avatars/
+    avatars_dir = Path("data/avatars")
+    if avatars_dir.exists():
+        for f in avatars_dir.glob("team_*.jpg"):
+            return f.read_bytes()
     return None
 _CORRECTIONS_LOG = Path(__file__).parent.parent.parent / "data" / "placement_corrections_log.jsonl"
 
