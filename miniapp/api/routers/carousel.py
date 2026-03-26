@@ -46,6 +46,21 @@ def _load_brand_avatar(payload: dict) -> bytes | None:
     return None
 
 
+# ── Divider styles (MUST be before {draft_id} route) ─────────────────────────
+
+class DividerStylePayload(BaseModel):
+    style: str
+
+
+@router.get("/api/carousel/divider-styles")
+async def list_divider_styles():
+    """List available divider styles."""
+    from bot.agents.carousel_editorial import DIVIDER_STYLES, DEFAULT_DIVIDER
+    return {"styles": DIVIDER_STYLES, "default": DEFAULT_DIVIDER}
+
+
+# ── Carousel CRUD ────────────────────────────────────────────────────────────
+
 @router.get("/api/carousel/{draft_id}")
 async def get_carousel(
     background_tasks: BackgroundTasks,
@@ -289,21 +304,6 @@ async def regenerate_carousel_all(
         raise HTTPException(status_code=404, detail="carousel_not_found")
     return await serialize_draft(refreshed)
 
-
-# ── Divider style ─────────────────────────────────────────────────────────────
-
-@router.get("/api/carousel/divider-styles")
-async def list_divider_styles():
-    """List available divider styles with preview thumbnails."""
-    from bot.agents.carousel_editorial import DIVIDER_STYLES, DEFAULT_DIVIDER
-    return {
-        "styles": DIVIDER_STYLES,
-        "default": DEFAULT_DIVIDER,
-    }
-
-
-class DividerStylePayload(BaseModel):
-    style: str
 
 
 @router.patch("/api/carousel/{draft_id}/divider-style")
