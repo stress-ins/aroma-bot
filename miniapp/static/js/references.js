@@ -997,6 +997,19 @@ export function createReferencesModule(deps) {
       );
       const _dOil = state._dailyOil;
       state._dailyOil = null;
+      // Persist daily oil context so all creation tools can use it
+      if (_dOil) {
+        try {
+          sessionStorage.setItem("daily_oil_context", JSON.stringify({
+            oil_name: reference.name || _dOil.name || "",
+            oil_slug: reference.slug || _dOil.slug || "",
+            reason: _dOil.reason || "",
+            fact: _dOil.fact || "",
+            daily_practice: _dOil.daily_practice || "",
+            date: _dOil.date || new Date().toISOString().slice(0, 10),
+          }));
+        } catch { /* ignore */ }
+      }
       const dailyOilHtml = _dOil && (_dOil.reason || _dOil.fact || _dOil.daily_practice)
         ? `<section class="section daily-oil-detail-section">
             <h3><i class="ph ph-sparkle"></i> Масло дня</h3>
@@ -1246,6 +1259,18 @@ export function createReferencesModule(deps) {
 
   function createContentFromOilTool(oilName, toolId) {
     if (typeof window.openCreateTool !== "function") return;
+    // Build topic with daily oil context if available
+    let topic = oilName;
+    try {
+      const raw = sessionStorage.getItem("daily_oil_context");
+      if (raw) {
+        const ctx = JSON.parse(raw);
+        const parts = [oilName];
+        if (ctx.reason) parts.push(ctx.reason);
+        if (ctx.daily_practice) parts.push(ctx.daily_practice);
+        topic = parts.join(" — ");
+      }
+    } catch { /* ignore */ }
     window.openCreateTool(toolId || "content");
     let attempts = 0;
     const tryFill = () => {
@@ -1253,7 +1278,7 @@ export function createReferencesModule(deps) {
       const ta = document.querySelector(".create-form textarea[name=topic]")
         || document.querySelector(".create-form input[name=topic]");
       if (ta) {
-        ta.value = oilName;
+        ta.value = topic;
         ta.dispatchEvent(new Event("input", { bubbles: true }));
         return;
       }
