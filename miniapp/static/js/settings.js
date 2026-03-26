@@ -942,7 +942,7 @@ export function createSettingsModule(deps) {
       const detail = err?.detail || err?.message || "";
       if (detail === "already_tracked") showUiNotice("Тег уже отслеживается", "error");
       else if (detail === "max_tags_reached") showUiNotice("Достигнут лимит тегов (30)", "error");
-      else showUiNotice(typeof detail === "string" && detail ? detail : "Не удалось добавить тег", "error");
+      else showUiNotice("Не удалось добавить тег", "error");
     }
   }
 
