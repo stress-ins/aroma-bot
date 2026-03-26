@@ -194,18 +194,22 @@ def render_editorial_png(
     canvas = Image.new("RGB", (w, h), bg_color)
     draw = ImageDraw.Draw(canvas)
 
-    # ── Place photo at top (contain — no cropping) ──
+    # ── Place photo at top (fit-width — full width, no cropping) ──
     if img_bytes:
         photo = Image.open(io.BytesIO(img_bytes)).convert("RGB")
-        # Contain: scale to fit within w × photo_h, preserve aspect ratio
-        scale = min(w / photo.width, photo_h / photo.height)
-        new_w = int(photo.width * scale)
+        # Scale to full width, keep aspect ratio (may exceed photo_h)
+        scale = w / photo.width
+        new_w = w
         new_h = int(photo.height * scale)
         photo = photo.resize((new_w, new_h), Image.LANCZOS)
-        # Center on bg-colored area
-        paste_x = (w - new_w) // 2
+        # If taller than photo_h, crop from center vertically
+        if new_h > photo_h:
+            crop_top = (new_h - photo_h) // 2
+            photo = photo.crop((0, crop_top, new_w, crop_top + photo_h))
+            new_h = photo_h
+        # Center vertically in photo area
         paste_y = (photo_h - new_h) // 2
-        canvas.paste(photo, (paste_x, paste_y))
+        canvas.paste(photo, (0, paste_y))
 
         # Soft gradient transition from photo to bg (longer for smoother blend)
         gradient_h = int(120 * h / 1350)
@@ -220,17 +224,34 @@ def render_editorial_png(
             gradient.split()[3],
         ), (0, photo_h - gradient_h))
 
-    # ── Avatar + username bar ──
-    bar_y = photo_h + 12 if img_bytes else 40
+    # ── Divider line between photo and text ──
     PAD = 48
+    if img_bytes:
+        divider_y = photo_h + 6
+        draw.line([(PAD, divider_y), (w - PAD, divider_y)], fill=(80, 80, 90), width=1)
+
+    # ── Avatar + username bar (centered) ──
+    bar_y = photo_h + 18 if img_bytes else 40
 
     if username:
-        # Avatar circle
         avatar_size = 48
-        ax = PAD
-        ay = bar_y
+        ufont = _load_font(22)
+        dash_w = 28
+        gap_avatar_dash = 14
+        gap_dash_text = 6
+
+        # Measure username width for centering
+        try:
+            uname_w = int(draw.textlength(username, font=ufont))
+        except AttributeError:
+            bbox = draw.textbbox((0, 0), username, font=ufont)
+            uname_w = bbox[2] - bbox[0]
 
         if avatar_bytes:
+            total_bar_w = avatar_size + gap_avatar_dash + dash_w + gap_dash_text + uname_w
+            ax = (w - total_bar_w) // 2
+            ay = bar_y
+
             try:
                 av = Image.open(io.BytesIO(avatar_bytes)).convert("RGB")
                 av = av.resize((avatar_size, avatar_size), Image.LANCZOS)
@@ -240,20 +261,19 @@ def render_editorial_png(
                 md.ellipse((0, 0, avatar_size, avatar_size), fill=255)
                 canvas.paste(av, (ax, ay), mask)
             except Exception:
-                # Draw placeholder circle
                 draw.ellipse((ax, ay, ax + avatar_size, ay + avatar_size),
                              fill=(60, 60, 70))
 
-            # Username text
-            ufont = _load_font(22)
-            ux = ax + avatar_size + 14
-            # Dash line
-            draw.line([(ux, ay + avatar_size // 2), (ux + 28, ay + avatar_size // 2)],
+            ux = ax + avatar_size + gap_avatar_dash
+            dash_y = ay + avatar_size // 2
+            draw.line([(ux, dash_y), (ux + dash_w, dash_y)],
                       fill=(100, 100, 110), width=2)
-            draw.text((ux + 34, ay + 12), username, font=ufont, fill=(200, 200, 210))
+            draw.text((ux + dash_w + gap_dash_text, ay + 12), username,
+                      font=ufont, fill=(200, 200, 210))
         else:
-            ufont = _load_font(22)
-            draw.text((ax, ay + 12), username, font=ufont, fill=(200, 200, 210))
+            # No avatar — center just the username
+            ux = (w - uname_w) // 2
+            draw.text((ux, bar_y + 12), username, font=ufont, fill=(200, 200, 210))
 
         bar_y += avatar_size + 24
 
