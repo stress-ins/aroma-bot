@@ -236,6 +236,8 @@
   text-overflow: ellipsis;
 }
 .team-members-list { margin: 8px 0 12px; }
+.team-avatar-section { display: flex; align-items: center; gap: 12px; margin: 12px 0; }
+.team-avatar-preview { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border); }
 #teamContent > .settings-section + .settings-section { margin-top: 16px; }
 
 /* ── City settings ── */

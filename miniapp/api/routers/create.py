@@ -103,6 +103,13 @@ async def _fetch_brand_profile(team_id: str | None) -> dict:
     except Exception:
         logger.debug("Failed to fetch brand avatar", exc_info=True)
 
+    # Fallback: use manually uploaded team avatar
+    if not result.get("brand_avatar_path") and team_id:
+        from pathlib import Path as _P
+        team_avatar = _P("data/avatars") / f"team_{team_id}.jpg"
+        if team_avatar.exists():
+            result["brand_avatar_path"] = str(team_avatar.resolve())
+
     return result
 
 

@@ -1,7 +1,7 @@
 """Team management — CRUD for teams, members, and invites."""
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from pydantic import BaseModel
 
 from bot.services.mentions_store import get_token, list_tokens
@@ -103,6 +103,12 @@ async def get_team_detail(
             acc["username"] = username_token.access_token
         connected_accounts.append(acc)
 
+    # Check if team avatar exists
+    from pathlib import Path
+    avatar_dir = Path(__file__).parent.parent.parent.parent / "data" / "avatars"
+    avatar_file = avatar_dir / f"team_{team_id}.jpg"
+    has_avatar = avatar_file.exists()
+
     return {
         "team_id": team.team_id,
         "name": team.name,
@@ -111,6 +117,8 @@ async def get_team_detail(
         "role": role,
         "members": members,
         "connected_accounts": connected_accounts,
+        "has_avatar": has_avatar,
+        "avatar_url": f"/api/teams/{team_id}/avatar" if has_avatar else None,
     }
 
 
@@ -196,6 +204,66 @@ async def leave_team(
         raise HTTPException(status_code=400, detail="owner_cannot_leave")
     await remove_member(team_id, telegram_id)
     return {"ok": True}
+
+
+# ---------------------------------------------------------------------------
+# Avatar
+# ---------------------------------------------------------------------------
+
+
+@router.post("/api/teams/{team_id}/avatar")
+async def upload_team_avatar(
+    team_id: str,
+    file: UploadFile = File(...),
+    ctx: TeamContext = Depends(require_team_role("owner")),
+):
+    """Upload team avatar image (JPG/PNG, max 2MB)."""
+    if ctx.team_id != team_id:
+        raise HTTPException(status_code=403, detail="team_mismatch")
+
+    content_type = file.content_type or ""
+    if not content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="image_required")
+
+    data = await file.read()
+    if len(data) > 2 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="file_too_large")
+
+    from pathlib import Path
+    from PIL import Image
+    import io
+
+    # Resize to 256x256 circle-ready square
+    img = Image.open(io.BytesIO(data)).convert("RGB")
+    img.thumbnail((256, 256), Image.LANCZOS)
+    # Center-crop to square
+    w, h = img.size
+    side = min(w, h)
+    left = (w - side) // 2
+    top = (h - side) // 2
+    img = img.crop((left, top, left + side, top + side))
+
+    avatar_dir = Path(__file__).parent.parent.parent.parent / "data" / "avatars"
+    avatar_dir.mkdir(parents=True, exist_ok=True)
+    avatar_path = avatar_dir / f"team_{team_id}.jpg"
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG", quality=90)
+    avatar_path.write_bytes(buf.getvalue())
+
+    return {"ok": True, "avatar_url": f"/api/teams/{team_id}/avatar"}
+
+
+@router.get("/api/teams/{team_id}/avatar")
+async def get_team_avatar(team_id: str):
+    """Serve team avatar image."""
+    from pathlib import Path
+    from fastapi.responses import FileResponse
+
+    avatar_dir = Path(__file__).parent.parent.parent.parent / "data" / "avatars"
+    avatar_path = avatar_dir / f"team_{team_id}.jpg"
+    if not avatar_path.exists():
+        raise HTTPException(status_code=404, detail="avatar_not_found")
+    return FileResponse(avatar_path, media_type="image/jpeg")
 
 
 # ---------------------------------------------------------------------------
