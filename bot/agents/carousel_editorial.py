@@ -170,6 +170,20 @@ def _draw_rich_line(
         cx += int(ww)
 
 
+def _draw_avatar_placeholder(draw, x, y, diameter, username, accent_color):
+    """Draw accent-colored circle with first letter of username."""
+    draw.ellipse((x, y, x + diameter, y + diameter), fill=tuple(accent_color))
+    letter = username[0].upper() if username else "?"
+    lf = _load_font(max(12, diameter * 2 // 3))
+    try:
+        lw = int(draw.textlength(letter, font=lf))
+    except AttributeError:
+        lw = diameter // 2
+    lh = max(12, diameter * 2 // 3)
+    draw.text((x + (diameter - lw) // 2, y + (diameter - lh) // 2),
+              letter, font=lf, fill=(255, 255, 255))
+
+
 def render_editorial_png(
     img_bytes: bytes | None,
     text: str,
@@ -226,92 +240,62 @@ def render_editorial_png(
 
     PAD = 48
 
-    # ── Zigzag divider between photo and text area ──
-    if img_bytes:
-        divider_y = photo_h + 4
-        tooth_w = 18  # width of each triangle tooth
-        tooth_h = 8   # height of tooth peak
-        divider_color = (200, 200, 210)
-        x = PAD
-        while x < w - PAD:
-            peak_x = x + tooth_w // 2
-            end_x = min(x + tooth_w, w - PAD)
-            # Draw rounded triangle: up-peak
-            draw.polygon(
-                [(x, divider_y + tooth_h), (peak_x, divider_y), (end_x, divider_y + tooth_h)],
-                fill=divider_color,
-            )
-            # Round the peak with a small ellipse
-            r = 3
-            draw.ellipse(
-                (peak_x - r, divider_y - r, peak_x + r, divider_y + r),
-                fill=divider_color,
-            )
-            x += tooth_w
-
-    # ── Avatar + username bar (centered) ──
+    # ── Author Divider: [line] [avatar] username [line] ──
     bar_y = photo_h + 18 if img_bytes else 40
 
     if username:
-        avatar_size = 48
-        ufont = _load_font(22)
-        dash_w = 28
-        gap_avatar_dash = 14
-        gap_dash_text = 6
+        _AD = {
+            "line_width": 70, "line_thickness": 2,
+            "line_color": (255, 255, 255, 230),
+            "avatar_diameter": 30, "gap": 8,
+            "font_size": 13, "font_color": (255, 255, 255),
+        }
+        ad_avatar_d = _AD["avatar_diameter"]
+        ad_line_w = _AD["line_width"]
+        ad_gap = _AD["gap"]
+        ufont = _load_font(_AD["font_size"])
 
-        # Measure username width for centering
         try:
             uname_w = int(draw.textlength(username, font=ufont))
         except AttributeError:
             bbox = draw.textbbox((0, 0), username, font=ufont)
             uname_w = bbox[2] - bbox[0]
 
-        total_bar_w = avatar_size + gap_avatar_dash + dash_w + gap_dash_text + uname_w
-        ax = (w - total_bar_w) // 2
-        ay = bar_y
+        total_bar_w = ad_line_w + ad_gap + ad_avatar_d + ad_gap + uname_w + ad_gap + ad_line_w
+        cx = w // 2
+        left = cx - total_bar_w // 2
+        center_y = bar_y + ad_avatar_d // 2
 
+        # Left line
+        draw.line([(left, center_y), (left + ad_line_w, center_y)],
+                  fill=_AD["line_color"], width=_AD["line_thickness"])
+        left += ad_line_w + ad_gap
+
+        # Avatar (circular)
+        av_x, av_y = left, bar_y
         if avatar_bytes:
             try:
                 av = Image.open(io.BytesIO(avatar_bytes)).convert("RGB")
-                av = av.resize((avatar_size, avatar_size), Image.LANCZOS)
-                mask = Image.new("L", (avatar_size, avatar_size), 0)
-                md = ImageDraw.Draw(mask)
-                md.ellipse((0, 0, avatar_size, avatar_size), fill=255)
-                canvas.paste(av, (ax, ay), mask)
+                av = av.resize((ad_avatar_d, ad_avatar_d), Image.LANCZOS)
+                mask = Image.new("L", (ad_avatar_d, ad_avatar_d), 0)
+                ImageDraw.Draw(mask).ellipse((0, 0, ad_avatar_d, ad_avatar_d), fill=255)
+                canvas.paste(av, (av_x, av_y), mask)
             except Exception:
-                # Fallback: colored circle with first letter
-                draw.ellipse((ax, ay, ax + avatar_size, ay + avatar_size),
-                             fill=tuple(accent_color))
-                letter = username[0].upper()
-                lf = _load_font(26)
-                try:
-                    lw = int(draw.textlength(letter, font=lf))
-                except AttributeError:
-                    lw = 16
-                draw.text((ax + (avatar_size - lw) // 2, ay + 8), letter,
-                          font=lf, fill=(255, 255, 255))
+                _draw_avatar_placeholder(draw, av_x, av_y, ad_avatar_d, username, accent_color)
         else:
-            # No avatar photo — draw accent-colored circle with first letter
-            draw.ellipse((ax, ay, ax + avatar_size, ay + avatar_size),
-                         fill=tuple(accent_color))
-            letter = username[0].upper()
-            lf = _load_font(26)
-            try:
-                lw = int(draw.textlength(letter, font=lf))
-            except AttributeError:
-                lw = 16
-            draw.text((ax + (avatar_size - lw) // 2, ay + 8), letter,
-                      font=lf, fill=(255, 255, 255))
+            _draw_avatar_placeholder(draw, av_x, av_y, ad_avatar_d, username, accent_color)
+        left += ad_avatar_d + ad_gap
 
-        # Dash line between avatar and username (like reference)
-        ux = ax + avatar_size + gap_avatar_dash
-        dash_y = ay + avatar_size // 2
-        draw.line([(ux, dash_y), (ux + dash_w, dash_y)],
-                  fill=(180, 180, 190), width=2)
-        draw.text((ux + dash_w + gap_dash_text, ay + 12), username,
-                  font=ufont, fill=(220, 220, 230))
+        # Username
+        text_y_offset = center_y - _AD["font_size"] // 2
+        draw.text((left, text_y_offset), username, font=ufont, fill=_AD["font_color"])
+        left += uname_w + ad_gap
 
-        bar_y += avatar_size + 24
+        # Right line
+        draw.line([(left, center_y), (left + ad_line_w, center_y)],
+                  fill=_AD["line_color"], width=_AD["line_thickness"])
+
+        bar_y += ad_avatar_d + 20
 
     # ── Parse and render text ──
     # Uppercase transformation for headlines (not bullet body)
@@ -415,22 +399,40 @@ def render_editorial_png(
                             (255, 255, 255), accent_color, "center", PAD, usable_w)
             text_y += line_h
 
-    # ── "Свайпай →" on hook slide ──
+    # ── Swipe CTA: СВАЙПАЙ ————→ ──
     if is_hook:
-        swipe_font = _load_font(28)
-        swipe_text = "СВАЙПАЙ  >>"
+        _SC = {
+            "text": "СВАЙПАЙ", "font_size": 12, "font_color": (255, 255, 255),
+            "arrow_length": 44, "arrow_head_size": 7,
+            "line_thickness": 2, "gap_text_arrow": 10, "margin_bottom": 28,
+        }
+        cta_font = _load_font(_SC["font_size"])
+        cta_text = _SC["text"]
         try:
-            sw = draw.textlength(swipe_text, font=swipe_font)
+            cta_tw = int(draw.textlength(cta_text, font=cta_font))
         except AttributeError:
-            sw = 160
-        sx = (w - int(sw)) // 2
-        sy = h - 60
-        swipe_color = (
-            min(255, accent_color[0] // 2 + 70),
-            min(255, accent_color[1] // 2 + 70),
-            min(255, accent_color[2] // 2 + 70),
-        )
-        draw.text((sx, sy), swipe_text, font=swipe_font, fill=swipe_color)
+            cta_tw = _SC["font_size"] * len(cta_text)
+        arrow_total = _SC["arrow_length"]
+        total_cta_w = cta_tw + _SC["gap_text_arrow"] + arrow_total
+        cta_x = (w - total_cta_w) // 2
+        cta_y = h - _SC["margin_bottom"]
+
+        # Text
+        draw.text((cta_x, cta_y - _SC["font_size"]), cta_text,
+                  font=cta_font, fill=_SC["font_color"])
+        ax = cta_x + cta_tw + _SC["gap_text_arrow"]
+        arrow_y = cta_y - _SC["font_size"] // 2
+
+        # Arrow line
+        draw.line([(ax, arrow_y), (ax + _SC["arrow_length"], arrow_y)],
+                  fill=_SC["font_color"], width=_SC["line_thickness"])
+        # Arrow head
+        tip_x = ax + _SC["arrow_length"]
+        ah = _SC["arrow_head_size"]
+        draw.line([(tip_x - ah - 1, arrow_y - ah + 2), (tip_x, arrow_y)],
+                  fill=_SC["font_color"], width=_SC["line_thickness"])
+        draw.line([(tip_x - ah - 1, arrow_y + ah - 2), (tip_x, arrow_y)],
+                  fill=_SC["font_color"], width=_SC["line_thickness"])
 
     buf = io.BytesIO()
     canvas.save(buf, format="PNG", quality=92)
