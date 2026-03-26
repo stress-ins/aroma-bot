@@ -14,9 +14,10 @@ ExecStart=/opt/aroma/.venv/bin/gunicorn miniapp_server:app \
 ExecReload=/bin/kill -s HUP $MAINPID
 Restart=always
 RestartSec=3
-# Startup watchdog: kill if not ready in 30s, health check every 60s
+# Startup timeout
 TimeoutStartSec=30
-WatchdogSec=60
+# WatchdogSec disabled — gunicorn does not send sd_notify heartbeats
+WatchdogSec=0
 User=root
 # Prevent FFmpeg OOM from killing the entire service
 MemoryMax=2500M

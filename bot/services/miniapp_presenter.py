@@ -113,7 +113,12 @@ async def _resolve_username(telegram_id: int | None) -> str:
 
 
 async def serialize_draft(record: DraftRecord) -> dict[str, Any]:
+    from bot.services.image_thumbs import enrich_image_dict
+
     payload = dict(record.payload)
+    # Enrich slide_images with thumb_url/lqip_url for progressive loading
+    if isinstance(payload.get("slide_images"), list):
+        payload["slide_images"] = [enrich_image_dict(img) for img in payload["slide_images"]]
     slides_count = len(payload.get("slides", [])) if isinstance(payload.get("slides"), list) else 0
     storyboard_count = len(payload.get("storyboard", [])) if isinstance(payload.get("storyboard"), list) else 0
     images_ready = int(payload.get("images_ready", 0) or 0)

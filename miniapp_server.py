@@ -231,6 +231,20 @@ async def index():
     html = html.replace("__VITE_JS__", vite["js"])
     html = html.replace("__VITE_CSS__", vite["css"])
 
+    # Temporary debug: catch data-action clicks before module loads
+    if os.getenv("AROMA_DEBUG_CLICKS") == "1":
+        html = html.replace("</head>", """<script>
+document.addEventListener("click", function(e) {
+  var el = e.target.closest("[data-action]");
+  if (el) {
+    var n = el.dataset.action;
+    var f = window[n];
+    var msg = "action=" + n + " fn=" + typeof f;
+    alert(msg);
+  }
+}, true);
+</script></head>""")
+
     if os.getenv("AROMA_BYPASS_AUTH") == "1":
         html = html.replace(
             '<script src="https://telegram.org/js/telegram-web-app.js"></script>',

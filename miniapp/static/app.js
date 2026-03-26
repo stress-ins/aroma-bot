@@ -116,7 +116,7 @@ let addTrackedHashtag, removeTrackedHashtag;
 let addMonitoredAccountFromSettings, removeMonitoredAccountFromSettings;
 let addKeywordItem, removeKeywordItem, openKeywordTopic;
 let addForbiddenPhrase, removeForbiddenPhrase;
-let createNewTeam, createTeamInvite, removeTeamMember, activatePromo, generatePromos, selectCity;
+let createNewTeam, createTeamInvite, removeTeamMember, uploadTeamAvatar, activatePromo, generatePromos, selectCity;
 let adminResetStuck, adminRestartWorker;
 let goBackToSettings;
 let saveContentReviewDraft, saveThreadsReviewDraft, polishContentDraft, refreshDraftMetrics, moveDraftToTeam;
@@ -1690,6 +1690,7 @@ const {
   upgradeToFull,
   generateReelsImages,
   approveReels,
+  forceEditReels,
   scheduleFrameOverlaySave,
   saveFrameImagePrompt,
   autoResize,
@@ -1786,6 +1787,9 @@ const {
   runSmartSearch,
   clearSmartSearch,
   createContentFromOil,
+  createContentFromOilTool,
+  toggleDailyOilPicker,
+  createContentFromDailyOil,
   toggleReferenceFilters,
 } = createReferencesModule({
   state,
@@ -2034,7 +2038,7 @@ const { renderBrand: renderBrandImpl, loadForbiddenPhrases: loadForbiddenPhrases
   connectPlatform, switchAccountsTeam,
   addTrackedHashtag, removeTrackedHashtag,
   addMonitoredAccountFromSettings, removeMonitoredAccountFromSettings,
-  createNewTeam, createTeamInvite, removeTeamMember,
+  createNewTeam, createTeamInvite, removeTeamMember, uploadTeamAvatar,
   activatePromo, generatePromos,
   selectCity,
   adminResetStuck,
@@ -2463,6 +2467,10 @@ registerWindowBridge({
   previewCarouselSlide,
   carouselSwiperGoTo,
   setSlidesViewMode,
+  setDividerStyle,
+  downloadSlideImage,
+  uploadSlideImage,
+  uploadSlideImageFromInput,
   downloadCarouselPptx,
   importCarouselPptx,
   exportToCanva,
@@ -2486,6 +2494,7 @@ registerWindowBridge({
   upgradeToFull,
   generateReelsImages,
   approveReels,
+  forceEditReels,
   scheduleFrameOverlaySave,
   saveFrameImagePrompt,
   autoResize,
@@ -2541,6 +2550,7 @@ registerWindowBridge({
   createNewTeam,
   createTeamInvite,
   removeTeamMember,
+  uploadTeamAvatar,
   activatePromo,
   generatePromos,
   selectCity,
@@ -2577,6 +2587,9 @@ registerWindowBridge({
   runSmartSearch,
   clearSmartSearch,
   createContentFromOil,
+  createContentFromOilTool,
+  toggleDailyOilPicker,
+  createContentFromDailyOil,
   toggleReferenceFilters,
   openBlendConstructor,
   addRecoOilToBlend,
