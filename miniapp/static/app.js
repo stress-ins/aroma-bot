@@ -307,6 +307,7 @@ const RU_KIND_LABELS = {
   reels: "Рилсы",
   reels_v2: "Рилсы",
   carousel: "Карусель",
+  youtube_video: "YouTube видео",
 };
 
 const RU_STATUS_LABELS = {
@@ -727,6 +728,8 @@ function uiIcon(name) {
     "at-sign":  "at",
     clock:      "clock",
     "file-text": "file-text",
+    music:      "music-notes",
+    list:       "list-bullets",
     "layout-grid": "grid-four",
     "arrow-up-right": "arrow-up-right",
     "arrow-down-left": "arrow-down-left",
@@ -811,6 +814,7 @@ function sectionHeadingIcon(title) {
     "video": "play-circle",         // Предпросмотр → плеер
     "tech-check": "shield-check",   // Проверка → щит с галочкой
     "publish": "paper-plane-tilt",  // Публикация → отправка
+    "music": "music-notes",          // Музыка → ноты
   };
   return uiIcon(iconMap[title] || "card");
 }
