@@ -1003,6 +1003,7 @@ export function createReferencesModule(deps) {
             ${_dOil.reason ? `<p class="daily-oil-detail-reason">💡 ${escapeHtml(_dOil.reason)}</p>` : ""}
             ${_dOil.fact ? `<p>${escapeHtml(_dOil.fact)}</p>` : ""}
             ${_dOil.daily_practice ? `<p><strong>Практика дня:</strong> ${escapeHtml(_dOil.daily_practice)}</p>` : ""}
+            <button class="secondary-button daily-oil-create-btn" type="button" data-action="createContentFromOil" data-args='${JSON.stringify([reference.name])}'><i data-lucide="plus" style="width:16px;height:16px"></i><span>Создать контент по маслу дня</span></button>
           </section>` : "";
       detailHtml = `
         <div class="detail-grid">
@@ -1028,9 +1029,6 @@ export function createReferencesModule(deps) {
           ${renderStructuredList("Меры предосторожности", reference.precautions)}
           ${aromaSection("Материалы курса", reference.course_notes)}
           ${renderCollapsibleSection("Исторические сведения", reference.history, 280)}
-          <div class="actions-row" style="margin-top:var(--space-3)">
-            <button class="secondary-button" type="button" data-action="createContentFromOil" data-args='${JSON.stringify([reference.name])}'><i class="ph ph-plus" style="font-size:16px"></i><span>Создать контент</span></button>
-          </div>
         </div>
       `;
     }
@@ -1209,18 +1207,21 @@ export function createReferencesModule(deps) {
   }
 
   function createContentFromOil(oilName) {
-    if (typeof window.openCreateTool === "function") window.openCreateTool("content");
+    if (typeof window.openCreateTool !== "function") return;
+    window.openCreateTool("content");
     let attempts = 0;
     const tryFill = () => {
       attempts++;
-      const selectors = ["[data-create-content] [name=topic]", "#createForm textarea"];
-      for (const sel of selectors) {
-        const ta = document.querySelector(sel);
-        if (ta && !ta.value) { ta.value = oilName; ta.dispatchEvent(new Event("input")); return; }
+      const ta = document.querySelector("[data-create-content] [name=topic]")
+        || document.querySelector(".create-form textarea[name=topic]");
+      if (ta) {
+        ta.value = oilName;
+        ta.dispatchEvent(new Event("input", { bubbles: true }));
+        return;
       }
-      if (attempts < 15) setTimeout(tryFill, 80);
+      if (attempts < 30) setTimeout(tryFill, 100);
     };
-    setTimeout(tryFill, 80);
+    setTimeout(tryFill, 150);
   }
 
   function clearSmartSearch() {
