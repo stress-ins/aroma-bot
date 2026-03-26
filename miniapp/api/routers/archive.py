@@ -16,7 +16,11 @@ from bot.services.past_publications_store import (
     list_publications,
     update_publication,
 )
-from ..auth import TeamContext, _resolve_team_context
+from bot.services.content_analytics import (
+    get_format_performance,
+    get_pillar_performance,
+)
+from ..auth import TeamContext, _require_auth, _resolve_team_context
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +52,31 @@ async def list_archive(
     return {"items": [_serialize(p) for p in pubs], "total": len(pubs)}
 
 
+# ── Coaching Summary ───────────────────────────────────────────────────────
+
+@router.get("/api/archive/coaching/summary")
+async def get_coaching_summary(ctx: TeamContext = Depends(_resolve_team_context)):
+    """Get overall coaching summary across all publications."""
+    from bot.agents.content_coach import generate_coaching_summary
+
+    pubs = await list_publications(ctx.team_id, limit=100)
+    if not pubs:
+        return {
+            "top_insight": "Нет публикаций для анализа. Добавьте посты в архив.",
+            "format_recommendations": [],
+            "pillar_recommendations": [],
+            "content_gaps": [],
+            "weekly_plan_suggestion": "Начните с добавления публикаций в архив.",
+        }
+
+    pub_dicts = [_serialize(p) for p in pubs]
+    format_perf = await get_format_performance(ctx.team_id)
+    pillar_perf = await get_pillar_performance(ctx.team_id)
+
+    summary = await generate_coaching_summary(pub_dicts, format_perf, pillar_perf)
+    return summary
+
+
 # ── Stats ──────────────────────────────────────────────────────────────────
 
 @router.get("/api/archive/stats")
@@ -67,13 +96,43 @@ async def archive_stats(ctx: TeamContext = Depends(_resolve_team_context)):
 # ── Detail ─────────────────────────────────────────────────────────────────
 
 @router.get("/api/archive/{pub_id}")
-async def get_archive_item(pub_id: str, ctx: TeamContext = Depends(_resolve_team_context)):
+async def get_archive_item(pub_id: str, _: None = Depends(_require_auth)):
     pub = await get_publication(pub_id)
     if not pub:
         raise HTTPException(status_code=404, detail="publication_not_found")
-    if pub.team_id and pub.team_id != ctx.team_id:
-        raise HTTPException(status_code=403, detail="team_mismatch")
     return _serialize(pub)
+
+
+# ── Post Coaching ──────────────────────────────────────────────────────────
+
+@router.get("/api/archive/{pub_id}/coaching")
+async def get_post_coaching(pub_id: str, ctx: TeamContext = Depends(_resolve_team_context)):
+    """Get AI coaching analysis for a specific published post."""
+    from bot.agents.content_coach import analyze_post_performance
+
+    pub = await get_publication(pub_id)
+    if not pub:
+        raise HTTPException(status_code=404, detail="publication_not_found")
+
+    pub_dict = _serialize(pub)
+
+    # Build team averages
+    stats = await get_stats(ctx.team_id)
+    team_averages = {
+        "avg_engagement": stats.get("avg_scores", {}).get("score_engagement", "н/д"),
+        "avg_brand": stats.get("avg_scores", {}).get("score_brand_fit", "н/д"),
+        "avg_craft": stats.get("avg_scores", {}).get("score_craft", "н/д"),
+        "avg_goal": stats.get("avg_scores", {}).get("score_goal_hit", "н/д"),
+        "avg_total": stats.get("avg_score", "н/д"),
+    }
+
+    format_benchmarks = await get_format_performance(ctx.team_id)
+    pillar_benchmarks = await get_pillar_performance(ctx.team_id)
+
+    coaching = await analyze_post_performance(
+        pub_dict, team_averages, format_benchmarks, pillar_benchmarks,
+    )
+    return coaching
 
 
 # ── Create ─────────────────────────────────────────────────────────────────
@@ -85,7 +144,6 @@ async def create_archive_item(body: dict, ctx: TeamContext = Depends(_resolve_te
         try:
             published_at = datetime.fromisoformat(body["published_at"])
         except (ValueError, TypeError):
-            logger.warning("create_archive_item: fromisoformat failed", exc_info=True)
             pass
 
     pub = await create_publication(
@@ -140,19 +198,12 @@ async def import_from_url(body: dict, ctx: TeamContext = Depends(_resolve_team_c
 # ── Update ─────────────────────────────────────────────────────────────────
 
 @router.put("/api/archive/{pub_id}")
-async def update_archive_item(pub_id: str, body: dict, ctx: TeamContext = Depends(_resolve_team_context)):
-    pub = await get_publication(pub_id)
-    if not pub:
-        raise HTTPException(status_code=404, detail="publication_not_found")
-    if pub.team_id and pub.team_id != ctx.team_id:
-        raise HTTPException(status_code=403, detail="team_mismatch")
-
+async def update_archive_item(pub_id: str, body: dict, _: None = Depends(_require_auth)):
     published_at_raw = body.pop("published_at", None)
     if published_at_raw is not None:
         try:
             body["published_at"] = datetime.fromisoformat(published_at_raw)
         except (ValueError, TypeError):
-            logger.warning("update_archive_item: fromisoformat failed", exc_info=True)
             pass
 
     pub = await update_publication(pub_id, **body)
@@ -164,12 +215,7 @@ async def update_archive_item(pub_id: str, body: dict, ctx: TeamContext = Depend
 # ── Delete ─────────────────────────────────────────────────────────────────
 
 @router.delete("/api/archive/{pub_id}")
-async def delete_archive_item(pub_id: str, ctx: TeamContext = Depends(_resolve_team_context)):
-    pub = await get_publication(pub_id)
-    if not pub:
-        raise HTTPException(status_code=404, detail="publication_not_found")
-    if pub.team_id and pub.team_id != ctx.team_id:
-        raise HTTPException(status_code=403, detail="team_mismatch")
+async def delete_archive_item(pub_id: str, _: None = Depends(_require_auth)):
     deleted = await delete_publication(pub_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="publication_not_found")
@@ -259,7 +305,6 @@ async def _fetch_threads_post(url: str, team_id: str) -> dict | None:
             try:
                 published_at = datetime.fromisoformat(matched["timestamp"].replace("Z", "+00:00"))
             except (ValueError, TypeError):
-                logger.warning("_fetch_threads_post: fromisoformat failed", exc_info=True)
                 pass
 
         # Fetch insights
@@ -316,7 +361,6 @@ async def _fetch_recent_threads(team_id: str, days: int) -> list[dict]:
             try:
                 published_at = datetime.fromisoformat(t["timestamp"].replace("Z", "+00:00"))
             except (ValueError, TypeError):
-                logger.warning("_fetch_recent_threads: fromisoformat failed", exc_info=True)
                 continue
         if published_at and published_at < cutoff:
             continue
@@ -393,7 +437,6 @@ async def _fetch_recent_instagram(team_id: str, days: int) -> list[dict]:
             try:
                 published_at = datetime.fromisoformat(post["timestamp"].replace("Z", "+00:00"))
             except (ValueError, TypeError):
-                logger.warning("archive: suppressed exception", exc_info=True)
                 continue
         if published_at and published_at < cutoff:
             continue

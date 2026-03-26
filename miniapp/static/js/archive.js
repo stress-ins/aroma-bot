@@ -19,6 +19,9 @@ export function createArchiveModule(deps) {
   if (!state.archiveStats) state.archiveStats = null;
   if (!state.archiveItems) state.archiveItems = [];
   if (state.archiveStatsCollapsed === undefined) state.archiveStatsCollapsed = false;
+  if (state.coachingSummaryOpen === undefined) state.coachingSummaryOpen = false;
+  if (!state.coachingSummaryData) state.coachingSummaryData = null;
+  if (!state.coachingCache) state.coachingCache = {};
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -213,6 +216,8 @@ export function createArchiveModule(deps) {
             ${uiIcon("plus")} Добавить публикацию
           </button>
         </div>
+        ${items.length > 0 ? renderCoachingSummaryHeader() : ""}
+        ${state.coachingSummaryOpen ? renderCoachingSummaryPanel() : ""}
         ${statsHtml}
         ${cardsHtml}
       </div>
@@ -331,7 +336,10 @@ export function createArchiveModule(deps) {
           </section>
         ` : ""}
 
-        <div class="actions-row">
+        <div class="actions-row" style="flex-wrap:wrap">
+          <button class="coach-btn" data-action="loadPostCoaching" data-args='["${escapeHtml(pub.pub_id)}"]'>
+            ${uiIcon("brain")} Анализ AI
+          </button>
           <button class="secondary-button" data-action="openArchiveForm" data-args='["${escapeHtml(pub.pub_id)}"]'>
             ${uiIcon("pencil")} Редактировать
           </button>
@@ -339,6 +347,7 @@ export function createArchiveModule(deps) {
             ${uiIcon("trash-2")} Удалить
           </button>
         </div>
+        <div id="coachPanelContainer"></div>
       </div>
     `;
     syncMobileNavigation();
@@ -595,6 +604,231 @@ export function createArchiveModule(deps) {
     }
   }
 
+  // ── Coaching: Summary ─────────────────────────────────────────────────────
+
+  function renderCoachingSummaryHeader() {
+    return `
+      <div class="coach-summary-header" data-action="toggleCoachingSummary" data-args='[]'>
+        ${uiIcon("brain")} Coaching Summary
+        <span style="margin-left:auto">${state.coachingSummaryOpen ? "▲" : "▼"}</span>
+      </div>
+    `;
+  }
+
+  function renderCoachingSummaryPanel() {
+    const data = state.coachingSummaryData;
+    if (!data) {
+      return `<div class="coach-summary-panel"><div class="coach-loading">${uiIcon("loader")} Анализирую публикации...</div></div>`;
+    }
+
+    let formatRecsHtml = "";
+    if (data.format_recommendations && data.format_recommendations.length) {
+      formatRecsHtml = `
+        <div class="coach-section">
+          <h4>Форматы</h4>
+          ${data.format_recommendations.map(r => `
+            <div class="coach-rec-item">
+              <span class="coach-rec-format">${escapeHtml(r.format || "")}</span>
+              <span class="coach-rec-verdict coach-rec-verdict--${escapeHtml(r.verdict || "keep")}">${escapeHtml(r.verdict || "")}</span>
+              <span class="coach-rec-note">${escapeHtml(r.note || "")}</span>
+            </div>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    let pillarRecsHtml = "";
+    if (data.pillar_recommendations && data.pillar_recommendations.length) {
+      pillarRecsHtml = `
+        <div class="coach-section">
+          <h4>Столпы контента</h4>
+          ${data.pillar_recommendations.map(r => `
+            <div class="coach-rec-item">
+              <span class="coach-rec-format">${escapeHtml(r.pillar || "")}</span>
+              <span class="coach-rec-verdict coach-rec-verdict--${escapeHtml(r.verdict || "keep")}">${escapeHtml(r.verdict || "")}</span>
+              <span class="coach-rec-note">${escapeHtml(r.note || "")}</span>
+            </div>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    let gapsHtml = "";
+    if (data.content_gaps && data.content_gaps.length) {
+      gapsHtml = `
+        <div class="coach-section">
+          <h4>Пробелы в контенте</h4>
+          <ul>${data.content_gaps.map(g => `<li>${escapeHtml(g)}</li>`).join("")}</ul>
+        </div>
+      `;
+    }
+
+    let weeklyHtml = "";
+    if (data.weekly_plan_suggestion) {
+      weeklyHtml = `
+        <div class="coach-weekly">
+          <div class="coach-weekly-label">План на неделю</div>
+          ${escapeHtml(data.weekly_plan_suggestion)}
+        </div>
+      `;
+    }
+
+    return `
+      <div class="coach-summary-panel">
+        <div class="coach-summary-insight">${escapeHtml(data.top_insight || "")}</div>
+        ${formatRecsHtml}
+        ${pillarRecsHtml}
+        ${gapsHtml}
+        ${weeklyHtml}
+      </div>
+    `;
+  }
+
+  async function toggleCoachingSummary() {
+    state.coachingSummaryOpen = !state.coachingSummaryOpen;
+    renderArchiveList();
+
+    if (state.coachingSummaryOpen && !state.coachingSummaryData) {
+      try {
+        const data = await fetchJson("/api/archive/coaching/summary");
+        state.coachingSummaryData = data;
+      } catch (_e) {
+        state.coachingSummaryData = {
+          top_insight: "Не удалось загрузить анализ. Попробуйте позже.",
+          format_recommendations: [],
+          pillar_recommendations: [],
+          content_gaps: [],
+          weekly_plan_suggestion: "",
+        };
+      }
+      renderArchiveList();
+    }
+  }
+
+  // ── Coaching: Per-post ──────────────────────────────────────────────────
+
+  function renderCoachPanel(data) {
+    const verdictIcons = { success: "trophy", average: "minus", underperformed: "alert-triangle" };
+    const verdictLabels = { success: "Успех", average: "Средне", underperformed: "Ниже среднего" };
+    const icon = verdictIcons[data.verdict] || "minus";
+    const label = verdictLabels[data.verdict] || "Анализ";
+    const delta = data.score_vs_average != null ? (data.score_vs_average > 0 ? "+" : "") + data.score_vs_average.toFixed(1) + "%" : "";
+
+    let strengthsHtml = "";
+    if (data.strengths && data.strengths.length) {
+      strengthsHtml = `
+        <div class="coach-section">
+          <h4>Сильные стороны</h4>
+          <ul>${data.strengths.map(s => `<li>${escapeHtml(s)}</li>`).join("")}</ul>
+        </div>
+      `;
+    }
+
+    let weaknessesHtml = "";
+    if (data.weaknesses && data.weaknesses.length) {
+      weaknessesHtml = `
+        <div class="coach-section">
+          <h4>Что улучшить</h4>
+          <ul>${data.weaknesses.map(w => `<li>${escapeHtml(w)}</li>`).join("")}</ul>
+        </div>
+      `;
+    }
+
+    let recsHtml = "";
+    if (data.recommendations && data.recommendations.length) {
+      recsHtml = `
+        <div class="coach-section">
+          <h4>Рекомендации</h4>
+          <ul>${data.recommendations.map(r => `<li>${escapeHtml(r)}</li>`).join("")}</ul>
+        </div>
+      `;
+    }
+
+    let scoresHtml = "";
+    if (data.score_explanation) {
+      const scoreLabels = {
+        engagement: "Вовлечение",
+        brand_fit: "Бренд",
+        craft: "Контент",
+        goal_hit: "Цель",
+      };
+      scoresHtml = `
+        <div class="coach-section">
+          <h4>Оценки</h4>
+          <div class="coach-scores">
+            ${Object.entries(data.score_explanation).map(([key, text]) => `
+              <div class="coach-score-card">
+                <div class="coach-score-card-label">${escapeHtml(scoreLabels[key] || key)}</div>
+                <div class="coach-score-card-text">${escapeHtml(text || "")}</div>
+              </div>
+            `).join("")}
+          </div>
+        </div>
+      `;
+    }
+
+    let patternsHtml = "";
+    if (data.patterns_detected && data.patterns_detected.length) {
+      patternsHtml = `
+        <div class="coach-section">
+          <h4>Паттерны</h4>
+          <ul>${data.patterns_detected.map(p => `<li>${escapeHtml(p)}</li>`).join("")}</ul>
+        </div>
+      `;
+    }
+
+    let improvementsHtml = "";
+    if (data.suggested_improvements) {
+      improvementsHtml = `
+        <div class="coach-section">
+          <h4>Улучшенный вариант</h4>
+          <div class="coach-improvements">${escapeHtml(data.suggested_improvements)}</div>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="coach-panel">
+        <div class="coach-verdict coach-verdict--${escapeHtml(data.verdict || "average")}">
+          ${uiIcon(icon)}
+          <span>${escapeHtml(label)}</span>
+          <span class="coach-delta">${escapeHtml(delta)}</span>
+        </div>
+        ${strengthsHtml}
+        ${weaknessesHtml}
+        ${recsHtml}
+        ${scoresHtml}
+        ${patternsHtml}
+        ${improvementsHtml}
+      </div>
+    `;
+  }
+
+  async function loadPostCoaching(pubId, button) {
+    const container = document.getElementById("coachPanelContainer");
+    if (!container) return;
+
+    // Check cache
+    if (state.coachingCache[pubId]) {
+      container.innerHTML = renderCoachPanel(state.coachingCache[pubId]);
+      if (window.lucide) lucide.createIcons();
+      return;
+    }
+
+    container.innerHTML = `<div class="coach-panel"><div class="coach-loading">${uiIcon("loader")} Анализирую пост...</div></div>`;
+    if (window.lucide) lucide.createIcons();
+
+    try {
+      const data = await fetchJson(`/api/archive/${pubId}/coaching`);
+      state.coachingCache[pubId] = data;
+      container.innerHTML = renderCoachPanel(data);
+    } catch (_e) {
+      container.innerHTML = `<div class="coach-panel"><p style="color:var(--bad);padding:12px">Не удалось загрузить анализ. Попробуйте позже.</p></div>`;
+    }
+
+    if (window.lucide) lucide.createIcons();
+  }
+
   return {
     loadArchive,
     openArchiveDetail,
@@ -606,5 +840,7 @@ export function createArchiveModule(deps) {
     setArchivePlatformFilter,
     setArchiveScore,
     bulkImportFromAccount,
+    toggleCoachingSummary,
+    loadPostCoaching,
   };
 }

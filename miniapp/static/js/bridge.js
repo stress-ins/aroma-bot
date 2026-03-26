@@ -211,6 +211,8 @@ export function registerWindowBridge(deps) {
     setArchivePlatformFilter,
     setArchiveScore,
     bulkImportFromAccount,
+    toggleCoachingSummary,
+    loadPostCoaching,
   } = deps;
 
   window.retryCurrentTab = retryCurrentTab;
@@ -559,6 +561,8 @@ export function registerWindowBridge(deps) {
   window.setArchivePlatformFilter = setArchivePlatformFilter;
   window.setArchiveScore = setArchiveScore;
   window.bulkImportFromAccount = bulkImportFromAccount;
+  window.toggleCoachingSummary = toggleCoachingSummary;
+  window.loadPostCoaching = loadPostCoaching;
 
   // ── Global event delegation ────────────────────────────────────────────────
   // Replaces inline onclick/onchange/oninput/onkeydown attributes.

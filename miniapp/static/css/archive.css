@@ -223,6 +223,276 @@
   padding: 0 12px;
 }
 
+/* ── Content Coach Panel ────────────────────────────────────────────────── */
+
+.coach-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin-top: 12px;
+}
+
+.coach-verdict {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: var(--text-base);
+}
+
+.coach-verdict svg { width: 20px; height: 20px; }
+
+.coach-verdict--success {
+  background: color-mix(in srgb, var(--good) 10%, transparent);
+  color: var(--good);
+}
+
+.coach-verdict--average {
+  background: color-mix(in srgb, var(--muted) 10%, transparent);
+  color: var(--muted);
+}
+
+.coach-verdict--underperformed {
+  background: color-mix(in srgb, var(--bad) 10%, transparent);
+  color: var(--bad);
+}
+
+.coach-delta {
+  margin-left: auto;
+  font-weight: 700;
+  font-size: var(--text-lg);
+}
+
+.coach-section {
+  margin-top: 16px;
+}
+
+.coach-section h4 {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin: 0 0 8px;
+}
+
+.coach-section ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.coach-section ul li {
+  position: relative;
+  padding: 4px 0 4px 16px;
+  font-size: var(--text-sm);
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.coach-section ul li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 11px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--brand);
+}
+
+.coach-scores {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.coach-score-card {
+  background: var(--surface-2, var(--bg));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+}
+
+.coach-score-card-label {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.coach-score-card-text {
+  font-size: var(--text-sm);
+  color: var(--text);
+  line-height: 1.4;
+}
+
+.coach-improvements {
+  margin-top: 16px;
+  padding: 12px;
+  background: var(--surface-2, var(--bg));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  color: var(--text);
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.coach-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px;
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+.coach-loading svg {
+  width: 16px;
+  height: 16px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Coach button in cards and detail */
+.coach-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--brand);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard),
+              border-color var(--duration-fast) var(--ease-standard);
+  min-height: var(--touch-min);
+}
+
+.coach-btn:hover,
+.coach-btn:active {
+  background: var(--surface-2, var(--bg));
+  border-color: var(--brand);
+}
+
+.coach-btn svg { width: 16px; height: 16px; }
+
+/* Summary panel header */
+.coach-summary-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  margin: 0 12px 12px;
+  background: color-mix(in srgb, var(--brand) 8%, var(--surface));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--brand);
+  min-height: var(--touch-min);
+}
+
+.coach-summary-header svg { width: 16px; height: 16px; }
+
+.coach-summary-panel {
+  margin: 0 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+}
+
+.coach-summary-insight {
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.4;
+  margin-bottom: 16px;
+}
+
+.coach-rec-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.coach-rec-item:last-child { border-bottom: none; }
+
+.coach-rec-format {
+  font-weight: 600;
+  font-size: var(--text-sm);
+  min-width: 80px;
+}
+
+.coach-rec-verdict {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.coach-rec-verdict--keep,
+.coach-rec-verdict--scale {
+  background: color-mix(in srgb, var(--good) 12%, transparent);
+  color: var(--good);
+}
+
+.coach-rec-verdict--improve,
+.coach-rec-verdict--experiment {
+  background: color-mix(in srgb, var(--warning, #d4a017) 12%, transparent);
+  color: var(--warning, #d4a017);
+}
+
+.coach-rec-verdict--drop {
+  background: color-mix(in srgb, var(--bad) 12%, transparent);
+  color: var(--bad);
+}
+
+.coach-rec-note {
+  font-size: var(--text-sm);
+  color: var(--text);
+  flex: 1;
+}
+
+.coach-weekly {
+  margin-top: 16px;
+  padding: 12px;
+  background: color-mix(in srgb, var(--brand) 6%, var(--surface));
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.coach-weekly-label {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--brand);
+  margin-bottom: 4px;
+}
+
 /* ── Audit fixes 2026-03-23 ───────────────────────────────────────────── */
 
 /* Fix: section headings should wrap, not truncate */
