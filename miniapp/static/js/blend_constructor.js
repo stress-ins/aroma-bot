@@ -119,13 +119,15 @@ export function createBlendConstructorModule(deps) {
       if (diff !== 0) active[0].displayDrops = (active[0].displayDrops || active[0].drops) + diff;
     }
     function renderOils() {
+      const pinnedNames = blendState._pinnedNames || new Set();
       return blendState.oils.map(o => {
         const d = o.displayDrops || o.drops;
         const changed = o.active && d !== o._origDrops;
         const id = o.db_id || o.name_ru;
-        return `<div class="oil-edit-row ${o.active ? "" : "is-removed"}">
+        const isPinned = pinnedNames.has(o.name_ru?.toLowerCase());
+        return `<div class="oil-edit-row ${o.active ? "" : "is-removed"} ${isPinned ? "is-pinned" : ""}">
           <button class="oil-edit-toggle ${o.active ? "is-on" : "is-off"}" data-action="blendToggleOil" data-args='${JSON.stringify([id])}'>${o.active ? "\u2713" : "\u2715"}</button>
-          <span class="oil-edit-name">${escapeHtml(o.name_ru)}</span>
+          <span class="oil-edit-name">${escapeHtml(o.name_ru)}${isPinned ? ' <span class="oil-pin-icon" title="\u0417\u0430\u043a\u0440\u0435\u043f\u043b\u0435\u043d\u043e">\u{1F4CC}</span>' : ""}</span>
           <span class="oil-edit-drops ${changed ? "is-recalculated" : ""}">${o.active ? d + " \u043a\u0430\u043f." : "\u2014"}</span>
           <span class="oil-edit-role">${escapeHtml(o.role)}</span>
         </div>`;
@@ -426,10 +428,12 @@ export function createBlendConstructorModule(deps) {
     const req = _blendState.origRequest;
     const prevResult = _blendState.result;
     // Collect oils that user toggled off — tell LLM to exclude them
-    const activeOils = (_blendState.oils || []).filter(o => o.active).map(o => o.name_ru);
+    const activeOils = (_blendState.oils || []).filter(o => o.active);
     const excludeOils = (_blendState.oils || []).filter(o => !o.active).map(o => o.name_ru);
     const pickerOils = (_blendState._pickerOils || []).map(o => o.name);
-    const customOils = [...activeOils, ...pickerOils];
+    const customOils = [...activeOils.map(o => o.name_ru), ...pickerOils];
+    // Remember pinned oils so we can guarantee they appear in the result
+    const pinnedOils = activeOils.map(o => ({name_ru: o.name_ru, name_en: o.name_en, drops: o.displayDrops || o.drops, role: o.role, db_id: o.db_id}));
     elements.draftDetail.innerHTML = `<div class="detail-grid">
       ${renderBackButton()}
       ${renderDetailLoader("\u041f\u0435\u0440\u0435\u0433\u0435\u043d\u0435\u0440\u0438\u0440\u0443\u044e \u0441\u043c\u0435\u0441\u044c", "\u0421\u043e\u0441\u0442\u0430\u0432\u043b\u044f\u044e \u043d\u043e\u0432\u044b\u0439 \u0432\u0430\u0440\u0438\u0430\u043d\u0442 \u0440\u0435\u0446\u0435\u043f\u0442\u0430 \u0441 \u0442\u0435\u043c\u0438 \u0436\u0435 \u043f\u0430\u0440\u0430\u043c\u0435\u0442\u0440\u0430\u043c\u0438.")}
@@ -439,6 +443,18 @@ export function createBlendConstructorModule(deps) {
       timeout: 60000,
       body: JSON.stringify({...req, skip_cache: true, custom_oils: customOils, exclude_oils: excludeOils}),
     }).then(result => {
+      // Ensure pinned oils are in the result — LLM may have dropped them
+      if (pinnedOils.length) {
+        const resultNames = new Set(result.oils.map(o => o.name_ru?.toLowerCase()));
+        for (const po of pinnedOils) {
+          if (!resultNames.has(po.name_ru?.toLowerCase())) {
+            result.oils.unshift(po);
+          }
+        }
+      }
+      // Mark which oils were pinned by the user
+      const pinnedSet = new Set(pinnedOils.map(o => o.name_ru?.toLowerCase()));
+      _blendState._pinnedNames = pinnedSet;
       renderBlendResult(result);
     }).catch(() => {
       if (prevResult) renderBlendResult(prevResult);
