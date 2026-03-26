@@ -287,9 +287,9 @@ export function createCarouselModule(deps) {
     const hasAvatar = Boolean(draft?.payload?.brand_avatar_path);
     const layoutStyle = draft?.payload?.layout_style || "overlay";
     const avatarBanner = (!hasAvatar && layoutStyle === "editorial")
-      ? `<div class="notice-banner notice-warning">
-           ${uiIcon("alert-circle")}
-           <span>Аватарка не загружена — на слайдах будет заглушка. <button class="link-button" data-action="openSettingsSection" data-args='["team"]'>Загрузить в настройках команды</button></span>
+      ? `<div class="avatar-missing-banner">
+           <div class="avatar-missing-text">${uiIcon("alert-circle")}<span>Аватарка не загружена — на слайдах будет заглушка</span></div>
+           <button class="secondary-button avatar-missing-btn" type="button" data-action="openSettingsSection" data-args='["team"]'>${uiIcon("upload")}<span>Загрузить в настройках</span></button>
          </div>`
       : "";
 
