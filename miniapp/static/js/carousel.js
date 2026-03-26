@@ -101,7 +101,7 @@ export function createCarouselModule(deps) {
                   <span class="meta">${escapeHtml(formatPlanDate(version.generated_at) || "сейчас")}</span>
                 </div>
                 <div class="actions-row slide-version-actions actions-grid-two">
-                  ${version.url ? `<button class="secondary-button" type="button" data-action="downloadSlideImage" data-args='${JSON.stringify([version.url, slideIndex, null])}'>${actionLabel("download", "Скачать")}</button>` : ""}
+                  ${version.url ? `<a class="secondary-button" href="${escapeHtml(version.url)}" target="_blank" rel="noopener">${actionLabel("download", "Скачать")}</a>` : ""}
                   ${isCurrent ? "" : `<button class="secondary-button" type="button" data-action="selectCarouselSlideVersion" data-args='${JSON.stringify([draftId, slideIndex, versionIndex, null])}'>${actionLabel("approve", "Сделать текущей")}</button>`}
                   ${items.length > 1 ? `<button class="secondary-button" type="button" data-action="deleteCarouselSlideVersion" data-args='${JSON.stringify([draftId, slideIndex, versionIndex, null])}'>${actionLabel("trash", "Удалить")}</button>` : ""}
                 </div>
@@ -247,7 +247,7 @@ export function createCarouselModule(deps) {
           </div>
           <div class="actions-row prompt-actions actions-grid-two">
             ${img?.url ? `<a class="secondary-button" href="${escapeHtml(img.url)}" target="_blank" rel="noopener">${actionLabel("download", "Скачать")}</a>` : `<span class="secondary-button" disabled>${actionLabel("download", "Скачать")}</span>`}
-            <button class="secondary-button" type="button" data-action="uploadSlideImage" data-args='${JSON.stringify([draftId, index, null])}'>${actionLabel("upload", "Своя картинка")}</button>
+            <button class="secondary-button" type="button" onclick="window.uploadSlideImage('${escapeHtml(draftId)}',${index},this)">${actionLabel("upload", "Своя картинка")}</button>
           </div>
           ${prompt ? (() => {
               const discOpen = isPromptDisclosureOpen(`carousel:${draftId}:${index}`, !img?.url);
@@ -320,7 +320,7 @@ export function createCarouselModule(deps) {
             ["divider_12_asymm", "Асимметрия"],
           ].map(([id, label]) => `
             <button class="divider-option${id === currentDivider ? " is-active" : ""}" type="button"
-              data-action="setDividerStyle" data-args='${JSON.stringify([draftId, id])}'
+              onclick="window.setDividerStyle('${escapeHtml(draftId)}','${escapeHtml(id)}')"
               title="${escapeHtml(label)}">
               <img src="/assets/carousel_dividers/${id}.png" alt="${escapeHtml(label)}" />
             </button>
