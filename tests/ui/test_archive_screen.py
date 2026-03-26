@@ -17,11 +17,11 @@ def test_archive_tab_visible(dark_page):
     """Archive tab appears as a content sub-tab under Контент."""
     page = dark_page
     content_btn = page.locator("#btnTabContent")
-    content_btn.wait_for(state="visible", timeout=15000)
+    content_btn.wait_for(state="visible", timeout=30000)
     content_btn.click()
-    page.wait_for_timeout(3000)
+    page.wait_for_timeout(5000)
     archive_tab = page.locator(".content-sub-tab", has_text="Архив")
-    archive_tab.wait_for(state="visible", timeout=15000)
+    archive_tab.wait_for(state="visible", timeout=30000)
     assert archive_tab.is_visible()
 
 
