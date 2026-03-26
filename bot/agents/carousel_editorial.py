@@ -232,32 +232,29 @@ def render_editorial_png(
 
     w, h = size
 
-    # Photo takes top 55%, text area bottom 45%
-    photo_h = int(h * 0.55) if img_bytes else 0
-    text_area_h = h - photo_h
+    # Layer 1: photo (top ~50%), Layer 2: dark rect (bottom ~50%), Layer 3: gradient
+    dark_rect_top = int(h * 0.50)
+    photo_h = dark_rect_top if img_bytes else 0
 
     canvas = Image.new("RGB", (w, h), bg_color)
     draw = ImageDraw.Draw(canvas)
 
-    # ── Place photo at top (fit-width — full width, no cropping) ──
+    # ── Layer 1: Photo — fit-width, NO crop, overflow allowed ──
     if img_bytes:
         photo = Image.open(io.BytesIO(img_bytes)).convert("RGB")
-        # Scale to full width, keep aspect ratio (may exceed photo_h)
         scale = w / photo.width
         new_w = w
         new_h = int(photo.height * scale)
         photo = photo.resize((new_w, new_h), Image.LANCZOS)
-        # If taller than photo_h, crop from center vertically
-        if new_h > photo_h:
-            crop_top = (new_h - photo_h) // 2
-            photo = photo.crop((0, crop_top, new_w, crop_top + photo_h))
-            new_h = photo_h
-        # Center vertically in photo area
-        paste_y = (photo_h - new_h) // 2
-        canvas.paste(photo, (0, paste_y))
+        # Paste from top (y=0), no crop — photo may overflow past dark_rect_top
+        canvas.paste(photo, (0, 0))
 
-        # Soft gradient transition from photo to bg (longer for smoother blend)
-        gradient_h = int(120 * h / 1350)
+    # ── Layer 2: Dark rect — bottom 50% ──
+    draw.rectangle([(0, dark_rect_top), (w, h)], fill=bg_color)
+
+    # ── Layer 3: Gradient overlay — smooth transition (80px) ──
+    if img_bytes:
+        gradient_h = 80
         gradient = Image.new("RGBA", (w, gradient_h), (0, 0, 0, 0))
         gd = ImageDraw.Draw(gradient)
         for i in range(gradient_h):
@@ -265,9 +262,9 @@ def render_editorial_png(
             gd.line([(0, i), (w, i)], fill=(*bg_color, alpha))
         canvas.paste(Image.composite(
             Image.new("RGB", (w, gradient_h), bg_color),
-            canvas.crop((0, photo_h - gradient_h, w, photo_h)),
+            canvas.crop((0, dark_rect_top - gradient_h, w, dark_rect_top)),
             gradient.split()[3],
-        ), (0, photo_h - gradient_h))
+        ), (0, dark_rect_top - gradient_h))
 
     PAD = 48
 
@@ -337,11 +334,11 @@ def render_editorial_png(
     display_text = text.upper() if uppercased else text
     segments = _parse_highlighted_text(display_text, skip_caps_highlight=uppercased)
 
-    # Determine font size based on text length
+    # Determine font size — minimum 48pt for titles per spec
     char_count = len(text)
     if is_bullet_list:
-        title_size = 52
-        body_size = 36
+        title_size = 56
+        body_size = 40
     elif char_count <= 40:
         title_size = 80
         body_size = 80
@@ -350,10 +347,10 @@ def render_editorial_png(
         body_size = 68
     elif char_count <= 150:
         title_size = 56
-        body_size = 42
+        body_size = 48
     else:
-        title_size = 48
-        body_size = 34
+        title_size = 52
+        body_size = 40
 
     # Tighter line height for large fonts (magazine style)
     line_mult = 1.25 if title_size >= 60 else 1.35
@@ -436,7 +433,7 @@ def render_editorial_png(
     # ── Swipe CTA: СВАЙПАЙ ————▶ (filled triangle) ──
     if is_hook:
         _SC = {
-            "text": "СВАЙПАЙ", "font_size": 12, "font_color": (255, 255, 255),
+            "text": "СВАЙПАЙ", "font_size": 14, "font_color": (255, 255, 255),
             "arrow_line_length": 38, "arrow_line_thickness": 2,
             "arrow_triangle_width": 20, "arrow_triangle_height": 10,
             "gap_text_arrow": 10, "margin_bottom": 28,
