@@ -38,10 +38,21 @@ async def publish_draft(draft_id: str, payload: PublishPayload, ctx: TeamContext
     if not payload.platforms:
         raise HTTPException(status_code=400, detail="platforms_required")
 
-    valid_platforms = {"threads", "instagram", "telegram"}
+    valid_platforms = {"threads", "instagram", "telegram", "tiktok"}
     for p in payload.platforms:
         if p not in valid_platforms:
             raise HTTPException(status_code=400, detail=f"invalid_platform: {p}")
+
+    # TikTok requires video content
+    if "tiktok" in payload.platforms:
+        draft_payload = draft.payload or {}
+        video_info = draft_payload.get("video") or {}
+        has_video = bool(
+            (isinstance(video_info, dict) and (video_info.get("public_url") or video_info.get("url")))
+            or draft_payload.get("video_url")
+        )
+        if not has_video:
+            raise HTTPException(status_code=400, detail="tiktok_requires_video")
 
     scheduled_at: datetime | None = None
     if payload.scheduled_at:

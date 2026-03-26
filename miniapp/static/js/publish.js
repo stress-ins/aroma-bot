@@ -12,6 +12,7 @@ export function createPublishModule(deps) {
     threads: `<svg class="publish-platform-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15 12a3 3 0 1 1-3-3c2 0 3.5 1 3.5 3s-1.5 3-3.5 3"/></svg>`,
     instagram: `<svg class="publish-platform-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>`,
     telegram: `<svg class="publish-platform-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>`,
+    tiktok: `<svg class="publish-platform-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"/></svg>`,
   };
 
   let _pollTimer = null;
@@ -27,7 +28,9 @@ export function createPublishModule(deps) {
     const isPublished = status === "published";
     const isScheduled = status === "scheduled";
     const hasMedia = opts?.hasMedia ?? true;
+    const hasVideo = opts?.hasVideo ?? false;
     const igDisabled = isPublished || !hasMedia;
+    const ttDisabled = isPublished || !hasVideo;
     return `
       <section class="section section-primary">
         <div class="section-heading">
@@ -39,6 +42,7 @@ export function createPublishModule(deps) {
             <label class="publish-platform-toggle"><input type="checkbox" id="pubThreads" value="threads" ${isPublished ? "disabled" : ""} checked>${PLATFORM_SVG.threads}<span>Threads</span></label>
             <label class="publish-platform-toggle ${!hasMedia ? "publish-platform-disabled" : ""}"><input type="checkbox" id="pubInstagram" value="instagram" ${igDisabled ? "disabled" : ""}>${PLATFORM_SVG.instagram}<span>Instagram</span>${!hasMedia ? '<span class="publish-platform-hint">нужна картинка</span>' : ""}</label>
             <label class="publish-platform-toggle"><input type="checkbox" id="pubTelegram" value="telegram" ${isPublished ? "disabled" : ""}>${PLATFORM_SVG.telegram}<span>Telegram</span></label>
+            <label class="publish-platform-toggle ${!hasVideo ? "publish-platform-disabled" : ""}"><input type="checkbox" id="pubTiktok" value="tiktok" ${ttDisabled ? "disabled" : ""}>${PLATFORM_SVG.tiktok}<span>TikTok</span>${!hasVideo ? '<span class="publish-platform-hint">нужно видео</span>' : ""}</label>
           </div>
           ${!isPublished ? `
             <div class="publish-schedule-row">
@@ -67,6 +71,7 @@ export function createPublishModule(deps) {
     if (document.getElementById("pubThreads")?.checked) platforms.push("threads");
     if (document.getElementById("pubInstagram")?.checked) platforms.push("instagram");
     if (document.getElementById("pubTelegram")?.checked) platforms.push("telegram");
+    if (document.getElementById("pubTiktok")?.checked) platforms.push("tiktok");
     return platforms;
   }
 
@@ -121,7 +126,7 @@ export function createPublishModule(deps) {
   function _renderStatusLogs(logs) {
     const container = document.getElementById("publishStatusContainer");
     if (!container || !logs.length) return;
-    const PLATFORM_ICONS = { threads: PLATFORM_SVG.threads, instagram: PLATFORM_SVG.instagram, telegram: PLATFORM_SVG.telegram };
+    const PLATFORM_ICONS = { threads: PLATFORM_SVG.threads, instagram: PLATFORM_SVG.instagram, telegram: PLATFORM_SVG.telegram, tiktok: PLATFORM_SVG.tiktok };
     const STATUS_ICONS = { success: "done", failed: "error", pending: "pending" };
     container.innerHTML = `
       <div class="publish-status-list">

@@ -11,10 +11,12 @@ from bot.services.mentions_store import get_token, list_tokens
 from bot.services.social_oauth import (
     INSTAGRAM_DEFAULT_SCOPES,
     THREADS_DEFAULT_SCOPES,
+    TIKTOK_DEFAULT_SCOPES,
     build_canva_authorize_url,
     build_instagram_authorize_url,
     build_oauth_state,
     build_threads_authorize_url,
+    build_tiktok_authorize_url,
     build_youtube_authorize_url,
 )
 from config import settings
@@ -27,14 +29,16 @@ THREADS_REDIRECT_URI = "https://oauth.aromara.ru/threads/callback"
 INSTAGRAM_REDIRECT_URI = "https://oauth.aromara.ru/instagram/callback"
 CANVA_REDIRECT_URI = "https://oauth.aromara.ru/canva/callback"
 YOUTUBE_REDIRECT_URI = "https://oauth.aromara.ru/youtube/callback"
+TIKTOK_REDIRECT_URI = "https://oauth.aromara.ru/tiktok/callback"
 
-_PLATFORMS = ("threads", "instagram", "canva", "youtube")
+_PLATFORMS = ("threads", "instagram", "canva", "youtube", "tiktok")
 
 _PLATFORM_SCOPES: dict[str, list[str]] = {
     "threads": list(THREADS_DEFAULT_SCOPES),
     "instagram": list(INSTAGRAM_DEFAULT_SCOPES),
     "canva": [],
     "youtube": [],
+    "tiktok": list(TIKTOK_DEFAULT_SCOPES),
 }
 
 
@@ -84,6 +88,8 @@ async def social_connect_url(
         raise HTTPException(status_code=400, detail="canva_not_configured")
     if platform == "youtube" and (not settings.google_client_id or not settings.google_client_secret):
         raise HTTPException(status_code=400, detail="youtube_not_configured")
+    if platform == "tiktok" and (not settings.tiktok_client_key or not settings.tiktok_client_secret):
+        raise HTTPException(status_code=400, detail="tiktok_not_configured")
 
     user_id = _telegram_user_id_from_init_data(x_telegram_init_data or "") or 0
     chat_id = user_id
@@ -120,6 +126,12 @@ async def social_connect_url(
             url = build_youtube_authorize_url(
                 client_id=settings.google_client_id,
                 redirect_uri=YOUTUBE_REDIRECT_URI,
+                state=state,
+            )
+        elif platform == "tiktok":
+            url = build_tiktok_authorize_url(
+                client_key=settings.tiktok_client_key,
+                redirect_uri=TIKTOK_REDIRECT_URI,
                 state=state,
             )
         else:

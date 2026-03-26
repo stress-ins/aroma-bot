@@ -96,7 +96,7 @@ class TestPublishDraft:
         client = TestClient(app)
         resp = client.post(
             f"/api/drafts/{draft.draft_id}/publish",
-            json={"platforms": ["tiktok"]},
+            json={"platforms": ["snapchat"]},
             headers=HEADERS,
         )
         assert resp.status_code == 400

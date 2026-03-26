@@ -52,6 +52,14 @@ YOUTUBE_DEFAULT_SCOPES = (
     "https://www.googleapis.com/auth/youtube.force-ssl",
 )
 
+TIKTOK_AUTHORIZE_URL = "https://www.tiktok.com/v2/auth/authorize/"
+TIKTOK_TOKEN_URL = "https://open.tiktokapis.com/v2/oauth/token/"
+TIKTOK_USERINFO_URL = "https://open.tiktokapis.com/v2/user/info/"
+TIKTOK_DEFAULT_SCOPES = (
+    "video.upload",
+    "video.publish",
+)
+
 CANVA_AUTHORIZE_URL = "https://www.canva.com/api/oauth/authorize"
 CANVA_TOKEN_URL = "https://api.canva.com/rest/v1/oauth/token"
 CANVA_ME_URL = "https://api.canva.com/rest/v1/users/me"
@@ -531,6 +539,122 @@ def refresh_youtube_token(
         return _work(session)
 
 
+def build_tiktok_authorize_url(
+    *,
+    client_key: str,
+    redirect_uri: str,
+    state: str = "",
+    scopes: tuple[str, ...] = TIKTOK_DEFAULT_SCOPES,
+) -> str:
+    params = {
+        "client_key": client_key,
+        "redirect_uri": redirect_uri,
+        "response_type": "code",
+        "scope": ",".join(scopes),
+    }
+    if state:
+        params["state"] = state
+    return f"{TIKTOK_AUTHORIZE_URL}?{urlencode(params)}"
+
+
+def exchange_tiktok_code(
+    *,
+    code: str,
+    client_key: str,
+    client_secret: str,
+    redirect_uri: str,
+    client: httpx.Client | None = None,
+) -> OAuthTokenBundle:
+    def _work(session: httpx.Client) -> OAuthTokenBundle:
+        token_response = session.post(
+            TIKTOK_TOKEN_URL,
+            data={
+                "client_key": client_key,
+                "client_secret": client_secret,
+                "grant_type": "authorization_code",
+                "redirect_uri": redirect_uri,
+                "code": code,
+            },
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+        )
+        token_payload = _parse_json_response(token_response, "TikTok code exchange")
+        access_token = str(token_payload.get("access_token", "")).strip()
+        if not access_token:
+            raise OAuthExchangeError("TikTok code exchange did not return access_token")
+
+        refresh_token = str(token_payload.get("refresh_token", "")).strip()
+        open_id = str(token_payload.get("open_id", "")).strip()
+
+        # Fetch user info for display_name
+        display_name = ""
+        try:
+            user_response = session.get(
+                TIKTOK_USERINFO_URL,
+                params={"fields": "open_id,display_name,avatar_url"},
+                headers={"Authorization": f"Bearer {access_token}"},
+            )
+            user_payload = _parse_json_response(user_response, "TikTok user info")
+            user_data = user_payload.get("data", {}).get("user", {})
+            display_name = str(user_data.get("display_name", "")).strip()
+            if not open_id:
+                open_id = str(user_data.get("open_id", "")).strip()
+        except OAuthExchangeError:
+            pass
+
+        if not open_id:
+            raise OAuthExchangeError("TikTok exchange did not return open_id")
+
+        return OAuthTokenBundle(
+            service="tiktok",
+            short_lived_token=access_token,
+            access_token=access_token,
+            expires_in=_coerce_int(token_payload.get("expires_in")),
+            user_id=open_id,
+            username=display_name,
+            metadata={"refresh_token": refresh_token},
+        )
+
+    if client is not None:
+        return _work(client)
+    with httpx.Client(timeout=30.0) as session:
+        return _work(session)
+
+
+def refresh_tiktok_token(
+    *,
+    refresh_token: str,
+    client_key: str,
+    client_secret: str,
+    client: httpx.Client | None = None,
+) -> dict[str, str | int]:
+    """Refresh a TikTok access token. Returns dict with access_token, refresh_token, expires_in."""
+    def _work(session: httpx.Client) -> dict[str, str | int]:
+        resp = session.post(
+            TIKTOK_TOKEN_URL,
+            data={
+                "client_key": client_key,
+                "client_secret": client_secret,
+                "grant_type": "refresh_token",
+                "refresh_token": refresh_token,
+            },
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+        )
+        payload = _parse_json_response(resp, "TikTok token refresh")
+        new_access = str(payload.get("access_token", "")).strip()
+        if not new_access:
+            raise OAuthExchangeError("TikTok refresh did not return access_token")
+        return {
+            "access_token": new_access,
+            "refresh_token": str(payload.get("refresh_token", refresh_token)).strip(),
+            "expires_in": _coerce_int(payload.get("expires_in")) or 0,
+        }
+
+    if client is not None:
+        return _work(client)
+    with httpx.Client(timeout=30.0) as session:
+        return _work(session)
+
+
 def update_env_file(env_path: str | Path, updates: dict[str, str]) -> None:
     path = Path(env_path)
     existing_lines = path.read_text(encoding="utf-8").splitlines() if path.exists() else []
@@ -637,6 +761,8 @@ def bundle_env_updates(bundle: OAuthTokenBundle) -> dict[str, str]:
         if bundle.user_id:
             updates["YOUTUBE_CHANNEL_ID"] = bundle.user_id
         return updates
+    if bundle.service == "tiktok":
+        return {}
     raise OAuthExchangeError(f"Unsupported service: {bundle.service}")
 
 
