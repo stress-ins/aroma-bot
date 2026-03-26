@@ -101,7 +101,7 @@ export function createCarouselModule(deps) {
                   <span class="meta">${escapeHtml(formatPlanDate(version.generated_at) || "сейчас")}</span>
                 </div>
                 <div class="actions-row slide-version-actions actions-grid-two">
-                  ${version.url ? `<a class="secondary-button" href="${escapeHtml(version.url)}" download="slide_${slideIndex + 1}_v${versionIndex + 1}.png">${actionLabel("download", "Скачать")}</a>` : ""}
+                  ${version.url ? `<button class="secondary-button" type="button" data-action="downloadSlideImage" data-args='${JSON.stringify([version.url, slideIndex])}'>${actionLabel("download", "Скачать")}</button>` : ""}
                   ${isCurrent ? "" : `<button class="secondary-button" type="button" data-action="selectCarouselSlideVersion" data-args='${JSON.stringify([draftId, slideIndex, versionIndex, null])}'>${actionLabel("approve", "Сделать текущей")}</button>`}
                   ${items.length > 1 ? `<button class="secondary-button" type="button" data-action="deleteCarouselSlideVersion" data-args='${JSON.stringify([draftId, slideIndex, versionIndex, null])}'>${actionLabel("trash", "Удалить")}</button>` : ""}
                 </div>
@@ -245,7 +245,7 @@ export function createCarouselModule(deps) {
             <button class="secondary-button" type="button" ${!img?.url ? "disabled" : ""} data-action="previewCarouselSlide" data-args='${JSON.stringify([draftId, index, null])}'>${actionLabel("eye", "Предпросмотр")}</button>
           </div>
           <div class="actions-row prompt-actions actions-grid-two">
-            <a class="secondary-button" ${img?.url ? `href="${escapeHtml(img.url)}" download="slide_${index + 1}.png"` : ""} ${!img?.url ? "disabled" : ""}>${actionLabel("download", "Скачать")}</a>
+            <button class="secondary-button" type="button" ${!img?.url ? "disabled" : ""} data-action="downloadSlideImage" data-args='${JSON.stringify([img?.url || "", index])}'>${actionLabel("download", "Скачать")}</button>
             <label class="secondary-button upload-slide-label" ${!img?.url && !prompt ? "disabled" : ""}>
               ${actionLabel("upload", "Своя картинка")}
               <input type="file" accept="image/jpeg,image/png,image/webp" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden" data-on-change="uploadSlideImage" data-args='${JSON.stringify([draftId, index])}' />
@@ -837,6 +837,17 @@ export function createCarouselModule(deps) {
     }
   }
 
+  function downloadSlideImage(url, slideIndex) {
+    if (!url) return;
+    // Build absolute URL for Telegram openLink
+    const fullUrl = new URL(url, window.location.origin).href;
+    if (window.Telegram?.WebApp?.openLink) {
+      window.Telegram.WebApp.openLink(fullUrl);
+    } else {
+      window.open(fullUrl, "_blank");
+    }
+  }
+
   async function uploadSlideImage(draftId, slideIndex, _value, inputEl) {
     const file = inputEl?.files?.[0];
     if (!file) return;
@@ -889,6 +900,7 @@ export function createCarouselModule(deps) {
     clearAllCarouselOperations,
     renderSlides,
     setSlidesViewMode,
+    downloadSlideImage,
     uploadSlideImage,
     setDividerStyle,
     saveCarouselSlideText,

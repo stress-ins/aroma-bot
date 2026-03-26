@@ -271,13 +271,14 @@ def render_editorial_png(
 
     PAD = 48
 
-    # ── Author Divider: PNG template + avatar + username ──
-    bar_y = photo_h + 18 if img_bytes else 40
+    # ── Author Divider: divider PNG + avatar + username on same line ──
+    bar_y = photo_h + 12 if img_bytes else 40
 
     if username:
-        AVATAR_D = 40
-        FONT_SIZE = 13
+        AVATAR_D = 56
+        FONT_SIZE = 18
         ufont = _load_font(FONT_SIZE)
+        GAP_AV_NAME = 8
 
         try:
             uname_w = int(draw.textlength(username, font=ufont))
@@ -285,47 +286,44 @@ def render_editorial_png(
             bbox = draw.textbbox((0, 0), username, font=ufont)
             uname_w = bbox[2] - bbox[0]
 
+        # Divider PNG — wide, across the slide
         divider_img = _load_divider_png(divider_style)
         if divider_img:
-            # Scale divider to ~60% of slide width, keep aspect ratio
-            target_div_w = int(w * 0.60)
+            target_div_w = int(w * 0.85)
             div_scale = target_div_w / divider_img.width
             div_w = target_div_w
             div_h = int(divider_img.height * div_scale)
             divider_img = divider_img.resize((div_w, div_h), Image.LANCZOS)
 
-            # Center divider horizontally
             div_x = (w - div_w) // 2
             div_y = bar_y
             canvas.paste(divider_img, (div_x, div_y), divider_img)
+            bar_y += div_h + 6
 
-            # Avatar in center of divider gap
-            center_y = div_y + div_h // 2
-            av_x = (w - AVATAR_D) // 2
-            av_y = center_y - AVATAR_D // 2
-            if avatar_bytes:
-                try:
-                    av = Image.open(io.BytesIO(avatar_bytes)).convert("RGB")
-                    av = av.resize((AVATAR_D, AVATAR_D), Image.LANCZOS)
-                    mask = Image.new("L", (AVATAR_D, AVATAR_D), 0)
-                    ImageDraw.Draw(mask).ellipse((0, 0, AVATAR_D, AVATAR_D), fill=255)
-                    canvas.paste(av, (av_x, av_y), mask)
-                except Exception:
-                    _draw_avatar_placeholder(draw, av_x, av_y, AVATAR_D, username, accent_color)
-            else:
+        # Avatar + username centered on one line below divider
+        author_w = AVATAR_D + GAP_AV_NAME + uname_w
+        author_x = (w - author_w) // 2
+        av_x = author_x
+        av_y = bar_y
+
+        if avatar_bytes:
+            try:
+                av = Image.open(io.BytesIO(avatar_bytes)).convert("RGB")
+                av = av.resize((AVATAR_D, AVATAR_D), Image.LANCZOS)
+                mask = Image.new("L", (AVATAR_D, AVATAR_D), 0)
+                ImageDraw.Draw(mask).ellipse((0, 0, AVATAR_D, AVATAR_D), fill=255)
+                canvas.paste(av, (av_x, av_y), mask)
+            except Exception:
                 _draw_avatar_placeholder(draw, av_x, av_y, AVATAR_D, username, accent_color)
-
-            # Username below divider
-            name_x = (w - uname_w) // 2
-            name_y = div_y + div_h + 4
-            draw.text((name_x, name_y), username, font=ufont, fill=(255, 255, 255))
-
-            bar_y = name_y + FONT_SIZE + 12
         else:
-            # Fallback: just username centered
-            name_x = (w - uname_w) // 2
-            draw.text((name_x, bar_y), username, font=ufont, fill=(255, 255, 255))
-            bar_y += FONT_SIZE + 20
+            _draw_avatar_placeholder(draw, av_x, av_y, AVATAR_D, username, accent_color)
+
+        # Username to the right of avatar, vertically centered
+        name_x = av_x + AVATAR_D + GAP_AV_NAME
+        name_y = av_y + (AVATAR_D - FONT_SIZE) // 2
+        draw.text((name_x, name_y), username, font=ufont, fill=(255, 255, 255))
+
+        bar_y += AVATAR_D + 14
 
     # ── Parse and render text ──
     # Uppercase transformation for headlines (not bullet body)
@@ -429,36 +427,42 @@ def render_editorial_png(
                             (255, 255, 255), accent_color, "center", PAD, usable_w)
             text_y += line_h
 
-    # ── Swipe CTA: PNG arrow image ──
+    # ── Swipe CTA: "СВАЙП" + PNG arrow ──
     if is_hook:
         from PIL import ImageOps
+        CTA_MARGIN = 32
+        cta_font = _load_font(16)
+        cta_text = "СВАЙП"
+        try:
+            cta_tw = int(draw.textlength(cta_text, font=cta_font))
+        except AttributeError:
+            cta_tw = 60
+
         arrow_img = _load_swipe_arrow()
         if arrow_img:
-            # Invert black arrow to white for dark background
             r, g, b, a = arrow_img.split()
             rgb = Image.merge("RGB", (r, g, b))
             rgb = ImageOps.invert(rgb)
             arrow_img = Image.merge("RGBA", (*rgb.split(), a))
 
-            # Scale arrow to ~120px wide
-            arrow_target_w = 120
+            arrow_target_w = 100
             ar_scale = arrow_target_w / arrow_img.width
             ar_w = arrow_target_w
             ar_h = int(arrow_img.height * ar_scale)
             arrow_img = arrow_img.resize((ar_w, ar_h), Image.LANCZOS)
 
-            ar_x = (w - ar_w) // 2
-            ar_y = h - 28 - ar_h
-            canvas.paste(arrow_img, (ar_x, ar_y), arrow_img)
+            # Layout: [text] [gap] [arrow] centered
+            gap = 8
+            total_w = cta_tw + gap + ar_w
+            start_x = (w - total_w) // 2
+            cta_y = h - CTA_MARGIN - max(ar_h, 16)
+
+            draw.text((start_x, cta_y + (ar_h - 16) // 2), cta_text,
+                      font=cta_font, fill=(255, 255, 255))
+            canvas.paste(arrow_img, (start_x + cta_tw + gap, cta_y), arrow_img)
         else:
-            # Fallback: text-only CTA
-            cta_font = _load_font(14)
-            cta_text = "СВАЙПАЙ  >>"
-            try:
-                cta_tw = int(draw.textlength(cta_text, font=cta_font))
-            except AttributeError:
-                cta_tw = 100
-            draw.text(((w - cta_tw) // 2, h - 42), cta_text,
+            cta_y = h - CTA_MARGIN - 16
+            draw.text(((w - cta_tw) // 2, cta_y), cta_text,
                       font=cta_font, fill=(255, 255, 255))
 
     buf = io.BytesIO()
