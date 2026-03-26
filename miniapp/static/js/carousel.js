@@ -247,7 +247,7 @@ export function createCarouselModule(deps) {
           </div>
           <div class="actions-row prompt-actions actions-grid-two">
             ${img?.url ? `<a class="secondary-button" href="${escapeHtml(img.url)}" target="_blank" rel="noopener">${actionLabel("download", "Скачать")}</a>` : `<span class="secondary-button" disabled>${actionLabel("download", "Скачать")}</span>`}
-            <button class="secondary-button" type="button" onclick="window.uploadSlideImage('${escapeHtml(draftId)}',${index},this)">${actionLabel("upload", "Своя картинка")}</button>
+            <button class="secondary-button" type="button" onclick="alert('upload slide ${index}')">${actionLabel("upload", "Тест кнопки")}</button>
           </div>
           ${prompt ? (() => {
               const discOpen = isPromptDisclosureOpen(`carousel:${draftId}:${index}`, !img?.url);
