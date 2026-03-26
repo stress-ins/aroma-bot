@@ -60,6 +60,10 @@ async def _lifespan(app: FastAPI):  # noqa: ARG001
     from miniapp.api.generation import complete_carousel_generation, complete_reels_generation
     from bot.services.kie_task_store import cleanup_expired
 
+    # Invalidate Vite manifest cache so new builds are picked up after restart
+    from miniapp.vite_manifest import invalidate_manifest_cache
+    invalidate_manifest_cache()
+
     await preload_brand_settings()
     _ready = True  # ready to serve traffic before recovery
 

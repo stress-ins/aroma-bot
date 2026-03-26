@@ -66,7 +66,8 @@ jobs:
 
       - name: Restart and verify ALL services
         run: |
-          ssh root@46.32.186.192 'systemctl restart aroma-miniapp'
+          ssh root@46.32.186.192 'systemctl restart aroma-bot aroma-miniapp'
+          sleep 3
           ssh root@46.32.186.192 'systemctl is-active aroma-bot'
           ssh root@46.32.186.192 'systemctl is-active threads-oauth'
           ssh root@46.32.186.192 'systemctl is-active aroma-miniapp'
