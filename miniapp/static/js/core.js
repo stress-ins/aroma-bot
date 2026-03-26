@@ -726,7 +726,8 @@ export function createCoreModule(deps) {
       callbacks.renderDraftDetail(draft);
       callbacks.renderDraftList();
     };
-    if (hasButton) {
+    // Delay re-render for status changes (approve/reject) so user sees "Готово"
+    if (hasButton && action === "status") {
       window.setTimeout(rerender, 800);
     } else {
       rerender();
