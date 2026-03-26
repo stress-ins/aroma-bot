@@ -232,3 +232,215 @@ class TestPublishHistory:
         resp = client.get("/api/publish/history", headers=HEADERS)
         assert resp.status_code == 200
         assert resp.json()["items"] == []
+
+
+# ---------------------------------------------------------------------------
+# GET /api/drafts/{id}/metrics
+# ---------------------------------------------------------------------------
+
+class TestDraftMetrics:
+    async def test_metrics_not_found(self):
+        from miniapp_server import app
+        client = TestClient(app)
+        resp = client.get("/api/drafts/nonexistent/metrics", headers=HEADERS)
+        assert resp.status_code == 404
+
+    async def test_metrics_returns_data(self, approved_draft):
+        from miniapp_server import app
+        _, draft = approved_draft
+        client = TestClient(app)
+        resp = client.get(f"/api/drafts/{draft.draft_id}/metrics", headers=HEADERS)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["draft_id"] == draft.draft_id
+        assert "metrics" in data
+
+
+# ---------------------------------------------------------------------------
+# GET /api/drafts/{id}/metrics/history
+# ---------------------------------------------------------------------------
+
+class TestDraftMetricsHistory:
+    async def test_metrics_history(self, approved_draft):
+        from miniapp_server import app
+        _, draft = approved_draft
+        client = TestClient(app)
+        resp = client.get(
+            f"/api/drafts/{draft.draft_id}/metrics/history?platform=threads",
+            headers=HEADERS,
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["draft_id"] == draft.draft_id
+        assert data["platform"] == "threads"
+        assert "history" in data
+
+
+# ---------------------------------------------------------------------------
+# POST /api/drafts/{id}/metrics/refresh
+# ---------------------------------------------------------------------------
+
+class TestRefreshMetrics:
+    async def test_refresh_not_found(self):
+        from miniapp_server import app
+        client = TestClient(app)
+        resp = client.post("/api/drafts/nonexistent/metrics/refresh", headers=HEADERS)
+        assert resp.status_code == 404
+
+    async def test_refresh_not_published(self, approved_draft):
+        from miniapp_server import app
+        _, draft = approved_draft
+        client = TestClient(app)
+        resp = client.post(f"/api/drafts/{draft.draft_id}/metrics/refresh", headers=HEADERS)
+        assert resp.status_code == 400
+        assert resp.json()["detail"] == "draft_not_published"
+
+    @patch("bot.services.metrics_fetcher.fetch_metrics_for_draft", new_callable=AsyncMock, return_value={"views": 50})
+    async def test_refresh_success(self, mock_fetch, setup_test_db):
+        from bot.services.team_store import create_team
+        from bot.services.drafts_store import save_draft, update_draft
+        from miniapp_server import app
+
+        team = await create_team("T", creator_telegram_id=12345)
+        draft = await save_draft(
+            kind="instagram", topic="t", source="ai", payload={},
+            team_id=team.team_id, created_by=12345,
+        )
+        await update_draft(draft.draft_id, status="published")
+
+        client = TestClient(app)
+        resp = client.post(f"/api/drafts/{draft.draft_id}/metrics/refresh", headers=HEADERS)
+        assert resp.status_code == 200
+        assert resp.json()["metrics"]["views"] == 50
+
+
+# ---------------------------------------------------------------------------
+# POST /api/publish/{item_id} — immediate publish
+# ---------------------------------------------------------------------------
+
+class TestPublishById:
+    async def test_publish_by_id_not_found(self):
+        from miniapp_server import app
+        client = TestClient(app)
+        resp = client.post("/api/publish/nonexistent-id-xyz", headers=HEADERS)
+        # 404 because draft doesn't exist
+        assert resp.status_code == 404
+
+    async def test_publish_by_id_not_ready(self, setup_test_db):
+        from bot.services.team_store import create_team
+        from bot.services.drafts_store import save_draft
+        from miniapp_server import app
+
+        team = await create_team("T", creator_telegram_id=12345)
+        draft = await save_draft(
+            kind="instagram", topic="t", source="ai", payload={},
+            team_id=team.team_id, created_by=12345,
+        )
+        client = TestClient(app)
+        resp = client.post(f"/api/publish/{draft.draft_id}", headers=HEADERS)
+        assert resp.status_code == 400
+        assert resp.json()["detail"] == "draft_not_ready"
+
+    @patch("miniapp.api.routers.publish.publish", new_callable=AsyncMock, return_value=[{"platform": "threads", "status": "success"}])
+    async def test_publish_by_id_success(self, mock_pub, approved_draft):
+        from miniapp_server import app
+        _, draft = approved_draft
+        client = TestClient(app)
+        resp = client.post(f"/api/publish/{draft.draft_id}", headers=HEADERS)
+        assert resp.status_code == 200
+        assert resp.json()["draft_id"] == draft.draft_id
+
+
+# ---------------------------------------------------------------------------
+# POST /api/publish/schedule-series
+# ---------------------------------------------------------------------------
+
+class TestScheduleSeries:
+    async def test_schedule_series_not_found(self, setup_test_db):
+        from miniapp_server import app
+        client = TestClient(app)
+        resp = client.post(
+            "/api/publish/schedule-series",
+            json={"draft_id": "nonexistent", "date": "2030-01-01", "slots": ["morning"]},
+            headers=HEADERS,
+        )
+        assert resp.status_code == 404
+
+    async def test_schedule_series_wrong_kind(self, approved_draft):
+        from miniapp_server import app
+        _, draft = approved_draft
+        client = TestClient(app)
+        resp = client.post(
+            "/api/publish/schedule-series",
+            json={"draft_id": draft.draft_id, "date": "2030-01-01", "slots": ["morning"]},
+            headers=HEADERS,
+        )
+        assert resp.status_code == 400
+        assert resp.json()["detail"] == "draft_kind_mismatch"
+
+    async def test_schedule_series_not_approved(self, setup_test_db):
+        from bot.services.team_store import create_team
+        from bot.services.drafts_store import save_draft
+        from miniapp_server import app
+
+        team = await create_team("T", creator_telegram_id=12345)
+        draft = await save_draft(
+            kind="threads_series", topic="t", source="ai",
+            payload={"threads_posts": [{"slot": "morning", "text": "hi", "scheduled_time": "09:00"}]},
+            team_id=team.team_id, created_by=12345,
+        )
+        client = TestClient(app)
+        resp = client.post(
+            "/api/publish/schedule-series",
+            json={"draft_id": draft.draft_id, "date": "2030-01-01", "slots": ["morning"]},
+            headers=HEADERS,
+        )
+        assert resp.status_code == 400
+        assert resp.json()["detail"] == "draft_must_be_approved"
+
+    async def test_schedule_series_invalid_date(self, setup_test_db):
+        from bot.services.team_store import create_team
+        from bot.services.drafts_store import save_draft, update_draft
+        from miniapp_server import app
+
+        team = await create_team("T", creator_telegram_id=12345)
+        draft = await save_draft(
+            kind="threads_series", topic="t", source="ai",
+            payload={"threads_posts": [{"slot": "morning", "text": "hi"}]},
+            team_id=team.team_id, created_by=12345,
+        )
+        await update_draft(draft.draft_id, status="approved")
+        client = TestClient(app)
+        resp = client.post(
+            "/api/publish/schedule-series",
+            json={"draft_id": draft.draft_id, "date": "not-a-date", "slots": ["morning"]},
+            headers=HEADERS,
+        )
+        assert resp.status_code == 400
+        assert resp.json()["detail"] == "invalid_date_format"
+
+    async def test_schedule_series_success(self, setup_test_db):
+        from bot.services.team_store import create_team
+        from bot.services.drafts_store import save_draft, update_draft
+        from miniapp_server import app
+
+        team = await create_team("T", creator_telegram_id=12345)
+        draft = await save_draft(
+            kind="threads_series", topic="t", source="ai",
+            payload={"threads_posts": [
+                {"slot": "morning", "text": "hi", "scheduled_time": "09:00"},
+                {"slot": "evening", "text": "bye", "scheduled_time": "18:00"},
+            ]},
+            team_id=team.team_id, created_by=12345,
+        )
+        await update_draft(draft.draft_id, status="approved")
+        client = TestClient(app)
+        resp = client.post(
+            "/api/publish/schedule-series",
+            json={"draft_id": draft.draft_id, "date": "2030-06-15", "slots": ["morning", "evening"]},
+            headers=HEADERS,
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["draft_id"] == draft.draft_id
+        assert len(data["scheduled"]) == 2
