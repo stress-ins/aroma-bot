@@ -633,7 +633,18 @@ export function registerWindowBridge(deps) {
   // If so, load the full-quality image in the background and swap when ready.
   document.addEventListener("load", (e) => {
     const img = e.target;
-    if (!img.matches || !img.matches(".progressive-img__full")) return;
+    if (!img.matches) return;
+    // Simple progressive: img with data-full loads thumb first, then upgrades
+    if (img.matches(".progressive-carousel-img[data-full]")) {
+      const fullSrc = img.dataset.full;
+      if (fullSrc && !img.src.includes(fullSrc.split("/").pop())) {
+        const loader = new Image();
+        loader.onload = () => { img.src = fullSrc; };
+        loader.src = fullSrc;
+      }
+      return;
+    }
+    if (!img.matches(".progressive-img__full")) return;
     const fullSrc = img.dataset.full;
     if (!fullSrc || img.src.includes(fullSrc.split("/").pop())) {
       // Already showing full — just reveal

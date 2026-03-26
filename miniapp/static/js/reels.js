@@ -456,8 +456,8 @@ export function createReelsModule(deps) {
       const _lqipUrl = frame.lqip_url || "";
       if (_thumbUrl || _lqipUrl) {
         imageAreaHtml = `<div class="progressive-img" style="width:100%;height:100%;cursor:pointer" data-action="openReelsPreview" data-args='${JSON.stringify([imageUrl, frame.overlay_text || "", frameId, draftId])}'>` +
-          `<img class="progressive-img__full" src="${escapeHtml(_thumbUrl || imageUrl)}" data-full="${escapeHtml(imageUrl)}" alt="Кадр ${n}" loading="lazy">` +
           (_lqipUrl ? `<img class="progressive-img__lqip" src="${escapeHtml(_lqipUrl)}" alt="" aria-hidden="true">` : "") +
+          `<img class="progressive-img__full" src="${escapeHtml(_thumbUrl || imageUrl)}" data-full="${escapeHtml(imageUrl)}" alt="Кадр ${n}" loading="lazy">` +
           `</div>`;
       } else {
         imageAreaHtml = `<img src="${escapeHtml(imageUrl)}" style="width:100%;height:100%;object-fit:cover;cursor:pointer" alt="Кадр ${n}" data-action="openReelsPreview" data-args='${JSON.stringify([imageUrl, frame.overlay_text || "", frameId, draftId])}' />`;

@@ -845,8 +845,8 @@ function progressiveImg(src, { thumb, lqip, alt = "", cls = "", loading = "lazy"
   }
   const initialSrc = thumb || src;
   return `<div class="progressive-img ${escapeHtml(cls)}">` +
-    `<img class="progressive-img__full" src="${escapeHtml(initialSrc)}" data-full="${escapeHtml(src)}" alt="${escapeHtml(alt)}" loading="${loading}">` +
     (lqip ? `<img class="progressive-img__lqip" src="${escapeHtml(lqip)}" alt="" aria-hidden="true">` : "") +
+    `<img class="progressive-img__full" src="${escapeHtml(initialSrc)}" data-full="${escapeHtml(src)}" alt="${escapeHtml(alt)}" loading="${loading}">` +
     `</div>`;
 }
 

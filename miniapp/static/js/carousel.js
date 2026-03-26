@@ -223,10 +223,11 @@ export function createCarouselModule(deps) {
       const versions = Array.isArray(versionItems[index]) ? versionItems[index] : [];
       const genFailed = !img?.url && state.selected?.generation_stage === "error" && !state.selected?.generation_pending;
       const slideOp = carouselSlideOperation(draftId, index);
+      const _slideSrc = img?.thumb_url || img?.url;
       const imgHtml = slideOp && img?.url
-        ? `<div class="carousel-slide-image-wrap carousel-slide-regenerating">${progressiveImg(img.url, { thumb: img.thumb_url, lqip: img.lqip_url, alt: "Слайд " + (index + 1) })}<div class="carousel-slide-loading-overlay"><span class="button-spinner" aria-hidden="true"></span></div></div>`
+        ? `<div class="carousel-slide-image-wrap carousel-slide-regenerating"><img src="${escapeHtml(_slideSrc)}" data-full="${escapeHtml(img.url)}" alt="Слайд ${index + 1}" class="progressive-carousel-img" /><div class="carousel-slide-loading-overlay"><span class="button-spinner" aria-hidden="true"></span></div></div>`
         : img?.url
-        ? `<div class="carousel-slide-image-wrap" style="cursor:pointer" data-action="openImageFullscreen" data-args='${JSON.stringify([img.url, `Слайд ${index + 1}`])}'>${progressiveImg(img.url, { thumb: img.thumb_url, lqip: img.lqip_url, alt: "Слайд " + (index + 1) })}</div>`
+        ? `<div class="carousel-slide-image-wrap"><img src="${escapeHtml(_slideSrc)}" data-full="${escapeHtml(img.url)}" alt="Слайд ${index + 1}" class="progressive-carousel-img" style="cursor:pointer" data-action="openImageFullscreen" data-args='${JSON.stringify([img.url, `Слайд ${index + 1}`])}' /></div>`
         : genFailed
           ? `<div class="carousel-slide-image-wrap"><div class="frame-loading"><div class="frame-loading-inner"><i class="ph ph-warning"></i><span>Не удалось сгенерировать картинку. Нажмите «Новый вариант» чтобы попробовать снова.</span></div></div></div>`
           : `<div class="carousel-slide-image-wrap"><div class="frame-loading"><div class="frame-loading-inner"><span class="button-spinner" aria-hidden="true"></span><span>Изображение ещё готовится</span></div></div></div>`;
