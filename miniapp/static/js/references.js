@@ -8,6 +8,21 @@ const REFERENCE_SOURCE_TYPE_LABELS = {
   grass:   "Злаковые",
   root:    "Корневые",
   wood:    "Деревянистые",
+  quartz:         "Кварц",
+  tourmaline:     "Турмалин",
+  feldspar:       "Полевой шпат",
+  gypsum:         "Гипс",
+  silicate:       "Силикат",
+  carbonate:      "Карбонат",
+  halide:         "Галоид",
+  oxide:          "Оксид",
+  volcanic_glass: "Вулканическое стекло",
+  singing_bowl:   "Поющая чаша",
+  gong:           "Гонг",
+  tuning_fork:    "Камертон",
+  drum:           "Барабан",
+  voice_healing:  "Голосовое исцеление",
+  binaural:       "Бинауральные ритмы",
 };
 
 export function createReferencesModule(deps) {
@@ -470,6 +485,11 @@ export function createReferencesModule(deps) {
       reference.botanical_family && { icon: "🌿", label: "Семейство", value: reference.botanical_family },
       reference.origin_countries && { icon: "📍", label: "Происхождение", value: addCountryFlags(reference.origin_countries) },
       reference.extraction_method && { icon: "⚗️", label: "Метод", value: shortExtractionMethod(reference.extraction_method) },
+      reference.session_duration && reference.category === "sound" && { icon: "⏱", label: "Длительность сеанса", value: reference.session_duration },
+      reference.frequency_range && reference.category === "sound" && { icon: "📡", label: "Частотный диапазон", value: reference.frequency_range },
+      reference.color && reference.category === "crystal" && { icon: "🎨", label: "Цвет", value: reference.color },
+      reference.hardness && reference.category === "crystal" && { icon: "💎", label: "Твёрдость", value: String(reference.hardness) },
+      reference.crystal_system && reference.category === "crystal" && { icon: "🔷", label: "Кристаллическая система", value: reference.crystal_system },
       reference.volatility && (() => {
         const isDuration = reference.category === "practice" || reference.category === "sound";
         return {
@@ -498,6 +518,11 @@ export function createReferencesModule(deps) {
       citrus: "🍊", herb: "🌿", flower: "🌸", tree: "🌲", resin: "🪨",
       spice: "🌶", grass: "🌾", root: "🌱", wood: "🪵",
       blend: "🧪", symptom: "🩺", practice: "📿", concept: "💡",
+      crystal: "💎", quartz: "💎", tourmaline: "🖤", feldspar: "🌙",
+      gypsum: "🤍", silicate: "💙", carbonate: "💚", halide: "💜",
+      oxide: "🩶", volcanic_glass: "⬛",
+      singing_bowl: "🔔", gong: "🔔", tuning_fork: "🔊", drum: "🥁",
+      voice_healing: "🎤", binaural: "🎧",
     };
     return icons[reference.source_type] || icons[reference.category] || handbookCategoryIcon(state.tab);
   }
@@ -553,7 +578,7 @@ export function createReferencesModule(deps) {
   }
 
   function renderFilterChips(items, tabId) {
-    if (!["aromas", "blends", "symptoms", "concepts", "practices"].includes(tabId)) return "";
+    if (!["aromas", "blends", "symptoms", "concepts", "practices", "crystals"].includes(tabId)) return "";
 
     if (tabId === "symptoms") {
       return renderSymptomFilterChips(items);
@@ -907,6 +932,35 @@ export function createReferencesModule(deps) {
           ${aromaSection("Материалы курса", reference.course_notes)}
         </div>
       `;
+    } else if (state.tab === "crystals") {
+      const compOilChips = renderCrossRefChips(
+        zipNamesAndSlugs(reference.complementary_oils || [], reference.complementary_oil_slugs || []),
+        "aromas"
+      );
+      const symptomChips = renderCrossRefChips(
+        zipNamesAndSlugs(reference.related_symptom_names, reference.related_symptom_slugs),
+        "symptoms"
+      );
+      const chakraList = Array.isArray(reference.chakras) ? reference.chakras.join(", ") : (reference.chakras || "");
+      const contraList = Array.isArray(reference.contraindications) ? reference.contraindications : [];
+      detailHtml = `
+        <div class="detail-grid">
+          ${renderBackButton()}
+          ${renderReferenceImage(reference)}
+          ${reference.color ? aromaSection("Цвет", reference.color) : ""}
+          ${chakraList ? aromaSection("Чакры", chakraList) : ""}
+          ${renderCollapsibleDescription(reference)}
+          ${renderCollapsibleSection("Терапевтические свойства", Array.isArray(reference.therapeutic_properties) ? reference.therapeutic_properties.join(", ") : reference.therapeutic_properties, 280)}
+          ${renderCollapsibleSection("Психологические свойства", Array.isArray(reference.psychological_properties) ? reference.psychological_properties.join(", ") : reference.psychological_properties, 280)}
+          ${compOilChips ? `<section class="section"><h3><i data-lucide="droplets" style="width:16px;height:16px"></i> Комплементарные масла</h3><div class="detail-preview">${compOilChips}</div></section>` : ""}
+          ${symptomChips ? `<section class="section"><h3><i data-lucide="heart-pulse" style="width:16px;height:16px"></i> Помогает при</h3><div class="detail-preview">${symptomChips}</div></section>` : ""}
+          ${reference.care_instructions ? aromaSection("Уход за кристаллом", reference.care_instructions) : ""}
+          ${contraList.length ? renderStructuredList("Противопоказания", contraList.join(". ")) : ""}
+          ${reference.crystal_system ? aromaSection("Кристаллическая система", reference.crystal_system) : ""}
+          ${reference.hardness ? aromaSection("Твёрдость (Моос)", String(reference.hardness)) : ""}
+          ${Array.isArray(reference.origin_countries) ? aromaSection("Происхождение", reference.origin_countries.join(", ")) : ""}
+        </div>
+      `;
     } else if (state.tab === "sounds") {
       const compOilChips = renderCrossRefChips(
         zipNamesAndSlugs(reference.complementary_oil_names, reference.complementary_oil_slugs),
@@ -999,7 +1053,7 @@ export function createReferencesModule(deps) {
   }
 
   async function loadAllReferencesForSearch() {
-    const tabs = ["aromas", "blends", "symptoms", "concepts", "practices", "sounds"];
+    const tabs = ["aromas", "blends", "symptoms", "concepts", "practices", "sounds", "crystals"];
     const promises = tabs.filter(t => !_searchCache[t]).map(async (tabId) => {
       const meta = HANDBOOK_CATEGORY_META[tabId];
       if (!meta) return;
@@ -1053,6 +1107,7 @@ export function createReferencesModule(deps) {
       ...(_searchCache.concepts || []),
       ...(_searchCache.practices || []),
       ...(_searchCache.sounds || []),
+      ...(_searchCache.crystals || []),
     ];
     const scored = allItems.map(item => {
       let score = 0;

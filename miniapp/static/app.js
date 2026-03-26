@@ -88,6 +88,7 @@ const MODE_TABS = {
     { id: "concepts", label: "Теория" },
     { id: "practices", label: "Практики" },
     { id: "sounds", label: "Звуки" },
+    { id: "crystals", label: "Кристаллы" },
   ],
 };
 
@@ -193,6 +194,15 @@ const SOURCE_TYPE_LABELS = {
   grass:   "Злаковые",
   root:    "Корневые",
   wood:    "Деревянистые",
+  quartz:         "Кварц",
+  tourmaline:     "Турмалин",
+  feldspar:       "Полевой шпат",
+  gypsum:         "Гипс",
+  silicate:       "Силикат",
+  carbonate:      "Карбонат",
+  halide:         "Галоид",
+  oxide:          "Оксид",
+  volcanic_glass: "Вулканическое стекло",
 };
 
 const SOURCE_TYPE_ICONS = {
@@ -395,6 +405,17 @@ const HANDBOOK_CATEGORY_META = {
     locked: "Доступ к разделу Симптомы закрыт.",
     count: (items) => `${items.length} симптомов`,
   },
+  crystals: {
+    category: "crystal",
+    title: "Кристаллы",
+    label: "кристалл",
+    searchLabel: "Поиск кристалла",
+    searchPlaceholder: "аметист, розовый кварц...",
+    empty: "Кристаллы не найдены.",
+    selectPrompt: "Выберите кристалл из списка.",
+    locked: "Доступ к разделу Кристаллы закрыт.",
+    count: (items) => `${items.length} кристаллов`,
+  },
 };
 
 function handbookCategoryIcon(tabId) {
@@ -405,6 +426,7 @@ function handbookCategoryIcon(tabId) {
     concepts: "🧭",
     practices: "🫁",
     sounds: "🔔",
+    crystals: "💎",
   };
   const glyph = glyphMap[String(tabId || "").toLowerCase()] || "•";
   return `<span class="kind-glyph handbook-glyph" aria-hidden="true">${glyph}</span>`;
@@ -433,6 +455,7 @@ function aromaCardIcon(item, tabId) {
     if (name.includes("иланг") || name.includes("ylang")) return "🌸";
     return "🌿";
   }
+  if (tabId === "crystals") return "💎";
   if (tabId === "blends") return "🌀";
   if (tabId === "symptoms") return "🫀";
   if (tabId === "concepts") return conceptTypeMeta(item.source_type).icon;
@@ -478,6 +501,10 @@ function handbookCardBadge(tabId, item = {}) {
     return PRACTICE_RU_LABELS[sourceType.toLowerCase()] || "Практика";
   }
   if (tabId === "sounds") return "Звук";
+  if (tabId === "crystals" && sourceType) {
+    return SOURCE_TYPE_LABELS[sourceType.toLowerCase()] || "Кристалл";
+  }
+  if (tabId === "crystals") return "Кристалл";
   return "";
 }
 
@@ -2199,7 +2226,7 @@ const SECTION_TITLES = {
   schedule: "Расписание", inbox: "Согласование",
   keywords: "Ключи", status: "Статус",
   aromas: "Ароматы", concepts: "Концепции", practices: "Практики", sounds: "Звуки",
-  blends: "Смеси", symptoms: "Симптомы",
+  blends: "Смеси", symptoms: "Симптомы", crystals: "Кристаллы",
 };
 
 /* ── Inspiration sub-tabs (pill-style below section title) ────────────── */

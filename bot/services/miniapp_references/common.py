@@ -18,7 +18,7 @@ from db.session import AsyncSessionLocal
 BASE_DIR = Path(__file__).resolve().parents[3]
 SEED_FILE = BASE_DIR / "data" / "reference_cards_seed.json"
 EXTRA_SEED_FILE = BASE_DIR / "data" / "reference_cards_extra.json"
-REFERENCE_CATEGORIES = {"aroma", "practice", "sound", "concept", "blend", "symptom"}
+REFERENCE_CATEGORIES = {"aroma", "practice", "sound", "concept", "blend", "symptom", "crystal"}
 REFERENCE_IMAGES_DIR = BASE_DIR / "assets" / "reference_images"
 INTERNAL_SEED_KEY = "__seed_payload"
 INTERNAL_OVERRIDES_KEY = "__manual_overrides"
@@ -27,6 +27,7 @@ REFERENCE_CONTEXT_TITLES = {
     "concept": "Теория",
     "practice": "Практики",
     "sound": "Звуки",
+    "crystal": "Кристаллы",
 }
 EDITABLE_FIELDS = (
     "description",
@@ -77,6 +78,7 @@ def _image_label(category: str) -> str:
         "practice": "образ практики",
         "concept": "теоретическая карточка",
         "sound": "источник звука",
+        "crystal": "целительный кристалл",
     }.get(category, "справочник")
 
 
@@ -116,6 +118,21 @@ def _source_illustration_key(source_type: str, title: str) -> str:
         "sound": "sound-wave",
         "instrument": "sound-bowl",
         "voice": "voice-wave",
+        "quartz": "meditation-stone",
+        "tourmaline": "meditation-stone",
+        "gypsum": "meditation-stone",
+        "feldspar": "meditation-stone",
+        "silicate": "meditation-stone",
+        "carbonate": "meditation-stone",
+        "halide": "meditation-stone",
+        "oxide": "meditation-stone",
+        "volcanic_glass": "meditation-stone",
+        "singing_bowl": "sound-bowl",
+        "gong": "sound-wave",
+        "tuning_fork": "sound-wave",
+        "drum": "sound-wave",
+        "voice_healing": "voice-wave",
+        "binaural": "sound-wave",
     }
     return fallback.get(source_type, "leafy-herb")
 
@@ -233,6 +250,20 @@ def _source_image(source_type: str, title: str, category: str) -> str:
         "voice": ("#ad5f9e", "#f0d7eb", "голос"),
         "blend": ("#b45c3d", "#f2e2d8", "смесь"),
         "symptom": ("#7a4f8a", "#e9ddf5", "симптом"),
+        "quartz": ("#9b8ec4", "#e8e2f6", "кварц"),
+        "tourmaline": ("#3d3d3d", "#d4d4d4", "турмалин"),
+        "gypsum": ("#c9c5b8", "#f5f3ee", "гипс"),
+        "feldspar": ("#6a8ea8", "#dce9f0", "полевой шпат"),
+        "carbonate": ("#4a8a5c", "#d6eddc", "карбонат"),
+        "halide": ("#7b68b8", "#e0d9f4", "галоид"),
+        "oxide": ("#7a7a7a", "#e0e0e0", "оксид"),
+        "volcanic_glass": ("#2d2d2d", "#c4c4c4", "вулканическое стекло"),
+        "singing_bowl": ("#b8944a", "#f0e4c9", "поющая чаша"),
+        "gong": ("#8a7a4a", "#ede5c8", "гонг"),
+        "tuning_fork": ("#6080a0", "#d4e0ec", "камертон"),
+        "drum": ("#8b6050", "#e8d6cc", "барабан"),
+        "voice_healing": ("#b06090", "#f0d0e0", "голос"),
+        "binaural": ("#5070a0", "#d0dcea", "бинауральный"),
     }
     primary, secondary, label = palette.get(source_type, palette["herb"])
     card_label = _image_label(category)
@@ -658,6 +689,7 @@ async def get_reference_card(category: str, slug_or_name: str) -> dict[str, obje
     # Import entity-specific enrichment lazily to avoid circular imports
     from bot.services.miniapp_references.aroma import _enrich_aroma_cross_refs
     from bot.services.miniapp_references.blend import _enrich_blend_cross_refs
+    from bot.services.miniapp_references.crystal import _enrich_crystal_cross_refs
     from bot.services.miniapp_references.symptom import _enrich_symptom_cross_refs
 
     await seed_reference_cards_if_empty()
@@ -675,6 +707,8 @@ async def get_reference_card(category: str, slug_or_name: str) -> dict[str, obje
                 serialized = await _enrich_symptom_cross_refs(serialized)
             elif category == "blend":
                 serialized = await _enrich_blend_cross_refs(serialized)
+            elif category == "crystal":
+                serialized = await _enrich_crystal_cross_refs(serialized)
             return serialized
     return None
 
