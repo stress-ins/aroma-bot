@@ -137,17 +137,17 @@ async def start_worker() -> None:
     global _worker_task
 
     try:
-        # Ensure table exists (auto-create if missing)
+        # Ensure table exists (auto-create if missing, with timeout to avoid SQLite lock hang)
         from db.models import VideoTaskModel, Base
         from sqlalchemy.ext.asyncio import create_async_engine
         from db.session import DATABASE_URL
-        _engine = create_async_engine(DATABASE_URL, echo=False)
+        _engine = create_async_engine(DATABASE_URL, echo=False, connect_args={"timeout": 10})
         async with _engine.begin() as conn:
-            await conn.run_sync(
+            await asyncio.wait_for(conn.run_sync(
                 lambda sync_conn: Base.metadata.create_all(
                     sync_conn, tables=[VideoTaskModel.__table__], checkfirst=True,
                 )
-            )
+            ), timeout=15)
         await _engine.dispose()
 
         # Reset any video tasks that were running when server died
