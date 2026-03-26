@@ -454,6 +454,11 @@ export function createShellModule(deps) {
   function bindSwipeBack() {
     const isMobile = window.matchMedia("(max-width: 760px)").matches;
     if (!isMobile) return;
+    const panel = elements.detailPanel;
+    let directionLocked = false; // once locked to horizontal, stays locked
+    let swiping = false; // true while actively dragging horizontally
+    let rafId = 0;
+
     elements.detailPanel.addEventListener("touchstart", (event) => {
       const touch = event.touches[0];
       if (!touch || state.mobileView !== "detail" || hasActiveTextSelection()) {
@@ -465,42 +470,66 @@ export function createShellModule(deps) {
         swipeStart = null;
         return;
       }
+      directionLocked = false;
+      swiping = false;
       swipeStart = { x: touch.clientX, y: touch.clientY, edgeSwipe };
     }, { passive: true });
-    const panel = elements.detailPanel;
+
+    const cleanupPanel = () => {
+      panel.classList.remove("is-swiping", "swipe-back-hint", "swipe-back-ready");
+      panel.style.removeProperty("transform");
+      panel.style.removeProperty("opacity");
+      panel.style.removeProperty("transition");
+      swiping = false;
+      directionLocked = false;
+    };
+
     const resetSwipe = (springBack = false) => {
       panel.classList.remove("swipe-back-hint", "swipe-back-ready");
-      if (springBack) {
+      if (springBack && swiping) {
+        panel.classList.remove("is-swiping");
         panel.style.transition = "transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.3s ease";
         panel.style.transform = "translateX(0)";
         panel.style.opacity = "1";
-        window.setTimeout(() => {
-          panel.style.removeProperty("transform");
-          panel.style.removeProperty("opacity");
-          panel.style.removeProperty("transition");
-        }, 300);
+        window.setTimeout(cleanupPanel, 300);
       } else {
-        panel.style.removeProperty("transform");
-        panel.style.removeProperty("opacity");
-        panel.style.removeProperty("transition");
+        cleanupPanel();
       }
     };
+
     panel.addEventListener("touchmove", (event) => {
       if (!swipeStart || state.mobileView !== "detail" || hasActiveTextSelection()) return;
       if (!swipeStart.edgeSwipe && (isInteractiveTarget(event.target) || isSelectableTextTarget(event.target))) return;
       const touch = event.touches[0];
       const dx = Math.max(0, touch.clientX - swipeStart.x);
       const dy = Math.abs(touch.clientY - swipeStart.y);
-      if (dx > 10 && dy < 72) {
-        panel.style.removeProperty("transition");
-        panel.style.transform = `translateX(${dx}px)`;
-        panel.style.opacity = `${1 - (dx / window.innerWidth) * 0.4}`;
-        panel.classList.toggle("swipe-back-ready", dx > 72);
+
+      // Direction lock: once vertical scroll wins, abort swipe-back entirely
+      if (!directionLocked && (dx > 8 || dy > 8)) {
+        directionLocked = true;
+        if (dy > dx) { swipeStart = null; return; } // vertical — bail
+      }
+      if (!directionLocked) return;
+
+      if (dx > 10) {
+        if (!swiping) {
+          swiping = true;
+          panel.classList.add("is-swiping"); // enables will-change + kills transition
+        }
+        if (rafId) cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(() => {
+          panel.style.transform = `translateX(${dx}px)`;
+          panel.style.opacity = `${1 - (dx / window.innerWidth) * 0.4}`;
+          panel.classList.toggle("swipe-back-ready", dx > 72);
+          rafId = 0;
+        });
       }
     }, { passive: true });
+
     panel.addEventListener("touchend", (event) => {
+      if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
       if (!swipeStart || state.mobileView !== "detail" || hasActiveTextSelection()) {
-        resetSwipe(true);
+        resetSwipe(swiping);
         return;
       }
       const touch = event.changedTouches[0];
@@ -509,22 +538,23 @@ export function createShellModule(deps) {
       swipeStart = null;
       panel.classList.remove("swipe-back-hint", "swipe-back-ready");
       if (dx > 72 && dy < 56 && dx > dy * 1.4) {
+        panel.classList.remove("is-swiping");
         panel.style.transition = "transform 0.25s var(--ease-standard, ease), opacity 0.25s var(--ease-standard, ease)";
         panel.style.transform = "translateX(100%)";
         panel.style.opacity = "0.6";
         window.setTimeout(() => {
-          panel.style.removeProperty("transform");
-          panel.style.removeProperty("opacity");
-          panel.style.removeProperty("transition");
+          cleanupPanel();
           goBackToList(false);
         }, 260);
       } else {
         resetSwipe(true);
       }
     }, { passive: true });
+
     panel.addEventListener("touchcancel", () => {
+      if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
       swipeStart = null;
-      resetSwipe(true);
+      resetSwipe(swiping);
     }, { passive: true });
   }
 
