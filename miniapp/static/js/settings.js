@@ -1356,16 +1356,21 @@ export function createSettingsModule(deps) {
             </div>`
           : "";
 
-        // Avatar section
+        // Avatar section — use native <label>+<input> for Telegram WebView compat
+        const avatarInputId = `avatarUpload-${t.team_id}`;
+        const avatarUploadLabel = isOwner
+          ? `<label class="secondary-button avatar-upload-label" for="${avatarInputId}">${uiIcon("upload")}<span>${detail.has_avatar ? "Заменить аватарку" : "Загрузить аватарку"}</span></label>
+             <input id="${avatarInputId}" type="file" accept="image/jpeg,image/png,image/webp" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden" data-on-change="uploadTeamAvatar" data-args='${JSON.stringify([t.team_id])}' />`
+          : "";
         const avatarHtml = detail.has_avatar
           ? `<div class="team-avatar-section">
                <img src="${escapeHtml(detail.avatar_url)}" alt="Аватарка" class="team-avatar-preview" />
-               ${isOwner ? `<button class="secondary-button" type="button" data-action="uploadTeamAvatar" data-args='${JSON.stringify([t.team_id])}'>${uiIcon("upload")}<span>Заменить аватарку</span></button>` : ""}
+               ${avatarUploadLabel}
              </div>`
           : isOwner
             ? `<div class="team-avatar-section">
                  <p class="settings-hint">Аватарка не загружена — она используется на слайдах карусели.</p>
-                 <button class="primary-button" type="button" data-action="uploadTeamAvatar" data-args='${JSON.stringify([t.team_id])}'>${uiIcon("upload")}<span>Загрузить аватарку</span></button>
+                 ${avatarUploadLabel}
                </div>`
             : "";
 
@@ -1450,39 +1455,34 @@ export function createSettingsModule(deps) {
     }
   }
 
-  async function uploadTeamAvatar(teamId) {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "image/jpeg,image/png,image/webp";
-    input.onchange = async () => {
-      const file = input.files?.[0];
-      if (!file) return;
-      if (file.size > 2 * 1024 * 1024) {
-        showUiNotice("Файл слишком большой (макс. 2 МБ)", "error");
-        return;
+  async function uploadTeamAvatar(teamId, _value, inputEl) {
+    // Called via data-on-change on <input type="file">
+    const file = inputEl?.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      showUiNotice("Файл слишком большой (макс. 2 МБ)", "error");
+      return;
+    }
+    const formData = new FormData();
+    formData.append("file", file);
+    try {
+      const headers = { "X-Team-Id": teamId };
+      const initData = window.Telegram?.WebApp?.initData;
+      if (initData) headers["X-Telegram-Init-Data"] = initData;
+      const resp = await fetch(`/api/teams/${teamId}/avatar`, {
+        method: "POST",
+        headers,
+        body: formData,
+      });
+      if (!resp.ok) {
+        const body = await resp.text();
+        throw new Error(`HTTP ${resp.status}: ${body}`);
       }
-      const formData = new FormData();
-      formData.append("file", file);
-      try {
-        const headers = { "X-Team-Id": teamId };
-        const initData = window.Telegram?.WebApp?.initData;
-        if (initData) headers["X-Telegram-Init-Data"] = initData;
-        const resp = await fetch(`/api/teams/${teamId}/avatar`, {
-          method: "POST",
-          headers,
-          body: formData,
-        });
-        if (!resp.ok) {
-          const body = await resp.text();
-          throw new Error(`HTTP ${resp.status}: ${body}`);
-        }
-        showUiNotice("Аватарка загружена", "success");
-        renderTeam();
-      } catch (err) {
-        showUiNotice(`Не удалось загрузить: ${err.message}`, "error");
-      }
-    };
-    input.click();
+      showUiNotice("Аватарка загружена", "success");
+      renderTeam();
+    } catch (err) {
+      showUiNotice(`Не удалось загрузить: ${err.message}`, "error");
+    }
   }
 
   // ── Promo code activation + admin management ─────────────────────────────
