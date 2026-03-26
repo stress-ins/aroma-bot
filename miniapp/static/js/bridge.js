@@ -208,6 +208,8 @@ export function registerWindowBridge(deps) {
     coherenceCheck,
     generateTrendCards,
     createFromTrendCard,
+    openIntelligenceOpp,
+    createFromIntelligence,
     openArchiveDetail,
     openArchiveForm,
     savePublication,
@@ -483,6 +485,8 @@ export function registerWindowBridge(deps) {
   window.coherenceCheck = coherenceCheck;
   window.generateTrendCards = generateTrendCards;
   window.createFromTrendCard = createFromTrendCard;
+  window.openIntelligenceOpp = openIntelligenceOpp;
+  window.createFromIntelligence = createFromIntelligence;
 
   // Recommendations wizard
   window.openRecommendationsWizard = openRecommendationsWizard;

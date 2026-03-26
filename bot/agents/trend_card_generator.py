@@ -57,17 +57,25 @@ FORMATS: [через запятую: instagram, carousel, reels, threads_series]
 
 
 def _parse_cards(raw: str, opportunities: list[dict]) -> list[dict]:
-    """Parse Claude response into card dicts."""
-    cards = []
-    current = None
+    """Parse Claude response into card dicts.
+
+    Handles markdown formatting: ``## CARD 1``, ``**TITLE:**``, ``---`` separators.
+    """
+    cards: list[dict] = []
+    current: dict | None = None
+    last_field: str | None = None  # track field for continuation lines
     expires = datetime.now(timezone.utc) + timedelta(days=7)
+
+    _FIELDS = {"TITLE", "SUMMARY", "RECOMMENDATION", "FORMATS"}
 
     for line in raw.strip().splitlines():
         line = line.strip()
-        if not line:
+        if not line or line.startswith("---"):
             continue
 
-        m = re.match(r"CARD\s+(\d+)", line, re.IGNORECASE)
+        # Strip leading markdown (##, **, etc.)
+        stripped = re.sub(r"^[#*\s]+", "", line)
+        m = re.match(r"CARD\s+(\d+)", stripped, re.IGNORECASE)
         if m:
             if current:
                 cards.append(current)
@@ -88,21 +96,32 @@ def _parse_cards(raw: str, opportunities: list[dict]) -> list[dict]:
                 "source_signals": opp.get("sources", []),
                 "expires_at": expires.isoformat(),
             }
+            last_field = None
             continue
 
         if current is None:
             continue
 
-        cleaned = line.replace("**", "").strip()
-        if cleaned.upper().startswith("TITLE:"):
-            current["title"] = cleaned.split(":", 1)[1].strip()
-        elif cleaned.upper().startswith("SUMMARY:"):
-            current["summary"] = cleaned.split(":", 1)[1].strip()
-        elif cleaned.upper().startswith("RECOMMENDATION:"):
-            current["recommendation"] = cleaned.split(":", 1)[1].strip()
-        elif cleaned.upper().startswith("FORMATS:"):
-            formats_raw = cleaned.split(":", 1)[1].strip()
-            current["suggested_formats"] = [f.strip() for f in formats_raw.split(",") if f.strip()]
+        cleaned = line.replace("**", "").replace("*", "").strip()
+        upper = cleaned.upper()
+
+        matched = False
+        for field in _FIELDS:
+            if upper.startswith(f"{field}:"):
+                value = cleaned.split(":", 1)[1].strip()
+                if field == "FORMATS":
+                    current["suggested_formats"] = [f.strip() for f in value.split(",") if f.strip()]
+                    last_field = None
+                else:
+                    key = field.lower()
+                    current[key] = value
+                    last_field = key
+                matched = True
+                break
+
+        # Continuation line (belongs to previous field like SUMMARY)
+        if not matched and last_field and last_field in ("summary", "recommendation"):
+            current[last_field] += " " + cleaned
 
     if current:
         cards.append(current)
@@ -112,6 +131,7 @@ def _parse_cards(raw: str, opportunities: list[dict]) -> list[dict]:
         if not card["title"]:
             card["title"] = card["keyword"].capitalize() if card["keyword"] else "Trend"
 
+    logger.info("Parsed %d trend cards from Claude response (%d chars)", len(cards), len(raw))
     return cards[:5]
 
 
@@ -133,8 +153,12 @@ async def generate_and_save_cards(team_id: str | None = None) -> list[dict]:
         logger.error("Failed to generate trend report", exc_info=True)
         return []
 
-    if not report.get("top_opportunities"):
+    opps = report.get("top_opportunities", [])
+    if not opps:
+        logger.warning("Trend card generation: no opportunities in report (signals=%s)", report.get("total_signals_analyzed", 0))
         return []
+
+    logger.info("Generating trend cards from %d opportunities (%d signals)", len(opps), report.get("total_signals_analyzed", 0))
 
     # Generate cards via Claude
     loop = asyncio.get_running_loop()
@@ -142,7 +166,10 @@ async def generate_and_save_cards(team_id: str | None = None) -> list[dict]:
     cards = await loop.run_in_executor(executor, generate_cards_from_report_sync, report)
 
     if not cards:
+        logger.warning("Trend card generation: Claude returned no parseable cards")
         return []
+
+    logger.info("Generated %d trend cards, saving to DB", len(cards))
 
     # Save to DB
     async with AsyncSessionLocal() as session:

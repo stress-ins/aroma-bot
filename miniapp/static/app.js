@@ -768,6 +768,11 @@ function uiIcon(name) {
     "tech-check": "scan",
     "copy-plus": "copy",
     sparkles:   "sparkle",
+    globe:      "globe",
+    target:     "crosshair",
+    "trending-up": "trend-up",
+    "trending-down": "trend-down",
+    radar:      "broadcast",
     "map-pin":  "map-pin",
     "sliders-horizontal": "sliders-horizontal",
     award:      "trophy",
@@ -2036,7 +2041,7 @@ const { renderBrand: renderBrandImpl, loadForbiddenPhrases: loadForbiddenPhrases
   adminRestartWorker,
 } = _settingsMod);
 
-let selectTrendsPlatform, selectTrendsPeriod, refreshTrends, openTrendsPost, createFromInsight, addMonitoredAccount, removeMonitoredAccount, generateTrendCards, createFromTrendCard;
+let selectTrendsPlatform, selectTrendsPeriod, refreshTrends, openTrendsPost, createFromInsight, addMonitoredAccount, removeMonitoredAccount, generateTrendCards, createFromTrendCard, openIntelligenceOpp, createFromIntelligence;
 ({
   loadTrends,
   selectTrendsPlatform,
@@ -2048,6 +2053,8 @@ let selectTrendsPlatform, selectTrendsPeriod, refreshTrends, openTrendsPost, cre
   removeMonitoredAccount,
   generateTrendCards,
   createFromTrendCard,
+  openIntelligenceOpp,
+  createFromIntelligence,
 } = createTrendsModule({
   state,
   elements,
@@ -2624,6 +2631,8 @@ registerWindowBridge({
   coherenceCheck,
   generateTrendCards,
   createFromTrendCard,
+  openIntelligenceOpp,
+  createFromIntelligence,
   refreshDraftMetrics,
   shareBlend,
   // Stock photo picker

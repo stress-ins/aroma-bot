@@ -62,7 +62,7 @@ class InstagramTrendsCollector:
         self, client: httpx.AsyncClient, username: str, cutoff: datetime
     ) -> int:
         """Fetch posts for a single account. Uses /me/media for own account,
-        business_discovery for others (graceful fallback on permission error)."""
+        business_discovery for others, Playwright fallback on permission error."""
         if self._own_username and username.lower() == self._own_username:
             return await self._collect_own_media(client, username, cutoff)
 
@@ -70,11 +70,54 @@ class InstagramTrendsCollector:
             return await self._collect_via_business_discovery(client, username, cutoff)
         except RuntimeError as exc:
             # business_discovery requires instagram_business_manage permission;
-            # instagram_business_basic doesn't support it — skip gracefully
+            # fall back to Playwright scraping
             logger.warning(
-                "IG trends: business_discovery unavailable for @%s (team=%s): %s — skipping",
+                "IG trends: business_discovery failed for @%s (team=%s): %s — trying Playwright",
                 username, self.team_id, exc,
             )
+            return await self._collect_via_playwright(username, cutoff)
+
+    async def _collect_via_playwright(self, username: str, cutoff: datetime) -> int:
+        """Fallback: scrape public IG profile via Playwright."""
+        try:
+            from analytics.playwright_scraper import scrape_instagram_profile
+
+            posts = await scrape_instagram_profile(username, max_posts=_MAX_POSTS_PER_ACCOUNT)
+            count = 0
+            for p in posts:
+                if not p.get("post_id"):
+                    continue
+                posted_at = None
+                if p.get("posted_at"):
+                    try:
+                        posted_at = datetime.fromisoformat(p["posted_at"])
+                    except (ValueError, TypeError):
+                        pass
+                if posted_at and posted_at < cutoff:
+                    continue
+                caption = p.get("text", "") or ""
+                hashtags = _HASHTAG_RE.findall(caption)
+                await upsert_social_post(
+                    team_id=self.team_id,
+                    platform="instagram",
+                    post_id=str(p["post_id"]),
+                    source_type="account",
+                    source_value=f"@{username}",
+                    author_username=p.get("author_username", username),
+                    text=caption,
+                    permalink=p.get("permalink", ""),
+                    media_type=p.get("media_type", "IMAGE"),
+                    thumbnail_url=p.get("thumbnail_url", ""),
+                    hashtags=hashtags,
+                    like_count=p.get("like_count", 0),
+                    comment_count=p.get("comment_count", 0),
+                    posted_at=posted_at,
+                )
+                count += 1
+            logger.info("IG Playwright fallback: collected %d posts from @%s (team=%s)", count, username, self.team_id)
+            return count
+        except Exception as exc:
+            logger.warning("IG Playwright fallback failed for @%s (team=%s): %s", username, self.team_id, exc)
             return 0
 
     async def _collect_own_media(
