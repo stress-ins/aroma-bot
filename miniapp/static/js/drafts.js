@@ -351,6 +351,10 @@ export function createDraftsModule(deps) {
       return renderContentSeriesDetail(d);
     }
 
+    if (d?.kind === "youtube_video") {
+      return renderYouTubeDetail(d);
+    }
+
     const p = d.payload || {};
     const mainText = p.caption || p.scenario || "";
 
@@ -656,6 +660,113 @@ export function createDraftsModule(deps) {
       `<option value="${escapeHtml(t.team_id)}">${escapeHtml(t.name)}</option>`
     ).join("");
     return `<select class="move-to-team-select" data-on-change="moveDraftToTeam" data-args='${JSON.stringify([draftId])}' data-guard="truthy"><option value="">Перенести в...</option>${options}</select>`;
+  }
+
+  // ── YouTube Video Detail ─────────────────────────────────────────
+  function renderYouTubeDetail(d) {
+    const p = d.payload || {};
+    const sections = p.sections || [];
+    const brollMap = p.broll_map || [];
+    const thumb = p.thumbnail || {};
+    const meta = p.metadata || {};
+    const subformatLabels = { talking_head: "Talking Head", listicle: "Listicle / Top-N", podcast: "Подкаст / Интервью" };
+
+    const sectionsHtml = sections.length ? sections.map((s, i) => `
+      <div class="youtube-section-card">
+        <div class="youtube-section-header">
+          <span class="youtube-section-num">${i + 1}</span>
+          <span class="youtube-section-type">${escapeHtml(s.label || s.section_type || "")}</span>
+          <span class="youtube-section-time">${escapeHtml(s.timecode || "")}</span>
+          ${s.energy ? `<span class="keyword-chip keyword-chip--small">${escapeHtml(s.energy)}</span>` : ""}
+        </div>
+        <div class="youtube-section-text">${escapeHtml(s.speaker_text || s.host_text || "").substring(0, 300)}${(s.speaker_text || s.host_text || "").length > 300 ? "…" : ""}</div>
+        ${s.screen_text ? `<div class="youtube-section-screen"><strong>Экран:</strong> ${escapeHtml(s.screen_text)}</div>` : ""}
+        ${s.broll_cue ? `<div class="youtube-section-broll">${uiIcon("video", 14)} B-roll: ${escapeHtml(s.broll_cue)}</div>` : ""}
+        ${s.guest_talking_points?.length ? `<div class="youtube-section-points"><strong>Тезисы гостя:</strong><ul>${s.guest_talking_points.map(tp => `<li>${escapeHtml(tp)}</li>`).join("")}</ul></div>` : ""}
+      </div>
+    `).join("") : `<div class="empty-state-hint">Секции не сгенерированы</div>`;
+
+    const brollHtml = brollMap.length ? `
+      <section class="section">
+        <div class="section-heading"><h3>${uiIcon("video")}B-Roll карта (${brollMap.length})</h3></div>
+        <div class="youtube-broll-list">${brollMap.map((b, i) => `
+          <div class="youtube-broll-item">
+            <span class="youtube-broll-time">${escapeHtml(b.timestamp || "")}</span>
+            <span class="youtube-broll-desc">${escapeHtml(b.description || "")}</span>
+            ${b.search_keywords?.length ? `<div class="youtube-broll-kw">${b.search_keywords.map(k => `<span class="keyword-chip keyword-chip--small">${escapeHtml(k)}</span>`).join(" ")}</div>` : ""}
+          </div>
+        `).join("")}</div>
+      </section>
+    ` : "";
+
+    const thumbHtml = thumb.result_path ? `
+      <section class="section">
+        <div class="section-heading"><h3>${uiIcon("image")}Обложка</h3></div>
+        <img src="${escapeHtml(thumb.result_url || "")}" alt="Обложка" class="youtube-thumbnail-preview" loading="lazy">
+        ${thumb.text_overlay ? `<p class="field-help">Текст: ${escapeHtml(thumb.text_overlay)}</p>` : ""}
+      </section>
+    ` : "";
+
+    const metaHtml = meta.title ? `
+      <section class="section">
+        <div class="section-heading"><h3>${uiIcon("text")}Метаданные YouTube</h3></div>
+        <div class="youtube-meta-block">
+          <label><strong>Заголовок</strong><div class="youtube-meta-value">${escapeHtml(meta.title)}</div></label>
+          ${meta.description ? `<label><strong>Описание</strong><pre class="youtube-meta-desc">${escapeHtml(meta.description)}</pre></label>` : ""}
+          ${meta.tags?.length ? `<div class="youtube-meta-tags">${meta.tags.map(t => `<span class="keyword-chip keyword-chip--small">${escapeHtml(t)}</span>`).join(" ")}</div>` : ""}
+        </div>
+      </section>
+    ` : "";
+
+    elements.draftDetail.innerHTML = `
+      <div class="detail-grid">
+        ${renderBackButton()}
+        <div class="detail-top detail-hero">
+          <div class="detail-hero-copy">
+            <p class="eyebrow">${contentKindIcon(d.kind)}<span>${escapeHtml(kindLabel(d.kind))}${sourceLabel(d.source) ? " • " + escapeHtml(sourceLabel(d.source)) : ""}</span></p>
+            <h2 class="detail-title">${escapeHtml(p.title || d.topic)}</h2>
+            <div class="draft-meta">
+              ${d.seq_id ? `<span class="meta-chip meta-chip--muted">#${d.seq_id}</span>` : ""}
+              ${formatPlanDate(d.created_at) ? `<span class="meta-chip meta-chip--muted">${escapeHtml(formatPlanDate(d.created_at))}</span>` : ""}
+              ${tagMarkup(statusLabel(d.status), statusTone(d.status))}
+              ${p.subformat ? tagMarkup(subformatLabels[p.subformat] || p.subformat, "status-neutral") : ""}
+              ${p.duration_target ? tagMarkup("~" + p.duration_target + " мин", "status-neutral") : ""}
+              ${d.generation_pending && draftGenerationLabel(d) ? tagMarkup(draftGenerationLabel(d), "pending") : ""}
+            </div>
+          </div>
+          <div class="actions-row detail-actions">
+            <button class="primary-button" data-action="updateDraft" data-args='["status",{"status":"approved"},null]'>${actionLabel("approve", "Согласовать")}</button>
+            <div class="detail-icon-actions">
+              <button class="secondary-button" title="Вернуть на доработку" data-action="updateDraft" data-args='["status",{"status":"rejected"},null]'>${uiIcon("reject")}</button>
+            </div>
+            ${renderMoveButton(d.draft_id)}
+          </div>
+        </div>
+
+        ${d.generation_pending ? renderDetailLoader("Генерирую сценарий", "Пишу сценарий YouTube-видео.", "detail-loader-card-compact") : ""}
+
+        ${!d.generation_pending && sections.length ? `
+          <section class="section section-primary">
+            <div class="section-heading">
+              <h3>${uiIcon("list")}Сценарий (${sections.length} секций)</h3>
+              ${p.music_mood ? `<p>${uiIcon("music", 14)} ${escapeHtml(p.music_mood)}</p>` : ""}
+            </div>
+            <div class="youtube-sections-list">${sectionsHtml}</div>
+          </section>
+        ` : ""}
+
+        ${brollHtml}
+        ${thumbHtml}
+        ${metaHtml}
+
+        <section class="section">
+          <div class="actions-row">
+            <button class="secondary-button danger-button" data-action="deleteDraft" data-args='${JSON.stringify([d.draft_id])}'>${uiIcon("trash")}<span>Удалить</span></button>
+          </div>
+        </section>
+      </div>
+    `;
+    syncMobileNavigation();
   }
 
   // ── Content Series Detail ──────────────────────────────────────────

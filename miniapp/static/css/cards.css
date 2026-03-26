@@ -171,3 +171,37 @@
   margin-top: 10px;
 }
 
+/* ── YouTube Video Detail ──────────────────────────────────────── */
+.youtube-sections-list { display: flex; flex-direction: column; gap: 10px; }
+.youtube-section-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  background: var(--surface);
+}
+.youtube-section-header {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;
+}
+.youtube-section-num {
+  width: 24px; height: 24px; border-radius: 50%; background: var(--brand);
+  color: var(--text-on-brand); font-size: 12px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.youtube-section-type { font-weight: 600; font-size: 14px; }
+.youtube-section-time { color: var(--muted); font-size: 12px; margin-left: auto; }
+.youtube-section-text { font-size: 13px; line-height: 1.5; color: var(--text); }
+.youtube-section-screen { font-size: 12px; color: var(--muted); margin-top: 6px; }
+.youtube-section-broll { font-size: 12px; color: var(--brand); margin-top: 4px; display: flex; align-items: center; gap: 4px; }
+.youtube-section-points { font-size: 12px; margin-top: 6px; }
+.youtube-section-points ul { margin: 4px 0 0 16px; padding: 0; }
+.youtube-broll-list { display: flex; flex-direction: column; gap: 8px; }
+.youtube-broll-item { display: flex; flex-wrap: wrap; gap: 6px; align-items: baseline; font-size: 13px; }
+.youtube-broll-time { color: var(--brand); font-weight: 600; min-width: 40px; }
+.youtube-broll-desc { flex: 1; min-width: 200px; }
+.youtube-broll-kw { display: flex; flex-wrap: wrap; gap: 4px; width: 100%; }
+.youtube-thumbnail-preview { width: 100%; max-width: 640px; border-radius: var(--radius-md); }
+.youtube-meta-block { display: flex; flex-direction: column; gap: 10px; }
+.youtube-meta-value { font-size: 15px; font-weight: 600; }
+.youtube-meta-desc { font-size: 12px; white-space: pre-wrap; background: var(--surface); padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--border); max-height: 300px; overflow-y: auto; }
+.youtube-meta-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+
