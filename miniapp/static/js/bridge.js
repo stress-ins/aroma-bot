@@ -116,6 +116,7 @@ export function registerWindowBridge(deps) {
     runSmartSearch,
     clearSmartSearch,
     createContentFromOil,
+    createContentFromDailyOil,
     toggleReferenceFilters,
     openBlendConstructor,
     addRecoOilToBlend,
@@ -365,6 +366,7 @@ export function registerWindowBridge(deps) {
   window.runSmartSearch = runSmartSearch;
   window.clearSmartSearch = clearSmartSearch;
   window.createContentFromOil = createContentFromOil;
+  window.createContentFromDailyOil = createContentFromDailyOil;
   window.toggleReferenceFilters = toggleReferenceFilters;
   window.openBlendConstructor = openBlendConstructor;
   window.addRecoOilToBlend = addRecoOilToBlend;
@@ -528,6 +530,11 @@ export function registerWindowBridge(deps) {
 
   window._dismissBlendContext = function() {
     sessionStorage.removeItem("blend_create_context");
+    renderCreateTool(state.selectedCreateTool);
+  };
+
+  window._dismissDailyOilContext = function() {
+    sessionStorage.removeItem("daily_oil_context");
     renderCreateTool(state.selectedCreateTool);
   };
 

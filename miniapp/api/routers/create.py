@@ -33,6 +33,26 @@ def _extract_blend_context(payload) -> dict | None:
     return bc.model_dump() if bc else None
 
 
+def _extract_daily_oil_context(payload) -> dict | None:
+    doc = getattr(payload, "daily_oil_context", None)
+    return doc.model_dump() if doc else None
+
+
+def _enrich_topic_with_daily_oil(topic: str, doc: dict | None) -> str:
+    """Prepend daily oil context to topic for richer generation."""
+    if not doc or not doc.get("oil_name"):
+        return topic
+    parts = [f"Масло дня: {doc['oil_name']}."]
+    if doc.get("reason"):
+        parts.append(f"Почему сегодня: {doc['reason']}")
+    if doc.get("fact"):
+        parts.append(f"Факт: {doc['fact']}")
+    if doc.get("daily_practice"):
+        parts.append(f"Практика: {doc['daily_practice']}")
+    context_block = " ".join(parts)
+    return f"{context_block}\n\nТема: {topic}"
+
+
 async def _fetch_brand_profile(team_id: str | None) -> dict:
     """Fetch brand username and avatar from connected Instagram/Threads account.
 
@@ -114,6 +134,8 @@ async def generate_content(
         raise HTTPException(status_code=400, detail="invalid_format")
 
     bc = _extract_blend_context(payload)
+    doc = _extract_daily_oil_context(payload)
+    enriched_topic = _enrich_topic_with_daily_oil(topic, doc)
     stub_payload: dict = {
         "generation_pending": True,
         "generation_stage": "content",
@@ -123,6 +145,8 @@ async def generate_content(
     }
     if bc:
         stub_payload["blend_context"] = bc
+    if doc:
+        stub_payload["daily_oil_context"] = doc
     saved = await save_draft(
         kind=format_key,
         topic=topic,
@@ -131,7 +155,7 @@ async def generate_content(
         team_id=ctx.team_id,
         created_by=ctx.telegram_id,
     )
-    background_tasks.add_task(complete_content_generation, saved.draft_id, topic, goal_key, format_key, bc)
+    background_tasks.add_task(complete_content_generation, saved.draft_id, enriched_topic, goal_key, format_key, bc)
     return await serialize_draft(saved)
 
 
@@ -149,6 +173,8 @@ async def generate_threads_series(
         raise HTTPException(status_code=400, detail="invalid_goal")
 
     bc = _extract_blend_context(payload)
+    doc = _extract_daily_oil_context(payload)
+    enriched_topic = _enrich_topic_with_daily_oil(topic, doc)
     stub_payload: dict = {
         "generation_pending": True,
         "generation_stage": "content",
@@ -159,6 +185,8 @@ async def generate_threads_series(
     }
     if bc:
         stub_payload["blend_context"] = bc
+    if doc:
+        stub_payload["daily_oil_context"] = doc
     saved = await save_draft(
         kind="threads_series",
         topic=topic,
@@ -167,7 +195,7 @@ async def generate_threads_series(
         team_id=ctx.team_id,
         created_by=ctx.telegram_id,
     )
-    background_tasks.add_task(complete_threads_series_generation, saved.draft_id, topic, goal_key, emotion, bc, team_id=ctx.team_id)
+    background_tasks.add_task(complete_threads_series_generation, saved.draft_id, enriched_topic, goal_key, emotion, bc, team_id=ctx.team_id)
     return await serialize_draft(saved)
 
 
@@ -182,6 +210,8 @@ async def generate_reels(
     emotion = payload.emotion.strip().lower() or "calm"
 
     bc = _extract_blend_context(payload)
+    doc = _extract_daily_oil_context(payload)
+    enriched_topic = _enrich_topic_with_daily_oil(topic, doc)
     lightweight = payload.lightweight
     reels_payload: dict = {
         "goal": goal,
@@ -204,6 +234,8 @@ async def generate_reels(
         reels_payload["lightweight"] = True
     if bc:
         reels_payload["blend_context"] = bc
+    if doc:
+        reels_payload["daily_oil_context"] = doc
     saved = await save_draft(
         kind="reels_v2",
         topic=topic,
@@ -213,9 +245,9 @@ async def generate_reels(
         created_by=ctx.telegram_id,
     )
     if lightweight:
-        background_tasks.add_task(complete_reels_lightweight_generation, saved.draft_id, topic, goal, emotion, bc)
+        background_tasks.add_task(complete_reels_lightweight_generation, saved.draft_id, enriched_topic, goal, emotion, bc)
     else:
-        background_tasks.add_task(complete_reels_v2_generation, saved.draft_id, topic, goal, emotion, bc)
+        background_tasks.add_task(complete_reels_v2_generation, saved.draft_id, enriched_topic, goal, emotion, bc)
     draft = await serialize_reels_draft(saved.draft_id)
     if not draft:
         raise HTTPException(status_code=500, detail="reels_not_saved")
@@ -231,6 +263,8 @@ async def generate_carousel(
     topic = _validate_topic(payload)
 
     bc = _extract_blend_context(payload)
+    doc = _extract_daily_oil_context(payload)
+    enriched_topic = _enrich_topic_with_daily_oil(topic, doc)
     carousel_payload: dict = {
         "slides": [],
         "img_prompts": [],
@@ -245,6 +279,8 @@ async def generate_carousel(
     }
     if bc:
         carousel_payload["blend_context"] = bc
+    if doc:
+        carousel_payload["daily_oil_context"] = doc
     layout_style = payload.layout_style if payload.layout_style in ("overlay", "editorial") else "overlay"
     carousel_payload["layout_style"] = layout_style
 
@@ -263,7 +299,7 @@ async def generate_carousel(
         team_id=ctx.team_id,
         created_by=ctx.telegram_id,
     )
-    background_tasks.add_task(complete_carousel_generation, saved.draft_id, topic, bc, layout_style)
+    background_tasks.add_task(complete_carousel_generation, saved.draft_id, enriched_topic, bc, layout_style)
     return await serialize_draft(saved)
 
 
