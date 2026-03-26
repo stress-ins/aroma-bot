@@ -671,6 +671,7 @@ export function createDraftsModule(deps) {
     const meta = p.metadata || {};
     const subformatLabels = { talking_head: "Talking Head", listicle: "Listicle / Top-N", podcast: "Подкаст / Интервью" };
 
+    const _energyRu = { low: "спокойно", medium: "средне", "medium-high": "активно", high: "энергично" };
     const sectionsHtml = sections.length ? sections.map((s, i) => {
       const speakerText = s.speaker_text || s.host_text || "";
       return `
@@ -679,12 +680,13 @@ export function createDraftsModule(deps) {
           <span class="youtube-section-num">${i + 1}</span>
           <span class="youtube-section-type">${escapeHtml(s.label || s.section_type || "")}</span>
           <span class="youtube-section-time">${escapeHtml(s.timecode || "")}</span>
-          ${s.energy ? `<span class="keyword-chip keyword-chip--small">${escapeHtml(s.energy)}</span>` : ""}
+          ${s.energy ? `<span class="keyword-chip keyword-chip--small">${escapeHtml(_energyRu[s.energy] || s.energy)}</span>` : ""}
         </div>
         ${speakerText ? `
           <div class="youtube-speaker-block">
             <div class="youtube-speaker-label">${uiIcon("text", 14)} Текст спикера</div>
             <div class="youtube-speaker-text">${escapeHtml(speakerText)}</div>
+            <button class="youtube-copy-btn" type="button" data-action="youtubeCopySection" data-args='${JSON.stringify([i])}'>${uiIcon("copy", 12)} Скопировать</button>
           </div>
         ` : ""}
         ${s.screen_text ? `<div class="youtube-section-screen">${uiIcon("image", 14)} <strong>На экране:</strong> ${escapeHtml(s.screen_text)}</div>` : ""}
@@ -694,6 +696,8 @@ export function createDraftsModule(deps) {
       </div>`;
     }).join("") : `<div class="empty-state-hint">Секции не сгенерированы</div>`;
 
+    const _cameraRu = { slow_zoom_in: "медл. наезд", slow_zoom_out: "медл. отъезд", pan_left: "панорама влево", pan_right: "панорама вправо", static: "статика", parallax: "параллакс" };
+    const _moodRu = { calm: "спокойно", dynamic: "динамично", educational: "обучение", warm: "тепло", mysterious: "загадочно" };
     const brollHtml = brollMap.length ? `
       <section class="section">
         <div class="section-heading"><h3>${uiIcon("video")}B-Roll карта (${brollMap.length})</h3></div>
@@ -701,8 +705,10 @@ export function createDraftsModule(deps) {
           <div class="youtube-broll-item">
             <span class="youtube-broll-time">${escapeHtml(b.timestamp || "")}</span>
             <span class="youtube-broll-desc">${escapeHtml(b.description || "")}</span>
-            ${b.camera_motion ? `<span class="keyword-chip keyword-chip--small">${escapeHtml(b.camera_motion)}</span>` : ""}
-            ${b.mood ? `<span class="keyword-chip keyword-chip--small">${escapeHtml(b.mood)}</span>` : ""}
+            ${b.camera_motion || b.mood ? `<div class="youtube-broll-chips">
+              ${b.camera_motion ? `<span class="keyword-chip keyword-chip--small">${escapeHtml(_cameraRu[b.camera_motion] || b.camera_motion)}</span>` : ""}
+              ${b.mood ? `<span class="keyword-chip keyword-chip--small">${escapeHtml(_moodRu[b.mood] || b.mood)}</span>` : ""}
+            </div>` : ""}
           </div>
         `).join("")}</div>
       </section>
@@ -761,6 +767,9 @@ export function createDraftsModule(deps) {
               ${p.music_mood ? `<p>${uiIcon("music", 14)} ${escapeHtml(p.music_mood)}</p>` : ""}
             </div>
             <div class="youtube-sections-list">${sectionsHtml}</div>
+            <div class="youtube-copy-all-row">
+              <button class="secondary-button" type="button" data-action="youtubeCopyAllText" data-args='${JSON.stringify([d.draft_id])}'>${uiIcon("copy")}<span>Скопировать весь текст для суфлёра</span></button>
+            </div>
             <div class="youtube-script-actions">
               <label class="youtube-revision-label">
                 <span>Замечания к сценарию</span>
@@ -774,32 +783,6 @@ export function createDraftsModule(deps) {
         ` : ""}
 
         ${brollHtml}
-
-        ${!d.generation_pending ? `
-          <section class="section">
-            <div class="section-heading"><h3>${uiIcon("image")}Обложка</h3></div>
-            ${thumb.result_url ? `<img src="${escapeHtml(thumb.result_url)}" alt="Обложка" class="youtube-thumbnail-preview" loading="lazy">` : `<p class="field-help">Обложка ещё не сгенерирована.</p>`}
-            ${thumb.text_overlay ? `<p class="field-help">Текст: ${escapeHtml(thumb.text_overlay)}</p>` : ""}
-            <div class="youtube-thumb-actions">
-              <label class="youtube-revision-label">
-                <span>Замечания к обложке</span>
-                <textarea id="youtubeThumbNote" class="youtube-revision-input" placeholder="Сделать ярче, поменять текст..."></textarea>
-              </label>
-              <div class="actions-row">
-                <button class="secondary-button" type="button" data-action="youtubeRegenThumbnail" data-args='${JSON.stringify([d.draft_id, "prompt"])}'>${uiIcon("regenerate")}<span>Сгенерировать обложку</span></button>
-              </div>
-            </div>
-          </section>
-        ` : ""}
-
-        ${metaHtml}
-        ${!d.generation_pending && !meta.title ? `
-          <section class="section">
-            <div class="actions-row">
-              <button class="secondary-button" type="button" data-action="youtubeGenMetadata" data-args='${JSON.stringify([d.draft_id])}'>${uiIcon("text")}<span>Сгенерировать описание и таймкоды</span></button>
-            </div>
-          </section>
-        ` : ""}
 
         <section class="section">
           <div class="actions-row">
