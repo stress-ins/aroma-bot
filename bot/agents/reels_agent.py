@@ -213,9 +213,27 @@ def _parse_draft(raw: str) -> ReelsV2Draft:
     # Fallback: regex extraction if concept still empty
     if not concept:
         import re
-        m = re.search(r'CONCEPT:\s*(.+)', raw, re.IGNORECASE)
-        if m:
-            concept = m.group(1).strip().strip("*").strip()
+        # Try various patterns Claude might use
+        for pattern in [
+            r'CONCEPT:\s*(.+)',
+            r'Концепция:\s*(.+)',
+            r'Concept:\s*(.+)',
+            r'[«"]\s*(.{10,80})\s*[»"]',  # first quoted phrase ≥10 chars
+        ]:
+            m = re.search(pattern, raw, re.IGNORECASE)
+            if m:
+                concept = m.group(1).strip().strip("*\"«»").strip()
+                if concept:
+                    logger.info("Concept extracted via fallback pattern %r: %s", pattern, concept[:100])
+                    break
+    # Last resort: use first non-empty meaningful line as concept
+    if not concept:
+        for line in raw.splitlines():
+            candidate = line.strip().lstrip("#").strip().replace("**", "").strip()
+            if len(candidate) >= 15 and not candidate.startswith(("HOOK", "SCENARIO", "CAPTION", "MUSIC")):
+                concept = candidate[:200]
+                logger.info("Concept extracted as first meaningful line: %s", concept[:100])
+                break
 
     return ReelsV2Draft(
         concept=concept,
@@ -254,7 +272,10 @@ def generate_reels_v2_draft_sync(
     emotion: str = "calm",
     blend_context: dict | None = None,
 ) -> ReelsV2Draft:
-    """Generate a v2 reels draft: concept, hook, scenario, caption, music mood."""
+    """Generate a v2 reels draft: concept, hook, scenario, caption, music mood.
+
+    Retries Claude call if parsing yields an empty concept (up to 2 attempts).
+    """
     bs = get_brand_settings_cached()
     forbidden_block = (
         "НЕ использовать следующие фразы:\n"
@@ -275,12 +296,27 @@ def generate_reels_v2_draft_sync(
         emotion_label=emotion_label,
         forbidden_block=forbidden_block,
     )
-    text = call_claude(
-        messages=[{"role": "user", "content": prompt}],
-        max_tokens=1800,
-        context="reels draft",
-    )
-    draft = _parse_draft(text)
+
+    draft = ReelsV2Draft(concept="", hook="", scenario="", caption="", music_mood="")
+
+    for attempt in range(2):
+        text = call_claude(
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=1800,
+            context="reels draft",
+        )
+        logger.info(
+            "Reels draft raw response (attempt %d, %d chars): %s",
+            attempt + 1, len(text), text[:500],
+        )
+        draft = _parse_draft(text)
+        if draft.concept:
+            break
+        logger.warning(
+            "Reels draft parse returned empty concept on attempt %d. "
+            "Raw response preview: %s",
+            attempt + 1, text[:800],
+        )
 
     # Video Coach: attach production guidance (non-blocking, never breaks pipeline)
     try:
