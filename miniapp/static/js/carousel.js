@@ -245,7 +245,7 @@ export function createCarouselModule(deps) {
             <button class="secondary-button" type="button" ${!img?.url ? "disabled" : ""} data-action="previewCarouselSlide" data-args='${JSON.stringify([draftId, index, null])}'>${actionLabel("eye", "Предпросмотр")}</button>
           </div>
           <div class="actions-row prompt-actions actions-grid-two">
-            <button class="secondary-button" type="button" ${!img?.url ? "disabled" : ""} data-action="downloadSlideImage" data-args='${JSON.stringify([img?.url || "", index, null])}'>${actionLabel("download", "Скачать")}</button>
+            ${img?.url ? `<a class="secondary-button" href="${escapeHtml(img.url)}" target="_blank" rel="noopener">${actionLabel("download", "Скачать")}</a>` : `<span class="secondary-button" disabled>${actionLabel("download", "Скачать")}</span>`}
             <button class="secondary-button" type="button" data-action="uploadSlideImage" data-args='${JSON.stringify([draftId, index, null])}'>${actionLabel("upload", "Своя картинка")}</button>
           </div>
           ${prompt ? (() => {
@@ -861,7 +861,7 @@ export function createCarouselModule(deps) {
   }
 
   async function uploadSlideImage(draftId, slideIndex, button) {
-    showUiNotice("Выберите файл...", "info");
+    showUiNotice(`Загрузка для слайда ${slideIndex + 1}...`, "info");
     const input = document.createElement("input");
     input.type = "file";
     input.accept = "image/jpeg,image/png,image/webp";
@@ -902,6 +902,7 @@ export function createCarouselModule(deps) {
   }
 
   async function setDividerStyle(draftId, style) {
+    showUiNotice(`Меняю разделитель на ${style}...`, "info");
     try {
       const data = await fetchJson(`/api/carousel/${draftId}/divider-style`, {
         method: "PATCH",
