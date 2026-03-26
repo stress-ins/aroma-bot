@@ -215,4 +215,12 @@
 .youtube-meta-value { font-size: 15px; font-weight: 600; }
 .youtube-meta-desc { font-size: 12px; white-space: pre-wrap; background: var(--surface); padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--border); max-height: 300px; overflow-y: auto; }
 .youtube-meta-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.youtube-script-actions, .youtube-thumb-actions { margin-top: 12px; }
+.youtube-revision-label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+.youtube-revision-input {
+  width: 100%; min-height: 60px; padding: 10px; border: 1px solid var(--border);
+  border-radius: var(--radius-sm); background: var(--bg); color: var(--text);
+  font-size: 13px; resize: vertical;
+}
+.youtube-revision-input:focus { border-color: var(--brand); outline: none; }
 

@@ -114,52 +114,73 @@ def _parse_youtube_script(raw: str, subformat: str) -> YouTubeScript:
         if not block.startswith("SECTION:"):
             continue
 
-        section_type = label = timecode = speaker_text = screen_text = energy = ""
-        broll_cue = host_text = follow_up = ""
+        section_type = label = timecode = screen_text = energy = ""
+        broll_cue = follow_up = ""
+        speaker_buf: list[str] = []
+        host_buf: list[str] = []
         guest_points: list[str] = []
-        in_guest_points = False
-        in_questions = False
         questions: list[str] = []
+        # Track which multiline field we're accumulating into
+        _accum = ""  # "speaker" | "host" | "guest_points" | "questions" | ""
+
+        # Known single-line field prefixes that stop multiline accumulation
+        _FIELD_PREFIXES = (
+            "SECTION:", "TIMECODE:", "LABEL:", "SPEAKER_TEXT:", "HOST_TEXT:",
+            "SCREEN_TEXT:", "ENERGY:", "FOLLOW_UP:", "GUEST_TALKING_POINTS:",
+            "QUESTIONS:", "[B-ROLL:", "MUSIC_MOOD:", "TITLE:", "GUEST_NAME:",
+            "GUEST_EXPERTISE:",
+        )
 
         for line in block.splitlines():
             clean = _clean_line(line)
 
+            # Check if this line starts a known field
+            is_field = any(clean.startswith(p) for p in _FIELD_PREFIXES)
+
             if clean.startswith("SECTION:"):
                 section_type = clean[len("SECTION:"):].strip()
-                in_guest_points = False
-                in_questions = False
+                _accum = ""
             elif clean.startswith("TIMECODE:"):
                 timecode = clean[len("TIMECODE:"):].strip()
+                _accum = ""
             elif clean.startswith("LABEL:"):
                 label = clean[len("LABEL:"):].strip()
+                _accum = ""
             elif clean.startswith("SPEAKER_TEXT:"):
-                speaker_text = clean[len("SPEAKER_TEXT:"):].strip()
-                in_guest_points = False
+                tail = clean[len("SPEAKER_TEXT:"):].strip()
+                speaker_buf = [tail] if tail else []
+                _accum = "speaker"
             elif clean.startswith("HOST_TEXT:"):
-                host_text = clean[len("HOST_TEXT:"):].strip()
-                in_guest_points = False
+                tail = clean[len("HOST_TEXT:"):].strip()
+                host_buf = [tail] if tail else []
+                _accum = "host"
             elif clean.startswith("SCREEN_TEXT:"):
                 screen_text = clean[len("SCREEN_TEXT:"):].strip()
-                in_guest_points = False
+                _accum = ""
             elif clean.startswith("ENERGY:"):
                 energy = clean[len("ENERGY:"):].strip()
-                in_guest_points = False
+                _accum = ""
             elif clean.startswith("FOLLOW_UP:"):
                 follow_up = clean[len("FOLLOW_UP:"):].strip()
-                in_guest_points = False
+                _accum = ""
             elif clean.startswith("GUEST_TALKING_POINTS:"):
-                in_guest_points = True
-                in_questions = False
+                _accum = "guest_points"
             elif clean.startswith("QUESTIONS:"):
-                in_questions = True
-                in_guest_points = False
+                _accum = "questions"
             elif clean.startswith("[B-ROLL:"):
                 broll_cue = clean.strip("[]").replace("B-ROLL:", "").strip()
-                in_guest_points = False
-            elif in_guest_points and clean.startswith("- "):
+                _accum = ""
+            elif _accum == "guest_points" and clean.startswith("- "):
                 guest_points.append(clean[2:].strip())
-            elif in_questions and clean.startswith("- "):
+            elif _accum == "questions" and clean.startswith("- "):
                 questions.append(clean[2:].strip())
+            elif _accum == "speaker" and not is_field and clean:
+                speaker_buf.append(line.strip())
+            elif _accum == "host" and not is_field and clean:
+                host_buf.append(line.strip())
+
+        speaker_text = "\n".join(speaker_buf).strip()
+        host_text = "\n".join(host_buf).strip()
 
         # For lightning round, combine questions into speaker_text
         if questions and not speaker_text:
