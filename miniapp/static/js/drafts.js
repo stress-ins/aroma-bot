@@ -761,12 +761,45 @@ export function createDraftsModule(deps) {
               ${p.music_mood ? `<p>${uiIcon("music", 14)} ${escapeHtml(p.music_mood)}</p>` : ""}
             </div>
             <div class="youtube-sections-list">${sectionsHtml}</div>
+            <div class="youtube-script-actions">
+              <label class="youtube-revision-label">
+                <span>Замечания к сценарию</span>
+                <textarea id="youtubeRevisionNote" class="youtube-revision-input" placeholder="Что изменить, добавить или убрать..."></textarea>
+              </label>
+              <div class="actions-row">
+                <button class="secondary-button" type="button" data-action="youtubeRegenScript" data-args='${JSON.stringify([d.draft_id])}'>${uiIcon("regenerate")}<span>Перегенерировать сценарий</span></button>
+              </div>
+            </div>
           </section>
         ` : ""}
 
         ${brollHtml}
-        ${thumbHtml}
+
+        ${!d.generation_pending ? `
+          <section class="section">
+            <div class="section-heading"><h3>${uiIcon("image")}Обложка</h3></div>
+            ${thumb.result_url ? `<img src="${escapeHtml(thumb.result_url)}" alt="Обложка" class="youtube-thumbnail-preview" loading="lazy">` : `<p class="field-help">Обложка ещё не сгенерирована.</p>`}
+            ${thumb.text_overlay ? `<p class="field-help">Текст: ${escapeHtml(thumb.text_overlay)}</p>` : ""}
+            <div class="youtube-thumb-actions">
+              <label class="youtube-revision-label">
+                <span>Замечания к обложке</span>
+                <textarea id="youtubeThumbNote" class="youtube-revision-input" placeholder="Сделать ярче, поменять текст..."></textarea>
+              </label>
+              <div class="actions-row">
+                <button class="secondary-button" type="button" data-action="youtubeRegenThumbnail" data-args='${JSON.stringify([d.draft_id, "prompt"])}'>${uiIcon("regenerate")}<span>Сгенерировать обложку</span></button>
+              </div>
+            </div>
+          </section>
+        ` : ""}
+
         ${metaHtml}
+        ${!d.generation_pending && !meta.title ? `
+          <section class="section">
+            <div class="actions-row">
+              <button class="secondary-button" type="button" data-action="youtubeGenMetadata" data-args='${JSON.stringify([d.draft_id])}'>${uiIcon("text")}<span>Сгенерировать описание и таймкоды</span></button>
+            </div>
+          </section>
+        ` : ""}
 
         <section class="section">
           <div class="actions-row">
