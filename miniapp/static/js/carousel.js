@@ -101,7 +101,7 @@ export function createCarouselModule(deps) {
                   <span class="meta">${escapeHtml(formatPlanDate(version.generated_at) || "сейчас")}</span>
                 </div>
                 <div class="actions-row slide-version-actions actions-grid-two">
-                  ${version.url ? `<button class="secondary-button" type="button" data-action="downloadSlideImage" data-args='${JSON.stringify([version.url, slideIndex])}'>${actionLabel("download", "Скачать")}</button>` : ""}
+                  ${version.url ? `<button class="secondary-button" type="button" data-action="downloadSlideImage" data-args='${JSON.stringify([version.url, slideIndex, null])}'>${actionLabel("download", "Скачать")}</button>` : ""}
                   ${isCurrent ? "" : `<button class="secondary-button" type="button" data-action="selectCarouselSlideVersion" data-args='${JSON.stringify([draftId, slideIndex, versionIndex, null])}'>${actionLabel("approve", "Сделать текущей")}</button>`}
                   ${items.length > 1 ? `<button class="secondary-button" type="button" data-action="deleteCarouselSlideVersion" data-args='${JSON.stringify([draftId, slideIndex, versionIndex, null])}'>${actionLabel("trash", "Удалить")}</button>` : ""}
                 </div>
@@ -245,7 +245,7 @@ export function createCarouselModule(deps) {
             <button class="secondary-button" type="button" ${!img?.url ? "disabled" : ""} data-action="previewCarouselSlide" data-args='${JSON.stringify([draftId, index, null])}'>${actionLabel("eye", "Предпросмотр")}</button>
           </div>
           <div class="actions-row prompt-actions actions-grid-two">
-            <button class="secondary-button" type="button" ${!img?.url ? "disabled" : ""} data-action="downloadSlideImage" data-args='${JSON.stringify([img?.url || "", index])}'>${actionLabel("download", "Скачать")}</button>
+            <button class="secondary-button" type="button" ${!img?.url ? "disabled" : ""} data-action="downloadSlideImage" data-args='${JSON.stringify([img?.url || "", index, null])}'>${actionLabel("download", "Скачать")}</button>
             <button class="secondary-button" type="button" data-action="uploadSlideImage" data-args='${JSON.stringify([draftId, index, null])}'>${actionLabel("upload", "Своя картинка")}</button>
           </div>
           ${prompt ? (() => {
@@ -834,20 +834,34 @@ export function createCarouselModule(deps) {
     }
   }
 
-  async function downloadSlideImage(url, slideIndex) {
-    if (!url) return;
-    // Same approach as PPTX download — openLink with full URL
-    const fullUrl = `${window.location.origin}${url}`;
-    const tg = window.Telegram?.WebApp;
-    if (tg?.openLink) {
-      tg.openLink(fullUrl);
-    } else {
-      window.open(fullUrl, "_blank", "noopener,noreferrer");
+  async function downloadSlideImage(url, slideIndex, button) {
+    if (!url) { showUiNotice("Картинка ещё не готова", "error"); return; }
+    if (button instanceof HTMLElement) button.textContent = "Скачиваю...";
+    try {
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const blob = await resp.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = `slide_${(slideIndex || 0) + 1}.png`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
+      showUiNotice("Скачано", "success");
+    } catch (err) {
+      // Fallback: open externally
+      const fullUrl = `${window.location.origin}${url}`;
+      const tg = window.Telegram?.WebApp;
+      if (tg?.openLink) tg.openLink(fullUrl);
+      else window.open(fullUrl, "_blank");
     }
+    if (button instanceof HTMLElement) button.textContent = "Скачать";
   }
 
   async function uploadSlideImage(draftId, slideIndex, button) {
-    // Same pattern as importCarouselPptx — programmatic input.click() inside click handler
+    showUiNotice("Выберите файл...", "info");
     const input = document.createElement("input");
     input.type = "file";
     input.accept = "image/jpeg,image/png,image/webp";
@@ -858,6 +872,7 @@ export function createCarouselModule(deps) {
         showUiNotice("Файл слишком большой (макс. 10 МБ)", "error");
         return;
       }
+      showUiNotice("Загружаю картинку...", "info");
       if (button instanceof HTMLElement) button.textContent = "Загружаю...";
       const formData = new FormData();
       formData.append("file", file);
