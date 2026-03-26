@@ -170,6 +170,37 @@ def _draw_rich_line(
         cx += int(ww)
 
 
+def _draw_pike(draw, x_tip, cy, direction="left", length=100, height=8, color=(255, 255, 255)):
+    """Draw a tapered pike/spear shape with rounded inner end.
+
+    direction='left'  — tip points left, rounded end on right (left pike)
+    direction='right' — tip points right, rounded end on left (right pike)
+    """
+    half_h = height // 2
+    r = 4  # corner radius of the flat/rounded end
+
+    if direction == "left":
+        flat_x = x_tip + length
+        draw.polygon([
+            (x_tip, cy),
+            (flat_x - r, cy - half_h),
+            (flat_x, cy - half_h),
+            (flat_x, cy + half_h),
+            (flat_x - r, cy + half_h),
+        ], fill=color)
+        draw.ellipse((flat_x - r * 2, cy - half_h, flat_x, cy + half_h), fill=color)
+    else:  # right
+        flat_x = x_tip - length
+        draw.polygon([
+            (x_tip, cy),
+            (flat_x + r, cy - half_h),
+            (flat_x, cy - half_h),
+            (flat_x, cy + half_h),
+            (flat_x + r, cy + half_h),
+        ], fill=color)
+        draw.ellipse((flat_x, cy - half_h, flat_x + r * 2, cy + half_h), fill=color)
+
+
 def _draw_avatar_placeholder(draw, x, y, diameter, username, accent_color):
     """Draw accent-colored circle with first letter of username."""
     draw.ellipse((x, y, x + diameter, y + diameter), fill=tuple(accent_color))
@@ -240,19 +271,18 @@ def render_editorial_png(
 
     PAD = 48
 
-    # ── Author Divider: [line] [avatar] username [line] ──
+    # ── Author Divider: [◀▬▬] [avatar] username [▬▬▶] ──
     bar_y = photo_h + 18 if img_bytes else 40
 
     if username:
         _AD = {
-            "line_width": 70, "line_thickness": 2,
-            "line_color": (255, 255, 255, 230),
-            "avatar_diameter": 30, "gap": 8,
+            "pike_length": 100, "pike_height": 8, "pike_color": (255, 255, 255),
+            "avatar_diameter": 30, "gap_pike_avatar": 6,
             "font_size": 13, "font_color": (255, 255, 255),
         }
-        ad_avatar_d = _AD["avatar_diameter"]
-        ad_line_w = _AD["line_width"]
-        ad_gap = _AD["gap"]
+        ad_d = _AD["avatar_diameter"]
+        pike_len = _AD["pike_length"]
+        gap_pa = _AD["gap_pike_avatar"]
         ufont = _load_font(_AD["font_size"])
 
         try:
@@ -261,41 +291,45 @@ def render_editorial_png(
             bbox = draw.textbbox((0, 0), username, font=ufont)
             uname_w = bbox[2] - bbox[0]
 
-        total_bar_w = ad_line_w + ad_gap + ad_avatar_d + ad_gap + uname_w + ad_gap + ad_line_w
+        # Layout: [pike] [gap] [avatar] [gap] [username] [gap] [pike]
+        gap_name = 6
+        total_w = pike_len + gap_pa + ad_d + gap_name + uname_w + gap_pa + pike_len
         cx = w // 2
-        left = cx - total_bar_w // 2
-        center_y = bar_y + ad_avatar_d // 2
+        center_y = bar_y + ad_d // 2
 
-        # Left line
-        draw.line([(left, center_y), (left + ad_line_w, center_y)],
-                  fill=_AD["line_color"], width=_AD["line_thickness"])
-        left += ad_line_w + ad_gap
+        # Compute positions from center
+        left_edge = cx - total_w // 2
 
-        # Avatar (circular)
-        av_x, av_y = left, bar_y
+        # Left pike — tip points left (outward)
+        _draw_pike(draw, x_tip=left_edge, cy=center_y, direction="left",
+                   length=pike_len, height=_AD["pike_height"], color=_AD["pike_color"])
+
+        # Avatar
+        av_x = left_edge + pike_len + gap_pa
+        av_y = bar_y
         if avatar_bytes:
             try:
                 av = Image.open(io.BytesIO(avatar_bytes)).convert("RGB")
-                av = av.resize((ad_avatar_d, ad_avatar_d), Image.LANCZOS)
-                mask = Image.new("L", (ad_avatar_d, ad_avatar_d), 0)
-                ImageDraw.Draw(mask).ellipse((0, 0, ad_avatar_d, ad_avatar_d), fill=255)
+                av = av.resize((ad_d, ad_d), Image.LANCZOS)
+                mask = Image.new("L", (ad_d, ad_d), 0)
+                ImageDraw.Draw(mask).ellipse((0, 0, ad_d, ad_d), fill=255)
                 canvas.paste(av, (av_x, av_y), mask)
             except Exception:
-                _draw_avatar_placeholder(draw, av_x, av_y, ad_avatar_d, username, accent_color)
+                _draw_avatar_placeholder(draw, av_x, av_y, ad_d, username, accent_color)
         else:
-            _draw_avatar_placeholder(draw, av_x, av_y, ad_avatar_d, username, accent_color)
-        left += ad_avatar_d + ad_gap
+            _draw_avatar_placeholder(draw, av_x, av_y, ad_d, username, accent_color)
 
         # Username
-        text_y_offset = center_y - _AD["font_size"] // 2
-        draw.text((left, text_y_offset), username, font=ufont, fill=_AD["font_color"])
-        left += uname_w + ad_gap
+        name_x = av_x + ad_d + gap_name
+        name_y = center_y - _AD["font_size"] // 2
+        draw.text((name_x, name_y), username, font=ufont, fill=_AD["font_color"])
 
-        # Right line
-        draw.line([(left, center_y), (left + ad_line_w, center_y)],
-                  fill=_AD["line_color"], width=_AD["line_thickness"])
+        # Right pike — tip points right (outward)
+        right_pike_tip = name_x + uname_w + gap_pa + pike_len
+        _draw_pike(draw, x_tip=right_pike_tip, cy=center_y, direction="right",
+                   length=pike_len, height=_AD["pike_height"], color=_AD["pike_color"])
 
-        bar_y += ad_avatar_d + 20
+        bar_y += ad_d + 20
 
     # ── Parse and render text ──
     # Uppercase transformation for headlines (not bullet body)
@@ -399,12 +433,13 @@ def render_editorial_png(
                             (255, 255, 255), accent_color, "center", PAD, usable_w)
             text_y += line_h
 
-    # ── Swipe CTA: СВАЙПАЙ ————→ ──
+    # ── Swipe CTA: СВАЙПАЙ ————▶ (filled triangle) ──
     if is_hook:
         _SC = {
             "text": "СВАЙПАЙ", "font_size": 12, "font_color": (255, 255, 255),
-            "arrow_length": 44, "arrow_head_size": 7,
-            "line_thickness": 2, "gap_text_arrow": 10, "margin_bottom": 28,
+            "arrow_line_length": 38, "arrow_line_thickness": 2,
+            "arrow_triangle_width": 20, "arrow_triangle_height": 10,
+            "gap_text_arrow": 10, "margin_bottom": 28,
         }
         cta_font = _load_font(_SC["font_size"])
         cta_text = _SC["text"]
@@ -412,27 +447,32 @@ def render_editorial_png(
             cta_tw = int(draw.textlength(cta_text, font=cta_font))
         except AttributeError:
             cta_tw = _SC["font_size"] * len(cta_text)
-        arrow_total = _SC["arrow_length"]
+
+        arrow_total = _SC["arrow_line_length"] + _SC["arrow_triangle_width"]
         total_cta_w = cta_tw + _SC["gap_text_arrow"] + arrow_total
         cta_x = (w - total_cta_w) // 2
         cta_y = h - _SC["margin_bottom"]
+        arrow_y = cta_y - _SC["font_size"] // 2
 
         # Text
         draw.text((cta_x, cta_y - _SC["font_size"]), cta_text,
                   font=cta_font, fill=_SC["font_color"])
-        ax = cta_x + cta_tw + _SC["gap_text_arrow"]
-        arrow_y = cta_y - _SC["font_size"] // 2
 
-        # Arrow line
-        draw.line([(ax, arrow_y), (ax + _SC["arrow_length"], arrow_y)],
-                  fill=_SC["font_color"], width=_SC["line_thickness"])
-        # Arrow head
-        tip_x = ax + _SC["arrow_length"]
-        ah = _SC["arrow_head_size"]
-        draw.line([(tip_x - ah - 1, arrow_y - ah + 2), (tip_x, arrow_y)],
-                  fill=_SC["font_color"], width=_SC["line_thickness"])
-        draw.line([(tip_x - ah - 1, arrow_y + ah - 2), (tip_x, arrow_y)],
-                  fill=_SC["font_color"], width=_SC["line_thickness"])
+        # Arrow: thin line + filled triangle
+        ax = cta_x + cta_tw + _SC["gap_text_arrow"]
+        line_end = ax + _SC["arrow_line_length"]
+        draw.line([(ax, arrow_y), (line_end, arrow_y)],
+                  fill=_SC["font_color"], width=_SC["arrow_line_thickness"])
+
+        # Filled triangle pike (slight overlap with line)
+        tri_x = line_end - 2
+        tri_w = _SC["arrow_triangle_width"]
+        tri_hh = _SC["arrow_triangle_height"] // 2
+        draw.polygon([
+            (tri_x, arrow_y - tri_hh),
+            (tri_x + tri_w, arrow_y),
+            (tri_x, arrow_y + tri_hh),
+        ], fill=_SC["font_color"])
 
     buf = io.BytesIO()
     canvas.save(buf, format="PNG", quality=92)
