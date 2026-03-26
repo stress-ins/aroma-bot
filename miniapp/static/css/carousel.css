@@ -41,6 +41,9 @@
 /* ── Upload slide image label ────────────────────────────────────────── */
 .upload-slide-label { cursor: pointer; position: relative; }
 
+/* ── Download link styled as button ──────────────────────────────────── */
+a.secondary-button { text-decoration: none; }
+
 /* ── Carousel slide image container (4:5 aspect ratio) ───────────────────── */
 .carousel-slide-image-wrap {
   aspect-ratio: 4 / 5;
