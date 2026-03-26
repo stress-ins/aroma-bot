@@ -17,8 +17,8 @@ from config import settings
 logger = logging.getLogger(__name__)
 
 CANVA_API_BASE = "https://api.canva.com/rest/v1"
-POLL_INTERVAL = 2
-POLL_TIMEOUT = 120
+POLL_INTERVAL = 3
+POLL_TIMEOUT = 600  # 10 minutes — large carousels can take a while
 
 UPLOAD_TIMEOUT = httpx.Timeout(connect=10.0, read=30.0, write=60.0, pool=10.0)
 POLL_TIMEOUT_CFG = httpx.Timeout(connect=10.0, read=15.0, write=10.0, pool=10.0)
@@ -206,7 +206,7 @@ async def _poll_job(access_token: str, url: str) -> dict[str, Any]:
     while True:
         elapsed = time.monotonic() - start
         if elapsed > POLL_TIMEOUT:
-            raise CanvaAPIError(f"Canva job timed out after {POLL_TIMEOUT}s")
+            raise CanvaAPIError(f"Загрузка в Canva не завершилась за {POLL_TIMEOUT // 60} мин. Попробуйте ещё раз.")
 
         await asyncio.sleep(POLL_INTERVAL)
         async with httpx.AsyncClient(timeout=POLL_TIMEOUT_CFG) as client:

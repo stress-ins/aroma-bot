@@ -125,7 +125,7 @@ async def test_poll_job_timeout():
         ctx.__aenter__ = AsyncMock(return_value=client)
         ctx.__aexit__ = AsyncMock(return_value=False)
         mock_httpx.AsyncClient.return_value = ctx
-        with pytest.raises(CanvaAPIError, match="timed out"):
+        with pytest.raises(CanvaAPIError, match="не завершилась"):
             await _poll_job("token", "https://api.canva.com/rest/v1/imports/j1")
 
     await client.aclose()
