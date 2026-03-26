@@ -671,7 +671,9 @@ export function createDraftsModule(deps) {
     const meta = p.metadata || {};
     const subformatLabels = { talking_head: "Talking Head", listicle: "Listicle / Top-N", podcast: "Подкаст / Интервью" };
 
-    const sectionsHtml = sections.length ? sections.map((s, i) => `
+    const sectionsHtml = sections.length ? sections.map((s, i) => {
+      const speakerText = s.speaker_text || s.host_text || "";
+      return `
       <div class="youtube-section-card">
         <div class="youtube-section-header">
           <span class="youtube-section-num">${i + 1}</span>
@@ -679,12 +681,18 @@ export function createDraftsModule(deps) {
           <span class="youtube-section-time">${escapeHtml(s.timecode || "")}</span>
           ${s.energy ? `<span class="keyword-chip keyword-chip--small">${escapeHtml(s.energy)}</span>` : ""}
         </div>
-        <div class="youtube-section-text">${escapeHtml(s.speaker_text || s.host_text || "").substring(0, 300)}${(s.speaker_text || s.host_text || "").length > 300 ? "…" : ""}</div>
-        ${s.screen_text ? `<div class="youtube-section-screen"><strong>Экран:</strong> ${escapeHtml(s.screen_text)}</div>` : ""}
-        ${s.broll_cue ? `<div class="youtube-section-broll">${uiIcon("video", 14)} B-roll: ${escapeHtml(s.broll_cue)}</div>` : ""}
+        ${speakerText ? `
+          <div class="youtube-speaker-block">
+            <div class="youtube-speaker-label">${uiIcon("text", 14)} Текст спикера</div>
+            <div class="youtube-speaker-text">${escapeHtml(speakerText)}</div>
+          </div>
+        ` : ""}
+        ${s.screen_text ? `<div class="youtube-section-screen">${uiIcon("image", 14)} <strong>На экране:</strong> ${escapeHtml(s.screen_text)}</div>` : ""}
+        ${s.broll_cue ? `<div class="youtube-section-broll">${uiIcon("video", 14)} <strong>B-roll:</strong> ${escapeHtml(s.broll_cue)}</div>` : ""}
+        ${s.follow_up ? `<div class="youtube-section-followup">${uiIcon("chat", 14)} <strong>Follow-up:</strong> ${escapeHtml(s.follow_up)}</div>` : ""}
         ${s.guest_talking_points?.length ? `<div class="youtube-section-points"><strong>Тезисы гостя:</strong><ul>${s.guest_talking_points.map(tp => `<li>${escapeHtml(tp)}</li>`).join("")}</ul></div>` : ""}
-      </div>
-    `).join("") : `<div class="empty-state-hint">Секции не сгенерированы</div>`;
+      </div>`;
+    }).join("") : `<div class="empty-state-hint">Секции не сгенерированы</div>`;
 
     const brollHtml = brollMap.length ? `
       <section class="section">
@@ -693,7 +701,8 @@ export function createDraftsModule(deps) {
           <div class="youtube-broll-item">
             <span class="youtube-broll-time">${escapeHtml(b.timestamp || "")}</span>
             <span class="youtube-broll-desc">${escapeHtml(b.description || "")}</span>
-            ${b.search_keywords?.length ? `<div class="youtube-broll-kw">${b.search_keywords.map(k => `<span class="keyword-chip keyword-chip--small">${escapeHtml(k)}</span>`).join(" ")}</div>` : ""}
+            ${b.camera_motion ? `<span class="keyword-chip keyword-chip--small">${escapeHtml(b.camera_motion)}</span>` : ""}
+            ${b.mood ? `<span class="keyword-chip keyword-chip--small">${escapeHtml(b.mood)}</span>` : ""}
           </div>
         `).join("")}</div>
       </section>
