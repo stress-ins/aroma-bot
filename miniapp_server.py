@@ -5,6 +5,7 @@ import fcntl
 import hashlib
 import logging
 import os
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -229,10 +230,12 @@ async def index():
     html = (MINIAPP_DIR / "index.html").read_text(encoding="utf-8")
 
     # Replace Vite asset placeholders with manifest-resolved paths
-    # Add cache-buster to prevent Telegram WebApp caching stale bundles
-    cache_buster = f"?v={int(time.time())}"
-    html = html.replace("__VITE_JS__", vite["js"] + cache_buster)
-    html = html.replace("__VITE_CSS__", vite["css"] + cache_buster if vite["css"] else "")
+    # Add cache-buster only for production builds (hashed filenames already bust,
+    # but Telegram WebApp aggressively caches the HTML that references them)
+    is_prod_build = "static-dist" in vite["js"]
+    cb = f"?v={int(time.time())}" if is_prod_build else ""
+    html = html.replace("__VITE_JS__", vite["js"] + cb)
+    html = html.replace("__VITE_CSS__", (vite["css"] + cb) if vite["css"] else "")
 
     if os.getenv("AROMA_BYPASS_AUTH") == "1":
         html = html.replace(

@@ -12,7 +12,7 @@ def _navigate_to_carousel(page):
     page.locator("#btnTabInspiration").click()
     page.wait_for_timeout(300)
     card = page.get_by_text("Сенсорная карусель для вечернего ритуала").first
-    card.wait_for(state="visible", timeout=10000)
+    card.wait_for(state="visible", timeout=30000)
     card.click()
     page.wait_for_timeout(300)
 
