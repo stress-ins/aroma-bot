@@ -710,18 +710,27 @@ export function createCoreModule(deps) {
       method: "POST",
       body: JSON.stringify(payload),
     });
-    const draft = button instanceof HTMLElement
+    const hasButton = button instanceof HTMLElement;
+    const draft = hasButton
       ? await withButtonFeedback(button, "Сохраняю...", request, "Готово")
       : await request();
-    if (state.tab === "reels" || draft.kind === "reels") {
-      mergeReelsIntoState(draft);
+    // Delay re-render so user sees the "Готово" feedback on the button
+    const rerender = () => {
+      if (state.tab === "reels" || draft.kind === "reels") {
+        mergeReelsIntoState(draft);
+        callbacks.renderDraftList();
+        callbacks.renderReelsDetail(draft);
+        return;
+      }
+      mergeDraftIntoState(draft);
+      callbacks.renderDraftDetail(draft);
       callbacks.renderDraftList();
-      callbacks.renderReelsDetail(draft);
-      return;
+    };
+    if (hasButton) {
+      window.setTimeout(rerender, 800);
+    } else {
+      rerender();
     }
-    mergeDraftIntoState(draft);
-    callbacks.renderDraftDetail(draft);
-    callbacks.renderDraftList();
   }
 
   function aromaSection(title, content) {
