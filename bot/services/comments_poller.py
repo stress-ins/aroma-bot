@@ -9,7 +9,7 @@ import logging
 from typing import Any
 
 from bot.services.drafts_store import list_recent_drafts
-from bot.services.mentions_store import save_mention, find_mention_by_external_id
+from bot.services.mentions_store import save_mention, find_mention_by_external_id, get_own_usernames
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +21,9 @@ async def poll_published_comments(team_id: str | None = None) -> tuple[int, int]
     """
     drafts = await list_recent_drafts(limit=100, newest_first=True, team_id=team_id)
     published = [d for d in drafts if d.status == "published" and d.kind == "reels_v2"]
+
+    # Gather own usernames to filter out own comments
+    own_usernames = await get_own_usernames(team_id)
 
     total_polled = 0
     newly_saved = 0
@@ -48,12 +51,14 @@ async def poll_published_comments(team_id: str | None = None) -> tuple[int, int]
                         post_id=external_id,
                         draft_topic=draft.topic or "",
                         team_id=draft.team_id,
+                        own_usernames=own_usernames,
                     )
                 elif platform == "youtube":
                     polled, saved = await _poll_youtube_comments(
                         video_id=external_id,
                         draft_topic=draft.topic or "",
                         team_id=draft.team_id,
+                        own_usernames=own_usernames,
                     )
                 else:
                     continue
@@ -74,12 +79,18 @@ async def poll_published_comments(team_id: str | None = None) -> tuple[int, int]
 
 async def _poll_instagram_comments(
     post_id: str, draft_topic: str, team_id: str | None,
+    own_usernames: set[str] | None = None,
 ) -> tuple[int, int]:
     from bot.services.meta_publisher import fetch_instagram_comments
 
     comments = await fetch_instagram_comments(post_id)
     saved = 0
     for c in comments:
+        # Skip own comments
+        author = (c.get("username") or "").lower().lstrip("@")
+        if own_usernames and author and author in own_usernames:
+            continue
+
         comment_id = c.get("id", "")
         dedup_id = f"ig:{post_id}:{comment_id}"
 
@@ -105,12 +116,18 @@ async def _poll_instagram_comments(
 
 async def _poll_youtube_comments(
     video_id: str, draft_topic: str, team_id: str | None,
+    own_usernames: set[str] | None = None,
 ) -> tuple[int, int]:
     from bot.services.youtube_publisher import fetch_youtube_comments
 
     comments = await fetch_youtube_comments(video_id)
     saved = 0
     for c in comments:
+        # Skip own comments
+        author = (c.get("author") or "").lower().lstrip("@")
+        if own_usernames and author and author in own_usernames:
+            continue
+
         comment_id = c.get("id", "")
         dedup_id = f"yt:{video_id}:{comment_id}"
 

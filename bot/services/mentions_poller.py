@@ -11,6 +11,7 @@ from datetime import datetime, timedelta, timezone
 
 from bot.services.mentions_store import (
     find_mention_by_external_id,
+    get_own_usernames,
     get_token,
     get_token_for_team,
     list_expiring_tokens,
@@ -34,22 +35,8 @@ async def poll_threads_mentions(access_token: str, team_id: str | None = None) -
     loop = asyncio.get_event_loop()
     client = ThreadsClient(access_token=access_token)
 
-    # Determine own username to filter out own posts
-    own_usernames: set[str] = set()
-    if settings.threads_username:
-        own_usernames.add(settings.threads_username.lower().lstrip("@"))
-    # Also check team brand settings for monitored accounts
-    if team_id:
-        try:
-            from bot.services.brand_settings_store import get_brand_settings
-            brand = await get_brand_settings(team_id)
-            for acc in (brand.threads_accounts or []):
-                uname = (acc.get("username") or "").lower().lstrip("@")
-                if uname:
-                    own_usernames.add(uname)
-        except Exception:
-            logger.warning("poll_threads_mentions: suppressed exception", exc_info=True)
-            pass
+    # Determine own usernames to filter out own posts
+    own_usernames = await get_own_usernames(team_id)
 
     # Only fetch external mentions (not own posts)
     raw_items: list[dict] = []
