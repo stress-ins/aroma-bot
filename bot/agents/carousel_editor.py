@@ -187,7 +187,13 @@ def _parse_slides(text: str, count: int | None = None) -> list[str]:
                 current = i
                 slots[i] = []
                 plen = len(prefix_spaced) if stripped.upper().startswith(prefix_spaced.upper()) else len(prefix)
-                after = stripped[plen:].strip().lstrip("*_").rstrip("*_").strip()
+                after = stripped[plen:].strip()
+                # Strip decorative wrapping (e.g. SLIDE1: ***text***) but preserve
+                # inline **bold** markers used for accent highlights.
+                if after.startswith("***") and after.endswith("***"):
+                    after = after[3:-3].strip()
+                elif after.startswith("**") and after.endswith("**") and "**" not in after[2:-2]:
+                    after = after[2:-2].strip()
                 if after:
                     slots[i].append(after)
                 matched = True
