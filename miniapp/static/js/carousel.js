@@ -101,6 +101,7 @@ export function createCarouselModule(deps) {
                   <span class="meta">${escapeHtml(formatPlanDate(version.generated_at) || "сейчас")}</span>
                 </div>
                 <div class="actions-row slide-version-actions actions-grid-two">
+                  ${version.url ? `<a class="secondary-button" href="${escapeHtml(version.url)}" download="slide_${slideIndex + 1}_v${versionIndex + 1}.png">${actionLabel("download", "Скачать")}</a>` : ""}
                   ${isCurrent ? "" : `<button class="secondary-button" type="button" data-action="selectCarouselSlideVersion" data-args='${JSON.stringify([draftId, slideIndex, versionIndex, null])}'>${actionLabel("approve", "Сделать текущей")}</button>`}
                   ${items.length > 1 ? `<button class="secondary-button" type="button" data-action="deleteCarouselSlideVersion" data-args='${JSON.stringify([draftId, slideIndex, versionIndex, null])}'>${actionLabel("trash", "Удалить")}</button>` : ""}
                 </div>
@@ -242,6 +243,13 @@ export function createCarouselModule(deps) {
           <div class="actions-row prompt-actions actions-grid-two">
             <button class="primary-button" type="button" aria-label="Сохранить текст слайда" data-action="saveCarouselSlideText" data-args='${JSON.stringify([draftId, index, null])}'>${actionLabel("text", "Сохранить подпись")}</button>
             <button class="secondary-button" type="button" ${!img?.url ? "disabled" : ""} data-action="previewCarouselSlide" data-args='${JSON.stringify([draftId, index, null])}'>${actionLabel("eye", "Предпросмотр")}</button>
+          </div>
+          <div class="actions-row prompt-actions actions-grid-two">
+            <a class="secondary-button" ${img?.url ? `href="${escapeHtml(img.url)}" download="slide_${index + 1}.png"` : ""} ${!img?.url ? "disabled" : ""}>${actionLabel("download", "Скачать")}</a>
+            <label class="secondary-button upload-slide-label" ${!img?.url && !prompt ? "disabled" : ""}>
+              ${actionLabel("upload", "Своя картинка")}
+              <input type="file" accept="image/jpeg,image/png,image/webp" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden" data-on-change="uploadSlideImage" data-args='${JSON.stringify([draftId, index])}' />
+            </label>
           </div>
           ${prompt ? (() => {
               const discOpen = isPromptDisclosureOpen(`carousel:${draftId}:${index}`, !img?.url);
@@ -829,6 +837,34 @@ export function createCarouselModule(deps) {
     }
   }
 
+  async function uploadSlideImage(draftId, slideIndex, _value, inputEl) {
+    const file = inputEl?.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      showUiNotice("Файл слишком большой (макс. 10 МБ)", "error");
+      return;
+    }
+    const formData = new FormData();
+    formData.append("file", file);
+    try {
+      const headers = {};
+      const initData = window.Telegram?.WebApp?.initData;
+      if (initData) headers["X-Telegram-Init-Data"] = initData;
+      const resp = await fetch(`/api/carousel/${draftId}/slides/${slideIndex}/upload`, {
+        method: "POST",
+        headers,
+        body: formData,
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+      mergeDraftIntoState(data);
+      if (isCurrentDraftDetail(draftId)) renderDraftDetail(state.selected);
+      showUiNotice("Картинка загружена", "success");
+    } catch (err) {
+      showRequestError("Не удалось загрузить картинку", err);
+    }
+  }
+
   async function setDividerStyle(draftId, style) {
     try {
       const data = await fetchJson(`/api/carousel/${draftId}/divider-style`, {
@@ -853,6 +889,7 @@ export function createCarouselModule(deps) {
     clearAllCarouselOperations,
     renderSlides,
     setSlidesViewMode,
+    uploadSlideImage,
     setDividerStyle,
     saveCarouselSlideText,
     handleCarouselSlideNoteInput,

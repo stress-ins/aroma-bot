@@ -31,6 +31,7 @@ export function registerWindowBridge(deps) {
     carouselSwiperGoTo,
     setSlidesViewMode,
     setDividerStyle,
+    uploadSlideImage,
     downloadCarouselPptx,
     importCarouselPptx,
     exportToCanva,
@@ -322,6 +323,7 @@ export function registerWindowBridge(deps) {
   window.carouselSwiperGoTo = carouselSwiperGoTo;
   window.setSlidesViewMode = setSlidesViewMode;
   window.setDividerStyle = setDividerStyle;
+  window.uploadSlideImage = uploadSlideImage;
   window.downloadCarouselPptx = downloadCarouselPptx;
   window.importCarouselPptx = importCarouselPptx;
   window.exportToCanva = exportToCanva;
