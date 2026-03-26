@@ -246,10 +246,7 @@ export function createCarouselModule(deps) {
           </div>
           <div class="actions-row prompt-actions actions-grid-two">
             <button class="secondary-button" type="button" ${!img?.url ? "disabled" : ""} data-action="downloadSlideImage" data-args='${JSON.stringify([img?.url || "", index])}'>${actionLabel("download", "Скачать")}</button>
-            <label class="secondary-button upload-slide-label" ${!img?.url && !prompt ? "disabled" : ""}>
-              ${actionLabel("upload", "Своя картинка")}
-              <input type="file" accept="image/jpeg,image/png,image/webp" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden" data-on-change="uploadSlideImage" data-args='${JSON.stringify([draftId, index])}' />
-            </label>
+            <button class="secondary-button" type="button" data-action="uploadSlideImage" data-args='${JSON.stringify([draftId, index, null])}'>${actionLabel("upload", "Своя картинка")}</button>
           </div>
           ${prompt ? (() => {
               const discOpen = isPromptDisclosureOpen(`carousel:${draftId}:${index}`, !img?.url);
@@ -839,64 +836,54 @@ export function createCarouselModule(deps) {
 
   async function downloadSlideImage(url, slideIndex) {
     if (!url) return;
-    showUiNotice("Скачиваю...", "info");
-    try {
-      // Fetch as blob → trigger browser download
-      const resp = await fetch(url);
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      const blob = await resp.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = blobUrl;
-      a.download = `slide_${(slideIndex || 0) + 1}.png`;
-      a.style.display = "none";
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => { URL.revokeObjectURL(blobUrl); a.remove(); }, 1000);
-      showUiNotice("Скачано", "success");
-    } catch (err) {
-      // Fallback: open in browser
-      const fullUrl = new URL(url, window.location.origin).href;
-      if (window.Telegram?.WebApp?.openLink) {
-        window.Telegram.WebApp.openLink(fullUrl);
-      } else {
-        window.open(fullUrl, "_blank");
-      }
+    // Same approach as PPTX download — openLink with full URL
+    const fullUrl = `${window.location.origin}${url}`;
+    const tg = window.Telegram?.WebApp;
+    if (tg?.openLink) {
+      tg.openLink(fullUrl);
+    } else {
+      window.open(fullUrl, "_blank", "noopener,noreferrer");
     }
   }
 
-  async function uploadSlideImage(draftId, slideIndex, _value, inputEl) {
-    const file = inputEl?.files?.[0];
-    if (!file) return;
-    if (file.size > 10 * 1024 * 1024) {
-      showUiNotice("Файл слишком большой (макс. 10 МБ)", "error");
-      return;
-    }
-    showUiNotice("Загружаю картинку...", "info");
-    const formData = new FormData();
-    formData.append("file", file);
-    try {
-      const headers = {};
-      const initData = window.Telegram?.WebApp?.initData;
-      if (initData) headers["X-Telegram-Init-Data"] = initData;
-      const resp = await fetch(`/api/carousel/${draftId}/slides/${slideIndex}/upload`, {
-        method: "POST",
-        headers,
-        body: formData,
-      });
-      if (!resp.ok) {
-        const body = await resp.text();
-        throw new Error(`HTTP ${resp.status}: ${body}`);
+  async function uploadSlideImage(draftId, slideIndex, button) {
+    // Same pattern as importCarouselPptx — programmatic input.click() inside click handler
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/jpeg,image/png,image/webp";
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      if (file.size > 10 * 1024 * 1024) {
+        showUiNotice("Файл слишком большой (макс. 10 МБ)", "error");
+        return;
       }
-      const data = await resp.json();
-      mergeDraftIntoState(data);
-      if (isCurrentDraftDetail(draftId)) renderDraftDetail(state.selected);
-      showUiNotice("Картинка загружена", "success");
-    } catch (err) {
-      showRequestError("Не удалось загрузить картинку", err);
-    }
-    // Reset input so same file can be re-selected
-    if (inputEl) inputEl.value = "";
+      if (button instanceof HTMLElement) button.textContent = "Загружаю...";
+      const formData = new FormData();
+      formData.append("file", file);
+      try {
+        const headers = {};
+        const initData = window.Telegram?.WebApp?.initData;
+        if (initData) headers["X-Telegram-Init-Data"] = initData;
+        const resp = await fetch(`/api/carousel/${draftId}/slides/${slideIndex}/upload`, {
+          method: "POST",
+          headers,
+          body: formData,
+        });
+        if (!resp.ok) {
+          const body = await resp.text();
+          throw new Error(`HTTP ${resp.status}: ${body}`);
+        }
+        const data = await resp.json();
+        mergeDraftIntoState(data);
+        if (isCurrentDraftDetail(draftId)) renderDraftDetail(state.selected);
+        showUiNotice("Картинка загружена", "success");
+      } catch (err) {
+        showRequestError("Не удалось загрузить картинку", err);
+        if (button instanceof HTMLElement) button.textContent = "Своя картинка";
+      }
+    };
+    input.click();
   }
 
   async function setDividerStyle(draftId, style) {
