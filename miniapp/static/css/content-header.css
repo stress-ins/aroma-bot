@@ -79,7 +79,8 @@
 /* ── Panel filter row (inside panel-header) ──────────────────────────── */
 .panel-filter-row {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  flex-wrap: wrap;
   gap: var(--space-2);
   width: 100%;
   border-radius: var(--radius-sm);
