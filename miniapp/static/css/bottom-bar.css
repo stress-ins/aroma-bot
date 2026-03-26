@@ -93,6 +93,13 @@
   margin-bottom: 12px;
 }
 
+/* Swipe-back: GPU-accelerated layer during active drag */
+.detail-panel.is-swiping {
+  will-change: transform, opacity;
+  transition: none !important;
+  backface-visibility: hidden;
+}
+
 /* Swipe-back: visual indicator when threshold is reached */
 .detail-panel.swipe-back-ready {
   box-shadow: inset 6px 0 16px -4px rgba(var(--brand-rgb), 0.5);
