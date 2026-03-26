@@ -109,6 +109,46 @@ def assert_scroll_snapshots(
     page.wait_for_timeout(DOM_RENDER)
 
 
+def _save_visual_report(
+    report_dir: str,
+    snapshot_name: str,
+    expected: "Image.Image",
+    actual: "Image.Image",
+    diff_mask: "np.ndarray",
+    diff_ratio: float,
+) -> None:
+    """Save baseline/actual/diff/comparison images for CI reporting."""
+    from PIL import ImageDraw
+
+    out = Path(report_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    stem = Path(snapshot_name).stem
+
+    expected.save(out / f"{stem}_baseline.png")
+    actual.save(out / f"{stem}_actual.png")
+
+    # Diff highlight: red overlay on changed pixels
+    diff_highlight = actual.copy()
+    px = np.array(diff_highlight)
+    px[diff_mask] = [255, 0, 0, 255]
+    diff_img = Image.fromarray(px)
+    diff_img.save(out / f"{stem}_diff.png")
+
+    # Side-by-side comparison
+    w, h = actual.size
+    gap = 10
+    comp = Image.new("RGBA", (w * 3 + gap * 2, h + 25), (30, 30, 30, 255))
+    comp.paste(expected, (0, 25))
+    comp.paste(actual, (w + gap, 25))
+    comp.paste(diff_img, (w * 2 + gap * 2, 25))
+
+    draw = ImageDraw.Draw(comp)
+    draw.text((w // 2 - 30, 5), "Baseline", fill=(200, 200, 200))
+    draw.text((w + gap + w // 2 - 20, 5), "Actual", fill=(200, 200, 200))
+    draw.text((w * 2 + gap * 2 + w // 2 - 40, 5), f"Diff ({diff_ratio:.2%})", fill=(255, 80, 80))
+    comp.save(out / f"{stem}_comparison.png")
+
+
 def assert_visual_snapshot(locator, snapshot_name: str, *, max_diff_ratio: float = 0.0025) -> None:
     expected_path = _SNAPSHOT_DIR / snapshot_name
     actual_bytes = locator.screenshot(animations="disabled")
@@ -132,6 +172,12 @@ def assert_visual_snapshot(locator, snapshot_name: str, *, max_diff_ratio: float
     actual_pixels = np.array(actual)
     diff_mask = np.any(np.abs(actual_pixels.astype(np.int16) - expected_pixels.astype(np.int16)) > 12, axis=2)
     diff_ratio = float(diff_mask.mean())
+
+    # Save visual report artifacts for CI when diff exceeds threshold
+    report_dir = os.getenv("VISUAL_REPORT_DIR")
+    if report_dir and diff_ratio > max_diff_ratio:
+        _save_visual_report(report_dir, snapshot_name, expected, actual, diff_mask, diff_ratio)
+
     assert diff_ratio <= max_diff_ratio, (
         f"Visual regression in {snapshot_name}: diff ratio {diff_ratio:.4%} exceeds {max_diff_ratio:.4%}"
     )
