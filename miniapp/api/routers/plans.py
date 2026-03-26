@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import asyncio
+import calendar as _calendar
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
+from pydantic import BaseModel
 from sqlalchemy import or_, and_, select
 
 from bot.agents.planner import generate_plan_sync
@@ -389,3 +391,125 @@ async def plan_activation_status(plan_id: str, _: None = Depends(_require_auth))
             })
 
     return {"plan_id": plan_id, "status": record.status, "drafts": draft_ids}
+
+
+# ── Calendar API ────────────────────────────────────────────────────────────
+
+
+class ReschedulePayload(BaseModel):
+    scheduled_at: str
+
+
+@router.get("/api/calendar")
+async def calendar_month(
+    month: str = Query(..., description="Month in YYYY-MM format"),
+    _: None = Depends(_require_auth),
+):
+    """Return all content items for a given month grouped by date."""
+    try:
+        year, mon = month.split("-")
+        year, mon = int(year), int(mon)
+        if mon < 1 or mon > 12:
+            raise ValueError
+    except (ValueError, AttributeError):
+        raise HTTPException(status_code=400, detail="invalid_month_format")
+
+    first_day = datetime(year, mon, 1, tzinfo=timezone.utc)
+    last_day_num = _calendar.monthrange(year, mon)[1]
+    end_day = datetime(year, mon, last_day_num, 23, 59, 59, tzinfo=timezone.utc)
+
+    items_by_date: dict[str, list[dict]] = {}
+
+    async with AsyncSessionLocal() as session:
+        # 1. Published drafts (published_at in month)
+        pub_query = select(DraftModel).filter(
+            DraftModel.status == "published",
+            DraftModel.published_at >= first_day,
+            DraftModel.published_at <= end_day,
+        )
+        pub_result = await session.execute(pub_query)
+        for d in pub_result.scalars().all():
+            date_key = d.published_at.strftime("%Y-%m-%d") if d.published_at else None
+            if not date_key:
+                continue
+            items_by_date.setdefault(date_key, []).append({
+                "type": "published",
+                "draft_id": d.draft_id,
+                "kind": d.kind,
+                "topic": d.topic or "",
+                "status": "published",
+                "scheduled_at": d.scheduled_at.isoformat() if d.scheduled_at else None,
+                "published_at": d.published_at.isoformat() if d.published_at else None,
+                "preview": str((d.payload or {}).get("caption") or (d.payload or {}).get("hook") or "")[:100],
+            })
+
+        # 2. Scheduled drafts (scheduled_at in month)
+        sched_query = select(DraftModel).filter(
+            DraftModel.status == "scheduled",
+            DraftModel.scheduled_at >= first_day,
+            DraftModel.scheduled_at <= end_day,
+        )
+        sched_result = await session.execute(sched_query)
+        for d in sched_result.scalars().all():
+            date_key = d.scheduled_at.strftime("%Y-%m-%d") if d.scheduled_at else None
+            if not date_key:
+                continue
+            items_by_date.setdefault(date_key, []).append({
+                "type": "scheduled",
+                "draft_id": d.draft_id,
+                "kind": d.kind,
+                "topic": d.topic or "",
+                "status": "scheduled",
+                "scheduled_at": d.scheduled_at.isoformat() if d.scheduled_at else None,
+                "published_at": None,
+                "preview": str((d.payload or {}).get("caption") or (d.payload or {}).get("hook") or "")[:100],
+            })
+
+        # 3. Draft items (created_at in month, status=draft, no scheduled_at)
+        draft_query = select(DraftModel).filter(
+            DraftModel.status == "draft",
+            DraftModel.created_at >= first_day,
+            DraftModel.created_at <= end_day,
+        )
+        draft_result = await session.execute(draft_query)
+        for d in draft_result.scalars().all():
+            date_key = d.created_at.strftime("%Y-%m-%d")
+            items_by_date.setdefault(date_key, []).append({
+                "type": "draft",
+                "draft_id": d.draft_id,
+                "kind": d.kind,
+                "topic": d.topic or "",
+                "status": "draft",
+                "scheduled_at": d.scheduled_at.isoformat() if d.scheduled_at else None,
+                "published_at": None,
+                "preview": str((d.payload or {}).get("caption") or (d.payload or {}).get("hook") or "")[:100],
+            })
+
+    return {"month": month, "days": items_by_date}
+
+
+@router.patch("/api/calendar/{draft_id}/reschedule")
+async def calendar_reschedule(
+    draft_id: str,
+    payload: ReschedulePayload,
+    _: None = Depends(_require_auth),
+):
+    """Move a scheduled draft to a new date/time."""
+    try:
+        new_dt = datetime.fromisoformat(payload.scheduled_at.replace("Z", "+00:00"))
+    except (ValueError, AttributeError):
+        raise HTTPException(status_code=400, detail="invalid_datetime")
+
+    async with AsyncSessionLocal() as session:
+        query = select(DraftModel).filter(DraftModel.draft_id == draft_id)
+        result = await session.execute(query)
+        draft = result.scalar_one_or_none()
+        if not draft:
+            raise HTTPException(status_code=404, detail="draft_not_found")
+
+        draft.scheduled_at = new_dt
+        if draft.status == "draft":
+            draft.status = "scheduled"
+        await session.commit()
+
+    return {"draft_id": draft_id, "scheduled_at": new_dt.isoformat()}

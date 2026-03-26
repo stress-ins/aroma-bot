@@ -9,6 +9,7 @@ import { createDraftsModule } from "./js/drafts.js";
 import { createPublishModule } from "./js/publish.js";
 import { createScheduleModule } from "./js/schedule.js";
 import { createPlansModule } from "./js/plans.js";
+import { createCalendarModule } from "./js/calendar.js";
 import { createArchiveModule } from "./js/archive.js";
 import { createMentionsModule } from "./js/mentions.js";
 import { createBlendConstructorModule } from "./js/blend_constructor.js";
@@ -24,7 +25,6 @@ import { createStockPhotosModule } from "./js/stock_photos.js";
 import { createTeamsModule } from "./js/teams.js";
 import { createTrendsModule } from "./js/trends.js";
 import { createAnalyticsModule } from "./js/analytics.js";
-import { createContentDashboardModule } from "./js/content_dashboard.js";
 
 const state = {
   mode: "content", // 'content' or 'handbook'
@@ -89,7 +89,6 @@ const MODE_TABS = {
     { id: "concepts", label: "Теория" },
     { id: "practices", label: "Практики" },
     { id: "sounds", label: "Звуки" },
-    { id: "crystals", label: "Кристаллы" },
   ],
 };
 
@@ -195,15 +194,6 @@ const SOURCE_TYPE_LABELS = {
   grass:   "Злаковые",
   root:    "Корневые",
   wood:    "Деревянистые",
-  quartz:         "Кварц",
-  tourmaline:     "Турмалин",
-  feldspar:       "Полевой шпат",
-  gypsum:         "Гипс",
-  silicate:       "Силикат",
-  carbonate:      "Карбонат",
-  halide:         "Галоид",
-  oxide:          "Оксид",
-  volcanic_glass: "Вулканическое стекло",
 };
 
 const SOURCE_TYPE_ICONS = {
@@ -406,17 +396,6 @@ const HANDBOOK_CATEGORY_META = {
     locked: "Доступ к разделу Симптомы закрыт.",
     count: (items) => `${items.length} симптомов`,
   },
-  crystals: {
-    category: "crystal",
-    title: "Кристаллы",
-    label: "кристалл",
-    searchLabel: "Поиск кристалла",
-    searchPlaceholder: "аметист, розовый кварц...",
-    empty: "Кристаллы не найдены.",
-    selectPrompt: "Выберите кристалл из списка.",
-    locked: "Доступ к разделу Кристаллы закрыт.",
-    count: (items) => `${items.length} кристаллов`,
-  },
 };
 
 function handbookCategoryIcon(tabId) {
@@ -427,7 +406,6 @@ function handbookCategoryIcon(tabId) {
     concepts: "🧭",
     practices: "🫁",
     sounds: "🔔",
-    crystals: "💎",
   };
   const glyph = glyphMap[String(tabId || "").toLowerCase()] || "•";
   return `<span class="kind-glyph handbook-glyph" aria-hidden="true">${glyph}</span>`;
@@ -456,7 +434,6 @@ function aromaCardIcon(item, tabId) {
     if (name.includes("иланг") || name.includes("ylang")) return "🌸";
     return "🌿";
   }
-  if (tabId === "crystals") return "💎";
   if (tabId === "blends") return "🌀";
   if (tabId === "symptoms") return "🫀";
   if (tabId === "concepts") return conceptTypeMeta(item.source_type).icon;
@@ -502,10 +479,6 @@ function handbookCardBadge(tabId, item = {}) {
     return PRACTICE_RU_LABELS[sourceType.toLowerCase()] || "Практика";
   }
   if (tabId === "sounds") return "Звук";
-  if (tabId === "crystals" && sourceType) {
-    return SOURCE_TYPE_LABELS[sourceType.toLowerCase()] || "Кристалл";
-  }
-  if (tabId === "crystals") return "Кристалл";
   return "";
 }
 
@@ -773,6 +746,8 @@ function uiIcon(name) {
     list:       "rows",
     "chevron-down": "caret-down",
     "chevron-up": "caret-up",
+    "chevron-left": "caret-left",
+    "chevron-right": "caret-right",
     archive:    "archive-box",
     pencil:     "pencil",
     "pencil-simple": "pencil-simple",
@@ -792,12 +767,6 @@ function uiIcon(name) {
     sparkles:   "sparkle",
     "map-pin":  "map-pin",
     "sliders-horizontal": "sliders-horizontal",
-    award:      "trophy",
-    trophy:     "trophy",
-    "trending-up": "trend-up",
-    clapperboard: "film-slate",
-    type:       "text-aa",
-    smartphone: "device-mobile",
   };
   return `<span class="ui-icon ui-icon-${escapeHtml(name)}">${icon(PHOSPHOR_MAP[name] || name, 16)}</span>`;
 }
@@ -1602,27 +1571,37 @@ const archiveModule = createArchiveModule({
 
 window.archiveModule = archiveModule;
 
-// ── Content Dashboard module ──────────────────────────────────────────────
+// ── Calendar module ──────────────────────────────────────────────────────────
 
-const contentDashboardModule = createContentDashboardModule({
+const calendarModule = createCalendarModule({
   state,
   elements,
   escapeHtml,
   uiIcon,
+  contentKindIcon,
+  kindLabel,
   fetchJson,
-  renderGuidedState,
+  showUiNotice,
+  enterDetailView,
+  syncMobileNavigation,
+  openDraft: (...a) => openDraft(...a),
+  setTab,
 });
 
-window.contentDashboardModule = contentDashboardModule;
+window.calendarModule = calendarModule;
 
 function setPlansSubMode(mode) {
   state.plansSubMode = mode;
   if (mode === "mentions") state.selectedMention = null;
-  if (mode === "publications") state.contentSubTab = "plans";
+  if (mode === "calendar") state.contentSubTab = "calendar";
+  else if (mode === "publications") state.contentSubTab = "plans";
   else if (mode === "mentions") state.contentSubTab = "mentions";
   else if (mode === "archive") state.contentSubTab = "archive";
-  else if (mode === "dashboard") state.contentSubTab = "dashboard";
-  renderPlans();
+  if (mode === "calendar") {
+    void calendarModule.loadCalendar();
+  } else {
+    renderPlans();
+  }
   renderContentSubTabs();
 }
 
@@ -1654,8 +1633,6 @@ function toggleArchiveStats() { archiveModule.toggleArchiveStats(); }
 function setArchivePlatformFilter(v) { archiveModule.setArchivePlatformFilter(v); }
 function setArchiveScore(name, value) { return archiveModule.setArchiveScore(name, value); }
 function bulkImportFromAccount(platform, btn) { return archiveModule.bulkImportFromAccount(platform, btn); }
-function toggleCoachingSummary() { return archiveModule.toggleCoachingSummary(); }
-function loadPostCoaching(pubId, btn) { return archiveModule.loadPostCoaching(pubId, btn); }
 
 const reelsCallbacks = {
   renderReels: null,
@@ -1750,6 +1727,10 @@ async function loadStatus() {
 }
 
 async function loadPlans() {
+  if (state.plansSubMode === "calendar") {
+    await calendarModule.loadCalendar();
+    return;
+  }
   await Promise.all([loadPlansImpl(), loadPlansFeedImpl()]);
 }
 
@@ -1775,7 +1756,6 @@ const {
   runSmartSearch,
   clearSmartSearch,
   createContentFromOil,
-  createContentFromDailyOil,
   toggleReferenceFilters,
 } = createReferencesModule({
   state,
@@ -2250,7 +2230,7 @@ const SECTION_TITLES = {
   schedule: "Расписание", inbox: "Согласование",
   keywords: "Ключи", status: "Статус",
   aromas: "Ароматы", concepts: "Концепции", practices: "Практики", sounds: "Звуки",
-  blends: "Смеси", symptoms: "Симптомы", crystals: "Кристаллы",
+  blends: "Смеси", symptoms: "Симптомы",
 };
 
 /* ── Inspiration sub-tabs (pill-style below section title) ────────────── */
@@ -2263,11 +2243,11 @@ const _TABS_SHOWING_INSPIRATION_SUB = new Set(["drafts", "trends"]);
 
 /* ── Content sub-tabs (pill-style below section title) ─────────────────── */
 const CONTENT_SUB_TABS = [
+  { id: "calendar", label: "Календарь" },
   { id: "plans", label: "Планы" },
   { id: "mentions", label: "Упоминания" },
   { id: "publications", label: "Публикации" },
   { id: "archive", label: "Архив" },
-  { id: "dashboard", label: "Аналитика" },
 ];
 
 const _TABS_SHOWING_CONTENT_SUB = new Set(["plans"]);
@@ -2320,7 +2300,11 @@ function switchInspirationSubTab(subTab) {
 
 function switchContentSubTab(subTab) {
   state.contentSubTab = subTab;
-  if (subTab === "publications") {
+  if (subTab === "calendar") {
+    state.plansSubMode = "calendar";
+    setTab("plans");
+    void calendarModule.loadCalendar();
+  } else if (subTab === "publications") {
     state.plansSubMode = "publications";
     setTab("plans");
     void safeLoadCurrentTab("Не удалось загрузить публикации");
@@ -2336,10 +2320,6 @@ function switchContentSubTab(subTab) {
     state.plansSubMode = "archive";
     setTab("plans");
     void safeLoadCurrentTab("Не удалось загрузить архив");
-  } else if (subTab === "dashboard") {
-    state.plansSubMode = "dashboard";
-    setTab("plans");
-    void safeLoadCurrentTab("Не удалось загрузить аналитику");
   }
 }
 
@@ -2557,13 +2537,10 @@ registerWindowBridge({
   setArchivePlatformFilter,
   setArchiveScore,
   bulkImportFromAccount,
-  toggleCoachingSummary,
-  loadPostCoaching,
   handleSmartSearch,
   runSmartSearch,
   clearSmartSearch,
   createContentFromOil,
-  createContentFromDailyOil,
   toggleReferenceFilters,
   openBlendConstructor,
   addRecoOilToBlend,
