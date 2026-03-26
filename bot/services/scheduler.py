@@ -124,6 +124,7 @@ async def _publish_series_slots(draft, now: datetime) -> None:
         try:
             h, m = map(int, time_str.split(":"))
         except ValueError:
+            logger.warning("_publish_series_slots: map failed", exc_info=True)
             continue
 
         slot_time = datetime(
@@ -149,6 +150,7 @@ async def _publish_series_slots(draft, now: datetime) -> None:
                         f"  {post['slot']}: {exc}"
                     )
                 except Exception:
+                    logger.warning("scheduler: suppressed exception", exc_info=True)
                     pass
 
 

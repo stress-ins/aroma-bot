@@ -167,6 +167,7 @@ async def complete_series_generation(
             cards = await retrieve_relevant_cards(topic, max_items=5)
             rag_context = format_rag_context(cards)
         except Exception:
+            logger.warning("complete_series_generation: suppressed exception", exc_info=True)
             pass
 
         await set_generation_state(

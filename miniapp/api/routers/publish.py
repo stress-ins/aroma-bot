@@ -138,6 +138,7 @@ async def schedule_series(payload: ScheduleSeriesRequest, _: None = Depends(_req
         try:
             h, m = map(int, time_str.split(":"))
         except ValueError:
+            logger.warning("publish: suppressed exception", exc_info=True)
             continue
         scheduled_at = datetime(pub_date.year, pub_date.month, pub_date.day, h, m, tzinfo=timezone.utc)
         if scheduled_at <= now:

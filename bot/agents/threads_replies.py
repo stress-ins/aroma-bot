@@ -7,6 +7,10 @@ from bot.agents.content import BRAND_CONTEXT
 from bot.services.claude_client import call_claude
 from bot.services.threads_api import ThreadsCandidate
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 @dataclass
 class ReplySuggestion:
@@ -82,5 +86,6 @@ def suggest_replies_sync(candidates: list[ThreadsCandidate]) -> list[ReplySugges
                 )
             )
         except Exception:
+            logger.warning("threads_replies: suppressed exception", exc_info=True)
             continue
     return suggestions[:5]

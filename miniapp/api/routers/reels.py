@@ -1379,6 +1379,7 @@ async def _run_clean_video_task(
                 payload["cleaning_error"] = "cleaning_failed"
                 await _update_draft(draft_id, payload=payload)
         except Exception:
+            logger.warning("reels: suppressed exception", exc_info=True)
             pass
 
 
@@ -1546,6 +1547,7 @@ async def reels_generation_stream(draft_id: str, _: str = Depends(_resolve_sse_a
                 try:
                     await asyncio.wait_for(evt.wait(), timeout=3.0)
                 except asyncio.TimeoutError:
+                    logger.warning("reels: suppressed exception", exc_info=True)
                     pass
         finally:
             cleanup_generation_event(draft_id)
@@ -1617,6 +1619,7 @@ async def clean_video_stream(draft_id: str, _: str = Depends(_resolve_sse_auth))
                 try:
                     await asyncio.wait_for(evt.wait(), timeout=2.0)
                 except asyncio.TimeoutError:
+                    logger.warning("reels: suppressed exception", exc_info=True)
                     pass
         finally:
             pass
@@ -1709,6 +1712,7 @@ async def _run_split_clips_task(draft_id: str) -> None:
                 p["split_status"] = "failed"
                 await _update_draft(draft_id, payload=p)
         except Exception:
+            logger.warning("reels: suppressed exception", exc_info=True)
             pass
 
 

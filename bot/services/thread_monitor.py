@@ -77,8 +77,10 @@ def _collect_deep_candidates_sync() -> list[dict]:
                         "reply_count": 0,
                     })
             except ThreadsAPIError:
+                logger.warning("thread_monitor: suppressed exception", exc_info=True)
                 continue
     except ThreadsAPIError:
+        logger.warning("thread_monitor: suppressed exception", exc_info=True)
         pass
 
     # Keyword search (placeholder)
@@ -103,6 +105,7 @@ def _collect_deep_candidates_sync() -> list[dict]:
                     "reply_count": int(post.get("repost_count", 0)),
                 })
     except ThreadsAPIError:
+        logger.warning("thread_monitor: suppressed exception", exc_info=True)
         pass
 
     return results

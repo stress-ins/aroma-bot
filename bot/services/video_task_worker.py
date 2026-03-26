@@ -105,6 +105,7 @@ async def _notify_admin_error(task, error_msg: str) -> None:
                 if draft and draft.created_by:
                     admin_chat_id = str(draft.created_by)
             except Exception:
+                logger.warning("_notify_admin_error: suppressed exception", exc_info=True)
                 pass
 
         if not admin_chat_id:

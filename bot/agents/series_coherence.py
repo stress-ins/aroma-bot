@@ -61,6 +61,7 @@ def _parse_coherence(raw: str) -> dict:
                 score = float(val)
                 score = max(0.0, min(1.0, score))
             except (ValueError, IndexError):
+                logger.warning("_parse_coherence: split failed", exc_info=True)
                 pass
         elif cleaned.upper().startswith("ISSUES:"):
             raw_issues = cleaned.split(":", 1)[1].strip()

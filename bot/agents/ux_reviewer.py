@@ -57,6 +57,7 @@ def _check_card_fields(card: dict[str, Any]) -> tuple[float, list[str]]:
                 issues.append("description_short is raw JSON, not human-readable text")
                 score -= penalty
             except (ValueError, TypeError):
+                logger.warning("ux_reviewer: suppressed exception", exc_info=True)
                 pass
 
     if not applications:

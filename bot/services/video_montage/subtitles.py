@@ -215,6 +215,7 @@ json.dump(segments, sys.stdout, ensure_ascii=False)
     try:
         Path(audio_path).unlink(missing_ok=True)
     except Exception:
+        logger.warning("subtitles: suppressed exception", exc_info=True)
         pass
 
     if proc.returncode != 0:

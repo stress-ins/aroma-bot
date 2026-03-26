@@ -118,6 +118,7 @@ async def _generate_storyboard_images(
                 f"🎬 Тема: {topic}\n\n🖼 Кадры: {icons} {done_count}/{total}"
             )
         except Exception:
+            logger.warning("gen_one: status_message failed", exc_info=True)
             pass
 
     await asyncio.gather(*[

@@ -348,6 +348,7 @@ async def _generate_and_show_draft(
                 "✍️ Автор: пишет текст..."
             )
         except Exception:
+            logger.warning("_generate_and_show_draft: status failed", exc_info=True)
             pass
     except Exception:
         logger.exception("Strategist step failed")
@@ -365,6 +366,7 @@ async def _generate_and_show_draft(
     try:
         await status.delete()
     except Exception:
+        logger.warning("content: suppressed exception", exc_info=True)
         pass
 
     saved = save_draft(

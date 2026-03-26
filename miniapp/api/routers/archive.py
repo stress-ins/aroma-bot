@@ -83,6 +83,7 @@ async def create_archive_item(body: dict, ctx: TeamContext = Depends(_resolve_te
         try:
             published_at = datetime.fromisoformat(body["published_at"])
         except (ValueError, TypeError):
+            logger.warning("create_archive_item: fromisoformat failed", exc_info=True)
             pass
 
     pub = await create_publication(
@@ -143,6 +144,7 @@ async def update_archive_item(pub_id: str, body: dict, _: None = Depends(_requir
         try:
             body["published_at"] = datetime.fromisoformat(published_at_raw)
         except (ValueError, TypeError):
+            logger.warning("update_archive_item: fromisoformat failed", exc_info=True)
             pass
 
     pub = await update_publication(pub_id, **body)
@@ -244,6 +246,7 @@ async def _fetch_threads_post(url: str, team_id: str) -> dict | None:
             try:
                 published_at = datetime.fromisoformat(matched["timestamp"].replace("Z", "+00:00"))
             except (ValueError, TypeError):
+                logger.warning("_fetch_threads_post: fromisoformat failed", exc_info=True)
                 pass
 
         # Fetch insights
@@ -300,6 +303,7 @@ async def _fetch_recent_threads(team_id: str, days: int) -> list[dict]:
             try:
                 published_at = datetime.fromisoformat(t["timestamp"].replace("Z", "+00:00"))
             except (ValueError, TypeError):
+                logger.warning("_fetch_recent_threads: fromisoformat failed", exc_info=True)
                 continue
         if published_at and published_at < cutoff:
             continue
@@ -376,6 +380,7 @@ async def _fetch_recent_instagram(team_id: str, days: int) -> list[dict]:
             try:
                 published_at = datetime.fromisoformat(post["timestamp"].replace("Z", "+00:00"))
             except (ValueError, TypeError):
+                logger.warning("archive: suppressed exception", exc_info=True)
                 continue
         if published_at and published_at < cutoff:
             continue

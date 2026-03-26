@@ -158,6 +158,7 @@ def call_claude(
                     daemon=True,
                 ).start()
             except Exception:
+                logger.warning("claude_client: suppressed exception", exc_info=True)
                 pass  # Never let logging break the LLM call
 
             return text
@@ -173,12 +174,14 @@ def call_claude(
 
         except anthropic.RateLimitError as exc:
             last_exc = exc
+            logger.warning("Claude rate limit (attempt %d/%d, context=%s): %s", attempt + 1, retries, context, exc)
             if attempt < retries - 1:
                 time.sleep(2 ** attempt)
             continue
 
         except anthropic.APIConnectionError as exc:
             last_exc = exc
+            logger.warning("Claude connection error (attempt %d/%d, context=%s): %s", attempt + 1, retries, context, exc)
             if attempt < retries - 1:
                 time.sleep(1)
             continue
@@ -281,6 +284,7 @@ def _call_replicate_claude(
             daemon=True,
         ).start()
     except Exception:
+        logger.warning("claude_client: suppressed exception", exc_info=True)
         pass
 
     return text
@@ -370,6 +374,7 @@ def _call_replicate_gemini_vision(
             daemon=True,
         ).start()
     except Exception:
+        logger.warning("claude_client: suppressed exception", exc_info=True)
         pass
 
     return text

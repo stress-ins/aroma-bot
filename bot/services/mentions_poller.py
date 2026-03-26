@@ -48,6 +48,7 @@ async def poll_threads_mentions(access_token: str, team_id: str | None = None) -
                 if uname:
                     own_usernames.add(uname)
         except Exception:
+            logger.warning("poll_threads_mentions: suppressed exception", exc_info=True)
             pass
 
     # Only fetch external mentions (not own posts)

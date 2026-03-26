@@ -201,6 +201,7 @@ def _kie_poll(
                     logger.info("%s: callback already delivered for %s, skipping poll", log_context, task_id)
                     return db_task.image_url
             except Exception:
+                logger.warning("_kie_poll: suppressed exception", exc_info=True)
                 pass  # DB check is best-effort
 
         try:

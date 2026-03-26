@@ -605,6 +605,7 @@ async def carousel_canva_stream(draft_id: str, _: str = Depends(_resolve_sse_aut
             try:
                 await asyncio.wait_for(evt.wait(), timeout=2.0)
             except asyncio.TimeoutError:
+                logger.warning("carousel: suppressed exception", exc_info=True)
                 pass
 
     return StreamingResponse(
@@ -648,6 +649,7 @@ async def carousel_generation_stream(draft_id: str, _: str = Depends(_resolve_ss
                 try:
                     await asyncio.wait_for(evt.wait(), timeout=3.0)
                 except asyncio.TimeoutError:
+                    logger.warning("_event_generator: asyncio failed", exc_info=True)
                     pass
         finally:
             cleanup_generation_event(draft_id)

@@ -21,6 +21,7 @@ def _get_admin_ids() -> set[int]:
         try:
             return {int(admin_id)}
         except (ValueError, TypeError):
+            logger.warning("_get_admin_ids: int failed", exc_info=True)
             pass
     return set()
 
@@ -170,6 +171,7 @@ async def admin_dashboard(user_info: tuple = Depends(_resolve_user)):
             "percent": round(usage.used / usage.total * 100, 1),
         }
     except Exception:
+        logger.warning("admin: suppressed exception", exc_info=True)
         pass
 
     result = {
