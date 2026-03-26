@@ -37,6 +37,7 @@ export function createTrendsModule(deps) {
   let trendsPeriod = 7;
   let trendsData = null;
   let trendsCompare = null;
+  let intelligenceData = null;
   let monitoredAccounts = { instagram: [], threads: [], connected_usernames: {} };
   let trackedHashtags = [];
   let accountStats = [];
@@ -56,22 +57,30 @@ export function createTrendsModule(deps) {
       const promises = [
         trendsPlatform === "compare"
           ? fetchJson(`/api/trends/compare?period=${trendsPeriod}`)
-          : fetchJson(`/api/trends/${trendsPlatform}?period=${trendsPeriod}`),
+          : trendsPlatform === "intelligence"
+            ? fetchJson("/api/trends/intelligence")
+            : fetchJson(`/api/trends/${trendsPlatform}?period=${trendsPeriod}`),
         fetchJson("/api/social/monitored-accounts"),
         fetchJson("/api/social/tracked-hashtags"),
         fetchJson("/api/trends/account-stats"),
       ];
-      if (trendsPlatform !== "compare") {
+      if (trendsPlatform !== "compare" && trendsPlatform !== "intelligence") {
         promises.push(fetchJson(`/api/trends/suggestions?platform=${trendsPlatform}`));
       }
       const [trendsResult, accountsResult, hashtagsResult, statsResult, suggestionsResult] = await Promise.allSettled(promises);
 
-      if (trendsPlatform === "compare") {
+      if (trendsPlatform === "intelligence") {
+        intelligenceData = trendsResult.status === "fulfilled" ? trendsResult.value : null;
+        trendsData = null;
+        trendsCompare = null;
+      } else if (trendsPlatform === "compare") {
         trendsCompare = trendsResult.status === "fulfilled" ? trendsResult.value : null;
         trendsData = null;
+        intelligenceData = null;
       } else {
         trendsData = trendsResult.status === "fulfilled" ? trendsResult.value : null;
         trendsCompare = null;
+        intelligenceData = null;
       }
 
       if (accountsResult.status === "fulfilled") {
@@ -91,6 +100,7 @@ export function createTrendsModule(deps) {
     } catch (err) {
       trendsData = null;
       trendsCompare = null;
+      intelligenceData = null;
       suggestionsData = null;
     }
 
@@ -107,6 +117,7 @@ export function createTrendsModule(deps) {
       { id: "instagram", label: "Instagram", icon: "instagram" },
       { id: "threads", label: "Threads", icon: "at-sign" },
       { id: "compare", label: "Сравнение", icon: "columns-2" },
+      { id: "intelligence", label: "Разведка", icon: "radar" },
       { id: "cards", label: "AI-карточки", icon: "sparkles" },
     ];
 
@@ -146,6 +157,8 @@ export function createTrendsModule(deps) {
     let summary = "";
     if (trendsPlatform === "cards") {
       summary = renderTrendCardsList();
+    } else if (trendsPlatform === "intelligence") {
+      summary = renderIntelligenceSummaryList();
     } else if (trendsPlatform === "compare" && trendsCompare) {
       summary = renderCompareSummaryList();
     } else if (trendsData) {
@@ -361,6 +374,7 @@ export function createTrendsModule(deps) {
 
   function renderTrendsDetail() {
     if (trendsPlatform === "compare") return renderCompareDetail();
+    if (trendsPlatform === "intelligence") return renderIntelligenceDetail();
     if (!trendsData) {
       return `<div class="detail-empty">${renderGuidedState({
         eyebrow: "Аналитика",
@@ -936,6 +950,151 @@ export function createTrendsModule(deps) {
     syncMobileNavigation();
   }
 
+  // ── Intelligence (trend report from aggregator) ──────────────────
+
+  function renderIntelligenceSummaryList() {
+    if (!intelligenceData) {
+      return `<div class="detail-empty">${renderGuidedState({
+        eyebrow: "Разведка",
+        title: "Загрузка данных",
+        body: "Отчёт собирается ежедневно из Google Trends, YouTube, TikTok, Reddit, Telegram и других источников.",
+        actionLabel: "Обновить",
+        action: "refreshTrends",
+      })}</div>`;
+    }
+
+    const opps = intelligenceData.top_opportunities || [];
+    const emerging = intelligenceData.emerging_signals || [];
+    const declining = intelligenceData.declining_topics || [];
+    const total = intelligenceData.total_signals_analyzed || 0;
+
+    const LIFECYCLE_COLORS = { emerging: "#4CAF50", growing: "#2196F3", peaking: "#FF9800", declining: "#9E9E9E", evergreen: "#8BC34A" };
+    const LIFECYCLE_LABELS = { emerging: "Растущий", growing: "Набирает", peaking: "На пике", declining: "Спадает", evergreen: "Стабильный" };
+
+    const oppCards = opps.slice(0, 10).map((o, i) => {
+      const kw = (o.keyword || "").length > 60 ? o.keyword.substring(0, 60) + "…" : o.keyword;
+      const score = ((o.score || 0) * 100).toFixed(0);
+      const lc = o.lifecycle || "emerging";
+      return `
+        <div class="draft-card" data-action="openIntelligenceOpp" data-args='[${i}]'>
+          <div class="draft-card-header">
+            <span class="draft-card-topic">${escapeHtml(kw)}</span>
+            <span class="draft-card-badges">
+              <span class="keyword-chip" style="background:${LIFECYCLE_COLORS[lc] || "var(--muted)"};color:#fff;font-size:0.65rem">${LIFECYCLE_LABELS[lc] || lc}</span>
+              <span class="meta-chip meta-chip--own">${score}%</span>
+            </span>
+          </div>
+          <div class="draft-card-preview">${escapeHtml((o.content_angle || "").substring(0, 100))}</div>
+          <div class="draft-card-meta">
+            ${o.velocity ? `<span>${actionLabel("trending-up", o.velocity.toFixed(1) + "x")}</span>` : ""}
+            ${o.sources ? `<span>${actionLabel("globe", o.sources.length + " ист.")}</span>` : ""}
+            ${o.sentiment ? `<span>${actionLabel(o.sentiment === "positive" ? "smile" : o.sentiment === "negative" ? "frown" : "meh", o.sentiment)}</span>` : ""}
+          </div>
+        </div>`;
+    }).join("");
+
+    const header = `<div class="trends-intelligence-header" style="padding:0.5rem 0;opacity:0.7;font-size:0.8rem">
+      ${uiIcon("activity", 14)} Проанализировано ${total} сигналов | ${opps.length} возможностей | ${emerging.length} новых | ${declining.length} спадающих
+    </div>`;
+
+    return `${header}<div class="draft-list-content">${oppCards || `<p style="padding:1rem;opacity:0.6">Нет данных — запустите сбор трендов</p>`}</div>`;
+  }
+
+  function renderIntelligenceDetail() {
+    if (!intelligenceData) {
+      return `<div class="detail-empty">${renderGuidedState({
+        eyebrow: "Разведка",
+        title: "Данные собираются ежедневно",
+        body: "Отчёт включает анализ из 10+ источников: Google Trends, YouTube, TikTok, Reddit, Telegram и др.",
+        actionLabel: "Обновить",
+        action: "refreshTrends",
+      })}</div>`;
+    }
+
+    const sections = [];
+    const emerging = intelligenceData.emerging_signals || [];
+    const declining = intelligenceData.declining_topics || [];
+
+    if (emerging.length > 0) {
+      const items = emerging.map(s => `
+        <div class="insight-card">
+          <div class="insight-card-header">
+            <span class="keyword-chip" style="background:#4CAF50;color:#fff;font-size:0.65rem">Новый</span>
+            <strong style="flex:1">${escapeHtml((s.keyword || "").substring(0, 50))}</strong>
+            <span class="trend-strength" style="color:var(--success, green)">${((s.score || 0) * 100).toFixed(0)}%</span>
+          </div>
+          ${s.content_angle ? `<div class="insight-card-topic">${escapeHtml(s.content_angle.substring(0, 120))}</div>` : ""}
+          ${s.sources ? `<div class="detail-meta" style="margin-top:4px;opacity:0.6">${s.sources.map(src => escapeHtml(src)).join(", ")}</div>` : ""}
+        </div>`).join("");
+      sections.push(`<div class="detail-section"><div class="detail-section-title">${uiIcon("zap", 16)} Новые сигналы</div>${items}</div>`);
+    }
+
+    if (declining.length > 0) {
+      const items = declining.map(s => `
+        <div class="insight-card" style="opacity:0.7">
+          <div class="insight-card-header">
+            <span class="keyword-chip" style="background:#9E9E9E;color:#fff;font-size:0.65rem">Спад</span>
+            <strong style="flex:1">${escapeHtml((s.keyword || "").substring(0, 50))}</strong>
+          </div>
+          ${s.content_angle ? `<div class="insight-card-topic">${escapeHtml(s.content_angle.substring(0, 120))}</div>` : ""}
+        </div>`).join("");
+      sections.push(`<div class="detail-section"><div class="detail-section-title">${uiIcon("trending-down", 16)} Спадающие темы</div>${items}</div>`);
+    }
+
+    if (sections.length === 0) {
+      return `<div class="detail-empty"><p>Выберите тренд слева для деталей</p></div>`;
+    }
+
+    return `<div class="trends-detail-content">${sections.join("")}</div>`;
+  }
+
+  function openIntelligenceOpp(idx) {
+    if (!intelligenceData || !intelligenceData.top_opportunities) return;
+    const opp = intelligenceData.top_opportunities[idx];
+    if (!opp) return;
+
+    const LIFECYCLE_LABELS = { emerging: "Растущий", growing: "Набирает", peaking: "На пике", declining: "Спадает", evergreen: "Стабильный" };
+    const FORMAT_LABELS = { "in-depth post": "Подробный пост", "carousel": "Карусель", "reels": "Рилс", "live session": "Прямой эфир", "thread": "Тред", "threads_series": "Серия Threads", "expert commentary": "Экспертный комментарий", "tutorial": "Туториал", "content": "Пост" };
+    const formats = (opp.suggested_formats || []).map(f => FORMAT_LABELS[f] || f).join(", ");
+
+    elements.draftDetail.innerHTML = `
+      ${renderBackButton("К разведке", () => { void loadTrends(); })}
+      <div class="detail-section">
+        <div class="detail-section-title">${escapeHtml(opp.keyword || "Тренд")}</div>
+        <div class="detail-meta" style="margin-bottom:12px">
+          <span class="keyword-chip" style="background:var(--brand);color:#fff;font-size:0.7rem">${LIFECYCLE_LABELS[opp.lifecycle] || opp.lifecycle}</span>
+          <span>${actionLabel("trending-up", (opp.velocity || 0).toFixed(1) + "x скорость")}</span>
+          <span>${actionLabel("target", ((opp.score || 0) * 100).toFixed(0) + "% релевантность")}</span>
+          ${opp.sentiment ? `<span>${actionLabel("heart", opp.sentiment)}</span>` : ""}
+        </div>
+        ${opp.content_angle ? `<div class="detail-text" style="margin-bottom:12px">${escapeHtml(opp.content_angle)}</div>` : ""}
+        ${formats ? `<div style="margin-bottom:8px"><strong>Форматы:</strong> ${escapeHtml(formats)}</div>` : ""}
+        ${opp.sources ? `<div style="margin-bottom:12px"><strong>Источники:</strong> ${opp.sources.map(s => escapeHtml(s)).join(", ")}</div>` : ""}
+        <button class="primary-button" type="button" data-action="createFromIntelligence" data-args='${JSON.stringify([opp.keyword, opp.suggested_formats?.[0] || "content"])}'>
+          ${uiIcon("plus", 14)} Создать контент по тренду
+        </button>
+      </div>`;
+    enterDetailView();
+    syncMobileNavigation();
+  }
+
+  async function createFromIntelligence(keyword, format) {
+    try {
+      const draft = await fetchJson("/api/drafts", {
+        method: "POST",
+        body: JSON.stringify({
+          topic: keyword,
+          format_key: format === "carousel" ? "carousel" : format === "reels" ? "reels" : "instagram",
+          goal_key: "trust",
+        }),
+      });
+      showUiNotice("Черновик создан из тренда", "success");
+      if (draft?.draft_id && deps.openDraft) {
+        await deps.openDraft(draft.draft_id);
+      }
+    } catch (e) { showUiNotice("Ошибка создания черновика", "error"); }
+  }
+
   // ── Trend Cards (AI-generated) ────────────────────────────────────
   let trendCards = null;
 
@@ -1016,5 +1175,7 @@ export function createTrendsModule(deps) {
     createFromInsight,
     generateTrendCards,
     createFromTrendCard,
+    openIntelligenceOpp,
+    createFromIntelligence,
   };
 }
