@@ -837,14 +837,31 @@ export function createCarouselModule(deps) {
     }
   }
 
-  function downloadSlideImage(url, slideIndex) {
+  async function downloadSlideImage(url, slideIndex) {
     if (!url) return;
-    // Build absolute URL for Telegram openLink
-    const fullUrl = new URL(url, window.location.origin).href;
-    if (window.Telegram?.WebApp?.openLink) {
-      window.Telegram.WebApp.openLink(fullUrl);
-    } else {
-      window.open(fullUrl, "_blank");
+    showUiNotice("Скачиваю...", "info");
+    try {
+      // Fetch as blob → trigger browser download
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const blob = await resp.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = `slide_${(slideIndex || 0) + 1}.png`;
+      a.style.display = "none";
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => { URL.revokeObjectURL(blobUrl); a.remove(); }, 1000);
+      showUiNotice("Скачано", "success");
+    } catch (err) {
+      // Fallback: open in browser
+      const fullUrl = new URL(url, window.location.origin).href;
+      if (window.Telegram?.WebApp?.openLink) {
+        window.Telegram.WebApp.openLink(fullUrl);
+      } else {
+        window.open(fullUrl, "_blank");
+      }
     }
   }
 
@@ -855,6 +872,7 @@ export function createCarouselModule(deps) {
       showUiNotice("Файл слишком большой (макс. 10 МБ)", "error");
       return;
     }
+    showUiNotice("Загружаю картинку...", "info");
     const formData = new FormData();
     formData.append("file", file);
     try {
@@ -866,7 +884,10 @@ export function createCarouselModule(deps) {
         headers,
         body: formData,
       });
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      if (!resp.ok) {
+        const body = await resp.text();
+        throw new Error(`HTTP ${resp.status}: ${body}`);
+      }
       const data = await resp.json();
       mergeDraftIntoState(data);
       if (isCurrentDraftDetail(draftId)) renderDraftDetail(state.selected);
@@ -874,6 +895,8 @@ export function createCarouselModule(deps) {
     } catch (err) {
       showRequestError("Не удалось загрузить картинку", err);
     }
+    // Reset input so same file can be re-selected
+    if (inputEl) inputEl.value = "";
   }
 
   async function setDividerStyle(draftId, style) {
