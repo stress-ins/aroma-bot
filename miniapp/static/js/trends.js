@@ -37,7 +37,7 @@ export function createTrendsModule(deps) {
   let trendsPeriod = 7;
   let trendsData = null;
   let trendsCompare = null;
-  let monitoredAccounts = { instagram: [], threads: [] };
+  let monitoredAccounts = { instagram: [], threads: [], connected_usernames: {} };
   let trackedHashtags = [];
   let accountStats = [];
   let cooldownUntil = 0; // unix ms when cooldown expires
@@ -185,9 +185,10 @@ export function createTrendsModule(deps) {
       })}</div>`;
     }
 
+    // "Own" = connected via OAuth, not all monitored accounts
+    const connected = monitoredAccounts.connected_usernames || {};
     const ownUsernames = new Set(
-      [...(monitoredAccounts.instagram || []), ...(monitoredAccounts.threads || [])]
-        .map(a => (a.username || a).replace(/^@/, "").toLowerCase()),
+      Object.values(connected).map(u => u.replace(/^@/, "").toLowerCase()),
     );
     const _mediaLabel = (mt) => {
       if (!mt) return "";
@@ -902,9 +903,9 @@ export function createTrendsModule(deps) {
     if (!post) return;
 
     const eng = (post.like_count || 0) + (post.comment_count || 0) + (post.share_count || 0) + (post.reply_count || 0);
+    const connected = monitoredAccounts.connected_usernames || {};
     const ownUsernames = new Set(
-      [...(monitoredAccounts.instagram || []), ...(monitoredAccounts.threads || [])]
-        .map(a => (a.username || a).replace(/^@/, "").toLowerCase()),
+      Object.values(connected).map(u => u.replace(/^@/, "").toLowerCase()),
     );
     const detailAuthor = (post.author_username || "").toLowerCase();
     const isOwnPost = ownUsernames.has(detailAuthor);

@@ -162,9 +162,18 @@ async def list_monitored_accounts(
 ):
     """List all monitored IG + Threads accounts for this team."""
     bs = await get_brand_settings(ctx.team_id)
+
+    # Resolve connected (OAuth) usernames — these are "own" accounts
+    connected: dict[str, str] = {}
+    for platform in ("instagram", "threads"):
+        token = await get_token(f"{platform}_username")
+        if token and token.access_token:
+            connected[platform] = token.access_token
+
     return {
         "instagram": bs.instagram_accounts or [],
         "threads": bs.threads_accounts or [],
+        "connected_usernames": connected,
     }
 
 
