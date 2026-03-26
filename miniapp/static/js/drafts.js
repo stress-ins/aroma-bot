@@ -809,6 +809,9 @@ export function createDraftsModule(deps) {
       </div>
     `;
     syncMobileNavigation();
+    if (d.generation_pending || !sections.length) {
+      scheduleDraftRefresh(d.draft_id);
+    }
   }
 
   // ── Content Series Detail ──────────────────────────────────────────
