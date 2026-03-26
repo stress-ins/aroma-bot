@@ -39,10 +39,18 @@ def save_reels_frame_asset(draft_id: str, frame_index: int, image_bytes: bytes, 
     filename = f"frame_{frame_index + 1}_{uuid4().hex[:8]}.png"
     file_path = directory / filename
     file_path.write_bytes(image_bytes)
+
+    from bot.services.image_thumbs import ensure_thumbnails, thumb_urls
+    ensure_thumbnails(file_path)
+    url = f"/generated/reels_assets/{draft_id}/{filename}"
+    urls = thumb_urls(url)
+
     return {
         "filename": filename,
         "generated_at": generated_at,
-        "url": f"/generated/reels_assets/{draft_id}/{filename}",
+        "url": url,
+        "thumb_url": urls["thumb_url"],
+        "lqip_url": urls["lqip_url"],
         "prompt": prompt,
     }
 
@@ -164,10 +172,18 @@ def save_frame_asset(draft_id: str, frame_id: str, image_bytes: bytes, *, prompt
     filename = f"frame_{frame_id[:8]}_{uuid4().hex[:8]}.png"
     file_path = directory / filename
     file_path.write_bytes(image_bytes)
+
+    from bot.services.image_thumbs import ensure_thumbnails, thumb_urls
+    ensure_thumbnails(file_path)
+    url = f"/generated/reels_assets/{draft_id}/{filename}"
+    urls = thumb_urls(url)
+
     return {
         "filename": filename,
         "generated_at": generated_at,
-        "url": f"/generated/reels_assets/{draft_id}/{filename}",
+        "url": url,
+        "thumb_url": urls["thumb_url"],
+        "lqip_url": urls["lqip_url"],
         "prompt": prompt,
     }
 

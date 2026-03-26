@@ -145,11 +145,21 @@ def save_carousel_slide_asset(
     directory = _slide_dir(draft_id)
     generated_at = datetime.now(timezone.utc).isoformat()
     filename = f"slide_{slide_index + 1}_{uuid4().hex[:8]}.png"
-    (directory / filename).write_bytes(image_bytes)
+    filepath = directory / filename
+    filepath.write_bytes(image_bytes)
+
+    # Generate progressive loading thumbnails
+    from bot.services.image_thumbs import ensure_thumbnails, thumb_urls
+    ensure_thumbnails(filepath)
+    url = f"/generated/carousel_assets/{draft_id}/{filename}"
+    urls = thumb_urls(url)
+
     return {
         "filename": filename,
         "generated_at": generated_at,
-        "url": f"/generated/carousel_assets/{draft_id}/{filename}",
+        "url": url,
+        "thumb_url": urls["thumb_url"],
+        "lqip_url": urls["lqip_url"],
         "prompt": prompt,
     }
 

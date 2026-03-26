@@ -452,7 +452,16 @@ export function createReelsModule(deps) {
         </div>
       `;
     } else if (imageStatus === "ready" && imageUrl) {
-      imageAreaHtml = `<img src="${escapeHtml(imageUrl)}" style="width:100%;height:100%;object-fit:cover;cursor:pointer" alt="Кадр ${n}" data-overlay="${escapeHtml(frame.overlay_text || '')}" data-frame-id="${escapeHtml(frameId)}" data-draft-id="${escapeHtml(draftId)}" data-action="openReelsPreview" data-args='${JSON.stringify([imageUrl, frame.overlay_text || "", frameId, draftId])}' />`;
+      const _thumbUrl = frame.thumb_url || "";
+      const _lqipUrl = frame.lqip_url || "";
+      if (_thumbUrl || _lqipUrl) {
+        imageAreaHtml = `<div class="progressive-img" style="width:100%;height:100%;cursor:pointer" data-action="openReelsPreview" data-args='${JSON.stringify([imageUrl, frame.overlay_text || "", frameId, draftId])}'>` +
+          `<img class="progressive-img__full" src="${escapeHtml(_thumbUrl || imageUrl)}" data-full="${escapeHtml(imageUrl)}" alt="Кадр ${n}" loading="lazy">` +
+          (_lqipUrl ? `<img class="progressive-img__lqip" src="${escapeHtml(_lqipUrl)}" alt="" aria-hidden="true">` : "") +
+          `</div>`;
+      } else {
+        imageAreaHtml = `<img src="${escapeHtml(imageUrl)}" style="width:100%;height:100%;object-fit:cover;cursor:pointer" alt="Кадр ${n}" data-action="openReelsPreview" data-args='${JSON.stringify([imageUrl, frame.overlay_text || "", frameId, draftId])}' />`;
+      }
     } else if (imageStatus === "error") {
       const errorReason = frame.error_message || frame.error || "";
       const hasKieTask = !!frame.kie_task_id;
@@ -478,7 +487,7 @@ export function createReelsModule(deps) {
       <div class="reels-frame-versions">
         ${versions.map((v, vi) => `
           <div class="reels-frame-version-thumb${v.is_current ? " is-current" : ""}" title="Версия ${vi + 1}">
-            ${v.url ? `<img src="${escapeHtml(v.url)}" style="width:100%;height:100%;object-fit:cover" />` : ""}
+            ${v.url ? `<img src="${escapeHtml(v.thumb_url || v.url)}" style="width:100%;height:100%;object-fit:cover" />` : ""}
           </div>
         `).join("")}
       </div>
