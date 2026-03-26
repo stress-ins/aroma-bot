@@ -1003,15 +1003,36 @@ export function createReferencesModule(deps) {
             ${_dOil.reason ? `<p class="daily-oil-detail-reason">💡 ${escapeHtml(_dOil.reason)}</p>` : ""}
             ${_dOil.fact ? `<p>${escapeHtml(_dOil.fact)}</p>` : ""}
             ${_dOil.daily_practice ? `<p><strong>Практика дня:</strong> ${escapeHtml(_dOil.daily_practice)}</p>` : ""}
-            <div class="daily-oil-create-picker">
-              <p class="daily-oil-create-label">Создать контент по маслу дня:</p>
-              <div class="daily-oil-create-grid">
-                <button class="daily-oil-tool-btn" type="button" data-action="createContentFromOilTool" data-args='${JSON.stringify([reference.name, "content"])}'><i data-lucide="file-text" style="width:18px;height:18px"></i><span>Пост</span></button>
-                <button class="daily-oil-tool-btn" type="button" data-action="createContentFromOilTool" data-args='${JSON.stringify([reference.name, "carousel"])}'><i data-lucide="layers" style="width:18px;height:18px"></i><span>Карусель</span></button>
-                <button class="daily-oil-tool-btn" type="button" data-action="createContentFromOilTool" data-args='${JSON.stringify([reference.name, "reels"])}'><i data-lucide="clapperboard" style="width:18px;height:18px"></i><span>Рилс</span></button>
-                <button class="daily-oil-tool-btn" type="button" data-action="createContentFromOilTool" data-args='${JSON.stringify([reference.name, "youtube"])}'><i data-lucide="youtube" style="width:18px;height:18px"></i><span>YouTube</span></button>
-                <button class="daily-oil-tool-btn" type="button" data-action="createContentFromOilTool" data-args='${JSON.stringify([reference.name, "threads_series"])}'><i data-lucide="at-sign" style="width:18px;height:18px"></i><span>Threads</span></button>
-              </div>
+            <button class="daily-oil-cta-btn" type="button" data-action="toggleDailyOilPicker" data-args='[]'>
+              <i class="ph ph-plus-circle" style="font-size:18px"></i>
+              <span>Создать контент</span>
+            </button>
+            <div class="daily-oil-picker" hidden>
+              <button class="daily-oil-tool-btn" type="button" data-action="createContentFromOilTool" data-args='${JSON.stringify([reference.name, "content"])}'>
+                <i class="ph ph-pencil-line" style="font-size:22px"></i>
+                <strong>Пост</strong>
+                <span>Instagram или Telegram</span>
+              </button>
+              <button class="daily-oil-tool-btn" type="button" data-action="createContentFromOilTool" data-args='${JSON.stringify([reference.name, "carousel"])}'>
+                <i class="ph ph-stack" style="font-size:22px"></i>
+                <strong>Карусель</strong>
+                <span>5 слайдов с картинками</span>
+              </button>
+              <button class="daily-oil-tool-btn" type="button" data-action="createContentFromOilTool" data-args='${JSON.stringify([reference.name, "reels"])}'>
+                <i class="ph ph-video-camera" style="font-size:22px"></i>
+                <strong>Рилс</strong>
+                <span>Сценарий + раскадровка</span>
+              </button>
+              <button class="daily-oil-tool-btn" type="button" data-action="createContentFromOilTool" data-args='${JSON.stringify([reference.name, "youtube"])}'>
+                <i class="ph ph-youtube-logo" style="font-size:22px"></i>
+                <strong>YouTube</strong>
+                <span>Сценарий, обложка, описание</span>
+              </button>
+              <button class="daily-oil-tool-btn" type="button" data-action="createContentFromOilTool" data-args='${JSON.stringify([reference.name, "threads_series"])}'>
+                <i class="ph ph-at" style="font-size:22px"></i>
+                <strong>Threads</strong>
+                <span>Серия: утро / день / вечер</span>
+              </button>
             </div>
           </section>` : "";
       detailHtml = `
@@ -1215,6 +1236,14 @@ export function createReferencesModule(deps) {
     if (typeof window.openCreateTool === "function") window.openCreateTool("content");
   }
 
+  function toggleDailyOilPicker() {
+    const picker = document.querySelector(".daily-oil-picker");
+    if (!picker) return;
+    picker.hidden = !picker.hidden;
+    const btn = document.querySelector(".daily-oil-cta-btn");
+    if (btn) btn.classList.toggle("expanded", !picker.hidden);
+  }
+
   function createContentFromOilTool(oilName, toolId) {
     if (typeof window.openCreateTool !== "function") return;
     window.openCreateTool(toolId || "content");
@@ -1354,6 +1383,7 @@ export function createReferencesModule(deps) {
     clearSmartSearch,
     createContentFromOil,
     createContentFromOilTool,
+    toggleDailyOilPicker,
     createContentFromDailyOil,
     toggleReferenceFilters,
   };
