@@ -1003,7 +1003,16 @@ export function createReferencesModule(deps) {
             ${_dOil.reason ? `<p class="daily-oil-detail-reason">💡 ${escapeHtml(_dOil.reason)}</p>` : ""}
             ${_dOil.fact ? `<p>${escapeHtml(_dOil.fact)}</p>` : ""}
             ${_dOil.daily_practice ? `<p><strong>Практика дня:</strong> ${escapeHtml(_dOil.daily_practice)}</p>` : ""}
-            <button class="secondary-button daily-oil-create-btn" type="button" data-action="createContentFromOil" data-args='${JSON.stringify([reference.name])}'><i data-lucide="plus" style="width:16px;height:16px"></i><span>Создать контент по маслу дня</span></button>
+            <div class="daily-oil-create-picker">
+              <p class="daily-oil-create-label">Создать контент по маслу дня:</p>
+              <div class="daily-oil-create-grid">
+                <button class="daily-oil-tool-btn" type="button" data-action="createContentFromOilTool" data-args='${JSON.stringify([reference.name, "content"])}'><i data-lucide="file-text" style="width:18px;height:18px"></i><span>Пост</span></button>
+                <button class="daily-oil-tool-btn" type="button" data-action="createContentFromOilTool" data-args='${JSON.stringify([reference.name, "carousel"])}'><i data-lucide="layers" style="width:18px;height:18px"></i><span>Карусель</span></button>
+                <button class="daily-oil-tool-btn" type="button" data-action="createContentFromOilTool" data-args='${JSON.stringify([reference.name, "reels"])}'><i data-lucide="clapperboard" style="width:18px;height:18px"></i><span>Рилс</span></button>
+                <button class="daily-oil-tool-btn" type="button" data-action="createContentFromOilTool" data-args='${JSON.stringify([reference.name, "youtube"])}'><i data-lucide="youtube" style="width:18px;height:18px"></i><span>YouTube</span></button>
+                <button class="daily-oil-tool-btn" type="button" data-action="createContentFromOilTool" data-args='${JSON.stringify([reference.name, "threads_series"])}'><i data-lucide="at-sign" style="width:18px;height:18px"></i><span>Threads</span></button>
+              </div>
+            </div>
           </section>` : "";
       detailHtml = `
         <div class="detail-grid">
@@ -1206,14 +1215,14 @@ export function createReferencesModule(deps) {
     if (typeof window.openCreateTool === "function") window.openCreateTool("content");
   }
 
-  function createContentFromOil(oilName) {
+  function createContentFromOilTool(oilName, toolId) {
     if (typeof window.openCreateTool !== "function") return;
-    window.openCreateTool("content");
+    window.openCreateTool(toolId || "content");
     let attempts = 0;
     const tryFill = () => {
       attempts++;
-      const ta = document.querySelector("[data-create-content] [name=topic]")
-        || document.querySelector(".create-form textarea[name=topic]");
+      const ta = document.querySelector(".create-form textarea[name=topic]")
+        || document.querySelector(".create-form input[name=topic]");
       if (ta) {
         ta.value = oilName;
         ta.dispatchEvent(new Event("input", { bubbles: true }));
@@ -1222,6 +1231,10 @@ export function createReferencesModule(deps) {
       if (attempts < 30) setTimeout(tryFill, 100);
     };
     setTimeout(tryFill, 150);
+  }
+
+  function createContentFromOil(oilName) {
+    createContentFromOilTool(oilName, "content");
   }
 
   function clearSmartSearch() {
@@ -1318,10 +1331,7 @@ export function createReferencesModule(deps) {
           ${oil.reason ? `<p class="daily-oil-reason"><i class="ph ph-lightbulb" style="font-size:14px;vertical-align:-2px;margin-right:4px"></i>${escapeHtml(oil.reason)}</p>` : ""}
           <span class="daily-oil-cta">\u0423\u0437\u043d\u0430\u0442\u044c \u0431\u043e\u043b\u044c\u0448\u0435 <i class="ph ph-caret-right"></i></span>
         </div>
-        <button class="primary-button daily-oil-create-btn" type="button" data-action="createContentFromDailyOil" data-args='${JSON.stringify([JSON.stringify(oil)])}'>
-          <i class="ph ph-plus" style="font-size:16px"></i>
-          <span>\u0421\u043e\u0437\u0434\u0430\u0442\u044c \u043a\u043e\u043d\u0442\u0435\u043d\u0442 \u043f\u043e \u043c\u0430\u0441\u043b\u0443 \u0434\u043d\u044f</span>
-        </button>`;
+`;
     } catch {
       el.innerHTML = "";
     }
@@ -1343,6 +1353,7 @@ export function createReferencesModule(deps) {
     runSmartSearch,
     clearSmartSearch,
     createContentFromOil,
+    createContentFromOilTool,
     createContentFromDailyOil,
     toggleReferenceFilters,
   };
