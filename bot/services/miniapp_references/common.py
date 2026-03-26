@@ -18,7 +18,7 @@ from db.session import AsyncSessionLocal
 BASE_DIR = Path(__file__).resolve().parents[3]
 SEED_FILE = BASE_DIR / "data" / "reference_cards_seed.json"
 EXTRA_SEED_FILE = BASE_DIR / "data" / "reference_cards_extra.json"
-REFERENCE_CATEGORIES = {"aroma", "practice", "sound", "concept", "blend", "symptom"}
+REFERENCE_CATEGORIES = {"aroma", "practice", "sound", "concept", "blend", "symptom", "crystal"}
 REFERENCE_IMAGES_DIR = BASE_DIR / "assets" / "reference_images"
 INTERNAL_SEED_KEY = "__seed_payload"
 INTERNAL_OVERRIDES_KEY = "__manual_overrides"
@@ -663,6 +663,26 @@ async def build_reference_context(
     return "\n\n".join(sections)
 
 
+async def _enrich_complementary_oil_refs(card: dict) -> dict:
+    """Resolve complementary_oils names → slugs for crystal/sound cards."""
+    oil_names = card.get("complementary_oils") or []
+    if not oil_names:
+        return card
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(
+            select(AromaCardModel).where(AromaCardModel.category == "aroma")
+        )
+        aromas = result.scalars().all()
+    name_to_slug = {_normalize(m.name): m.slug for m in aromas}
+    slugs = []
+    for name in oil_names:
+        slug = name_to_slug.get(_normalize(name))
+        if slug:
+            slugs.append(slug)
+    card["complementary_oil_slugs"] = slugs
+    return card
+
+
 async def get_reference_card(category: str, slug_or_name: str) -> dict[str, object] | None:
     from .cache import _make_key, get_cached, set_cached
 
@@ -691,6 +711,8 @@ async def get_reference_card(category: str, slug_or_name: str) -> dict[str, obje
                 serialized = await _enrich_symptom_cross_refs(serialized)
             elif category == "blend":
                 serialized = await _enrich_blend_cross_refs(serialized)
+            elif category in ("crystal", "sound"):
+                serialized = await _enrich_complementary_oil_refs(serialized)
             await set_cached(cache_key, serialized)
             return serialized
     return None
