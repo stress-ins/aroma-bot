@@ -259,6 +259,34 @@ export function registerWindowBridge(deps) {
   window.sendDraftToChat = sendDraftToChat;
   window.deleteDraft = deleteDraft;
 
+  // ── YouTube actions ───────────────────────────────────────────────
+  window.youtubeRegenScript = async function(draftId) {
+    try {
+      await fetchJson(`/api/youtube/${draftId}/regen-script`, { method: "POST", body: "{}" });
+      showUiNotice("Перегенерация сценария запущена");
+      setTimeout(() => openDraft(draftId), 2000);
+    } catch (e) { showRequestError(e); }
+  };
+  window.youtubeRegenThumbnail = async function(draftId, mode) {
+    const noteEl = document.getElementById("youtubeThumbNote");
+    const revision_note = noteEl ? noteEl.value.trim() : "";
+    try {
+      await fetchJson(`/api/youtube/${draftId}/thumbnail`, {
+        method: "POST",
+        body: JSON.stringify({ mode: mode || "prompt", revision_note }),
+      });
+      showUiNotice("Генерация обложки запущена");
+      setTimeout(() => openDraft(draftId), 3000);
+    } catch (e) { showRequestError(e); }
+  };
+  window.youtubeGenMetadata = async function(draftId) {
+    try {
+      await fetchJson(`/api/youtube/${draftId}/metadata`, { method: "POST", body: "{}" });
+      showUiNotice("Генерация метаданных запущена");
+      setTimeout(() => openDraft(draftId), 3000);
+    } catch (e) { showRequestError(e); }
+  };
+
   window.saveCarouselSlideText = saveCarouselSlideText;
   window.regenerateCarouselSlide = regenerateCarouselSlide;
   window.regenerateCarouselAll = regenerateCarouselAll;
