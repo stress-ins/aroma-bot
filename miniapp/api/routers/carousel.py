@@ -159,6 +159,55 @@ async def update_carousel_slide_copy(
     return await serialize_draft(draft)
 
 
+@router.post("/api/carousel/{draft_id}/slides/{slide_index}/upload")
+async def upload_carousel_slide_image(
+    draft_id: str,
+    slide_index: int,
+    file: UploadFile = File(...),
+    _: None = Depends(_require_auth),
+):
+    """Upload a custom image for a carousel slide."""
+    draft = await get_draft(draft_id)
+    if not draft or draft.kind != "carousel":
+        raise HTTPException(status_code=404, detail="carousel_not_found")
+
+    content_type = file.content_type or ""
+    if not content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="image_required")
+
+    data = await file.read()
+    if len(data) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="file_too_large")
+
+    img_prompts = list(draft.payload.get("img_prompts", []))
+    if slide_index < 0 or slide_index >= len(img_prompts):
+        raise HTTPException(status_code=400, detail="invalid_slide_index")
+
+    version = save_carousel_slide_asset(draft_id, slide_index, data, prompt="custom_upload")
+
+    payload = dict(draft.payload)
+    slide_images = list(payload.get("slide_images", []))
+    while len(slide_images) <= slide_index:
+        slide_images.append(None)
+    slide_images[slide_index] = version
+
+    slide_versions = list(payload.get("slide_image_versions", []))
+    while len(slide_versions) <= slide_index:
+        slide_versions.append([])
+    if not isinstance(slide_versions[slide_index], list):
+        slide_versions[slide_index] = []
+    slide_versions[slide_index].append(version)
+
+    payload["slide_images"] = slide_images
+    payload["slide_image_versions"] = slide_versions
+    payload["images_ready"] = sum(1 for img in slide_images if isinstance(img, dict) and img.get("filename"))
+
+    updated = await update_draft(draft_id, payload=payload)
+    if not updated:
+        raise HTTPException(status_code=500, detail="update_failed")
+    return await serialize_draft(updated)
+
+
 @router.post("/api/carousel/{draft_id}/slides/{slide_index}/note")
 async def update_carousel_slide_review_note(
     draft_id: str,
