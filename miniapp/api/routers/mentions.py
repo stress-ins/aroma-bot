@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from bot.services.mentions_store import (
     find_mention_by_external_id,
     get_mention,
+    get_own_usernames,
     get_token,
     ignore_mention,
     list_mentions,
@@ -88,13 +89,8 @@ async def ingest_mention(payload: MentionIngestPayload, _: None = Depends(_requi
 
     Filters out own posts — only external mentions are saved.
     """
-    # Filter out own posts
-    from config import settings
-    own_usernames: set[str] = set()
-    if settings.threads_username:
-        own_usernames.add(settings.threads_username.lower().lstrip("@"))
-    if settings.instagram_user_id:
-        own_usernames.add(settings.instagram_user_id.lower())
+    # Filter out own posts — check all known own accounts
+    own_usernames = await get_own_usernames()
     author = (payload.author_username or "").lower().lstrip("@")
     if author and author in own_usernames:
         return {"mention_id": None, "status": "skipped_own"}

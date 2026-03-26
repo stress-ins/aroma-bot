@@ -13,6 +13,54 @@ from db.models import MentionModel, MentionReplyModel, PlatformTokenModel
 logger = logging.getLogger(__name__)
 
 
+async def get_own_usernames(team_id: str | None = None) -> set[str]:
+    """Collect all 'own' usernames for filtering out own posts from mentions.
+
+    Sources:
+    1. Global settings (threads_username, instagram_user_id)
+    2. OAuth-connected accounts (PlatformTokenModel with key {platform}_username)
+    3. Brand settings monitored accounts (if team_id provided)
+    """
+    from config import settings
+
+    own: set[str] = set()
+
+    # 1) Global config
+    if settings.threads_username:
+        own.add(settings.threads_username.lower().lstrip("@"))
+    if settings.instagram_user_id:
+        own.add(settings.instagram_user_id.lower().lstrip("@"))
+
+    # 2) OAuth-connected usernames stored as PlatformToken entries
+    async with AsyncSessionLocal() as session:
+        for key in ("instagram_username", "threads_username", "youtube_username"):
+            result = await session.execute(
+                select(PlatformTokenModel).filter(PlatformTokenModel.platform == key)
+            )
+            token = result.scalar_one_or_none()
+            if token and token.access_token:
+                own.add(token.access_token.lower().lstrip("@"))
+
+    # 3) Brand settings monitored accounts
+    if team_id:
+        try:
+            from bot.services.brand_settings_store import get_brand_settings
+            brand = await get_brand_settings(team_id)
+            for acc_list in (brand.instagram_accounts or [], brand.threads_accounts or []):
+                for acc in acc_list:
+                    uname = ""
+                    if isinstance(acc, dict):
+                        uname = acc.get("username", "")
+                    elif isinstance(acc, str):
+                        uname = acc
+                    if uname:
+                        own.add(uname.lower().lstrip("@"))
+        except Exception:
+            logger.warning("get_own_usernames: failed to load brand settings", exc_info=True)
+
+    return own
+
+
 async def find_mention_by_external_id(platform: str, external_id: str) -> MentionModel | None:
     """Find an existing mention by platform + external_id (for deduplication)."""
     if not external_id:
