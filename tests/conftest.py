@@ -100,6 +100,10 @@ async def setup_test_db(monkeypatch):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
+    # Clear reference data cache between tests to avoid cross-test leaks
+    from bot.services.miniapp_references.cache import invalidate_all
+    invalidate_all()
+
     # Preload brand settings cache so sync callers don't crash
     from bot.services.brand_settings_store import preload_brand_settings
     await preload_brand_settings()

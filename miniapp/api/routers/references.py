@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi.responses import JSONResponse
 
 from bot.services.miniapp_references import (
     enrich_reference_card,
@@ -14,6 +15,10 @@ from config import settings
 from bot.services.daily_oil import get_daily_oil
 from ..auth import _require_reference_access, _telegram_user_id_from_init_data, _verify_init_data
 from ..models import AromaCardPayload
+
+# HTTP cache durations (seconds)
+_LIST_MAX_AGE = 60
+_DETAIL_MAX_AGE = 300
 
 router = APIRouter()
 
@@ -52,7 +57,11 @@ async def references_images_audit(category: str = "aroma", _: int = Depends(_req
 
 @router.get("/api/references/{category}")
 async def references_list(category: str, _: int = Depends(_require_reference_access)):
-    return {"items": await list_reference_cards(category)}
+    items = await list_reference_cards(category)
+    return JSONResponse(
+        content={"items": items},
+        headers={"Cache-Control": f"public, max-age={_LIST_MAX_AGE}"},
+    )
 
 
 @router.get("/api/references/{category}/{slug}")
@@ -60,7 +69,10 @@ async def reference_detail(category: str, slug: str, _: int = Depends(_require_r
     card = await get_reference_card(category, slug)
     if not card:
         raise HTTPException(status_code=404, detail="reference_not_found")
-    return card
+    return JSONResponse(
+        content=card,
+        headers={"Cache-Control": f"public, max-age={_DETAIL_MAX_AGE}"},
+    )
 
 
 @router.put("/api/references/{category}/{slug}")
