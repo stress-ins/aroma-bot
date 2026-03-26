@@ -33,6 +33,59 @@ def _extract_blend_context(payload) -> dict | None:
     return bc.model_dump() if bc else None
 
 
+async def _fetch_brand_profile(team_id: str | None) -> dict:
+    """Fetch brand username and avatar from connected Instagram/Threads account.
+
+    Returns dict with brand_username and optionally brand_avatar_path.
+    """
+    from bot.services.mentions_store import get_token, get_token_for_team
+    from pathlib import Path
+    import httpx
+
+    result: dict = {}
+
+    # Try Instagram first, then Threads
+    for platform in ("instagram", "threads"):
+        try:
+            if team_id:
+                uname_rec = await get_token_for_team(f"{platform}_username", team_id)
+            else:
+                uname_rec = await get_token(f"{platform}_username")
+            if uname_rec and uname_rec.access_token:
+                result["brand_username"] = uname_rec.access_token
+                break
+        except Exception:
+            continue
+
+    if not result.get("brand_username"):
+        return result
+
+    # Try to fetch avatar from Threads profile
+    try:
+        if team_id:
+            th_token = await get_token_for_team("threads", team_id)
+        else:
+            th_token = await get_token("threads")
+        if th_token and th_token.access_token:
+            from bot.services.threads_api import ThreadsAPI
+            api = ThreadsAPI(th_token.access_token)
+            profile = api.get_me()
+            pic_url = profile.get("threads_profile_picture_url")
+            if pic_url:
+                avatars_dir = Path("data/avatars")
+                avatars_dir.mkdir(parents=True, exist_ok=True)
+                avatar_path = avatars_dir / f"{result['brand_username']}.jpg"
+                async with httpx.AsyncClient() as client:
+                    resp = await client.get(pic_url, timeout=15)
+                    if resp.status_code == 200:
+                        avatar_path.write_bytes(resp.content)
+                        result["brand_avatar_path"] = str(avatar_path.resolve())
+    except Exception:
+        logger.debug("Failed to fetch brand avatar", exc_info=True)
+
+    return result
+
+
 
 
 @router.post("/api/suggest-topics", dependencies=[Depends(require_tier("expert"))])
@@ -194,6 +247,14 @@ async def generate_carousel(
         carousel_payload["blend_context"] = bc
     layout_style = payload.layout_style if payload.layout_style in ("overlay", "editorial") else "overlay"
     carousel_payload["layout_style"] = layout_style
+
+    # Auto-populate brand profile from connected Instagram/Threads
+    brand = await _fetch_brand_profile(ctx.team_id)
+    if brand.get("brand_username"):
+        carousel_payload["brand_username"] = brand["brand_username"]
+    if brand.get("brand_avatar_path"):
+        carousel_payload["brand_avatar_path"] = brand["brand_avatar_path"]
+
     saved = await save_draft(
         kind="carousel",
         topic=topic,

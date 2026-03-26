@@ -100,7 +100,7 @@ _PROMPT_CAROUSEL = """\
 SLIDE1: [текст]
 SLIDE2: [текст]
 ...
-SLIDE{N}: [текст]
+SLIDE{{N}}: [текст]
 IMG_PROMPT: [промпт]
 """
 
