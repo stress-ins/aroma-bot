@@ -1464,16 +1464,21 @@ export function createSettingsModule(deps) {
       const formData = new FormData();
       formData.append("file", file);
       try {
-        const resp = await fetch(`/api/teams/${teamId}/avatar${window._authQueryString?.() || ""}`, {
+        const headers = deps.initDataHeaders ? deps.initDataHeaders() : {};
+        headers["X-Team-Id"] = teamId;
+        const resp = await fetch(`/api/teams/${teamId}/avatar`, {
           method: "POST",
-          headers: deps.initDataHeaders ? deps.initDataHeaders() : {},
+          headers,
           body: formData,
         });
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        if (!resp.ok) {
+          const body = await resp.text();
+          throw new Error(`HTTP ${resp.status}: ${body}`);
+        }
         showUiNotice("Аватарка загружена", "success");
         renderTeam();
-      } catch (_err) {
-        showUiNotice("Не удалось загрузить аватарку", "error");
+      } catch (err) {
+        showUiNotice(`Не удалось загрузить: ${err.message}`, "error");
       }
     };
     input.click();
