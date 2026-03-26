@@ -222,14 +222,17 @@ _TELEGRAM_STUB_JS = (
 
 @app.get("/", response_class=HTMLResponse)
 async def index():
+    import time
     from miniapp.vite_manifest import get_vite_assets
 
     vite = get_vite_assets()
     html = (MINIAPP_DIR / "index.html").read_text(encoding="utf-8")
 
     # Replace Vite asset placeholders with manifest-resolved paths
-    html = html.replace("__VITE_JS__", vite["js"])
-    html = html.replace("__VITE_CSS__", vite["css"])
+    # Add cache-buster to prevent Telegram WebApp caching stale bundles
+    cache_buster = f"?v={int(time.time())}"
+    html = html.replace("__VITE_JS__", vite["js"] + cache_buster)
+    html = html.replace("__VITE_CSS__", vite["css"] + cache_buster if vite["css"] else "")
 
     if os.getenv("AROMA_BYPASS_AUTH") == "1":
         html = html.replace(
