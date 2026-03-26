@@ -116,6 +116,7 @@ export function registerWindowBridge(deps) {
     runSmartSearch,
     clearSmartSearch,
     createContentFromOil,
+    createContentFromOilTool,
     createContentFromDailyOil,
     toggleReferenceFilters,
     openBlendConstructor,
@@ -369,6 +370,7 @@ export function registerWindowBridge(deps) {
   window.runSmartSearch = runSmartSearch;
   window.clearSmartSearch = clearSmartSearch;
   window.createContentFromOil = createContentFromOil;
+  window.createContentFromOilTool = createContentFromOilTool;
   window.createContentFromDailyOil = createContentFromDailyOil;
   window.toggleReferenceFilters = toggleReferenceFilters;
   window.openBlendConstructor = openBlendConstructor;
