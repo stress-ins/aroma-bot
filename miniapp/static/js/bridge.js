@@ -645,8 +645,15 @@ export function registerWindowBridge(deps) {
   document.addEventListener("click", (e) => {
     const el = e.target.closest("[data-action]");
     if (!el) return;
-    const fn = window[el.dataset.action];
-    if (typeof fn === "function") fn(..._resolveArgs(el, el.dataset.args));
+    const actionName = el.dataset.action;
+    const fn = window[actionName];
+    if (typeof fn === "function") {
+      fn(..._resolveArgs(el, el.dataset.args));
+    } else {
+      console.error(`[data-action] "${actionName}" is not a function:`, typeof fn, fn);
+      // Show debug toast so user can report
+      if (window.showUiNotice) window.showUiNotice(`Кнопка "${actionName}" не найдена (${typeof fn})`, "error");
+    }
   });
 
   document.addEventListener("change", (e) => {
