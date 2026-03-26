@@ -767,6 +767,9 @@ function uiIcon(name) {
     sparkles:   "sparkle",
     "map-pin":  "map-pin",
     "sliders-horizontal": "sliders-horizontal",
+    award:      "trophy",
+    trophy:     "trophy",
+    "trending-up": "trend-up",
   };
   return `<span class="ui-icon ui-icon-${escapeHtml(name)}">${icon(PHOSPHOR_MAP[name] || name, 16)}</span>`;
 }
