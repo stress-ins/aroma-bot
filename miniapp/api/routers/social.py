@@ -9,10 +9,12 @@ from pydantic import BaseModel
 from bot.services.brand_settings_store import get_brand_settings, update_brand_settings
 from bot.services.mentions_store import get_token, list_tokens
 from bot.services.social_oauth import (
+    FACEBOOK_DEFAULT_SCOPES,
     INSTAGRAM_DEFAULT_SCOPES,
     THREADS_DEFAULT_SCOPES,
     TIKTOK_DEFAULT_SCOPES,
     build_canva_authorize_url,
+    build_facebook_authorize_url,
     build_instagram_authorize_url,
     build_oauth_state,
     build_threads_authorize_url,
@@ -30,12 +32,14 @@ INSTAGRAM_REDIRECT_URI = "https://oauth.aromara.ru/instagram/callback"
 CANVA_REDIRECT_URI = "https://oauth.aromara.ru/canva/callback"
 YOUTUBE_REDIRECT_URI = "https://oauth.aromara.ru/youtube/callback"
 TIKTOK_REDIRECT_URI = "https://oauth.aromara.ru/tiktok/callback"
+FACEBOOK_REDIRECT_URI = "https://oauth.aromara.ru/facebook/callback"
 
-_PLATFORMS = ("threads", "instagram", "canva", "youtube", "tiktok")
+_PLATFORMS = ("threads", "instagram", "canva", "youtube", "tiktok", "facebook")
 
 _PLATFORM_SCOPES: dict[str, list[str]] = {
     "threads": list(THREADS_DEFAULT_SCOPES),
     "instagram": list(INSTAGRAM_DEFAULT_SCOPES),
+    "facebook": list(FACEBOOK_DEFAULT_SCOPES),
     "canva": [],
     "youtube": [],
     "tiktok": list(TIKTOK_DEFAULT_SCOPES),
@@ -90,6 +94,8 @@ async def social_connect_url(
         raise HTTPException(status_code=400, detail="youtube_not_configured")
     if platform == "tiktok" and (not settings.tiktok_client_key or not settings.tiktok_client_secret):
         raise HTTPException(status_code=400, detail="tiktok_not_configured")
+    if platform == "facebook" and (not settings.instagram_app_id or not settings.instagram_app_secret):
+        raise HTTPException(status_code=400, detail="facebook_not_configured")
 
     user_id = _telegram_user_id_from_init_data(x_telegram_init_data or "") or 0
     chat_id = user_id
@@ -132,6 +138,12 @@ async def social_connect_url(
             url = build_tiktok_authorize_url(
                 client_key=settings.tiktok_client_key,
                 redirect_uri=TIKTOK_REDIRECT_URI,
+                state=state,
+            )
+        elif platform == "facebook":
+            url = build_facebook_authorize_url(
+                client_id=settings.instagram_app_id,
+                redirect_uri=FACEBOOK_REDIRECT_URI,
                 state=state,
             )
         else:

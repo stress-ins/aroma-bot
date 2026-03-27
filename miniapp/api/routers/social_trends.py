@@ -246,19 +246,23 @@ async def _run_team_collection(team_id: str) -> None:
             th_accounts = [{"username": a.get("username", ""), "status": "checking"} for a in ig_accounts if a.get("username")]
             logger.info("Auto-populated %d Threads accounts from Instagram for team %s", len(th_accounts), team_id)
 
-        # Instagram
+        # Instagram — use IG Business Login for own media, Facebook Login for others
         ig_token = await get_token_for_team("instagram", team_id)
         ig_uid = await get_token_for_team("instagram_user_id", team_id)
+        fb_token = await get_token_for_team("facebook", team_id)
+        fb_ig_uid = await get_token_for_team("facebook_user_id", team_id)
         if ig_token and ig_uid:
             from analytics.instagram_trends import InstagramTrendsCollector
 
             collector = InstagramTrendsCollector(
                 team_id, ig_token.access_token, ig_uid.access_token,
                 own_username=own_ig_username,
+                fb_token=fb_token.access_token if fb_token else "",
+                fb_user_id=fb_ig_uid.access_token if fb_ig_uid else "",
             )
             if ig_accounts:
                 await collector.collect_from_accounts(ig_accounts)
-            # Hashtag collection
+            # Hashtag collection (prefers FB token if available)
             await collector.collect_from_hashtags(brand_hashtags)
 
         # Threads
