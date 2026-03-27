@@ -35,6 +35,10 @@ export function createRuntimeModule(deps) {
   } = deps;
 
   async function loadCurrentTab() {
+    // Static action-group: show only on handbook tabs, hide on all others
+    const refActions = document.getElementById("referenceActions");
+    if (refActions) refActions.style.display = deps.HANDBOOK_CATEGORY_META[state.tab] ? "" : "none";
+
     if (state.tab === "create") return renderCreate();
     if (state.tab === "inbox") return loadInbox();
     if (state.tab === "plans") return loadPlans();
