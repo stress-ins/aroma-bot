@@ -147,6 +147,7 @@ export function registerWindowBridge(deps) {
     createNewTeam,
     createTeamInvite,
     removeTeamMember,
+    triggerAvatarFileInput,
     uploadTeamAvatar,
     activatePromo,
     generatePromos,
@@ -460,6 +461,7 @@ export function registerWindowBridge(deps) {
   window.createNewTeam = createNewTeam;
   window.createTeamInvite = createTeamInvite;
   window.removeTeamMember = removeTeamMember;
+  window.triggerAvatarFileInput = triggerAvatarFileInput;
   window.uploadTeamAvatar = uploadTeamAvatar;
   window.activatePromo = activatePromo;
   window.generatePromos = generatePromos;
