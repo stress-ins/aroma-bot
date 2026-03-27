@@ -1459,14 +1459,34 @@ export function createSettingsModule(deps) {
   async function uploadTeamAvatar(teamId, _value, inputEl) {
     // Called via data-on-change on <input type="file">
     const file = inputEl?.files?.[0];
-    if (!file) return;
+    if (!file) {
+      showUiNotice("Файл не выбран", "error");
+      return;
+    }
     if (file.size > 10 * 1024 * 1024) {
       showUiNotice("Файл слишком большой (макс. 10 МБ)", "error");
       return;
     }
-    // Reset input so re-selecting same file triggers change again
-    inputEl.value = "";
 
+    // Read file into memory BEFORE resetting input — some WebViews
+    // invalidate File objects after input.value = ""
+    const reader = new FileReader();
+    reader.onload = () => {
+      // Reset input so re-selecting same file triggers change again
+      if (inputEl) inputEl.value = "";
+
+      // Create a new File from the data URL to ensure it stays valid
+      const blob = new Blob([reader.result], { type: file.type });
+      const safeFile = new File([blob], file.name, { type: file.type });
+      _openCropper(safeFile, teamId);
+    };
+    reader.onerror = () => {
+      showUiNotice("Не удалось прочитать файл", "error");
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  function _openCropper(file, teamId) {
     // Open cropper — the cropped blob is sent to the server
     avatarCropper.open(file, async (blob) => {
       const formData = new FormData();
