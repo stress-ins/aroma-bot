@@ -57,6 +57,11 @@
   background: rgba(46,125,79,0.10); border: 1px solid rgba(46,125,79,0.25);
   color: var(--good); padding: 2px 8px; border-radius: 20px;
 }
+.tag-status-error {
+  display: inline-block; font-size: 11px; font-weight: 600;
+  background: rgba(176,58,46,0.12); border: 1px solid rgba(176,58,46,0.25);
+  color: var(--bad); padding: 2px 8px; border-radius: 20px;
+}
 
 .mention-card--dim { opacity: 0.65; }
 

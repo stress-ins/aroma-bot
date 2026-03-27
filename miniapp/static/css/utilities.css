@@ -298,7 +298,9 @@
   text-overflow: ellipsis;
 }
 .team-members-list { margin: 8px 0 12px; }
-.team-avatar-section { display: flex; align-items: center; gap: 12px; margin: 12px 0; }
+.team-avatar-section { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; padding: 12px 14px; background: var(--surface-2); border-radius: var(--radius-md); }
+.team-avatar-top { display: flex; align-items: center; gap: 12px; }
+.team-avatar-hint { color: var(--hint); font-size: 11px; line-height: 1.4; }
 .team-avatar-preview { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border); }
 #teamContent > .settings-section + .settings-section { margin-top: 16px; }
 
@@ -426,7 +428,9 @@
   margin-top: 12px;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
 }
+.promo-table-wrap::-webkit-scrollbar { display: none; }
 .promo-table {
   width: 100%;
   border-collapse: collapse;

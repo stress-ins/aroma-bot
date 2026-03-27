@@ -248,7 +248,6 @@ export function createArchiveModule(deps) {
         </div>
         ${summaryHtml}
         ${items.length > 0 ? renderCoachingSummaryHeader() : ""}
-        ${state.coachingSummaryOpen ? renderCoachingSummaryPanel() : ""}
         ${statsHtml}
         ${cardsHtml}
       </div>
@@ -649,9 +648,9 @@ export function createArchiveModule(deps) {
 
   function renderCoachingSummaryHeader() {
     return `
-      <div class="coach-summary-header" data-action="toggleCoachingSummary" data-args='[]'>
+      <div class="coach-summary-header disabled">
         ${uiIcon("brain")} Coaching Summary
-        <span style="margin-left:auto">${state.coachingSummaryOpen ? "▲" : "▼"}</span>
+        <span class="coach-summary-soon">скоро</span>
       </div>
     `;
   }

@@ -468,9 +468,9 @@ export function createPlansModule(deps) {
               data-action="publishScheduledNow" data-args='${JSON.stringify([draft.draft_id, draft.kind, slot || "", null])}'>
               ${actionLabel("send", "Опубликовать сейчас")}
             </button>
-            <button class="secondary-button"
+            <button class="danger-button"
               data-action="cancelPublishSchedule" data-args='${JSON.stringify([draft.draft_id, null])}'>
-              ✗ Отменить
+              ✗ Отменить публикацию
             </button>
           ` : ""}
           <button class="danger-button"

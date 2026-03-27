@@ -39,7 +39,9 @@
   padding: 0 var(--space-3) 0;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
 }
+.content-sub-tabs::-webkit-scrollbar { display: none; }
 .content-sub-tabs:empty { display: none; }
 
 .content-sub-tab {
