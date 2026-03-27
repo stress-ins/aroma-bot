@@ -695,3 +695,122 @@ body.is-mobile-layout .detail-icon-actions button {
 /* Publish panel */
 .publish-panel { display: grid; gap: var(--space-3); }
 
+/* ── Carousel Publish Screen ──────────────────────────────────────────── */
+
+.carousel-publish-thumbs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 0 8px;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+.carousel-publish-thumb {
+  position: relative;
+  flex: 0 0 auto;
+  width: 100px;
+  height: 100px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  scroll-snap-align: start;
+}
+
+.carousel-publish-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.carousel-publish-thumb-num {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 600;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+}
+
+.publish-caption-field {
+  width: 100%;
+  min-height: 100px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.publish-caption-field:focus {
+  outline: none;
+  border-color: var(--brand);
+}
+
+.caption-counter {
+  font-size: 12px;
+  color: var(--muted);
+  text-align: right;
+  margin-top: 4px;
+}
+
+.caption-counter--warn {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.publish-status-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.publish-status-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.publish-status-badge {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.publish-status-badge--success {
+  background: color-mix(in srgb, var(--positive) 15%, transparent);
+  color: var(--positive);
+}
+
+.publish-status-badge--failed {
+  background: color-mix(in srgb, var(--danger) 15%, transparent);
+  color: var(--danger);
+}
+
+.publish-status-badge--pending {
+  background: color-mix(in srgb, var(--hint) 15%, transparent);
+  color: var(--hint);
+}
+
+.publish-status-error {
+  font-size: 12px;
+  color: var(--danger);
+  margin-left: auto;
+}
+

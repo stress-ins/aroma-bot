@@ -87,6 +87,73 @@ async def complete_carousel_regen_slide(
         )
 
 
+def _generate_carousel_caption_sync(topic: str, slides: list[str], angle: str) -> str:
+    """Generate a carousel post caption via Claude."""
+    from bot.services.claude_client import call_claude
+    from bot.services.brand_settings_store import get_brand_settings_cached
+
+    bs = get_brand_settings_cached()
+    forbidden_block = (
+        "НЕ использовать следующие фразы:\n"
+        + "\n".join(f"- {p}" for p in bs.forbidden_phrases)
+        if bs.forbidden_phrases
+        else ""
+    )
+    slides_text = "\n".join(
+        f"Слайд {i + 1}: {s}" for i, s in enumerate(slides) if s
+    )
+    prompt = (
+        f"{bs.brand_voice}\n\n"
+        f"Напиши описание (caption) для карусельного поста в Instagram.\n\n"
+        f"Тема: «{topic}»\n"
+        f"Угол подачи: {angle}\n\n"
+        f"Слайды:\n{slides_text}\n\n"
+        f"Требования:\n"
+        f"- 2-4 предложения, описывающие суть карусели\n"
+        f"- Разговорный тон, от первого лица\n"
+        f"- Призыв к действию или вопрос в конце\n"
+        f"- 5-8 релевантных хэштегов\n"
+        f"- Макс. 2200 символов\n"
+        f"- Только текст, без markdown\n"
+        f"\n{forbidden_block}"
+    )
+    return call_claude(
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=600,
+        context="carousel caption",
+    )
+
+
+async def complete_carousel_regen_caption(draft_id: str) -> None:
+    """Regenerate caption for a carousel draft via AI."""
+    try:
+        loop = asyncio.get_running_loop()
+        draft = await get_draft(draft_id)
+        if not draft or draft.kind != "carousel":
+            return
+        payload = draft.payload or {}
+        topic = draft.topic or ""
+        slides = payload.get("slides") or []
+        angle = str(payload.get("angle", "") or "")
+        caption = await loop.run_in_executor(
+            None,
+            _generate_carousel_caption_sync,
+            topic, slides, angle,
+        )
+        p = dict(payload)
+        p["caption"] = caption
+        await update_draft(draft_id, payload=p)
+        await set_generation_state(draft_id, pending=False)
+    except Exception as exc:
+        await set_generation_state(
+            draft_id,
+            pending=False,
+            stage="error",
+            message="Не удалось сгенерировать описание. Попробуйте ещё раз.",
+            error=str(exc),
+        )
+
+
 async def complete_carousel_regenerate_all(draft_id: str) -> None:
     await _run_generation_task(
         draft_id,

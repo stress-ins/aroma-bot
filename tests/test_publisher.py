@@ -212,7 +212,7 @@ async def test_publish_routes_mixed(mock_upload_client, mock_draft):
 
 
 async def test_publish_with_photos(mock_upload_client, tmp_path):
-    """Carousel draft with images should call upload_photos."""
+    """Carousel draft with images should publish via Meta Graph API."""
     from bot.services.drafts_store import DraftRecord
 
     draft_id = "car01"
@@ -234,23 +234,22 @@ async def test_publish_with_photos(mock_upload_client, tmp_path):
         },
     )
 
+    mock_publish_to_instagram = AsyncMock(return_value={"id": "ig_123"})
+
     with (
-        patch("bot.services.upload_post_publisher.get_draft", return_value=draft),
-        patch("bot.services.upload_post_publisher._get_upload_credentials", new_callable=AsyncMock, return_value=("key", "user")),
-        patch("bot.services.upload_post_publisher._get_upload_client", return_value=mock_upload_client),
-        patch("bot.services.upload_post_publisher._ensure_user"),
-        patch("bot.services.upload_post_publisher.CAROUSEL_ASSETS_DIR", tmp_path),
-        patch("bot.services.upload_post_publisher.save_log", return_value=1),
-        patch("bot.services.upload_post_publisher.update_log_status"),
-        patch("bot.services.upload_post_publisher.mark_published", new_callable=AsyncMock),
-        patch("bot.services.upload_post_publisher.mark_failed", new_callable=AsyncMock),
         patch("bot.services.publisher.get_draft", return_value=draft),
         patch("bot.services.publisher.update_draft", return_value=draft),
+        patch("bot.services.publisher._resolve_media_paths", return_value=[tmp_path / draft_id / "s1.png"]),
+        patch("bot.services.meta_publisher.publish_to_instagram", mock_publish_to_instagram),
+        patch("bot.services.meta_publisher._get_carousel_image_urls", return_value=["https://example.com/s1.png"]),
+        patch("bot.services.publish_log_store.save_log", new_callable=AsyncMock, return_value=1),
+        patch("bot.services.publish_log_store.update_log_status", new_callable=AsyncMock),
     ):
         results = await publish(draft_id, ["instagram"])
 
     assert results["instagram"]["status"] == "success"
-    mock_upload_client.upload_photos.assert_called_once()
+    assert results["instagram"]["external_id"] == "ig_123"
+    mock_publish_to_instagram.assert_called_once()
 
 
 async def test_publish_with_schedule(mock_upload_client, mock_draft):

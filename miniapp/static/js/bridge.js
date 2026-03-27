@@ -39,6 +39,11 @@ export function registerWindowBridge(deps) {
     exportToCanva,
     importFromCanva,
     selectCanvaDesign,
+    showCarouselPublishScreen,
+    showCarouselPublishBack,
+    saveCarouselCaption,
+    regenCarouselCaption,
+    publishCarousel,
     saveReelsScenario,
     regenerateReelsStoryboard,
     regenerateAllReelsFrames,
@@ -335,6 +340,11 @@ export function registerWindowBridge(deps) {
   window.exportToCanva = exportToCanva;
   window.importFromCanva = importFromCanva;
   window.selectCanvaDesign = selectCanvaDesign;
+  window.showCarouselPublishScreen = showCarouselPublishScreen;
+  window.showCarouselPublishBack = showCarouselPublishBack;
+  window.saveCarouselCaption = saveCarouselCaption;
+  window.regenCarouselCaption = regenCarouselCaption;
+  window.publishCarousel = publishCarousel;
 
   window.saveReelsScenario = saveReelsScenario;
   window.regenerateReelsStoryboard = regenerateReelsStoryboard;

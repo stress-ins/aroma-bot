@@ -201,11 +201,21 @@ async def _execute_import(task) -> dict:
     img_prompts: list[str] = list(draft.payload.get("img_prompts", []))
     slide_images: list[dict | None] = list(draft.payload.get("slide_images", []))
     slide_versions: list[list] = list(draft.payload.get("slide_image_versions", []))
+    slides: list[str] = list(draft.payload.get("slides", []))
 
-    while len(slide_images) < len(images):
+    # Sync array lengths to match imported images count
+    n = len(images)
+    while len(slide_images) < n:
         slide_images.append(None)
-    while len(slide_versions) < len(images):
+    while len(slide_versions) < n:
         slide_versions.append([])
+    while len(slides) < n:
+        slides.append("")
+    # Trim if Canva returned fewer slides
+    slide_images = slide_images[:n]
+    slide_versions = slide_versions[:n]
+    slides = slides[:n]
+    img_prompts = img_prompts[:n]
 
     for i, img_bytes in enumerate(images):
         if img_bytes is None:
@@ -217,6 +227,8 @@ async def _execute_import(task) -> dict:
             slide_versions[i].append(version)
 
     payload = dict(draft.payload)
+    payload["slides"] = slides
+    payload["img_prompts"] = img_prompts
     payload["slide_images"] = slide_images
     payload["slide_image_versions"] = slide_versions
     payload["images_ready"] = sum(1 for img in slide_images if img)

@@ -564,6 +564,10 @@ export function createCoreModule(deps) {
         tag_not_found: "Тег не найден.",
         // Carousel / Canva
         carousel_not_found: "Карусель не найдена.",
+        carousel_no_images: "Нет готовых картинок для публикации.",
+        carousel_caption_too_long: "Описание слишком длинное. Сократите до 2200 символов.",
+        instagram_token_not_configured: "Instagram не подключён. Авторизуйтесь в настройках.",
+        threads_token_not_configured: "Threads не подключён. Авторизуйтесь в настройках.",
         carousel_slide_not_found: "Слайд не найден.",
         carousel_version_not_found: "Версия не найдена.",
         slide_preview_failed: "Не удалось создать превью слайда.",

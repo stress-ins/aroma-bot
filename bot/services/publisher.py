@@ -152,16 +152,64 @@ async def publish(
         if overall < 0.65:
             logger.warning("Publishing draft %s with low quality_score=%.2f", draft_id, overall)
 
-    upload_platforms = [p for p in platforms if p in UPLOAD_POST_PLATFORMS]
+    # Carousel: publish Instagram/Threads via Meta Graph API directly
+    remaining_platforms = list(platforms)
+    if draft and draft.kind == "carousel":
+        from bot.services.meta_publisher import (
+            publish_to_instagram,
+            publish_to_threads,
+            _get_carousel_image_urls,
+            _get_public_image_url,
+        )
+        from bot.services.publish_log_store import save_log, update_log_status
+
+        caption = _draft_text(draft.payload, draft.kind)
+        media_paths = _resolve_media_paths(draft.kind, draft_id, draft.payload)
+
+        if "instagram" in remaining_platforms:
+            log_id = await save_log(draft_id, "instagram", "publish", "pending")
+            try:
+                image_urls = _get_carousel_image_urls(draft.payload or {}, draft_id, media_paths)
+                if not image_urls:
+                    raise RuntimeError("carousel_no_images")
+                result = await publish_to_instagram(caption, carousel_image_urls=image_urls)
+                ext_id = str(result.get("id", ""))
+                await update_log_status(log_id, "success", external_id=ext_id)
+                results["instagram"] = {"status": "success", "external_id": ext_id}
+                logger.info("Published carousel %s to instagram: %s", draft_id, ext_id)
+            except Exception as exc:
+                error_msg = str(exc)[:500]
+                await update_log_status(log_id, "failed", error_message=error_msg)
+                results["instagram"] = {"status": "failed", "error": error_msg}
+                logger.error("Failed to publish carousel %s to instagram: %s", draft_id, exc)
+            remaining_platforms = [p for p in remaining_platforms if p != "instagram"]
+
+        if "threads" in remaining_platforms:
+            log_id = await save_log(draft_id, "threads", "publish", "pending")
+            try:
+                image_url = _get_public_image_url(draft.payload or {}, draft.kind, draft_id, media_paths)
+                result = await publish_to_threads(caption, image_url=image_url)
+                ext_id = str(result.get("id", ""))
+                await update_log_status(log_id, "success", external_id=ext_id)
+                results["threads"] = {"status": "success", "external_id": ext_id}
+                logger.info("Published carousel %s to threads: %s", draft_id, ext_id)
+            except Exception as exc:
+                error_msg = str(exc)[:500]
+                await update_log_status(log_id, "failed", error_message=error_msg)
+                results["threads"] = {"status": "failed", "error": error_msg}
+                logger.error("Failed to publish carousel %s to threads: %s", draft_id, exc)
+            remaining_platforms = [p for p in remaining_platforms if p != "threads"]
+
+    upload_platforms = [p for p in remaining_platforms if p in UPLOAD_POST_PLATFORMS]
     if upload_platforms:
         result = await _upload_post_publish(draft_id, upload_platforms, scheduled_at)
         results.update(result)
 
-    if "telegram" in platforms and telegram_bot and telegram_chat_id:
+    if "telegram" in remaining_platforms and telegram_bot and telegram_chat_id:
         result = await _telegram_publish(draft_id, telegram_bot, telegram_chat_id)
         results["telegram"] = result
 
-    if "tiktok" in platforms:
+    if "tiktok" in remaining_platforms:
         results["tiktok"] = await _tiktok_publish(draft_id)
 
     # Update draft metadata (external_ids, status, platforms) for backward compat

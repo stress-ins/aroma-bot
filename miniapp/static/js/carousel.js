@@ -975,6 +975,268 @@ export function createCarouselModule(deps) {
     }
   }
 
+  // ── Carousel Publish Screen ────────────────────────────────────────────
+
+  const _PLATFORM_SVG = {
+    threads: `<svg class="publish-platform-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15 12a3 3 0 1 1-3-3c2 0 3.5 1 3.5 3s-1.5 3-3.5 3"/></svg>`,
+    instagram: `<svg class="publish-platform-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>`,
+    telegram: `<svg class="publish-platform-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>`,
+  };
+
+  function _renderCarouselPublishScreen(d) {
+    const p = d.payload || {};
+    const caption = p.caption || "";
+    const captionLen = caption.length;
+    const slideImages = (p.slide_images || []).filter(Boolean);
+
+    return `
+      <div class="detail-grid">
+        <button class="back-button visible" data-action="showCarouselPublishBack" data-args='${JSON.stringify([d.draft_id])}'>${uiIcon("back")}<span>Назад к карусели</span></button>
+
+        <div class="detail-top detail-hero">
+          <div class="detail-hero-copy">
+            <p class="eyebrow"><i class="ph ph-images-square"></i><span>Карусель · Публикация</span></p>
+            <h2 class="detail-title">${escapeHtml(d.topic)}</h2>
+          </div>
+        </div>
+
+        <section class="section">
+          <div class="section-heading">
+            <h3><i class="ph ph-eye"></i> Превью слайдов</h3>
+            <p>${slideImages.length} слайд${slideImages.length === 1 ? "" : slideImages.length < 5 ? "а" : "ов"}</p>
+          </div>
+          <div class="carousel-publish-thumbs">
+            ${slideImages.map((img, i) => {
+              const url = img?.thumb_url || img?.url || "";
+              return `<div class="carousel-publish-thumb">
+                <img src="${escapeHtml(url)}" alt="Слайд ${i + 1}" loading="lazy" />
+                <span class="carousel-publish-thumb-num">${i + 1}</span>
+              </div>`;
+            }).join("")}
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-heading">
+            <h3><i class="ph ph-text-aa"></i> Описание поста</h3>
+          </div>
+          <textarea id="carouselPublishCaption" class="publish-caption-field" rows="5"
+            placeholder="Напишите описание к посту…">${escapeHtml(caption)}</textarea>
+          <div class="caption-counter ${captionLen > 2200 ? "caption-counter--warn" : ""}" id="captionCounter">
+            ${captionLen} / 2200
+          </div>
+          <div class="actions-row" style="margin-top:8px">
+            <button class="secondary-button" type="button"
+              data-action="saveCarouselCaption" data-args='${JSON.stringify([d.draft_id, null])}'>
+              <i class="ph ph-floppy-disk"></i> Сохранить
+            </button>
+            <button class="secondary-button" type="button"
+              data-action="regenCarouselCaption" data-args='${JSON.stringify([d.draft_id, null])}'>
+              <i class="ph ph-sparkle"></i> Сгенерировать AI
+            </button>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-heading">
+            <h3><i class="ph ph-share-network"></i> Платформы</h3>
+          </div>
+          <div class="publish-platforms">
+            <label class="publish-platform-toggle">
+              <input type="checkbox" name="carouselPubPlatform" value="instagram" checked>
+              ${_PLATFORM_SVG.instagram}<span>Instagram</span>
+            </label>
+            <label class="publish-platform-toggle">
+              <input type="checkbox" name="carouselPubPlatform" value="threads">
+              ${_PLATFORM_SVG.threads}<span>Threads</span>
+            </label>
+            <label class="publish-platform-toggle">
+              <input type="checkbox" name="carouselPubPlatform" value="telegram">
+              ${_PLATFORM_SVG.telegram}<span>Telegram</span>
+            </label>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-heading">
+            <h3><i class="ph ph-calendar"></i> Расписание</h3>
+          </div>
+          <div class="publish-schedule-row">
+            <label class="publish-schedule-label"><span>Запланировать на</span>
+              <input type="datetime-local" id="carouselPubScheduleAt" class="publish-datetime">
+            </label>
+          </div>
+          <p class="field-help">Оставьте пустым для немедленной публикации.</p>
+        </section>
+
+        <section class="section">
+          <div class="actions-row">
+            <button class="primary-button" type="button"
+              data-action="publishCarousel" data-args='${JSON.stringify([d.draft_id, false, null])}'>
+              <i class="ph ph-paper-plane-tilt"></i> Опубликовать сейчас
+            </button>
+            <button class="secondary-button" type="button"
+              data-action="publishCarousel" data-args='${JSON.stringify([d.draft_id, true, null])}'>
+              <i class="ph ph-calendar-check"></i> Запланировать
+            </button>
+          </div>
+          <div id="publishStatusContainer"></div>
+        </section>
+      </div>
+    `;
+  }
+
+  async function showCarouselPublishScreen(draftId) {
+    const container = document.getElementById("draftDetail");
+    if (!container) return;
+    try {
+      const draft = await fetchJson(`/api/carousel/${draftId}`);
+      mergeDraftIntoState(draft);
+      container.innerHTML = _renderCarouselPublishScreen(draft);
+      // Live caption counter
+      const textarea = document.getElementById("carouselPublishCaption");
+      const counter = document.getElementById("captionCounter");
+      if (textarea && counter) {
+        textarea.addEventListener("input", () => {
+          const len = textarea.value.length;
+          counter.textContent = `${len} / 2200`;
+          counter.classList.toggle("caption-counter--warn", len > 2200);
+        });
+      }
+    } catch (err) {
+      showRequestError("Не удалось открыть экран публикации", err);
+    }
+  }
+
+  async function showCarouselPublishBack(draftId) {
+    try {
+      const draft = await fetchJson(`/api/carousel/${draftId}`);
+      mergeDraftIntoState(draft);
+      renderDraftDetail(draft);
+    } catch (err) {
+      showRequestError("Не удалось загрузить карусель", err);
+    }
+  }
+
+  async function saveCarouselCaption(draftId, btn) {
+    const caption = document.getElementById("carouselPublishCaption")?.value || "";
+    await withButtonFeedback(btn, "Сохраняю…", async () => {
+      await fetchJson(`/api/carousel/${draftId}/caption`, {
+        method: "POST",
+        body: JSON.stringify({ caption }),
+      });
+      showUiNotice("Описание сохранено", "success");
+    }, "Сохранено");
+  }
+
+  async function regenCarouselCaption(draftId, btn) {
+    await withButtonFeedback(btn, "Генерирую…", async () => {
+      await fetchJson(`/api/carousel/${draftId}/regen-caption`, { method: "POST" });
+      // Poll for generation completion
+      const poll = setInterval(async () => {
+        try {
+          const draft = await fetchJson(`/api/carousel/${draftId}`);
+          if (!draft.generation_pending) {
+            clearInterval(poll);
+            const caption = draft.payload?.caption || "";
+            const textarea = document.getElementById("carouselPublishCaption");
+            if (textarea) textarea.value = caption;
+            const counter = document.getElementById("captionCounter");
+            if (counter) {
+              counter.textContent = `${caption.length} / 2200`;
+              counter.classList.toggle("caption-counter--warn", caption.length > 2200);
+            }
+            showUiNotice("Описание сгенерировано", "success");
+          }
+        } catch (_) { clearInterval(poll); }
+      }, 2000);
+      setTimeout(() => clearInterval(poll), 30000);
+    }, "Готово");
+  }
+
+  async function publishCarousel(draftId, withSchedule, btn) {
+    // Save caption first
+    const caption = document.getElementById("carouselPublishCaption")?.value || "";
+    await fetchJson(`/api/carousel/${draftId}/caption`, {
+      method: "POST",
+      body: JSON.stringify({ caption }),
+    });
+
+    const checkboxes = document.querySelectorAll("input[name='carouselPubPlatform']:checked");
+    const platforms = Array.from(checkboxes).map((cb) => cb.value);
+    if (!platforms.length) {
+      showUiNotice("Выберите хотя бы одну платформу", "error");
+      return;
+    }
+
+    const body = { platforms };
+    if (withSchedule) {
+      const dt = document.getElementById("carouselPubScheduleAt")?.value;
+      if (!dt) {
+        showUiNotice("Укажите дату и время", "error");
+        return;
+      }
+      body.scheduled_at = new Date(dt).toISOString();
+    } else {
+      const ok = confirm("Опубликовать карусель сейчас?");
+      if (!ok) return;
+    }
+
+    await withButtonFeedback(btn, withSchedule ? "Планирую…" : "Публикую…", async () => {
+      await fetchJson(`/api/drafts/${draftId}/publish`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+      const draft = await fetchJson(`/api/carousel/${draftId}`);
+      mergeDraftIntoState(draft);
+      // Re-render publish screen with status
+      const container = document.getElementById("draftDetail");
+      if (container) container.innerHTML = _renderCarouselPublishScreen(draft);
+      // Start SSE status poll
+      _startCarouselPublishPoll(draftId);
+    }, withSchedule ? "Запланировано" : "Отправлено");
+  }
+
+  let _carouselPublishEs = null;
+
+  async function _startCarouselPublishPoll(draftId) {
+    if (_carouselPublishEs) { _carouselPublishEs.close(); _carouselPublishEs = null; }
+    if (typeof EventSource !== "undefined") {
+      const qs = await sseQueryString();
+      const es = new EventSource(`/api/drafts/${draftId}/publish-stream${qs}`);
+      _carouselPublishEs = es;
+      es.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          _renderCarouselPublishStatus(data.logs || []);
+          if (data.error === "not_found" || data.done) {
+            es.close();
+            _carouselPublishEs = null;
+          }
+        } catch (_) { /* ignore */ }
+      };
+      es.onerror = () => { es.close(); _carouselPublishEs = null; };
+    }
+  }
+
+  function _renderCarouselPublishStatus(logs) {
+    const container = document.getElementById("publishStatusContainer");
+    if (!container || !logs.length) return;
+    const STATUS_TEXT = { success: "Опубликовано", failed: "Ошибка", pending: "В процессе…" };
+    container.innerHTML = `
+      <div class="publish-status-list">
+        ${logs.map((l) => `
+          <div class="publish-status-item publish-status-${l.status}">
+            <span class="publish-status-platform">${_PLATFORM_SVG[l.platform] || escapeHtml(l.platform)}</span>
+            <span class="publish-status-action">${escapeHtml(l.action || "")}</span>
+            <span class="publish-status-badge publish-status-badge--${l.status}">${STATUS_TEXT[l.status] || l.status}</span>
+            ${l.error_message ? `<span class="publish-status-error">${escapeHtml(l.error_message)}</span>` : ""}
+          </div>
+        `).join("")}
+      </div>
+    `;
+  }
+
   return {
     slideNoteId,
     slideTextId,
@@ -1002,5 +1264,10 @@ export function createCarouselModule(deps) {
     exportToCanva,
     importFromCanva,
     selectCanvaDesign,
+    showCarouselPublishScreen,
+    showCarouselPublishBack,
+    saveCarouselCaption,
+    regenCarouselCaption,
+    publishCarousel,
   };
 }
