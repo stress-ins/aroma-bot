@@ -345,7 +345,7 @@ export function createCreateModule(deps) {
                 </label>
               </div>
             </div>
-            <button class="primary-button" type="submit">Собрать карусель</button>
+            <button class="primary-button carousel-cta-disabled" type="submit" id="carouselSubmitBtn" disabled>Собрать карусель</button>
           </form>
         </section>
       `;
@@ -593,6 +593,17 @@ export function createCreateModule(deps) {
           );
         });
       });
+      // Enable/disable CTA based on topic input
+      const topicArea = carouselForm.querySelector("textarea[name='topic']");
+      const submitBtn = carouselForm.querySelector("#carouselSubmitBtn");
+      if (topicArea && submitBtn) {
+        topicArea.addEventListener("input", () => {
+          const hasText = topicArea.value.trim().length > 0;
+          submitBtn.disabled = !hasText;
+          submitBtn.classList.toggle("carousel-cta-disabled", !hasText);
+          submitBtn.classList.toggle("primary-button", hasText);
+        });
+      }
     }
     if (carouselForm) bindTopicForm(carouselForm, { pendingText: "Создаю...", onSubmit: async (topic) => {
       const bcRaw = sessionStorage.getItem("blend_create_context");

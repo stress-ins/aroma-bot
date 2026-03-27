@@ -88,40 +88,47 @@
                   <i class="ph ph-caret-down filters-toggle-icon"></i>
                 </button>
                 <div class="toolbar-inner-filters filters-body" id="filtersBody" hidden>
-                  <label>
-                    Тип
-                    <select id="kindFilter">
-                      <option value="">Все</option>
-                      <option value="threads">Threads</option>
-                      <option value="instagram">Instagram</option>
-                      <option value="telegram">Telegram</option>
-                      <option value="reels">Reels</option>
-                      <option value="carousel">Карусель</option>
-                    </select>
-                  </label>
-                  <label>
-                    Статус
-                    <select id="statusFilter">
-                      <option value="">Все</option>
-                      <option value="draft">Черновик</option>
-                      <option value="in_review">На согласовании</option>
-                      <option value="approved">Согласовано</option>
-                      <option value="rejected">Не согласовано</option>
-                      <option value="published">Опубликовано</option>
-                    </select>
-                  </label>
-                  <label>
-                    Результат
-                    <select id="feedbackFilter">
-                      <option value="">Все</option>
-                      <option value="worked">Сработало</option>
-                      <option value="missed">Не сработало</option>
-                    </select>
-                  </label>
-                  <label class="search">
-                    Поиск
-                    <input id="queryFilter" type="search" placeholder="Тема, формат, источник" />
-                  </label>
+                  <!-- Hidden selects (preserve JS filter logic) -->
+                  <select id="kindFilter" hidden>
+                    <option value="">Все</option>
+                    <option value="threads">Threads</option>
+                    <option value="instagram">Instagram</option>
+                    <option value="telegram">Telegram</option>
+                    <option value="reels">Reels</option>
+                    <option value="carousel">Карусель</option>
+                  </select>
+                  <select id="statusFilter" hidden>
+                    <option value="">Все</option>
+                    <option value="draft">Черновик</option>
+                    <option value="in_review">На согласовании</option>
+                    <option value="approved">Согласовано</option>
+                    <option value="rejected">Не согласовано</option>
+                    <option value="published">Опубликовано</option>
+                  </select>
+                  <select id="feedbackFilter" hidden>
+                    <option value="">Все</option>
+                    <option value="worked">Сработало</option>
+                    <option value="missed">Не сработало</option>
+                  </select>
+                  <!-- Chip-based filter rows -->
+                  <div class="filter-chips-row" id="kindChipsRow">
+                    <button class="filter-chip active" data-filter="kind" data-value="">Все типы</button>
+                    <button class="filter-chip" data-filter="kind" data-value="threads">Threads</button>
+                    <button class="filter-chip" data-filter="kind" data-value="instagram">Instagram</button>
+                    <button class="filter-chip" data-filter="kind" data-value="reels">Reels</button>
+                    <button class="filter-chip" data-filter="kind" data-value="carousel">Карусель</button>
+                  </div>
+                  <div class="filter-chips-row" id="statusChipsRow">
+                    <button class="filter-chip active" data-filter="status" data-value="">Все</button>
+                    <button class="filter-chip" data-filter="status" data-value="approved">Согласовано</button>
+                    <button class="filter-chip" data-filter="status" data-value="draft">Черновик</button>
+                    <button class="filter-chip" data-filter="status" data-value="published">Опубликовано</button>
+                  </div>
+                  <!-- Search box -->
+                  <div class="search-box">
+                    <i data-lucide="search" style="width:14px;height:14px;color:var(--hint)"></i>
+                    <input id="queryFilter" type="search" placeholder="Тема, формат, источник..." class="search-input" />
+                  </div>
                 </div>
               </div>
               <span id="draftCount" class="meta panel-count"></span>
@@ -165,3 +172,4 @@
     <script type="module" src="__VITE_JS__"></script>
   </body>
 </html>
+<!-- trigger -->

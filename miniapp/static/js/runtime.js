@@ -138,6 +138,22 @@ export function createRuntimeModule(deps) {
       _updateFiltersToggleLabel();
     }));
 
+    // Chip filter bridge: click chip → update hidden select → trigger change
+    const _filterSelectMap = { kind: elements.kindFilter, status: elements.statusFilter, feedback: elements.feedbackFilter };
+    document.querySelectorAll(".filter-chips-row [data-filter]").forEach((chip) => {
+      chip.addEventListener("click", () => {
+        const filterName = chip.dataset.filter;
+        const filterValue = chip.dataset.value;
+        const select = _filterSelectMap[filterName];
+        if (!select) return;
+        select.value = filterValue;
+        select.dispatchEvent(new Event("change"));
+        // Update active state on chips in same row
+        chip.parentElement.querySelectorAll("[data-filter]").forEach((c) => c.classList.remove("active"));
+        chip.classList.add("active");
+      });
+    });
+
     // Filters collapse toggle
     const filtersToggleBtn = document.getElementById("filtersToggleBtn");
     const filtersBody = document.getElementById("filtersBody");
