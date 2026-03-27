@@ -289,14 +289,10 @@ def _serialize_model(model: AromaCardModel) -> dict[str, object]:
         payload["name_en"] = model.name if (name_ru and model.name != name_ru) else ""
     elif model.category == "aroma":
         name_ru = str(payload.get("name_ru", "")).strip()
-        has_cyrillic = any("\u0400" <= ch <= "\u04ff" for ch in name_ru)
-        if name_ru and has_cyrillic and name_ru != model.name:
-            payload["name"] = name_ru
-            payload.setdefault("name_en", model.name)
-        else:
-            payload["name"] = model.name
-            if name_ru and not has_cyrillic:
-                payload.setdefault("name_en", name_ru)
+        payload["name"] = model.name
+        if name_ru and name_ru != model.name:
+            payload["name_ru"] = name_ru
+        payload.setdefault("name_en", "")
     else:
         payload["name"] = model.name
     payload["category"] = model.category
@@ -563,10 +559,23 @@ async def list_reference_cards(category: str) -> list[dict[str, str]]:
     for model in models:
         payload = _public_payload(model.payload or {})
         name_ru = str(payload.get("name_ru", "")).strip()
+        model_name_has_cyrillic = any("\u0400" <= ch <= "\u04ff" for ch in model.name)
+        name_ru_has_cyrillic = any("\u0400" <= ch <= "\u04ff" for ch in name_ru) if name_ru else False
+        # If model.name is Latin and name_ru is Cyrillic → swap (e.g. blends: Abundance → Изобилие)
+        if not model_name_has_cyrillic and name_ru_has_cyrillic:
+            display_name = name_ru
+            display_name_ru = ""
+            display_name_en = model.name
+        else:
+            # model.name is the common/recognizable Cyrillic name
+            display_name = model.name
+            display_name_ru = name_ru if (name_ru and name_ru != model.name) else ""
+            display_name_en = str(payload.get("name_en", ""))
         items.append({
             "slug": model.slug,
-            "name": name_ru or model.name,
-            "name_en": model.name if (name_ru and model.name != name_ru) else str(payload.get("name_en", "")),
+            "name": display_name,
+            "name_ru": display_name_ru,
+            "name_en": display_name_en,
             "description": str(payload.get("description", "")),
             "description_short": str(payload.get("description_short", "")),
             "category": model.category,
