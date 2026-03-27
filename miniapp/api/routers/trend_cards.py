@@ -50,9 +50,9 @@ async def list_trend_cards(
 
         result = await session.execute(q)
         cards = []
-        now = datetime.now(timezone.utc)
+        now = datetime.utcnow()
         for row in result.scalars():
-            if row.expires_at and row.expires_at < now:
+            if row.expires_at and row.expires_at.replace(tzinfo=None) < now:
                 continue
             cards.append({
                 "card_id": row.card_id,
