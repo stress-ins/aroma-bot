@@ -504,15 +504,12 @@ export function createReferencesModule(deps) {
       reference.course_source && { icon: "📚", label: "Курс", value: formatCourseSourceLabel(reference.course_source) },
     ].filter(Boolean);
     if (!rows.length) return "";
-    return `<div class="passport-section">
-      <div class="ps-label"><i class="ph ph-clipboard-text" style="font-size:14px"></i> Паспорт аромата</div>
-      ${rows.map((row) =>
+    return rows.map((row) =>
       `<div class="ps-row">
         <span class="ps-key">${escapeHtml(row.label)}</span>
         <span class="ps-val">${row.raw ? row.value : escapeHtml(row.value)}</span>
       </div>`
-    ).join("")}
-    </div>`;
+    ).join("");
   }
 
   function cardCategoryIcon(reference) {
@@ -787,6 +784,10 @@ export function createReferencesModule(deps) {
       `;
       listContainer = document.getElementById("referenceListContainer");
       if (tabId === "aromas") _loadDailyOilBanner();
+    }
+    // Ensure action-group persists across re-renders (DOM may be reset by other renderers)
+    if (!elements.draftList.querySelector(".action-group")) {
+      listContainer.insertAdjacentHTML("beforebegin", renderSmartSearchHero());
     }
     const filterChipsEl = document.getElementById("referenceFilterChips");
     if (filterChipsEl) filterChipsEl.innerHTML = renderFilterChips(items, tabId);
