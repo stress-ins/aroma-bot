@@ -71,8 +71,12 @@ export function createAvatarCropperModule() {
 
     backdrop.querySelector(".avatar-cropper-close").addEventListener("click", close);
     backdrop.querySelector(".avatar-cropper-cancel").addEventListener("click", close);
-    backdrop.addEventListener("click", (e) => {
-      if (e.target === backdrop) close();
+    // Defer backdrop-click-to-close to avoid the originating click event
+    // (from the file input label) bubbling up and immediately closing the modal
+    requestAnimationFrame(() => {
+      backdrop.addEventListener("click", (e) => {
+        if (e.target === backdrop) close();
+      });
     });
 
     // ── Image load ──
