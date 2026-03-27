@@ -243,6 +243,14 @@
   font-weight: 600;
 }
 
+/* ── Trends dashboard inline (mobile) ──────────────────────────────── */
+.trends-dashboard-inline {
+  padding: 0 4px;
+  margin-top: var(--space-3);
+  border-top: 1px solid var(--border);
+  padding-top: var(--space-3);
+}
+
 /* ── Trends ─────────────────────────────────────────────────────────── */
 .trends-controls { padding: 12px 14px 8px; }
 .trends-platform-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
