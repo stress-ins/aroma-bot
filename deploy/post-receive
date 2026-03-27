@@ -1,35 +1,7 @@
 #!/bin/bash
-echo '=== Deploy started ==='
+# Only checkout files — all restarts and migrations are handled by
+# the GitHub Actions deploy workflow (.github/workflows/deploy.yml).
+# This prevents double-restart and the ~60s downtime window.
+echo '=== post-receive: checkout only ==='
 GIT_WORK_TREE=/opt/aroma GIT_DIR=/opt/aroma.git git checkout -f main
-cd /opt/aroma
-
-# Update dependencies
-if [ -f requirements.txt ]; then
-    /opt/aroma/.venv/bin/pip install -q -r requirements.txt
-fi
-
-# Run migrations
-/opt/aroma/.venv/bin/alembic upgrade head
-
-# Sync aroma cards (upsert)
-/opt/aroma/.venv/bin/python scripts/patch_aroma_cards.py
-
-# Restart services
-systemctl restart aroma-bot
-systemctl restart threads-oauth
-echo '=== threads-oauth restarted ==='
-if systemctl is-enabled aroma-miniapp &>/dev/null; then
-    systemctl reload aroma-miniapp
-    # Wait for new workers to be ready (max 30s)
-    for i in $(seq 1 60); do
-        curl -sf http://127.0.0.1:8091/readyz > /dev/null 2>&1 && break
-        sleep 0.5
-    done
-    if curl -sf http://127.0.0.1:8091/readyz > /dev/null 2>&1; then
-        echo '=== aroma-miniapp reloaded (zero-downtime) ==='
-    else
-        echo 'WARNING: aroma-miniapp not ready after 30s'
-    fi
-fi
-
-echo '=== Deploy done ==='
+echo '=== post-receive: done ==='
