@@ -545,6 +545,299 @@ details[open] > .trend-suggestions-toggle::before { transform: rotate(90deg); }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
+   SECTION: Analytics Redesign — summary, platform cards, post cards
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Summary section (overview totals) ───────────────────────────────── */
+.analytics-summary {
+  background: var(--surface);
+  border-radius: 14px;
+  padding: 12px 14px;
+  border: 0.5px solid var(--border);
+}
+.analytics-summary-label {
+  color: var(--hint);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+}
+.analytics-summary-metrics {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.asm-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.asm-val {
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 700;
+}
+.asm-label {
+  color: var(--hint);
+  font-size: 9px;
+}
+.asm-divider {
+  width: 0.5px;
+  height: 28px;
+  background: var(--border);
+}
+
+/* ── Platform stat cards grid ────────────────────────────────────────── */
+.analytics-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.analytics-platform-card {
+  background: var(--surface);
+  border-radius: 14px;
+  padding: 12px;
+  border: 0.5px solid var(--border);
+}
+.apc-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.apc-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.apc-dot-ig { background: #e1306c; }
+.apc-dot-th { background: #9580ff; }
+.apc-platform {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+}
+.apc-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-bottom: 10px;
+}
+.apc-metric:last-child { margin-bottom: 0; }
+.apc-m-val {
+  color: var(--text);
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+.apc-m-val-sm {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+}
+.apc-m-label {
+  color: var(--hint);
+  font-size: 10px;
+}
+.apc-divider {
+  height: 0.5px;
+  background: var(--border);
+  margin: 8px 0;
+}
+.apc-eng-bar {
+  margin-top: 4px;
+}
+.apc-eng-bar-bg {
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.apc-eng-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+}
+.apc-eng-bar-fill.ig { background: #e1306c; }
+.apc-eng-bar-fill.th { background: #9580ff; }
+
+/* ── Best post card ──────────────────────────────────────────────────── */
+.analytics-best-post {
+  background: var(--surface);
+  border-radius: 14px;
+  padding: 12px 14px;
+  border: 0.5px solid var(--border);
+  border-left: 3px solid var(--brand);
+}
+.abp-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--hint);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+.abp-text {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+.abp-metrics {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.abp-val {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+}
+.abp-secondary {
+  color: var(--hint);
+  font-size: 12px;
+}
+.abp-time {
+  color: var(--hint);
+  font-size: 11px;
+  margin-left: auto;
+}
+
+/* ── Posts summary bar ───────────────────────────────────────────────── */
+.posts-summary-bar {
+  padding: 0 12px 8px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+}
+.psb-item {
+  color: var(--muted);
+  font-size: 11px;
+}
+.psb-item.psb-highlight {
+  color: var(--text);
+  font-weight: 600;
+}
+.psb-dot {
+  color: var(--hint);
+  font-size: 11px;
+}
+
+/* ── Post card ───────────────────────────────────────────────────────── */
+.post-card-v2 {
+  background: var(--surface);
+  border-radius: 14px;
+  padding: 12px 14px;
+  border: 0.5px solid var(--border);
+  margin-bottom: 8px;
+}
+.post-card-v2.is-top {
+  border-left: 3px solid #9580ff;
+}
+.post-card-v2.is-top.pc-ig {
+  border-left-color: #e1306c;
+}
+.pc-v2-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.pc-v2-account {
+  color: var(--brand);
+  font-size: 11px;
+  font-weight: 600;
+}
+.pc-v2-own-badge {
+  background: #0f3328;
+  color: #3bcb8a;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 5px;
+  padding: 2px 6px;
+}
+.pc-v2-competitor-badge {
+  background: #3a1a1a;
+  color: #ff6b6b;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 5px;
+  padding: 2px 6px;
+}
+.pc-v2-type {
+  color: var(--hint);
+  font-size: 11px;
+}
+.pc-v2-time {
+  color: var(--hint);
+  font-size: 11px;
+  margin-left: auto;
+  opacity: 0.7;
+}
+.pc-v2-text {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+  margin-bottom: 8px;
+}
+.pc-v2-metrics {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.pc-v2-metric {
+  color: var(--muted);
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.pc-v2-metric.pc-highlight {
+  color: var(--text);
+  font-weight: 600;
+}
+.pc-v2-top-badge {
+  margin-left: auto;
+  background: #2d1e5a;
+  color: #c4a8ff;
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 5px;
+  padding: 2px 7px;
+}
+
+/* Relative engagement bar */
+.pc-v2-rel-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pcr-v2-bg {
+  flex: 1;
+  height: 2px;
+  background: var(--border);
+  border-radius: 1px;
+  overflow: hidden;
+}
+.pcr-v2-fill {
+  height: 100%;
+  border-radius: 1px;
+}
+.pcr-v2-fill.ig { background: #e1306c; }
+.pcr-v2-fill.th { background: #9580ff; }
+.pcr-v2-val {
+  color: var(--hint);
+  font-size: 10px;
+  min-width: 22px;
+  text-align: right;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
    SECTION: Trends Redesign — list cards + detail hero
    ══════════════════════════════════════════════════════════════════════════ */
 
