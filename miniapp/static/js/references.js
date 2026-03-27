@@ -774,21 +774,17 @@ export function createReferencesModule(deps) {
       ? { eyebrow: meta.title, title: "Ничего не найдено", body: "Попробуйте другой запрос или сбросьте фильтр." }
       : meta.empty);
 
-    let listContainer = document.getElementById("referenceListContainer");
-    if (!listContainer) {
-      elements.draftList.innerHTML = `
-        ${renderSmartSearchHero()}
-        <div id="dailyOilBanner"></div>
-        <div id="referenceFilterChips"></div>
-        <div id="referenceListContainer" class="plans-list"></div>
-      `;
-      listContainer = document.getElementById("referenceListContainer");
-      if (tabId === "aromas") _loadDailyOilBanner();
-    }
-    // Re-inject action-group if it was lost (e.g. after data reload race condition)
-    if (!elements.draftList.querySelector(".action-group")) {
-      listContainer.insertAdjacentHTML("beforebegin", renderSmartSearchHero());
-    }
+    // Always rebuild the full shell — prevents action-group from disappearing
+    // across re-renders. The daily oil banner is async-loaded separately.
+    const hadBanner = !!document.getElementById("dailyOilBanner")?.innerHTML;
+    elements.draftList.innerHTML = `
+      ${renderSmartSearchHero()}
+      <div id="dailyOilBanner"></div>
+      <div id="referenceFilterChips"></div>
+      <div id="referenceListContainer" class="plans-list"></div>
+    `;
+    const listContainer = document.getElementById("referenceListContainer");
+    if (tabId === "aromas" && !hadBanner) _loadDailyOilBanner();
     const filterChipsEl = document.getElementById("referenceFilterChips");
     if (filterChipsEl) filterChipsEl.innerHTML = renderFilterChips(items, tabId);
 
