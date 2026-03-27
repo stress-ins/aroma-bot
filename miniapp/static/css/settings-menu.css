@@ -545,6 +545,143 @@ details[open] > .trend-suggestions-toggle::before { transform: rotate(90deg); }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
+   SECTION: 5-screen redesign — База, Аромат, Черновики, Упоминания, Карусель
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── База: action-group ──────────────────────────────────────────────── */
+.action-group {
+  background: var(--surface);
+  border-radius: 16px;
+  border: 0.5px solid var(--border);
+  overflow: hidden;
+}
+.action-item {
+  padding: 13px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 0.5px solid var(--border);
+  cursor: pointer;
+  transition: background var(--duration-fast) ease;
+}
+.action-item:last-child { border-bottom: none; }
+.action-item:active { background: var(--surface-2); }
+.action-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.ai-purple { background: rgba(var(--brand-rgb), 0.15); }
+.ai-teal   { background: rgba(59, 203, 138, 0.12); }
+.ai-pink   { background: rgba(255, 107, 107, 0.12); }
+.action-text { flex: 1; }
+.action-title { color: var(--text); font-size: 14px; font-weight: 600; }
+.action-sub   { color: var(--hint); font-size: 11px; margin-top: 1px; }
+.action-arrow { color: var(--hint); font-size: 16px; margin-left: auto; opacity: 0.5; }
+
+/* ── База: oil of day ────────────────────────────────────────────────── */
+.oil-of-day {
+  background: var(--surface);
+  border-radius: 16px;
+  border: 0.5px solid var(--border);
+  padding: 14px;
+  border-left: 3px solid #f5a623;
+}
+.ood-tag {
+  color: #f5a623;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.ood-name { color: var(--text); font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+.ood-desc { color: var(--muted); font-size: 12px; line-height: 1.5; font-style: italic; margin-bottom: 10px; }
+.ood-link { color: var(--brand); font-size: 13px; display: flex; align-items: center; gap: 4px; cursor: pointer; }
+
+/* ── Карточка аромата: passport-section ───────────────────────────────── */
+.passport-section {
+  background: var(--surface);
+  border-radius: 14px;
+  padding: 13px 14px;
+}
+.ps-label {
+  color: var(--hint);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ps-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 7px 0;
+  border-bottom: 0.5px solid var(--border);
+}
+.ps-row:last-child { border-bottom: none; padding-bottom: 0; }
+.ps-key { color: var(--hint); font-size: 11px; min-width: 80px; flex-shrink: 0; }
+.ps-val { color: var(--muted); font-size: 12px; line-height: 1.4; }
+
+/* ── Упоминания: summary + mention card borders ──────────────────────── */
+.mentions-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px 8px;
+  font-size: 11px;
+  color: var(--hint);
+  flex-shrink: 0;
+}
+.mentions-summary strong { color: var(--text); }
+.ms-waiting { color: var(--brand); font-weight: 600; }
+
+.mf-pill {
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-radius: 20px;
+  padding: 6px 12px;
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.mf-pill.active {
+  background: rgba(var(--brand-rgb), 0.15);
+  border-color: var(--brand-border);
+  color: var(--brand);
+  font-weight: 600;
+}
+
+.mention-card { border-left: 3px solid transparent; }
+.mention-card[data-status="pending"]  { border-left-color: var(--brand); }
+.mention-card[data-status="replied"]  { border-left-color: #3bcb8a; }
+.mention-card[data-status="ignored"]  { border-left-color: var(--hint); }
+
+/* ── Карусель: CTA btn states ────────────────────────────────────────── */
+.carousel-cta-disabled {
+  background: var(--border);
+  border-radius: 14px;
+  padding: 15px;
+  text-align: center;
+  color: var(--hint);
+  font-size: 14px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
    SECTION: Trends Redesign — list cards + detail hero
    ══════════════════════════════════════════════════════════════════════════ */
 

@@ -82,18 +82,25 @@ export function createMentionsModule(deps) {
     const platforms = ["all", "telegram", "threads", "instagram", "youtube"];
     const statuses = ["pending", "replied", "ignored", "all"];
 
+    const pendingCount = state.mentions.filter(m => m.status === "pending").length;
+    const summaryRow = `
+      <div class="mentions-summary">
+        <span><strong>${count}</strong> упоминаний</span>
+        ${pendingCount > 0 ? `<span class="ms-waiting">${pendingCount} ожидают ответа</span>` : ""}
+      </div>`;
+
     const filterBar = `
       <div class="plans-filter-bar" style="margin-bottom:12px">
         <div style="display:flex;gap:6px;overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none;-webkit-overflow-scrolling:touch">
           ${platforms.map(p => `
-            <button class="filter-chip${platform === p ? " active" : ""}" style="flex-shrink:0"
+            <button class="mf-pill${platform === p ? " active" : ""}"
               data-action="setMentionsFilter" data-args='["platform","${p}"]'>
               ${p === "all" ? "Все платформы" : platformLabel(p)}
             </button>`).join("")}
         </div>
         <div style="display:flex;gap:6px;overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin-top:6px">
           ${statuses.map(s => `
-            <button class="filter-chip${status === s ? " active" : ""}"
+            <button class="mf-pill${status === s ? " active" : ""}"
               data-action="setMentionsFilter" data-args='["status","${s}"]'>
               ${statusLabel(s)}
             </button>`).join("")}
@@ -119,7 +126,7 @@ export function createMentionsModule(deps) {
       const dimClass = m.status !== "pending" ? " mention-card--dim" : "";
       const checkIcon = m.status === "replied" ? `<i class="ph ph-check" style="font-size:12px"></i> ` : "";
       return `
-      <div class="mention-card${dimClass}" data-action="openMentionDetail" data-args='["${m.mention_id}"]'>
+      <div class="mention-card${dimClass}" data-status="${m.status}" data-action="openMentionDetail" data-args='["${m.mention_id}"]'>
         <div class="mention-meta">
           <span class="mention-platform-badge">
             <i class="ph ph-${platformIcon(m.platform)}"></i> ${platformLabel(m.platform)}
@@ -132,7 +139,7 @@ export function createMentionsModule(deps) {
       </div>`;
     }).join("");
 
-    container.innerHTML = filterBar + `<div class="mention-list">${cards}</div>`;
+    container.innerHTML = summaryRow + filterBar + `<div class="mention-list">${cards}</div>`;
   }
 
   // ── Detail view ────────────────────────────────────────────────────────────
