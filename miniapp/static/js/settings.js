@@ -1493,26 +1493,7 @@ export function createSettingsModule(deps) {
       return;
     }
 
-    // Read file into memory BEFORE resetting input — some WebViews
-    // invalidate File objects after input.value = ""
-    const reader = new FileReader();
-    reader.onload = () => {
-      // Reset input so re-selecting same file triggers change again
-      if (inputEl) inputEl.value = "";
-
-      // Create a new File from the data URL to ensure it stays valid
-      const blob = new Blob([reader.result], { type: file.type });
-      const safeFile = new File([blob], file.name, { type: file.type });
-      _openCropper(safeFile, teamId);
-    };
-    reader.onerror = () => {
-      showUiNotice("Не удалось прочитать файл", "error");
-    };
-    reader.readAsArrayBuffer(file);
-  }
-
-  function _openCropper(file, teamId) {
-    // Open cropper — the cropped blob is sent to the server
+    // Open cropper FIRST, then reset input — same pattern as carousel upload
     avatarCropper.open(file, async (blob) => {
       const formData = new FormData();
       formData.append("file", blob, "avatar.jpg");
