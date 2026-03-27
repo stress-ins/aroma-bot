@@ -7,7 +7,7 @@ WorkingDirectory=/opt/aroma
 EnvironmentFile=/opt/aroma/.env
 ExecStart=/opt/aroma/.venv/bin/gunicorn miniapp_server:app \
   -k uvicorn.workers.UvicornWorker \
-  --workers 1 \
+  --workers 2 \
   --bind 127.0.0.1:8091 \
   --graceful-timeout 15 \
   --timeout 120
