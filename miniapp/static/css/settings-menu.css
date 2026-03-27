@@ -742,6 +742,12 @@ details[open] > .trend-suggestions-toggle::before { transform: rotate(90deg); }
   line-height: 1.35;
   flex: 1;
 }
+.tc-v2-angle {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+  padding: 0 2px;
+}
 
 /* Lifecycle badges */
 .tc-badge {

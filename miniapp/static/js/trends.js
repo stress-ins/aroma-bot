@@ -557,7 +557,13 @@ export function createTrendsModule(deps) {
     }
 
     if (sections.length === 0) {
-      return renderEmptyGuide();
+      return `<div class="detail-empty">${renderGuidedState({
+        eyebrow: "Аналитика",
+        title: "Данные ещё собираются",
+        body: "Мониторинг настроен. Данные появятся после следующего цикла обновления (каждые 6 часов) или нажмите «Обновить» вручную.",
+        actionLabel: "Обновить",
+        action: "refreshTrends",
+      })}</div>`;
     }
 
     // Prepend insight cards before analytics
@@ -701,8 +707,14 @@ export function createTrendsModule(deps) {
     const items = hooks
       .map(
         (h) => `
-      <div class="trends-hook-card">
-        <span class="trends-hook-quote">"${escapeHtml(h)}"</span>
+      <div class="insight-card">
+        <div class="insight-card-topic">${escapeHtml(h)}</div>
+        <div class="insight-card-footer">
+          <span class="insight-card-format">${uiIcon("zap", 14)} Хук</span>
+          <button class="secondary-button" type="button" data-action="createFromInsight" data-args='${JSON.stringify([h, [], "threads_series"])}'>
+            ${uiIcon("plus", 14)} Создать контент
+          </button>
+        </div>
       </div>`
       )
       .join("");
@@ -1170,28 +1182,59 @@ export function createTrendsModule(deps) {
     const declining = intelligenceData.declining_topics || [];
 
     if (emerging.length > 0) {
-      const items = emerging.map(s => `
-        <div class="insight-card">
-          <div class="insight-card-header">
-            <span class="keyword-chip" style="background:#4CAF50;color:#fff;font-size:0.65rem">Новый</span>
-            <strong style="flex:1">${escapeHtml((s.keyword || "").substring(0, 50))}</strong>
-            <span class="trend-strength" style="color:var(--success, green)">${((s.score || 0) * 100).toFixed(0)}%</span>
+      const items = emerging.map((s, i) => {
+        const score = Math.round((s.score || 0) * 100);
+        const velocity = s.velocity ? s.velocity.toFixed(1) : "0.0";
+        const srcCount = s.sources ? s.sources.length : 0;
+        const lc = s.lifecycle || "emerging";
+        const cls = LIFECYCLE_CSS[lc] || "tc-hot";
+        return `
+        <div class="trend-card-v2 ${cls}" data-action="createFromIntelligence" data-args='${JSON.stringify([s.keyword || "", "content"])}'>
+          <div class="tc-v2-top">
+            <div class="tc-v2-title">${escapeHtml((s.keyword || "").substring(0, 60))}</div>
+            <span class="tc-badge ${cls}">${LIFECYCLE_LABELS[lc] || "Новый"}</span>
           </div>
-          ${s.content_angle ? `<div class="insight-card-topic">${escapeHtml(s.content_angle.substring(0, 120))}</div>` : ""}
-          ${s.sources ? `<div class="detail-meta" style="margin-top:4px;opacity:0.6">${s.sources.map(src => escapeHtml(src)).join(", ")}</div>` : ""}
-        </div>`).join("");
+          ${s.content_angle ? `<div class="tc-v2-angle">${escapeHtml(s.content_angle.substring(0, 120))}</div>` : ""}
+          <div class="tc-v2-metrics">
+            <div class="tc-metric-big">
+              <span class="tc-metric-val">${velocity}×</span>
+              <span class="tc-metric-label">скорость</span>
+            </div>
+            <div class="tc-metric-divider"></div>
+            <div class="tc-metric-small">
+              <span class="tc-ms-val">${srcCount} ист.</span>
+              <span class="tc-ms-label">источника</span>
+            </div>
+            <div class="tc-metric-small" style="margin-left:auto">
+              ${_sentimentHtml(s.sentiment)}
+            </div>
+          </div>
+          <div class="tc-rel-bar-wrap">
+            <div class="tc-rel-bar-bg"><div class="tc-rel-bar-fill tc-bar-${cls.replace("tc-", "")}" style="width:${score}%"></div></div>
+            <span class="tc-rel-pct">${score}%</span>
+          </div>
+        </div>`;
+      }).join("");
       sections.push(`<div class="detail-section"><div class="detail-section-title">${uiIcon("zap", 16)} Новые сигналы</div>${items}</div>`);
     }
 
     if (declining.length > 0) {
-      const items = declining.map(s => `
-        <div class="insight-card" style="opacity:0.7">
-          <div class="insight-card-header">
-            <span class="keyword-chip" style="background:#9E9E9E;color:#fff;font-size:0.65rem">Спад</span>
-            <strong style="flex:1">${escapeHtml((s.keyword || "").substring(0, 50))}</strong>
+      const items = declining.map(s => {
+        const score = Math.round((s.score || 0) * 100);
+        const velocity = s.velocity ? s.velocity.toFixed(1) : "0.0";
+        return `
+        <div class="trend-card-v2 tc-declining" data-action="createFromIntelligence" data-args='${JSON.stringify([s.keyword || "", "content"])}'>
+          <div class="tc-v2-top">
+            <div class="tc-v2-title">${escapeHtml((s.keyword || "").substring(0, 60))}</div>
+            <span class="tc-badge tc-declining">Спадает</span>
           </div>
-          ${s.content_angle ? `<div class="insight-card-topic">${escapeHtml(s.content_angle.substring(0, 120))}</div>` : ""}
-        </div>`).join("");
+          ${s.content_angle ? `<div class="tc-v2-angle">${escapeHtml(s.content_angle.substring(0, 120))}</div>` : ""}
+          <div class="tc-rel-bar-wrap">
+            <div class="tc-rel-bar-bg"><div class="tc-rel-bar-fill tc-bar-declining" style="width:${score}%"></div></div>
+            <span class="tc-rel-pct">${score}%</span>
+          </div>
+        </div>`;
+      }).join("");
       sections.push(`<div class="detail-section"><div class="detail-section-title">${uiIcon("trending-down", 16)} Спадающие темы</div>${items}</div>`);
     }
 
