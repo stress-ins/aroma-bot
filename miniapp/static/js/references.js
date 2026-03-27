@@ -555,22 +555,40 @@ export function createReferencesModule(deps) {
     // Subtitle line below the card title — only for aromas (EN name + family)
     let subtitle = "";
     if (state.tab === "aromas") {
-      const parts = [reference.name_en, keyline ? `(${keyline})` : ""].filter(Boolean);
+      const parts = [reference.name_en, keyline].filter(Boolean);
       subtitle = parts.join(" · ");
     }
     // Compact EN name for blends (mirrors card list style)
     const blendNameEn = state.tab === "blends" && reference.name_en ? reference.name_en : "";
+    // Pill badges for aromas (volatility + article)
+    let heroPills = "";
+    if (state.tab === "aromas") {
+      const pills = [];
+      if (reference.volatility) {
+        const v = String(reference.volatility).toLowerCase();
+        let label = reference.volatility;
+        if (v.includes("высок")) label = "Высокая летучесть";
+        else if (v.includes("средн")) label = "Средняя летучесть";
+        else if (v.includes("низк")) label = "Низкая летучесть";
+        pills.push(`<span class="hero-pill">${escapeHtml(label)}</span>`);
+      }
+      if (reference.article_number) {
+        pills.push(`<span class="hero-pill">#${escapeHtml(reference.article_number)}</span>`);
+      }
+      if (pills.length) heroPills = `<div class="hero-pills">${pills.join("")}</div>`;
+    }
     return `
       <section class="section aroma-hero ${heroClass}">
+        <div class="reference-hero-media">
+          <img class="aroma-image" src="${escapeHtml(reference.image_url)}" alt="${escapeHtml(reference.image_alt)}" />
+        </div>
         <div class="reference-hero-copy">
           <p class="eyebrow">${eyebrowLabel}</p>
           <h2 class="detail-title">${escapeHtml(state.tab === "symptoms" ? normalizePdfSymptomName(reference.name) : reference.name)}</h2>
           ${subtitle ? `<p class="reference-keyline">${escapeHtml(subtitle)}</p>` : ""}
           ${blendNameEn ? `<div class="reference-name-en">${escapeHtml(blendNameEn)}</div>` : ""}
           ${state.tab === "blends" && reference.article_number ? `<span class="reference-meta-article">🔖 ${escapeHtml(reference.article_number)}</span>` : ""}
-        </div>
-        <div class="reference-hero-media">
-          <img class="aroma-image" src="${escapeHtml(reference.image_url)}" alt="${escapeHtml(reference.image_alt)}" />
+          ${heroPills}
         </div>
       </section>
     `;

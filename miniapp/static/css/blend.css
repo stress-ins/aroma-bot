@@ -27,18 +27,38 @@
 .reference-hero-copy {
   display: grid;
   gap: 10px;
+  order: 2;
 }
 
 .reference-hero-media {
   display: grid;
   gap: 8px;
+  order: 1;
+}
+
+/* Hero pill badges (volatility, article) */
+.hero-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 2px;
+}
+.hero-pill {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 13px;
+  color: var(--text);
+  white-space: nowrap;
 }
 
 .reference-keyline {
-  font-size: 17px;
+  font-size: 15px;
   line-height: 1.5;
-  color: var(--brand);
-  font-weight: 600;
+  color: var(--muted);
+  font-weight: 400;
 }
 
 .reference-name-en {
