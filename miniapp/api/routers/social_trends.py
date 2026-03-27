@@ -232,15 +232,19 @@ async def _run_team_collection(team_id: str) -> None:
         if not brand_hashtags:
             brand_hashtags = ["ароматерапия", "эфирныемасла", "аромамасла"]
 
-        # Determine own username from settings (first account or brand name)
-        own_ig_username = ""
-        own_th_username = ""
+        # Determine own username from connected OAuth tokens (not monitored list)
+        ig_username_token = await get_token_for_team("instagram_username", team_id)
+        th_username_token = await get_token_for_team("threads_username", team_id)
+        own_ig_username = (ig_username_token.access_token if ig_username_token else "").lstrip("@")
+        own_th_username = (th_username_token.access_token if th_username_token else "").lstrip("@")
+
         ig_accounts = settings.instagram_accounts or []
         th_accounts = settings.threads_accounts or []
-        if ig_accounts:
-            own_ig_username = (ig_accounts[0].get("username") or "").lstrip("@")
-        if th_accounts:
-            own_th_username = (th_accounts[0].get("username") or "").lstrip("@")
+
+        # Auto-populate Threads monitored accounts from Instagram if empty
+        if not th_accounts and ig_accounts:
+            th_accounts = [{"username": a.get("username", ""), "status": "checking"} for a in ig_accounts if a.get("username")]
+            logger.info("Auto-populated %d Threads accounts from Instagram for team %s", len(th_accounts), team_id)
 
         # Instagram
         ig_token = await get_token_for_team("instagram", team_id)
