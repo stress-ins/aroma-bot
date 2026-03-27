@@ -23,6 +23,7 @@ from bot.services.social_trends_store import (
 logger = logging.getLogger(__name__)
 
 GRAPH_URL = "https://graph.instagram.com/v21.0"
+FB_GRAPH_URL = "https://graph.facebook.com/v21.0"
 _HASHTAG_RE = re.compile(r"#([\w\u0400-\u04FF]+)")
 _MAX_POSTS_PER_ACCOUNT = 25
 _MAX_AGE_DAYS = 30
@@ -164,9 +165,11 @@ class InstagramTrendsCollector:
         """Fetch posts for another account via business_discovery."""
         effective_token = token or self._token
         effective_uid = user_id or self._user_id
+        # FB token works on graph.facebook.com, IG token on graph.instagram.com
+        base = FB_GRAPH_URL if token == self._fb_token and self._fb_token else GRAPH_URL
         await self._rate_check()
         resp = await client.get(
-            f"{GRAPH_URL}/{effective_uid}",
+            f"{base}/{effective_uid}",
             params={
                 "fields": (
                     f"business_discovery.fields("
@@ -248,11 +251,13 @@ class InstagramTrendsCollector:
         # Use Facebook token if available (required for ig_hashtag_search)
         ht_token = self._fb_token or self._token
         ht_uid = self._fb_user_id or self._user_id
+        # FB token works on graph.facebook.com, IG token on graph.instagram.com
+        base_url = FB_GRAPH_URL if self._fb_token else GRAPH_URL
 
         # Step 1: Get hashtag ID
         await self._rate_check()
         resp = await client.get(
-            f"{GRAPH_URL}/ig_hashtag_search",
+            f"{base_url}/ig_hashtag_search",
             params={
                 "user_id": ht_uid,
                 "q": tag,
@@ -271,7 +276,7 @@ class InstagramTrendsCollector:
         for edge in ("top_media", "recent_media"):
             await self._rate_check()
             resp = await client.get(
-                f"{GRAPH_URL}/{hashtag_id}/{edge}",
+                f"{base_url}/{hashtag_id}/{edge}",
                 params={
                     "user_id": ht_uid,
                     "fields": "id,media_type,permalink,caption,like_count,comments_count,timestamp",
