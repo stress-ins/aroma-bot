@@ -952,6 +952,22 @@ export function createTrendsModule(deps) {
 
   // ── Intelligence (trend report from aggregator) ──────────────────
 
+  const LIFECYCLE_CSS = {
+    emerging: "tc-hot", growing: "tc-growing", peaking: "tc-hot",
+    declining: "tc-declining", evergreen: "tc-stable",
+  };
+  const LIFECYCLE_LABELS = {
+    emerging: "Набирает", growing: "Растёт", peaking: "На пике",
+    declining: "Спадает", evergreen: "Стабильный",
+  };
+
+  function _sentimentHtml(sentiment) {
+    if (!sentiment) return "";
+    if (sentiment === "positive") return `<span class="tc-ms-sentiment tc-ms-positive">↗ positive</span>`;
+    if (sentiment === "negative") return `<span class="tc-ms-sentiment tc-ms-negative">↘ negative</span>`;
+    return `<span class="tc-ms-sentiment tc-ms-neutral">— neutral</span>`;
+  }
+
   function renderIntelligenceSummaryList() {
     if (!intelligenceData) {
       return `<div class="detail-empty">${renderGuidedState({
@@ -968,36 +984,47 @@ export function createTrendsModule(deps) {
     const declining = intelligenceData.declining_topics || [];
     const total = intelligenceData.total_signals_analyzed || 0;
 
-    const LIFECYCLE_COLORS = { emerging: "#4CAF50", growing: "#2196F3", peaking: "#FF9800", declining: "#9E9E9E", evergreen: "#8BC34A" };
-    const LIFECYCLE_LABELS = { emerging: "Растущий", growing: "Набирает", peaking: "На пике", declining: "Спадает", evergreen: "Стабильный" };
-
     const oppCards = opps.slice(0, 10).map((o, i) => {
       const kw = (o.keyword || "").length > 60 ? o.keyword.substring(0, 60) + "…" : o.keyword;
-      const score = ((o.score || 0) * 100).toFixed(0);
+      const score = Math.round((o.score || 0) * 100);
       const lc = o.lifecycle || "emerging";
+      const cls = LIFECYCLE_CSS[lc] || "tc-early";
+      const velocity = o.velocity ? o.velocity.toFixed(1) : "0.0";
+      const srcCount = o.sources ? o.sources.length : 0;
+
       return `
-        <div class="draft-card" data-action="openIntelligenceOpp" data-args='[${i}]'>
-          <div class="draft-card-header">
-            <span class="draft-card-topic">${escapeHtml(kw)}</span>
-            <span class="draft-card-badges">
-              <span class="keyword-chip" style="background:${LIFECYCLE_COLORS[lc] || "var(--muted)"};color:#fff;font-size:0.65rem">${LIFECYCLE_LABELS[lc] || lc}</span>
-              <span class="meta-chip meta-chip--own">${score}%</span>
-            </span>
+        <div class="trend-card-v2 ${cls}" data-action="openIntelligenceOpp" data-args='[${i}]'>
+          <div class="tc-v2-top">
+            <div class="tc-v2-title">${escapeHtml(kw)}</div>
+            <span class="tc-badge ${cls}">${LIFECYCLE_LABELS[lc] || lc}</span>
           </div>
-          <div class="draft-card-preview">${escapeHtml((o.content_angle || "").substring(0, 100))}</div>
-          <div class="draft-card-meta">
-            ${o.velocity ? `<span>${actionLabel("trending-up", o.velocity.toFixed(1) + "x")}</span>` : ""}
-            ${o.sources ? `<span>${actionLabel("globe", o.sources.length + " ист.")}</span>` : ""}
-            ${o.sentiment ? `<span>${actionLabel(o.sentiment === "positive" ? "smile" : o.sentiment === "negative" ? "frown" : "meh", o.sentiment)}</span>` : ""}
+          <div class="tc-v2-metrics">
+            <div class="tc-metric-big">
+              <span class="tc-metric-val">${velocity}×</span>
+              <span class="tc-metric-label">скорость</span>
+            </div>
+            <div class="tc-metric-divider"></div>
+            <div class="tc-metric-small">
+              <span class="tc-ms-val">${srcCount} ист.</span>
+              <span class="tc-ms-label">источника</span>
+            </div>
+            <div class="tc-metric-small" style="margin-left:auto">
+              ${_sentimentHtml(o.sentiment)}
+            </div>
+          </div>
+          <div class="tc-rel-bar-wrap">
+            <div class="tc-rel-bar-bg"><div class="tc-rel-bar-fill tc-bar-${cls.replace("tc-", "")}" style="width:${score}%"></div></div>
+            <span class="tc-rel-pct">${score}%</span>
           </div>
         </div>`;
     }).join("");
 
-    const header = `<div class="trends-intelligence-header" style="padding:0.5rem 0;opacity:0.7;font-size:0.8rem">
-      ${uiIcon("activity", 14)} Проанализировано ${total} сигналов | ${opps.length} возможностей | ${emerging.length} новых | ${declining.length} спадающих
+    const statsRow = `<div class="trends-stats-row">
+      ${uiIcon("activity", 12)}
+      ${total} сигналов · ${opps.length} возможностей · ${emerging.length} новых · ${declining.length} спадающих
     </div>`;
 
-    return `${header}<div class="draft-list-content">${oppCards || `<p style="padding:1rem;opacity:0.6">Нет данных — запустите сбор трендов</p>`}</div>`;
+    return `${statsRow}<div class="draft-list-content">${oppCards || `<p style="padding:1rem;opacity:0.6">Нет данных — запустите сбор трендов</p>`}</div>`;
   }
 
   function renderIntelligenceDetail() {
@@ -1053,25 +1080,66 @@ export function createTrendsModule(deps) {
     const opp = intelligenceData.top_opportunities[idx];
     if (!opp) return;
 
-    const LIFECYCLE_LABELS = { emerging: "Растущий", growing: "Набирает", peaking: "На пике", declining: "Спадает", evergreen: "Стабильный" };
     const FORMAT_LABELS = { "in-depth post": "Подробный пост", "carousel": "Карусель", "reels": "Рилс", "live session": "Прямой эфир", "thread": "Тред", "threads_series": "Серия Threads", "expert commentary": "Экспертный комментарий", "tutorial": "Туториал", "content": "Пост" };
-    const formats = (opp.suggested_formats || []).map(f => FORMAT_LABELS[f] || f).join(", ");
+    const lc = opp.lifecycle || "emerging";
+    const cls = LIFECYCLE_CSS[lc] || "tc-early";
+    const velocity = (opp.velocity || 0).toFixed(1);
+    const score = Math.round((opp.score || 0) * 100);
+    const sentiment = opp.sentiment || "neutral";
+    const hashtags = (opp.hashtags || []).map(t => `#${escapeHtml(t)}`).join(" ");
+    const formats = opp.suggested_formats || [];
+    const sources = opp.sources || [];
+
+    const formatPills = formats.length
+      ? formats.map(f => `<span class="ds-format-pill">${escapeHtml(FORMAT_LABELS[f] || f)}</span>`).join("")
+      : "";
+
+    const sourceChips = sources.length
+      ? sources.map(s => `<span class="ds-source-chip">${uiIcon("globe", 14)} ${escapeHtml(s)}</span>`).join("")
+      : "";
 
     elements.draftDetail.innerHTML = `
       ${renderBackButton("К разведке", () => { void loadTrends(); })}
-      <div class="detail-section">
-        <div class="detail-section-title">${escapeHtml(opp.keyword || "Тренд")}</div>
-        <div class="detail-meta" style="margin-bottom:12px">
-          <span class="keyword-chip" style="background:var(--brand);color:#fff;font-size:0.7rem">${LIFECYCLE_LABELS[opp.lifecycle] || opp.lifecycle}</span>
-          <span>${actionLabel("trending-up", (opp.velocity || 0).toFixed(1) + "x скорость")}</span>
-          <span>${actionLabel("target", ((opp.score || 0) * 100).toFixed(0) + "% релевантность")}</span>
-          ${opp.sentiment ? `<span>${actionLabel("heart", opp.sentiment)}</span>` : ""}
+      <div class="trends-detail-v2">
+        <div class="detail-hero">
+          <div class="detail-status-row">
+            <span class="tc-badge ${cls}">${LIFECYCLE_LABELS[lc] || lc}</span>
+            ${hashtags ? `<span class="detail-hashtags">${hashtags}</span>` : ""}
+          </div>
+          <h2 class="detail-hero-title">${escapeHtml(opp.keyword || "Тренд")}</h2>
+          <div class="detail-chips">
+            <div class="detail-chip detail-chip-speed">
+              ${uiIcon("trending-up", 12)} ${velocity}× скорость
+            </div>
+            <div class="detail-chip detail-chip-rel">
+              ${uiIcon("check-circle", 12)} ${score}% релевантность
+            </div>
+            <div class="detail-chip detail-chip-sentiment">
+              ${uiIcon(sentiment === "positive" ? "smile" : sentiment === "negative" ? "frown" : "meh", 12)} ${sentiment}
+            </div>
+          </div>
         </div>
-        ${opp.content_angle ? `<div class="detail-text" style="margin-bottom:12px">${escapeHtml(opp.content_angle)}</div>` : ""}
-        ${formats ? `<div style="margin-bottom:8px"><strong>Форматы:</strong> ${escapeHtml(formats)}</div>` : ""}
-        ${opp.sources ? `<div style="margin-bottom:12px"><strong>Источники:</strong> ${opp.sources.map(s => escapeHtml(s)).join(", ")}</div>` : ""}
-        <button class="primary-button" type="button" data-action="createFromIntelligence" data-args='${JSON.stringify([opp.keyword, opp.suggested_formats?.[0] || "content"])}'>
-          ${uiIcon("plus", 14)} Создать контент по тренду
+
+        ${opp.content_angle ? `
+        <div class="ds-section">
+          <div class="ds-label">О тренде</div>
+          <div class="ds-text">${escapeHtml(opp.content_angle)}</div>
+        </div>` : ""}
+
+        ${formatPills ? `
+        <div class="ds-section">
+          <div class="ds-label">Рекомендуемые форматы</div>
+          <div class="ds-formats-pills">${formatPills}</div>
+        </div>` : ""}
+
+        ${sourceChips ? `
+        <div class="ds-section">
+          <div class="ds-label">Источники</div>
+          <div class="ds-sources-row">${sourceChips}</div>
+        </div>` : ""}
+
+        <button class="trend-cta-btn" type="button" data-action="createFromIntelligence" data-args='${JSON.stringify([opp.keyword, formats[0] || "content"])}'>
+          ${uiIcon("plus", 16)} Создать контент по тренду
         </button>
       </div>`;
     enterDetailView();

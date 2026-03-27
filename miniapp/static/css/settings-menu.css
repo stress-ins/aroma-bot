@@ -544,3 +544,263 @@ details[open] > .trend-suggestions-toggle::before { transform: rotate(90deg); }
   opacity: 0.6;
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   SECTION: Trends Redesign — list cards + detail hero
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Stats row above trend list ──────────────────────────────────────── */
+.trends-stats-row {
+  padding: 0 14px 10px;
+  font-size: 11px;
+  color: var(--hint);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* ── Trend card (list item) ──────────────────────────────────────────── */
+.trend-card-v2 {
+  background: var(--surface);
+  border-radius: 14px;
+  padding: 12px 14px;
+  border-left: 3px solid transparent;
+  cursor: pointer;
+  transition: background var(--duration-fast) ease, box-shadow var(--duration-fast) ease;
+}
+.trend-card-v2:active { background: var(--surface-2); }
+
+/* Lifecycle color coding — left border */
+.trend-card-v2.tc-hot      { border-left-color: #9580ff; }
+.trend-card-v2.tc-growing   { border-left-color: #3bcb8a; }
+.trend-card-v2.tc-early,
+.trend-card-v2.tc-stable    { border-left-color: #5a8aff; }
+.trend-card-v2.tc-declining { border-left-color: #ff6b6b; }
+
+/* Top row: title + badge */
+.tc-v2-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 9px;
+}
+.tc-v2-title {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  flex: 1;
+}
+
+/* Lifecycle badges */
+.tc-badge {
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 7px;
+  white-space: nowrap;
+}
+.tc-badge.tc-hot      { background: #2d1e5a; color: #c4a8ff; }
+.tc-badge.tc-growing   { background: #0f3328; color: #3bcb8a; }
+.tc-badge.tc-early,
+.tc-badge.tc-stable    { background: #1a2540; color: #5a8aff; }
+.tc-badge.tc-declining { background: #3a1a1a; color: #ff6b6b; }
+
+/* Metrics row: speed | sources | sentiment */
+.tc-v2-metrics {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 9px;
+}
+.tc-metric-big {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+}
+.tc-metric-val {
+  color: var(--text);
+  font-size: 19px;
+  font-weight: 700;
+}
+.tc-metric-label {
+  color: var(--hint);
+  font-size: 10px;
+}
+.tc-metric-divider {
+  width: 1px;
+  height: 22px;
+  background: var(--border);
+}
+.tc-metric-small {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.tc-ms-val {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+}
+.tc-ms-label {
+  color: var(--hint);
+  font-size: 9px;
+}
+.tc-ms-sentiment {
+  font-size: 10px;
+  font-weight: 600;
+}
+.tc-ms-positive { color: #3bcb8a; }
+.tc-ms-neutral  { color: var(--hint); }
+.tc-ms-negative { color: #ff6b6b; }
+
+/* Relevance progress bar */
+.tc-rel-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tc-rel-bar-bg {
+  flex: 1;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.tc-rel-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+}
+.tc-bar-hot      { background: #9580ff; }
+.tc-bar-growing   { background: #3bcb8a; }
+.tc-bar-early,
+.tc-bar-stable    { background: #5a8aff; }
+.tc-bar-declining { background: #ff6b6b; }
+.tc-rel-pct {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  min-width: 28px;
+  text-align: right;
+}
+
+/* ── Detail hero block ───────────────────────────────────────────────── */
+.detail-hero {
+  background: var(--surface);
+  border-radius: 16px;
+  padding: 14px;
+}
+.detail-status-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.detail-hashtags {
+  color: var(--hint);
+  font-size: 11px;
+  line-height: 1.4;
+}
+.detail-hero-title {
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.4;
+  margin-bottom: 12px;
+}
+.detail-chips {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.detail-chip {
+  border-radius: 20px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.detail-chip-speed     { background: #2d1e5a; color: #c4a8ff; }
+.detail-chip-rel       { background: #0f3328; color: #3bcb8a; }
+.detail-chip-sentiment { background: #1a2040; color: #7aa3ff; }
+
+/* ── Detail sections (unified) ───────────────────────────────────────── */
+.ds-section {
+  background: var(--surface);
+  border-radius: 14px;
+  padding: 13px 14px;
+}
+.ds-label {
+  color: var(--hint);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 8px;
+}
+.ds-text {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+.ds-formats-pills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.ds-format-pill {
+  background: var(--border);
+  border: 0.5px solid var(--border);
+  border-radius: 20px;
+  padding: 5px 12px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.ds-sources-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.ds-source-chip {
+  background: var(--bg);
+  border: 0.5px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  color: var(--muted);
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* ── CTA button ──────────────────────────────────────────────────────── */
+.trend-cta-btn {
+  background: var(--brand);
+  border-radius: 14px;
+  padding: 15px;
+  text-align: center;
+  color: var(--text-on-brand);
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 4px;
+  margin-bottom: 8px;
+}
+.trend-cta-btn:active { opacity: 0.85; }
+
+/* ── Trends detail scroll container ──────────────────────────────────── */
+.trends-detail-v2 {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 0 14px 20px;
+}
+
