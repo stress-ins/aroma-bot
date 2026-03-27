@@ -131,22 +131,53 @@ async def trends_compare(
 
     def _platform_summary(posts, times):
         if not posts:
-            return {"avg_engagement": 0, "best_hour": None, "top_topic": None, "post_count": len(posts)}
-        total = sum(
+            return {"avg_engagement": 0, "best_hour": None, "top_topic": None, "post_count": 0, "total_likes": 0, "total_comments": 0, "total_views": 0}
+        total_eng = sum(
             p["like_count"] + p["comment_count"] + p.get("share_count", 0) + p.get("reply_count", 0)
             for p in posts
         )
+        total_likes = sum(p.get("like_count", 0) for p in posts)
+        total_comments = sum(p.get("comment_count", 0) + p.get("reply_count", 0) for p in posts)
+        total_views = sum(p.get("view_count", 0) for p in posts)
         return {
-            "avg_engagement": round(total / len(posts), 1),
+            "avg_engagement": round(total_eng / len(posts), 1),
             "best_hour": times[0]["hour"] if times else None,
             "top_topic": posts[0].get("text", "")[:80] if posts else None,
             "post_count": len(posts),
+            "total_likes": total_likes,
+            "total_comments": total_comments,
+            "total_views": total_views,
+        }
+
+    ig_summary = _platform_summary(ig_top, ig_times)
+    th_summary = _platform_summary(th_top, th_times)
+
+    # Find best post across both platforms
+    all_posts = [(p, "instagram") for p in ig_top] + [(p, "threads") for p in th_top]
+    best_post = None
+    if all_posts:
+        top = max(all_posts, key=lambda x: x[0].get("like_count", 0))
+        p, plat = top
+        best_post = {
+            "platform": plat,
+            "text": (p.get("text") or "")[:100],
+            "likes": p.get("like_count", 0),
+            "shares": p.get("share_count", 0) + p.get("reply_count", 0),
+            "posted_at": p.get("posted_at"),
+            "author_username": p.get("author_username", ""),
         }
 
     return {
-        "instagram": _platform_summary(ig_top, ig_times),
-        "threads": _platform_summary(th_top, th_times),
+        "instagram": ig_summary,
+        "threads": th_summary,
         "period_days": period,
+        "totals": {
+            "posts": ig_summary["post_count"] + th_summary["post_count"],
+            "likes": ig_summary["total_likes"] + th_summary["total_likes"],
+            "comments": ig_summary["total_comments"] + th_summary["total_comments"],
+            "views": ig_summary["total_views"] + th_summary["total_views"],
+        },
+        "best_post": best_post,
     }
 
 

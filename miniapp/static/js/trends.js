@@ -185,6 +185,8 @@ export function createTrendsModule(deps) {
     `;
   }
 
+  const MEDIA_LABELS = { IMAGE: "Фото", VIDEO: "Видео", CAROUSEL_ALBUM: "Карусель", TEXT_POST: "Текст", REEL: "Reels" };
+
   function renderPlatformSummaryList() {
     if (!trendsData) return "";
     const topPosts = trendsData.top_posts || [];
@@ -198,79 +200,194 @@ export function createTrendsModule(deps) {
       })}</div>`;
     }
 
-    // "Own" = connected via OAuth, not all monitored accounts
     const connected = monitoredAccounts.connected_usernames || {};
     const ownUsernames = new Set(
       Object.values(connected).map(u => u.replace(/^@/, "").toLowerCase()),
     );
-    const _mediaLabel = (mt) => {
-      if (!mt) return "";
-      const map = { IMAGE: "Фото", VIDEO: "Видео", CAROUSEL_ALBUM: "Карусель", TEXT_POST: "Текст", REEL: "Reels" };
-      return map[mt] || mt;
-    };
-    const _relDate = (iso) => {
-      if (!iso) return "";
-      const d = new Date(iso);
-      const now = new Date();
-      const diffH = Math.round((now - d) / 3600000);
-      if (diffH < 1) return "только что";
-      if (diffH < 24) return `${diffH}ч назад`;
-      const diffD = Math.round(diffH / 24);
-      return `${diffD}д назад`;
-    };
 
-    const cards = topPosts
-      .slice(0, 10)
+    const isIg = trendsPlatform === "instagram";
+    const platformClass = isIg ? "ig" : "th";
+    const posts = topPosts.slice(0, 10);
+
+    // Compute totals for summary bar
+    const totalLikes = posts.reduce((s, p) => s + (p.like_count || 0), 0);
+    const totalViews = posts.reduce((s, p) => s + (p.view_count || 0), 0);
+    const totalComments = posts.reduce((s, p) => s + (p.comment_count || 0) + (p.reply_count || 0), 0);
+    const maxLikes = Math.max(...posts.map(p => p.like_count || 0), 1);
+
+    // Find top post index (most likes)
+    let topIdx = 0;
+    posts.forEach((p, i) => { if ((p.like_count || 0) > (posts[topIdx].like_count || 0)) topIdx = i; });
+
+    const summaryBar = `
+      <div class="posts-summary-bar">
+        <span class="psb-item">${posts.length} постов</span>
+        <span class="psb-dot">·</span>
+        <span class="psb-item psb-highlight">♡ ${totalLikes} всего</span>
+        <span class="psb-dot">·</span>
+        <span class="psb-item">${totalViews ? `◉ ${totalViews} просм.` : `💬 ${totalComments} комм.`}</span>
+      </div>`;
+
+    const cards = posts
       .map((p, i) => {
         const preview = escapeHtml((p.text || "").substring(0, 80));
         const author = (p.author_username || "").toLowerCase();
         const isOwn = ownUsernames.has(author);
-        const ownerBadge = isOwn
-          ? `<span class="meta-chip meta-chip--own">Свой</span>`
-          : `<span class="meta-chip meta-chip--competitor">Чужой</span>`;
-        const mediaBadge = p.media_type ? `<span class="meta-chip">${_mediaLabel(p.media_type)}</span>` : "";
-        const dateBadge = p.posted_at ? `<span class="meta-chip meta-chip--muted">${_relDate(p.posted_at)}</span>` : "";
+        const isTop = i === topIdx && (p.like_count || 0) > 0;
+        const relPct = Math.round(((p.like_count || 0) / maxLikes) * 100);
+        const engRate = totalViews > 0
+          ? ((p.like_count || 0) / Math.max(p.view_count || 1, 1) * 100).toFixed(1)
+          : ((p.like_count || 0) / maxLikes * 10).toFixed(1);
+
         return `
-        <div class="draft-card" data-action="openTrendsPost" data-args='[${i}]'>
-          <div class="draft-card-header">
-            <span class="draft-card-topic">@${escapeHtml(p.author_username || "—")}</span>
-            <span class="draft-card-badges">${ownerBadge}${mediaBadge}${dateBadge}</span>
+        <div class="post-card-v2 ${isTop ? "is-top" : ""} ${isIg ? "pc-ig" : ""}" data-action="openTrendsPost" data-args='[${i}]'>
+          <div class="pc-v2-top">
+            <span class="pc-v2-account">@${escapeHtml(p.author_username || "—")}</span>
+            ${isOwn ? `<span class="pc-v2-own-badge">Свой</span>` : `<span class="pc-v2-competitor-badge">Чужой</span>`}
+            ${p.media_type ? `<span class="pc-v2-type">${MEDIA_LABELS[p.media_type] || p.media_type}</span>` : ""}
+            <span class="pc-v2-time">${_relDate(p.posted_at)}</span>
           </div>
-          <div class="draft-card-preview">${preview}${p.text && p.text.length > 80 ? "…" : ""}</div>
-          <div class="draft-card-meta">
-            ${(p.like_count || 0) ? `<span>${actionLabel("heart", p.like_count)}</span>` : ""}
-            ${(p.reply_count || 0) ? `<span>${actionLabel("message-circle", p.reply_count)}</span>` : ""}
-            ${(p.share_count || 0) ? `<span>${actionLabel("repeat", p.share_count)}</span>` : ""}
-            ${(p.view_count || 0) ? `<span>${actionLabel("eye", p.view_count)}</span>` : ""}
-            ${(p.comment_count || 0) ? `<span>${actionLabel("copy", p.comment_count)}</span>` : ""}
+          <div class="pc-v2-text">${preview}${p.text && p.text.length > 80 ? "…" : ""}</div>
+          <div class="pc-v2-metrics">
+            <div class="pc-v2-metric ${isTop ? "pc-highlight" : ""}">♡ ${p.like_count || 0}</div>
+            ${(p.reply_count || 0) ? `<div class="pc-v2-metric">◎ ${p.reply_count}</div>` : ""}
+            ${(p.comment_count || 0) ? `<div class="pc-v2-metric">💬 ${p.comment_count}</div>` : ""}
+            ${(p.view_count || 0) ? `<div class="pc-v2-metric">◉ ${p.view_count}</div>` : ""}
+            ${(p.share_count || 0) ? `<div class="pc-v2-metric">↺ ${p.share_count}</div>` : ""}
+            ${isTop ? `<div class="pc-v2-top-badge">топ</div>` : ""}
+          </div>
+          <div class="pc-v2-rel-bar">
+            <div class="pcr-v2-bg"><div class="pcr-v2-fill ${platformClass}" style="width:${relPct}%"></div></div>
+            <span class="pcr-v2-val">${engRate}%</span>
           </div>
         </div>`;
       })
       .join("");
 
-    return `<div class="draft-list-content">${cards}</div>`;
+    return `${summaryBar}<div class="draft-list-content">${cards}</div>`;
+  }
+
+  function _relDate(iso) {
+    if (!iso) return "";
+    const d = new Date(iso);
+    const now = new Date();
+    const diffH = Math.round((now - d) / 3600000);
+    if (diffH < 1) return "только что";
+    if (diffH < 24) return `${diffH}ч назад`;
+    const diffD = Math.round(diffH / 24);
+    return `${diffD}д назад`;
   }
 
   function renderCompareSummaryList() {
     if (!trendsCompare) return "";
     const ig = trendsCompare.instagram || {};
     const th = trendsCompare.threads || {};
+    const totals = trendsCompare.totals || {};
+    const bestPost = trendsCompare.best_post;
+    const periodDays = trendsCompare.period_days || trendsPeriod;
 
-    return `
-      <div class="trends-compare-cards">
-        <div class="trends-compare-card">
-          <div class="trends-compare-card-title">${uiIcon("instagram", 16)} Instagram</div>
-          <div class="trends-compare-metric">${actionLabel("heart", ig.avg_engagement || 0)} ср. вовлечение</div>
-          <div class="trends-compare-metric">${actionLabel("clock", ig.best_hour != null ? ig.best_hour + ":00" : "—")} лучшее время</div>
-          <div class="trends-compare-metric">${actionLabel("file-text", ig.post_count || 0)} постов</div>
-        </div>
-        <div class="trends-compare-card">
-          <div class="trends-compare-card-title">${uiIcon("at-sign", 16)} Threads</div>
-          <div class="trends-compare-metric">${actionLabel("heart", th.avg_engagement || 0)} ср. вовлечение</div>
-          <div class="trends-compare-metric">${actionLabel("clock", th.best_hour != null ? th.best_hour + ":00" : "—")} лучшее время</div>
-          <div class="trends-compare-metric">${actionLabel("file-text", th.post_count || 0)} постов</div>
+    // Engagement bar relative percentage (max = larger of the two)
+    const maxEng = Math.max(ig.avg_engagement || 0, th.avg_engagement || 0, 1);
+    const igEngPct = Math.round(((ig.avg_engagement || 0) / maxEng) * 100);
+    const thEngPct = Math.round(((th.avg_engagement || 0) / maxEng) * 100);
+
+    const summarySection = `
+      <div class="analytics-summary">
+        <div class="analytics-summary-label">Всего за ${periodDays} дней</div>
+        <div class="analytics-summary-metrics">
+          <div class="asm-item">
+            <span class="asm-val">${totals.posts || 0}</span>
+            <span class="asm-label">постов</span>
+          </div>
+          <div class="asm-divider"></div>
+          <div class="asm-item">
+            <span class="asm-val">${totals.likes || 0}</span>
+            <span class="asm-label">лайков</span>
+          </div>
+          <div class="asm-divider"></div>
+          <div class="asm-item">
+            <span class="asm-val">${totals.comments || 0}</span>
+            <span class="asm-label">комментов</span>
+          </div>
+          <div class="asm-divider"></div>
+          <div class="asm-item">
+            <span class="asm-val">${totals.views || 0}</span>
+            <span class="asm-label">просмотров</span>
+          </div>
         </div>
       </div>`;
+
+    const platformCards = `
+      <div class="analytics-stats-grid">
+        <div class="analytics-platform-card">
+          <div class="apc-header">
+            <div class="apc-dot apc-dot-ig"></div>
+            <span class="apc-platform">Instagram</span>
+          </div>
+          <div class="apc-metric">
+            <span class="apc-m-val">${ig.avg_engagement || 0}</span>
+            <span class="apc-m-label">ср. вовлечение</span>
+            <div class="apc-eng-bar">
+              <div class="apc-eng-bar-bg"><div class="apc-eng-bar-fill ig" style="width:${igEngPct}%"></div></div>
+            </div>
+          </div>
+          <div class="apc-divider"></div>
+          <div class="apc-metric">
+            <span class="apc-m-val-sm">${ig.best_hour != null ? ig.best_hour + ":00" : "—"}</span>
+            <span class="apc-m-label">лучшее время</span>
+          </div>
+          <div class="apc-divider"></div>
+          <div class="apc-metric">
+            <span class="apc-m-val-sm">${ig.post_count || 0} постов</span>
+            <span class="apc-m-label">за период</span>
+          </div>
+        </div>
+        <div class="analytics-platform-card">
+          <div class="apc-header">
+            <div class="apc-dot apc-dot-th"></div>
+            <span class="apc-platform">Threads</span>
+          </div>
+          <div class="apc-metric">
+            <span class="apc-m-val">${th.avg_engagement || 0}</span>
+            <span class="apc-m-label">ср. вовлечение</span>
+            <div class="apc-eng-bar">
+              <div class="apc-eng-bar-bg"><div class="apc-eng-bar-fill th" style="width:${thEngPct}%"></div></div>
+            </div>
+          </div>
+          <div class="apc-divider"></div>
+          <div class="apc-metric">
+            <span class="apc-m-val-sm">${th.best_hour != null ? th.best_hour + ":00" : "—"}</span>
+            <span class="apc-m-label">лучшее время</span>
+          </div>
+          <div class="apc-divider"></div>
+          <div class="apc-metric">
+            <span class="apc-m-val-sm">${th.post_count || 0} постов</span>
+            <span class="apc-m-label">за период</span>
+          </div>
+        </div>
+      </div>`;
+
+    let bestPostHtml = "";
+    if (bestPost) {
+      const isIg = bestPost.platform === "instagram";
+      bestPostHtml = `
+        <div class="analytics-best-post" style="border-left-color: ${isIg ? "#e1306c" : "#9580ff"}">
+          <div class="abp-label">
+            <div class="apc-dot ${isIg ? "apc-dot-ig" : "apc-dot-th"}"></div>
+            Лучший пост за период
+          </div>
+          <div class="abp-text">${escapeHtml(bestPost.text)}</div>
+          <div class="abp-metrics">
+            <span class="abp-val">♡ ${bestPost.likes}</span>
+            ${bestPost.shares ? `<span class="abp-secondary">↺ ${bestPost.shares}</span>` : ""}
+            <span class="abp-time">${_relDate(bestPost.posted_at)}</span>
+          </div>
+        </div>`;
+    }
+
+    return `<div class="draft-list-content" style="display:flex;flex-direction:column;gap:8px;padding:0 0 8px">
+      ${summarySection}${platformCards}${bestPostHtml}
+    </div>`;
   }
 
   // ── Insight cards from suggestions ────────────────────────────────
