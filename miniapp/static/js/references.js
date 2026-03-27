@@ -121,7 +121,9 @@ export function createReferencesModule(deps) {
     }
     // Clear stale items before fetch to prevent cross-category contamination
     state.referenceItems = [];
-    renderReferences();
+    // Don't call renderReferences() with empty items — it causes flicker.
+    // Just show a loading hint; the full render happens after fetch completes.
+    elements.listTitle.textContent = meta.title;
     const data = await fetchJson(`/api/references/${meta.category}`);
     // Client-side guard: filter out any items that belong to a different category
     state.referenceItems = (data.items || []).filter(
@@ -774,9 +776,10 @@ export function createReferencesModule(deps) {
       ? { eyebrow: meta.title, title: "Ничего не найдено", body: "Попробуйте другой запрос или сбросьте фильтр." }
       : meta.empty);
 
-    // Build the shell once; on subsequent renders only update list + chips.
-    // Check that the container is actually a child of draftList (not orphaned in
-    // a detached DOM tree from a previous tab switch).
+    // Build shell once: action-group + banner + filters + list container.
+    // The shell is only created when referenceListContainer is missing from
+    // the LIVE draftList DOM. No empty pre-render — data is already loaded
+    // when renderReferences() is first called from loadReferences().
     let listContainer = document.getElementById("referenceListContainer");
     const shellAlive = listContainer && elements.draftList.contains(listContainer);
     if (!shellAlive) {
