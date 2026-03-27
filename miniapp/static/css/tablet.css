@@ -36,3 +36,28 @@
   }
 }
 
+/* ═══════════════════════════════════════
+   SECTION: Desktop (>1024px)
+   Bottom tab bar must also be visible
+   ═══════════════════════════════════════ */
+@media (min-width: 1025px) {
+  .bottom-tab-bar {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    display: block;
+    padding: 10px 10px calc(10px + env(safe-area-inset-bottom, 0px));
+    z-index: 30;
+    pointer-events: none;
+    background: transparent;
+  }
+  .bottom-tab-bar .bottom-tab-bar-inner { pointer-events: auto; }
+
+  body { padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
+
+  body.tg-theme-dark .bottom-tab-bar-inner {
+    background: var(--surface);
+    border-color: rgba(255, 230, 200, 0.12);
+    box-shadow: none;
+  }
+}
+
