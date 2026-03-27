@@ -231,8 +231,8 @@ body.is-mobile-layout .detail-top::after {
 .actions, .actions-row {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2);
-  margin-top: var(--space-2);
+  gap: var(--space-3);
+  margin-top: var(--space-3);
   justify-content: flex-start;
   align-items: stretch;
 }
@@ -246,7 +246,7 @@ body.is-mobile-layout .detail-top::after {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-3);
   min-width: 0;
 }
 .detail-actions > button {
