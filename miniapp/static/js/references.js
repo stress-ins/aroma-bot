@@ -504,13 +504,15 @@ export function createReferencesModule(deps) {
       reference.course_source && { icon: "📚", label: "Курс", value: formatCourseSourceLabel(reference.course_source) },
     ].filter(Boolean);
     if (!rows.length) return "";
-    return `<div class="passport-grid">${rows.map((row) =>
-      `<div class="passport-row">
-        <span class="passport-icon">${row.icon}</span>
-        <span class="passport-label">${escapeHtml(row.label)}</span>
-        <span class="passport-value">${row.raw ? row.value : escapeHtml(row.value)}</span>
+    return `<div class="passport-section">
+      <div class="ps-label">${uiIcon("clipboard", 14)} Паспорт аромата</div>
+      ${rows.map((row) =>
+      `<div class="ps-row">
+        <span class="ps-key">${escapeHtml(row.label)}</span>
+        <span class="ps-val">${row.raw ? row.value : escapeHtml(row.value)}</span>
       </div>`
-    ).join("")}</div>`;
+    ).join("")}
+    </div>`;
   }
 
   function cardCategoryIcon(reference) {
@@ -1086,10 +1088,31 @@ export function createReferencesModule(deps) {
 
   function renderSmartSearchHero() {
     return `
-      <div class="smart-search-hero">
-        <button class="blend-constructor-cta" data-action="openBlendConstructor">\u0421\u043e\u0437\u0434\u0430\u0442\u044c \u0441\u043c\u0435\u0441\u044c \u043f\u043e\u0434 \u0437\u0430\u0434\u0430\u0447\u0443</button>
-        <button class="reco-cta-btn" data-action="openRecommendationsWizard">Подобрать масло</button>
-        <button class="my-blends-btn" data-action="openSavedBlends">\u2665 \u0421\u043e\u0445\u0440\u0430\u043d\u0451\u043d\u043d\u043e\u0435</button>
+      <div class="action-group">
+        <div class="action-item" data-action="openBlendConstructor">
+          <div class="action-icon ai-purple">${uiIcon("flask-conical", 16)}</div>
+          <div class="action-text">
+            <div class="action-title">Создать смесь под задачу</div>
+            <div class="action-sub">AI подберёт компоненты</div>
+          </div>
+          <span class="action-arrow">›</span>
+        </div>
+        <div class="action-item" data-action="openRecommendationsWizard">
+          <div class="action-icon ai-teal">${uiIcon("search", 16)}</div>
+          <div class="action-text">
+            <div class="action-title">Подобрать масло</div>
+            <div class="action-sub">По симптому или цели</div>
+          </div>
+          <span class="action-arrow">›</span>
+        </div>
+        <div class="action-item" data-action="openSavedBlends">
+          <div class="action-icon ai-pink">${uiIcon("heart", 16)}</div>
+          <div class="action-text">
+            <div class="action-title">Сохранённое</div>
+            <div class="action-sub">Избранные карточки</div>
+          </div>
+          <span class="action-arrow">›</span>
+        </div>
       </div>`;
   }
 
@@ -1376,14 +1399,11 @@ export function createReferencesModule(deps) {
       const oil = await fetchJson("/api/references/daily-oil");
       _dailyOilData = oil;
       el.innerHTML = `
-        <div class="daily-oil-banner" data-action="openDailyOilReference" data-args='${JSON.stringify([oil.slug])}'>
-          <div class="daily-oil-header">
-            <i class="ph ph-sparkle daily-oil-icon"></i>
-            <span class="daily-oil-label">\u041c\u0430\u0441\u043b\u043e \u0434\u043d\u044f</span>
-          </div>
-          <h3 class="daily-oil-name">${escapeHtml(oil.name)}</h3>
-          ${oil.reason ? `<p class="daily-oil-reason"><i class="ph ph-lightbulb" style="font-size:14px;vertical-align:-2px;margin-right:4px"></i>${escapeHtml(oil.reason)}</p>` : ""}
-          <span class="daily-oil-cta">\u0423\u0437\u043d\u0430\u0442\u044c \u0431\u043e\u043b\u044c\u0448\u0435 <i class="ph ph-caret-right"></i></span>
+        <div class="oil-of-day" data-action="openDailyOilReference" data-args='${JSON.stringify([oil.slug])}'>
+          <div class="ood-tag">✦ Масло дня</div>
+          <div class="ood-name">${escapeHtml(oil.name)}</div>
+          ${oil.reason ? `<div class="ood-desc">${escapeHtml(oil.reason)}</div>` : ""}
+          <span class="ood-link">Узнать больше →</span>
         </div>
 `;
     } catch {
