@@ -35,10 +35,10 @@ export function createRuntimeModule(deps) {
   } = deps;
 
   async function loadCurrentTab() {
-    // Static action-group + search: show only on handbook tabs
-    const isHandbook = !!deps.HANDBOOK_CATEGORY_META[state.tab];
-    const refActions = document.getElementById("referenceActions");
-    if (refActions) refActions.style.display = isHandbook ? "" : "none";
+    // Restore draftCount visibility when leaving handbook tabs
+    if (!deps.HANDBOOK_CATEGORY_META[state.tab] && elements.draftCount) {
+      elements.draftCount.style.display = "";
+    }
 
     if (state.tab === "create") return renderCreate();
     if (state.tab === "inbox") return loadInbox();
