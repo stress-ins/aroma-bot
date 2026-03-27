@@ -39,9 +39,10 @@ export function createRuntimeModule(deps) {
     const isHandbook = !!deps.HANDBOOK_CATEGORY_META[state.tab];
     const refActions = document.getElementById("referenceActions");
     if (refActions) refActions.style.display = isHandbook ? "" : "none";
-    // draftCount: only visible on drafts tab (other tabs use their own count/search)
-    const isDrafts = !["create", "inbox", "plans", "schedule", "settings", "status", "keywords", "trends"].includes(state.tab) && !isHandbook;
-    if (elements.draftCount) elements.draftCount.style.display = isDrafts ? "" : "none";
+    // Filters bar (filtersContainer): only show on drafts tab
+    const isDrafts = state.tab === "drafts" || (!["create", "inbox", "plans", "schedule", "settings", "status", "keywords", "trends"].includes(state.tab) && !isHandbook);
+    const filtersEl = document.getElementById("filtersContainer");
+    if (filtersEl) filtersEl.style.display = isDrafts ? "" : "none";
 
     if (state.tab === "create") return renderCreate();
     if (state.tab === "inbox") return loadInbox();
