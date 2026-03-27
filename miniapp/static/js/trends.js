@@ -107,6 +107,15 @@ export function createTrendsModule(deps) {
     elements.listTitle.textContent = "Тренды";
     elements.draftList.innerHTML = renderTrendsListPanel();
     elements.draftDetail.innerHTML = renderTrendsDetail();
+
+    // On mobile, the detail panel is hidden — append dashboard inline below the list
+    if (document.body.classList.contains("is-mobile-layout")) {
+      const dashboardHtml = renderTrendsDetail();
+      if (dashboardHtml && !dashboardHtml.includes("detail-empty")) {
+        elements.draftList.insertAdjacentHTML("beforeend", `<div class="trends-dashboard-inline">${dashboardHtml}</div>`);
+      }
+    }
+
     syncMobileNavigation();
   }
 
