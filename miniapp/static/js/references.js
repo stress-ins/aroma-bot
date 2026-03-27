@@ -746,29 +746,38 @@ export function createReferencesModule(deps) {
 
     const searchHint = meta.searchPlaceholder || "Масло, аромат, симптом...";
 
-    /* Render inline search bar inside draftCount area */
-    if (!document.getElementById("smartSearchInput")) {
-      elements.draftCount.innerHTML = `
-        <div class="smart-search-bar smart-search-bar--inline" id="smartSearchBar">
-          <span class="smart-search-icon"><svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="6.5" cy="6.5" r="4.5"/><line x1="10" y1="10" x2="13.5" y2="13.5"/></svg></span>
-          <input type="text" class="smart-search-input" id="smartSearchInput"
-            placeholder="${escapeHtml(searchHint)}"
-            data-on-input="handleSmartSearch" data-args='[]'
-            data-on-keydown="runSmartSearch" data-keydown-guard="Enter" data-args-keydown='[]'>
-          <span class="smart-search-count" id="smartSearchCount">${escapeHtml(countText)}</span>
-          <button class="smart-search-clear" id="smartSearchClear" data-action="clearSmartSearch" hidden>\u2715</button>
-        </div>`;
-      document.getElementById("smartSearchInput")?.addEventListener("input", (e) => {
-        state.referenceSearch = e.target.value;
-      });
-    } else {
-      const searchInput = document.getElementById("smartSearchInput");
-      if (searchInput) {
-        searchInput.value = state.referenceSearch;
+    /* Use static search bar from index.html (#refSearchInput) */
+    const refSearchInput = document.getElementById("refSearchInput");
+    const refSearchCount = document.getElementById("refSearchCount");
+    const refSearchClear = document.getElementById("refSearchClear");
+    if (refSearchInput) {
+      refSearchInput.placeholder = searchHint;
+      refSearchInput.value = state.referenceSearch || "";
+      // Bind input handler once
+      if (!refSearchInput._bound) {
+        refSearchInput._bound = true;
+        refSearchInput.addEventListener("input", (e) => {
+          state.referenceSearch = e.target.value;
+          handleSmartSearch(e.target.value);
+          if (refSearchClear) refSearchClear.style.display = e.target.value ? "" : "none";
+        });
+        refSearchInput.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") runSmartSearch(e.target.value);
+        });
+        if (refSearchClear) {
+          refSearchClear.addEventListener("click", () => {
+            refSearchInput.value = "";
+            state.referenceSearch = "";
+            refSearchClear.style.display = "none";
+            clearSmartSearch();
+          });
+        }
       }
-      const countEl = document.getElementById("smartSearchCount");
-      if (countEl) countEl.textContent = countText;
     }
+    if (refSearchCount) refSearchCount.textContent = countText;
+    if (refSearchClear) refSearchClear.style.display = (state.referenceSearch || "") ? "" : "none";
+    // Keep draftCount for non-handbook use
+    elements.draftCount.textContent = "";
 
     setEmptyState(filtered.length > 0, query
       ? { eyebrow: meta.title, title: "Ничего не найдено", body: "Попробуйте другой запрос или сбросьте фильтр." }
