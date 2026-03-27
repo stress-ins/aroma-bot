@@ -226,22 +226,21 @@ async def upload_team_avatar(
         raise HTTPException(status_code=400, detail="image_required")
 
     data = await file.read()
-    if len(data) > 2 * 1024 * 1024:
+    if len(data) > 5 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="file_too_large")
 
     from pathlib import Path
     from PIL import Image
     import io
 
-    # Resize to 256x256 circle-ready square
     img = Image.open(io.BytesIO(data)).convert("RGB")
-    img.thumbnail((256, 256), Image.LANCZOS)
-    # Center-crop to square
+    # Center-crop to square first, then resize to 512x512
     w, h = img.size
     side = min(w, h)
     left = (w - side) // 2
     top = (h - side) // 2
     img = img.crop((left, top, left + side, top + side))
+    img = img.resize((512, 512), Image.LANCZOS)
 
     avatar_dir = Path(__file__).parent.parent.parent.parent / "data" / "avatars"
     avatar_dir.mkdir(parents=True, exist_ok=True)
@@ -263,7 +262,11 @@ async def get_team_avatar(team_id: str):
     avatar_path = avatar_dir / f"team_{team_id}.jpg"
     if not avatar_path.exists():
         raise HTTPException(status_code=404, detail="avatar_not_found")
-    return FileResponse(avatar_path, media_type="image/jpeg")
+    return FileResponse(
+        avatar_path,
+        media_type="image/jpeg",
+        headers={"Cache-Control": "no-cache, must-revalidate"},
+    )
 
 
 # ---------------------------------------------------------------------------

@@ -25,6 +25,7 @@ import { createStockPhotosModule } from "./js/stock_photos.js";
 import { createTeamsModule } from "./js/teams.js";
 import { createTrendsModule } from "./js/trends.js";
 import { createAnalyticsModule } from "./js/analytics.js";
+import { createAvatarCropperModule } from "./js/avatar-cropper.js";
 
 const state = {
   mode: "content", // 'content' or 'handbook'
@@ -2007,6 +2008,8 @@ const _stockPhotosMod = createStockPhotosModule({
   },
 }));
 
+const avatarCropper = createAvatarCropperModule();
+
 const _settingsMod = createSettingsModule({
   state,
   elements,
@@ -2024,6 +2027,8 @@ const _settingsMod = createSettingsModule({
   syncMobileNavigation,
   enterDetailView,
   applyTheme,
+  getInitDataHeaders,
+  avatarCropper,
 });
 const { renderBrand: renderBrandImpl, loadForbiddenPhrases: loadForbiddenPhrasesImpl, loadPolicy: loadPolicyImpl, renderAccounts: renderAccountsImpl } = _settingsMod;
 ({
