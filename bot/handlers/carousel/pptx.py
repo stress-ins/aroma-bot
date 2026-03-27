@@ -113,6 +113,7 @@ def _build_pptx(slides: list[str], images: list[bytes | None] | None = None) -> 
         margin  = Emu(80000)
         box_top = Emu(int(_SLIDE_EMU * top_frac))
         box_h   = Emu(int(_SLIDE_EMU * h_frac))
+        box_w   = Emu(_SLIDE_EMU) - margin * 2
 
         # Semi-transparent dark overlay behind text (only when image is present)
         if img_bytes:
@@ -121,11 +122,14 @@ def _build_pptx(slides: list[str], images: list[bytes | None] | None = None) -> 
             overlay = slide.shapes.add_shape(
                 1,
                 margin - pad, box_top - pad,
-                Emu(_SLIDE_EMU) - margin * 2 + pad * 2, box_h + pad * 2,
+                box_w + pad * 2, box_h + pad * 2,
             )
             overlay.fill.solid()
             overlay.fill.fore_color.rgb = RGBColor(0x18, 0x0E, 0x08)
             overlay.line.fill.background()
+            overlay.rotation = 0.0
+            # Lock overlay to prevent accidental edits in Canva
+            overlay.name = "text_overlay"
             # Set 58% opacity via OOXML (val=58000 means 58% opaque)
             sp_pr = overlay._element.spPr
             solid = sp_pr.find(".//" + _qn("a:solidFill"))
@@ -136,7 +140,7 @@ def _build_pptx(slides: list[str], images: list[bytes | None] | None = None) -> 
                     alpha_el.set("val", "58000")
 
         txBox = slide.shapes.add_textbox(
-            margin, box_top, Emu(_SLIDE_EMU) - margin * 2, box_h
+            margin, box_top, box_w, box_h
         )
         txBox.fill.background()
         tf = txBox.text_frame

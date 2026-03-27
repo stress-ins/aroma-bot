@@ -139,7 +139,7 @@ def build_editorial_pptx(
         # ── Avatar + username bar ──
         pad_x = Emu(int(SLIDE_W * 0.044))  # ~48px at 1080
         bar_top = Emu(photo_h_emu + int(SLIDE_H * 0.01))
-        avatar_size_px = 48
+        avatar_size_px = 56
         avatar_size_emu = avatar_size_px * 9525
 
         if username:
