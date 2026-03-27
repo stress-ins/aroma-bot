@@ -94,7 +94,7 @@ async def social_connect_url(
         raise HTTPException(status_code=400, detail="youtube_not_configured")
     if platform == "tiktok" and (not settings.tiktok_client_key or not settings.tiktok_client_secret):
         raise HTTPException(status_code=400, detail="tiktok_not_configured")
-    if platform == "facebook" and (not settings.instagram_app_id or not settings.instagram_app_secret):
+    if platform == "facebook" and (not settings.facebook_app_id or not settings.facebook_app_secret):
         raise HTTPException(status_code=400, detail="facebook_not_configured")
 
     user_id = _telegram_user_id_from_init_data(x_telegram_init_data or "") or 0
@@ -142,7 +142,7 @@ async def social_connect_url(
             )
         elif platform == "facebook":
             url = build_facebook_authorize_url(
-                client_id=settings.instagram_app_id,
+                client_id=settings.facebook_app_id,
                 redirect_uri=FACEBOOK_REDIRECT_URI,
                 state=state,
             )
