@@ -31,11 +31,17 @@ _MAX_AGE_DAYS = 30
 class InstagramTrendsCollector:
     """Collects posts from monitored Instagram accounts for a single team."""
 
-    def __init__(self, team_id: str, access_token: str, ig_user_id: str, own_username: str = ""):
+    def __init__(
+        self, team_id: str, access_token: str, ig_user_id: str,
+        own_username: str = "", fb_token: str = "", fb_user_id: str = "",
+    ):
         self.team_id = team_id
         self._token = access_token
         self._user_id = ig_user_id
         self._own_username = own_username.lower().lstrip("@")
+        # Facebook Login token for business_discovery + hashtag search
+        self._fb_token = fb_token
+        self._fb_user_id = fb_user_id
         self._request_count = 0
 
     async def collect_from_accounts(self, accounts: list[dict]) -> int:
@@ -62,15 +68,27 @@ class InstagramTrendsCollector:
         self, client: httpx.AsyncClient, username: str, cutoff: datetime
     ) -> int:
         """Fetch posts for a single account. Uses /me/media for own account,
-        business_discovery for others, Playwright fallback on permission error."""
+        business_discovery (FB token preferred) for others, Playwright fallback."""
         if self._own_username and username.lower() == self._own_username:
             return await self._collect_own_media(client, username, cutoff)
 
+        # Try Facebook Login token for business_discovery (has proper permissions)
+        if self._fb_token and self._fb_user_id:
+            try:
+                return await self._collect_via_business_discovery(
+                    client, username, cutoff,
+                    token=self._fb_token, user_id=self._fb_user_id,
+                )
+            except RuntimeError as exc:
+                logger.warning(
+                    "IG trends: FB business_discovery failed for @%s (team=%s): %s — trying IG token",
+                    username, self.team_id, exc,
+                )
+
+        # Fallback to IG Business Login token
         try:
             return await self._collect_via_business_discovery(client, username, cutoff)
         except RuntimeError as exc:
-            # business_discovery requires instagram_business_manage permission;
-            # fall back to Playwright scraping
             logger.warning(
                 "IG trends: business_discovery failed for @%s (team=%s): %s — trying Playwright",
                 username, self.team_id, exc,
@@ -140,12 +158,15 @@ class InstagramTrendsCollector:
         return await self._save_posts(media_data, username, cutoff)
 
     async def _collect_via_business_discovery(
-        self, client: httpx.AsyncClient, username: str, cutoff: datetime
+        self, client: httpx.AsyncClient, username: str, cutoff: datetime,
+        *, token: str = "", user_id: str = "",
     ) -> int:
         """Fetch posts for another account via business_discovery."""
+        effective_token = token or self._token
+        effective_uid = user_id or self._user_id
         await self._rate_check()
         resp = await client.get(
-            f"{GRAPH_URL}/{self._user_id}",
+            f"{GRAPH_URL}/{effective_uid}",
             params={
                 "fields": (
                     f"business_discovery.fields("
@@ -154,7 +175,7 @@ class InstagramTrendsCollector:
                     f"permalink,caption,like_count,comments_count,timestamp}}"
                     f"){{username={username}}}"
                 ),
-                "access_token": self._token,
+                "access_token": effective_token,
             },
         )
         self._request_count += 1
@@ -223,15 +244,19 @@ class InstagramTrendsCollector:
         return total
 
     async def _collect_hashtag(self, client: httpx.AsyncClient, tag: str) -> int:
-        """Search hashtag and collect top/recent media."""
+        """Search hashtag and collect top/recent media. Prefers FB token."""
+        # Use Facebook token if available (required for ig_hashtag_search)
+        ht_token = self._fb_token or self._token
+        ht_uid = self._fb_user_id or self._user_id
+
         # Step 1: Get hashtag ID
         await self._rate_check()
         resp = await client.get(
             f"{GRAPH_URL}/ig_hashtag_search",
             params={
-                "user_id": self._user_id,
+                "user_id": ht_uid,
                 "q": tag,
-                "access_token": self._token,
+                "access_token": ht_token,
             },
         )
         self._request_count += 1
@@ -248,9 +273,9 @@ class InstagramTrendsCollector:
             resp = await client.get(
                 f"{GRAPH_URL}/{hashtag_id}/{edge}",
                 params={
-                    "user_id": self._user_id,
+                    "user_id": ht_uid,
                     "fields": "id,media_type,permalink,caption,like_count,comments_count,timestamp",
-                    "access_token": self._token,
+                    "access_token": ht_token,
                 },
             )
             self._request_count += 1

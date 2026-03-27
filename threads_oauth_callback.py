@@ -17,6 +17,7 @@ from bot.services.social_oauth import (
     OAuthStateError,
     bundle_env_updates,
     exchange_canva_code,
+    exchange_facebook_code,
     exchange_instagram_code,
     exchange_threads_code,
     exchange_youtube_code,
@@ -36,6 +37,7 @@ THREADS_REDIRECT_URI = "https://oauth.aromara.ru/threads/callback"
 INSTAGRAM_REDIRECT_URI = "https://oauth.aromara.ru/instagram/callback"
 CANVA_REDIRECT_URI = "https://oauth.aromara.ru/canva/callback"
 YOUTUBE_REDIRECT_URI = "https://oauth.aromara.ru/youtube/callback"
+FACEBOOK_REDIRECT_URI = "https://oauth.aromara.ru/facebook/callback"
 
 
 @app.get("/")
@@ -94,6 +96,11 @@ async def canva_callback(request: Request):
 @app.get("/youtube/callback")
 async def youtube_callback(request: Request):
     return await _complete_oauth("youtube", request)
+
+
+@app.get("/facebook/callback")
+async def facebook_callback(request: Request):
+    return await _complete_oauth("facebook", request)
 
 
 @app.get("/threads/deauthorize")
@@ -415,6 +422,13 @@ def _exchange_bundle(service: str, code: str, *, code_verifier: str = "") -> OAu
             client_secret=settings.google_client_secret,
             redirect_uri=YOUTUBE_REDIRECT_URI,
         )
+    if service == "facebook":
+        return exchange_facebook_code(
+            code=code,
+            client_id=settings.instagram_app_id,
+            client_secret=settings.instagram_app_secret,
+            redirect_uri=FACEBOOK_REDIRECT_URI,
+        )
     raise OAuthExchangeError(f"Unsupported service: {service}")
 
 
@@ -436,6 +450,14 @@ def _notify_success(chat_id: str, bundle: OAuthTokenBundle) -> None:
             "✅ YouTube подключён.\n"
             f"Канал: {bundle.username or 'unknown'}\n"
             f"Channel ID: {bundle.user_id}"
+        )
+    elif bundle.service == "facebook":
+        ig_uid = bundle.metadata.get("ig_user_id", "")
+        text = (
+            "✅ Facebook Login подключён (Instagram Graph API).\n"
+            + (f"IG аккаунт: @{bundle.username}\n" if bundle.username else "")
+            + (f"IG User ID: {ig_uid}\n" if ig_uid else "")
+            + "business_discovery и hashtag search теперь доступны."
         )
     else:
         text = (

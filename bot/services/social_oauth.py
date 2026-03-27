@@ -42,10 +42,18 @@ INSTAGRAM_DEFAULT_SCOPES = (
     "instagram_business_manage_comments",
     "instagram_business_manage_insights",
     "instagram_business_manage_messages",
-    # Graph API scopes for business_discovery + ig_hashtag_search
+)
+
+# Facebook Login — for business_discovery + ig_hashtag_search
+FACEBOOK_AUTHORIZE_URL = "https://www.facebook.com/v21.0/dialog/oauth"
+FACEBOOK_TOKEN_URL = "https://graph.facebook.com/v21.0/oauth/access_token"
+FACEBOOK_GRAPH_URL = "https://graph.facebook.com/v21.0"
+FACEBOOK_DEFAULT_SCOPES = (
     "instagram_basic",
+    "instagram_manage_messages",
     "pages_read_engagement",
     "pages_show_list",
+    "business_management",
     "public_profile",
 )
 
@@ -154,6 +162,115 @@ def build_instagram_authorize_url(
     if state:
         params["state"] = state
     return f"https://www.instagram.com/oauth/authorize?{urlencode(params)}"
+
+
+def build_facebook_authorize_url(
+    *,
+    client_id: str,
+    redirect_uri: str,
+    state: str = "",
+    scopes: tuple[str, ...] = FACEBOOK_DEFAULT_SCOPES,
+) -> str:
+    """Build Facebook Login OAuth URL for Instagram Graph API access."""
+    params = {
+        "client_id": client_id,
+        "redirect_uri": redirect_uri,
+        "response_type": "code",
+        "scope": ",".join(scopes),
+    }
+    if state:
+        params["state"] = state
+    return f"{FACEBOOK_AUTHORIZE_URL}?{urlencode(params)}"
+
+
+def exchange_facebook_code(
+    *,
+    code: str,
+    client_id: str,
+    client_secret: str,
+    redirect_uri: str,
+    client: httpx.Client | None = None,
+) -> OAuthTokenBundle:
+    """Exchange Facebook Login code for long-lived token + resolve IG business account."""
+    def _work(session: httpx.Client) -> OAuthTokenBundle:
+        # Step 1: Exchange code for short-lived token
+        token_response = session.get(
+            FACEBOOK_TOKEN_URL,
+            params={
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "redirect_uri": redirect_uri,
+                "code": code,
+            },
+        )
+        short_payload = _parse_json_response(token_response, "Facebook code exchange")
+        short_token = str(short_payload.get("access_token", "")).strip()
+        if not short_token:
+            raise OAuthExchangeError("Facebook code exchange did not return access_token")
+
+        # Step 2: Exchange for long-lived token (~60 days)
+        long_response = session.get(
+            FACEBOOK_TOKEN_URL,
+            params={
+                "grant_type": "fb_exchange_token",
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "fb_exchange_token": short_token,
+            },
+        )
+        long_payload = _parse_json_response(long_response, "Facebook long-lived token exchange")
+        long_token = str(long_payload.get("access_token", "")).strip() or short_token
+
+        # Step 3: Get Facebook Pages linked to Instagram
+        pages_response = session.get(
+            f"{FACEBOOK_GRAPH_URL}/me/accounts",
+            params={
+                "fields": "id,name,instagram_business_account{id,username}",
+                "access_token": long_token,
+            },
+        )
+        pages_payload = _parse_json_response(pages_response, "Facebook pages lookup")
+        pages = pages_payload.get("data", [])
+
+        ig_user_id = ""
+        ig_username = ""
+        page_id = ""
+        for page in pages:
+            ig_account = page.get("instagram_business_account")
+            if ig_account:
+                ig_user_id = str(ig_account.get("id", "")).strip()
+                ig_username = str(ig_account.get("username", "")).strip()
+                page_id = str(page.get("id", "")).strip()
+                break
+
+        if not ig_user_id:
+            # Try direct /me?fields=id,name
+            me_resp = session.get(
+                f"{FACEBOOK_GRAPH_URL}/me",
+                params={"fields": "id,name", "access_token": long_token},
+            )
+            me_payload = _parse_json_response(me_resp, "Facebook /me")
+            logger.warning(
+                "Facebook Login: no Instagram Business Account found on any Page. "
+                "FB user: %s. Pages: %s",
+                me_payload.get("name", "?"),
+                [p.get("name") for p in pages],
+            )
+
+        return OAuthTokenBundle(
+            service="facebook",
+            short_lived_token=short_token,
+            access_token=long_token,
+            expires_in=_coerce_int(long_payload.get("expires_in")),
+            user_id=ig_user_id or page_id,
+            username=ig_username,
+            metadata={"page_id": page_id, "ig_user_id": ig_user_id},
+        )
+
+    if client is not None:
+        return _work(client)
+    with httpx.Client(timeout=30.0) as session:
+        return _work(session)
 
 
 def exchange_threads_code(
@@ -757,6 +874,11 @@ def bundle_env_updates(bundle: OAuthTokenBundle) -> dict[str, str]:
         return {
             "INSTAGRAM_ACCESS_TOKEN": bundle.access_token,
             "INSTAGRAM_USER_ID": bundle.user_id,
+        }
+    if bundle.service == "facebook":
+        return {
+            "FACEBOOK_ACCESS_TOKEN": bundle.access_token,
+            "FACEBOOK_IG_USER_ID": bundle.metadata.get("ig_user_id", ""),
         }
     if bundle.service == "canva":
         return {}

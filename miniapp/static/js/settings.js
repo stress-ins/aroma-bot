@@ -696,8 +696,8 @@ export function createSettingsModule(deps) {
   }
 
   function accountCardHtml(acc, opts = {}) {
-    const platformIcons = { threads: "message-circle", instagram: "camera", canva: "pen-tool", youtube: "video" };
-    const platformLabels = { threads: "Threads", instagram: "Instagram", canva: "Canva", youtube: "YouTube" };
+    const platformIcons = { threads: "message-circle", instagram: "camera", canva: "pen-tool", youtube: "video", facebook: "globe", tiktok: "video" };
+    const platformLabels = { threads: "Threads", instagram: "Instagram", canva: "Canva", youtube: "YouTube", facebook: "Facebook (IG Graph)", tiktok: "TikTok" };
     const icon = uiIcon(platformIcons[acc.platform] || "link");
     const label = platformLabels[acc.platform] || acc.platform;
     const connected = acc.connected;
