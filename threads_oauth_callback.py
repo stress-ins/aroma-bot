@@ -425,8 +425,8 @@ def _exchange_bundle(service: str, code: str, *, code_verifier: str = "") -> OAu
     if service == "facebook":
         return exchange_facebook_code(
             code=code,
-            client_id=settings.instagram_app_id,
-            client_secret=settings.instagram_app_secret,
+            client_id=settings.facebook_app_id,
+            client_secret=settings.facebook_app_secret,
             redirect_uri=FACEBOOK_REDIRECT_URI,
         )
     raise OAuthExchangeError(f"Unsupported service: {service}")
