@@ -377,14 +377,14 @@ export function createArchiveModule(deps) {
           </section>
         ` : ""}
 
-        <div class="actions-row" style="flex-wrap:wrap">
-          <button class="coach-btn" data-action="loadPostCoaching" data-args='["${escapeHtml(pub.pub_id)}"]'>
+        <div class="archive-actions">
+          <button class="archive-action-btn archive-action-secondary" data-action="loadPostCoaching" data-args='["${escapeHtml(pub.pub_id)}"]'>
             ${uiIcon("brain")} Анализ AI
           </button>
-          <button class="secondary-button" data-action="openArchiveForm" data-args='["${escapeHtml(pub.pub_id)}"]'>
+          <button class="archive-action-btn archive-action-secondary" data-action="openArchiveForm" data-args='["${escapeHtml(pub.pub_id)}"]'>
             ${uiIcon("pencil")} Редактировать
           </button>
-          <button class="danger-button" data-action="deletePublication" data-args='["${escapeHtml(pub.pub_id)}", null]'>
+          <button class="archive-action-btn archive-action-danger" data-action="deletePublication" data-args='["${escapeHtml(pub.pub_id)}", null]'>
             ${uiIcon("trash-2")} Удалить
           </button>
         </div>
