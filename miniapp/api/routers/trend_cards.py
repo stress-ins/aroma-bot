@@ -66,6 +66,7 @@ async def list_trend_cards(
                 "suggested_formats": row.suggested_formats or [],
                 "velocity": row.velocity,
                 "convergence": row.convergence,
+                "source_signals": row.source_signals or [],
                 "created_at": row.created_at.isoformat() if row.created_at else "",
             })
 

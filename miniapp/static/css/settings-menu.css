@@ -835,6 +835,17 @@ details[open] > .trend-suggestions-toggle::before { transform: rotate(90deg); }
   text-align: right;
 }
 
+/* ── Trends stats summary row ───────────────────────────────────────── */
+.trends-stats-row {
+  padding: 0 4px 10px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--hint);
+  flex-shrink: 0;
+}
+
 /* ── Detail hero block ───────────────────────────────────────────────── */
 .detail-hero {
   background: var(--surface);
