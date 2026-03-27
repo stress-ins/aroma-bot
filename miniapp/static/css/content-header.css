@@ -88,7 +88,8 @@
 
 /* Hide filter row on tabs that don't need it */
 body[data-tab="settings"] .panel-filter-row,
-body[data-tab="create"] .panel-filter-row { display: none; }
+body[data-tab="create"] .panel-filter-row,
+body[data-tab="trends"] .panel-filter-row { display: none; }
 
 .panel-count {
   margin-left: auto;
