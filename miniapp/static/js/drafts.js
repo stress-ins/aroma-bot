@@ -195,6 +195,7 @@ export function createDraftsModule(deps) {
     }
     state.selected = d;
     state.draftId = id;
+    state.selectedReels = null; // Clear stale reels ref so PTR refreshes the correct draft
     renderDraftList();
     renderDraftDetail(d);
     enterDetailView();

@@ -117,6 +117,8 @@
 .oil-edit-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--border); transition: opacity 0.2s; }
 .oil-edit-row:last-child { border: none; padding-bottom: 0; }
 .oil-edit-row.is-removed { opacity: 0.3; }
+.oil-edit-row.is-pinned { background: var(--brand-bg); border-radius: 6px; padding-left: 6px; padding-right: 4px; margin: 0 -6px; }
+.oil-pin-icon { font-size: 10px; vertical-align: 1px; opacity: 0.7; }
 .oil-edit-toggle { width: 24px; height: 24px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface-2); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; font-size: 12px; transition: 0.15s; color: var(--brand); }
 .oil-edit-toggle.is-off { background: rgba(176,58,46,.08); border-color: rgba(176,58,46,.2); color: var(--bad); }
 .oil-edit-name { font-size: 13px; font-weight: 600; color: var(--text); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
