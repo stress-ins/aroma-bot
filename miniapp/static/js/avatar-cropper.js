@@ -11,8 +11,15 @@ export function createAvatarCropperModule() {
    * @param {(blob: Blob) => void} onSave - called with cropped JPEG blob
    */
   function open(file, onSave) {
+    console.log("[avatar-cropper] open called, file:", file?.name, file?.size);
     const reader = new FileReader();
-    reader.onload = () => _buildModal(reader.result, onSave);
+    reader.onload = () => {
+      console.log("[avatar-cropper] file read, dataUrl length:", reader.result?.length);
+      _buildModal(reader.result, onSave);
+    };
+    reader.onerror = (err) => {
+      console.error("[avatar-cropper] FileReader error:", err);
+    };
     reader.readAsDataURL(file);
   }
 

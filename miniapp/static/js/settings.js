@@ -1485,7 +1485,7 @@ export function createSettingsModule(deps) {
     // Called via data-on-change on <input type="file">
     const file = inputEl?.files?.[0];
     if (!file) {
-      showUiNotice("Файл не выбран", "error");
+      showUiNotice("Файл не выбран — попробуйте ещё раз", "error");
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
@@ -1493,8 +1493,11 @@ export function createSettingsModule(deps) {
       return;
     }
 
-    // Open cropper FIRST, then reset input — same pattern as carousel upload
-    avatarCropper.open(file, async (blob) => {
+    showUiNotice(`Открываю кадрирование (${file.name})…`, "info");
+
+    // Open cropper — same pattern as carousel upload
+    try {
+      avatarCropper.open(file, async (blob) => {
       const formData = new FormData();
       formData.append("file", blob, "avatar.jpg");
       try {
@@ -1516,6 +1519,9 @@ export function createSettingsModule(deps) {
         showUiNotice(`Не удалось загрузить: ${err.message}`, "error");
       }
     });
+    } catch (cropperErr) {
+      showUiNotice(`Ошибка кадрирования: ${cropperErr.message}`, "error");
+    }
   }
 
   // ── Promo code activation + admin management ─────────────────────────────
