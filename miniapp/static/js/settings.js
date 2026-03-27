@@ -727,7 +727,10 @@ export function createSettingsModule(deps) {
 
     if (connected) {
       const usernameRow = acc.username ? `<span class="account-username">@${escapeHtml(acc.username)}</span>` : "";
-      const statusMeta = `<span class="account-meta">${uiIcon("check-circle")}<span>Подключено</span>${expiry ? `<span class="account-expiry"> · до ${expiry}</span>` : ""}${expiryBadge}</span>`;
+      const isExpired = daysLeft !== null && daysLeft <= 0;
+      const statusMeta = isExpired
+        ? `<span class="account-meta"><span class="tag-status-error">Истёк</span>${expiry ? `<span class="account-expiry" style="color:var(--hint);font-size:11px;margin-left:4px">до ${expiry}</span>` : ""}</span>`
+        : `<span class="account-meta">${uiIcon("check-circle")}<span>Подключено</span>${expiry ? `<span class="account-expiry"> · до ${expiry}</span>` : ""}${expiryBadge}</span>`;
       const btn = readOnly
         ? ""
         : `<button class="secondary-button account-full-btn" type="button" data-action="connectPlatform" data-args='${JSON.stringify([acc.platform])}'>${uiIcon("regenerate")}<span>Переподключить</span></button>`;
@@ -1508,13 +1511,17 @@ export function createSettingsModule(deps) {
           : "";
         const avatarHtml = detail.has_avatar
           ? `<div class="team-avatar-section">
-               <img src="${escapeHtml(detail.avatar_url)}?t=${Date.now()}" alt="Аватарка" class="team-avatar-preview" />
-               ${avatarUploadLabel}
+               <div class="team-avatar-top">
+                 <img src="${escapeHtml(detail.avatar_url)}?t=${Date.now()}" alt="Аватарка" class="team-avatar-preview" />
+                 ${avatarUploadLabel}
+               </div>
              </div>`
           : isOwner
             ? `<div class="team-avatar-section">
-                 <p class="settings-hint">Аватарка не загружена — она используется на слайдах карусели.</p>
-                 ${avatarUploadLabel}
+                 <div class="team-avatar-top">
+                   ${avatarUploadLabel}
+                 </div>
+                 <div class="team-avatar-hint">Аватарка используется на слайдах карусели.</div>
                </div>`
             : "";
 

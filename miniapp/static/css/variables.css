@@ -55,6 +55,23 @@
   --color-warning: #FF9800;
   --color-error: #F44336;
 
+  /* ── Content type colors (platform brand, theme-independent) ──────────── */
+  --type-threads:          #9580ff;
+  --type-threads-bg:       #2d1e5a;
+  --type-threads-text:     #c4a8ff;
+  --type-reels:            #c4a8ff;
+  --type-reels-bg:         #2d1e5a;
+  --type-reels-text:       #c4a8ff;
+  --type-carousel:         #5a8aff;
+  --type-carousel-bg:      #1a2540;
+  --type-carousel-text:    #7aa3ff;
+  --type-youtube:          #ff9090;
+  --type-youtube-bg:       #2d1a1a;
+  --type-youtube-text:     #ff9090;
+  --type-instagram:        #e1306c;
+  --type-instagram-bg:     #2d1a22;
+  --type-instagram-text:   #f472b6;
+
   /* ── Extended spacing scale ────────────────────────────────────────────── */
   --space-6: 32px;
   --space-8: 48px;
