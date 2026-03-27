@@ -118,15 +118,15 @@ async def generate_trend_report() -> dict:
 
 
 def _content_angle(keyword: str, lifecycle: str, velocity: float) -> str:
-    """Generate a brief content angle suggestion."""
+    """Generate a brief content angle suggestion in Russian."""
     if lifecycle == "emerging":
-        return f'Early trend alert: "{keyword}" is gaining traction. Position as thought leader.'
+        return f'Ранний тренд: «{keyword}» набирает обороты. Займите позицию эксперта первым.'
     if lifecycle == "growing":
-        return f'Growing interest in "{keyword}". Create educational content to capture search traffic.'
+        return f'Растущий интерес к теме «{keyword}». Создайте образовательный контент для захвата поискового трафика.'
     if lifecycle == "peaking":
-        return f'"{keyword}" is at peak attention. Share expert perspective while interest is high.'
+        return f'«{keyword}» на пике внимания. Поделитесь экспертным мнением, пока интерес высок.'
     if lifecycle == "declining":
-        return f'Interest in "{keyword}" is waning. Pivot to retrospective or myth-busting angle.'
+        return f'Интерес к «{keyword}» снижается. Используйте ретроспективный или разоблачающий мифы формат.'
     if lifecycle == "evergreen":
-        return f'"{keyword}" has steady demand. Invest in comprehensive, SEO-optimized content.'
-    return f'Cover "{keyword}" from a wellness/aromatherapy angle.'
+        return f'«{keyword}» имеет стабильный спрос. Создайте подробный SEO-оптимизированный контент.'
+    return f'Раскройте тему «{keyword}» с точки зрения ароматерапии и велнеса.'

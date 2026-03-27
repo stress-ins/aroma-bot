@@ -1094,8 +1094,9 @@ export function createTrendsModule(deps) {
       ? formats.map(f => `<span class="ds-format-pill">${escapeHtml(FORMAT_LABELS[f] || f)}</span>`).join("")
       : "";
 
+    const SOURCE_ICONS = { youtube: "youtube", youtube_ru: "youtube", instagram: "instagram", threads: "at-sign", tiktok: "music", reddit: "message-square", telegram: "send", google_trends: "trending-up" };
     const sourceChips = sources.length
-      ? sources.map(s => `<span class="ds-source-chip">${uiIcon("globe", 14)} ${escapeHtml(s)}</span>`).join("")
+      ? sources.map(s => `<span class="ds-source-chip">${uiIcon(SOURCE_ICONS[s] || "globe", 14)} ${escapeHtml(s)}</span>`).join("")
       : "";
 
     elements.draftDetail.innerHTML = `
@@ -1147,20 +1148,30 @@ export function createTrendsModule(deps) {
   }
 
   async function createFromIntelligence(keyword, format) {
+    const formatMap = { "carousel": "carousel", "reels": "reels", "threads_series": "threads_series" };
+    const endpoint = format === "carousel" ? "/api/generate/carousel"
+      : format === "reels" ? "/api/generate/reels"
+      : format === "threads_series" ? "/api/generate/threads-series"
+      : "/api/generate/content";
+    const body = { topic: keyword };
+    if (endpoint === "/api/generate/content") {
+      body.format_key = "instagram";
+      body.goal_key = "trust";
+    }
     try {
-      const draft = await fetchJson("/api/drafts", {
+      const draft = await fetchJson(endpoint, {
         method: "POST",
-        body: JSON.stringify({
-          topic: keyword,
-          format_key: format === "carousel" ? "carousel" : format === "reels" ? "reels" : "instagram",
-          goal_key: "trust",
-        }),
+        timeout: 45000,
+        body: JSON.stringify(body),
       });
       showUiNotice("Черновик создан из тренда", "success");
       if (draft?.draft_id && deps.openDraft) {
         await deps.openDraft(draft.draft_id);
       }
-    } catch (e) { showUiNotice("Ошибка создания черновика", "error"); }
+    } catch (e) {
+      if (e?.message === "paywall") return;
+      showUiNotice("Ошибка создания черновика", "error");
+    }
   }
 
   // ── Trend Cards (AI-generated) ────────────────────────────────────
