@@ -222,15 +222,18 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--border);
-  transition: border-color var(--duration-fast), background var(--duration-fast);
+  color: var(--hint);
+  transition: border-color var(--duration-fast), background var(--duration-fast), color var(--duration-fast);
+  min-width: 22px;
+  min-height: 22px;
 }
-.score-star-btn:hover { border-color: var(--brand); }
+.score-star-btn:hover { border-color: var(--brand); color: var(--brand); }
+.score-star-btn:active { transform: scale(0.9); }
 
 .score-star-btn svg { width: 10px; height: 10px; }
 
 .score-star-btn.score-star--filled {
-  background: var(--brand-bg);
+  background: rgba(var(--brand-rgb), 0.2);
   border-color: var(--brand);
   color: var(--brand);
 }
@@ -254,6 +257,39 @@
   border-top: 1px solid var(--border);
   margin-top: 4px;
 }
+
+/* ── Archive action buttons (redesign) ──────────────────────────────── */
+.archive-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.archive-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  border: 0.5px solid var(--border);
+  cursor: pointer;
+  transition: background var(--duration-fast), border-color var(--duration-fast);
+  flex: 1;
+  min-width: 0;
+}
+.archive-action-secondary {
+  background: var(--surface);
+  color: var(--text);
+}
+.archive-action-secondary:active { background: var(--surface-2); }
+.archive-action-danger {
+  background: rgba(255, 107, 107, 0.08);
+  border-color: rgba(255, 107, 107, 0.3);
+  color: #ff7070;
+}
+.archive-action-danger:active { background: rgba(255, 107, 107, 0.15); }
 
 /* ── Metrics block (large numbers) ──────────────────────────────────── */
 .metrics-block {

@@ -452,16 +452,16 @@ details[open] > .trend-suggestions-toggle::before { transform: rotate(90deg); }
   position: relative;
 }
 .interactive-card::after {
-  content: "";
+  content: "›";
   position: absolute;
   right: 12px;
   top: 50%;
   transform: translateY(-50%);
-  width: 6px;
-  height: 10px;
-  background: var(--hint);
-  clip-path: polygon(0 0, 100% 50%, 0 100%);
+  font-size: 18px;
+  line-height: 1;
+  color: var(--hint);
   opacity: 0.4;
+  pointer-events: none;
 }
 
 /* ── Onboarding tooltip z-index and positioning fix (Task 20) ───────────── */
