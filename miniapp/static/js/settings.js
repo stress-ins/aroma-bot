@@ -1160,135 +1160,253 @@ export function createSettingsModule(deps) {
       const canvaWorker = data.canva_worker || {};
       const isAdmin = data.is_admin || false;
 
-      // Labels
-      const STATUS_RU = { pending: "В очереди", running: "Выполняется", completed: "Готово", failed: "Ошибка", cancelled: "Отменено" };
       const TYPE_RU = { clean: "Очистка", montage: "Монтаж", grade: "Цветокоррекция", compose: "Сборка", canva_export: "Canva экспорт", canva_import: "Canva импорт" };
-      const STEP_RU = { preparing: "Подготовка", analyzing: "Анализ", transcribing: "Транскрипция", detecting_silence: "Поиск пауз", processing: "Обработка", assembling: "Сборка", encoding: "Кодирование", grading: "Коррекция", subtitles: "Субтитры", music: "Музыка", broll: "B-roll", color_grading: "Цвет", done: "Готово", queued: "В очереди", saving: "Сохранение", rendering: "Рендеринг", starting: "Запуск", uploading: "Загрузка в Canva", exporting_from_canva: "Экспорт из Canva", extracting_images: "Извлечение изображений", updating_draft: "Обновление черновика", error: "Ошибка" };
+      const STATUS_RU = { pending: "В очереди", running: "Выполняется", completed: "Готово", failed: "Ошибка", cancelled: "Отменено" };
 
-      // Video queue summary
+      // ── Workers section ──
+      const canvaLive = canvaWorker.live || {};
+      const canvaLiveEntries = Object.entries(canvaLive);
+      const canvaErrorCount = canvaLiveEntries.filter(([, t]) => t.status === "failed").length;
+      const workerTaskCount = q.active || 0;
+
+      const workerBadge = worker.alive
+        ? `<span class="wr-badge wb-ok">Работает</span>`
+        : `<span class="wr-badge wb-err">Остановлен</span>`;
+      const canvaBadge = canvaWorker.alive
+        ? (canvaErrorCount > 0 ? `<span class="wr-badge wb-err">Ошибки</span>` : `<span class="wr-badge wb-ok">Работает</span>`)
+        : `<span class="wr-badge wb-err">Остановлен</span>`;
+
+      const workerTasksHtml = canvaLiveEntries.map(([key, t]) => {
+        const draftShort = key.split(":")[0]?.slice(0, 8) || key;
+        const typeLabel = TYPE_RU[t.type] || t.type || "";
+        const isCanva = (t.type || "").startsWith("canva");
+        const chipClass = isCanva ? "chip-canva" : "chip-video";
+        const statusCls = t.status === "failed" ? "wts-error" : "wts-running";
+        const statusLabel = STATUS_RU[t.status] || t.status || "";
+        return `<div class="worker-task">
+          <span class="task-type-chip ${chipClass}">${escapeHtml(typeLabel)}</span>
+          <span class="wt-id">#${escapeHtml(draftShort)}</span>
+          <span class="wt-status ${statusCls}">${escapeHtml(statusLabel)}</span>
+        </div>`;
+      }).join("");
+
+      const workersSectionHtml = `
+        <div class="section-card">
+          <div class="sc-header">
+            <div class="sc-title">${uiIcon("check-circle")} Воркеры</div>
+          </div>
+          <div class="worker-row">
+            <div class="wr-left">
+              <div class="status-dot ${worker.alive ? "dot-green" : "dot-red"}"></div>
+              <div>
+                <div class="wr-name">Worker</div>
+                <div class="wr-tasks">${workerTaskCount} задач${workerTaskCount === 1 ? "а" : ""} в работе</div>
+              </div>
+            </div>
+            ${workerBadge}
+          </div>
+          <div class="worker-row" style="border-bottom:none;${canvaLiveEntries.length ? "padding-bottom:4px;" : ""}">
+            <div class="wr-left">
+              <div class="status-dot ${canvaWorker.alive ? (canvaErrorCount > 0 ? "dot-red" : "dot-green") : "dot-red"}"></div>
+              <div>
+                <div class="wr-name">Canva Worker</div>
+                <div class="wr-tasks">${canvaErrorCount > 0 ? canvaErrorCount + " ошибок" : (canvaLiveEntries.length ? canvaLiveEntries.length + " задач" : "Нет задач")}</div>
+              </div>
+            </div>
+            ${canvaBadge}
+          </div>
+          ${workerTasksHtml}
+        </div>`;
+
+      // ── Queue stats 2×2 grid ──
       const byStatus = q.by_status || {};
-      const statusRows = Object.entries(byStatus).map(([status, types]) => {
-        const total = Object.values(types).reduce((s, v) => s + v, 0);
-        const detail = Object.entries(types).map(([t, c]) => `${TYPE_RU[t] || t}: ${c}`).join(", ");
-        const color = { pending: "var(--brand)", running: "#4a90d9", completed: "var(--good)", failed: "var(--danger, #e53935)" }[status] || "var(--hint)";
-        return `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)">
-          <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};margin-right:6px"></span>${escapeHtml(STATUS_RU[status] || status)}</span>
-          <span style="color:var(--hint);font-size:12px">${detail} (${total})</span>
+      function statusTotal(key) {
+        const types = byStatus[key] || {};
+        return Object.values(types).reduce((s, v) => s + v, 0);
+      }
+      function statusDetail(key) {
+        const types = byStatus[key] || {};
+        return Object.entries(types).map(([t, c]) => `${TYPE_RU[t] || t}: ${c}`).join(", ");
+      }
+      const queueTotal = Object.values(byStatus).reduce((sum, types) => sum + Object.values(types).reduce((s, v) => s + v, 0), 0);
+
+      const queueHtml = `
+        <div class="section-card">
+          <div class="sc-header">
+            <div class="sc-title">${uiIcon("stack")} Очередь видео</div>
+            <span class="queue-total">всего ${queueTotal}</span>
+          </div>
+          <div class="queue-grid">
+            <div class="queue-stat-item">
+              <div class="qsi-top">
+                <div class="status-dot dot-blue" style="width:7px;height:7px"></div>
+                <span class="qsi-label">Выполняется</span>
+                <span class="qsi-val running">${statusTotal("running")}</span>
+              </div>
+              <div class="qsi-detail">${statusDetail("running") || "—"}</div>
+            </div>
+            <div class="queue-stat-item">
+              <div class="qsi-top">
+                <div class="status-dot dot-red" style="width:7px;height:7px"></div>
+                <span class="qsi-label">Ошибка</span>
+                <span class="qsi-val error">${statusTotal("failed")}</span>
+              </div>
+              <div class="qsi-detail">${statusDetail("failed") || "—"}</div>
+            </div>
+            <div class="queue-stat-item">
+              <div class="qsi-top">
+                <div class="status-dot dot-green" style="width:7px;height:7px"></div>
+                <span class="qsi-label">Готово</span>
+                <span class="qsi-val done">${statusTotal("completed")}</span>
+              </div>
+              <div class="qsi-detail">${statusDetail("completed") || "—"}</div>
+            </div>
+            <div class="queue-stat-item">
+              <div class="qsi-top">
+                <div class="status-dot dot-gray" style="width:7px;height:7px"></div>
+                <span class="qsi-label">Отменено</span>
+                <span class="qsi-val canceled">${statusTotal("cancelled")}</span>
+              </div>
+              <div class="qsi-detail">${statusDetail("cancelled") || "—"}</div>
+            </div>
+          </div>
+        </div>`;
+
+      // ── Recent tasks — grouped by status ──
+      const recent = q.recent || [];
+      const errorCount = recent.filter(t => t.status === "failed").length;
+      const runningTasks = recent.filter(t => t.status === "running");
+      const failedTasks = recent.filter(t => t.status === "failed");
+      const doneTasks = recent.filter(t => t.status === "completed");
+
+      function taskChipClass(type) {
+        return (type || "").startsWith("canva") ? "chip-canva" : "chip-video";
+      }
+
+      const runningTasksHtml = runningTasks.map(t => {
+        const typeLabel = TYPE_RU[t.type] || t.type;
+        const idShort = (t.draft_id || t.task_id || "").slice(0, 8);
+        return `<div class="task-row running">
+          <span class="task-type-chip ${taskChipClass(t.type)}">${escapeHtml(typeLabel)}</span>
+          <div class="tr-info">
+            <div class="tr-status running">Выполняется</div>
+            <div class="tr-id">#${escapeHtml(idShort)}</div>
+          </div>
+          <span class="tr-time">—</span>
         </div>`;
       }).join("");
 
-      // Recent tasks
-      const recent = (q.recent || []).slice(0, 10).map(t => {
-        const statusColor = { pending: "var(--brand)", running: "#4a90d9", completed: "var(--good)", failed: "var(--danger)" }[t.status] || "var(--hint)";
-        return `<div style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid var(--border);font-size:12px;align-items:center">
-          <span style="min-width:50px;color:var(--hint)">#${escapeHtml(t.draft_id)}</span>
-          <span style="min-width:55px">${escapeHtml(TYPE_RU[t.type] || t.type)}</span>
-          <span style="color:${statusColor};font-weight:600;min-width:65px">${escapeHtml(STATUS_RU[t.status] || t.status)}</span>
-          <span style="color:var(--hint);flex:1">${t.step ? escapeHtml(STEP_RU[t.step] || t.step) : ""} ${t.progress ? t.progress + "%" : ""}</span>
-          <span style="color:var(--muted)">${t.duration_sec ? t.duration_sec + "с" : ""}</span>
-        </div>`;
-      }).join("");
+      // Group failed tasks by type, show max 2 + "show more"
+      const failedByType = {};
+      for (const t of failedTasks) {
+        const key = t.type || "unknown";
+        (failedByType[key] = failedByType[key] || []).push(t);
+      }
+      let failedGroupsHtml = "";
+      for (const [type, tasks] of Object.entries(failedByType)) {
+        const typeLabel = TYPE_RU[type] || type;
+        failedGroupsHtml += `<div class="task-group-label">Ошибки ${escapeHtml(typeLabel)}</div>`;
+        const shown = tasks.slice(0, 2);
+        for (const t of shown) {
+          const idShort = (t.draft_id || t.task_id || "").slice(0, 8);
+          failedGroupsHtml += `<div class="task-row">
+            <span class="tr-id">#${escapeHtml(idShort)}</span>
+            <span class="tr-status error">Ошибка</span>
+            <span class="tr-time">${t.duration_sec ? t.duration_sec + "с" : ""}</span>
+          </div>`;
+        }
+        if (tasks.length > 2) {
+          failedGroupsHtml += `<div class="task-show-more">+ ещё ${tasks.length - 2} → Показать все</div>`;
+        }
+      }
 
-      // Memory bar
+      const doneTasksHtml = doneTasks.length ? `<div class="task-group-label">Готово</div>` + doneTasks.slice(0, 3).map(t => {
+        const typeLabel = TYPE_RU[t.type] || t.type;
+        const idShort = (t.draft_id || t.task_id || "").slice(0, 8);
+        return `<div class="task-row">
+          <span class="task-type-chip ${taskChipClass(t.type)}">${escapeHtml(typeLabel)}</span>
+          <span class="tr-id">#${escapeHtml(idShort)}</span>
+          <span class="tr-status done">Готово</span>
+          <span class="tr-time">${t.duration_sec ? t.duration_sec + "с" : ""}</span>
+        </div>`;
+      }).join("") : "";
+
+      const recentHtml = `
+        <div class="section-card">
+          <div class="sc-header">
+            <div class="sc-title">${uiIcon("clock-counter-clockwise")} Последние задачи</div>
+            ${errorCount > 0 ? `<span style="color:#ff9090;font-size:11px;font-weight:600">${errorCount} ошибок</span>` : ""}
+          </div>
+          ${runningTasksHtml}${failedGroupsHtml}${doneTasksHtml}
+          ${!recent.length ? '<div style="padding:14px;color:var(--hint);font-size:13px">Нет задач</div>' : ""}
+        </div>`;
+
+      // ── Resources with color-coded bars ──
+      function resBarClass(pct) { return pct > 80 ? "res-bar-crit" : pct > 50 ? "res-bar-warn" : "res-bar-ok"; }
       const ramPct = mem.ram_percent || 0;
-      const ramBar = `<div style="display:flex;align-items:center;gap:8px;margin:4px 0">
-        <span style="min-width:40px;font-size:12px;color:var(--hint)">RAM</span>
-        <div style="flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden">
-          <div style="width:${ramPct}%;height:100%;background:${ramPct > 80 ? "var(--danger)" : "var(--brand)"};border-radius:4px"></div>
-        </div>
-        <span style="min-width:90px;font-size:11px;color:var(--hint)">${mem.ram_used_mb || 0}/${mem.ram_total_mb || 0} МБ</span>
-      </div>`;
-
       const swapPct = mem.swap_percent || 0;
-      const swapBar = `<div style="display:flex;align-items:center;gap:8px;margin:4px 0">
-        <span style="min-width:40px;font-size:12px;color:var(--hint)">Swap</span>
-        <div style="flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden">
-          <div style="width:${swapPct}%;height:100%;background:${swapPct > 50 ? "#f59e0b" : "var(--brand)"};border-radius:4px"></div>
-        </div>
-        <span style="min-width:90px;font-size:11px;color:var(--hint)">${mem.swap_used_mb || 0}/${mem.swap_total_mb || 0} МБ</span>
-      </div>`;
-
       const diskPct = disk.percent || 0;
-      const diskBar = `<div style="display:flex;align-items:center;gap:8px;margin:4px 0">
-        <span style="min-width:40px;font-size:12px;color:var(--hint)">Диск</span>
-        <div style="flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden">
-          <div style="width:${diskPct}%;height:100%;background:${diskPct > 85 ? "var(--danger)" : "var(--brand)"};border-radius:4px"></div>
-        </div>
-        <span style="min-width:90px;font-size:11px;color:var(--hint)">${disk.used_gb || 0}/${disk.total_gb || 0} ГБ</span>
-      </div>`;
+
+      const resourcesHtml = isAdmin ? `
+        <div class="section-card">
+          <div class="sc-header"><div class="sc-title">${uiIcon("cpu")} Ресурсы</div></div>
+          <div class="resource-row">
+            <span class="res-label">RAM</span>
+            <div class="res-bar-bg"><div class="res-bar-fill ${resBarClass(ramPct)}" style="width:${ramPct}%"></div></div>
+            <span class="res-val">${mem.ram_used_mb || 0} / ${mem.ram_total_mb || 0} МБ</span>
+          </div>
+          <div class="resource-row">
+            <span class="res-label">Swap</span>
+            <div class="res-bar-bg"><div class="res-bar-fill ${resBarClass(swapPct)}" style="width:${swapPct}%"></div></div>
+            <span class="res-val">${mem.swap_used_mb || 0} / ${mem.swap_total_mb || 0} МБ</span>
+          </div>
+          <div class="resource-row">
+            <span class="res-label">Диск</span>
+            <div class="res-bar-bg"><div class="res-bar-fill ${resBarClass(diskPct)}" style="width:${diskPct}%"></div></div>
+            <span class="res-val">${disk.used_gb || 0} / ${disk.total_gb || 0} ГБ</span>
+          </div>
+        </div>` : "";
+
+      // ── LLM stats ──
+      const llmHtml = isAdmin ? `
+        <div class="section-card">
+          <div class="sc-header"><div class="sc-title">${uiIcon("brain")} LLM запросы</div></div>
+          <div class="llm-row">
+            <div class="llm-item"><span class="llm-val">${llm.today || 0}</span><span class="llm-label">сегодня</span></div>
+            <div class="llm-divider"></div>
+            <div class="llm-item"><span class="llm-val">${llm.total || 0}</span><span class="llm-label">всего</span></div>
+          </div>
+        </div>` : "";
+
+      // ── Management actions ──
+      const manageHtml = isAdmin ? `
+        <div class="section-card">
+          <div class="sc-header"><div class="sc-title">Управление</div></div>
+          <div class="manage-item" data-action="adminResetStuck" data-args='[null]'>
+            ${uiIcon("arrow-counter-clockwise")}
+            <span class="manage-label">Сбросить залипшие</span>
+            <span class="manage-arrow">›</span>
+          </div>
+          <div class="manage-item danger" data-action="adminRestartWorker" data-args='[null]'>
+            ${uiIcon("play")}
+            <span class="manage-label">Перезапустить worker</span>
+            <span class="manage-arrow">›</span>
+          </div>
+        </div>` : "";
 
       elements.draftDetail.innerHTML = `
         <div class="detail-grid">
           ${renderBackButton()}
-          <div class="detail-top">
-            <p class="eyebrow">${uiIcon("gauge")}<span>Очереди</span></p>
-            <h2 class="detail-title">Обработка видео</h2>
+          <div class="admin-sticky-header">
+            <div class="admin-breadcrumb">Настройки · Очереди</div>
+            <div class="admin-title">Обработка видео</div>
           </div>
-
-          <section class="section">
-            <h3>${uiIcon("play-circle")} Worker</h3>
-            <div style="display:flex;align-items:center;gap:8px;font-size:13px">
-              <span style="width:10px;height:10px;border-radius:50%;background:${worker.alive ? "var(--good)" : "var(--danger)"}"></span>
-              <span>${worker.alive ? "Работает" : "Остановлен"}</span>
-            </div>
-            <div style="font-size:12px;color:var(--hint);margin-top:4px">Задач в работе: ${q.active || 0}</div>
-          </section>
-
-          <section class="section">
-            <h3>${uiIcon("paint-brush")} Canva Worker</h3>
-            <div style="display:flex;align-items:center;gap:8px;font-size:13px">
-              <span style="width:10px;height:10px;border-radius:50%;background:${canvaWorker.alive ? "var(--good)" : "var(--danger)"}"></span>
-              <span>${canvaWorker.alive ? "Работает" : "Остановлен"}</span>
-            </div>
-            ${(() => {
-              const canvaLive = canvaWorker.live || {};
-              const entries = Object.entries(canvaLive);
-              if (!entries.length) return '<div style="font-size:12px;color:var(--hint);margin-top:4px">Нет активных задач</div>';
-              return entries.map(([key, t]) => {
-                const statusColor = { running: "#4a90d9", completed: "var(--good)", failed: "var(--danger)" }[t.status] || "var(--hint)";
-                const draftShort = key.split(":")[0]?.slice(0, 8) || key;
-                return `<div style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid var(--border);font-size:12px;align-items:center">
-                  <span style="min-width:50px;color:var(--hint)">#${escapeHtml(draftShort)}</span>
-                  <span style="min-width:70px">${escapeHtml(TYPE_RU[t.type] || t.type || "")}</span>
-                  <span style="color:${statusColor};font-weight:600;min-width:65px">${escapeHtml(STATUS_RU[t.status] || t.status || "")}</span>
-                  <span style="color:var(--hint);flex:1">${t.step ? escapeHtml(STEP_RU[t.step] || t.step) : ""}</span>
-                  ${t.status === "failed" && t.error ? `<span style="color:var(--danger);font-size:11px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(t.error)}">${escapeHtml(t.error)}</span>` : ""}
-                </div>`;
-              }).join("");
-            })()}
-          </section>
-
-          <section class="section">
-            <h3>${uiIcon("stack")} Очередь видео</h3>
-            ${statusRows || '<div style="font-size:13px;color:var(--hint)">Нет задач</div>'}
-          </section>
-
-          <section class="section">
-            <h3>${uiIcon("clock-counter-clockwise")} Последние задачи</h3>
-            <div style="font-size:13px">${recent || '<div style="color:var(--hint)">Нет задач</div>'}</div>
-          </section>
-
-          ${isAdmin ? `
-          <section class="section">
-            <h3>${uiIcon("brain")} LLM запросы</h3>
-            <div style="font-size:13px">Сегодня: <strong>${llm.today || 0}</strong> · Всего: ${llm.total || 0}</div>
-          </section>
-
-          <section class="section">
-            <h3>${uiIcon("cpu")} Ресурсы</h3>
-            ${ramBar}${swapBar}${diskBar}
-          </section>
-
-          <section class="section">
-            <div class="actions-row" style="gap:8px">
-              <button class="secondary-button compact" type="button" data-action="adminResetStuck" data-args='[null]'>
-                ${uiIcon("arrow-counter-clockwise")} Сбросить залипшие
-              </button>
-              <button class="secondary-button compact" type="button" data-action="adminRestartWorker" data-args='[null]'>
-                ${uiIcon("play")} Перезапустить worker
-              </button>
-            </div>
-          </section>` : ""}
+          ${workersSectionHtml}
+          ${queueHtml}
+          ${recentHtml}
+          ${llmHtml}
+          ${resourcesHtml}
+          ${manageHtml}
         </div>`;
     } catch (e) {
       elements.draftDetail.innerHTML = `<div class="detail-empty">${renderGuidedState({
