@@ -2408,7 +2408,7 @@ function setTab(t) {
     b.setAttribute("aria-selected", String(isActive));
     if (isActive) b.scrollIntoView({ inline: "center", behavior: "smooth", block: "nearest" });
   });
-  elements.filtersContainer.hidden = !["drafts", "inbox"].includes(t);
+  elements.filtersContainer.hidden = t !== "drafts";
   renderContentSubTabs();
 
   // Clear panels immediately to prevent showing tools/content from previous tab
