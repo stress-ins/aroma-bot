@@ -1386,7 +1386,7 @@ export function createSettingsModule(deps) {
         // Avatar section — use native <label>+<input> for Telegram WebView compat
         const avatarInputId = `avatarUpload-${t.team_id}`;
         const avatarUploadLabel = isOwner
-          ? `<label class="secondary-button avatar-upload-label">${uiIcon("upload")}<span>${detail.has_avatar ? "Заменить аватарку" : "Загрузить аватарку"}</span><input type="file" accept="image/jpeg,image/png,image/webp" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden" data-on-change="uploadTeamAvatar" data-args='${JSON.stringify([t.team_id])}' /></label>`
+          ? `<label class="secondary-button avatar-upload-label">${uiIcon("upload")}<span>${detail.has_avatar ? "Заменить аватарку" : "Загрузить аватарку"}</span><input id="${avatarInputId}" type="file" accept="image/jpeg,image/png,image/webp" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden" data-on-change="uploadTeamAvatar" data-args='${JSON.stringify([t.team_id])}' /></label>`
           : "";
         const avatarHtml = detail.has_avatar
           ? `<div class="team-avatar-section">
@@ -1424,6 +1424,15 @@ export function createSettingsModule(deps) {
       `;
 
       container.innerHTML = html;
+
+      // Bind file input change listeners directly — delegated change events
+      // don't fire reliably in Telegram WebApp after returning from file picker
+      container.querySelectorAll("input[type=file]").forEach((input) => {
+        input.addEventListener("change", () => {
+          const teamId = input.closest("[data-team-id]")?.dataset?.teamId || input.id.replace("avatarUpload-", "");
+          uploadTeamAvatar(teamId, input.value, input);
+        });
+      });
     } catch (err) {
       const container = document.getElementById("teamContent");
       if (container) container.innerHTML = `<p class="plan-entry-hint">Не удалось загрузить команды.</p>`;
@@ -1485,7 +1494,7 @@ export function createSettingsModule(deps) {
     // Called via data-on-change on <input type="file">
     const file = inputEl?.files?.[0];
     if (!file) {
-      showUiNotice("Файл не выбран — попробуйте ещё раз", "error");
+      showUiNotice("Файл не выбран", "error");
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
@@ -1493,11 +1502,8 @@ export function createSettingsModule(deps) {
       return;
     }
 
-    showUiNotice(`Открываю кадрирование (${file.name})…`, "info");
-
     // Open cropper — same pattern as carousel upload
-    try {
-      avatarCropper.open(file, async (blob) => {
+    avatarCropper.open(file, async (blob) => {
       const formData = new FormData();
       formData.append("file", blob, "avatar.jpg");
       try {
@@ -1519,9 +1525,6 @@ export function createSettingsModule(deps) {
         showUiNotice(`Не удалось загрузить: ${err.message}`, "error");
       }
     });
-    } catch (cropperErr) {
-      showUiNotice(`Ошибка кадрирования: ${cropperErr.message}`, "error");
-    }
   }
 
   // ── Promo code activation + admin management ─────────────────────────────
