@@ -35,9 +35,13 @@ export function createRuntimeModule(deps) {
   } = deps;
 
   async function loadCurrentTab() {
-    // Static action-group: show only on handbook tabs, hide on all others
+    // Static action-group + search: show only on handbook tabs
+    const isHandbook = !!deps.HANDBOOK_CATEGORY_META[state.tab];
     const refActions = document.getElementById("referenceActions");
-    if (refActions) refActions.style.display = deps.HANDBOOK_CATEGORY_META[state.tab] ? "" : "none";
+    if (refActions) refActions.style.display = isHandbook ? "" : "none";
+    // draftCount: only visible on drafts tab (other tabs use their own count/search)
+    const isDrafts = !["create", "inbox", "plans", "schedule", "settings", "status", "keywords", "trends"].includes(state.tab) && !isHandbook;
+    if (elements.draftCount) elements.draftCount.style.display = isDrafts ? "" : "none";
 
     if (state.tab === "create") return renderCreate();
     if (state.tab === "inbox") return loadInbox();

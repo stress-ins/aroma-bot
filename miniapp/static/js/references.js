@@ -776,8 +776,8 @@ export function createReferencesModule(deps) {
     }
     if (refSearchCount) refSearchCount.textContent = countText;
     if (refSearchClear) refSearchClear.style.display = (state.referenceSearch || "") ? "" : "none";
-    // Keep draftCount for non-handbook use
-    elements.draftCount.textContent = "";
+    // Hide draftCount on handbook tabs (search is in #referenceActions)
+    elements.draftCount.style.display = "none";
 
     setEmptyState(filtered.length > 0, query
       ? { eyebrow: meta.title, title: "Ничего не найдено", body: "Попробуйте другой запрос или сбросьте фильтр." }
