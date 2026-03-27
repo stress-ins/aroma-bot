@@ -1157,12 +1157,13 @@ export function createSettingsModule(deps) {
       const disk = data.disk || {};
       const llm = data.llm || {};
       const worker = data.worker || {};
+      const canvaWorker = data.canva_worker || {};
       const isAdmin = data.is_admin || false;
 
       // Labels
       const STATUS_RU = { pending: "В очереди", running: "Выполняется", completed: "Готово", failed: "Ошибка", cancelled: "Отменено" };
-      const TYPE_RU = { clean: "Очистка", montage: "Монтаж", grade: "Цветокоррекция", compose: "Сборка", canva_export: "Canva" };
-      const STEP_RU = { preparing: "Подготовка", analyzing: "Анализ", transcribing: "Транскрипция", detecting_silence: "Поиск пауз", processing: "Обработка", assembling: "Сборка", encoding: "Кодирование", grading: "Коррекция", subtitles: "Субтитры", music: "Музыка", broll: "B-roll", color_grading: "Цвет", done: "Готово", queued: "В очереди", saving: "Сохранение", rendering: "Рендеринг" };
+      const TYPE_RU = { clean: "Очистка", montage: "Монтаж", grade: "Цветокоррекция", compose: "Сборка", canva_export: "Canva экспорт", canva_import: "Canva импорт" };
+      const STEP_RU = { preparing: "Подготовка", analyzing: "Анализ", transcribing: "Транскрипция", detecting_silence: "Поиск пауз", processing: "Обработка", assembling: "Сборка", encoding: "Кодирование", grading: "Коррекция", subtitles: "Субтитры", music: "Музыка", broll: "B-roll", color_grading: "Цвет", done: "Готово", queued: "В очереди", saving: "Сохранение", rendering: "Рендеринг", starting: "Запуск", uploading: "Загрузка в Canva", exporting_from_canva: "Экспорт из Canva", extracting_images: "Извлечение изображений", updating_draft: "Обновление черновика", error: "Ошибка" };
 
       // Video queue summary
       const byStatus = q.by_status || {};
@@ -1231,6 +1232,30 @@ export function createSettingsModule(deps) {
               <span>${worker.alive ? "Работает" : "Остановлен"}</span>
             </div>
             <div style="font-size:12px;color:var(--hint);margin-top:4px">Задач в работе: ${q.active || 0}</div>
+          </section>
+
+          <section class="section">
+            <h3>${uiIcon("paint-brush")} Canva Worker</h3>
+            <div style="display:flex;align-items:center;gap:8px;font-size:13px">
+              <span style="width:10px;height:10px;border-radius:50%;background:${canvaWorker.alive ? "var(--good)" : "var(--danger)"}"></span>
+              <span>${canvaWorker.alive ? "Работает" : "Остановлен"}</span>
+            </div>
+            ${(() => {
+              const canvaLive = canvaWorker.live || {};
+              const entries = Object.entries(canvaLive);
+              if (!entries.length) return '<div style="font-size:12px;color:var(--hint);margin-top:4px">Нет активных задач</div>';
+              return entries.map(([key, t]) => {
+                const statusColor = { running: "#4a90d9", completed: "var(--good)", failed: "var(--danger)" }[t.status] || "var(--hint)";
+                const draftShort = key.split(":")[0]?.slice(0, 8) || key;
+                return `<div style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid var(--border);font-size:12px;align-items:center">
+                  <span style="min-width:50px;color:var(--hint)">#${escapeHtml(draftShort)}</span>
+                  <span style="min-width:70px">${escapeHtml(TYPE_RU[t.type] || t.type || "")}</span>
+                  <span style="color:${statusColor};font-weight:600;min-width:65px">${escapeHtml(STATUS_RU[t.status] || t.status || "")}</span>
+                  <span style="color:var(--hint);flex:1">${t.step ? escapeHtml(STEP_RU[t.step] || t.step) : ""}</span>
+                  ${t.status === "failed" && t.error ? `<span style="color:var(--danger);font-size:11px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(t.error)}">${escapeHtml(t.error)}</span>` : ""}
+                </div>`;
+              }).join("");
+            })()}
           </section>
 
           <section class="section">

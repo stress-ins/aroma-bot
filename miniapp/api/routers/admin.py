@@ -159,6 +159,20 @@ async def admin_dashboard(user_info: tuple = Depends(_resolve_user)):
         for k, v in video_task_worker.live_status.items()
     }
 
+    # ── Canva worker status ──
+    from bot.services import canva_task_worker
+    canva_worker_alive = canva_task_worker._worker_task is not None and not canva_task_worker._worker_task.done()
+    canva_live_tasks = {
+        k: {
+            "type": v.get("task_type"),
+            "status": v.get("status"),
+            "step": v.get("step"),
+            "error": (v.get("error") or "")[:200],
+            "result": v.get("result"),
+        }
+        for k, v in canva_task_worker.live_status.items()
+    }
+
     # ── Disk usage ──
     disk = {}
     try:
@@ -187,6 +201,7 @@ async def admin_dashboard(user_info: tuple = Depends(_resolve_user)):
     # Admin-only details
     if is_admin:
         result["worker"] = {"alive": worker_alive}
+        result["canva_worker"] = {"alive": canva_worker_alive, "live": canva_live_tasks}
         result["llm"] = llm_stats
         result["memory"] = memory
         result["disk"] = disk
