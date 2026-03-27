@@ -16,6 +16,8 @@ export function createSettingsModule(deps) {
     syncMobileNavigation,
     enterDetailView,
     applyTheme,
+    getInitDataHeaders,
+    avatarCropper,
   } = deps;
 
   function keywordFieldEntries(topic) {
@@ -1364,7 +1366,7 @@ export function createSettingsModule(deps) {
           : "";
         const avatarHtml = detail.has_avatar
           ? `<div class="team-avatar-section">
-               <img src="${escapeHtml(detail.avatar_url)}" alt="Аватарка" class="team-avatar-preview" />
+               <img src="${escapeHtml(detail.avatar_url)}?t=${Date.now()}" alt="Аватарка" class="team-avatar-preview" />
                ${avatarUploadLabel}
              </div>`
           : isOwner
@@ -1459,30 +1461,36 @@ export function createSettingsModule(deps) {
     // Called via data-on-change on <input type="file">
     const file = inputEl?.files?.[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
-      showUiNotice("Файл слишком большой (макс. 2 МБ)", "error");
+    if (file.size > 10 * 1024 * 1024) {
+      showUiNotice("Файл слишком большой (макс. 10 МБ)", "error");
       return;
     }
-    const formData = new FormData();
-    formData.append("file", file);
-    try {
-      const headers = { "X-Team-Id": teamId };
-      const initData = window.Telegram?.WebApp?.initData;
-      if (initData) headers["X-Telegram-Init-Data"] = initData;
-      const resp = await fetch(`/api/teams/${teamId}/avatar`, {
-        method: "POST",
-        headers,
-        body: formData,
-      });
-      if (!resp.ok) {
-        const body = await resp.text();
-        throw new Error(`HTTP ${resp.status}: ${body}`);
+    // Reset input so re-selecting same file triggers change again
+    inputEl.value = "";
+
+    // Open cropper — the cropped blob is sent to the server
+    avatarCropper.open(file, async (blob) => {
+      const formData = new FormData();
+      formData.append("file", blob, "avatar.jpg");
+      try {
+        const headers = getInitDataHeaders();
+        // Ensure correct team header (override activeTeamId if different)
+        headers["X-Team-Id"] = teamId;
+        const resp = await fetch(`/api/teams/${teamId}/avatar`, {
+          method: "POST",
+          headers,
+          body: formData,
+        });
+        if (!resp.ok) {
+          const body = await resp.text();
+          throw new Error(`HTTP ${resp.status}: ${body}`);
+        }
+        showUiNotice("Аватарка загружена", "success");
+        renderTeam();
+      } catch (err) {
+        showUiNotice(`Не удалось загрузить: ${err.message}`, "error");
       }
-      showUiNotice("Аватарка загружена", "success");
-      renderTeam();
-    } catch (err) {
-      showUiNotice(`Не удалось загрузить: ${err.message}`, "error");
-    }
+    });
   }
 
   // ── Promo code activation + admin management ─────────────────────────────
