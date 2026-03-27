@@ -107,15 +107,6 @@ export function createTrendsModule(deps) {
     elements.listTitle.textContent = "Тренды";
     elements.draftList.innerHTML = renderTrendsListPanel();
     elements.draftDetail.innerHTML = renderTrendsDetail();
-
-    // On mobile, the detail panel is hidden — append dashboard inline below the list
-    if (document.body.classList.contains("is-mobile-layout")) {
-      const dashboardHtml = renderTrendsDetail();
-      if (dashboardHtml && !dashboardHtml.includes("detail-empty")) {
-        elements.draftList.insertAdjacentHTML("beforeend", `<div class="trends-dashboard-inline">${dashboardHtml}</div>`);
-      }
-    }
-
     syncMobileNavigation();
   }
 
@@ -181,6 +172,15 @@ export function createTrendsModule(deps) {
         </button>
       </div>`;
 
+    // On mobile, detail panel is hidden — show dashboard inline before posts
+    let inlineDashboard = "";
+    if (document.body.classList.contains("is-mobile-layout")) {
+      const dashHtml = renderTrendsDetail();
+      if (dashHtml && !dashHtml.includes("detail-empty")) {
+        inlineDashboard = `<div class="trends-dashboard-inline">${dashHtml}</div>`;
+      }
+    }
+
     return `
       <div class="trends-controls">
         <div class="trends-platform-tabs">${platformTabs}</div>
@@ -189,6 +189,7 @@ export function createTrendsModule(deps) {
           ${refreshBtn}
         </div>
       </div>
+      ${inlineDashboard}
       ${summary}
       ${settingsLink}
     `;
