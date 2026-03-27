@@ -505,7 +505,7 @@ export function createReferencesModule(deps) {
     ].filter(Boolean);
     if (!rows.length) return "";
     return `<div class="passport-section">
-      <div class="ps-label">${uiIcon("clipboard", 14)} Паспорт аромата</div>
+      <div class="ps-label"><i class="ph ph-clipboard-text" style="font-size:14px"></i> Паспорт аромата</div>
       ${rows.map((row) =>
       `<div class="ps-row">
         <span class="ps-key">${escapeHtml(row.label)}</span>
@@ -1090,7 +1090,7 @@ export function createReferencesModule(deps) {
     return `
       <div class="action-group">
         <div class="action-item" data-action="openBlendConstructor">
-          <div class="action-icon ai-purple">${uiIcon("flask-conical", 16)}</div>
+          <div class="action-icon ai-purple"><i class="ph ph-flask" style="font-size:16px"></i></div>
           <div class="action-text">
             <div class="action-title">Создать смесь под задачу</div>
             <div class="action-sub">AI подберёт компоненты</div>
@@ -1098,7 +1098,7 @@ export function createReferencesModule(deps) {
           <span class="action-arrow">›</span>
         </div>
         <div class="action-item" data-action="openRecommendationsWizard">
-          <div class="action-icon ai-teal">${uiIcon("search", 16)}</div>
+          <div class="action-icon ai-teal"><i class="ph ph-magnifying-glass" style="font-size:16px"></i></div>
           <div class="action-text">
             <div class="action-title">Подобрать масло</div>
             <div class="action-sub">По симптому или цели</div>
@@ -1106,7 +1106,7 @@ export function createReferencesModule(deps) {
           <span class="action-arrow">›</span>
         </div>
         <div class="action-item" data-action="openSavedBlends">
-          <div class="action-icon ai-pink">${uiIcon("heart", 16)}</div>
+          <div class="action-icon ai-pink"><i class="ph ph-heart" style="font-size:16px"></i></div>
           <div class="action-text">
             <div class="action-title">Сохранённое</div>
             <div class="action-sub">Избранные карточки</div>
