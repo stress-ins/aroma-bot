@@ -153,6 +153,15 @@ export function createCarouselModule(deps) {
     if (_swiperAbort) _swiperAbort.abort();
     _swiperAbort = new AbortController();
     const signal = _swiperAbort.signal;
+    // Sync transform & dots with current _swiperIndex — it may have changed
+    // between renderSlides (which read idx) and this rAF callback (e.g. if a
+    // touchend on a detached track updated _swiperIndex in between).
+    const safeIndex = Math.min(_swiperIndex, total - 1);
+    if (safeIndex !== _swiperIndex) _swiperIndex = safeIndex;
+    track.style.transform = `translateX(-${_swiperIndex * 100}%)`;
+    document.querySelectorAll(".slides-dot").forEach((dot, i) => {
+      dot.classList.toggle("is-active", i === _swiperIndex);
+    });
     let startX = 0, startY = 0, currentX = 0, dragging = false, locked = false;
     const threshold = 40;
 
@@ -389,8 +398,20 @@ export function createCarouselModule(deps) {
   async function _refreshSlidePreview(draftId, slideIndex) {
     try {
       setCarouselSlideOperation(draftId, slideIndex, "Обновляю превью…");
-      const draft = state.selected;
-      if (isCurrentDraftDetail(draftId) && draft) renderDraftDetail(draft);
+      // Show loading overlay on current slide without full re-render to avoid
+      // destroying the swiper track and causing slide-skip on next swipe.
+      const slideArticles = document.querySelectorAll(".slides-swiper-track > .slide");
+      const slideEl = slideArticles[slideIndex];
+      if (slideEl) {
+        const wrap = slideEl.querySelector(".carousel-slide-image-wrap");
+        if (wrap && !wrap.querySelector(".carousel-slide-loading-overlay")) {
+          wrap.classList.add("carousel-slide-regenerating");
+          const overlay = document.createElement("div");
+          overlay.className = "carousel-slide-loading-overlay";
+          overlay.innerHTML = '<span class="button-spinner" aria-hidden="true"></span>';
+          wrap.appendChild(overlay);
+        }
+      }
 
       const previewUrl = `/api/carousel/${draftId}/slides/${slideIndex}/preview${authQueryString()}`;
       const resp = await fetch(previewUrl, {
