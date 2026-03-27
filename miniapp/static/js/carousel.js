@@ -118,6 +118,7 @@ export function createCarouselModule(deps) {
   let _swiperDraftId = "";
   let _swiperCaptionTimer = 0;
   let _slidesViewMode = "swiper"; // "swiper" | "grid"
+  let _swiperAbort = null; // AbortController for touch listeners
 
   function _swiperSaveCaption(draftId, fromIndex) {
     const textField = document.getElementById(slideTextId(fromIndex));
@@ -148,6 +149,10 @@ export function createCarouselModule(deps) {
   function initSwiper(container, total, draftId) {
     const track = container.querySelector(".slides-swiper-track");
     if (!track) return;
+    // Abort previous listeners to prevent stacking on re-render
+    if (_swiperAbort) _swiperAbort.abort();
+    _swiperAbort = new AbortController();
+    const signal = _swiperAbort.signal;
     let startX = 0, startY = 0, currentX = 0, dragging = false, locked = false;
     const threshold = 40;
 
@@ -159,7 +164,7 @@ export function createCarouselModule(deps) {
       dragging = true;
       locked = false;
       track.classList.add("is-dragging");
-    }, { passive: true });
+    }, { passive: true, signal });
 
     track.addEventListener("touchmove", (e) => {
       if (!dragging) return;
@@ -173,7 +178,7 @@ export function createCarouselModule(deps) {
       const base = -_swiperIndex * 100;
       const pct = (dx / container.offsetWidth) * 100;
       track.style.transform = `translateX(${base + pct}%)`;
-    }, { passive: true });
+    }, { passive: true, signal });
 
     track.addEventListener("touchend", () => {
       if (!dragging) return;
@@ -186,7 +191,7 @@ export function createCarouselModule(deps) {
       } else {
         track.style.transform = `translateX(-${_swiperIndex * 100}%)`;
       }
-    }, { passive: true });
+    }, { passive: true, signal });
   }
 
   function renderSlides(draftId, slides = [], prompts = [], slideImages = [], promptNotes = [], slideVersions = []) {
