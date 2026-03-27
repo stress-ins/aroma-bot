@@ -785,6 +785,10 @@ export function createReferencesModule(deps) {
       listContainer = document.getElementById("referenceListContainer");
       if (tabId === "aromas") _loadDailyOilBanner();
     }
+    // Re-inject action-group if it was lost (e.g. after data reload race condition)
+    if (!elements.draftList.querySelector(".action-group")) {
+      listContainer.insertAdjacentHTML("beforebegin", renderSmartSearchHero());
+    }
     const filterChipsEl = document.getElementById("referenceFilterChips");
     if (filterChipsEl) filterChipsEl.innerHTML = renderFilterChips(items, tabId);
 
