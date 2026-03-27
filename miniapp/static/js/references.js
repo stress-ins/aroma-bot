@@ -556,8 +556,7 @@ export function createReferencesModule(deps) {
     // Subtitle line below the card title — only for aromas (EN name + family)
     let subtitle = "";
     if (state.tab === "aromas") {
-      const altName = reference.name_ru && reference.name_ru !== reference.name ? reference.name_ru : "";
-      const parts = [altName, reference.name_en, keyline ? `(${keyline})` : ""].filter(Boolean);
+      const parts = [reference.name_en, keyline ? `(${keyline})` : ""].filter(Boolean);
       subtitle = parts.join(" · ");
     }
     // Compact EN name for blends (mirrors card list style)
@@ -801,7 +800,6 @@ export function createReferencesModule(deps) {
           ${(() => { const courseLabel = formatCourseSourceLabel(item.course_source); const dateLabel = courseLabel || (state.tab !== "aromas" ? REFERENCE_SOURCE_TYPE_LABELS[item.source_type] || "" : ""); return dateLabel ? `<span class="overview-card-date">${escapeHtml(dateLabel)}</span>` : ""; })()}
         </div>
         <h3 class="draft-topic">${escapeHtml(state.tab === "symptoms" ? normalizePdfSymptomName(item.name) : item.name)}</h3>
-        ${item.name_ru && item.name_ru !== item.name ? `<div class="reference-name-en">${escapeHtml(item.name_ru)}</div>` : ""}
         ${item.name_en ? `<div class="reference-name-en">${escapeHtml(item.name_en)}</div>` : ""}
         <div class="draft-preview">${escapeHtml(stripMarkdown(
           (state.tab === "concepts" ? item.key : null)
@@ -1219,13 +1217,11 @@ export function createReferencesModule(deps) {
     const typeLabel = typeLabels[item._type] || item._type;
     const typeIcon = typeIcons[item._type] || "";
     const tabId = item._type + "s";
-    const name = item.name || item.name_ru || "";
-    const altName = item.name_ru && item.name_ru !== item.name ? item.name_ru : "";
+    const name = item.name || "";
     return `<article ${interactiveCardAttrs("\u041e\u0442\u043a\u0440\u044b\u0442\u044c " + name)} class="draft-card overview-card interactive-card"
       data-action="openReference" data-args='${JSON.stringify([item.slug, tabId])}'>
       <div class="overview-card-top"><span class="search-type-badge">${typeIcon} ${escapeHtml(typeLabel)}</span></div>
       <h3 class="draft-topic">${escapeHtml(name)}</h3>
-      ${altName ? `<div class="reference-name-en">${escapeHtml(altName)}</div>` : ""}
       ${item.name_en ? `<div class="reference-name-en">${escapeHtml(item.name_en)}</div>` : ""}
       <div class="draft-preview">${escapeHtml(stripMarkdown(item.description_short || item.description || item.indications || "").slice(0, 100))}...</div>
       ${item._matchedSymptoms ? `<span class="search-symptom-tag">Помогает при: ${escapeHtml(item._matchedSymptoms.join(", "))}</span>` : ""}
