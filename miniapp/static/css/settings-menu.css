@@ -644,9 +644,9 @@ details[open] > .trend-suggestions-toggle::before { transform: rotate(90deg); }
 .action-item:last-child { border-bottom: none; }
 .action-item:active { background: var(--surface-2); }
 .action-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.ai-purple { background: rgba(var(--brand-rgb), 0.15); }
-.ai-teal   { background: rgba(59, 203, 138, 0.12); }
-.ai-pink   { background: rgba(255, 107, 107, 0.12); }
+.ai-purple { background: rgba(var(--brand-rgb), 0.15); color: var(--brand); }
+.ai-teal   { background: rgba(59, 203, 138, 0.12); color: #3bcb8a; }
+.ai-pink   { background: rgba(255, 107, 107, 0.12); color: #ff6b6b; }
 .action-text { flex: 1; }
 .action-title { color: var(--text); font-size: 14px; font-weight: 600; }
 .action-sub   { color: var(--hint); font-size: 11px; margin-top: 1px; }
