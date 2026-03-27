@@ -128,10 +128,6 @@ async def serialize_draft(record: DraftRecord) -> dict[str, Any]:
             generation_pending = generation_pending or images_ready < slides_count
         if record.kind == "reels" and storyboard_count:
             generation_pending = generation_pending or images_ready < storyboard_count
-    from bot.services.image_thumbs import enrich_image_dict
-    if isinstance(payload.get("slide_images"), list):
-        payload["slide_images"] = [enrich_image_dict(img) for img in payload["slide_images"]]
-
     created_by_username = await _resolve_username(record.created_by)
     return {
         "draft_id": record.draft_id,
