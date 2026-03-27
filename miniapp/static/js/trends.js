@@ -172,6 +172,15 @@ export function createTrendsModule(deps) {
         </button>
       </div>`;
 
+    // On mobile, show dashboard inline before posts (detail panel is hidden)
+    let inlineDashboard = "";
+    if (document.body.classList.contains("is-mobile-layout")) {
+      const dashHtml = renderTrendsDetail();
+      if (dashHtml && !dashHtml.includes("detail-empty")) {
+        inlineDashboard = `<div class="trends-dashboard-inline">${dashHtml}</div>`;
+      }
+    }
+
     return `
       <div class="trends-controls">
         <div class="trends-platform-tabs">${platformTabs}</div>
@@ -180,6 +189,7 @@ export function createTrendsModule(deps) {
           ${refreshBtn}
         </div>
       </div>
+      ${inlineDashboard}
       ${summary}
       ${settingsLink}
     `;
