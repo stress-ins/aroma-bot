@@ -33,6 +33,7 @@ export function registerWindowBridge(deps) {
     setDividerStyle,
     downloadSlideImage,
     uploadSlideImage,
+    uploadSlideImageFromInput,
     downloadCarouselPptx,
     importCarouselPptx,
     exportToCanva,
@@ -328,6 +329,7 @@ export function registerWindowBridge(deps) {
   window.setDividerStyle = setDividerStyle;
   window.downloadSlideImage = downloadSlideImage;
   window.uploadSlideImage = uploadSlideImage;
+  window.uploadSlideImageFromInput = uploadSlideImageFromInput;
   window.downloadCarouselPptx = downloadCarouselPptx;
   window.importCarouselPptx = importCarouselPptx;
   window.exportToCanva = exportToCanva;
