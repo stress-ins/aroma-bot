@@ -554,7 +554,8 @@ export function createReelsModule(deps) {
       const attrs = clickable
         ? `data-action="jumpToReelsStep" data-args='${JSON.stringify([draftId, s.key, null])}' class="reels-step ${cls} clickable" role="button" tabindex="0"`
         : `class="reels-step ${cls}"`;
-      return `<div ${attrs}><span class="reels-step-dot"></span><span class="reels-step-label">${s.label}</span></div>`;
+      const dotContent = i < activeIdx ? uiIcon("check", 10) : i === activeIdx ? '<span style="width:6px;height:6px;border-radius:50%;background:var(--brand);display:block"></span>' : "";
+      return `<div ${attrs}><span class="reels-step-dot">${dotContent}</span><span class="reels-step-label">${s.label}</span></div>`;
     }).join("")}</div>`;
   }
 
@@ -878,8 +879,12 @@ export function createReelsModule(deps) {
       <section class="section">
         <h3>${sectionHeadingIcon("tech-check")}Результаты проверки</h3>
         <div class="field-grid" style="gap:8px">
-          ${techCheck.info?.file_size_mb != null ? `<div class="tech-row"><span>Размер</span><span>${techCheck.info.file_size_mb} МБ</span></div>` : ""}
-          ${techCheck.info?.duration_seconds != null ? `<div class="tech-row"><span>Длительность</span><span>${techCheck.info.duration_seconds} сек</span></div>` : ""}
+          ${techCheck.info?.file_size_mb != null || techCheck.info?.duration_seconds != null ? `
+            <div class="video-meta-row">
+              <span>${techCheck.info?.file_size_mb != null ? techCheck.info.file_size_mb + " МБ" : ""}${techCheck.info?.file_size_mb != null && techCheck.info?.duration_seconds != null ? " · " : ""}${techCheck.info?.duration_seconds != null ? techCheck.info.duration_seconds + " сек" : ""}</span>
+              ${techCheck.info?.duration_seconds != null && techCheck.info.duration_seconds > 90 ? `<span class="video-warning">⚠ длиннее 90 сек</span>` : ""}
+            </div>
+          ` : ""}
           ${techCheck.info?.width ? `<div class="tech-row"><span>Разрешение</span><span>${techCheck.info.width}×${techCheck.info.height}</span></div>` : ""}
         </div>
         ${techCheck.passed

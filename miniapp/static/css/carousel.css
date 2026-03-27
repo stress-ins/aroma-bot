@@ -430,17 +430,82 @@ body.is-mobile-layout .detail-icon-actions button {
   flex: none;
 }
 
+/* ── Carousel export groups (redesigned) ──────────────────────────────── */
 .carousel-export-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-direction: column;
   gap: var(--space-2);
   width: 100%;
   margin-top: var(--space-2);
 }
-.carousel-export-row button {
-  min-height: 40px;
-  font-size: 13px;
+
+.export-group {
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  border: 0.5px solid var(--border);
+  overflow: hidden;
 }
+.export-group-label {
+  color: var(--hint);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  padding: 10px 14px 6px;
+}
+.export-item {
+  padding: 11px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-top: 0.5px solid var(--border);
+  cursor: pointer;
+  background: none;
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+}
+.export-group .export-item:first-of-type { border-top: none; }
+.export-item:hover { background: var(--brand-bg); }
+
+.ei-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.ei-icon svg { width: 14px; height: 14px; }
+.ei-icon.ei-blue { background: color-mix(in srgb, var(--brand) 12%, transparent); color: var(--brand); }
+.ei-icon.ei-teal { background: color-mix(in srgb, var(--good) 12%, transparent); color: var(--good); }
+.ei-icon.ei-purple { background: var(--brand-bg); color: var(--brand); }
+.ei-icon.ei-sage { background: var(--sage-bg); color: var(--sage); }
+
+.ei-text { flex: 1; min-width: 0; }
+.ei-title { color: var(--text); font-size: var(--text-sm); font-weight: 500; }
+.ei-sub { color: var(--hint); font-size: var(--text-xs); margin-top: 1px; }
+.ei-arrow { color: var(--hint); font-size: 16px; margin-left: auto; }
+
+.export-move {
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  color: var(--muted);
+  font-size: var(--text-sm);
+  border: 0.5px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  width: 100%;
+}
+.export-move:hover { background: var(--brand-bg); }
 
 /* ── Carousel layout picker ───────────────────────────────────────────────── */
 .carousel-layout-picker,

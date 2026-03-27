@@ -474,10 +474,32 @@ export function createDraftsModule(deps) {
             </div>
             ${d.kind === "carousel" && !d.generation_pending ? `
               <div class="carousel-export-row">
-                <button class="secondary-button" data-action="downloadCarouselPptx" data-args='${JSON.stringify([d.draft_id, null])}'>${uiIcon("download")}<span>Скачать PPTX</span></button>
-                <button class="secondary-button" data-action="importCarouselPptx" data-args='${JSON.stringify([d.draft_id, null])}'>${uiIcon("upload")}<span>Загрузить PPTX</span></button>
-                <button class="secondary-button" data-action="exportToCanva" data-args='${JSON.stringify([d.draft_id, null])}'>${uiIcon("arrow-up-right")}<span>Открыть в Canva</span></button>
-                <button class="secondary-button" data-action="importFromCanva" data-args='${JSON.stringify([d.draft_id, null])}'>${uiIcon("arrow-down-left")}<span>Импорт из Canva</span></button>
+                <div class="export-group">
+                  <div class="export-group-label">PPTX файл</div>
+                  <button class="export-item" data-action="downloadCarouselPptx" data-args='${JSON.stringify([d.draft_id, null])}'>
+                    <div class="ei-icon ei-blue">${uiIcon("download", 14)}</div>
+                    <div class="ei-text"><div class="ei-title">Скачать PPTX</div></div>
+                    <span class="ei-arrow">›</span>
+                  </button>
+                  <button class="export-item" data-action="importCarouselPptx" data-args='${JSON.stringify([d.draft_id, null])}'>
+                    <div class="ei-icon ei-teal">${uiIcon("upload", 14)}</div>
+                    <div class="ei-text"><div class="ei-title">Загрузить PPTX</div><div class="ei-sub">Заменить текущий файл</div></div>
+                    <span class="ei-arrow">›</span>
+                  </button>
+                </div>
+                <div class="export-group">
+                  <div class="export-group-label">Canva</div>
+                  <button class="export-item" data-action="exportToCanva" data-args='${JSON.stringify([d.draft_id, null])}'>
+                    <div class="ei-icon ei-purple">${uiIcon("arrow-up-right", 14)}</div>
+                    <div class="ei-text"><div class="ei-title">Открыть в Canva</div></div>
+                    <span class="ei-arrow">›</span>
+                  </button>
+                  <button class="export-item" data-action="importFromCanva" data-args='${JSON.stringify([d.draft_id, null])}'>
+                    <div class="ei-icon ei-sage">${uiIcon("arrow-down-left", 14)}</div>
+                    <div class="ei-text"><div class="ei-title">Импорт из Canva</div></div>
+                    <span class="ei-arrow">›</span>
+                  </button>
+                </div>
               </div>
             ` : ""}
             ${renderMoveButton(d.draft_id)}

@@ -189,6 +189,32 @@ export function createArchiveModule(deps) {
       groups.get(key).push(item);
     }
 
+    // Compute summary & relative metrics
+    let summaryHtml = "";
+    let maxPrimary = 1;
+    if (items.length > 0) {
+      let maxReach = 0, topLikes = 0;
+      for (const it of items) {
+        const pm = it.likes || it.views || 0;
+        if (pm > maxPrimary) maxPrimary = pm;
+        if ((it.views || 0) > maxReach) maxReach = it.views || 0;
+        if ((it.likes || 0) > topLikes) topLikes = it.likes || 0;
+      }
+      summaryHtml = `
+        <div class="archive-summary">
+          <span class="as-item"><strong>${items.length}</strong> постов</span>
+          <span class="as-dot">·</span>
+          <span class="as-item"><strong>${fmtNum(maxReach)}</strong> макс. охват</span>
+          <span class="as-dot">·</span>
+          <span class="as-item"><strong>${fmtNum(topLikes)}</strong> топ лайков</span>
+        </div>
+      `;
+    }
+
+    // Sort items by primary metric for isTop detection
+    const sortedByMetric = [...items].sort((a, b) => (b.likes || b.views || 0) - (a.likes || a.views || 0));
+    const topPubId = sortedByMetric.length > 0 ? sortedByMetric[0].pub_id : null;
+
     let cardsHtml = "";
     if (items.length === 0) {
       cardsHtml = renderGuidedState({
@@ -201,7 +227,11 @@ export function createArchiveModule(deps) {
     } else {
       for (const [month, monthItems] of groups) {
         cardsHtml += `<div class="plans-day-label">${escapeHtml(month)}</div>`;
-        cardsHtml += monthItems.map(renderArchiveCard).join("");
+        cardsHtml += monthItems.map(it => {
+          const pm = it.likes || it.views || 0;
+          const pct = Math.round((pm / maxPrimary) * 100);
+          return renderArchiveCard(it, it.pub_id === topPubId, pct);
+        }).join("");
       }
     }
 
@@ -216,6 +246,7 @@ export function createArchiveModule(deps) {
             ${uiIcon("plus")} Добавить публикацию
           </button>
         </div>
+        ${summaryHtml}
         ${items.length > 0 ? renderCoachingSummaryHeader() : ""}
         ${state.coachingSummaryOpen ? renderCoachingSummaryPanel() : ""}
         ${statsHtml}
@@ -233,25 +264,35 @@ export function createArchiveModule(deps) {
     syncMobileNavigation();
   }
 
-  function renderArchiveCard(item) {
+  function renderArchiveCard(item, isTop, relativePct) {
     const score = avgScore(item);
     const scoreBadge = score != null ? `<span class="archive-score-badge">${score}★</span>` : "";
+    const typeClass = `type-${item.kind || "text"}`;
+    const badgeClass = `ac-badge-${item.kind || "text"}`;
+    const primaryMetric = item.likes || item.views || 0;
+    const fillClass = `fill-${item.platform || "threads"}`;
 
     return `
-      <article class="archive-card interactive-card"
+      <article class="archive-card ${typeClass} interactive-card"
         data-action="openArchiveDetail" data-args='["${escapeHtml(item.pub_id)}"]'>
         <div class="archive-card-top">
-          <div class="archive-card-left">
-            <div class="archive-card-kind">${kindIcon(item.kind)} ${escapeHtml(kindBadge(item.kind))}<span class="archive-card-date">${escapeHtml(formatDate(item.published_at))}</span></div>
-            <div class="archive-card-title">${escapeHtml(item.topic || item.caption?.substring(0, 60) || "Без заголовка")}</div>
-            <div class="archive-card-metrics">
-              ${item.views ? `${uiIcon("eye")} ${fmtNum(item.views)}` : ""}
-              ${item.likes ? ` ${uiIcon("heart")} ${fmtNum(item.likes)}` : ""}
-              ${item.comments ? ` ${uiIcon("message-circle")} ${fmtNum(item.comments)}` : ""}
-              ${scoreBadge}
-            </div>
-          </div>
+          <div class="archive-card-kind ${badgeClass}">${kindIcon(item.kind)} ${escapeHtml(kindBadge(item.kind))}</div>
+          <span class="archive-card-date">${escapeHtml(formatDate(item.published_at))}</span>
         </div>
+        <div class="archive-card-title">${escapeHtml(item.topic || item.caption?.substring(0, 60) || "Без заголовка")}</div>
+        <div class="archive-card-metrics">
+          ${item.likes ? `<span>${uiIcon("heart")} ${fmtNum(item.likes)}</span>` : ""}
+          ${item.comments ? `<span>${uiIcon("message-circle")} ${fmtNum(item.comments)}</span>` : ""}
+          ${item.views ? `<span>${uiIcon("eye")} ${fmtNum(item.views)}</span>` : ""}
+          ${isTop ? `<span class="ac-top-badge">топ</span>` : ""}
+          ${scoreBadge}
+        </div>
+        ${primaryMetric > 0 ? `
+        <div class="ac-metric-bar">
+          <div class="acmb-bg"><div class="acmb-fill ${fillClass}" style="width:${relativePct || 0}%"></div></div>
+          <span class="acmb-val">${fmtNum(primaryMetric)}</span>
+        </div>
+        ` : ""}
       </article>
     `;
   }
@@ -295,25 +336,25 @@ export function createArchiveModule(deps) {
         </div>
 
         ${(pub.views || pub.likes || pub.comments || pub.shares) ? `
-          <section class="section">
-            <h3>МЕТРИКИ</h3>
-            <div class="metrics-grid">
-              ${pub.views ? `<div class="metric-item">${uiIcon("eye")} <strong>${fmtNum(pub.views)}</strong> просмотров</div>` : ""}
-              ${pub.likes ? `<div class="metric-item">${uiIcon("heart")} <strong>${fmtNum(pub.likes)}</strong> лайков</div>` : ""}
-              ${pub.comments ? `<div class="metric-item">${uiIcon("message-circle")} <strong>${fmtNum(pub.comments)}</strong> комментариев</div>` : ""}
-              ${pub.shares ? `<div class="metric-item">${uiIcon("share-2")} <strong>${fmtNum(pub.shares)}</strong> репостов</div>` : ""}
-            </div>
-          </section>
+          <div class="metrics-block">
+            ${pub.likes ? `<div class="mb-item"><span class="mb-val">${fmtNum(pub.likes)}</span><span class="mb-key">лайков</span></div>` : ""}
+            ${pub.likes && pub.views ? `<div class="mb-divider"></div>` : ""}
+            ${pub.views ? `<div class="mb-item"><span class="mb-val">${fmtNum(pub.views)}</span><span class="mb-key">просмотров</span></div>` : ""}
+            ${(pub.likes || pub.views) && pub.comments ? `<div class="mb-divider"></div>` : ""}
+            ${pub.comments ? `<div class="mb-item"><span class="mb-val">${fmtNum(pub.comments)}</span><span class="mb-key">комментариев</span></div>` : ""}
+            ${(pub.likes || pub.views || pub.comments) && pub.shares ? `<div class="mb-divider"></div>` : ""}
+            ${pub.shares ? `<div class="mb-item"><span class="mb-val">${fmtNum(pub.shares)}</span><span class="mb-key">репостов</span></div>` : ""}
+          </div>
         ` : ""}
 
-        <section class="section">
-          <h3>ОЦЕНКА</h3>
+        <div class="rating-card">
+          <div class="rc-label">Оценка</div>
           ${scoreInputRow("score_engagement", "Вовлечение", "качество реакций", pub.score_engagement)}
           ${scoreInputRow("score_brand_fit", "Бренд", "попадание в голос", pub.score_brand_fit)}
           ${scoreInputRow("score_craft", "Контент", "хук, визуал, CTA", pub.score_craft)}
           ${scoreInputRow("score_goal_hit", "Цель", "достигнута ли цель", pub.score_goal_hit)}
           ${score != null ? `<div class="score-avg">Средняя: ${score} ★</div>` : ""}
-        </section>
+        </div>
 
         ${pub.content_pillar || pub.funnel_stage ? `
           <div class="draft-meta" style="padding:0 0 8px">
