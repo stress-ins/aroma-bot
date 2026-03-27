@@ -132,6 +132,13 @@ async def serialize_draft(record: DraftRecord) -> dict[str, Any]:
     if isinstance(payload.get("slide_images"), list):
         payload["slide_images"] = [enrich_image_dict(img) for img in payload["slide_images"]]
 
+    # Check avatar existence: from payload path or team avatar on disk
+    has_avatar = bool(payload.get("brand_avatar_path"))
+    if not has_avatar and record.team_id:
+        from pathlib import Path
+        team_avatar = Path(__file__).parent.parent.parent / "data" / "avatars" / f"team_{record.team_id}.jpg"
+        has_avatar = team_avatar.exists()
+
     created_by_username = await _resolve_username(record.created_by)
     return {
         "draft_id": record.draft_id,
@@ -151,6 +158,7 @@ async def serialize_draft(record: DraftRecord) -> dict[str, Any]:
         "generation_stage": generation_stage,
         "generation_message": str(payload.get("generation_message", "")),
         "generation_error": str(payload.get("generation_error", "")),
+        "has_avatar": has_avatar,
         "created_by": record.created_by,
         "created_by_username": created_by_username,
         "payload": payload,

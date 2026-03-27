@@ -304,7 +304,7 @@ export function createCarouselModule(deps) {
 
     // Avatar warning banner
     const draft = state.selected;
-    const hasAvatar = Boolean(draft?.payload?.brand_avatar_path);
+    const hasAvatar = Boolean(draft?.has_avatar || draft?.payload?.brand_avatar_path);
     const layoutStyle = draft?.payload?.layout_style || "overlay";
     const avatarBanner = (!hasAvatar && layoutStyle === "editorial")
       ? `<div class="avatar-missing-banner">
