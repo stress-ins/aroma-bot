@@ -52,6 +52,7 @@ export function createContentModule(deps) {
     setTab("reels");
     enterDetailView();
     clearBackgroundRefreshes();
+    state.draftId = ""; // Clear stale draft ref so PTR refreshes the correct view
     const reel = await fetchJson(`/api/reels/${id}`);
     state.selectedReels = reel;
     renderReelsDetail(reel);

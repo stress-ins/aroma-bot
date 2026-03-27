@@ -243,7 +243,7 @@ export function registerWindowBridge(deps) {
   window.copyText = copyText;
   window.openReels = openReels;
   window.refreshCurrentDetail = async () => {
-    if (state.selectedReels?.draft_id) {
+    if (state.tab === "reels" && state.selectedReels?.draft_id) {
       await refreshReelsDetail(state.selectedReels.draft_id);
     } else if (state.selectedReference?.slug) {
       await openReference(state.selectedReference.slug, state.tab, { quiet: true });
