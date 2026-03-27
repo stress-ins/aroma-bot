@@ -774,15 +774,15 @@ export function createReferencesModule(deps) {
       ? { eyebrow: meta.title, title: "Ничего не найдено", body: "Попробуйте другой запрос или сбросьте фильтр." }
       : meta.empty);
 
-    // Build shell once: action-group + banner + filters + list container.
-    // The shell is only created when referenceListContainer is missing from
-    // the LIVE draftList DOM. No empty pre-render — data is already loaded
-    // when renderReferences() is first called from loadReferences().
+    // Show static action-group (lives in index.html, outside draftList)
+    const refActions = document.getElementById("referenceActions");
+    if (refActions) refActions.style.display = "";
+
+    // Build list shell inside draftList (banner + filters + card list).
     let listContainer = document.getElementById("referenceListContainer");
     const shellAlive = listContainer && elements.draftList.contains(listContainer);
     if (!shellAlive) {
       elements.draftList.innerHTML = `
-        ${renderSmartSearchHero()}
         <div id="dailyOilBanner"></div>
         <div id="referenceFilterChips"></div>
         <div id="referenceListContainer" class="plans-list"></div>
@@ -1087,36 +1087,6 @@ export function createReferencesModule(deps) {
   }
 
   /* ── Smart Search ── */
-
-  function renderSmartSearchHero() {
-    return `
-      <div class="action-group">
-        <div class="action-item" data-action="openBlendConstructor">
-          <div class="action-icon ai-purple"><i class="ph ph-flask" style="font-size:16px"></i></div>
-          <div class="action-text">
-            <div class="action-title">Создать смесь под задачу</div>
-            <div class="action-sub">AI подберёт компоненты</div>
-          </div>
-          <span class="action-arrow">›</span>
-        </div>
-        <div class="action-item" data-action="openRecommendationsWizard">
-          <div class="action-icon ai-teal"><i class="ph ph-magnifying-glass" style="font-size:16px"></i></div>
-          <div class="action-text">
-            <div class="action-title">Подобрать масло</div>
-            <div class="action-sub">По симптому или цели</div>
-          </div>
-          <span class="action-arrow">›</span>
-        </div>
-        <div class="action-item" data-action="openSavedBlends">
-          <div class="action-icon ai-pink"><i class="ph ph-heart" style="font-size:16px"></i></div>
-          <div class="action-text">
-            <div class="action-title">Сохранённое</div>
-            <div class="action-sub">Избранные карточки</div>
-          </div>
-          <span class="action-arrow">›</span>
-        </div>
-      </div>`;
-  }
 
   async function loadAllReferencesForSearch() {
     const tabs = ["aromas", "blends", "symptoms", "concepts", "practices", "sounds", "crystals"];
