@@ -203,19 +203,36 @@
 .filters-toggle {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 6px;
-  padding: 6px 10px;
+  padding: 9px 14px;
   font-size: 13px;
   font-weight: 500;
-  color: var(--text-secondary);
+  color: var(--muted);
   background: var(--surface-2, var(--surface));
-  border: 1px solid var(--border);
-  border-radius: var(--radius, 8px);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-sm, 10px);
   cursor: pointer;
   transition: color 0.15s ease;
+  width: 100%;
 }
 
-.filters-toggle:hover { color: var(--text-primary); }
+.filters-toggle:hover { color: var(--text); }
+
+.filters-toggle .ft-left {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.filters-toggle .ft-count {
+  color: var(--hint);
+  font-size: 12px;
+  margin-left: auto;
+  margin-right: 4px;
+}
 
 .filters-toggle .filters-toggle-icon {
   width: 14px;
@@ -227,14 +244,13 @@
   transform: rotate(180deg);
 }
 
-/* Mobile: 2-column filter grid */
+/* Filter body — chip-based layout */
 .toolbar-inner-filters {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-3, 12px) var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
 }
 
-/* Filter body inside panel-filter-row */
 .filters-body {
   padding: var(--space-3, 12px);
   border: 1px solid var(--border);
@@ -242,13 +258,68 @@
   background: var(--surface-raised, var(--surface));
 }
 
-.toolbar-inner-filters > label {
+/* Filter chip rows */
+.filters-body .filter-chips-row {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.filters-body .filter-chip {
+  background: var(--surface-2, var(--surface));
+  border: 0.5px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 11px;
   font-size: 12px;
   color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--duration-fast) var(--ease-standard),
+              border-color var(--duration-fast) var(--ease-standard),
+              color var(--duration-fast) var(--ease-standard);
+  font-family: var(--font-ui);
+}
+
+.filters-body .filter-chip:hover {
+  border-color: var(--brand);
+  color: var(--text);
+}
+
+.filters-body .filter-chip.active {
+  background: var(--brand-bg);
+  border-color: var(--brand);
+  color: var(--brand);
+  font-weight: 600;
+}
+
+/* Search box inside filter body */
+.filters-body .search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface-2, var(--surface));
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-sm, 10px);
+  padding: 10px 14px;
+}
+
+.filters-body .search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+  min-width: 0;
+}
+
+.filters-body .search-input::placeholder {
+  color: var(--hint);
+}
+
+/* Hide label-based filters (replaced by chips) */
+.toolbar-inner-filters > label {
+  display: none;
 }
 
 .toolbar-inner-filters > label > select,
@@ -272,8 +343,8 @@
   }
 
 .toolbar-inner-filters {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    display: flex;
+    flex-direction: column;
     gap: var(--space-2);
   }
 }
