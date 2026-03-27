@@ -1319,26 +1319,79 @@ export function createTrendsModule(deps) {
     return `<div class="trends-cards-container">${_renderCardsInner()}</div>`;
   }
 
+  const STATUS_LABELS = {
+    growing:   "Набирает",
+    emerging:  "Ранний",
+    hot:       "Горячий",
+    peaking:   "Горячий",
+    stable:    "Стабильный",
+    declining: "Спадает",
+    evergreen: "Стабильный",
+  };
+
+  function _lifecycleClass(lc) {
+    if (lc === "peaking") return "tc-hot";
+    if (lc === "evergreen") return "tc-stable";
+    if (lc === "emerging") return "tc-early";
+    return "tc-" + (lc || "early");
+  }
+
+  function _sentimentHtml(sentiment) {
+    const s = (sentiment || "neutral").toLowerCase();
+    if (s === "positive") return `<span class="tc-ms-sentiment tc-ms-positive">↗ позитивный</span>`;
+    if (s === "negative") return `<span class="tc-ms-sentiment tc-ms-negative">↘ негативный</span>`;
+    return `<span class="tc-ms-sentiment tc-ms-neutral">— нейтральный</span>`;
+  }
+
   function _renderCardsInner() {
     if (!trendCards || !trendCards.length) {
-      return `<div class="detail-empty"><p>Нет AI-карточек. Нажмите "Сгенерировать" для создания.</p>
+      return `<div class="detail-empty"><p>Нет AI-карточек. Нажмите «Сгенерировать» для создания.</p>
         <button class="primary-button" type="button" data-action="generateTrendCards">${uiIcon("sparkles", 14)}<span>Сгенерировать карточки</span></button></div>`;
     }
-    const lifecycleColors = { emerging: "#4CAF50", growing: "#2196F3", peaking: "#FF9800", declining: "#9E9E9E" };
-    return trendCards.map(c => `
-      <div class="trend-card interactive-card" data-card-id="${escapeHtml(c.card_id)}">
-        <div class="trend-card-header">
-          <span class="keyword-chip" style="background:${lifecycleColors[c.lifecycle] || "var(--muted)"};color:#fff;font-size:0.7rem">${escapeHtml(c.lifecycle || "?")}</span>
-          <strong>${escapeHtml(c.title || c.keyword)}</strong>
-          <span class="trend-strength" style="color:${c.strength >= 0.7 ? "var(--success, green)" : "var(--muted)"}">${(c.strength * 100).toFixed(0)}%</span>
+
+    const total = trendCards.length;
+    const opportunities = trendCards.filter(c => (c.strength || 0) >= 0.5).length;
+    const growing = trendCards.filter(c => c.lifecycle === "growing" || c.lifecycle === "emerging").length;
+
+    const statsRow = `<div class="trends-stats-row">
+      ${uiIcon("chart-line", 12)}
+      ${total} сигналов · ${opportunities} возможностей · ${growing} новых
+    </div>`;
+
+    const cards = trendCards.map(c => {
+      const lc = c.lifecycle || "emerging";
+      const cls = _lifecycleClass(lc);
+      const pct = Math.round((c.strength || 0) * 100);
+      const vel = (c.velocity || 0).toFixed(1);
+      const srcCount = (c.source_signals || []).length || "—";
+      return `
+      <div class="trend-card-v2 ${cls} interactive-card" data-card-id="${escapeHtml(c.card_id)}">
+        <div class="tc-v2-top">
+          <div class="tc-v2-title">${escapeHtml(c.title || c.keyword)}</div>
+          <span class="tc-badge ${cls}">${STATUS_LABELS[lc] || lc}</span>
         </div>
-        <div class="trend-card-summary">${escapeHtml((c.summary || "").substring(0, 120))}</div>
-        ${c.recommendation ? `<div class="trend-card-rec">${uiIcon("lightbulb", 12)} ${escapeHtml(c.recommendation.substring(0, 100))}</div>` : ""}
-        <div class="trend-card-actions">
-          <button class="secondary-button" type="button" data-action="createFromTrendCard" data-args='${JSON.stringify([c.card_id, c.title])}'>${uiIcon("plus", 14)}<span>Создать контент</span></button>
+        <div class="tc-v2-metrics">
+          <div class="tc-metric-big">
+            <span class="tc-metric-val">${vel}×</span>
+            <span class="tc-metric-label">скорость</span>
+          </div>
+          <div class="tc-metric-divider"></div>
+          <div class="tc-metric-small">
+            <span class="tc-ms-val">${srcCount} ист.</span>
+            <span class="tc-ms-label">источника</span>
+          </div>
+          <div class="tc-metric-small" style="margin-left:auto;">
+            ${_sentimentHtml(c.sentiment)}
+          </div>
         </div>
-      </div>
-    `).join("") + `<button class="secondary-button" type="button" data-action="generateTrendCards" style="margin-top:0.5rem">${uiIcon("refresh-cw", 14)}<span>Обновить карточки</span></button>`;
+        <div class="tc-rel-bar-wrap">
+          <div class="tc-rel-bar-bg"><div class="tc-rel-bar-fill tc-bar-${lc === "peaking" ? "hot" : lc === "evergreen" ? "stable" : lc === "emerging" ? "early" : lc}" style="width:${pct}%;"></div></div>
+          <span class="tc-rel-pct">${pct}%</span>
+        </div>
+      </div>`;
+    }).join("");
+
+    return statsRow + cards + `<button class="secondary-button" type="button" data-action="generateTrendCards" style="margin-top:0.5rem">${uiIcon("refresh-cw", 14)}<span>Обновить карточки</span></button>`;
   }
 
   async function generateTrendCards() {
