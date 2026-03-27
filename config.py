@@ -71,6 +71,10 @@ class Settings(BaseSettings):
     # Instagram Platform API
     instagram_app_id: str = ""
     instagram_app_secret: str = ""
+
+    # Facebook Login (for IG Graph API: business_discovery, hashtag search)
+    facebook_app_id: str = ""
+    facebook_app_secret: str = ""
     instagram_access_token: str = ""
     instagram_user_id: str = ""
     instagram_business_account_id: str = ""
