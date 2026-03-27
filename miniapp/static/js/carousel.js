@@ -937,7 +937,6 @@ export function createCarouselModule(deps) {
   }
 
   async function setDividerStyle(draftId, style) {
-    showUiNotice(`Меняю разделитель на ${style}...`, "info");
     try {
       const data = await fetchJson(`/api/carousel/${draftId}/divider-style`, {
         method: "PATCH",
@@ -945,7 +944,6 @@ export function createCarouselModule(deps) {
       });
       mergeDraftIntoState(data);
       if (isCurrentDraftDetail(draftId)) renderDraftDetail(state.selected);
-      showUiNotice("Разделитель обновлён", "success");
     } catch (err) {
       showRequestError("Не удалось сменить разделитель", err);
     }
