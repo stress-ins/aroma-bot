@@ -1361,8 +1361,7 @@ export function createSettingsModule(deps) {
         // Avatar section — use native <label>+<input> for Telegram WebView compat
         const avatarInputId = `avatarUpload-${t.team_id}`;
         const avatarUploadLabel = isOwner
-          ? `<button class="secondary-button avatar-upload-label" type="button" data-action="triggerAvatarFileInput" data-args='${JSON.stringify([avatarInputId])}'>${uiIcon("upload")}<span>${detail.has_avatar ? "Заменить аватарку" : "Загрузить аватарку"}</span></button>
-             <input id="${avatarInputId}" type="file" accept="image/jpeg,image/png,image/webp" class="sr-only" data-on-change="uploadTeamAvatar" data-args='${JSON.stringify([t.team_id])}' />`
+          ? `<label class="secondary-button avatar-upload-label">${uiIcon("upload")}<span>${detail.has_avatar ? "Заменить аватарку" : "Загрузить аватарку"}</span><input type="file" accept="image/jpeg,image/png,image/webp" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden" data-on-change="uploadTeamAvatar" data-args='${JSON.stringify([t.team_id])}' /></label>`
           : "";
         const avatarHtml = detail.has_avatar
           ? `<div class="team-avatar-section">
@@ -1455,11 +1454,6 @@ export function createSettingsModule(deps) {
     } catch (_err) {
       showUiNotice("Не удалось удалить участника", "error");
     }
-  }
-
-  function triggerAvatarFileInput(inputId) {
-    const input = document.getElementById(inputId);
-    if (input) input.click();
   }
 
   async function uploadTeamAvatar(teamId, _value, inputEl) {
@@ -1732,7 +1726,6 @@ export function createSettingsModule(deps) {
     createNewTeam,
     createTeamInvite,
     removeTeamMember,
-    triggerAvatarFileInput,
     uploadTeamAvatar,
     renderPromo,
     activatePromo,
