@@ -98,6 +98,10 @@ def _resolve_media_paths(draft_kind: str, draft_id: str, payload: dict[str, Any]
 def _draft_text(payload: dict[str, Any], kind: str) -> str:
     """Extract the main text content from draft payload."""
     if kind == "carousel":
+        # Prefer explicit caption field; fall back to joined slide texts
+        caption = str(payload.get("caption", "") or "").strip()
+        if caption:
+            return caption
         slides = payload.get("slides") or []
         return "\n\n".join(str(s) for s in slides if s)
     for key in ("text", "post", "caption"):

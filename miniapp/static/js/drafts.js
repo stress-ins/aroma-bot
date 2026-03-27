@@ -529,7 +529,15 @@ export function createDraftsModule(deps) {
         ${payloadSection("CTA", p.cta)}
         ${generationStateMarkup(d, "draft")}
         ${reviewActions}
-        ${renderPublishPanel(d.draft_id, d.status, { kind: d.kind, hasMedia: _hasMedia(d) })}
+        ${d.kind === "carousel" && (d.status === "approved" || d.status === "scheduled") ? `
+          <section class="section section-primary">
+            <div class="actions-row">
+              <button class="primary-button" type="button" data-action="showCarouselPublishScreen" data-args='${JSON.stringify([d.draft_id])}'>
+                <i class="ph ph-paper-plane-tilt"></i> Перейти к публикации
+              </button>
+            </div>
+          </section>
+        ` : renderPublishPanel(d.draft_id, d.status, { kind: d.kind, hasMedia: _hasMedia(d) })}
         ${d.status === "published" ? `<section class="section metrics-section" id="metricsSection_${d.draft_id}"><div class="metrics-empty"><i class="ph ph-chart-bar"></i><span>Загружаю метрики...</span></div></section>` : ""}
         ${renderSlides(d.draft_id, p.slides, p.img_prompts, p.slide_images, p.img_prompt_notes, p.slide_image_versions)}
         ${promptSection("Промпт для изображения", p.visual_prompt, "Скопировать промпт", `draft:${d.draft_id}:visual`)}

@@ -25,6 +25,7 @@ from ..deps import require_draft
 from ..generation import complete_carousel_regen_slide, complete_carousel_regenerate_all, set_generation_state
 from ..generation._common import get_generation_event, cleanup_generation_event, sse_msg
 from ..models import (
+    CarouselCaptionPayload,
     CarouselSlideNotePayload,
     CarouselSlideRegeneratePayload,
     CarouselSlideTextPayload,
@@ -172,6 +173,51 @@ async def update_carousel_slide_copy(
     if not draft:
         raise HTTPException(status_code=404, detail="carousel_not_found")
     return await serialize_draft(draft)
+
+
+# ── Caption ───────────────────────────────────────────────────────────────
+
+
+@router.post("/api/carousel/{draft_id}/caption")
+async def update_carousel_caption(
+    draft_id: str,
+    body: CarouselCaptionPayload,
+    _: None = Depends(_require_auth),
+):
+    """Save carousel post caption (separate from slide texts)."""
+    draft = await get_draft(draft_id)
+    if not draft or draft.kind != "carousel":
+        raise HTTPException(status_code=404, detail="carousel_not_found")
+    payload = dict(draft.payload)
+    payload["caption"] = body.caption
+    await update_draft(draft_id, payload=payload)
+    refreshed = await get_draft(draft_id)
+    if not refreshed:
+        raise HTTPException(status_code=404, detail="carousel_not_found")
+    return await serialize_draft(refreshed)
+
+
+@router.post("/api/carousel/{draft_id}/regen-caption", dependencies=[Depends(require_tier("expert"))])
+async def carousel_regen_caption(
+    draft_id: str,
+    background_tasks: BackgroundTasks,
+    _: None = Depends(_require_auth),
+):
+    """Generate carousel caption via AI."""
+    from ..generation.carousel import complete_carousel_regen_caption
+
+    draft = await get_draft(draft_id)
+    if not draft or draft.kind != "carousel":
+        raise HTTPException(status_code=404, detail="carousel_not_found")
+    await set_generation_state(
+        draft_id, pending=True, stage="caption",
+        message="Генерирую описание для карусели…",
+    )
+    background_tasks.add_task(complete_carousel_regen_caption, draft_id)
+    refreshed = await get_draft(draft_id)
+    if not refreshed:
+        raise HTTPException(status_code=404, detail="carousel_not_found")
+    return await serialize_draft(refreshed)
 
 
 @router.post("/api/carousel/{draft_id}/slides/{slide_index}/upload")
@@ -440,11 +486,21 @@ async def carousel_pptx_import(
     img_prompts: list[str] = list(draft.payload.get("img_prompts", []))
     slide_images: list[dict | None] = list(draft.payload.get("slide_images", []))
     slide_versions: list[list] = list(draft.payload.get("slide_image_versions", []))
+    slides: list[str] = list(draft.payload.get("slides", []))
 
-    while len(slide_images) < len(images):
+    # Sync array lengths to match imported images count
+    n = len(images)
+    while len(slide_images) < n:
         slide_images.append(None)
-    while len(slide_versions) < len(images):
+    while len(slide_versions) < n:
         slide_versions.append([])
+    while len(slides) < n:
+        slides.append("")
+    # Trim if fewer slides imported
+    slide_images = slide_images[:n]
+    slide_versions = slide_versions[:n]
+    slides = slides[:n]
+    img_prompts = img_prompts[:n]
 
     for i, img_bytes in enumerate(images):
         if img_bytes is None:
@@ -456,6 +512,8 @@ async def carousel_pptx_import(
             slide_versions[i].append(version)
 
     payload = dict(draft.payload)
+    payload["slides"] = slides
+    payload["img_prompts"] = img_prompts
     payload["slide_images"] = slide_images
     payload["slide_image_versions"] = slide_versions
     payload["images_ready"] = sum(1 for img in slide_images if img)
