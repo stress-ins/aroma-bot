@@ -247,7 +247,7 @@ export function createCarouselModule(deps) {
           </div>
           <div class="actions-row prompt-actions actions-grid-two">
             ${img?.url ? `<a class="secondary-button" href="${escapeHtml(img.url)}" target="_blank" rel="noopener">${actionLabel("download", "Скачать")}</a>` : `<span class="secondary-button" disabled>${actionLabel("download", "Скачать")}</span>`}
-            <button class="secondary-button" type="button" data-action="uploadSlideImage" data-args='${JSON.stringify([draftId, index, null])}'>${actionLabel("upload", "Загрузить")}</button>
+            <label class="secondary-button upload-slide-label">${actionLabel("upload", "Загрузить")}<input type="file" accept="image/jpeg,image/png,image/webp" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden" data-on-change="uploadSlideImageFromInput" data-args='${JSON.stringify([draftId, index])}' /></label>
           </div>
           ${prompt ? (() => {
               const discOpen = isPromptDisclosureOpen(`carousel:${draftId}:${index}`, !img?.url);
@@ -902,6 +902,40 @@ export function createCarouselModule(deps) {
     input.click();
   }
 
+  async function uploadSlideImageFromInput(draftId, slideIndex, _value, inputEl) {
+    const file = inputEl?.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      showUiNotice("Файл слишком большой (макс. 10 МБ)", "error");
+      return;
+    }
+    showUiNotice("Загружаю картинку...", "info");
+    const formData = new FormData();
+    formData.append("file", file);
+    try {
+      const headers = {};
+      const initData = window.Telegram?.WebApp?.initData;
+      if (initData) headers["X-Telegram-Init-Data"] = initData;
+      const resp = await fetch(`/api/carousel/${draftId}/slides/${slideIndex}/upload`, {
+        method: "POST",
+        headers,
+        body: formData,
+      });
+      if (!resp.ok) {
+        const body = await resp.text();
+        throw new Error(`HTTP ${resp.status}: ${body}`);
+      }
+      const data = await resp.json();
+      mergeDraftIntoState(data);
+      if (isCurrentDraftDetail(draftId)) renderDraftDetail(state.selected);
+      showUiNotice("Картинка загружена", "success");
+    } catch (err) {
+      showRequestError("Не удалось загрузить картинку", err);
+    } finally {
+      inputEl.value = "";
+    }
+  }
+
   async function setDividerStyle(draftId, style) {
     showUiNotice(`Меняю разделитель на ${style}...`, "info");
     try {
@@ -929,6 +963,7 @@ export function createCarouselModule(deps) {
     setSlidesViewMode,
     downloadSlideImage,
     uploadSlideImage,
+    uploadSlideImageFromInput,
     setDividerStyle,
     saveCarouselSlideText,
     handleCarouselSlideNoteInput,
