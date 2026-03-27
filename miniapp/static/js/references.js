@@ -121,9 +121,7 @@ export function createReferencesModule(deps) {
     }
     // Clear stale items before fetch to prevent cross-category contamination
     state.referenceItems = [];
-    // Don't call renderReferences() with empty items — it causes flicker.
-    // Just show a loading hint; the full render happens after fetch completes.
-    elements.listTitle.textContent = meta.title;
+    renderReferences();
     const data = await fetchJson(`/api/references/${meta.category}`);
     // Client-side guard: filter out any items that belong to a different category
     state.referenceItems = (data.items || []).filter(
