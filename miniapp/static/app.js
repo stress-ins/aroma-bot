@@ -782,6 +782,7 @@ function uiIcon(name) {
     "flask-conical": "flask",
     clipboard:  "clipboard",
     "paint-brush": "paint-brush",
+    "chart-line":  "chart-line-up",
   };
   return `<span class="ui-icon ui-icon-${escapeHtml(name)}">${icon(PHOSPHOR_MAP[name] || name, 16)}</span>`;
 }
