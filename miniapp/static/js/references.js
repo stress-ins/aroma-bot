@@ -119,9 +119,8 @@ export function createReferencesModule(deps) {
       renderReferencesLocked();
       return;
     }
-    // Clear stale items before fetch to prevent cross-category contamination
+    // Clear stale items before fetch — setTab() already shows loading state
     state.referenceItems = [];
-    renderReferences();
     const data = await fetchJson(`/api/references/${meta.category}`);
     // Client-side guard: filter out any items that belong to a different category
     state.referenceItems = (data.items || []).filter(
