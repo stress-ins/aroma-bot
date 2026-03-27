@@ -135,7 +135,13 @@
             </div>
             <div id="headerTabs" class="header-tabs" style="display:none"></div>
           </div>
-          <div id="referenceActions" style="display:none">
+          <div id="referenceActions" style="display:none; padding: 0 12px 8px;">
+            <div class="smart-search-bar smart-search-bar--inline" id="refSearchBar" style="margin-bottom:8px">
+              <span class="smart-search-icon"><i class="ph ph-magnifying-glass" style="font-size:15px"></i></span>
+              <input type="text" class="smart-search-input" id="refSearchInput" placeholder="Масло, аромат, симптом...">
+              <span class="smart-search-count" id="refSearchCount"></span>
+              <button class="smart-search-clear" id="refSearchClear" style="display:none">✕</button>
+            </div>
             <div class="action-group">
               <div class="action-item" data-action="openBlendConstructor">
                 <div class="action-icon ai-purple"><i class="ph ph-flask" style="font-size:16px"></i></div>
@@ -161,12 +167,6 @@
                 </div>
                 <span class="action-arrow">›</span>
               </div>
-            </div>
-            <div class="smart-search-bar smart-search-bar--inline" id="refSearchBar" style="margin-top:8px">
-              <span class="smart-search-icon"><i class="ph ph-magnifying-glass" style="font-size:15px"></i></span>
-              <input type="text" class="smart-search-input" id="refSearchInput" placeholder="Масло, аромат, симптом...">
-              <span class="smart-search-count" id="refSearchCount"></span>
-              <button class="smart-search-clear" id="refSearchClear" style="display:none">✕</button>
             </div>
           </div>
           <div id="draftList" class="draft-list"></div>
