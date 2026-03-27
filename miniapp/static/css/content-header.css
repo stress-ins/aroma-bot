@@ -86,10 +86,10 @@
   border-radius: var(--radius-sm);
 }
 
-/* Hide filter row on tabs that don't need it */
-body[data-tab="settings"] .panel-filter-row,
-body[data-tab="create"] .panel-filter-row,
-body[data-tab="trends"] .panel-filter-row { display: none; }
+/* Show filter row only on tabs that use it (drafts, inbox) — hide everywhere else */
+.panel-filter-row { display: none; }
+body[data-tab="drafts"] .panel-filter-row,
+body[data-tab="inbox"] .panel-filter-row { display: flex; }
 
 .panel-count {
   margin-left: auto;

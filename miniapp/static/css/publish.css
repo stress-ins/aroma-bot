@@ -51,13 +51,13 @@
 .plan-card.plan-card-published { opacity: 0.75; }
 .plan-card-top { display: flex; gap: 8px; align-items: flex-start; }
 .plan-card-left { flex: 1; min-width: 0; }
-.plan-card-right { flex-shrink: 0; text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.plan-card-right { flex-shrink: 0; text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; max-width: 110px; }
 .plan-card-kind { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 99px; background: var(--brand-bg); border: 1px solid var(--brand-border); font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--brand); margin-bottom: 5px; }
 .plan-card-title { font-size: 14px; font-weight: 600; color: var(--text); line-height: 1.3; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .plan-card-preview { font-size: 12px; color: var(--muted); line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .plan-card-error { font-size: 11px; color: var(--bad); line-height: 1.4; margin-top: 5px; }
 .plan-card-time { font-size: 13px; font-weight: 600; color: var(--text); }
-.plan-card-platforms { display: flex; gap: 2px; justify-content: flex-end; font-size: 14px; }
+.plan-card-platforms { display: none; }
 
 /* ── Verification badge & medical disclaimer (symptoms tab) ─────────────── */
 .verification-badge {
