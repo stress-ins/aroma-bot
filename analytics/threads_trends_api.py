@@ -65,12 +65,14 @@ class ThreadsTrendsCollector:
                 if username.lower() in collected_usernames:
                     continue  # already collected as own
                 if not threads_user_id:
-                    # Can only read other accounts with their OAuth token
-                    logger.info(
-                        "Threads trends: skipping @%s — no threads_user_id (team=%s)",
-                        username, self.team_id,
-                    )
-                    continue
+                    # Resolve user_id via profile_discovery
+                    threads_user_id = await self._lookup_user_id(client, username)
+                    if not threads_user_id:
+                        logger.info(
+                            "Threads trends: skipping @%s — profile_discovery failed (team=%s)",
+                            username, self.team_id,
+                        )
+                        continue
                 try:
                     count = await self._collect_user_threads(
                         client, threads_user_id, username, cutoff,
@@ -376,6 +378,30 @@ class ThreadsTrendsCollector:
             "avg_reply_rate": avg_reply_rate,
             "platform": "threads",
         }
+
+    async def _lookup_user_id(self, client: httpx.AsyncClient, username: str) -> str | None:
+        """Resolve Threads user_id by username via profile_discovery (threads_profile_discovery scope)."""
+        try:
+            await self._rate_check()
+            resp = await client.get(
+                f"{GRAPH_URL}/{self._user_id}",
+                params={
+                    "fields": f"profile_discovery.fields(id,username){{username={username}}}",
+                    "access_token": self._token,
+                },
+            )
+            self._request_count += 1
+            if resp.status_code != 200:
+                _log_api_error(resp, f"Threads profile_discovery @{username}")
+                return None
+            discovery = resp.json().get("profile_discovery", {})
+            user_id = discovery.get("id")
+            if user_id:
+                logger.info("Threads profile_discovery: @%s -> id=%s", username, user_id)
+            return user_id
+        except Exception as exc:
+            logger.warning("Threads profile_discovery @%s failed: %s", username, exc)
+            return None
 
     async def _rate_check(self) -> None:
         import asyncio

@@ -42,6 +42,11 @@ INSTAGRAM_DEFAULT_SCOPES = (
     "instagram_business_manage_comments",
     "instagram_business_manage_insights",
     "instagram_business_manage_messages",
+    # Graph API scopes for business_discovery + ig_hashtag_search
+    "instagram_basic",
+    "pages_read_engagement",
+    "pages_show_list",
+    "public_profile",
 )
 
 YOUTUBE_AUTHORIZE_URL = "https://accounts.google.com/o/oauth2/v2/auth"
