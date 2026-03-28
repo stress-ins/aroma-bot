@@ -5,6 +5,7 @@ import io
 import logging
 import zipfile
 
+from PIL import Image, ImageDraw
 from pptx import Presentation
 from pptx.util import Emu, Pt
 from pptx.dml.color import RGBColor
@@ -76,6 +77,47 @@ def _embed_font_in_pptx(pptx_bytes: bytes) -> bytes:
     return out.getvalue()
 
 
+def _bake_overlay_rect(
+    img_bytes: bytes,
+    top_frac: float,
+    h_frac: float,
+    margin_frac: float = 80000 / _SLIDE_EMU,
+    width_frac: float | None = None,
+) -> bytes:
+    """Burn a semi-transparent dark overlay rectangle into image pixels.
+
+    This avoids a separate PPTX shape for the overlay which Canva
+    consistently moves to the wrong layer on import.
+    """
+    img = Image.open(io.BytesIO(img_bytes)).convert("RGBA")
+    w, h = img.size
+
+    pad_frac = 55000 / _SLIDE_EMU
+    if width_frac is None:
+        width_frac = 1.0 - 2 * margin_frac
+
+    box_top = int(h * top_frac)
+    box_h = int(h * h_frac)
+    pad_x = int(w * pad_frac)
+    pad_y = int(h * pad_frac)
+    margin_px = int(w * margin_frac)
+    box_w_px = int(w * width_frac)
+
+    overlay = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay)
+    alpha = int(255 * 0.58)
+    x0 = margin_px - pad_x
+    y0 = box_top - pad_y
+    x1 = margin_px + box_w_px + pad_x
+    y1 = box_top + box_h + pad_y
+    draw.rounded_rectangle([x0, y0, x1, y1], radius=12, fill=(0x18, 0x0E, 0x08, alpha))
+
+    composite = Image.alpha_composite(img, overlay)
+    buf = io.BytesIO()
+    composite.convert("RGB").save(buf, format="JPEG", quality=92)
+    return buf.getvalue()
+
+
 def _build_pptx(slides: list[str], images: list[bytes | None] | None = None) -> bytes:
     BEIGE = RGBColor(0xF2, 0xE8, 0xD9)
     DARK  = RGBColor(0x3D, 0x2B, 0x1F)
@@ -96,11 +138,15 @@ def _build_pptx(slides: list[str], images: list[bytes | None] | None = None) -> 
         img_bytes = (images[i] if images and i < len(images) else None)
 
         if img_bytes:
+            top_frac, h_frac = _find_text_zone(img_bytes)
+            # Bake semi-transparent overlay directly into the image so Canva
+            # cannot reorder layers (overlay was a separate shape before and
+            # Canva consistently moved it on top of everything).
+            composite_bytes = _bake_overlay_rect(img_bytes, top_frac, h_frac)
             slide.shapes.add_picture(
-                io.BytesIO(img_bytes), Emu(0), Emu(0), Emu(_SLIDE_EMU), Emu(_SLIDE_EMU)
+                io.BytesIO(composite_bytes), Emu(0), Emu(0), Emu(_SLIDE_EMU), Emu(_SLIDE_EMU)
             )
             text_color = WHITE
-            top_frac, h_frac = _find_text_zone(img_bytes)
         else:
             bg = slide.shapes.add_shape(1, Emu(0), Emu(0), Emu(_SLIDE_EMU), Emu(_SLIDE_EMU))
             bg.fill.solid()
@@ -109,35 +155,10 @@ def _build_pptx(slides: list[str], images: list[bytes | None] | None = None) -> 
             text_color = DARK
             top_frac, h_frac = 0.32, 0.36   # centre for plain background
 
-        pad     = Emu(55000)
         margin  = Emu(80000)
         box_top = Emu(int(_SLIDE_EMU * top_frac))
         box_h   = Emu(int(_SLIDE_EMU * h_frac))
         box_w   = Emu(_SLIDE_EMU) - margin * 2
-
-        # Semi-transparent dark overlay behind text (only when image is present)
-        if img_bytes:
-            from pptx.oxml.ns import qn as _qn
-            from lxml import etree as _etree
-            overlay = slide.shapes.add_shape(
-                1,
-                margin - pad, box_top - pad,
-                box_w + pad * 2, box_h + pad * 2,
-            )
-            overlay.fill.solid()
-            overlay.fill.fore_color.rgb = RGBColor(0x18, 0x0E, 0x08)
-            overlay.line.fill.background()
-            overlay.rotation = 0.0
-            # Lock overlay to prevent accidental edits in Canva
-            overlay.name = "text_overlay"
-            # Set 58% opacity via OOXML (val=58000 means 58% opaque)
-            sp_pr = overlay._element.spPr
-            solid = sp_pr.find(".//" + _qn("a:solidFill"))
-            if solid is not None:
-                clr = solid.find(_qn("a:srgbClr"))
-                if clr is not None:
-                    alpha_el = _etree.SubElement(clr, _qn("a:alpha"))
-                    alpha_el.set("val", "58000")
 
         txBox = slide.shapes.add_textbox(
             margin, box_top, box_w, box_h
