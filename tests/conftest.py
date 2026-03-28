@@ -35,6 +35,7 @@ import bot.services.subscription_store
 import bot.services.blends_store
 import bot.services.saved_blends_store
 import bot.services.mentions_store
+import bot.services.inbox_store
 import bot.services.cost_stats_store
 import bot.services.publish_log_store
 import bot.services.tracked_threads_store
@@ -84,6 +85,7 @@ async def setup_test_db(monkeypatch):
     monkeypatch.setattr(bot.services.blends_store, "AsyncSessionLocal", AsyncSessionLocal)
     monkeypatch.setattr(bot.services.saved_blends_store, "AsyncSessionLocal", AsyncSessionLocal)
     monkeypatch.setattr(bot.services.mentions_store, "AsyncSessionLocal", AsyncSessionLocal)
+    monkeypatch.setattr(bot.services.inbox_store, "AsyncSessionLocal", AsyncSessionLocal)
     monkeypatch.setattr(bot.services.cost_stats_store, "AsyncSessionLocal", AsyncSessionLocal)
     monkeypatch.setattr(bot.services.publish_log_store, "AsyncSessionLocal", AsyncSessionLocal)
     monkeypatch.setattr(bot.services.tracked_threads_store, "AsyncSessionLocal", AsyncSessionLocal)

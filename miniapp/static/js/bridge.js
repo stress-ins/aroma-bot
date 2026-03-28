@@ -177,6 +177,15 @@ export function registerWindowBridge(deps) {
     publishReply,
     ignoreMentionAction,
     setMentionsFilter,
+    openConversation,
+    closeConversation,
+    sendInboxReply,
+    sendInboxReplyOnEnter,
+    generateInboxReply,
+    useAiReply,
+    archiveConversation,
+    pollInbox,
+    setInboxFilter,
     upgradeToFull,
     generateReelsImages,
     moveDraftToTeam,
@@ -480,6 +489,15 @@ export function registerWindowBridge(deps) {
   window.publishReply = publishReply;
   window.ignoreMentionAction = ignoreMentionAction;
   window.setMentionsFilter = setMentionsFilter;
+  window.openConversation = openConversation;
+  window.closeConversation = closeConversation;
+  window.sendInboxReply = sendInboxReply;
+  window.sendInboxReplyOnEnter = sendInboxReplyOnEnter;
+  window.generateInboxReply = generateInboxReply;
+  window.useAiReply = useAiReply;
+  window.archiveConversation = archiveConversation;
+  window.pollInbox = pollInbox;
+  window.setInboxFilter = setInboxFilter;
   window.moveDraftToTeam = moveDraftToTeam;
   window.switchAccountsTeam = switchAccountsTeam;
   window.addTrackedHashtag = addTrackedHashtag;
