@@ -9,6 +9,7 @@ export function createBlendConstructorModule(deps) {
     syncMobileNavigation,
     renderBackButton,
     renderDetailLoader,
+    renderPanelError,
     showUiNotice,
     tagMarkup,
     openReference,
@@ -511,7 +512,7 @@ export function createBlendConstructorModule(deps) {
       _renderSavedBlendDetail(blend);
       enterDetailView();
     } catch {
-      elements.draftDetail.innerHTML = `<div class="detail-grid">${renderBackButton()}<p class="field-help">\u0421\u043c\u0435\u0441\u044c \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d\u0430</p></div>`;
+      elements.draftDetail.innerHTML = `<div class="detail-grid">${renderBackButton()}${renderPanelError("Смесь не найдена", "Не удалось загрузить данные смеси")}</div>`;
     }
   }
 
@@ -641,7 +642,7 @@ export function createBlendConstructorModule(deps) {
       </div>`;
       enterDetailView();
     } catch {
-      elements.draftDetail.innerHTML = `<div class="detail-grid">${renderBackButton()}<p class="field-help">\u0421\u043c\u0435\u0441\u044c \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d\u0430 \u0438\u043b\u0438 \u0431\u044b\u043b\u0430 \u0443\u0434\u0430\u043b\u0435\u043d\u0430</p></div>`;
+      elements.draftDetail.innerHTML = `<div class="detail-grid">${renderBackButton()}${renderPanelError("Смесь не найдена", "Смесь не найдена или была удалена")}</div>`;
     }
   }
 

@@ -1620,7 +1620,7 @@ export function createTrendsModule(deps) {
     }
 
     if (sections.length === 0) {
-      return `<div class="detail-empty"><p>Выберите тренд слева для деталей</p></div>`;
+      return renderGuidedState({ eyebrow: "Тренды", title: "Выберите тренд для деталей", body: "Выберите тренд из списка слева, чтобы увидеть подробную информацию." });
     }
 
     return `<div class="trends-detail-content">${sections.join("")}</div>`;
@@ -1700,7 +1700,7 @@ export function createTrendsModule(deps) {
       ${total} сигналов · ${opps.length} возможностей · ${emerging.length} новых · ${declining.length} спадающих
     </div>`;
 
-    return `${statsRow}<div class="draft-list-content">${oppCards || `<p style="padding:1rem;opacity:0.6">Нет данных — запустите сбор трендов</p>`}</div>`;
+    return `${statsRow}<div class="draft-list-content">${oppCards || renderGuidedState({ eyebrow: "Разведка", title: "Нет данных", body: "Запустите сбор трендов для получения аналитики.", actionLabel: "Обновить", action: "refreshTrends" })}</div>`;
   }
 
   function renderIntelligenceDetail() {
@@ -1776,7 +1776,7 @@ export function createTrendsModule(deps) {
     }
 
     if (sections.length === 0) {
-      return `<div class="detail-empty"><p>Выберите тренд слева для деталей</p></div>`;
+      return renderGuidedState({ eyebrow: "Тренды", title: "Выберите тренд для деталей", body: "Выберите тренд из списка слева, чтобы увидеть подробную информацию." });
     }
 
     return `<div class="trends-detail-content">${sections.join("")}</div>`;
@@ -1917,8 +1917,7 @@ export function createTrendsModule(deps) {
 
   function _renderCardsInner() {
     if (!trendCards || !trendCards.length) {
-      return `<div class="detail-empty"><p>Нет AI-карточек. Нажмите «Сгенерировать» для создания.</p>
-        <button class="primary-button" type="button" data-action="generateTrendCards">${uiIcon("sparkles", 14)}<span>Сгенерировать карточки</span></button></div>`;
+      return renderGuidedState({ eyebrow: "AI-карточки", title: "Нет AI-карточек", body: "Нажмите кнопку ниже для генерации карточек на основе трендов.", actionLabel: "Сгенерировать карточки", action: "generateTrendCards" });
     }
 
     const total = trendCards.length;
