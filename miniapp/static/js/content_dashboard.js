@@ -63,7 +63,7 @@ export function createContentDashboardModule(deps) {
         <div class="detail-loader-card panel-loader-card" aria-live="polite">
           <div class="brand-loader" aria-hidden="true">
             <span class="brand-loader-ring"></span>
-            <span class="brand-loader-letter">A</span>
+            <span class="brand-loader-letter">А</span>
           </div>
           <div class="detail-loader-copy">
             <strong>Загружаю аналитику</strong>
@@ -131,7 +131,6 @@ export function createContentDashboardModule(deps) {
       });
     });
 
-    if (window.lucide) lucide.createIcons();
   }
 
   function renderPeriodSelector() {

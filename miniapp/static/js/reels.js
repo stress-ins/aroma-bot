@@ -1920,7 +1920,7 @@ export function createReelsModule(deps) {
       <div class="preview-modal" style="max-width:400px">
         <div class="preview-modal-header">
           <h3>Предпросмотр</h3>
-          <button class="secondary-button compact preview-modal-close" id="reels-preview-close">✕</button>
+          <button class="secondary-button compact preview-modal-close" id="reels-preview-close"><i class="ph ph-x"></i></button>
         </div>
         <div class="preview-modal-body reels-preview-body">
           <img src="${escapeHtml(url)}" alt="Предпросмотр кадра" />
