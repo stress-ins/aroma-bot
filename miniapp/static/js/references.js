@@ -363,7 +363,7 @@ export function createReferencesModule(deps) {
     }
     const cutAt = str.lastIndexOf(" ", maxChars) || maxChars;
     const preview = str.slice(0, cutAt);
-    return `<section class="section"><h3>${escapeHtml(title)}</h3><div class="detail-preview exp-section-wrap"><div class="exp-collapsed">${escapeHtml(preview)}… <button class="exp-btn" data-action="expandSection" data-args='[null]'>Читать далее <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button></div><div class="exp-expanded" hidden>${escapeHtml(str)}</div></div></section>`;
+    return `<section class="section"><h3>${escapeHtml(title)}</h3><div class="detail-preview exp-section-wrap"><div class="exp-collapsed">${escapeHtml(preview)}… <button class="exp-btn" data-action="expandSection" data-args='[null]'>Читать далее <i class="ph ph-arrow-right" style="font-size:12px" aria-hidden="true"></i></button></div><div class="exp-expanded" hidden>${escapeHtml(str)}</div></div></section>`;
   }
 
   const COUNTRY_FLAGS = {
@@ -990,8 +990,8 @@ export function createReferencesModule(deps) {
           ${renderCollapsibleDescription(reference)}
           ${renderCollapsibleSection("Терапевтические свойства", Array.isArray(reference.therapeutic_properties) ? reference.therapeutic_properties.join(", ") : reference.therapeutic_properties, 280)}
           ${renderCollapsibleSection("Психологические свойства", Array.isArray(reference.psychological_properties) ? reference.psychological_properties.join(", ") : reference.psychological_properties, 280)}
-          ${compOilChips ? `<section class="section"><h3><i data-lucide="droplets" style="width:16px;height:16px"></i> Комплементарные масла</h3><div class="detail-preview">${compOilChips}</div></section>` : ""}
-          ${symptomChips ? `<section class="section"><h3><i data-lucide="heart-pulse" style="width:16px;height:16px"></i> Помогает при</h3><div class="detail-preview">${symptomChips}</div></section>` : ""}
+          ${compOilChips ? `<section class="section"><h3><i class="ph ph-drop" style="font-size:16px"></i> Комплементарные масла</h3><div class="detail-preview">${compOilChips}</div></section>` : ""}
+          ${symptomChips ? `<section class="section"><h3><i class="ph ph-heartbeat" style="font-size:16px"></i> Помогает при</h3><div class="detail-preview">${symptomChips}</div></section>` : ""}
           ${reference.care_instructions ? aromaSection("Уход за кристаллом", reference.care_instructions) : ""}
           ${contraList.length ? renderStructuredList("Противопоказания", contraList.join(". ")) : ""}
           ${reference.crystal_system ? aromaSection("Кристаллическая система", reference.crystal_system) : ""}

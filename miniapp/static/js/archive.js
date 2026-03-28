@@ -851,12 +851,10 @@ export function createArchiveModule(deps) {
     // Check cache
     if (state.coachingCache[pubId]) {
       container.innerHTML = renderCoachPanel(state.coachingCache[pubId]);
-      if (window.lucide) lucide.createIcons();
       return;
     }
 
     container.innerHTML = `<div class="coach-panel"><div class="coach-loading">${uiIcon("loader")} Анализирую пост...</div></div>`;
-    if (window.lucide) lucide.createIcons();
 
     try {
       const data = await fetchJson(`/api/archive/${pubId}/coaching`);
@@ -866,7 +864,6 @@ export function createArchiveModule(deps) {
       container.innerHTML = `<div class="coach-panel"><p style="color:var(--bad);padding:12px">Не удалось загрузить анализ. Попробуйте позже.</p></div>`;
     }
 
-    if (window.lucide) lucide.createIcons();
   }
 
   return {

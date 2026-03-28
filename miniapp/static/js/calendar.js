@@ -427,7 +427,6 @@ export function createCalendarModule(deps) {
 
     container.innerHTML = html;
     _attachCalendarEvents(container);
-    if (window.lucide) lucide.createIcons();
   }
 
   function _pluralize(n, one, few, many) {

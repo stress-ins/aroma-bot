@@ -302,7 +302,7 @@ export function createSettingsModule(deps) {
   function renderForbiddenPhrases(phrases) {
     const container = document.getElementById("forbiddenPhrasesList");
     if (!container) return;
-    const closeSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>`;
+    const closeSvg = `<i class="ph ph-x" style="font-size:14px" aria-hidden="true"></i>`;
     container.innerHTML = (phrases || []).map((phrase) => `
       <span class="keyword-chip">
         <span>${escapeHtml(phrase)}</span>
@@ -477,7 +477,7 @@ export function createSettingsModule(deps) {
                   ${items.map((item) => `
                     <span class="keyword-chip">
                       <span>${escapeHtml(item)}</span>
-                      <button type="button" aria-label="Удалить ${escapeHtml(item)}" data-action="removeKeywordItem" data-args='${JSON.stringify([selectedTopic.topic_idx, String(field), String(item), null])}'><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+                      <button type="button" aria-label="Удалить ${escapeHtml(item)}" data-action="removeKeywordItem" data-args='${JSON.stringify([selectedTopic.topic_idx, String(field), String(item), null])}'><i class="ph ph-x" style="font-size:14px" aria-hidden="true"></i></button>
                     </span>
                   `).join("") || `<span class="plan-entry-hint">Пока пусто.</span>`}
                 </div>
@@ -671,7 +671,7 @@ export function createSettingsModule(deps) {
                   ${items.map((item) => `
                     <span class="keyword-chip">
                       <span>${escapeHtml(item)}</span>
-                      <button type="button" aria-label="Удалить ${escapeHtml(item)}" data-action="removeKeywordItem" data-args='${JSON.stringify([selectedTopic.topic_idx, String(field), String(item), null])}'><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+                      <button type="button" aria-label="Удалить ${escapeHtml(item)}" data-action="removeKeywordItem" data-args='${JSON.stringify([selectedTopic.topic_idx, String(field), String(item), null])}'><i class="ph ph-x" style="font-size:14px" aria-hidden="true"></i></button>
                     </span>
                   `).join("") || `<span class="plan-entry-hint">Пока пусто.</span>`}
                 </div>
