@@ -38,7 +38,7 @@ export function createAvatarCropperModule() {
         <div class="avatar-cropper-header">
           <h3>Кадрирование аватарки</h3>
           <button class="secondary-button avatar-cropper-close" type="button">
-            <i data-lucide="x" style="width:18px;height:18px"></i>
+            <i class="ph ph-x" style="font-size:18px"></i>
           </button>
         </div>
         <div class="avatar-cropper-body">
@@ -47,14 +47,14 @@ export function createAvatarCropperModule() {
         </div>
         <div class="avatar-cropper-footer">
           <div class="avatar-cropper-zoom-row">
-            <i data-lucide="zoom-out" style="width:16px;height:16px;color:var(--muted)"></i>
+            <i class="ph ph-magnifying-glass-minus" style="font-size:16px;color:var(--muted)"></i>
             <input type="range" class="avatar-cropper-zoom" min="100" max="400" value="100" />
-            <i data-lucide="zoom-in" style="width:16px;height:16px;color:var(--muted)"></i>
+            <i class="ph ph-magnifying-glass-plus" style="font-size:16px;color:var(--muted)"></i>
           </div>
           <div class="avatar-cropper-actions">
             <button class="secondary-button avatar-cropper-cancel" type="button">Отмена</button>
             <button class="primary-button avatar-cropper-save" type="button">
-              <i data-lucide="check" style="width:16px;height:16px"></i><span>Сохранить</span>
+              <i class="ph ph-check" style="font-size:16px"></i><span>Сохранить</span>
             </button>
           </div>
         </div>
@@ -83,7 +83,7 @@ export function createAvatarCropperModule() {
     img.onload = () => {
       _initCanvas();
       _draw();
-      if (window.lucide) lucide.createIcons({ nodes: [backdrop] });
+      // Phosphor icons are CSS-based, no init needed
     };
     img.src = dataUrl;
 

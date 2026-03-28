@@ -990,8 +990,8 @@ export function createReferencesModule(deps) {
           ${renderCollapsibleDescription(reference)}
           ${renderCollapsibleSection("Терапевтические свойства", Array.isArray(reference.therapeutic_properties) ? reference.therapeutic_properties.join(", ") : reference.therapeutic_properties, 280)}
           ${renderCollapsibleSection("Психологические свойства", Array.isArray(reference.psychological_properties) ? reference.psychological_properties.join(", ") : reference.psychological_properties, 280)}
-          ${compOilChips ? `<section class="section"><h3><i data-lucide="droplets" style="width:16px;height:16px"></i> Комплементарные масла</h3><div class="detail-preview">${compOilChips}</div></section>` : ""}
-          ${symptomChips ? `<section class="section"><h3><i data-lucide="heart-pulse" style="width:16px;height:16px"></i> Помогает при</h3><div class="detail-preview">${symptomChips}</div></section>` : ""}
+          ${compOilChips ? `<section class="section"><h3><i class="ph ph-drop" style="font-size:16px"></i> Комплементарные масла</h3><div class="detail-preview">${compOilChips}</div></section>` : ""}
+          ${symptomChips ? `<section class="section"><h3><i class="ph ph-heartbeat" style="font-size:16px"></i> Помогает при</h3><div class="detail-preview">${symptomChips}</div></section>` : ""}
           ${reference.care_instructions ? aromaSection("Уход за кристаллом", reference.care_instructions) : ""}
           ${contraList.length ? renderStructuredList("Противопоказания", contraList.join(". ")) : ""}
           ${reference.crystal_system ? aromaSection("Кристаллическая система", reference.crystal_system) : ""}
