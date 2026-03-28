@@ -2414,6 +2414,9 @@ function setTab(t) {
     if (isActive) b.scrollIntoView({ inline: "center", behavior: "smooth", block: "nearest" });
   });
   elements.filtersContainer.hidden = !["drafts", "inbox"].includes(t);
+  // Hide handbook sticky bar on non-handbook tabs
+  const _hb = document.getElementById("handbookStickyBar");
+  if (_hb) _hb.hidden = !HANDBOOK_CATEGORY_META[t];
   renderContentSubTabs();
 
   // Clear panels immediately to prevent showing tools/content from previous tab
