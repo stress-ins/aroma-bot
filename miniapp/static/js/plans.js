@@ -549,6 +549,19 @@ export function createPlansModule(deps) {
       return;
     }
 
+    if (subMode === "inbox") {
+      elements.listTitle.textContent = "Входящие";
+      elements.draftCount.textContent = "";
+      elements.draftList.innerHTML = `<div id="plans-container"></div>`;
+      if (window.inboxModule) {
+        window.inboxModule.loadInbox().then(() => {
+          const count = (state.inboxConversations || []).length;
+          if (count > 0) elements.draftCount.textContent = `${count} шт`;
+        });
+      }
+      return;
+    }
+
     if (subMode === "plans") {
       const plans = state.plans || [];
       elements.listTitle.textContent = "Контент-планы";
