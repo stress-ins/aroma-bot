@@ -37,6 +37,12 @@ async def _run_collection() -> None:
         en_report = build_report(results, lang="en")
         cache.set("digest", (ru_report, en_report))
         cache.set("results", results)
+        # Persist digest to DB so it survives restarts
+        try:
+            from bot.services.digest_store import save_digest
+            await save_digest(ru_report, en_report)
+        except Exception:
+            logger.exception("Failed to persist digest to DB")
         _collection_status["status"] = "done"
     except Exception as exc:
         logger.exception("Trend collection failed")
@@ -74,6 +80,17 @@ async def trends_intelligence():
     from analytics.trend_intelligence import generate_trend_report
 
     return await generate_trend_report()
+
+
+@router.get("/api/trends/digest")
+async def trends_digest():
+    """Return the latest cached digest report from DB."""
+    from bot.services.digest_store import get_digest
+
+    digest = await get_digest()
+    if digest is None:
+        return {"status": "not_available"}
+    return digest
 
 
 @router.post("/api/trends/enrich")

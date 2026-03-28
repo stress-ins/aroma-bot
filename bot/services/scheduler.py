@@ -56,6 +56,13 @@ async def _send_daily_digest(app: Application) -> None:
         en_report = build_report(results, lang="en")
         cache.set("digest", (ru_report, en_report))
 
+    # Persist digest to DB so it survives restarts
+    try:
+        from bot.services.digest_store import save_digest
+        await save_digest(ru_report, en_report)
+    except Exception as exc:
+        logger.error("Failed to persist digest to DB: %s", exc)
+
     for report in (ru_report, en_report):
         for chunk in _split_message(report):
             try:
@@ -196,11 +203,15 @@ _METRICS_POLL_HOURS = {0, 6, 12, 18}
 # Thread monitor: every 2 hours
 _THREAD_MONITOR_HOURS = {0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22}
 
-# Trend enrichment: every 6 hours (offset from metrics by 1 hour)
-_ENRICHMENT_HOURS = {1, 7, 13, 19}
-
-# Social trends collection: every 6 hours (offset from others)
+# Social trends collection + pipeline: every 6 hours
 _SOCIAL_TRENDS_HOURS = {3, 9, 15, 21}
+
+# Pipeline delay between collect and enrich (seconds)
+_PIPELINE_ENRICH_DELAY = 300  # 5 minutes
+
+# Comments polling: every 3 hours at :30 (offset from social trends at :00)
+_COMMENTS_POLL_HOURS = {0, 3, 6, 9, 12, 15, 18, 21}
+_COMMENTS_POLL_MINUTE = 30
 
 
 # Daily oil: 06:00 UTC (09:00 MSK)
@@ -300,6 +311,55 @@ async def _collect_social_trends() -> None:
         await asyncio.sleep(2)  # pause between teams
 
 
+async def _run_trends_pipeline() -> None:
+    """Unified pipeline: collect social trends -> enrich -> generate cards.
+
+    Stages:
+    1. Collect social trends from all teams
+    2. Wait 5 minutes for data to settle
+    3. Enrich new signals (velocity, lifecycle, sentiment)
+    4. If any signals were enriched, generate trend cards
+
+    Errors at any stage are logged but do not block subsequent runs.
+    """
+    from analytics.signal_enricher import enrich_signals
+    from bot.agents.trend_card_generator import generate_and_save_cards
+
+    # Stage 1: Collect
+    try:
+        await _collect_social_trends()
+        logger.info("Trends pipeline: collected")
+    except Exception as exc:
+        logger.error("Trends pipeline: collect failed: %s", exc)
+
+    # Stage 2: Delay before enrichment
+    logger.info("Trends pipeline: waiting %d seconds before enrichment", _PIPELINE_ENRICH_DELAY)
+    await asyncio.sleep(_PIPELINE_ENRICH_DELAY)
+
+    # Stage 3: Enrich
+    enriched = 0
+    try:
+        enriched = await enrich_signals()
+        logger.info("Trends pipeline: enriched %d signals", enriched)
+    except Exception as exc:
+        logger.error("Trends pipeline: enrichment failed: %s", exc)
+
+    # Stage 4: Generate cards (only if enrichment produced results)
+    cards_count = 0
+    if enriched > 0:
+        try:
+            cards = await generate_and_save_cards()
+            cards_count = len(cards)
+            logger.info("Trends pipeline: generated %d cards", cards_count)
+        except Exception as exc:
+            logger.error("Trends pipeline: card generation failed: %s", exc)
+
+    logger.info(
+        "Trends pipeline: collected -> enriched %d -> generated %d cards",
+        enriched, cards_count,
+    )
+
+
 async def run_loop(app: Application) -> None:
     """Main scheduler loop — runs forever.
 
@@ -315,11 +375,11 @@ async def run_loop(app: Application) -> None:
     last_daily_oil_date: date | None = None
     last_metrics_fetch_hour: int | None = None
     last_thread_monitor_hour: int | None = None
-    last_enrichment_hour: int | None = None
     last_social_trends_hour: int | None = None
     last_status_check_minute: int | None = None
     last_mentions_poll_minute: int | None = None
     last_token_check_date: date | None = None
+    last_comments_poll_hour: int | None = None
     logger.info(
         "Scheduler loop started (digest at %s %s, post check every %ds)",
         settings.daily_digest_time,
@@ -386,19 +446,7 @@ async def run_loop(app: Application) -> None:
                 except Exception as exc:
                     logger.error("Thread monitor failed: %s", exc)
 
-            # Trend enrichment every 6 hours (offset)
-            if (
-                now.hour in _ENRICHMENT_HOURS
-                and now.minute == 0
-                and last_enrichment_hour != now.hour
-            ):
-                last_enrichment_hour = now.hour
-                try:
-                    await _run_trend_enrichment()
-                except Exception as exc:
-                    logger.error("Trend enrichment failed: %s", exc)
-
-            # Social trends collection every 6 hours (offset)
+            # Social trends pipeline every 6 hours (collect -> enrich -> cards)
             if (
                 now.hour in _SOCIAL_TRENDS_HOURS
                 and now.minute == 0
@@ -406,9 +454,27 @@ async def run_loop(app: Application) -> None:
             ):
                 last_social_trends_hour = now.hour
                 try:
-                    await _collect_social_trends()
+                    await _run_trends_pipeline()
                 except Exception as exc:
-                    logger.error("Social trends collection failed: %s", exc)
+                    logger.error("Trends pipeline failed: %s", exc)
+
+            # Comments polling every 3 hours at :30
+            if (
+                now.hour in _COMMENTS_POLL_HOURS
+                and now.minute == _COMMENTS_POLL_MINUTE
+                and last_comments_poll_hour != now.hour
+            ):
+                last_comments_poll_hour = now.hour
+                try:
+                    from bot.services.comments_poller import poll_published_comments
+                    total_polled, newly_saved = await poll_published_comments()
+                    if newly_saved:
+                        logger.info(
+                            "Comments poll: %d new comments from %d polled",
+                            newly_saved, total_polled,
+                        )
+                except Exception as exc:
+                    logger.error("Comments poll failed: %s", exc)
 
             # Mentions poll every 5 minutes
             if (

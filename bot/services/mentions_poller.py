@@ -144,8 +144,137 @@ async def poll_all_teams() -> dict[str, tuple[int, int]]:
     return results
 
 
+async def _auto_refresh_threads(token) -> str:
+    """Auto-refresh Threads long-lived token."""
+    import httpx
+
+    async with httpx.AsyncClient(timeout=15) as client:
+        r = await client.get(
+            "https://graph.threads.net/refresh_access_token",
+            params={
+                "grant_type": "th_refresh_token",
+                "access_token": token.access_token,
+            },
+        )
+        r.raise_for_status()
+        data = r.json()
+    new_token = data["access_token"]
+    new_expires = datetime.now(timezone.utc) + timedelta(seconds=data.get("expires_in", 5184000))
+    await upsert_token(token.platform, new_token, new_expires)
+    return new_token
+
+
+async def _auto_refresh_instagram(token) -> str:
+    """Auto-refresh Instagram long-lived token via ig_refresh_token grant."""
+    import httpx
+
+    async with httpx.AsyncClient(timeout=15) as client:
+        r = await client.get(
+            "https://graph.instagram.com/refresh_access_token",
+            params={
+                "grant_type": "ig_refresh_token",
+                "access_token": token.access_token,
+            },
+        )
+        r.raise_for_status()
+        data = r.json()
+    new_token = data["access_token"]
+    new_expires = datetime.now(timezone.utc) + timedelta(seconds=data.get("expires_in", 5184000))
+    await upsert_token(token.platform, new_token, new_expires)
+    return new_token
+
+
+async def _auto_refresh_facebook(token) -> str:
+    """Auto-refresh Facebook long-lived token via fb_exchange_token grant."""
+    from bot.services.social_oauth import refresh_facebook_token
+
+    result = refresh_facebook_token(
+        access_token=token.access_token,
+        client_id=settings.facebook_app_id,
+        client_secret=settings.facebook_app_secret,
+    )
+    expires_at = None
+    if result.get("expires_in"):
+        expires_at = datetime.now(timezone.utc) + timedelta(seconds=int(result["expires_in"]))
+    await upsert_token(token.platform, str(result["access_token"]), expires_at)
+    return str(result["access_token"])
+
+
+async def _auto_refresh_canva(token) -> str:
+    """Auto-refresh Canva token via refresh_token."""
+    from bot.services.social_oauth import refresh_canva_token
+
+    if not token.refresh_token:
+        raise ValueError("no refresh_token for Canva")
+    result = refresh_canva_token(
+        refresh_token=token.refresh_token,
+        client_id=settings.canva_client_id,
+        client_secret=settings.canva_client_secret,
+    )
+    expires_at = None
+    if result.get("expires_in"):
+        expires_at = datetime.now(timezone.utc) + timedelta(seconds=int(result["expires_in"]))
+    await upsert_token(
+        token.platform, str(result["access_token"]), expires_at,
+        refresh_token=str(result.get("refresh_token", "")),
+    )
+    return str(result["access_token"])
+
+
+async def _auto_refresh_youtube(token) -> str:
+    """Auto-refresh YouTube token via refresh_token."""
+    from bot.services.social_oauth import refresh_youtube_token
+
+    if not token.refresh_token:
+        raise ValueError("no refresh_token for YouTube")
+    result = refresh_youtube_token(
+        refresh_token=token.refresh_token,
+        client_id=settings.google_client_id,
+        client_secret=settings.google_client_secret,
+    )
+    expires_at = None
+    if result.get("expires_in"):
+        expires_at = datetime.now(timezone.utc) + timedelta(seconds=int(result["expires_in"]))
+    await upsert_token(
+        token.platform, str(result["access_token"]), expires_at,
+        refresh_token=str(result.get("refresh_token", "")),
+    )
+    return str(result["access_token"])
+
+
+async def _auto_refresh_tiktok(token) -> str:
+    """Auto-refresh TikTok token via refresh_token."""
+    from bot.services.social_oauth import refresh_tiktok_token
+
+    if not token.refresh_token:
+        raise ValueError("no refresh_token for TikTok")
+    result = refresh_tiktok_token(
+        refresh_token=token.refresh_token,
+        client_key=settings.tiktok_client_key,
+        client_secret=settings.tiktok_client_secret,
+    )
+    expires_at = None
+    if result.get("expires_in"):
+        expires_at = datetime.now(timezone.utc) + timedelta(seconds=int(result["expires_in"]))
+    await upsert_token(
+        token.platform, str(result["access_token"]), expires_at,
+        refresh_token=str(result.get("refresh_token", "")),
+    )
+    return str(result["access_token"])
+
+
+_AUTO_REFRESH_MAP = {
+    "threads": _auto_refresh_threads,
+    "instagram": _auto_refresh_instagram,
+    "facebook": _auto_refresh_facebook,
+    "canva": _auto_refresh_canva,
+    "youtube": _auto_refresh_youtube,
+    "tiktok": _auto_refresh_tiktok,
+}
+
+
 async def check_expiring_tokens() -> None:
-    """Check for tokens expiring within 7 days; auto-refresh Threads tokens, notify owner."""
+    """Check for tokens expiring within 7 days; auto-refresh all supported platforms, notify owner."""
     import httpx
 
     expiring = await list_expiring_tokens(days=7)
@@ -156,28 +285,16 @@ async def check_expiring_tokens() -> None:
 
     for token in expiring:
         days_left = (token.expires_at - datetime.now(timezone.utc)).days if token.expires_at else 0
+        refresh_fn = _AUTO_REFRESH_MAP.get(token.platform)
 
-        if token.platform == "threads" and token.access_token:
-            # Auto-refresh long-lived Threads token
+        if refresh_fn and token.access_token:
             try:
-                async with httpx.AsyncClient(timeout=15) as client:
-                    r = await client.get(
-                        "https://graph.threads.net/refresh_access_token",
-                        params={
-                            "grant_type": "th_refresh_token",
-                            "access_token": token.access_token,
-                        },
-                    )
-                    r.raise_for_status()
-                    data = r.json()
-                new_token = data["access_token"]
-                new_expires = datetime.now(timezone.utc) + timedelta(seconds=data.get("expires_in", 5184000))
-                await upsert_token(token.platform, new_token, new_expires)
-                messages.append(f"✅ Threads token refreshed (was expiring in {days_left}d)")
-                logger.info("Threads token refreshed successfully")
+                await refresh_fn(token)
+                messages.append(f"✅ {token.platform} token refreshed (was expiring in {days_left}d)")
+                logger.info("Token refresh: %s refreshed (was expiring in %dd)", token.platform, days_left)
             except Exception as exc:
-                messages.append(f"⚠️ Threads token refresh failed ({days_left}d left): {exc}")
-                logger.error("Threads token refresh failed: %s", exc)
+                messages.append(f"⚠️ {token.platform} token refresh failed ({days_left}d left): {exc}")
+                logger.error("Token refresh failed for %s: %s", token.platform, exc)
         else:
             messages.append(f"⚠️ {token.platform} token expires in {days_left}d — manual refresh needed")
 

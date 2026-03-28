@@ -121,6 +121,39 @@ class OAuthConnectState:
     code_verifier: str = ""
 
 
+def refresh_facebook_token(
+    *,
+    access_token: str,
+    client_id: str,
+    client_secret: str,
+    client: httpx.Client | None = None,
+) -> dict[str, str | int]:
+    """Refresh a Facebook long-lived token (~60 days) by exchanging it for a new one."""
+    def _work(session: httpx.Client) -> dict[str, str | int]:
+        resp = session.get(
+            FACEBOOK_TOKEN_URL,
+            params={
+                "grant_type": "fb_exchange_token",
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "fb_exchange_token": access_token,
+            },
+        )
+        payload = _parse_json_response(resp, "Facebook token refresh")
+        new_access = str(payload.get("access_token", "")).strip()
+        if not new_access:
+            raise OAuthExchangeError("Facebook refresh did not return access_token")
+        return {
+            "access_token": new_access,
+            "expires_in": _coerce_int(payload.get("expires_in")) or 0,
+        }
+
+    if client is not None:
+        return _work(client)
+    with httpx.Client(timeout=30.0) as session:
+        return _work(session)
+
+
 def build_threads_authorize_url(
     *,
     client_id: str,

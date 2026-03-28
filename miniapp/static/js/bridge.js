@@ -225,6 +225,8 @@ export function registerWindowBridge(deps) {
     createFromTrendCard,
     openIntelligenceOpp,
     createFromIntelligence,
+    toggleHealthDetails,
+    setAnalyticsSourceFilter,
     openArchiveDetail,
     openArchiveForm,
     savePublication,
@@ -517,6 +519,8 @@ export function registerWindowBridge(deps) {
   window.createFromTrendCard = createFromTrendCard;
   window.openIntelligenceOpp = openIntelligenceOpp;
   window.createFromIntelligence = createFromIntelligence;
+  window.toggleHealthDetails = toggleHealthDetails;
+  window.setAnalyticsSourceFilter = setAnalyticsSourceFilter;
 
   // Recommendations wizard
   window.openRecommendationsWizard = openRecommendationsWizard;

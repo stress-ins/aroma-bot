@@ -130,6 +130,21 @@ class UsageLog(Base):
     __table_args__ = (UniqueConstraint("telegram_id", "date"),)
 
 
+class DigestCache(Base):
+    """Key-value store for cached digest reports (survives restarts)."""
+
+    __tablename__ = "digest_cache"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    cache_key: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    value_json: Mapped[dict[str, Any]] = mapped_column(
+        MutableDict.as_mutable(JSON), default=dict
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )
+
+
 class AnalyticsEvent(Base):
     __tablename__ = "analytics_events"
     __table_args__ = (
