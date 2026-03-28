@@ -87,7 +87,7 @@ def test_smart_search_surfaces_oils_from_matching_symptoms(page):
     page.locator("#btnTabHandbook").click()
     page.wait_for_timeout(100)
 
-    search_input = page.locator("#smartSearchInput")
+    search_input = page.locator("#refSearchInput")
     search_input.fill("тревож")
     page.wait_for_timeout(600)  # debounce 300ms + render
 
@@ -101,7 +101,7 @@ def test_smart_search_shows_helps_with_badge(page):
     page.locator("#btnTabHandbook").click()
     page.wait_for_timeout(100)
 
-    search_input = page.locator("#smartSearchInput")
+    search_input = page.locator("#refSearchInput")
     search_input.fill("тревож")
     page.wait_for_timeout(600)
 
