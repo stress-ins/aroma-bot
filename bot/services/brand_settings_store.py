@@ -75,8 +75,6 @@ def _build_default_row(team_id: str | None = None) -> BrandSettingsModel:
         forbidden_phrases=list(_DEFAULT_FORBIDDEN_PHRASES),
         base_instructions="",
         target_platforms=list(_DEFAULT_TARGET_PLATFORMS),
-        upload_post_user="",
-        upload_post_api_key="",
         updated_at=datetime.now(timezone.utc),
     )
 

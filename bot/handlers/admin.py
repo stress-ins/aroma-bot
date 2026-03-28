@@ -198,7 +198,7 @@ async def admin_test_image_url_cmd(update: Update, context: ContextTypes.DEFAULT
 
     draft_id = args[0].strip()
     from bot.services.drafts_store import get_draft
-    from bot.services.upload_post_publisher import _resolve_media_paths
+    from bot.services.publisher import _resolve_media_paths
     from bot.services.meta_publisher import _get_public_image_url, _get_carousel_image_urls
     import httpx
 

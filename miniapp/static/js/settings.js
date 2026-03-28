@@ -242,36 +242,6 @@ export function createSettingsModule(deps) {
     }
   }
 
-  async function loadUploadPostPrefs() {
-    try {
-      const data = await fetchJson("/api/preferences/upload-post");
-      const userEl = document.getElementById("uploadPostUser");
-      const statusEl = document.getElementById("uploadPostKeyStatus");
-      if (userEl) userEl.value = data.user || "";
-      if (statusEl) statusEl.innerHTML = data.has_key ? `${uiIcon("approve")} Ключ сохранён` : "Ключ не задан";
-    } catch (_err) { /* silently ignore */ }
-  }
-
-  async function saveUploadPostPrefs() {
-    const apiKey = document.getElementById("uploadPostApiKey")?.value || "";
-    const user = document.getElementById("uploadPostUser")?.value || "";
-    const body = { user };
-    if (apiKey) body.api_key = apiKey;
-    try {
-      const data = await fetchJson("/api/preferences/upload-post", {
-        method: "PUT",
-        body: JSON.stringify(body),
-      });
-      const keyEl = document.getElementById("uploadPostApiKey");
-      if (keyEl) keyEl.value = "";
-      const statusEl = document.getElementById("uploadPostKeyStatus");
-      if (statusEl) statusEl.innerHTML = data.has_key ? `${uiIcon("approve")} Ключ сохранён` : "Ключ не задан";
-      showUiNotice("Upload-Post настройки сохранены", "success");
-    } catch (_err) {
-      showUiNotice("Не удалось сохранить настройки", "error");
-    }
-  }
-
   // NOTE: GET → PUT has a theoretical race if two platforms are saved
   // concurrently, but blur-triggered saves are sequential in practice.
   async function savePlatformTone(platform) {
@@ -1869,8 +1839,6 @@ export function createSettingsModule(deps) {
     addRewrite,
     removeRewrite,
     savePlatformTone,
-    loadUploadPostPrefs,
-    saveUploadPostPrefs,
     saveImageModels,
     loadImageModels,
     renderAccounts,

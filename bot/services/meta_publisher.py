@@ -1,7 +1,6 @@
 """Direct Meta Graph API publisher for Threads and Instagram.
 
 Uses access tokens stored in PlatformTokenModel (via mentions_store.get_token).
-Falls back to upload-post.com if no direct token is stored.
 """
 from __future__ import annotations
 

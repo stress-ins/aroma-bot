@@ -1,4 +1,4 @@
-"""Unified publisher facade — delegates to upload_post_publisher and telegram_publisher.
+"""Unified publisher facade — delegates to meta_publisher, telegram_publisher, tiktok_publisher.
 
 Existing consumers (scheduler, miniapp router) import from here for backward
 compatibility.  New code should import the specific publisher modules directly.
@@ -10,33 +10,90 @@ import logging
 from datetime import datetime
 from typing import Any
 
-from bot.services.upload_post_publisher import (
-    UPLOAD_POST_PLATFORMS,
-    publish_item as _upload_post_publish,
-    check_status,
-    cancel_scheduled,
-    _draft_text,
-    _resolve_media_paths,
-    _get_upload_client,
-)
+import os
+from pathlib import Path
+
 from bot.services.telegram_publisher import (
     publish_item as _telegram_publish,
 )
+from bot.services.carousel_assets import CAROUSEL_ASSETS_DIR
 from bot.services.drafts_store import get_draft, update_draft
 
 logger = logging.getLogger(__name__)
 
-# Re-export for backward compatibility
 __all__ = [
-    "UPLOAD_POST_PLATFORMS",
     "publish",
     "publish_threads_series_slot",
-    "check_status",
-    "cancel_scheduled",
     "_draft_text",
     "_resolve_media_paths",
-    "_get_upload_client",
+    "check_status",
+    "cancel_scheduled",
 ]
+
+
+async def check_status(draft_id: str) -> dict[str, Any]:
+    """Check publishing status for a draft (stub â direct API publishing has no polling)."""
+    return {}
+
+
+async def cancel_scheduled(draft_id: str) -> dict[str, Any]:
+    """Cancel a scheduled publication (stub â direct API publishing does not support cancel)."""
+    await update_draft(draft_id, status="approved", scheduled_at=None)
+    return {"status": "cancelled"}
+
+
+def _sanitize_filename(filename: str) -> str:
+    """Strip directory components and reject path traversal attempts."""
+    filename = os.path.basename(filename)
+    if ".." in filename or "/" in filename or "\\" in filename:
+        raise ValueError(f"Invalid filename: {filename}")
+    return filename
+
+
+def _resolve_media_paths(draft_kind: str, draft_id: str, payload: dict[str, Any]) -> list[Path]:
+    """Resolve absolute file paths for media in a draft."""
+    paths: list[Path] = []
+    if draft_kind == "carousel":
+        slide_images = payload.get("slide_images") or []
+        for item in slide_images:
+            if not item:
+                continue
+            raw_filename = str(item.get("filename", "")).strip()
+            if raw_filename:
+                filename = _sanitize_filename(raw_filename)
+                path = CAROUSEL_ASSETS_DIR / draft_id / filename
+                if path.exists():
+                    paths.append(path)
+    elif draft_kind in ("threads", "instagram"):
+        image_info = payload.get("image")
+        if isinstance(image_info, dict):
+            raw_filename = str(image_info.get("filename", "")).strip()
+            if raw_filename:
+                filename = _sanitize_filename(raw_filename)
+                path = CAROUSEL_ASSETS_DIR / draft_id / filename
+                if path.exists():
+                    paths.append(path)
+    return paths
+
+
+def _draft_text(payload: dict[str, Any], kind: str) -> str:
+    """Extract the main text content from draft payload."""
+    if kind == "carousel":
+        caption = str(payload.get("caption", "") or "").strip()
+        if caption:
+            return caption
+        slides = payload.get("slides") or []
+        return "\n\n".join(str(s) for s in slides if s)
+    for key in ("text", "post", "caption"):
+        value = str(payload.get(key, "") or "").strip()
+        if value:
+            return value
+    parts = []
+    for key in ("hook", "angle", "cta"):
+        value = str(payload.get(key, "") or "").strip()
+        if value:
+            parts.append(value)
+    return "\n\n".join(parts)
 
 
 async def publish_threads_series_slot(draft_id: str, slot: str) -> dict[str, Any]:
@@ -87,7 +144,6 @@ async def publish_threads_series_slot(draft_id: str, slot: str) -> dict[str, Any
 async def _tiktok_publish(draft_id: str) -> dict[str, Any]:
     """Publish a draft to TikTok. Requires video content."""
     from bot.services.tiktok_publisher import publish_to_tiktok
-    from bot.services.meta_publisher import _get_public_image_url
 
     draft = await get_draft(draft_id)
     if not draft:
@@ -130,8 +186,8 @@ async def publish(
 ) -> dict[str, Any]:
     """Publish or schedule a draft to the given platforms.
 
-    Routes to upload_post_publisher (threads/instagram) and
-    telegram_publisher (telegram).
+    Routes to meta_publisher (threads/instagram), telegram_publisher (telegram),
+    and tiktok_publisher (tiktok).
 
     Returns dict of {platform: {status, external_id/error}}.
     """
@@ -200,10 +256,51 @@ async def publish(
                 logger.error("Failed to publish carousel %s to threads: %s", draft_id, exc)
             remaining_platforms = [p for p in remaining_platforms if p != "threads"]
 
-    upload_platforms = [p for p in remaining_platforms if p in UPLOAD_POST_PLATFORMS]
-    if upload_platforms:
-        result = await _upload_post_publish(draft_id, upload_platforms, scheduled_at)
-        results.update(result)
+    # Non-carousel Threads publishing via Meta Graph API
+    if "threads" in remaining_platforms:
+        from bot.services.meta_publisher import publish_to_threads, _get_public_image_url
+        from bot.services.publish_log_store import save_log, update_log_status
+
+        log_id = await save_log(draft_id, "threads", "publish", "pending")
+        try:
+            payload = dict(draft.payload or {}) if draft else {}
+            text = _draft_text(payload, draft.kind if draft else "threads")
+            media_paths = _resolve_media_paths(draft.kind if draft else "threads", draft_id, payload)
+            image_url = _get_public_image_url(payload, draft.kind if draft else "threads", draft_id, media_paths) if media_paths else None
+            result = await publish_to_threads(text, image_url=image_url)
+            ext_id = str(result.get("id", ""))
+            await update_log_status(log_id, "success", external_id=ext_id)
+            results["threads"] = {"status": "success", "external_id": ext_id}
+        except Exception as exc:
+            error_msg = str(exc)[:500]
+            await update_log_status(log_id, "failed", error_message=error_msg)
+            results["threads"] = {"status": "failed", "error": error_msg}
+            logger.error("Failed to publish draft %s to threads: %s", draft_id, exc)
+        remaining_platforms = [p for p in remaining_platforms if p != "threads"]
+
+    # Non-carousel Instagram publishing via Meta Graph API
+    if "instagram" in remaining_platforms:
+        from bot.services.meta_publisher import publish_to_instagram, _get_public_image_url
+        from bot.services.publish_log_store import save_log, update_log_status
+
+        log_id = await save_log(draft_id, "instagram", "publish", "pending")
+        try:
+            payload = dict(draft.payload or {}) if draft else {}
+            text = _draft_text(payload, draft.kind if draft else "instagram")
+            media_paths = _resolve_media_paths(draft.kind if draft else "instagram", draft_id, payload)
+            if not media_paths:
+                raise RuntimeError("Instagram requires media")
+            image_url = _get_public_image_url(payload, draft.kind if draft else "instagram", draft_id, media_paths)
+            result = await publish_to_instagram(text, image_url=image_url)
+            ext_id = str(result.get("id", ""))
+            await update_log_status(log_id, "success", external_id=ext_id)
+            results["instagram"] = {"status": "success", "external_id": ext_id}
+        except Exception as exc:
+            error_msg = str(exc)[:500]
+            await update_log_status(log_id, "failed", error_message=error_msg)
+            results["instagram"] = {"status": "failed", "error": error_msg}
+            logger.error("Failed to publish draft %s to instagram: %s", draft_id, exc)
+        remaining_platforms = [p for p in remaining_platforms if p != "instagram"]
 
     if "telegram" in remaining_platforms and telegram_bot and telegram_chat_id:
         result = await _telegram_publish(draft_id, telegram_bot, telegram_chat_id)

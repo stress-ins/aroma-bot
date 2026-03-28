@@ -157,7 +157,7 @@ async def cb_threads_manager(update: Update, context: ContextTypes.DEFAULT_TYPE)
         draft_id = context.user_data.get("threads_publish_draft_id", "")
         if draft_id:
             from bot.services.publisher import publish
-            status = await query.message.reply_text("📤 Публикую через upload-post...")
+            status = await query.message.reply_text("📤 Публикую через ...")
             try:
                 results = await publish(draft_id, ["threads"])
                 threads_result = results.get("threads", {})

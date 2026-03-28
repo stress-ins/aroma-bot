@@ -13,7 +13,6 @@ from bot.services.publisher import (
     _draft_text,
     _resolve_media_paths,
     publish,
-    UPLOAD_POST_PLATFORMS,
 )
 from bot.services.publish_log_store import save_log, list_logs, update_log_status, list_all_logs
 
@@ -81,7 +80,7 @@ def test_resolve_media_paths_carousel(tmp_path):
         ]
     }
 
-    with patch("bot.services.upload_post_publisher.CAROUSEL_ASSETS_DIR", tmp_path):
+    with patch("bot.services.publisher.CAROUSEL_ASSETS_DIR", tmp_path):
         paths = _resolve_media_paths("carousel", draft_id, payload)
 
     assert len(paths) == 2
@@ -100,22 +99,14 @@ def test_resolve_media_paths_single_image(tmp_path):
     (asset_dir / "cover.png").write_bytes(b"cover")
 
     payload = {"image": {"filename": "cover.png"}}
-    with patch("bot.services.upload_post_publisher.CAROUSEL_ASSETS_DIR", tmp_path):
+    with patch("bot.services.publisher.CAROUSEL_ASSETS_DIR", tmp_path):
         paths = _resolve_media_paths("threads", draft_id, payload)
     assert len(paths) == 1
 
 
 # ---------------------------------------------------------------------------
-# Routing: upload-post vs telegram
+# Routing: Meta Graph API vs telegram
 # ---------------------------------------------------------------------------
-
-@pytest.fixture
-def mock_upload_client():
-    client = MagicMock()
-    client.upload_text.return_value = {"request_id": "req_001"}
-    client.upload_photos.return_value = {"request_id": "req_002"}
-    return client
-
 
 @pytest.fixture
 def mock_draft():
@@ -133,27 +124,22 @@ def mock_draft():
     )
 
 
-async def test_publish_routes_to_upload_post(mock_upload_client, mock_draft):
-    """Threads/instagram platforms should call upload-post SDK."""
+async def test_publish_routes_to_threads(mock_draft):
+    """Threads platform should call Meta Graph API publish_to_threads."""
+    mock_publish_to_threads = AsyncMock(return_value={"id": "threads_123"})
     with (
-        patch("bot.services.upload_post_publisher.get_draft", return_value=mock_draft),
-        patch("bot.services.upload_post_publisher._get_upload_credentials", new_callable=AsyncMock, return_value=("test_key", "test_user")),
-        patch("bot.services.upload_post_publisher._get_upload_client", return_value=mock_upload_client),
-        patch("bot.services.upload_post_publisher._ensure_user"),
-        patch("bot.services.upload_post_publisher.save_log", return_value=1),
-        patch("bot.services.upload_post_publisher.update_log_status"),
-        patch("bot.services.upload_post_publisher.mark_published", new_callable=AsyncMock),
-        patch("bot.services.upload_post_publisher.mark_failed", new_callable=AsyncMock),
         patch("bot.services.publisher.get_draft", return_value=mock_draft),
         patch("bot.services.publisher.update_draft", return_value=mock_draft),
+        patch("bot.services.meta_publisher.publish_to_threads", mock_publish_to_threads),
+        patch("bot.services.publish_log_store.save_log", new_callable=AsyncMock, return_value=1),
+        patch("bot.services.publish_log_store.update_log_status", new_callable=AsyncMock),
     ):
         results = await publish("d001", ["threads"])
 
     assert "threads" in results
     assert results["threads"]["status"] == "success"
-    mock_upload_client.upload_text.assert_called_once()
-    call_kwargs = mock_upload_client.upload_text.call_args
-    assert call_kwargs.kwargs.get("platforms") or call_kwargs[1].get("platforms") or "threads" in str(call_kwargs)
+    assert results["threads"]["external_id"] == "threads_123"
+    mock_publish_to_threads.assert_called_once()
 
 
 async def test_publish_routes_to_telegram(mock_draft):
@@ -178,20 +164,16 @@ async def test_publish_routes_to_telegram(mock_draft):
     mock_bot.send_message.assert_called_once()
 
 
-async def test_publish_routes_mixed(mock_upload_client, mock_draft):
-    """Both upload-post and telegram targets in one call."""
+async def test_publish_routes_mixed(mock_draft):
+    """Both Meta Graph API and telegram targets in one call."""
     mock_bot = AsyncMock()
     mock_bot.send_message.return_value = MagicMock(message_id=99)
+    mock_publish_to_threads = AsyncMock(return_value={"id": "threads_456"})
 
     with (
-        patch("bot.services.upload_post_publisher.get_draft", return_value=mock_draft),
-        patch("bot.services.upload_post_publisher._get_upload_credentials", new_callable=AsyncMock, return_value=("test_key", "test_user")),
-        patch("bot.services.upload_post_publisher._get_upload_client", return_value=mock_upload_client),
-        patch("bot.services.upload_post_publisher._ensure_user"),
-        patch("bot.services.upload_post_publisher.save_log", return_value=1),
-        patch("bot.services.upload_post_publisher.update_log_status"),
-        patch("bot.services.upload_post_publisher.mark_published", new_callable=AsyncMock),
-        patch("bot.services.upload_post_publisher.mark_failed", new_callable=AsyncMock),
+        patch("bot.services.meta_publisher.publish_to_threads", mock_publish_to_threads),
+        patch("bot.services.publish_log_store.save_log", new_callable=AsyncMock, return_value=1),
+        patch("bot.services.publish_log_store.update_log_status", new_callable=AsyncMock),
         patch("bot.services.telegram_publisher.get_draft", return_value=mock_draft),
         patch("bot.services.telegram_publisher.save_log", return_value=1),
         patch("bot.services.telegram_publisher.update_log_status"),
@@ -207,11 +189,11 @@ async def test_publish_routes_mixed(mock_upload_client, mock_draft):
 
     assert "threads" in results
     assert "telegram" in results
-    mock_upload_client.upload_text.assert_called_once()
+    mock_publish_to_threads.assert_called_once()
     mock_bot.send_message.assert_called_once()
 
 
-async def test_publish_with_photos(mock_upload_client, tmp_path):
+async def test_publish_with_photos(tmp_path):
     """Carousel draft with images should publish via Meta Graph API."""
     from bot.services.drafts_store import DraftRecord
 
@@ -252,35 +234,35 @@ async def test_publish_with_photos(mock_upload_client, tmp_path):
     mock_publish_to_instagram.assert_called_once()
 
 
-async def test_publish_with_schedule(mock_upload_client, mock_draft):
-    """Scheduled publish should pass scheduled_date to SDK."""
+async def test_publish_with_schedule(mock_draft):
+    """Scheduled publish should mark draft as scheduled."""
     scheduled = datetime(2026, 3, 15, 10, 0, tzinfo=timezone.utc)
+    mock_publish_to_threads = AsyncMock(return_value={"id": "threads_789"})
 
     with (
-        patch("bot.services.upload_post_publisher.get_draft", return_value=mock_draft),
-        patch("bot.services.upload_post_publisher._get_upload_credentials", new_callable=AsyncMock, return_value=("key", "user")),
-        patch("bot.services.upload_post_publisher._get_upload_client", return_value=mock_upload_client),
-        patch("bot.services.upload_post_publisher._ensure_user"),
-        patch("bot.services.upload_post_publisher.save_log", return_value=1),
-        patch("bot.services.upload_post_publisher.update_log_status"),
-        patch("bot.services.upload_post_publisher.mark_published", new_callable=AsyncMock),
-        patch("bot.services.upload_post_publisher.mark_failed", new_callable=AsyncMock),
+        patch("bot.services.meta_publisher.publish_to_threads", mock_publish_to_threads),
+        patch("bot.services.publish_log_store.save_log", new_callable=AsyncMock, return_value=1),
+        patch("bot.services.publish_log_store.update_log_status", new_callable=AsyncMock),
         patch("bot.services.publisher.get_draft", return_value=mock_draft),
         patch("bot.services.publisher.update_draft", return_value=mock_draft),
-        patch("config.settings") as mock_settings,
     ):
-        mock_settings.timezone = "Europe/Moscow"
         results = await publish("d001", ["threads"], scheduled_at=scheduled)
 
-    call_kwargs = mock_upload_client.upload_text.call_args
-    assert "scheduled_date" in (call_kwargs.kwargs or {}) or "scheduled_date" in str(call_kwargs)
+    assert "threads" in results
+    assert results["threads"]["status"] == "success"
 
 
-async def test_publish_draft_not_found():
-    """Should raise ValueError for non-existent draft."""
-    with patch("bot.services.upload_post_publisher.get_draft", return_value=None):
-        with pytest.raises(ValueError, match="not found"):
-            await publish("nonexistent", ["threads"])
+async def test_publish_threads_no_draft():
+    """Publishing to threads with non-existent draft should not crash."""
+    with (
+        patch("bot.services.publisher.get_draft", return_value=None),
+        patch("bot.services.publisher.update_draft", return_value=None),
+        patch("bot.services.publish_log_store.save_log", new_callable=AsyncMock, return_value=1),
+        patch("bot.services.publish_log_store.update_log_status", new_callable=AsyncMock),
+        patch("bot.services.meta_publisher.publish_to_threads", side_effect=RuntimeError("no draft")),
+    ):
+        results = await publish("nonexistent", ["threads"])
+    assert results["threads"]["status"] == "failed"
 
 
 # ---------------------------------------------------------------------------
@@ -332,11 +314,3 @@ async def test_list_all_logs(in_memory_db):
     assert len(all_logs) == 2
 
 
-# ---------------------------------------------------------------------------
-# Platform constants
-# ---------------------------------------------------------------------------
-
-def test_upload_post_platforms():
-    assert "threads" in UPLOAD_POST_PLATFORMS
-    assert "instagram" in UPLOAD_POST_PLATFORMS
-    assert "telegram" not in UPLOAD_POST_PLATFORMS

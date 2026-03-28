@@ -55,10 +55,6 @@ class PolicyUpdatePayload(BaseModel):
     per_platform_tone: dict[str, str] | None = None
 
 
-class UploadPostPayload(BaseModel):
-    api_key: str | None = None
-    user: str | None = None
-
 
 class ImageModelPayload(BaseModel):
     image_model_carousel: str | None = None
@@ -194,29 +190,8 @@ async def remove_rewrite(payload: RewriteRemovePayload, _: None = Depends(_requi
     return cfg.to_dict()
 
 
-@router.get("/api/preferences/upload-post")
-async def get_upload_post_prefs(_: None = Depends(_require_auth)):
-    bs = await get_brand_settings()
-    return {
-        "user": bs.upload_post_user or "",
-        "has_key": bool(bs.upload_post_api_key),
-    }
 
 
-@router.put("/api/preferences/upload-post")
-async def update_upload_post_prefs(payload: UploadPostPayload, _: None = Depends(_require_auth)):
-    updates: dict = {}
-    if payload.user is not None:
-        updates["upload_post_user"] = payload.user.strip()
-    if payload.api_key is not None:
-        updates["upload_post_api_key"] = payload.api_key.strip()
-    if updates:
-        await update_brand_settings(**updates)
-    bs = await get_brand_settings()
-    return {
-        "user": bs.upload_post_user or "",
-        "has_key": bool(bs.upload_post_api_key),
-    }
 
 
 ALLOWED_CAROUSEL_MODELS = {"gpt-image/1.5-text-to-image", "google/nano-banana"}
