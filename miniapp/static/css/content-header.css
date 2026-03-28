@@ -157,7 +157,8 @@ body.is-mobile-layout.is-detail-view .topbar-nav-row,
 body.is-mobile-layout.is-detail-view .content-sub-tabs {
   display: none;
 }
-body.is-mobile-layout.is-detail-view .panel-header {
+body.is-mobile-layout.is-detail-view .panel-header,
+body.is-mobile-layout.is-detail-view #handbookStickyBar {
   display: none !important;
 }
 

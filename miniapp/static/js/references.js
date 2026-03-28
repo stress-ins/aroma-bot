@@ -769,55 +769,63 @@ export function createReferencesModule(deps) {
       ? { eyebrow: meta.title, title: "Ничего не найдено", body: "Попробуйте другой запрос или сбросьте фильтр." }
       : meta.empty);
 
-    // Everything inside draftList — single scroll container.
-    // Shell: search bar + action-group + daily oil banner + filters + card list.
+    // ── Sticky bar: search + action-group live OUTSIDE draftList scroll ──
+    const stickyBar = document.getElementById("handbookStickyBar");
+    if (stickyBar) {
+      stickyBar.hidden = false;
+      if (!stickyBar.querySelector("#refSearchInput")) {
+        stickyBar.innerHTML = `
+          <div class="smart-search-bar smart-search-bar--inline" id="refSearchBar">
+            <span class="smart-search-icon"><i class="ph ph-magnifying-glass" style="font-size:15px"></i></span>
+            <input type="text" class="smart-search-input" id="refSearchInput" placeholder="${escapeHtml(searchHint)}">
+            <span class="smart-search-count" id="refSearchCount">${escapeHtml(countText)}</span>
+            <button class="smart-search-clear" id="refSearchClear" style="display:none">✕</button>
+          </div>
+          <div class="action-group">
+            <div class="action-item" data-action="openBlendConstructor">
+              <div class="action-icon ai-purple"><i class="ph ph-flask" style="font-size:16px"></i></div>
+              <div class="action-text"><div class="action-title">Создать смесь под задачу</div><div class="action-sub">AI подберёт компоненты</div></div>
+              <span class="action-arrow">›</span>
+            </div>
+            <div class="action-item" data-action="openRecommendationsWizard">
+              <div class="action-icon ai-teal"><i class="ph ph-magnifying-glass" style="font-size:16px"></i></div>
+              <div class="action-text"><div class="action-title">Подобрать масло</div><div class="action-sub">По симптому или цели</div></div>
+              <span class="action-arrow">›</span>
+            </div>
+            <div class="action-item" data-action="openSavedBlends">
+              <div class="action-icon ai-pink"><i class="ph ph-heart" style="font-size:16px"></i></div>
+              <div class="action-text"><div class="action-title">Сохранённое</div><div class="action-sub">Избранные карточки</div></div>
+              <span class="action-arrow">›</span>
+            </div>
+          </div>
+        `;
+        const _si = document.getElementById("refSearchInput");
+        const _sc = document.getElementById("refSearchClear");
+        if (_si) {
+          _si.addEventListener("input", (e) => {
+            state.referenceSearch = e.target.value;
+            handleSmartSearch(e.target.value);
+            if (_sc) _sc.style.display = e.target.value ? "" : "none";
+          });
+          _si.addEventListener("keydown", (e) => { if (e.key === "Enter") runSmartSearch(e.target.value); });
+        }
+        if (_sc) _sc.addEventListener("click", () => { _si.value = ""; state.referenceSearch = ""; _sc.style.display = "none"; clearSmartSearch(); });
+      }
+    }
+
+    // ── Scrollable list: daily oil + filters + cards ──
     let listContainer = document.getElementById("referenceListContainer");
     const shellAlive = listContainer && elements.draftList.contains(listContainer);
     if (!shellAlive) {
       elements.draftList.innerHTML = `
-        <div class="smart-search-bar smart-search-bar--inline" id="refSearchBar" style="margin-bottom:8px">
-          <span class="smart-search-icon"><i class="ph ph-magnifying-glass" style="font-size:15px"></i></span>
-          <input type="text" class="smart-search-input" id="refSearchInput" placeholder="${escapeHtml(searchHint)}">
-          <span class="smart-search-count" id="refSearchCount">${escapeHtml(countText)}</span>
-          <button class="smart-search-clear" id="refSearchClear" style="display:none">✕</button>
-        </div>
-        <div class="action-group">
-          <div class="action-item" data-action="openBlendConstructor">
-            <div class="action-icon ai-purple"><i class="ph ph-flask" style="font-size:16px"></i></div>
-            <div class="action-text"><div class="action-title">Создать смесь под задачу</div><div class="action-sub">AI подберёт компоненты</div></div>
-            <span class="action-arrow">›</span>
-          </div>
-          <div class="action-item" data-action="openRecommendationsWizard">
-            <div class="action-icon ai-teal"><i class="ph ph-magnifying-glass" style="font-size:16px"></i></div>
-            <div class="action-text"><div class="action-title">Подобрать масло</div><div class="action-sub">По симптому или цели</div></div>
-            <span class="action-arrow">›</span>
-          </div>
-          <div class="action-item" data-action="openSavedBlends">
-            <div class="action-icon ai-pink"><i class="ph ph-heart" style="font-size:16px"></i></div>
-            <div class="action-text"><div class="action-title">Сохранённое</div><div class="action-sub">Избранные карточки</div></div>
-            <span class="action-arrow">›</span>
-          </div>
-        </div>
         <div id="dailyOilBanner"></div>
         <div id="referenceFilterChips"></div>
         <div id="referenceListContainer" class="plans-list"></div>
       `;
       listContainer = document.getElementById("referenceListContainer");
       if (tabId === "aromas") _loadDailyOilBanner();
-      // Bind search handlers
-      const _si = document.getElementById("refSearchInput");
-      const _sc = document.getElementById("refSearchClear");
-      if (_si) {
-        _si.addEventListener("input", (e) => {
-          state.referenceSearch = e.target.value;
-          handleSmartSearch(e.target.value);
-          if (_sc) _sc.style.display = e.target.value ? "" : "none";
-        });
-        _si.addEventListener("keydown", (e) => { if (e.key === "Enter") runSmartSearch(e.target.value); });
-      }
-      if (_sc) _sc.addEventListener("click", () => { _si.value = ""; state.referenceSearch = ""; _sc.style.display = "none"; clearSmartSearch(); });
     }
-    // Update search state on existing shell
+    // Update search state
     const refSearchInput = document.getElementById("refSearchInput");
     const refSearchCount = document.getElementById("refSearchCount");
     const refSearchClear = document.getElementById("refSearchClear");

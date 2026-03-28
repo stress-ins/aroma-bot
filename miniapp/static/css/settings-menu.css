@@ -647,6 +647,15 @@ details[open] > .trend-suggestions-toggle::before { transform: rotate(90deg); }
    SECTION: 5-screen redesign — База, Аромат, Черновики, Упоминания, Карусель
    ══════════════════════════════════════════════════════════════════════════ */
 
+/* ── База: sticky search + action-group bar ─────────────────────────── */
+#handbookStickyBar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: 0 var(--space-3) var(--space-2);
+  flex-shrink: 0;
+}
+
 /* ── База: action-group ──────────────────────────────────────────────── */
 .action-group { background: var(--surface); border-radius: 16px; border: 0.5px solid var(--border); overflow: hidden; margin-bottom: 8px; }
 .action-item { padding: 13px 16px; display: flex; align-items: center; gap: 10px; border-bottom: 0.5px solid var(--border); cursor: pointer; transition: background var(--duration-fast) ease; }
