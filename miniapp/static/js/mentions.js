@@ -13,6 +13,8 @@ export function createMentionsModule(deps) {
     enterDetailView,
     syncMobileNavigation,
     renderBackButton,
+    renderGuidedState,
+    renderPanelError,
   } = deps;
 
   // ── State ──────────────────────────────────────────────────────────────────
@@ -55,8 +57,10 @@ export function createMentionsModule(deps) {
         `/api/mentions?platform=${platform}&status=${status}&limit=50`
       );
       state.mentions = data.items || [];
+      state._mentionsError = false;
     } catch (e) {
       state.mentions = [];
+      state._mentionsError = true;
     }
     renderMentions();
   }
@@ -107,15 +111,19 @@ export function createMentionsModule(deps) {
         </div>
       </div>`;
 
+    if (state._mentionsError) {
+      container.innerHTML = filterBar + renderPanelError("Ошибка загрузки", "Не удалось загрузить упоминания");
+      return;
+    }
+
     if (!state.mentions.length) {
-      container.innerHTML = filterBar + `<div class="empty-state">
-        <div style="text-align:center;padding:32px 16px">
-          <i class="ph ph-chat-circle" style="font-size:48px;color:var(--muted);margin:0 auto 12px;display:block"></i>
-          <p style="font-size:16px;font-weight:600;margin-bottom:8px">Упоминаний пока нет</p>
-          <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Здесь появятся упоминания вашего бренда в социальных сетях. Убедитесь что аккаунты для мониторинга настроены.</p>
-          <button class="secondary-button" type="button" data-action="openSettingsSection" data-args='["monitored"]'>Настроить мониторинг</button>
-        </div>
-      </div>`;
+      container.innerHTML = filterBar + renderGuidedState({
+        eyebrow: "Упоминания",
+        title: "Упоминаний пока нет",
+        body: "Здесь появятся упоминания вашего бренда в социальных сетях. Убедитесь что аккаунты для мониторинга настроены.",
+        actionLabel: "Настроить мониторинг",
+        action: "openSettingsSection",
+      });
       return;
     }
 
@@ -135,7 +143,7 @@ export function createMentionsModule(deps) {
           <span class="${statusClass}">${checkIcon}${statusLabel(m.status)}</span>
         </div>
         <div class="mention-author">@${escapeHtml(m.author_username || m.author_name || "аноним")}</div>
-        <div class="mention-preview">${escapeHtml(m.content.substring(0, 120))}${m.content.length > 120 ? "…" : ""}</div>
+        <div class="mention-preview">${escapeHtml(m.content.substring(0, 120))}${m.content.length > 120 ? "..." : ""}</div>
       </div>`;
     }).join("");
 
@@ -242,7 +250,7 @@ export function createMentionsModule(deps) {
 
   async function generateReplies(mentionId, btn) {
     try {
-      await withButtonFeedback(btn, "Генерирую…", async () => {
+      await withButtonFeedback(btn, "Генерирую...", async () => {
         const data = await fetchJson(`/api/mentions/${mentionId}/generate-replies`, { method: "POST" });
         const m = state.mentions.find(x => x.mention_id === mentionId);
         if (m) m.replies = data.replies || [];
@@ -259,7 +267,7 @@ export function createMentionsModule(deps) {
 
   async function publishReply(mentionId, replyId, btn) {
     try {
-      await withButtonFeedback(btn, "Публикую…", async () => {
+      await withButtonFeedback(btn, "Публикую...", async () => {
         const data = await fetchJson(`/api/mentions/${mentionId}/publish-reply`, {
           method: "POST",
           body: JSON.stringify({ reply_id: replyId }),
@@ -285,7 +293,7 @@ export function createMentionsModule(deps) {
 
   async function ignoreMentionAction(mentionId, btn) {
     try {
-      await withButtonFeedback(btn, "…", async () => {
+      await withButtonFeedback(btn, "...", async () => {
         await fetchJson(`/api/mentions/${mentionId}/ignore`, { method: "PATCH" });
         const m = state.mentions.find(x => x.mention_id === mentionId);
         if (m) m.status = "ignored";

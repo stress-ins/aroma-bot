@@ -13,6 +13,8 @@ export function createInboxModule(deps) {
     enterDetailView,
     syncMobileNavigation,
     renderBackButton,
+    renderGuidedState,
+    renderPanelError,
   } = deps;
 
   // ── State ──────────────────────────────────────────────────────────────────
@@ -52,8 +54,10 @@ export function createInboxModule(deps) {
     try {
       const data = await fetchJson(`/api/inbox?status=${status}&limit=50`);
       state.inboxConversations = data.items || [];
+      state._inboxError = false;
     } catch (e) {
       state.inboxConversations = [];
+      state._inboxError = true;
     }
     renderInbox();
   }
@@ -99,15 +103,19 @@ export function createInboxModule(deps) {
         </div>
       </div>`;
 
+    if (state._inboxError) {
+      container.innerHTML = filterBar + renderPanelError("Ошибка загрузки", "Не удалось загрузить сообщения");
+      return;
+    }
+
     if (!state.inboxConversations.length) {
-      container.innerHTML = filterBar + `<div class="empty-state">
-        <div style="text-align:center;padding:32px 16px">
-          <i class="ph ph-envelope-simple" style="font-size:48px;color:var(--muted);margin:0 auto 12px;display:block"></i>
-          <p style="font-size:16px;font-weight:600;margin-bottom:8px">Входящих пока нет</p>
-          <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Здесь появятся DM-сообщения из Instagram. Убедитесь что Instagram-аккаунт подключён.</p>
-          <button class="secondary-button" type="button" data-action="openSettingsSection" data-args='["accounts"]'>Настроить аккаунт</button>
-        </div>
-      </div>`;
+      container.innerHTML = filterBar + renderGuidedState({
+        eyebrow: "Входящие",
+        title: "Входящих пока нет",
+        body: "Здесь появятся DM-сообщения из Instagram. Убедитесь что Instagram-аккаунт подключён.",
+        actionLabel: "Настроить аккаунт",
+        action: "openSettingsSection",
+      });
       return;
     }
 

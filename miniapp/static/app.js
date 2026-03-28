@@ -113,7 +113,7 @@ let loadInbox, loadReels, loadKeywords, loadSettings, loadTrends;
 let renderCreate, renderCreateTool;
 let renderDraftList, openDraft, openReels, renderDraftDetail, renderEmptyDetail;
 let renderInbox, renderStatus, renderPlans, renderReels, renderReelsDetail, renderKeywords;
-let addRewrite, removeRewrite, savePlatformTone, saveUploadPostPrefs, saveImageModels, setTheme, connectPlatform, switchAccountsTeam;
+let addRewrite, removeRewrite, savePlatformTone, saveImageModels, setTheme, connectPlatform, switchAccountsTeam;
 let addTrackedHashtag, removeTrackedHashtag;
 let addMonitoredAccountFromSettings, removeMonitoredAccountFromSettings;
 let addKeywordItem, removeKeywordItem, openKeywordTopic;
@@ -1559,6 +1559,7 @@ const {
   renderGuidedState,
   setEmptyState,
   renderDetailLoader,
+  renderPanelError,
   detailFactMarkup,
   fetchJson,
   withButtonFeedback,
@@ -1591,6 +1592,8 @@ const mentionsModule = createMentionsModule({
   enterDetailView,
   syncMobileNavigation,
   renderBackButton,
+  renderGuidedState,
+  renderPanelError,
 });
 
 window.mentionsModule = mentionsModule;
@@ -1607,6 +1610,8 @@ const inboxModule = createInboxModule({
   enterDetailView,
   syncMobileNavigation,
   renderBackButton,
+  renderGuidedState,
+  renderPanelError,
 });
 
 window.inboxModule = inboxModule;
@@ -1622,6 +1627,8 @@ const archiveModule = createArchiveModule({
   renderBackButton,
   renderMarkdown,
   renderGuidedState,
+  renderDetailLoader,
+  renderPanelError,
   fetchJson,
   withButtonFeedback,
   confirmAction,
@@ -1647,6 +1654,7 @@ const calendarModule = createCalendarModule({
   syncMobileNavigation,
   openDraft: (...a) => openDraft(...a),
   setTab,
+  renderPanelLoader,
 });
 
 window.calendarModule = calendarModule;
@@ -1896,6 +1904,7 @@ const {
   syncMobileNavigation,
   renderBackButton,
   renderDetailLoader,
+  renderPanelError,
   showUiNotice,
   tagMarkup,
   openReference,
@@ -2075,7 +2084,6 @@ const { renderBrand: renderBrandImpl, loadForbiddenPhrases: loadForbiddenPhrases
   goBackToSettings,
   renderStatus, renderKeywords,
   addForbiddenPhrase, removeForbiddenPhrase,
-  addRewrite, removeRewrite, savePlatformTone, saveUploadPostPrefs,
   saveImageModels,
   setTheme,
   connectPlatform, switchAccountsTeam,
@@ -2596,7 +2604,6 @@ registerWindowBridge({
   addRewrite,
   removeRewrite,
   savePlatformTone,
-  saveUploadPostPrefs,
   saveImageModels,
   setTheme,
   connectPlatform,

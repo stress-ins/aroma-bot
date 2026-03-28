@@ -15,6 +15,7 @@ export function createCalendarModule(deps) {
     syncMobileNavigation,
     openDraft,
     setTab,
+    renderPanelLoader,
   } = deps;
 
   // ── State ────────────────────────────────────────────────────────────────
@@ -300,7 +301,7 @@ export function createCalendarModule(deps) {
     `;
 
     if (state.calendarLoading) {
-      html += `<div class="cal-loading"><div class="loading-spinner"></div></div>`;
+      html += `<div class="cal-loading">${renderPanelLoader("Загружаю календарь")}</div>`;
       container.innerHTML = html;
       _attachCalendarEvents(container);
       return;
