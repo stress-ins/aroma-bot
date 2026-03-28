@@ -1559,6 +1559,7 @@ const {
   renderGuidedState,
   setEmptyState,
   renderDetailLoader,
+  renderPanelError,
   detailFactMarkup,
   fetchJson,
   withButtonFeedback,
@@ -1591,6 +1592,8 @@ const mentionsModule = createMentionsModule({
   enterDetailView,
   syncMobileNavigation,
   renderBackButton,
+  renderGuidedState,
+  renderPanelError,
 });
 
 window.mentionsModule = mentionsModule;
@@ -1607,6 +1610,8 @@ const inboxModule = createInboxModule({
   enterDetailView,
   syncMobileNavigation,
   renderBackButton,
+  renderGuidedState,
+  renderPanelError,
 });
 
 window.inboxModule = inboxModule;
@@ -1622,6 +1627,8 @@ const archiveModule = createArchiveModule({
   renderBackButton,
   renderMarkdown,
   renderGuidedState,
+  renderDetailLoader,
+  renderPanelError,
   fetchJson,
   withButtonFeedback,
   confirmAction,
@@ -1896,6 +1903,7 @@ const {
   syncMobileNavigation,
   renderBackButton,
   renderDetailLoader,
+  renderPanelError,
   showUiNotice,
   tagMarkup,
   openReference,

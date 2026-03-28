@@ -22,6 +22,7 @@ export function createPlansModule(deps) {
     draftSummaryFromDraft,
     setTab,
     enterDetailView,
+    renderPanelError,
     syncMobileNavigation,
     loadPlans: reloadPlans,
     loadDrafts,
@@ -507,7 +508,7 @@ export function createPlansModule(deps) {
       renderPlanDetailView(draft, platform, slot);
       enterDetailView();
     } catch (_e) {
-      elements.draftDetail.innerHTML = `${renderBackButton()}<p style="padding:16px;color:var(--bad)">Не удалось загрузить публикацию</p>`;
+      elements.draftDetail.innerHTML = renderPanelError("Не удалось загрузить публикацию", "Попробуйте открыть заново или обновите страницу.");
     }
   }
 

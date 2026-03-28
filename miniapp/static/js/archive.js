@@ -8,6 +8,8 @@ export function createArchiveModule(deps) {
     renderBackButton,
     renderMarkdown,
     renderGuidedState,
+    renderDetailLoader,
+    renderPanelError,
     fetchJson,
     withButtonFeedback,
     confirmAction,
@@ -299,7 +301,7 @@ export function createArchiveModule(deps) {
   // ── Detail ──────────────────────────────────────────────────────────────────
 
   async function openArchiveDetail(pubId) {
-    elements.draftDetail.innerHTML = `${renderBackButton()}<p style="padding:16px">Загрузка...</p>`;
+    elements.draftDetail.innerHTML = `<div class="detail-grid">${renderDetailLoader("Загружаю публикацию")}</div>`;
     enterDetailView();
 
     try {
@@ -307,7 +309,7 @@ export function createArchiveModule(deps) {
       renderArchiveDetail(pub);
       enterDetailView();
     } catch (_e) {
-      elements.draftDetail.innerHTML = `${renderBackButton()}<p style="padding:16px;color:var(--bad)">Не удалось загрузить</p>`;
+      elements.draftDetail.innerHTML = renderPanelError("Не удалось загрузить", "Публикация недоступна. Попробуйте ещё раз.");
     }
   }
 

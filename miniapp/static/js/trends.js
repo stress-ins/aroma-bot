@@ -1620,7 +1620,11 @@ export function createTrendsModule(deps) {
     }
 
     if (sections.length === 0) {
-      return `<div class="detail-empty"><p>Выберите тренд слева для деталей</p></div>`;
+      return `<div class="detail-empty">${renderGuidedState({
+        eyebrow: "Аналитика",
+        title: "Выберите тренд слева",
+        body: "Нажмите на тренд в списке, чтобы увидеть подробности.",
+      })}</div>`;
     }
 
     return `<div class="trends-detail-content">${sections.join("")}</div>`;
@@ -1776,7 +1780,11 @@ export function createTrendsModule(deps) {
     }
 
     if (sections.length === 0) {
-      return `<div class="detail-empty"><p>Выберите тренд слева для деталей</p></div>`;
+      return `<div class="detail-empty">${renderGuidedState({
+        eyebrow: "Разведка",
+        title: "Выберите тренд слева",
+        body: "Нажмите на тренд в списке, чтобы увидеть подробности.",
+      })}</div>`;
     }
 
     return `<div class="trends-detail-content">${sections.join("")}</div>`;
@@ -1917,8 +1925,13 @@ export function createTrendsModule(deps) {
 
   function _renderCardsInner() {
     if (!trendCards || !trendCards.length) {
-      return `<div class="detail-empty"><p>Нет AI-карточек. Нажмите «Сгенерировать» для создания.</p>
-        <button class="primary-button" type="button" data-action="generateTrendCards">${uiIcon("sparkles", 14)}<span>Сгенерировать карточки</span></button></div>`;
+      return `<div class="detail-empty">${renderGuidedState({
+        eyebrow: "AI-карточки",
+        title: "Нет AI-карточек",
+        body: "Нажмите «Сгенерировать» для создания карточек на основе трендов.",
+        actionLabel: "Сгенерировать карточки",
+        action: "generateTrendCards",
+      })}</div>`;
     }
 
     const total = trendCards.length;

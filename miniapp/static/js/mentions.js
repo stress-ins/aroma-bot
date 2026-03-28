@@ -13,6 +13,8 @@ export function createMentionsModule(deps) {
     enterDetailView,
     syncMobileNavigation,
     renderBackButton,
+    renderGuidedState,
+    renderPanelError,
   } = deps;
 
   // ── State ──────────────────────────────────────────────────────────────────
@@ -57,6 +59,11 @@ export function createMentionsModule(deps) {
       state.mentions = data.items || [];
     } catch (e) {
       state.mentions = [];
+      const container = elements.plansContainer || document.getElementById("plans-container");
+      if (container) {
+        container.innerHTML = renderPanelError("Не удалось загрузить упоминания", "Проверьте соединение и попробуйте ещё раз.");
+      }
+      return;
     }
     renderMentions();
   }
@@ -108,14 +115,13 @@ export function createMentionsModule(deps) {
       </div>`;
 
     if (!state.mentions.length) {
-      container.innerHTML = filterBar + `<div class="empty-state">
-        <div style="text-align:center;padding:32px 16px">
-          <i class="ph ph-chat-circle" style="font-size:48px;color:var(--muted);margin:0 auto 12px;display:block"></i>
-          <p style="font-size:16px;font-weight:600;margin-bottom:8px">Упоминаний пока нет</p>
-          <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Здесь появятся упоминания вашего бренда в социальных сетях. Убедитесь что аккаунты для мониторинга настроены.</p>
-          <button class="secondary-button" type="button" data-action="openSettingsSection" data-args='["monitored"]'>Настроить мониторинг</button>
-        </div>
-      </div>`;
+      container.innerHTML = filterBar + renderGuidedState({
+        eyebrow: "Упоминания",
+        title: "Упоминаний пока нет",
+        body: "Здесь появятся упоминания вашего бренда в социальных сетях. Убедитесь что аккаунты для мониторинга настроены.",
+        actionLabel: "Настроить мониторинг",
+        action: "openSettingsSection",
+      });
       return;
     }
 
