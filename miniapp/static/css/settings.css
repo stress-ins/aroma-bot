@@ -5,7 +5,7 @@
 .settings-section input[type="text"],
 .settings-section input[type="password"],
 .settings-section textarea {
-  background: var(--card-bg);
+  background: var(--card-bg, var(--surface));
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 10px 12px;
@@ -22,7 +22,7 @@
 
 /* draft-textarea used for inline inputs in settings */
 .draft-textarea {
-  background: var(--card-bg);
+  background: var(--card-bg, var(--surface));
   border: 1px solid var(--border);
   border-radius: 10px;
   color: inherit;

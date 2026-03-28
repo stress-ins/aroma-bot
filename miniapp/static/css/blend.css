@@ -163,6 +163,18 @@
   color: #1c1510;
 }
 
+/* Dark theme override for concept cards */
+body[data-theme="terracotta"] .concept-card,
+body[data-theme="racing-green"] .concept-card,
+body[data-theme="champagne"] .concept-card,
+body[data-theme="violet"] .concept-card,
+body[data-theme="teal"] .concept-card,
+body[data-theme="raspberry"] .concept-card {
+  background: linear-gradient(180deg, rgba(var(--brand-rgb), 0.10), rgba(var(--sage-rgb, 93, 110, 58), 0.06));
+  color: var(--text);
+  border-color: rgba(var(--brand-rgb), 0.22);
+}
+
 .concept-card::before {
   background: linear-gradient(90deg, rgba(var(--brand-rgb), 0.75), rgba(93, 110, 58, 0.72));
 }
@@ -711,6 +723,16 @@ body.tg-theme-dark .concept-card {
   border-radius: var(--radius-md);
   padding: 12px 14px;
   background: rgba(255, 255, 255, 0.72);
+}
+
+/* Dark theme override for reels overview cards */
+body[data-theme="terracotta"] .reels-overview-card,
+body[data-theme="racing-green"] .reels-overview-card,
+body[data-theme="champagne"] .reels-overview-card,
+body[data-theme="violet"] .reels-overview-card,
+body[data-theme="teal"] .reels-overview-card,
+body[data-theme="raspberry"] .reels-overview-card {
+  background: rgba(var(--surface-rgb), 0.72);
 }
 
 .reels-overview-card strong {

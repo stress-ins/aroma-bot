@@ -217,7 +217,7 @@
 
 .cal-item--ghost {
   position: fixed;
-  z-index: 9999;
+  z-index: var(--z-overlay, 1000);
   pointer-events: none;
   opacity: 0.85;
   transform: scale(1.05);

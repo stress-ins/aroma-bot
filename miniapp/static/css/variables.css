@@ -36,24 +36,36 @@
   --font-ui:      -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   --font-serif:   "Georgia", "Times New Roman", serif;
   --shadow-sm:    0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-xs:    0 1px 3px rgba(0,0,0,0.07);
+  --shadow-md:    0 4px 16px rgba(0,0,0,0.12);
+  --shadow-lg:    0 10px 24px rgba(0,0,0,0.10);
+  --shadow-xl:    0 12px 40px rgba(0,0,0,0.20);
   --text-on-brand: #ffffff;
   --warning:       #d4a017;
   --brand-active:  #9a4d32;
   --text-secondary: var(--muted);
 
-  /* ── Semantic color tokens ─────────────────────────────────────────────── */
-  --color-primary: var(--sage, #6B8F71);
-  --color-secondary: var(--brand, #C4956A);
-  --color-accent: var(--brand);
-  --color-cta: var(--brand);
-  --color-surface: var(--bg, #FAFAF7);
-  --color-card: var(--surface, #FFFFFF);
-  --color-text: var(--text, #2D3436);
-  --color-muted: var(--muted, #6C7A89);
-  --color-border: var(--border, #E8E5DF);
-  --color-success: #4CAF50;
-  --color-warning: #FF9800;
-  --color-error: #F44336;
+  /* ── RGB channel tokens for semantic colors ────────────────────────────── */
+  --good-rgb:    46, 125, 79;
+  --bad-rgb:     176, 58, 46;
+  --sage-rgb:    93, 110, 58;
+  --warning-rgb: 245, 166, 35;
+
+  /* ── Fallback aliases ──────────────────────────────────────────────────── */
+  --accent:     var(--brand);
+  --accent-rgb: var(--brand-rgb);
+  --danger:     var(--bad);
+  --card-bg:    var(--surface);
+  --panel:      var(--surface);
+
+  /* ── Z-index scale ─────────────────────────────────────────────────────── */
+  --z-base:     1;
+  --z-sticky:   40;
+  --z-dropdown: 100;
+  --z-overlay:  1000;
+  --z-modal:    9000;
+  --z-toast:    9500;
+  --z-max:      10000;
 
   /* ── Content type colors (platform brand, theme-independent) ──────────── */
   --type-threads:          #9580ff;

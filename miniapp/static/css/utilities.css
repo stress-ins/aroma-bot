@@ -11,8 +11,8 @@
 
 /* ── Wellness Card base class ────────────────────────────────────────────── */
 .wellness-card {
-  background: var(--color-card, var(--surface));
-  border: 1px solid var(--color-border, var(--border));
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: var(--radius-md, 12px);
   padding: var(--space-4);
   transition: box-shadow 0.2s;
@@ -197,8 +197,8 @@
 
 /* ── Daily oil detail section (inside aroma card) ────────────────────────────── */
 .daily-oil-detail-section {
-  background: linear-gradient(135deg, rgba(var(--accent-rgb, 99,102,241), .08), rgba(var(--accent-rgb, 99,102,241), .03));
-  border: 1px solid rgba(var(--accent-rgb, 99,102,241), .15);
+  background: linear-gradient(135deg, rgba(var(--accent-rgb, var(--brand-rgb)), .08), rgba(var(--accent-rgb, var(--brand-rgb)), .03));
+  border: 1px solid rgba(var(--accent-rgb, var(--brand-rgb)), .15);
   border-radius: var(--radius-lg, 12px);
   padding: var(--space-3) var(--space-4);
 }
@@ -208,7 +208,7 @@
   gap: 6px;
   margin: 0 0 8px;
   font-size: 15px;
-  color: var(--accent);
+  color: var(--accent, var(--brand));
 }
 .daily-oil-detail-section p {
   margin: 6px 0;
@@ -231,8 +231,8 @@
   padding: 12px 16px;
   border-radius: var(--radius-md, 8px);
   border: none;
-  background: var(--brand, var(--accent));
-  color: #fff;
+  background: var(--brand);
+  color: var(--text-on-brand);
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
@@ -254,8 +254,8 @@
   gap: 12px;
   padding: 12px 14px;
   border-radius: var(--radius-md, 8px);
-  border: 1px solid rgba(var(--accent-rgb, 99,102,241), .18);
-  background: rgba(var(--accent-rgb, 99,102,241), .05);
+  border: 1px solid rgba(var(--accent-rgb, var(--brand-rgb)), .18);
+  background: rgba(var(--accent-rgb, var(--brand-rgb)), .05);
   color: var(--text);
   font-size: 13px;
   text-align: left;
@@ -264,10 +264,10 @@
 }
 .daily-oil-tool-btn:active { transform: scale(.98); }
 .daily-oil-tool-btn:hover {
-  background: rgba(var(--accent-rgb, 99,102,241), .12);
-  border-color: var(--accent);
+  background: rgba(var(--accent-rgb, var(--brand-rgb)), .12);
+  border-color: var(--accent, var(--brand));
 }
-.daily-oil-tool-btn .ph { color: var(--accent); flex-shrink: 0; }
+.daily-oil-tool-btn .ph { color: var(--accent, var(--brand)); flex-shrink: 0; }
 .daily-oil-tool-btn strong {
   font-size: 14px;
   font-weight: 600;
@@ -306,7 +306,7 @@
 
 /* ── Avatar cropper modal ── */
 .avatar-cropper-backdrop {
-  position: fixed; inset: 0; z-index: 10000;
+  position: fixed; inset: 0; z-index: var(--z-max, 10000);
   background: rgba(0,0,0,0.8);
   display: flex; align-items: center; justify-content: center;
   padding: 16px;
