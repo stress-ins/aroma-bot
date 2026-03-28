@@ -151,10 +151,11 @@ jobs:
         run: python -m playwright install --with-deps chromium
 
       - name: Run Mini App UI tests
-        continue-on-error: true
+        id: ui
         run: python -m pytest tests/ui/ -v -m "not visual" --timeout=120 -o timeout_func_only=false --tb=long --durations=10 -s --no-cov
 
       - name: Run visual regression tests
+        if: always()
         id: visual
         continue-on-error: true
         env:
@@ -164,15 +165,29 @@ jobs:
           python -m pytest tests/ui/ -v -m "visual" --timeout=120 -o timeout_func_only=false --tb=short -s --no-cov
 
       - name: Upload visual diff artifacts
-        if: steps.visual.outcome == 'failure'
+        if: always() && steps.visual.outcome == 'failure'
         uses: actions/upload-artifact@v4
         with:
           name: visual-diff-report
           path: visual-report/
           retention-days: 14
 
+      - name: Notify Telegram about UI test failures
+        if: failure() && steps.ui.outcome == 'failure'
+        env:
+          BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.REPORT_TARGET_CHAT_ID }}
+        run: |
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          BRANCH="${{ github.head_ref || github.ref_name }}"
+          MSG=$(printf '🔴 UI-тесты упали на ветке *%s*\n\nВозможно пропали кнопки или сломался layout.\n\n[Посмотреть логи](%s)' "$BRANCH" "$RUN_URL")
+          curl -sf -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
+            -d chat_id="${CHAT_ID}" \
+            -d text="${MSG}" \
+            -d parse_mode=Markdown || true
+
       - name: Notify Telegram about visual diffs
-        if: steps.visual.outcome == 'failure'
+        if: always() && steps.visual.outcome == 'failure'
         env:
           BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           CHAT_ID: ${{ secrets.REPORT_TARGET_CHAT_ID }}
