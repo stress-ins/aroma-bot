@@ -186,8 +186,8 @@
     border-radius: var(--radius-lg);
     background: var(--surface);
   }
-  /* Hide panel-header when filters are hidden AND counter is empty (settings, trends) */
-  body.is-mobile-layout .list-panel .panel-header:has(#filtersContainer[hidden]):has(.panel-count:empty) {
+  /* Hide panel-header when filters are hidden (handbook, settings, trends) */
+  body.is-mobile-layout .list-panel .panel-header:has(#filtersContainer[hidden]) {
     display: none;
   }
 
