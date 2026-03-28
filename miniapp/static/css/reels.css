@@ -150,7 +150,7 @@
   position: fixed;
   bottom: calc(env(safe-area-inset-bottom, 0px) + 72px);
   right: 12px;
-  z-index: 9999;
+  z-index: var(--z-toast, 50);
   background: var(--surface, var(--bg));
   border: 1px solid var(--border);
   border-radius: var(--radius-md, 12px);
@@ -184,8 +184,8 @@
 @keyframes skeleton-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
 /* Reels create FAB */
-.reels-create-fab { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; padding: 10px; margin-bottom: 8px; border: 2px dashed var(--border); border-radius: var(--radius-md); background: transparent; color: var(--accent); cursor: pointer; font-size: 14px; font-weight: 600; transition: background 0.15s, border-color 0.15s; }
-.reels-create-fab:hover { background: rgba(200, 160, 100, 0.08); border-color: var(--accent); }
+.reels-create-fab { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; padding: 10px; margin-bottom: 8px; border: 2px dashed var(--border); border-radius: var(--radius-md); background: transparent; color: var(--accent, var(--brand)); cursor: pointer; font-size: 14px; font-weight: 600; transition: background 0.15s, border-color 0.15s; }
+.reels-create-fab:hover { background: rgba(var(--brand-rgb), 0.08); border-color: var(--accent, var(--brand)); }
 
 /* Reels stepper (redesigned) */
 .reels-stepper {
@@ -260,7 +260,7 @@
 /* Storyboard dot indicator */
 .storyboard-dots { display: flex; justify-content: center; gap: 6px; padding: 4px 0 8px; }
 .storyboard-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); transition: background 0.2s; }
-.storyboard-dot.active { background: var(--accent); }
+.storyboard-dot.active { background: var(--accent, var(--brand)); }
 
 /* Suggest dropdown improvements */
 .suggest-topics-hint { font-size: 11px; color: var(--hint); margin: 0 0 4px; padding: 0 4px; }
