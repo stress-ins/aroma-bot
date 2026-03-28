@@ -20,6 +20,8 @@ from db.models.social import (
     TrackedThreadModel,
     SocialTrendPostModel,
     HashtagQuotaModel,
+    ConversationModel,
+    DirectMessageModel,
 )
 
 from db.models.analytics import (
@@ -64,6 +66,8 @@ __all__ = [
     "TrackedThreadModel",
     "SocialTrendPostModel",
     "HashtagQuotaModel",
+    "ConversationModel",
+    "DirectMessageModel",
     # analytics
     "PostMetricsModel",
     "ApiCostLog",

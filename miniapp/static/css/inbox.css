@@ -1,0 +1,137 @@
+/* ═══════════════════════════════════════
+   SECTION: Inbox (Instagram DM)
+   ═══════════════════════════════════════ */
+
+/* ── Summary ────────────────────────────────────────────────────────────── */
+.inbox-summary {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 12px; font-size: 13px; color: var(--muted);
+}
+.inbox-summary strong { color: var(--text); }
+
+/* ── Conversation list ──────────────────────────────────────────────────── */
+.inbox-list { display: flex; flex-direction: column; gap: 2px; }
+
+.inbox-card {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px; cursor: pointer;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  transition: background var(--duration-fast);
+}
+.inbox-card:hover { background: var(--surface-2); }
+.inbox-card--dim { opacity: 0.55; }
+
+.inbox-card-avatar {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--surface-2); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.inbox-card-body { flex: 1; min-width: 0; }
+
+.inbox-card-header {
+  display: flex; align-items: baseline; gap: 8px; margin-bottom: 2px;
+}
+
+.inbox-card-name {
+  font-size: 14px; font-weight: 600; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.inbox-card-time {
+  font-size: 11px; color: var(--hint); margin-left: auto; flex-shrink: 0;
+}
+
+.inbox-card-preview {
+  font-size: 13px; color: var(--muted); line-height: 1.4;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.inbox-unread-badge {
+  background: var(--brand); color: var(--brand-contrast, #fff);
+  font-size: 11px; font-weight: 700; min-width: 20px; height: 20px;
+  border-radius: 10px; display: flex; align-items: center;
+  justify-content: center; padding: 0 6px; flex-shrink: 0;
+}
+
+/* ── Chat header ────────────────────────────────────────────────────────── */
+.inbox-chat-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 0; margin-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.inbox-chat-avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--surface-2); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.inbox-chat-name { font-size: 14px; font-weight: 600; color: var(--text); }
+.inbox-chat-username { font-size: 12px; color: var(--hint); }
+
+/* ── Messages (chat bubbles) ────────────────────────────────────────────── */
+.inbox-messages {
+  display: flex; flex-direction: column; gap: 6px;
+  max-height: 50vh; overflow-y: auto; padding: 8px 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.inbox-bubble {
+  max-width: 80%; padding: 10px 14px;
+  border-radius: 16px; font-size: 14px; line-height: 1.45;
+  word-break: break-word;
+}
+
+.inbox-bubble--incoming {
+  align-self: flex-start;
+  background: var(--surface-2); color: var(--text);
+  border-bottom-left-radius: 4px;
+}
+
+.inbox-bubble--outgoing {
+  align-self: flex-end;
+  background: var(--brand); color: var(--brand-contrast, #fff);
+  border-bottom-right-radius: 4px;
+}
+
+.inbox-bubble-content { margin-bottom: 2px; }
+
+.inbox-bubble-time {
+  font-size: 10px; opacity: 0.6; text-align: right;
+}
+
+/* ── Compose area ───────────────────────────────────────────────────────── */
+.inbox-compose {
+  margin-top: 12px; padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.inbox-compose-row { margin-bottom: 8px; }
+
+.inbox-compose-input {
+  width: 100%; padding: 10px 12px;
+  border: 1px solid var(--border); border-radius: var(--radius-md);
+  background: var(--surface); color: var(--text);
+  font-size: 14px; font-family: inherit;
+  resize: vertical; min-height: 44px;
+  outline: none;
+  transition: border-color var(--duration-fast);
+}
+.inbox-compose-input:focus {
+  border-color: var(--brand);
+}
+
+.inbox-compose-actions {
+  display: flex; gap: 8px; justify-content: flex-end;
+}
+
+/* ── AI replies within inbox ────────────────────────────────────────────── */
+.inbox-ai-replies {
+  margin-top: 12px; padding: 12px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}

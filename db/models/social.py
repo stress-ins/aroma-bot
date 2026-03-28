@@ -125,3 +125,34 @@ class HashtagQuotaModel(Base):
     searched_at: Mapped[datetime] = mapped_column(
         DateTime, default=lambda: datetime.now(timezone.utc)
     )
+
+
+class ConversationModel(Base):
+    """Instagram DM conversation."""
+    __tablename__ = "conversations"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    conversation_id: Mapped[str] = mapped_column(String(36), unique=True, index=True)
+    team_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("teams.team_id"), nullable=True, index=True)
+    platform: Mapped[str] = mapped_column(String(32), default="instagram", index=True)
+    participant_id: Mapped[str] = mapped_column(String(255), default="")
+    participant_username: Mapped[str] = mapped_column(String(255), default="")
+    participant_name: Mapped[str] = mapped_column(String(255), default="")
+    last_message_preview: Mapped[str] = mapped_column(String(500), default="")
+    last_message_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    status: Mapped[str] = mapped_column(String(32), default="active", index=True)
+    unread_count: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class DirectMessageModel(Base):
+    """Individual message within an Instagram DM conversation."""
+    __tablename__ = "direct_messages"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    message_id: Mapped[str] = mapped_column(String(36), unique=True, index=True)
+    conversation_id: Mapped[str] = mapped_column(String(36), ForeignKey("conversations.conversation_id"), index=True)
+    sender_type: Mapped[str] = mapped_column(String(16), default="user")  # user | business
+    content: Mapped[str] = mapped_column(String(4000), default="")
+    sent_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
+    external_id: Mapped[str] = mapped_column(String(255), default="", index=True)

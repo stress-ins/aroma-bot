@@ -12,6 +12,7 @@ import { createPlansModule } from "./js/plans.js";
 import { createCalendarModule } from "./js/calendar.js";
 import { createArchiveModule } from "./js/archive.js";
 import { createMentionsModule } from "./js/mentions.js";
+import { createInboxModule } from "./js/inbox.js";
 import { createBlendConstructorModule } from "./js/blend_constructor.js";
 import { createReferencesModule } from "./js/references.js";
 import { createReelsModule } from "./js/reels.js";
@@ -1594,6 +1595,22 @@ const mentionsModule = createMentionsModule({
 
 window.mentionsModule = mentionsModule;
 
+// ── Inbox module ────────────────────────────────────────────────────────────
+
+const inboxModule = createInboxModule({
+  state,
+  elements: { plansContainer: null, draftDetail: elements.draftDetail, draftCount: elements.draftCount },
+  fetchJson,
+  escapeHtml,
+  withButtonFeedback,
+  showUiNotice,
+  enterDetailView,
+  syncMobileNavigation,
+  renderBackButton,
+});
+
+window.inboxModule = inboxModule;
+
 // ── Archive module ──────────────────────────────────────────────────────────
 
 const archiveModule = createArchiveModule({
@@ -1640,6 +1657,7 @@ function setPlansSubMode(mode) {
   if (mode === "calendar") state.contentSubTab = "calendar";
   else if (mode === "publications") state.contentSubTab = "plans";
   else if (mode === "mentions") state.contentSubTab = "mentions";
+  else if (mode === "inbox") state.contentSubTab = "inbox";
   else if (mode === "archive") state.contentSubTab = "archive";
   if (mode === "calendar") {
     void calendarModule.loadCalendar();
@@ -1666,6 +1684,17 @@ function generateReplies(mentionId, btn) { return mentionsModule.generateReplies
 function publishReply(mentionId, replyId, btn) { return mentionsModule.publishReply(mentionId, replyId, btn); }
 function ignoreMentionAction(mentionId, btn) { return mentionsModule.ignoreMentionAction(mentionId, btn); }
 function setMentionsFilter(key, value) { mentionsModule.setMentionsFilter(key, value); }
+
+// Inbox action wrappers
+function openConversation(convId) { inboxModule.openConversation(convId); }
+function closeConversation() { inboxModule.closeConversation(); }
+function sendInboxReply(convId, btn) { return inboxModule.sendInboxReply(convId, btn); }
+function sendInboxReplyOnEnter(value, el) { inboxModule.sendInboxReplyOnEnter(value, el); }
+function generateInboxReply(convId, btn) { return inboxModule.generateInboxReply(convId, btn); }
+function useAiReply(convId, idx) { inboxModule.useAiReply(convId, idx); }
+function archiveConversation(convId, btn) { return inboxModule.archiveConversation(convId, btn); }
+function pollInbox(btn) { return inboxModule.pollInbox(btn); }
+function setInboxFilter(key, value) { inboxModule.setInboxFilter(key, value); }
 
 // Archive action wrappers
 function openArchiveDetail(pubId) { archiveModule.openArchiveDetail(pubId); }
@@ -2300,6 +2329,7 @@ const CONTENT_SUB_TABS = [
   { id: "calendar", label: "Календарь" },
   { id: "plans", label: "Планы" },
   { id: "mentions", label: "Упоминания" },
+  { id: "inbox", label: "Входящие" },
   { id: "publications", label: "Публикации" },
   { id: "archive", label: "Архив" },
 ];
@@ -2370,6 +2400,10 @@ function switchContentSubTab(subTab) {
     state.plansSubMode = "mentions";
     setTab("plans");
     void safeLoadCurrentTab("Не удалось загрузить упоминания");
+  } else if (subTab === "inbox") {
+    state.plansSubMode = "inbox";
+    setTab("plans");
+    void safeLoadCurrentTab("Не удалось загрузить входящие");
   } else if (subTab === "archive") {
     state.plansSubMode = "archive";
     setTab("plans");

@@ -628,6 +628,9 @@ export function createShellModule(deps) {
           } else if (sub === "mentions") {
             state.plansSubMode = "mentions";
             setTab("plans");
+          } else if (sub === "inbox") {
+            state.plansSubMode = "inbox";
+            setTab("plans");
           } else if (sub === "archive") {
             state.plansSubMode = "archive";
             setTab("plans");
