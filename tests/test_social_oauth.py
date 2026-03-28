@@ -5,13 +5,17 @@ from urllib.parse import parse_qs, urlparse
 
 import httpx
 
+import pytest
+
 from bot.services.social_oauth import (
+    OAuthExchangeError,
     build_oauth_state,
     build_instagram_authorize_url,
     build_threads_authorize_url,
     exchange_instagram_code,
     exchange_threads_code,
     parse_oauth_state,
+    refresh_facebook_token,
     update_env_file,
 )
 
@@ -145,3 +149,42 @@ def test_update_env_file_replaces_existing_values(tmp_path: Path):
     assert "THREADS_USERNAME=stress_ins" in content
     assert "# comment" in content
     assert "OTHER=value" in content
+
+
+def test_refresh_facebook_token_success():
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.host == "graph.facebook.com"
+        assert request.url.params["grant_type"] == "fb_exchange_token"
+        assert request.url.params["fb_exchange_token"] == "old-long-token"
+        assert request.url.params["client_id"] == "fb-app-id"
+        assert request.url.params["client_secret"] == "fb-secret"
+        return httpx.Response(200, json={
+            "access_token": "new-long-token",
+            "token_type": "bearer",
+            "expires_in": 5184000,
+        })
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    result = refresh_facebook_token(
+        access_token="old-long-token",
+        client_id="fb-app-id",
+        client_secret="fb-secret",
+        client=client,
+    )
+
+    assert result["access_token"] == "new-long-token"
+    assert result["expires_in"] == 5184000
+
+
+def test_refresh_facebook_token_failure():
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"access_token": ""})
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    with pytest.raises(OAuthExchangeError, match="access_token"):
+        refresh_facebook_token(
+            access_token="expired",
+            client_id="fb-app-id",
+            client_secret="fb-secret",
+            client=client,
+        )

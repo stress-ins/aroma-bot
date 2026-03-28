@@ -53,7 +53,7 @@ async def update_token(
     payload: TokenUpdatePayload,
     _: None = Depends(_require_webhook_auth),
 ):
-    if platform not in ("threads", "instagram", "canva", "youtube", "tiktok"):
+    if platform not in ("threads", "instagram", "facebook", "canva", "youtube", "tiktok"):
         raise HTTPException(status_code=400, detail="unsupported_platform")
 
     expires_at: datetime | None = None
@@ -71,12 +71,15 @@ async def update_token(
 
 @router.post("/api/tokens/{platform}/refresh")
 async def refresh_token(platform: str, _: None = Depends(_require_webhook_auth)):
-    if platform not in ("threads", "instagram", "canva", "youtube", "tiktok"):
+    if platform not in ("threads", "instagram", "facebook", "canva", "youtube", "tiktok"):
         raise HTTPException(status_code=400, detail="unsupported_platform")
 
     token_record = await get_token(platform)
     if not token_record or not token_record.access_token:
         raise HTTPException(status_code=404, detail="no_token_stored")
+
+    if platform == "facebook":
+        return await _refresh_facebook(token_record)
 
     if platform == "canva":
         return await _refresh_canva(token_record)
@@ -212,5 +215,33 @@ async def _refresh_tiktok(token_record) -> dict:
         str(result["access_token"]),
         expires_at,
         refresh_token=str(result.get("refresh_token", "")),
+    )
+    return {**_serialize_token(updated), "refreshed": True}
+
+
+async def _refresh_facebook(token_record) -> dict:
+    """Refresh Facebook long-lived token via fb_exchange_token grant."""
+    if not settings.facebook_app_id or not settings.facebook_app_secret:
+        raise HTTPException(status_code=500, detail="facebook_app_id/secret not configured")
+
+    try:
+        from bot.services.social_oauth import refresh_facebook_token
+        result = refresh_facebook_token(
+            access_token=token_record.access_token,
+            client_id=settings.facebook_app_id,
+            client_secret=settings.facebook_app_secret,
+        )
+    except Exception as exc:
+        logger.error("Facebook token refresh failed: %s", exc)
+        raise HTTPException(status_code=502, detail=f"refresh_failed: {exc}")
+
+    expires_at = None
+    if result.get("expires_in"):
+        expires_at = datetime.now(timezone.utc) + timedelta(seconds=int(result["expires_in"]))
+
+    updated = await upsert_token(
+        "facebook",
+        str(result["access_token"]),
+        expires_at,
     )
     return {**_serialize_token(updated), "refreshed": True}

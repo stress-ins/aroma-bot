@@ -2088,7 +2088,7 @@ const { renderBrand: renderBrandImpl, loadForbiddenPhrases: loadForbiddenPhrases
   adminRestartWorker,
 } = _settingsMod);
 
-let selectTrendsPlatform, selectTrendsPeriod, refreshTrends, openTrendsPost, createFromInsight, addMonitoredAccount, removeMonitoredAccount, generateTrendCards, createFromTrendCard, openIntelligenceOpp, createFromIntelligence;
+let selectTrendsPlatform, selectTrendsPeriod, refreshTrends, openTrendsPost, createFromInsight, addMonitoredAccount, removeMonitoredAccount, generateTrendCards, createFromTrendCard, openIntelligenceOpp, createFromIntelligence, toggleHealthDetails, setAnalyticsSourceFilter;
 ({
   loadTrends,
   selectTrendsPlatform,
@@ -2102,6 +2102,8 @@ let selectTrendsPlatform, selectTrendsPeriod, refreshTrends, openTrendsPost, cre
   createFromTrendCard,
   openIntelligenceOpp,
   createFromIntelligence,
+  toggleHealthDetails,
+  setAnalyticsSourceFilter,
 } = createTrendsModule({
   state,
   elements,
@@ -2694,6 +2696,8 @@ registerWindowBridge({
   createFromTrendCard,
   openIntelligenceOpp,
   createFromIntelligence,
+  toggleHealthDetails,
+  setAnalyticsSourceFilter,
   refreshDraftMetrics,
   shareBlend,
   // Stock photo picker

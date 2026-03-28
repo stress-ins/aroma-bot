@@ -38,9 +38,13 @@ export function createTrendsModule(deps) {
   let trendsData = null;
   let trendsCompare = null;
   let intelligenceData = null;
+  let digestData = null;
+  let analyticsSourceFilter = null; // null = all, string = specific source key
   let monitoredAccounts = { instagram: [], threads: [], connected_usernames: {} };
   let trackedHashtags = [];
   let accountStats = [];
+  let healthData = null;
+  let healthExpanded = false;
   let cooldownUntil = 0; // unix ms when cooldown expires
   let _cooldownTimer = null;
 
@@ -57,22 +61,32 @@ export function createTrendsModule(deps) {
       const promises = [
         trendsPlatform === "compare"
           ? fetchJson(`/api/trends/compare?period=${trendsPeriod}`)
-          : trendsPlatform === "intelligence"
+          : trendsPlatform === "analytics"
             ? fetchJson("/api/trends/intelligence")
             : fetchJson(`/api/trends/${trendsPlatform}?period=${trendsPeriod}`),
         fetchJson("/api/social/monitored-accounts"),
         fetchJson("/api/social/tracked-hashtags"),
         fetchJson("/api/trends/account-stats"),
+        fetchJson("/api/trends/health"),
       ];
-      if (trendsPlatform !== "compare" && trendsPlatform !== "intelligence") {
+      if (trendsPlatform === "analytics") {
+        promises.push(fetchJson("/api/trends/cards?limit=10"));
+        promises.push(fetchJson("/api/trends/digest"));
+      } else if (trendsPlatform !== "compare") {
         promises.push(fetchJson(`/api/trends/suggestions?platform=${trendsPlatform}`));
       }
-      const [trendsResult, accountsResult, hashtagsResult, statsResult, suggestionsResult] = await Promise.allSettled(promises);
+      const results = await Promise.allSettled(promises);
+      const [trendsResult, accountsResult, hashtagsResult, statsResult, healthResult] = results;
 
-      if (trendsPlatform === "intelligence") {
+      if (trendsPlatform === "analytics") {
         intelligenceData = trendsResult.status === "fulfilled" ? trendsResult.value : null;
+        const cardsResult = results[5];
+        const digestResult = results[6];
+        trendCards = cardsResult && cardsResult.status === "fulfilled" ? (cardsResult.value?.cards || []) : null;
+        digestData = digestResult && digestResult.status === "fulfilled" ? digestResult.value : null;
         trendsData = null;
         trendsCompare = null;
+        analyticsSourceFilter = null;
       } else if (trendsPlatform === "compare") {
         trendsCompare = trendsResult.status === "fulfilled" ? trendsResult.value : null;
         trendsData = null;
@@ -81,6 +95,12 @@ export function createTrendsModule(deps) {
         trendsData = trendsResult.status === "fulfilled" ? trendsResult.value : null;
         trendsCompare = null;
         intelligenceData = null;
+        const suggestionsResult = results[5];
+        if (suggestionsResult && suggestionsResult.status === "fulfilled") {
+          suggestionsData = suggestionsResult.value;
+        } else {
+          suggestionsData = null;
+        }
       }
 
       if (accountsResult.status === "fulfilled") {
@@ -92,22 +112,125 @@ export function createTrendsModule(deps) {
       if (statsResult && statsResult.status === "fulfilled") {
         accountStats = (statsResult.value || {}).accounts || [];
       }
-      if (suggestionsResult && suggestionsResult.status === "fulfilled") {
-        suggestionsData = suggestionsResult.value;
-      } else {
-        suggestionsData = null;
+      if (healthResult && healthResult.status === "fulfilled") {
+        healthData = healthResult.value || [];
       }
     } catch (err) {
       trendsData = null;
       trendsCompare = null;
       intelligenceData = null;
       suggestionsData = null;
+      healthData = null;
+      digestData = null;
     }
 
     elements.listTitle.textContent = "Тренды";
     elements.draftList.innerHTML = renderTrendsListPanel();
     elements.draftDetail.innerHTML = renderTrendsDetail();
     syncMobileNavigation();
+  }
+
+  // ── Health indicator ──────────────────────────────────────────────────
+
+  function _collectorStatus(c) {
+    const now = new Date();
+    const lastSuccess = c.last_success ? new Date(c.last_success) : null;
+    const circuitUntil = c.circuit_open_until ? new Date(c.circuit_open_until) : null;
+    const hoursSince = lastSuccess ? (now - lastSuccess) / 3600000 : Infinity;
+    const failures = c.consecutive_failures || 0;
+
+    if (circuitUntil && circuitUntil > now) return "red";
+    if (hoursSince > 24) return "red";
+    if (hoursSince > 12 || failures > 0) return "yellow";
+    return "green";
+  }
+
+  function _collectorDisplayName(key) {
+    const names = {
+      google_trends: "Google",
+      threads: "Threads",
+      instagram: "Instagram",
+      youtube: "YouTube",
+    };
+    return names[key] || key;
+  }
+
+  function _formatHealthTimestamp() {
+    if (!healthData || !healthData.length) return null;
+    let latest = null;
+    for (const c of healthData) {
+      if (c.last_success) {
+        const d = new Date(c.last_success);
+        if (!latest || d > latest) latest = d;
+      }
+    }
+    if (!latest) return null;
+    const hh = String(latest.getHours()).padStart(2, "0");
+    const mm = String(latest.getMinutes()).padStart(2, "0");
+    const dd = String(latest.getDate()).padStart(2, "0");
+    const mo = String(latest.getMonth() + 1).padStart(2, "0");
+    return `${hh}:${mm} ${dd}.${mo}`;
+  }
+
+  function renderHealthIndicator() {
+    if (!healthData || !healthData.length) return "";
+
+    const ts = _formatHealthTimestamp();
+    const tsLabel = ts ? `Данные от: ${ts}` : "Нет данных";
+
+    const dots = healthData.map((c) => {
+      const status = _collectorStatus(c);
+      const name = _collectorDisplayName(c.source_key);
+      return `<span class="health-dot-item"><span class="health-dot health-dot--${status}"></span>${escapeHtml(name)}</span>`;
+    }).join("");
+
+    let details = "";
+    if (healthExpanded) {
+      const rows = healthData.map((c) => {
+        const status = _collectorStatus(c);
+        const name = _collectorDisplayName(c.source_key);
+        const failures = c.consecutive_failures || 0;
+        const lastOk = c.last_success
+          ? new Date(c.last_success).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
+          : "никогда";
+        const circuitUntil = c.circuit_open_until ? new Date(c.circuit_open_until) : null;
+        const circuitActive = circuitUntil && circuitUntil > new Date();
+
+        let statusText = "Работает";
+        if (status === "red") statusText = circuitActive ? "Приостановлен" : "Нет данных >24ч";
+        else if (status === "yellow") statusText = failures > 0 ? `Ошибки: ${failures}` : "Данные устаревают";
+
+        return `
+          <div class="health-detail-row">
+            <span class="health-dot health-dot--${status}"></span>
+            <span class="health-detail-name">${escapeHtml(name)}</span>
+            <span class="health-detail-status">${statusText}</span>
+            <span class="health-detail-time">${escapeHtml(lastOk)}</span>
+          </div>`;
+      }).join("");
+
+      details = `<div class="health-details">${rows}</div>`;
+    }
+
+    const expandIcon = healthExpanded ? "caret-up" : "caret-down";
+
+    return `
+      <div class="health-indicator" data-action="toggleHealthDetails">
+        <div class="health-summary">
+          <span class="health-ts">${escapeHtml(tsLabel)}</span>
+          <span class="health-dots">${dots}</span>
+          <i class="ph ph-${expandIcon} health-chevron"></i>
+        </div>
+        ${details}
+      </div>`;
+  }
+
+  function toggleHealthDetails() {
+    healthExpanded = !healthExpanded;
+    const container = document.querySelector(".health-indicator");
+    if (container) {
+      container.outerHTML = renderHealthIndicator();
+    }
   }
 
   // ── List Panel (platform selector + filters) ─────────────────────────
@@ -117,8 +240,7 @@ export function createTrendsModule(deps) {
       { id: "instagram", label: "Instagram", icon: "instagram" },
       { id: "threads", label: "Threads", icon: "at-sign" },
       { id: "compare", label: "Сравнение", icon: "columns-2" },
-      { id: "intelligence", label: "Разведка", icon: "radar" },
-      { id: "cards", label: "AI-карточки", icon: "sparkles" },
+      { id: "analytics", label: "Аналитика", icon: "chart-line" },
     ];
 
     const platformTabs = platforms
@@ -155,10 +277,8 @@ export function createTrendsModule(deps) {
     </button>`;
 
     let summary = "";
-    if (trendsPlatform === "cards") {
-      summary = renderTrendCardsList();
-    } else if (trendsPlatform === "intelligence") {
-      summary = renderIntelligenceSummaryList();
+    if (trendsPlatform === "analytics") {
+      summary = renderAnalyticsSummaryList();
     } else if (trendsPlatform === "compare" && trendsCompare) {
       summary = renderCompareSummaryList();
     } else if (trendsData) {
@@ -181,9 +301,12 @@ export function createTrendsModule(deps) {
       }
     }
 
+    const healthBar = renderHealthIndicator();
+
     return `
       <div class="trends-controls">
         <div class="trends-platform-tabs">${platformTabs}</div>
+        ${healthBar}
         <div class="trends-period-row">
           <div class="trends-period-btns">${periodBtns}</div>
           ${refreshBtn}
@@ -501,7 +624,7 @@ export function createTrendsModule(deps) {
 
   function renderTrendsDetail() {
     if (trendsPlatform === "compare") return renderCompareDetail();
-    if (trendsPlatform === "intelligence") return renderIntelligenceDetail();
+    if (trendsPlatform === "analytics") return renderAnalyticsDetail();
     if (!trendsData) {
       return `<div class="detail-empty">${renderGuidedState({
         eyebrow: "Аналитика",
@@ -1089,6 +1212,420 @@ export function createTrendsModule(deps) {
     syncMobileNavigation();
   }
 
+  // ── Analytics tab (consolidated: Digest + Intelligence + AI cards) ──
+
+  const SOURCE_ICONS = {
+    youtube: "youtube", youtube_ru: "youtube", instagram: "instagram",
+    threads: "at-sign", tiktok: "music", reddit: "message-circle",
+    telegram: "send", google_trends: "trending-up",
+  };
+  const SOURCE_DISPLAY = {
+    youtube: "YouTube", youtube_ru: "YouTube RU", instagram: "Instagram",
+    threads: "Threads", tiktok: "TikTok", reddit: "Reddit",
+    telegram: "Telegram", google_trends: "Google",
+  };
+
+  function _deduplicateSignals(topOpps, emerging) {
+    // Build a set of keywords from top_opportunities
+    const oppKeywords = new Set(topOpps.map(o => (o.keyword || "").toLowerCase().trim()));
+    // Mark emerging signals that also appear in top_opportunities
+    const deduped = [];
+    const alsoInTop = new Set();
+    for (const s of emerging) {
+      const kw = (s.keyword || "").toLowerCase().trim();
+      if (oppKeywords.has(kw)) {
+        alsoInTop.add(kw);
+      } else {
+        deduped.push(s);
+      }
+    }
+    // Add "also_emerging" flag to matching top opportunities
+    const enrichedOpps = topOpps.map(o => {
+      const kw = (o.keyword || "").toLowerCase().trim();
+      return alsoInTop.has(kw) ? { ...o, _alsoEmerging: true } : o;
+    });
+    return { enrichedOpps, dedupedEmerging: deduped };
+  }
+
+  function setAnalyticsSourceFilter(source) {
+    analyticsSourceFilter = analyticsSourceFilter === source ? null : source;
+    // Re-render list panel
+    elements.draftList.innerHTML = renderTrendsListPanel();
+  }
+
+  function renderAnalyticsSummaryList() {
+    const sections = [];
+
+    // ─── Section 1: Дайджест ───
+    sections.push(_renderDigestSection());
+
+    // ─── Section 2: Trend Intelligence ───
+    sections.push(_renderIntelligenceSection());
+
+    // ─── Section 3: AI-карточки ───
+    sections.push(_renderAiCardsSection());
+
+    return `<div class="analytics-tab-content">${sections.join("")}</div>`;
+  }
+
+  function _renderDigestSection() {
+    if (!digestData || digestData.status === "not_available") {
+      return `
+        <div class="analytics-section">
+          <div class="analytics-section-header">
+            <span class="analytics-section-icon">${uiIcon("clipboard", 16)}</span>
+            <span class="analytics-section-title">Дайджест</span>
+          </div>
+          <div class="analytics-section-empty">Дайджест ещё не сформирован. Данные появятся после следующего цикла сбора.</div>
+        </div>`;
+    }
+
+    const report = digestData.ru_report || "";
+    const generatedAt = digestData.generated_at
+      ? new Date(digestData.generated_at).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
+      : "";
+
+    // Convert markdown-like report to simple HTML
+    const htmlReport = escapeHtml(report)
+      .replace(/\n/g, "<br>")
+      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+
+    return `
+      <div class="analytics-section">
+        <div class="analytics-section-header">
+          <span class="analytics-section-icon">${uiIcon("clipboard", 16)}</span>
+          <span class="analytics-section-title">Дайджест</span>
+          ${generatedAt ? `<span class="analytics-section-ts">${escapeHtml(generatedAt)}</span>` : ""}
+        </div>
+        <div class="analytics-digest-body">${htmlReport}</div>
+      </div>`;
+  }
+
+  function _renderIntelligenceSection() {
+    if (!intelligenceData) {
+      return `
+        <div class="analytics-section">
+          <div class="analytics-section-header">
+            <span class="analytics-section-icon">${uiIcon("radar", 16)}</span>
+            <span class="analytics-section-title">Trend Intelligence</span>
+          </div>
+          <div class="analytics-section-empty">Данные разведки ещё не собраны. Отчёт обновляется ежедневно.</div>
+        </div>`;
+    }
+
+    const rawOpps = intelligenceData.top_opportunities || [];
+    const rawEmerging = intelligenceData.emerging_signals || [];
+    const declining = intelligenceData.declining_topics || [];
+    const total = intelligenceData.total_signals_analyzed || 0;
+
+    const { enrichedOpps, dedupedEmerging } = _deduplicateSignals(rawOpps, rawEmerging);
+
+    // Source filter pills (show all unique sources from data)
+    const allSources = new Set();
+    [...enrichedOpps, ...dedupedEmerging, ...declining].forEach(item => {
+      (item.sources || []).forEach(s => allSources.add(s));
+    });
+    const sourceFilterHtml = allSources.size > 0 ? `
+      <div class="analytics-source-filters">
+        <button class="analytics-source-pill ${!analyticsSourceFilter ? "active" : ""}"
+                data-action="setAnalyticsSourceFilter" data-args='[null]'>
+          Все
+        </button>
+        ${[...allSources].map(s => `
+          <button class="analytics-source-pill ${analyticsSourceFilter === s ? "active" : ""}"
+                  data-action="setAnalyticsSourceFilter" data-args='${JSON.stringify([s])}'>
+            ${uiIcon(SOURCE_ICONS[s] || "globe", 14)} ${escapeHtml(SOURCE_DISPLAY[s] || s)}
+          </button>
+        `).join("")}
+      </div>` : "";
+
+    // Filter by source if active
+    const filterBySource = (items) => {
+      if (!analyticsSourceFilter) return items;
+      return items.filter(item => (item.sources || []).includes(analyticsSourceFilter));
+    };
+
+    const filteredOpps = filterBySource(enrichedOpps);
+    const filteredEmerging = filterBySource(dedupedEmerging);
+    const filteredDeclining = filterBySource(declining);
+
+    const statsRow = `<div class="trends-stats-row">
+      ${uiIcon("activity", 12)}
+      ${total} сигналов · ${enrichedOpps.length} возможностей · ${dedupedEmerging.length} новых · ${declining.length} спадающих
+    </div>`;
+
+    // Top opportunities
+    const oppCards = filteredOpps.slice(0, 10).map((o, i) => {
+      const kw = (o.keyword || "").length > 60 ? o.keyword.substring(0, 60) + "\u2026" : o.keyword;
+      const score = Math.round((o.score || 0) * 100);
+      const lc = o.lifecycle || "emerging";
+      const cls = LIFECYCLE_CSS[lc] || "tc-early";
+      const velocity = o.velocity ? o.velocity.toFixed(1) : "0.0";
+      const sources = o.sources || [];
+
+      const sourcePills = sources.length ? `
+        <div class="tc-source-pills">
+          ${sources.map(s => `
+            <span class="tc-source-pill ${analyticsSourceFilter === s ? "tc-source-pill--active" : ""}"
+                  data-action="setAnalyticsSourceFilter" data-args='${JSON.stringify([s])}'>
+              ${uiIcon(SOURCE_ICONS[s] || "globe", 12)} ${escapeHtml(SOURCE_DISPLAY[s] || s)}
+            </span>`).join("")}
+        </div>` : "";
+
+      const emergingBadge = o._alsoEmerging
+        ? `<span class="tc-badge tc-badge-secondary">Нарастающий</span>`
+        : "";
+
+      return `
+        <div class="trend-card-v2 ${cls}" data-action="openIntelligenceOpp" data-args='[${i}]'>
+          <div class="tc-v2-top">
+            <div class="tc-v2-title">${escapeHtml(kw)}</div>
+            <span class="tc-badge ${cls}">${LIFECYCLE_LABELS[lc] || lc}</span>
+            ${emergingBadge}
+          </div>
+          <div class="tc-v2-metrics">
+            <div class="tc-metric-big">
+              <span class="tc-metric-val">${velocity}\u00d7</span>
+              <span class="tc-metric-label">скорость</span>
+            </div>
+            <div class="tc-metric-divider"></div>
+            <div class="tc-metric-small">
+              <span class="tc-ms-val">${sources.length} ист.</span>
+              <span class="tc-ms-label">источника</span>
+            </div>
+            <div class="tc-metric-small" style="margin-left:auto">
+              ${_sentimentHtml(o.sentiment)}
+            </div>
+          </div>
+          ${sourcePills}
+          <div class="tc-rel-bar-wrap">
+            <div class="tc-rel-bar-bg"><div class="tc-rel-bar-fill tc-bar-${cls.replace("tc-", "")}" style="width:${score}%"></div></div>
+            <span class="tc-rel-pct">${score}%</span>
+          </div>
+        </div>`;
+    }).join("");
+
+    // Emerging signals (deduplicated)
+    let emergingHtml = "";
+    if (filteredEmerging.length > 0) {
+      const items = filteredEmerging.slice(0, 8).map(s => {
+        const lc = s.lifecycle || "emerging";
+        const cls = LIFECYCLE_CSS[lc] || "tc-hot";
+        const velocity = s.velocity ? s.velocity.toFixed(1) : "0.0";
+        const sources = s.sources || [];
+        return `
+          <div class="analytics-emerging-item" data-action="createFromIntelligence" data-args='${JSON.stringify([s.keyword || "", "content"])}'>
+            <span class="analytics-emerging-kw">${escapeHtml((s.keyword || "").substring(0, 50))}</span>
+            <span class="tc-badge ${cls}" style="font-size:10px;padding:1px 6px">${LIFECYCLE_LABELS[lc] || "Новый"}</span>
+            <span class="analytics-emerging-vel">${velocity}\u00d7</span>
+            ${sources.length ? `<span class="analytics-emerging-src">${sources.map(src => `<span class="tc-source-pill-sm" data-action="setAnalyticsSourceFilter" data-args='${JSON.stringify([src])}'>${escapeHtml(SOURCE_DISPLAY[src] || src)}</span>`).join("")}</span>` : ""}
+          </div>`;
+      }).join("");
+      emergingHtml = `
+        <div class="analytics-subsection">
+          <div class="analytics-subsection-title">${uiIcon("zap", 14)} Нарастающие</div>
+          ${items}
+        </div>`;
+    }
+
+    // Declining signals
+    let decliningHtml = "";
+    if (filteredDeclining.length > 0) {
+      const items = filteredDeclining.slice(0, 5).map(s => {
+        const score = Math.round((s.score || 0) * 100);
+        return `
+          <div class="analytics-emerging-item analytics-declining-item" data-action="createFromIntelligence" data-args='${JSON.stringify([s.keyword || "", "content"])}'>
+            <span class="analytics-emerging-kw">${escapeHtml((s.keyword || "").substring(0, 50))}</span>
+            <span class="tc-badge tc-declining" style="font-size:10px;padding:1px 6px">Спадает</span>
+            <span class="analytics-emerging-vel">${score}%</span>
+          </div>`;
+      }).join("");
+      decliningHtml = `
+        <div class="analytics-subsection">
+          <div class="analytics-subsection-title">${uiIcon("trending-down", 14)} Спадающие</div>
+          ${items}
+        </div>`;
+    }
+
+    return `
+      <div class="analytics-section">
+        <div class="analytics-section-header">
+          <span class="analytics-section-icon">${uiIcon("radar", 16)}</span>
+          <span class="analytics-section-title">Trend Intelligence</span>
+        </div>
+        ${statsRow}
+        ${sourceFilterHtml}
+        <div class="analytics-subsection">
+          <div class="analytics-subsection-title">${uiIcon("trending-up", 14)} Топ возможности</div>
+          ${oppCards || `<p class="analytics-section-empty">Нет данных</p>`}
+        </div>
+        ${emergingHtml}
+        ${decliningHtml}
+      </div>`;
+  }
+
+  function _renderAiCardsSection() {
+    if (!trendCards) {
+      return `
+        <div class="analytics-section">
+          <div class="analytics-section-header">
+            <span class="analytics-section-icon">${uiIcon("sparkles", 16)}</span>
+            <span class="analytics-section-title">AI-карточки</span>
+          </div>
+          <div class="analytics-section-empty">
+            Нет AI-карточек. Нажмите кнопку ниже для создания.
+            <button class="primary-button" type="button" data-action="generateTrendCards" style="margin-top:8px">
+              ${uiIcon("sparkles", 14)}<span>Сгенерировать карточки</span>
+            </button>
+          </div>
+        </div>`;
+    }
+
+    if (trendCards.length === 0) {
+      return `
+        <div class="analytics-section">
+          <div class="analytics-section-header">
+            <span class="analytics-section-icon">${uiIcon("sparkles", 16)}</span>
+            <span class="analytics-section-title">AI-карточки</span>
+          </div>
+          <div class="analytics-section-empty">
+            Нет AI-карточек.
+            <button class="primary-button" type="button" data-action="generateTrendCards" style="margin-top:8px">
+              ${uiIcon("sparkles", 14)}<span>Сгенерировать карточки</span>
+            </button>
+          </div>
+        </div>`;
+    }
+
+    const cards = trendCards.slice(0, 8).map(c => {
+      const lc = c.lifecycle || "emerging";
+      const cls = _lifecycleClass(lc);
+      const pct = Math.round((c.strength || 0) * 100);
+      const vel = (c.velocity || 0).toFixed(1);
+      const srcCount = (c.source_signals || []).length || "\u2014";
+      return `
+      <div class="trend-card-v2 ${cls} interactive-card" data-card-id="${escapeHtml(c.card_id)}">
+        <div class="tc-v2-top">
+          <div class="tc-v2-title">${escapeHtml(c.title || c.keyword)}</div>
+          <span class="tc-badge ${cls}">${STATUS_LABELS[lc] || lc}</span>
+        </div>
+        <div class="tc-v2-metrics">
+          <div class="tc-metric-big">
+            <span class="tc-metric-val">${vel}\u00d7</span>
+            <span class="tc-metric-label">скорость</span>
+          </div>
+          <div class="tc-metric-divider"></div>
+          <div class="tc-metric-small">
+            <span class="tc-ms-val">${srcCount} ист.</span>
+            <span class="tc-ms-label">источника</span>
+          </div>
+          <div class="tc-metric-small" style="margin-left:auto;">
+            ${_sentimentHtml(c.sentiment)}
+          </div>
+        </div>
+        <div class="tc-rel-bar-wrap">
+          <div class="tc-rel-bar-bg"><div class="tc-rel-bar-fill tc-bar-${lc === "peaking" ? "hot" : lc === "evergreen" ? "stable" : lc === "emerging" ? "early" : lc}" style="width:${pct}%;"></div></div>
+          <span class="tc-rel-pct">${pct}%</span>
+        </div>
+      </div>`;
+    }).join("");
+
+    return `
+      <div class="analytics-section">
+        <div class="analytics-section-header">
+          <span class="analytics-section-icon">${uiIcon("sparkles", 16)}</span>
+          <span class="analytics-section-title">AI-карточки</span>
+        </div>
+        ${cards}
+        <button class="secondary-button" type="button" data-action="generateTrendCards" style="margin-top:0.5rem">
+          ${uiIcon("refresh-cw", 14)}<span>Обновить карточки</span>
+        </button>
+      </div>`;
+  }
+
+  function renderAnalyticsDetail() {
+    if (!intelligenceData && !digestData && !trendCards) {
+      return `<div class="detail-empty">${renderGuidedState({
+        eyebrow: "Аналитика",
+        title: "Данные собираются ежедневно",
+        body: "Отчёт включает анализ из 10+ источников: Google Trends, YouTube, TikTok, Reddit, Telegram и др.",
+        actionLabel: "Обновить",
+        action: "refreshTrends",
+      })}</div>`;
+    }
+
+    const sections = [];
+
+    // Sources breakdown from intelligence
+    if (intelligenceData) {
+      const breakdown = intelligenceData.sources_breakdown || {};
+      if (Object.keys(breakdown).length > 0) {
+        const rows = Object.entries(breakdown).map(([src, count]) => `
+          <div class="analytics-breakdown-row">
+            <span class="analytics-breakdown-src">${uiIcon(SOURCE_ICONS[src] || "globe", 14)} ${escapeHtml(SOURCE_DISPLAY[src] || src)}</span>
+            <span class="analytics-breakdown-count">${count} сигналов</span>
+          </div>`).join("");
+        sections.push(`
+          <div class="detail-section">
+            <div class="detail-section-title">${uiIcon("bar-chart-3", 16)} Источники сигналов</div>
+            ${rows}
+          </div>`);
+      }
+
+      // Emerging signals detail
+      const emerging = intelligenceData.emerging_signals || [];
+      if (emerging.length > 0) {
+        const items = emerging.map(s => {
+          const lc = s.lifecycle || "emerging";
+          const cls = LIFECYCLE_CSS[lc] || "tc-hot";
+          const velocity = s.velocity ? s.velocity.toFixed(1) : "0.0";
+          return `
+            <div class="trend-card-v2 ${cls}" data-action="createFromIntelligence" data-args='${JSON.stringify([s.keyword || "", "content"])}'>
+              <div class="tc-v2-top">
+                <div class="tc-v2-title">${escapeHtml((s.keyword || "").substring(0, 60))}</div>
+                <span class="tc-badge ${cls}">${LIFECYCLE_LABELS[lc] || "Новый"}</span>
+              </div>
+              ${s.content_angle ? `<div class="tc-v2-angle">${escapeHtml(s.content_angle.substring(0, 120))}</div>` : ""}
+              <div class="tc-v2-metrics">
+                <div class="tc-metric-big">
+                  <span class="tc-metric-val">${velocity}\u00d7</span>
+                  <span class="tc-metric-label">скорость</span>
+                </div>
+              </div>
+            </div>`;
+        }).join("");
+        sections.push(`<div class="detail-section"><div class="detail-section-title">${uiIcon("zap", 16)} Новые сигналы</div>${items}</div>`);
+      }
+
+      // Declining
+      const declining = intelligenceData.declining_topics || [];
+      if (declining.length > 0) {
+        const items = declining.map(s => {
+          const score = Math.round((s.score || 0) * 100);
+          return `
+            <div class="trend-card-v2 tc-declining" data-action="createFromIntelligence" data-args='${JSON.stringify([s.keyword || "", "content"])}'>
+              <div class="tc-v2-top">
+                <div class="tc-v2-title">${escapeHtml((s.keyword || "").substring(0, 60))}</div>
+                <span class="tc-badge tc-declining">Спадает</span>
+              </div>
+              ${s.content_angle ? `<div class="tc-v2-angle">${escapeHtml(s.content_angle.substring(0, 120))}</div>` : ""}
+              <div class="tc-rel-bar-wrap">
+                <div class="tc-rel-bar-bg"><div class="tc-rel-bar-fill tc-bar-declining" style="width:${score}%"></div></div>
+                <span class="tc-rel-pct">${score}%</span>
+              </div>
+            </div>`;
+        }).join("");
+        sections.push(`<div class="detail-section"><div class="detail-section-title">${uiIcon("trending-down", 16)} Спадающие темы</div>${items}</div>`);
+      }
+    }
+
+    if (sections.length === 0) {
+      return `<div class="detail-empty"><p>Выберите тренд слева для деталей</p></div>`;
+    }
+
+    return `<div class="trends-detail-content">${sections.join("")}</div>`;
+  }
+
   // ── Intelligence (trend report from aggregator) ──────────────────
 
   const LIFECYCLE_CSS = {
@@ -1101,10 +1638,10 @@ export function createTrendsModule(deps) {
   };
 
   function _sentimentHtml(sentiment) {
-    if (!sentiment) return "";
-    if (sentiment === "positive") return `<span class="tc-ms-sentiment tc-ms-positive">↗ positive</span>`;
-    if (sentiment === "negative") return `<span class="tc-ms-sentiment tc-ms-negative">↘ negative</span>`;
-    return `<span class="tc-ms-sentiment tc-ms-neutral">— neutral</span>`;
+    const s = (sentiment || "neutral").toLowerCase();
+    if (s === "positive") return `<span class="tc-ms-sentiment tc-ms-positive">↗ позитивный</span>`;
+    if (s === "negative") return `<span class="tc-ms-sentiment tc-ms-negative">↘ негативный</span>`;
+    return `<span class="tc-ms-sentiment tc-ms-neutral">— нейтральный</span>`;
   }
 
   function renderIntelligenceSummaryList() {
@@ -1264,13 +1801,12 @@ export function createTrendsModule(deps) {
       ? formats.map(f => `<span class="ds-format-pill">${escapeHtml(FORMAT_LABELS[f] || f)}</span>`).join("")
       : "";
 
-    const SOURCE_ICONS = { youtube: "youtube", youtube_ru: "youtube", instagram: "instagram", threads: "at-sign", tiktok: "music", reddit: "message-square", telegram: "send", google_trends: "trending-up" };
     const sourceChips = sources.length
-      ? sources.map(s => `<span class="ds-source-chip">${uiIcon(SOURCE_ICONS[s] || "globe", 14)} ${escapeHtml(s)}</span>`).join("")
+      ? sources.map(s => `<span class="ds-source-chip">${uiIcon(SOURCE_ICONS[s] || "globe", 14)} ${escapeHtml(SOURCE_DISPLAY[s] || s)}</span>`).join("")
       : "";
 
     elements.draftDetail.innerHTML = `
-      ${renderBackButton("К разведке", () => { void loadTrends(); })}
+      ${renderBackButton("К аналитике", () => { void loadTrends(); })}
       <div class="trends-detail-v2">
         <div class="detail-hero">
           <div class="detail-status-row">
@@ -1379,13 +1915,6 @@ export function createTrendsModule(deps) {
     return "tc-" + (lc || "early");
   }
 
-  function _sentimentHtml(sentiment) {
-    const s = (sentiment || "neutral").toLowerCase();
-    if (s === "positive") return `<span class="tc-ms-sentiment tc-ms-positive">↗ позитивный</span>`;
-    if (s === "negative") return `<span class="tc-ms-sentiment tc-ms-negative">↘ негативный</span>`;
-    return `<span class="tc-ms-sentiment tc-ms-neutral">— нейтральный</span>`;
-  }
-
   function _renderCardsInner() {
     if (!trendCards || !trendCards.length) {
       return `<div class="detail-empty"><p>Нет AI-карточек. Нажмите «Сгенерировать» для создания.</p>
@@ -1479,5 +2008,7 @@ export function createTrendsModule(deps) {
     createFromTrendCard,
     openIntelligenceOpp,
     createFromIntelligence,
+    toggleHealthDetails,
+    setAnalyticsSourceFilter,
   };
 }

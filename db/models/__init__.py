@@ -32,6 +32,7 @@ from db.models.analytics import (
     CollectorHealth,
     LlmCacheModel,
     UsageLog,
+    DigestCache,
     AnalyticsEvent,
 )
 
@@ -76,6 +77,7 @@ __all__ = [
     "CollectorHealth",
     "LlmCacheModel",
     "UsageLog",
+    "DigestCache",
     # media
     "VideoTaskModel",
     "KieTaskModel",
