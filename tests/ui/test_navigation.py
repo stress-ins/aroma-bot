@@ -19,6 +19,7 @@ def test_mobile_tabs_and_drafts_render_in_russian(page):
     assert "Планы" in content_tabs
     assert "Публикации" in content_tabs
     assert "Упоминания" in content_tabs
+    assert "Входящие" in content_tabs
     assert "Архив" in content_tabs
 
     page.locator("#btnTabHandbook").click()

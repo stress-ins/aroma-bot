@@ -2698,6 +2698,16 @@ registerWindowBridge({
   setAnalyticsSourceFilter,
   refreshDraftMetrics,
   shareBlend,
+  // Inbox (Instagram DM)
+  openConversation,
+  closeConversation,
+  sendInboxReply,
+  sendInboxReplyOnEnter,
+  generateInboxReply,
+  useAiReply,
+  archiveConversation,
+  pollInbox,
+  setInboxFilter,
   // Stock photo picker
   searchStockPhotos: (...a) => _stockPhotosMod.searchStockPhotos(...a),
   selectStockPhoto: (...a) => _stockPhotosMod.selectStockPhoto(...a),
