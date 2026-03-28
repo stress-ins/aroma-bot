@@ -344,10 +344,6 @@ def build_pptx_from_placement(
         pd = placement_data.get(str(i)) if placement_data else None
 
         if img_bytes:
-            slide.shapes.add_picture(
-                io.BytesIO(img_bytes), Emu(0), Emu(0), Emu(_SLIDE_EMU), Emu(_SLIDE_EMU),
-            )
-
             if pd:
                 top_frac = pd.get("top", 0.63)
                 h_frac = pd.get("height", 0.32)
@@ -356,8 +352,17 @@ def build_pptx_from_placement(
                 text_color = WHITE if pd.get("text_color", "light") == "light" else DARK
             else:
                 top_frac, h_frac = _find_text_zone(img_bytes)
-                left_frac, w_frac = 0.0, 1.0  # full width (matches original _build_pptx)
+                left_frac, w_frac = 0.0, 1.0
                 text_color = WHITE
+
+            # Bake overlay into image to prevent Canva layer reordering
+            from bot.handlers.carousel.pptx import _bake_overlay_rect
+            margin_frac = left_frac if pd else 80000 / _SLIDE_EMU
+            width_frac = w_frac if pd else 1.0 - 2 * margin_frac
+            composite = _bake_overlay_rect(img_bytes, top_frac, h_frac, margin_frac, width_frac)
+            slide.shapes.add_picture(
+                io.BytesIO(composite), Emu(0), Emu(0), Emu(_SLIDE_EMU), Emu(_SLIDE_EMU),
+            )
         else:
             bg = slide.shapes.add_shape(1, Emu(0), Emu(0), Emu(_SLIDE_EMU), Emu(_SLIDE_EMU))
             bg.fill.solid()
@@ -368,7 +373,7 @@ def build_pptx_from_placement(
             left_frac, w_frac = 0.0, 1.0
             pd = None
 
-        # Calculate positions — use placement_data left/width if available
+        # Calculate positions
         if pd and img_bytes:
             margin_left = Emu(int(_SLIDE_EMU * left_frac))
             box_w = Emu(int(_SLIDE_EMU * w_frac))
@@ -376,27 +381,8 @@ def build_pptx_from_placement(
             margin_left = Emu(80000)
             box_w = Emu(_SLIDE_EMU) - margin_left * 2
 
-        pad = Emu(55000)
         box_top = Emu(int(_SLIDE_EMU * top_frac))
         box_h = Emu(int(_SLIDE_EMU * h_frac))
-
-        # Semi-transparent overlay behind text
-        if img_bytes:
-            overlay = slide.shapes.add_shape(
-                1,
-                margin_left - pad, box_top - pad,
-                box_w + pad * 2, box_h + pad * 2,
-            )
-            overlay.fill.solid()
-            overlay.fill.fore_color.rgb = RGBColor(0x18, 0x0E, 0x08)
-            overlay.line.fill.background()
-            sp_pr = overlay._element.spPr
-            solid = sp_pr.find(".//" + _qn("a:solidFill"))
-            if solid is not None:
-                clr = solid.find(_qn("a:srgbClr"))
-                if clr is not None:
-                    alpha_el = _etree.SubElement(clr, _qn("a:alpha"))
-                    alpha_el.set("val", "58000")
 
         txBox = slide.shapes.add_textbox(margin_left, box_top, box_w, box_h)
         txBox.fill.background()
