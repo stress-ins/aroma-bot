@@ -201,11 +201,15 @@ export function createPlansModule(deps) {
   }
 
   function setPlanDateFilter(dateStr) {
+    const strip = document.getElementById("plansCalendarStrip");
+    if (strip) _calStripScrollLeft = strip.scrollLeft;
     state.plansFilter.date = state.plansFilter.date === dateStr ? null : dateStr;
     renderPlans();
   }
 
   // ── Calendar strip ─────────────────────────────────────────────────────────
+
+  let _calStripScrollLeft = null;
 
   function renderCalendarStrip(activeDateStr, datesWithContent) {
     const today = new Date();
@@ -213,7 +217,7 @@ export function createPlansModule(deps) {
     const days = [];
     const dayNames = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
     const months = ["янв", "фев", "мар", "апр", "мая", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
-    for (let i = -7; i <= 6; i++) {
+    for (let i = -3; i <= 20; i++) {
       const d = new Date(today);
       d.setDate(today.getDate() + i);
       const dateKey = d.toISOString().substring(0, 10);
@@ -240,6 +244,19 @@ export function createPlansModule(deps) {
         `).join("")}
       </div>
     `;
+  }
+
+  function scrollCalendarStripToToday() {
+    const strip = document.getElementById("plansCalendarStrip");
+    if (!strip) return;
+    if (_calStripScrollLeft != null) {
+      strip.scrollLeft = _calStripScrollLeft;
+      return;
+    }
+    const todayBtn = strip.querySelector(".is-today");
+    if (todayBtn) {
+      todayBtn.scrollIntoView({ inline: "start", block: "nearest", behavior: "instant" });
+    }
   }
 
   // ── Filter chips ───────────────────────────────────────────────────────────
@@ -587,6 +604,7 @@ export function createPlansModule(deps) {
         ${renderPlansFeed(feed, filters)}
       </div>
     `;
+    requestAnimationFrame(() => scrollCalendarStripToToday());
 
     if (!state.selectedPlan) {
       elements.draftDetail.innerHTML = `${renderBackButton()}<div class="detail-empty">${renderGuidedState({
