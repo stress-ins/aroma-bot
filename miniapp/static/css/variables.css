@@ -41,19 +41,33 @@
   --brand-active:  #9a4d32;
   --text-secondary: var(--muted);
 
-  /* ── Semantic color tokens ─────────────────────────────────────────────── */
-  --color-primary: var(--sage, #6B8F71);
-  --color-secondary: var(--brand, #C4956A);
-  --color-accent: var(--brand);
-  --color-cta: var(--brand);
-  --color-surface: var(--bg, #FAFAF7);
-  --color-card: var(--surface, #FFFFFF);
-  --color-text: var(--text, #2D3436);
-  --color-muted: var(--muted, #6C7A89);
-  --color-border: var(--border, #E8E5DF);
-  --color-success: #4CAF50;
-  --color-warning: #FF9800;
-  --color-error: #F44336;
+  /* ── RGB channel tokens (semantic) ─────────────────────────────────────── */
+  --good-rgb:     46, 125, 79;
+  --bad-rgb:      176, 58, 46;
+  --sage-rgb:     93, 110, 58;
+  --warning-rgb:  212, 160, 23;
+
+  /* ── Shadow system ─────────────────────────────────────────────────────── */
+  --shadow-xs:    0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md:    0 4px 12px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.06);
+  --shadow-lg:    0 8px 24px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.06);
+  --shadow-xl:    0 12px 40px rgba(0,0,0,0.18), 0 4px 12px rgba(0,0,0,0.08);
+
+  /* ── Z-index scale ─────────────────────────────────────────────────────── */
+  --z-base:       1;
+  --z-dropdown:   10;
+  --z-sticky:     20;
+  --z-overlay:    30;
+  --z-modal:      40;
+  --z-toast:      50;
+  --z-max:        9999;
+
+  /* ── Fallback aliases ──────────────────────────────────────────────────── */
+  --accent:       var(--brand);
+  --accent-rgb:   var(--brand-rgb);
+  --danger:       var(--bad);
+  --card-bg:      var(--surface);
+  --panel:        var(--surface);
 
   /* ── Content type colors (platform brand, theme-independent) ──────────── */
   --type-threads:          #9580ff;

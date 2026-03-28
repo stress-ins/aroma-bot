@@ -121,7 +121,7 @@
   top: 0;
   left: 0;
   right: 0;
-  z-index: 9999;
+  z-index: var(--z-toast, 50);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -323,7 +323,7 @@
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
-  z-index: 1000;
+  z-index: var(--z-overlay, 30);
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -331,7 +331,7 @@
 }
 
 .slot-history-modal {
-  background: var(--panel);
+  background: var(--panel, var(--surface));
   border-radius: var(--radius-md);
   padding: 20px;
   width: 100%;

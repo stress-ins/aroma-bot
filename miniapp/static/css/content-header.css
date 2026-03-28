@@ -59,7 +59,7 @@
 
 .content-sub-tab.active {
   background: var(--brand);
-  color: #fff;
+  color: var(--text-on-brand);
 }
 
 /* ── Topbar team container ────────────────────────────────────────────── */
@@ -190,6 +190,12 @@ body[data-theme="terracotta"] {
   --text-on-brand: #ffffff;
   --warning:       #e8b84d;
   --brand-active:  #8f4228;
+  --good:         #3da66a;
+  --good-rgb:     61, 166, 106;
+  --bad:          #d4564a;
+  --bad-rgb:      212, 86, 74;
+  --sage:         #7a9450;
+  --sage-rgb:     122, 148, 80;
 }
 body[data-theme="racing-green"] {
   --brand:        #2a8a50;
@@ -209,6 +215,12 @@ body[data-theme="racing-green"] {
   --text-on-brand: #ffffff;
   --warning:       #e8b84d;
   --brand-active:  #1e6e3a;
+  --good:         #3da66a;
+  --good-rgb:     61, 166, 106;
+  --bad:          #d4564a;
+  --bad-rgb:      212, 86, 74;
+  --sage:         #7a9450;
+  --sage-rgb:     122, 148, 80;
 }
 body[data-theme="champagne"] {
   --brand:        #c8a86a;
@@ -222,12 +234,18 @@ body[data-theme="champagne"] {
   --border:       rgba(200, 168, 106, 0.15);
   --text:         #f8edd8;
   --muted:        rgba(255, 255, 255, 0.52);
-  --hint:         rgba(255, 255, 255, 0.45);
+  --hint:         rgba(255, 255, 255, 0.58);
   --bg-rgb:       42, 34, 24;
   --surface-rgb:  53, 43, 30;
-  --text-on-brand: #2a2016;
+  --text-on-brand: #1a1408;
   --warning:       #e8b84d;
   --brand-active:  #b09050;
+  --good:         #4cb878;
+  --good-rgb:     76, 184, 120;
+  --bad:          #d4564a;
+  --bad-rgb:      212, 86, 74;
+  --sage:         #88a85e;
+  --sage-rgb:     136, 168, 94;
 }
 body[data-theme="violet"] {
   --brand:        #9060c8;
@@ -247,6 +265,12 @@ body[data-theme="violet"] {
   --text-on-brand: #ffffff;
   --warning:       #e8b84d;
   --brand-active:  #7048a0;
+  --good:         #3da66a;
+  --good-rgb:     61, 166, 106;
+  --bad:          #d4564a;
+  --bad-rgb:      212, 86, 74;
+  --sage:         #7a9450;
+  --sage-rgb:     122, 148, 80;
 }
 body[data-theme="teal"] {
   --brand:        #3a9098;
@@ -266,6 +290,12 @@ body[data-theme="teal"] {
   --text-on-brand: #ffffff;
   --warning:       #e8b84d;
   --brand-active:  #2a7078;
+  --good:         #3da66a;
+  --good-rgb:     61, 166, 106;
+  --bad:          #d4564a;
+  --bad-rgb:      212, 86, 74;
+  --sage:         #7a9450;
+  --sage-rgb:     122, 148, 80;
 }
 body[data-theme="raspberry"] {
   --brand:        #b04870;
@@ -285,6 +315,12 @@ body[data-theme="raspberry"] {
   --text-on-brand: #ffffff;
   --warning:       #e8b84d;
   --brand-active:  #8a3058;
+  --good:         #3da66a;
+  --good-rgb:     61, 166, 106;
+  --bad:          #d4564a;
+  --bad-rgb:      212, 86, 74;
+  --sage:         #7a9450;
+  --sage-rgb:     122, 148, 80;
 }
 
 /* ── Theme picker grid (settings screen) ─────────────────────────────────── */
