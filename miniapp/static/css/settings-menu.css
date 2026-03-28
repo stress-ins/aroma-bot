@@ -648,7 +648,7 @@ details[open] > .trend-suggestions-toggle::before { transform: rotate(90deg); }
    ══════════════════════════════════════════════════════════════════════════ */
 
 /* ── База: action-group ──────────────────────────────────────────────── */
-.action-group { background: var(--surface); border-radius: 16px; border: 0.5px solid var(--border); overflow: hidden; }
+.action-group { background: var(--surface); border-radius: 16px; border: 0.5px solid var(--border); overflow: hidden; margin-bottom: 8px; }
 .action-item { padding: 13px 16px; display: flex; align-items: center; gap: 10px; border-bottom: 0.5px solid var(--border); cursor: pointer; transition: background var(--duration-fast) ease; }
 .action-item:last-child { border-bottom: none; }
 .action-item:active { background: var(--surface-2); }

@@ -344,9 +344,8 @@ body.is-mobile-layout[data-mode="handbook"] .toolbar {
   padding-bottom: 4px;
 }
 body.is-mobile-layout[data-mode="handbook"] .list-panel .panel-header {
-  margin-top: 0;
-  /* Always show in handbook — search bar is always rendered here */
-  display: flex;
+  /* Search bar + action-group live inside draftList now — panel-header is empty */
+  display: none;
 }
 
 /* Compact topbar-main padding on mobile since title is hidden.
