@@ -199,6 +199,15 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
         "INSERT INTO mention_replies (reply_id, mention_id, tone, content, selected, generated_at, published_at, publish_error) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
         ("reply001", "mention002", "warm", "Рады, что помогли! Лаванда — отличный выбор для вечернего расслабления.", 1, now, now, ""),
     )
+    # Inbox conversations + messages for testing Входящие tab
+    cursor.execute(
+        "INSERT INTO conversations (conversation_id, platform, participant_id, participant_username, participant_name, last_message_preview, last_message_at, status, unread_count, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        ("conv001", "instagram", "ext_user_001", "wellness_dm", "Wellness DM User", "Подскажите, как использовать масло лаванды?", now, "active", 1, now),
+    )
+    cursor.execute(
+        "INSERT INTO direct_messages (message_id, conversation_id, sender_type, content, sent_at, external_id) VALUES (?, ?, ?, ?, ?, ?)",
+        ("dm001", "conv001", "user", "Подскажите, как использовать масло лаванды?", now, "ext_dm_001"),
+    )
     cursor.execute(
         "INSERT INTO plans (plan_id, raw_text, entries, status, created_at) VALUES (?, ?, ?, 'draft', ?)",
         (
