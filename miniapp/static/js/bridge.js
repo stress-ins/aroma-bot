@@ -168,7 +168,6 @@ export function registerWindowBridge(deps) {
     addRewrite,
     removeRewrite,
     savePlatformTone,
-    saveUploadPostPrefs,
     saveImageModels,
     setTheme,
     openMentionDetail,
@@ -443,7 +442,6 @@ export function registerWindowBridge(deps) {
   window.addRewrite = addRewrite;
   window.removeRewrite = removeRewrite;
   window.savePlatformTone = savePlatformTone;
-  window.saveUploadPostPrefs = saveUploadPostPrefs;
   window.saveImageModels = saveImageModels;
   window.setTheme = setTheme;
   window.addTodoItem = () => addTodoItem();

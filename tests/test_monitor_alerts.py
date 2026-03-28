@@ -110,3 +110,28 @@ class TestImageGenNotifies:
             mock_settings.monitor_bot_token = ""
             mock_settings.monitor_chat_id = ""
             notify_owner("test message")
+
+
+class TestRecentAlertsCleanup:
+    def setup_method(self):
+        from bot.handlers.monitor import _recent_alerts
+        _recent_alerts.clear()
+
+    def test_cleanup_limits_size(self):
+        """_recent_alerts should not grow beyond _RECENT_ALERTS_MAX."""
+        from bot.handlers.monitor import (
+            _recent_alerts,
+            _RECENT_ALERTS_MAX,
+            notify_owner_throttled,
+        )
+        import time
+
+        # Fill beyond max with unique keys
+        now = time.time()
+        for i in range(_RECENT_ALERTS_MAX + 100):
+            _recent_alerts[f"key_{i}"] = now - 100000  # old timestamps
+
+        with patch("bot.handlers.monitor.notify_owner"):
+            notify_owner_throttled("trigger cleanup", dedup_key="trigger", cooldown=1)
+
+        assert len(_recent_alerts) <= _RECENT_ALERTS_MAX + 1  # +1 for the trigger key

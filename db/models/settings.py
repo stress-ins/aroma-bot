@@ -16,8 +16,6 @@ class BrandSettingsModel(Base):
     forbidden_phrases: Mapped[list[str]] = mapped_column(MutableList.as_mutable(JSON), default=list)
     base_instructions: Mapped[str] = mapped_column(String(4000), default="")
     target_platforms: Mapped[list[str]] = mapped_column(MutableList.as_mutable(JSON), default=list)
-    upload_post_user: Mapped[str] = mapped_column(String(255), default="")
-    upload_post_api_key: Mapped[str] = mapped_column(String(255), default="")
     # Image generation model preferences
     image_model_carousel: Mapped[str] = mapped_column(String(100), default="gpt-image/1.5-text-to-image")
     image_model_img2img: Mapped[str] = mapped_column(String(100), default="google/nano-banana-edit")

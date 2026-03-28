@@ -28,7 +28,7 @@ def _get_admin_ids() -> set[int]:
 
 def _require_admin(x_telegram_init_data: str | None = Header(default=None)) -> int:
     """Require admin access — returns telegram_id or raises 403."""
-    if os.getenv("AROMA_BYPASS_AUTH") == "1":
+    if os.getenv("AROMA_BYPASS_AUTH") == "1" and os.getenv("AROMA_ENV", "production") in ("test", "dev"):
         return 12345
     if not x_telegram_init_data or not _verify_init_data(x_telegram_init_data):
         raise HTTPException(status_code=403, detail="forbidden")
@@ -44,7 +44,7 @@ def _require_admin(x_telegram_init_data: str | None = Header(default=None)) -> i
 def _resolve_user(x_telegram_init_data: str | None = Header(default=None)) -> tuple[int, bool]:
     """Returns (telegram_id, is_admin)."""
     import os
-    if os.getenv("AROMA_BYPASS_AUTH") == "1":
+    if os.getenv("AROMA_BYPASS_AUTH") == "1" and os.getenv("AROMA_ENV", "production") in ("test", "dev"):
         return 12345, True
     if not x_telegram_init_data or not _verify_init_data(x_telegram_init_data):
         raise HTTPException(status_code=403, detail="forbidden")

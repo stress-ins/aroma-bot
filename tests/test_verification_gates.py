@@ -133,15 +133,17 @@ class TestPrePublishQualityGate:
             },
         )
 
-        mock_upload = AsyncMock(return_value={"threads": {"status": "success", "external_id": "ext1"}})
+        mock_threads = AsyncMock(return_value={"id": "ext1"})
         with (
-            patch("bot.services.publisher._upload_post_publish", mock_upload),
+            patch("bot.services.meta_publisher.publish_to_threads", mock_threads),
+            patch("bot.services.publish_log_store.save_log", new_callable=AsyncMock, return_value=1),
+            patch("bot.services.publish_log_store.update_log_status", new_callable=AsyncMock),
             patch("bot.services.publisher.update_draft", return_value=draft),
         ):
             result = await publish(draft.draft_id, ["threads"])
 
         assert "error" not in result
-        mock_upload.assert_called_once()
+        mock_threads.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_allows_missing_score(self, in_memory_db):
@@ -153,9 +155,11 @@ class TestPrePublishQualityGate:
             payload={"text": "Legacy post"},
         )
 
-        mock_upload = AsyncMock(return_value={"threads": {"status": "success", "external_id": "ext2"}})
+        mock_threads = AsyncMock(return_value={"id": "ext2"})
         with (
-            patch("bot.services.publisher._upload_post_publish", mock_upload),
+            patch("bot.services.meta_publisher.publish_to_threads", mock_threads),
+            patch("bot.services.publish_log_store.save_log", new_callable=AsyncMock, return_value=1),
+            patch("bot.services.publish_log_store.update_log_status", new_callable=AsyncMock),
             patch("bot.services.publisher.update_draft", return_value=draft),
         ):
             result = await publish(draft.draft_id, ["threads"])

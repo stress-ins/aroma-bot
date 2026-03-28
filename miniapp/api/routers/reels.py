@@ -734,7 +734,7 @@ async def reels_notify_when_ready(
     import os
 
     # Extract telegram_id from init data
-    if os.getenv("AROMA_BYPASS_AUTH") == "1":
+    if os.getenv("AROMA_BYPASS_AUTH") == "1" and os.getenv("AROMA_ENV", "production") in ("test", "dev"):
         telegram_id = 12345
     else:
         if not x_telegram_init_data or not _verify_init_data(x_telegram_init_data):

@@ -86,10 +86,6 @@ class Settings(BaseSettings):
     canva_client_id: str = ""
     canva_client_secret: str = ""
 
-    # Upload-Post (cross-platform publishing)
-    upload_post_api_key: str = ""
-    upload_post_user: str = ""
-
     # Scheduler
     daily_digest_time: str = "09:00"
     timezone: str = "Europe/Moscow"
