@@ -1308,7 +1308,7 @@ export function createSettingsModule(deps) {
         <div class="section-card">
           <div class="sc-header">
             <div class="sc-title">${uiIcon("clock-counter-clockwise")} Последние задачи</div>
-            ${errorCount > 0 ? `<span style="color:#ff9090;font-size:11px;font-weight:600">${errorCount} ошибок</span>` : ""}
+            ${errorCount > 0 ? `<span style="color:var(--bad);font-size:11px;font-weight:600">${errorCount} ошибок</span>` : ""}
           </div>
           ${runningTasksHtml}${failedGroupsHtml}${doneTasksHtml}
           ${!recent.length ? '<div style="padding:14px;color:var(--hint);font-size:13px">Нет задач</div>' : ""}

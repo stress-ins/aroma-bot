@@ -46,6 +46,28 @@
   --bad-rgb:      176, 58, 46;
   --sage-rgb:     93, 110, 58;
   --warning-rgb:  212, 160, 23;
+  --info:         #5a8aff;
+  --info-rgb:     90, 138, 255;
+
+  /* ── Trend lifecycle colors ────────────────────────────────────────────── */
+  --lifecycle-hot:       #9580ff;
+  --lifecycle-hot-bg:    #2d1e5a;
+  --lifecycle-hot-text:  #c4a8ff;
+  --lifecycle-growing:       #3bcb8a;
+  --lifecycle-growing-bg:    #0f3328;
+  --lifecycle-growing-text:  #3bcb8a;
+  --lifecycle-stable:        #5a8aff;
+  --lifecycle-stable-bg:     #1a2540;
+  --lifecycle-stable-text:   #7aa3ff;
+  --lifecycle-declining:       #ff6b6b;
+  --lifecycle-declining-bg:    #3a1a1a;
+  --lifecycle-declining-text:  #ff6b6b;
+
+  /* ── Data visualization colors ─────────────────────────────────────────── */
+  --chart-green:  #6bb86e;
+  --chart-blue:   #4a90d9;
+  --chart-orange: #d4845e;
+  --chart-muted:  #999;
 
   /* ── Shadow system ─────────────────────────────────────────────────────── */
   --shadow-xs:    0 1px 2px rgba(0,0,0,0.04);
