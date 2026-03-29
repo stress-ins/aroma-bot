@@ -90,7 +90,9 @@ const MODE_TABS = {
     { id: "symptoms", label: "Симптомы" },
     { id: "concepts", label: "Теория" },
     { id: "practices", label: "Практики" },
+    { id: "massage", label: "Массаж" },
     { id: "sounds", label: "Звуки" },
+    { id: "crystals", label: "Кристаллы" },
   ],
 };
 
@@ -399,6 +401,28 @@ const HANDBOOK_CATEGORY_META = {
     locked: "Доступ к разделу Симптомы закрыт.",
     count: (items) => `${items.length} симптомов`,
   },
+  massage: {
+    category: "massage",
+    title: "Массаж",
+    label: "массажную технику",
+    searchLabel: "Поиск техники",
+    searchPlaceholder: "аромамассаж, рефлексология...",
+    empty: "Массажные техники не найдены.",
+    selectPrompt: "Выберите массажную технику из списка.",
+    locked: "Доступ к справочнику массажа ограничен.",
+    count: (items) => `${items.length} карточек`,
+  },
+  crystals: {
+    category: "crystal",
+    title: "Кристаллы",
+    label: "кристалл",
+    searchLabel: "Поиск кристалла",
+    searchPlaceholder: "аметист, кварц, турмалин...",
+    empty: "Кристаллы не найдены.",
+    selectPrompt: "Выберите кристалл из списка.",
+    locked: "Доступ к справочнику кристаллов ограничен.",
+    count: (items) => `${items.length} карточек`,
+  },
 };
 
 function handbookCategoryIcon(tabId) {
@@ -408,7 +432,9 @@ function handbookCategoryIcon(tabId) {
     symptoms: "🫀",
     concepts: "🧭",
     practices: "🫁",
+    massage: "💆",
     sounds: "🔔",
+    crystals: "💎",
   };
   const glyph = glyphMap[String(tabId || "").toLowerCase()] || "•";
   return `<span class="kind-glyph handbook-glyph" aria-hidden="true">${glyph}</span>`;
