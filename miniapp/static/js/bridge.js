@@ -644,6 +644,22 @@ export function registerWindowBridge(deps) {
     renderCreateTool(state.selectedCreateTool);
   };
 
+  // ── Shop promo link ──────────────────────────────────────────────
+  window.openShopLink = async function(url) {
+    const code = "AROMARA";
+    try {
+      await copyText(code);
+    } catch { /* best-effort */ }
+    showUiNotice(`Промокод ${code} скопирован — скидка 7%`, "success");
+    setTimeout(() => {
+      if (window.Telegram?.WebApp?.openLink) {
+        window.Telegram.WebApp.openLink(url);
+      } else {
+        window.open(url, "_blank", "noopener");
+      }
+    }, 600);
+  };
+
   // Trends
   window.selectTrendsPlatform = selectTrendsPlatform;
   window.selectTrendsPeriod = selectTrendsPeriod;

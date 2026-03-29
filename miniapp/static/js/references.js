@@ -876,6 +876,13 @@ export function createReferencesModule(deps) {
           ${renderBackButton()}
           ${renderReferenceImage(reference)}
           ${renderCollapsibleDescription(reference)}
+          ${reference.shop_url ? `<section class="section shop-buy-section">
+            <button class="shop-buy-btn" type="button" data-action="openShopLink" data-args='${JSON.stringify([reference.shop_url])}'>
+              <i class="ph ph-shopping-cart" style="font-size:18px"></i>
+              <span class="shop-buy-label">Купить смесь</span>
+              <span class="shop-buy-promo">Промокод <strong>AROMARA</strong> — скидка 7%</span>
+            </button>
+          </section>` : ""}
           ${aromaSection("Терапевтические свойства", reference.therapeutic_properties)}
           ${renderStructuredList("При каких состояниях", reference.conditions_for_use)}
           ${recipeHtml}
@@ -1084,6 +1091,13 @@ export function createReferencesModule(deps) {
           ${renderReferenceImage(reference)}
           ${dailyOilHtml}
           ${aromaHtmlSection("Паспорт аромата", renderReferencePassport(reference))}
+          ${reference.shop_url ? `<section class="section shop-buy-section">
+            <button class="shop-buy-btn" type="button" data-action="openShopLink" data-args='${JSON.stringify([reference.shop_url])}'>
+              <i class="ph ph-shopping-cart" style="font-size:18px"></i>
+              <span class="shop-buy-label">Купить масло</span>
+              <span class="shop-buy-promo">Промокод <strong>AROMARA</strong> — скидка 7%</span>
+            </button>
+          </section>` : ""}
           ${renderCollapsibleDescription(reference)}
           ${blendsChips ? `<section class="section"><h3>🌀 Входит в смеси</h3><div class="detail-preview">${blendsChips}</div></section>` : ""}
           ${symptomChips ? `<section class="section"><h3>💊 Помогает при</h3><div class="detail-preview">${symptomChips}</div></section>` : ""}
