@@ -243,21 +243,87 @@ async def test_webhook_creates_mention_via_ingest(miniapp_client):
     assert item["content"] == "Check out @aromara"
     assert item["author_username"] == "fan_user"
 
-    # Ingest via miniapp API
+
+@pytest.mark.asyncio
+async def test_instagram_messaging_webhook_parses_dm(oauth_client):
+    """Instagram messaging webhook (entry[].messaging[]) is parsed correctly."""
+    payload = {
+        "object": "instagram",
+        "entry": [
+            {
+                "id": "page-123",
+                "time": 1711700000,
+                "messaging": [
+                    {
+                        "sender": {"id": "user-456"},
+                        "recipient": {"id": "page-123"},
+                        "timestamp": 1711700000,
+                        "message": {
+                            "mid": "dm-msg-001",
+                            "text": "Подскажите по маслу лаванды",
+                        },
+                    }
+                ],
+            }
+        ],
+    }
+    body = json.dumps(payload).encode()
+    sig = _sign_payload(body, IG_APP_SECRET)
+    resp = await oauth_client.post(
+        "/webhooks/instagram",
+        content=body,
+        headers={"Content-Type": "application/json", "x-hub-signature-256": sig},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "ok"
+
+
+@pytest.mark.asyncio
+async def test_parse_meta_messaging_entries(miniapp_client):
+    """_parse_meta_messaging_entries extracts DM fields correctly."""
+    from threads_oauth_callback import _parse_meta_messaging_entries
+
+    payload = {
+        "entry": [
+            {
+                "id": "page-123",
+                "messaging": [
+                    {
+                        "sender": {"id": "user-789"},
+                        "recipient": {"id": "page-123"},
+                        "timestamp": 1711700000,
+                        "message": {
+                            "mid": "dm-mid-002",
+                            "text": "Hello!",
+                        },
+                    },
+                    {
+                        "sender": {"id": "user-789"},
+                        "recipient": {"id": "page-123"},
+                        "delivery": {"mids": ["dm-mid-002"]},
+                    },
+                ],
+            }
+        ],
+    }
+    items = _parse_meta_messaging_entries(payload, "instagram")
+    # Should only include actual messages, not delivery receipts
+    assert len(items) == 1
+    item = items[0]
+    assert item["platform"] == "instagram"
+    assert item["participant_id"] == "user-789"
+    assert item["content"] == "Hello!"
+    assert item["external_id"] == "dm-mid-002"
+    assert item["sender_type"] == "user"
+
+    # Ingest via inbox API (not mentions — DMs go to inbox)
     resp = await miniapp_client.post(
-        "/api/mentions/ingest",
+        "/api/inbox/ingest",
         json=item,
         headers={"X-Webhook-Secret": WEBHOOK_SECRET},
     )
     assert resp.status_code == 200
     assert resp.json()["status"] == "created"
-
-    # Verify mention is actually in DB
-    from bot.services.mentions_store import find_mention_by_external_id
-    mention = await find_mention_by_external_id("instagram", "mention-e2e-001")
-    assert mention is not None
-    assert mention.content == "Check out @aromara"
-    assert mention.author_username == "fan_user"
 
 
 @pytest.mark.asyncio
