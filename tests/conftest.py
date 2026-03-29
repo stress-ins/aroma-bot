@@ -67,6 +67,10 @@ async def setup_test_db(monkeypatch):
     # Ensure auth bypass works with the new AROMA_ENV guard
     monkeypatch.setenv("AROMA_ENV", "test")
 
+    # Disable rate limiting by default so unrelated tests are not affected.
+    # The dedicated test_rate_limit.py overrides this per-test.
+    monkeypatch.setenv("AROMA_RATE_LIMIT_DISABLED", "1")
+
     engine = create_async_engine(
         "sqlite+aiosqlite://",
         connect_args={"check_same_thread": False},
