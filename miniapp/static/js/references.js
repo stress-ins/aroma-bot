@@ -1427,6 +1427,7 @@ export function createReferencesModule(deps) {
   return {
     currentHandbookMeta,
     loadReferenceAccess,
+    actionGroupHtml: _actionGroupHtml,
     loadReferences,
     openReference,
     openDailyOilReference,
