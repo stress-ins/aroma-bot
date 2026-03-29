@@ -30,12 +30,6 @@
   order: 2;
 }
 
-.reference-hero-media {
-  display: grid;
-  gap: 8px;
-  order: 1;
-}
-
 /* Hero pill badges (volatility, article) */
 .hero-pills {
   display: flex;
@@ -208,6 +202,25 @@ body[data-theme] .reels-overview-card {
   color: var(--text);
 }
 
+.reference-hero-media {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  order: 1;
+}
+
+.reference-hero-media::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(to bottom, transparent, var(--bg));
+  pointer-events: none;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
+
 .aroma-image {
   display: block;
   width: 100%;
@@ -215,7 +228,6 @@ body[data-theme] .reels-overview-card {
   object-fit: cover;
   object-position: center;
   border-radius: var(--radius-md);
-  border: 1px solid var(--border);
   background: transparent;
 }
 

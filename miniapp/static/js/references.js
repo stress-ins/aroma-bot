@@ -582,23 +582,8 @@ export function createReferencesModule(deps) {
     }
     // Compact EN name for blends (mirrors card list style)
     const blendNameEn = state.tab === "blends" && reference.name_en ? reference.name_en : "";
-    // Pill badges for aromas (volatility + article)
-    let heroPills = "";
-    if (state.tab === "aromas") {
-      const pills = [];
-      if (reference.volatility) {
-        const v = String(reference.volatility).toLowerCase();
-        let label = reference.volatility;
-        if (v.includes("высок")) label = "Высокая летучесть";
-        else if (v.includes("средн")) label = "Средняя летучесть";
-        else if (v.includes("низк")) label = "Низкая летучесть";
-        pills.push(`<span class="hero-pill">${escapeHtml(label)}</span>`);
-      }
-      if (reference.article_number) {
-        pills.push(`<span class="hero-pill">#${escapeHtml(reference.article_number)}</span>`);
-      }
-      if (pills.length) heroPills = `<div class="hero-pills">${pills.join("")}</div>`;
-    }
+    // Volatility and article shown only in passport section, not in hero
+    const heroPills = "";
     return `
       <section class="section aroma-hero ${heroClass}">
         <div class="reference-hero-media">
