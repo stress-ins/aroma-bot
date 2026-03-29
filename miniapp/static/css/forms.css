@@ -11,7 +11,7 @@
   margin-top: 2px;
 }
 .char-counter.warn { color: var(--warning); }
-.char-counter.over { color: var(--danger, #c44); }
+.char-counter.over { color: var(--danger); }
 
 /* Timezone label */
 .tz-label {
@@ -442,7 +442,7 @@ body.tg-webapp .back-button { display: none !important; }
   padding: 8px;
   border: 1px solid rgba(60, 40, 20, 0.08);
   border-radius: 22px;
-  background: rgba(255, 253, 250, 0.72);
+  background: rgba(var(--bg-rgb), 0.72);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   box-shadow: 0 12px 30px rgba(28, 21, 16, 0.12);

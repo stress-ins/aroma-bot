@@ -504,7 +504,7 @@ export function createTrendsModule(deps) {
     if (bestPost) {
       const isIg = bestPost.platform === "instagram";
       bestPostHtml = `
-        <div class="analytics-best-post" style="border-left-color: ${isIg ? "#e1306c" : "#9580ff"}">
+        <div class="analytics-best-post" style="border-left-color: ${isIg ? "var(--type-instagram)" : "var(--type-threads)"}">
           <div class="abp-label">
             <div class="apc-dot ${isIg ? "apc-dot-ig" : "apc-dot-th"}"></div>
             Лучший пост за период
@@ -789,12 +789,13 @@ export function createTrendsModule(deps) {
       TEXT_POST: "Текст",
       unknown: "Другое",
     };
+    /* Data visualization colors — using CSS variables */
     const formatColors = {
       IMAGE: "var(--brand)",
-      VIDEO: "#4a90d9",
-      CAROUSEL_ALBUM: "#6bb86e",
-      TEXT_POST: "#d4845e",
-      unknown: "#999",
+      VIDEO: "var(--chart-blue)",
+      CAROUSEL_ALBUM: "var(--chart-green)",
+      TEXT_POST: "var(--chart-orange)",
+      unknown: "var(--chart-muted)",
     };
 
     const segments = Object.entries(formats)
@@ -872,9 +873,9 @@ export function createTrendsModule(deps) {
   function renderContentLengths(lengths) {
     const total = (lengths.short || 0) + (lengths.medium || 0) + (lengths.long || 0) || 1;
     const bars = [
-      { label: "Короткие (<100)", count: lengths.short || 0, color: "#6bb86e" },
+      { label: "Короткие (<100)", count: lengths.short || 0, color: "var(--chart-green)" },
       { label: "Средние (100-300)", count: lengths.medium || 0, color: "var(--brand)" },
-      { label: "Длинные (>300)", count: lengths.long || 0, color: "#4a90d9" },
+      { label: "Длинные (>300)", count: lengths.long || 0, color: "var(--chart-blue)" },
     ];
 
     const segments = bars

@@ -79,8 +79,8 @@
 .grade-recs { display: flex; flex-direction: column; gap: 4px; }
 .grade-rec-item { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text); }
 .grade-rec-priority { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px; }
-.grade-rec-priority--high { background: rgba(229,57,53,0.15); color: #e53935; }
-.grade-rec-priority--medium { background: rgba(255,152,0,0.15); color: #f59e0b; }
+.grade-rec-priority--high { background: rgba(var(--bad-rgb),0.15); color: var(--bad); }
+.grade-rec-priority--medium { background: rgba(var(--warning-rgb),0.15); color: var(--warning); }
 .grade-rec-priority--low { background: var(--surface); color: var(--hint); }
 
 /* Grade profile cards */
