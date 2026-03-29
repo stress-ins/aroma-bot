@@ -174,7 +174,7 @@ async def cmd_threads(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
     msg = await update.message.reply_text("🧠 Анализирую тренды, генерирую темы...")
 
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     trends_text = _format_trends(results)
     topics = await loop.run_in_executor(_executor, _claude_topics, trends_text)
 
@@ -203,7 +203,7 @@ async def cb_threads(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
             await query.message.edit_text("⏳ Нет данных. Сначала запроси /trends или /threads.")
             return
         await query.message.edit_text("🧠 Обновляю темы...")
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         trends_text = _format_trends(results)
         topics = await loop.run_in_executor(_executor, _claude_topics, trends_text)
         context.user_data["tt_topics"] = topics
@@ -225,7 +225,7 @@ async def cb_threads(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
             f"✍️ Тема: {topic}\n\n⏳ Генерирую пост и картинку...",
         )
 
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         post_text, image_prompt = await loop.run_in_executor(
             _executor, _claude_post_and_prompt, topic
         )

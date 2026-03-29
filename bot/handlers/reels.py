@@ -97,7 +97,7 @@ async def _generate_storyboard_images(
     if not settings.image_api_key or not frames:
         return []
 
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     images: list[bytes | None] = [None] * len(frames[:4])
     processed: set[int] = set()
     done_count = 0
@@ -130,7 +130,7 @@ async def _generate_storyboard_images(
 
 async def _load_topics(context: ContextTypes.DEFAULT_TYPE, results: list) -> list[str]:
     trends_text = _format_trends(results)
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     return await loop.run_in_executor(_executor, generate_reels_topics_sync, trends_text)
 
 
@@ -323,7 +323,7 @@ async def cb_reels(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
         topic = topics[idx]
         status = await query.message.reply_text(f"🎬 Тема: {topic}\n\n⏳ Пишу сценарий...")
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         scenario = await loop.run_in_executor(_executor, generate_reels_scenario_sync, topic)
         await _build_reels_review(status, query.message, context, topic, scenario)
 
@@ -337,7 +337,7 @@ async def _build_reels_review(
     *,
     existing_draft_id: str = "",
 ) -> None:
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     await status_message.edit_text(f"🎬 Тема: {topic}\n\n🎥 Готовлю раскадровку...")
     frames = await loop.run_in_executor(_executor, generate_reels_director_sync, topic, scenario)
 
@@ -451,7 +451,7 @@ async def _regen_reels_frame(message, context: ContextTypes.DEFAULT_TYPE, idx: i
         storyboard[idx] = frame
 
     status = await message.reply_text(f"🖼 Перегенерирую кадр {idx + 1}...")
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     image = await loop.run_in_executor(_img_executor, _gemini_reels_frame, prompt)
     await status.delete()
     if not image:

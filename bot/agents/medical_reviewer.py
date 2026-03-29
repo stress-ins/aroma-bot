@@ -226,5 +226,5 @@ async def review_card_medical(card: dict[str, Any], *, dry_run: bool = False) ->
             "corrections": {},
         }
 
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     return await loop.run_in_executor(None, review_card_medical_sync, card)

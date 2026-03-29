@@ -58,7 +58,7 @@ async def get_ai_recommendations(results: list[SourceResult]) -> SourceResult:
 
     try:
         trends_text = _format_trends_summary(results)
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         text = await loop.run_in_executor(_executor, _call_claude, trends_text)
         source.items = [TrendItem(title=text)]
     except Exception as exc:

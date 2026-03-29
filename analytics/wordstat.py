@@ -125,7 +125,7 @@ class WordstatCollector(BaseCollector):
                 icon=self.icon, error="YANDEX_CLIENT_ID/SECRET не заданы",
             )
         try:
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             items = await loop.run_in_executor(_executor, _fetch_wordstat)
             return SourceResult(
                 source_name=self.source_name, source_key=self.source_key,

@@ -204,7 +204,7 @@ async def cmd_plan(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     trends_text = _format_trends(results)
 
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     plan = await loop.run_in_executor(_executor, generate_plan_sync, trends_text)
 
     if not plan:
@@ -425,7 +425,7 @@ async def _generate_reels_from_plan(
         f"🎬 {entry.topic}\n\n"
         "⏳ Собираю Reels по пункту плана..."
     )
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     try:
         scenario = scenario_override or await loop.run_in_executor(_executor, generate_reels_scenario_sync, entry.topic)
         frames = await loop.run_in_executor(_executor, generate_reels_director_sync, entry.topic, scenario)

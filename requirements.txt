@@ -22,31 +22,32 @@ feedparser==6.0.11
 vk-api==11.9.9
 
 # Image generation
-python-pptx
-TikTokApi
-instagrapi
-anthropic
+python-pptx==1.0.2
+TikTokApi==7.3.2
+instagrapi==2.3.0
+anthropic==0.85.0
 
 # RAG
-faiss-cpu
-sentence-transformers>=3.0.0
-numpy>=1.24.0
+faiss-cpu==1.11.0
+sentence-transformers==3.4.1
+numpy==2.4.3
 
 # Utils
 aiohttp==3.10.10
 httpx==0.27.2
 fastapi==0.115.0
 uvicorn==0.32.0
-gunicorn>=22.0
+gunicorn==23.0.0
 aiosqlite==0.22.1
 sqlalchemy==2.0.48
 alembic==1.14.1
 pypdf==6.8.0
-pytest-asyncio
-pytest-timeout
-pytest-xdist
-pytest-cov
+pytest-asyncio==1.3.0
+pytest-timeout==2.4.0
+pytest-xdist==3.8.0
+pytest-cov==7.0.0
 playwright==1.58.0
-pdfplumber
-python-multipart
-edge-tts
+pdfplumber==0.11.9
+python-multipart==0.0.22
+edge-tts==7.2.7
+limits==5.8.0
