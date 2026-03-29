@@ -583,7 +583,7 @@ export function createReferencesModule(deps) {
         </div>
         <div class="reference-hero-copy">
           <p class="eyebrow">${eyebrowLabel}</p>
-          <h2 class="detail-title">${escapeHtml(state.tab === "symptoms" ? normalizePdfSymptomName(reference.name) : reference.name)}</h2>
+          <h2 class="detail-title">${escapeHtml(state.tab === "symptoms" ? normalizePdfSymptomName(reference.name) : (reference.name_ru || reference.name))}</h2>
           ${subtitle ? `<p class="reference-keyline">${escapeHtml(subtitle)}</p>` : ""}
           ${blendNameEn ? `<div class="reference-name-en">${escapeHtml(blendNameEn)}</div>` : ""}
           ${state.tab === "blends" && reference.article_number ? `<span class="reference-meta-article">🔖 ${escapeHtml(reference.article_number)}</span>` : ""}
@@ -837,7 +837,7 @@ export function createReferencesModule(deps) {
           <div class="draft-kind">${!["symptoms", "concepts", "blends"].includes(state.tab) ? `<span class="kind-glyph handbook-glyph" aria-hidden="true">${aromaCardIcon(item, state.tab)}</span>` : ""}${handbookCardBadge(state.tab, item) ? `<span>${state.tab === "concepts" ? `<span class="concept-kind-mark" aria-hidden="true">${escapeHtml(aromaCardIcon(item, state.tab))}</span>` : ""}${escapeHtml(handbookCardBadge(state.tab, item))}</span>` : ""}</div>
           ${(() => { const courseLabel = formatCourseSourceLabel(item.course_source); const dateLabel = courseLabel || (state.tab !== "aromas" ? REFERENCE_SOURCE_TYPE_LABELS[item.source_type] || "" : ""); return dateLabel ? `<span class="overview-card-date">${escapeHtml(dateLabel)}</span>` : ""; })()}
         </div>
-        <h3 class="draft-topic">${escapeHtml(state.tab === "symptoms" ? normalizePdfSymptomName(item.name) : item.name)}</h3>
+        <h3 class="draft-topic">${escapeHtml(state.tab === "symptoms" ? normalizePdfSymptomName(item.name) : (item.name_ru || item.name))}</h3>
         ${item.name_en ? `<div class="reference-name-en">${escapeHtml(item.name_en)}</div>` : ""}
         <div class="draft-preview">${escapeHtml(stripMarkdown(
           (state.tab === "concepts" ? item.key : null)
@@ -1246,7 +1246,7 @@ export function createReferencesModule(deps) {
     const typeLabel = typeLabels[item._type] || item._type;
     const typeIcon = typeIcons[item._type] || "";
     const tabId = item._type + "s";
-    const name = item.name || "";
+    const name = item.name_ru || item.name || "";
     return `<article ${interactiveCardAttrs("\u041e\u0442\u043a\u0440\u044b\u0442\u044c " + name)} class="draft-card overview-card interactive-card"
       data-action="openReference" data-args='${JSON.stringify([item.slug, tabId])}'>
       <div class="overview-card-top"><span class="search-type-badge">${typeIcon} ${escapeHtml(typeLabel)}</span></div>
