@@ -246,6 +246,8 @@ def miniapp_test_client(monkeypatch):
     import miniapp.api.auth as _miniapp_auth
     from config import settings as _cfg
 
+    # Disable auth bypass so tests can verify 403 on unauthenticated requests
+    monkeypatch.delenv("AROMA_BYPASS_AUTH", raising=False)
     monkeypatch.setattr(_miniapp_auth, "_verify_init_data", lambda _value: True)
     monkeypatch.setattr(_cfg, "anthropic_api_key", "test-key")
 
@@ -280,6 +282,7 @@ class TestInitDataAuth:
     def test_stale_init_data_rejected(self, monkeypatch):
         import time
         import miniapp.api.auth as _auth
+        monkeypatch.delenv("AROMA_BYPASS_AUTH", raising=False)
         monkeypatch.setattr(_auth.settings, "telegram_bot_token", "test-token")
         stale_date = int(time.time()) - 90000  # 25 hours ago
         data = self._make_init_data("test-token", auth_date=stale_date)
@@ -287,6 +290,7 @@ class TestInitDataAuth:
 
     def test_wrong_hash_rejected(self, monkeypatch):
         import miniapp.api.auth as _auth
+        monkeypatch.delenv("AROMA_BYPASS_AUTH", raising=False)
         monkeypatch.setattr(_auth.settings, "telegram_bot_token", "test-token")
         data = self._make_init_data("other-token")  # signed with wrong token
         assert _auth._verify_init_data(data) is False
