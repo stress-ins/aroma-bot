@@ -63,6 +63,10 @@ export function createRuntimeModule(deps) {
       if (gen !== state._loadGen) return false;
       console.error("miniapp runtime tab load failed", error);
       showRuntimeWarning(prefix, error);
+      // Ensure handbook action-group buttons stay visible even on error
+      if (deps.HANDBOOK_CATEGORY_META[state.tab] && deps.actionGroupHtml) {
+        elements.draftList.insertAdjacentHTML("afterbegin", deps.actionGroupHtml());
+      }
       hideBootFallback();
       return false;
     }
@@ -202,7 +206,9 @@ export function createRuntimeModule(deps) {
   }
 
   function retryCurrentTab() {
-    elements.draftList.innerHTML = renderPanelLoader("Повторяю загрузку");
+    const prefix = deps.HANDBOOK_CATEGORY_META[state.tab] && deps.actionGroupHtml
+      ? deps.actionGroupHtml() : "";
+    elements.draftList.innerHTML = prefix + renderPanelLoader("Повторяю загрузку");
     void safeLoadCurrentTab("Не удалось загрузить вкладку");
   }
 

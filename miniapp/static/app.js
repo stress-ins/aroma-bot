@@ -1821,6 +1821,7 @@ async function loadSchedule() {
 }
 
 const {
+  actionGroupHtml,
   currentHandbookMeta,
   loadReferenceAccess,
   loadReferences,
@@ -2203,6 +2204,7 @@ const _runtimeMod = createRuntimeModule({
   hideBootFallback,
   showRuntimeWarning,
   renderPanelLoader,
+  actionGroupHtml,
 });
 const { bindBootFallbackReload, bindStartupErrorFallbacks, bootstrap: bootstrapImpl } = _runtimeMod;
 ({ loadCurrentTab, safeLoadCurrentTab, retryCurrentTab } = _runtimeMod);
@@ -2467,7 +2469,12 @@ function setTab(t) {
   elements.listTitle.textContent = "Загрузка...";
   // Preserve search bar in handbook tabs — renderReferences will update the count
   if (!HANDBOOK_CATEGORY_META[t]) elements.draftCount.textContent = "";
-  elements.draftList.innerHTML = renderPanelLoader("Загружаю раздел");
+  // For handbook tabs, show action-group buttons immediately while data loads
+  if (HANDBOOK_CATEGORY_META[t]) {
+    elements.draftList.innerHTML = actionGroupHtml() + renderPanelLoader("Загружаю справочник");
+  } else {
+    elements.draftList.innerHTML = renderPanelLoader("Загружаю раздел");
+  }
   elements.draftDetail.innerHTML = renderDetailLoader("Загружаю раздел");
 
   renderContentSubTabs();
