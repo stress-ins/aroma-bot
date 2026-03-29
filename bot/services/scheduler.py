@@ -1,15 +1,16 @@
-"""Asyncio-based scheduler — replaces APScheduler.
+"""Asyncio-based scheduler — declarative task registry.
 
-Runs two tasks in a single loop:
-1. Daily digest at configured time
-2. Publish scheduled posts every 60 seconds
+All periodic tasks are declared as ScheduledTask instances in _build_task_registry().
+The run_loop dispatches them based on the current UTC time.
 """
 
 from __future__ import annotations
 
 import asyncio
 import logging
+from dataclasses import dataclass, field
 from datetime import datetime, date, timezone
+from typing import Awaitable, Callable
 
 from telegram.ext import Application
 
@@ -39,6 +40,10 @@ def _split_message(text: str, max_len: int = 4096) -> list[str]:
     return chunks
 
 
+# ---------------------------------------------------------------------------
+# Task functions (business logic unchanged)
+# ---------------------------------------------------------------------------
+
 async def _send_daily_digest(app: Application) -> None:
     """Collect trends and send daily digest to the configured chat."""
     from analytics.aggregator import collect_all
@@ -56,7 +61,6 @@ async def _send_daily_digest(app: Application) -> None:
         en_report = build_report(results, lang="en")
         cache.set("digest", (ru_report, en_report))
 
-    # Persist digest to DB so it survives restarts
     try:
         from bot.services.digest_store import save_digest
         await save_digest(ru_report, en_report)
@@ -87,11 +91,7 @@ async def _send_daily_digest(app: Application) -> None:
 
 
 async def _check_scheduled_posts(app: Application) -> None:
-    """Find scheduled drafts due for publishing and publish them.
-
-    For threads_series drafts: publishes individual slots at their scheduled_time.
-    For other drafts: publishes the whole draft at scheduled_at.
-    """
+    """Find scheduled drafts due for publishing and publish them."""
     from bot.services.drafts_store import list_scheduled_drafts_due
     from bot.services.publisher import publish
 
@@ -153,26 +153,29 @@ async def _publish_series_slots(draft, now: datetime) -> None:
                 try:
                     from bot.handlers.monitor import notify_owner
                     await notify_owner(
-                        f"⚠️ Scheduled publish failed for {draft.draft_id}:\n"
+                        f"\u26a0\ufe0f Scheduled publish failed for {draft.draft_id}:\n"
                         f"  {post['slot']}: {exc}"
                     )
                 except Exception:
                     logger.warning("scheduler: suppressed exception", exc_info=True)
-                    pass
 
 
 def _is_digest_time(now: datetime) -> bool:
-    """Check if current time matches configured digest time (±1 min)."""
+    """Check if current time matches configured digest time."""
     return now.hour == settings.digest_hour and now.minute == settings.digest_minute
 
 
-# Cost report: daily at 19:30 UTC, weekly (last 7 days) additionally on Fridays
+# Cost report: daily at 19:30 UTC
 _COST_REPORT_HOUR = 19
 _COST_REPORT_MINUTE = 30
 
-
-def _is_cost_report_time(now: datetime) -> bool:
-    return now.hour == _COST_REPORT_HOUR and now.minute == _COST_REPORT_MINUTE
+# Constants kept at module level for backward compatibility with tests
+_METRICS_POLL_HOURS = {0, 6, 12, 18}
+_THREAD_MONITOR_HOURS = {0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22}
+_SOCIAL_TRENDS_HOURS = {3, 9, 15, 21}
+_PIPELINE_ENRICH_DELAY = 300  # 5 minutes
+_COMMENTS_POLL_HOURS = {0, 3, 6, 9, 12, 15, 18, 21}
+_COMMENTS_POLL_MINUTE = 30
 
 
 async def _send_daily_cost_report(app: Application) -> None:
@@ -182,7 +185,7 @@ async def _send_daily_cost_report(app: Application) -> None:
     logger.info("Sending daily cost report...")
     since, until = date_range_today()
     stats = await get_cost_stats(since, until)
-    await send_cost_report(stats, period_label=f"за {since}")
+    await send_cost_report(stats, period_label=f"\u0437\u0430 {since}")
     logger.info("Daily cost report sent.")
 
 
@@ -193,34 +196,16 @@ async def _send_weekly_cost_report(app: Application) -> None:
     logger.info("Sending weekly cost report...")
     since, until = date_range_last7()
     stats = await get_cost_stats(since, until)
-    await send_cost_report(stats, period_label=f"за неделю ({since} — {until})")
+    await send_cost_report(stats, period_label=f"\u0437\u0430 \u043d\u0435\u0434\u0435\u043b\u044e ({since} \u2014 {until})")
     logger.info("Weekly cost report sent.")
 
 
-# Post metrics polling: every 6 hours (at :00 of 0, 6, 12, 18 UTC)
-_METRICS_POLL_HOURS = {0, 6, 12, 18}
-
-# Thread monitor: every 2 hours
-_THREAD_MONITOR_HOURS = {0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22}
-
-# Social trends collection + pipeline: every 6 hours
-_SOCIAL_TRENDS_HOURS = {3, 9, 15, 21}
-
-# Pipeline delay between collect and enrich (seconds)
-_PIPELINE_ENRICH_DELAY = 300  # 5 minutes
-
-# Comments polling: every 3 hours at :30 (offset from social trends at :00)
-_COMMENTS_POLL_HOURS = {0, 3, 6, 9, 12, 15, 18, 21}
-_COMMENTS_POLL_MINUTE = 30
-
-
-# Daily oil: 06:00 UTC (09:00 MSK)
-_DAILY_OIL_HOUR = 6
-_DAILY_OIL_MINUTE = 0
-
-
-def _is_daily_oil_time(now: datetime) -> bool:
-    return now.hour == _DAILY_OIL_HOUR and now.minute == _DAILY_OIL_MINUTE
+async def _send_cost_reports(app: Application) -> None:
+    """Send daily cost report; on Fridays also send weekly."""
+    await _send_daily_cost_report(app)
+    now = datetime.now(timezone.utc)
+    if now.weekday() == 4:
+        await _send_weekly_cost_report(app)
 
 
 async def _run_daily_oil(app: Application) -> None:
@@ -233,20 +218,20 @@ async def _run_daily_oil(app: Application) -> None:
     logger.info("Daily oil job complete for %s", today)
 
 
-async def _run_trend_enrichment() -> None:
-    from analytics.signal_enricher import enrich_signals
-
-    count = await enrich_signals()
-    if count:
-        logger.info("Enriched %d trend signals", count)
-
-
 async def _fetch_post_metrics() -> None:
     from bot.services.metrics_fetcher import fetch_all_pending_metrics
 
     count = await fetch_all_pending_metrics()
     if count:
         logger.info("Fetched metrics for %d published drafts", count)
+
+
+async def _run_thread_monitor() -> None:
+    from bot.services.thread_monitor import run_thread_monitor
+
+    count = await run_thread_monitor()
+    if count:
+        logger.info("Thread monitor: %d new relevant threads", count)
 
 
 async def _collect_social_trends() -> None:
@@ -266,40 +251,37 @@ async def _collect_social_trends() -> None:
     for team in teams:
         team_id = team["team_id"]
         try:
-            # Instagram collection
             if team["has_ig"]:
                 ig_token = await get_token_for_team("instagram", team_id)
                 ig_uid = await get_token_for_team("instagram_user_id", team_id)
                 ig_username_rec = await get_token_for_team("instagram_username", team_id)
                 if ig_token and ig_uid:
-                    settings = await get_brand_settings(team_id)
+                    bs = await get_brand_settings(team_id)
                     own_ig = ig_username_rec.access_token if ig_username_rec else ""
                     collector = InstagramTrendsCollector(
                         team_id, ig_token.access_token, ig_uid.access_token,
                         own_username=own_ig,
                     )
                     count = await collector.collect_from_accounts(
-                        settings.instagram_accounts or []
+                        bs.instagram_accounts or []
                     )
                     logger.info("Social trends: IG collected %d posts (team=%s)", count, team_id)
 
-            # Threads collection
             if team["has_threads"]:
                 th_token = await get_token_for_team("threads", team_id)
                 th_uid = await get_token_for_team("threads_user_id", team_id)
                 th_username_rec = await get_token_for_team("threads_username", team_id)
                 if th_token and th_uid:
-                    settings = await get_brand_settings(team_id)
+                    bs = await get_brand_settings(team_id)
                     own_th = th_username_rec.access_token if th_username_rec else ""
                     collector = ThreadsTrendsCollector(
                         team_id, th_token.access_token, th_uid.access_token
                     )
                     count = await collector.collect_from_accounts(
-                        settings.threads_accounts or [], own_username=own_th,
+                        bs.threads_accounts or [], own_username=own_th,
                     )
                     logger.info("Social trends: Threads collected %d posts (team=%s)", count, team_id)
-                    # Keyword search — find posts from other users
-                    tracked_kw = list(settings.tracked_hashtags or [])
+                    tracked_kw = list(bs.tracked_hashtags or [])
                     if tracked_kw:
                         kw_count = await collector.collect_from_keyword_search(tracked_kw)
                         if kw_count:
@@ -308,35 +290,23 @@ async def _collect_social_trends() -> None:
 
         except Exception as exc:
             logger.error("Social trends failed for team %s: %s", team_id, exc)
-        await asyncio.sleep(2)  # pause between teams
+        await asyncio.sleep(2)
 
 
 async def _run_trends_pipeline() -> None:
-    """Unified pipeline: collect social trends -> enrich -> generate cards.
-
-    Stages:
-    1. Collect social trends from all teams
-    2. Wait 5 minutes for data to settle
-    3. Enrich new signals (velocity, lifecycle, sentiment)
-    4. If any signals were enriched, generate trend cards
-
-    Errors at any stage are logged but do not block subsequent runs.
-    """
+    """Unified pipeline: collect social trends -> enrich -> generate cards."""
     from analytics.signal_enricher import enrich_signals
     from bot.agents.trend_card_generator import generate_and_save_cards
 
-    # Stage 1: Collect
     try:
         await _collect_social_trends()
         logger.info("Trends pipeline: collected")
     except Exception as exc:
         logger.error("Trends pipeline: collect failed: %s", exc)
 
-    # Stage 2: Delay before enrichment
     logger.info("Trends pipeline: waiting %d seconds before enrichment", _PIPELINE_ENRICH_DELAY)
     await asyncio.sleep(_PIPELINE_ENRICH_DELAY)
 
-    # Stage 3: Enrich
     enriched = 0
     try:
         enriched = await enrich_signals()
@@ -344,7 +314,6 @@ async def _run_trends_pipeline() -> None:
     except Exception as exc:
         logger.error("Trends pipeline: enrichment failed: %s", exc)
 
-    # Stage 4: Generate cards (only if enrichment produced results)
     cards_count = 0
     if enriched > 0:
         try:
@@ -360,28 +329,193 @@ async def _run_trends_pipeline() -> None:
     )
 
 
-async def run_loop(app: Application) -> None:
-    """Main scheduler loop — runs forever.
+async def _poll_comments() -> None:
+    from bot.services.comments_poller import poll_published_comments
 
-    Every 60 seconds:
-    - Checks if daily digest should fire
-    - Checks if daily/weekly cost report should fire
-    - Publishes any scheduled posts that are due
-    - Fetches post engagement metrics every 6 hours
-    - Collects social trends every 6 hours
+    total_polled, newly_saved = await poll_published_comments()
+    if newly_saved:
+        logger.info("Comments poll: %d new comments from %d polled", newly_saved, total_polled)
+
+
+async def _poll_mentions() -> None:
+    from bot.services.mentions_poller import poll_all_teams
+
+    results = await poll_all_teams()
+    total_saved = sum(s for _, s in results.values())
+    if total_saved:
+        logger.info("Mentions poll: saved %d new", total_saved)
+
+
+async def _check_expiring_tokens() -> None:
+    from bot.services.mentions_poller import check_expiring_tokens
+    await check_expiring_tokens()
+
+
+async def _check_status_feeds() -> None:
+    from bot.services.status_monitor import check_status_feeds
+    await check_status_feeds()
+
+
+# ---------------------------------------------------------------------------
+# Declarative task registry
+# ---------------------------------------------------------------------------
+
+@dataclass
+class ScheduledTask:
+    """A declarative description of a periodic task.
+
+    Scheduling modes (``check``):
+      - ``"daily"``: once per calendar day when ``hours`` and ``minute`` match.
+      - ``"hourly"``: once per matching hour at given ``minute``.
+      - ``"every_Nm"``: every ``interval_minutes`` minutes.
+      - ``"every_tick"``: every scheduler tick (60 s).
+
+    ``needs_app``: if True the callable receives the Application instance.
     """
-    last_digest_date: date | None = None
-    last_cost_report_date: date | None = None
-    last_daily_oil_date: date | None = None
-    last_metrics_fetch_hour: int | None = None
-    last_thread_monitor_hour: int | None = None
-    last_social_trends_hour: int | None = None
-    last_status_check_minute: int | None = None
-    last_mentions_poll_minute: int | None = None
-    last_token_check_date: date | None = None
-    last_comments_poll_hour: int | None = None
+
+    name: str
+    fn: Callable[..., Awaitable[None]]
+    hours: set[int] | None = None
+    minute: int = 0
+    check: str = "hourly"
+    interval_minutes: int = 0
+    needs_app: bool = False
+
+    _last_date: date | None = field(default=None, init=False, repr=False)
+    _last_hour: int | None = field(default=None, init=False, repr=False)
+    _last_minute: int | None = field(default=None, init=False, repr=False)
+
+    def should_run(self, now: datetime) -> bool:
+        """Return True if the task should fire at *now*, updating dedup state."""
+        if self.check == "daily":
+            if self._last_date == now.date():
+                return False
+            if self.hours is not None and now.hour not in self.hours:
+                return False
+            if now.minute != self.minute:
+                return False
+            self._last_date = now.date()
+            return True
+
+        if self.check == "hourly":
+            if self._last_hour == now.hour:
+                return False
+            if self.hours is not None and now.hour not in self.hours:
+                return False
+            if now.minute != self.minute:
+                return False
+            self._last_hour = now.hour
+            return True
+
+        if self.check == "every_Nm":
+            interval = self.interval_minutes
+            if interval <= 0:
+                return False
+            if now.minute % interval != 0 or self._last_minute == now.minute:
+                return False
+            self._last_minute = now.minute
+            return True
+
+        if self.check == "every_tick":
+            return True
+
+        return False
+
+
+def _build_task_registry() -> list[ScheduledTask]:
+    """Build the registry of all scheduled tasks."""
+    return [
+        ScheduledTask(
+            name="daily_digest",
+            fn=_send_daily_digest,
+            hours={settings.digest_hour},
+            minute=settings.digest_minute,
+            check="daily",
+            needs_app=True,
+        ),
+        ScheduledTask(
+            name="cost_report",
+            fn=_send_cost_reports,
+            hours={_COST_REPORT_HOUR},
+            minute=_COST_REPORT_MINUTE,
+            check="daily",
+            needs_app=True,
+        ),
+        ScheduledTask(
+            name="daily_oil",
+            fn=_run_daily_oil,
+            hours={6},
+            minute=0,
+            check="daily",
+            needs_app=True,
+        ),
+        ScheduledTask(
+            name="token_expiry_check",
+            fn=_check_expiring_tokens,
+            hours={4},
+            minute=0,
+            check="daily",
+        ),
+        ScheduledTask(
+            name="post_metrics",
+            fn=_fetch_post_metrics,
+            hours=_METRICS_POLL_HOURS,
+            minute=0,
+            check="hourly",
+        ),
+        ScheduledTask(
+            name="thread_monitor",
+            fn=_run_thread_monitor,
+            hours=_THREAD_MONITOR_HOURS,
+            minute=0,
+            check="hourly",
+        ),
+        ScheduledTask(
+            name="social_trends_pipeline",
+            fn=_run_trends_pipeline,
+            hours=_SOCIAL_TRENDS_HOURS,
+            minute=0,
+            check="hourly",
+        ),
+        ScheduledTask(
+            name="comments_poll",
+            fn=_poll_comments,
+            hours=_COMMENTS_POLL_HOURS,
+            minute=_COMMENTS_POLL_MINUTE,
+            check="hourly",
+        ),
+        ScheduledTask(
+            name="mentions_poll",
+            fn=_poll_mentions,
+            check="every_Nm",
+            interval_minutes=5,
+        ),
+        ScheduledTask(
+            name="status_monitor",
+            fn=_check_status_feeds,
+            check="every_Nm",
+            interval_minutes=5,
+        ),
+        ScheduledTask(
+            name="scheduled_posts",
+            fn=_check_scheduled_posts,
+            check="every_tick",
+            needs_app=True,
+        ),
+    ]
+
+
+# ---------------------------------------------------------------------------
+# Main loop
+# ---------------------------------------------------------------------------
+
+async def run_loop(app: Application) -> None:
+    """Main scheduler loop -- dispatches tasks from the registry every 60s."""
+    registry = _build_task_registry()
+
     logger.info(
-        "Scheduler loop started (digest at %s %s, post check every %ds)",
+        "Scheduler loop started (%d tasks, digest at %s %s, post check every %ds)",
+        len(registry),
         settings.daily_digest_time,
         settings.timezone,
         _POLL_INTERVAL,
@@ -391,136 +525,14 @@ async def run_loop(app: Application) -> None:
         await asyncio.sleep(_POLL_INTERVAL)
         try:
             now = datetime.now(timezone.utc)
-
-            # Daily digest
-            if _is_digest_time(now) and last_digest_date != now.date():
-                last_digest_date = now.date()
-                try:
-                    await _send_daily_digest(app)
-                except Exception as exc:
-                    logger.error("Daily digest failed: %s", exc)
-
-            # Daily cost report at 19:30 UTC
-            if _is_cost_report_time(now) and last_cost_report_date != now.date():
-                last_cost_report_date = now.date()
-                try:
-                    await _send_daily_cost_report(app)
-                    # On Fridays, also send weekly report
-                    if now.weekday() == 4:
-                        await _send_weekly_cost_report(app)
-                except Exception as exc:
-                    logger.error("Cost report failed: %s", exc)
-
-            # Daily oil at 06:00 UTC
-            if _is_daily_oil_time(now) and last_daily_oil_date != now.date():
-                last_daily_oil_date = now.date()
-                try:
-                    await _run_daily_oil(app)
-                except Exception as exc:
-                    logger.error("Daily oil job failed: %s", exc)
-
-            # Post metrics polling every 6 hours
-            if (
-                now.hour in _METRICS_POLL_HOURS
-                and now.minute == 0
-                and last_metrics_fetch_hour != now.hour
-            ):
-                last_metrics_fetch_hour = now.hour
-                try:
-                    await _fetch_post_metrics()
-                except Exception as exc:
-                    logger.error("Metrics fetch failed: %s", exc)
-
-            # Thread monitor every 2 hours
-            if (
-                now.hour in _THREAD_MONITOR_HOURS
-                and now.minute == 0
-                and last_thread_monitor_hour != now.hour
-            ):
-                last_thread_monitor_hour = now.hour
-                try:
-                    from bot.services.thread_monitor import run_thread_monitor
-                    count = await run_thread_monitor()
-                    if count:
-                        logger.info("Thread monitor: %d new relevant threads", count)
-                except Exception as exc:
-                    logger.error("Thread monitor failed: %s", exc)
-
-            # Social trends pipeline every 6 hours (collect -> enrich -> cards)
-            if (
-                now.hour in _SOCIAL_TRENDS_HOURS
-                and now.minute == 0
-                and last_social_trends_hour != now.hour
-            ):
-                last_social_trends_hour = now.hour
-                try:
-                    await _run_trends_pipeline()
-                except Exception as exc:
-                    logger.error("Trends pipeline failed: %s", exc)
-
-            # Comments polling every 3 hours at :30
-            if (
-                now.hour in _COMMENTS_POLL_HOURS
-                and now.minute == _COMMENTS_POLL_MINUTE
-                and last_comments_poll_hour != now.hour
-            ):
-                last_comments_poll_hour = now.hour
-                try:
-                    from bot.services.comments_poller import poll_published_comments
-                    total_polled, newly_saved = await poll_published_comments()
-                    if newly_saved:
-                        logger.info(
-                            "Comments poll: %d new comments from %d polled",
-                            newly_saved, total_polled,
-                        )
-                except Exception as exc:
-                    logger.error("Comments poll failed: %s", exc)
-
-            # Mentions poll every 5 minutes
-            if (
-                now.minute % 5 == 0
-                and last_mentions_poll_minute != now.minute
-            ):
-                last_mentions_poll_minute = now.minute
-                try:
-                    from bot.services.mentions_poller import poll_all_teams
-                    results = await poll_all_teams()
-                    total_saved = sum(s for _, s in results.values())
-                    if total_saved:
-                        logger.info("Mentions poll: saved %d new", total_saved)
-                except Exception as exc:
-                    logger.error("Mentions poll failed: %s", exc)
-
-            # Daily token expiry check at 04:00 UTC
-            if (
-                now.hour == 4
-                and now.minute == 0
-                and last_token_check_date != now.date()
-            ):
-                last_token_check_date = now.date()
-                try:
-                    from bot.services.mentions_poller import check_expiring_tokens
-                    await check_expiring_tokens()
-                except Exception as exc:
-                    logger.error("Token expiry check failed: %s", exc)
-
-            # Status monitor every 5 minutes
-            if (
-                now.minute % 5 == 0
-                and last_status_check_minute != now.minute
-            ):
-                last_status_check_minute = now.minute
-                try:
-                    from bot.services.status_monitor import check_status_feeds
-                    await check_status_feeds()
-                except Exception as exc:
-                    logger.error("Status monitor failed: %s", exc)
-
-            # Scheduled posts
-            try:
-                await _check_scheduled_posts(app)
-            except Exception as exc:
-                logger.error("Scheduled post check failed: %s", exc)
-
+            for task in registry:
+                if task.should_run(now):
+                    try:
+                        if task.needs_app:
+                            await task.fn(app)
+                        else:
+                            await task.fn()
+                    except Exception as exc:
+                        logger.error("%s failed: %s", task.name, exc)
         except Exception as exc:
             logger.error("Scheduler loop error: %s", exc)

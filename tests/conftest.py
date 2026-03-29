@@ -1,3 +1,7 @@
+import sys
+import importlib
+import pkgutil
+
 import pytest
 from contextlib import asynccontextmanager
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
@@ -14,41 +18,48 @@ async def _noop_lifespan(app):
 
 import miniapp_server  # noqa: E402
 miniapp_server.app.router.lifespan_context = _noop_lifespan
-import bot.services.drafts_store
-import bot.services.plans_store
-import bot.services.miniapp_references
-import bot.services.miniapp_references.common
-import bot.services.miniapp_references.aroma
-import bot.services.miniapp_references.blend
-import bot.services.miniapp_references.crystal
-import bot.services.miniapp_references.symptom
-import bot.services.draft_revisions_store
-import bot.services.kb_context_builder
-import bot.services.post_metrics_store
-import bot.services.daily_oil
-import analytics.trend_signal_store
-import analytics.signal_enricher
-import analytics.trend_intelligence
-import bot.services.llm_cache
-import bot.services.brand_settings_store
-import bot.services.subscription_store
-import bot.services.blends_store
-import bot.services.saved_blends_store
-import bot.services.mentions_store
-import bot.services.inbox_store
-import bot.services.cost_stats_store
-import bot.services.publish_log_store
-import bot.services.tracked_threads_store
-import bot.services.team_store
-import bot.services.video_task_store
-import bot.services.social_trends_store
-import bot.services.past_publications_store
-import bot.services.content_analytics
-import bot.services.analytics_store
-import bot.services.digest_store
-import miniapp.api.routers.plans
-import miniapp.api.routers.misc
-# Note: miniapp.api.routers.analytics uses local import from db.session (already patched)
+
+# ── Pre-import all modules that bind AsyncSessionLocal at import time ──
+# These package prefixes contain modules with `from db.session import AsyncSessionLocal`.
+# We import them eagerly so _patch_all_async_sessions can discover and patch them.
+
+_PACKAGES_TO_SCAN = [
+    ("bot.services", "bot/services"),
+    ("bot.agents", "bot/agents"),
+    ("analytics", "analytics"),
+    ("miniapp.api.routers", "miniapp/api/routers"),
+    ("miniapp.api.generation", "miniapp/api/generation"),
+]
+
+for _pkg_name, _pkg_path in _PACKAGES_TO_SCAN:
+    try:
+        _pkg = importlib.import_module(_pkg_name)
+    except ImportError:
+        continue
+    _search_path = getattr(_pkg, "__path__", None)
+    if _search_path is None:
+        continue
+    for _importer, _name, _ispkg in pkgutil.walk_packages(_search_path, _pkg_name + "."):
+        # Skip __main__ modules — they execute CLI entry points at import time
+        if _name.endswith(".__main__"):
+            continue
+        try:
+            importlib.import_module(_name)
+        except Exception:
+            pass
+
+
+def _patch_all_async_sessions(monkeypatch, session_factory):
+    """Patch AsyncSessionLocal in db.session and every module that imported it."""
+    monkeypatch.setattr(db.session, "AsyncSessionLocal", session_factory)
+    for mod in list(sys.modules.values()):
+        if mod is None or mod is db.session:
+            continue
+        if hasattr(mod, "AsyncSessionLocal"):
+            try:
+                monkeypatch.setattr(mod, "AsyncSessionLocal", session_factory)
+            except (TypeError, AttributeError):
+                pass
 
 
 @pytest.fixture(autouse=True, scope="function")
@@ -63,42 +74,7 @@ async def setup_test_db(monkeypatch):
     )
     AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 
-    # Monkeypatch everywhere it might be used
-    monkeypatch.setattr(db.session, "AsyncSessionLocal", AsyncSessionLocal)
-    monkeypatch.setattr(bot.services.drafts_store, "AsyncSessionLocal", AsyncSessionLocal)
-    monkeypatch.setattr(bot.services.plans_store, "AsyncSessionLocal", AsyncSessionLocal)
-    monkeypatch.setattr(bot.services.miniapp_references, "AsyncSessionLocal", AsyncSessionLocal)
-    monkeypatch.setattr(bot.services.miniapp_references.common, "AsyncSessionLocal", AsyncSessionLocal)
-    monkeypatch.setattr(bot.services.miniapp_references.aroma, "AsyncSessionLocal", AsyncSessionLocal)
-    monkeypatch.setattr(bot.services.miniapp_references.blend, "AsyncSessionLocal", AsyncSessionLocal)
-    monkeypatch.setattr(bot.services.miniapp_references.crystal, "AsyncSessionLocal", AsyncSessionLocal)
-    monkeypatch.setattr(bot.services.miniapp_references.symptom, "AsyncSessionLocal", AsyncSessionLocal)
-    monkeypatch.setattr(bot.services.draft_revisions_store, "AsyncSessionLocal", AsyncSessionLocal)
-    monkeypatch.setattr(bot.services.kb_context_builder, "AsyncSessionLocal", AsyncSessionLocal)
-    monkeypatch.setattr(bot.services.post_metrics_store, "AsyncSessionLocal", AsyncSessionLocal)
-    monkeypatch.setattr(bot.services.daily_oil, "AsyncSessionLocal", AsyncSessionLocal)
-    monkeypatch.setattr(analytics.trend_signal_store, "AsyncSessionLocal", AsyncSessionLocal)
-    monkeypatch.setattr(analytics.signal_enricher, "AsyncSessionLocal", AsyncSessionLocal)
-    monkeypatch.setattr(analytics.trend_intelligence, "AsyncSessionLocal", AsyncSessionLocal)
-    monkeypatch.setattr(bot.services.llm_cache, "AsyncSessionLocal", AsyncSessionLocal)
-    monkeypatch.setattr(bot.services.brand_settings_store, "AsyncSessionLocal", AsyncSessionLocal)
-    monkeypatch.setattr(bot.services.subscription_store, "AsyncSessionLocal", AsyncSessionLocal)
-    monkeypatch.setattr(bot.services.blends_store, "AsyncSessionLocal", AsyncSessionLocal)
-    monkeypatch.setattr(bot.services.saved_blends_store, "AsyncSessionLocal", AsyncSessionLocal)
-    monkeypatch.setattr(bot.services.mentions_store, "AsyncSessionLocal", AsyncSessionLocal)
-    monkeypatch.setattr(bot.services.inbox_store, "AsyncSessionLocal", AsyncSessionLocal)
-    monkeypatch.setattr(bot.services.cost_stats_store, "AsyncSessionLocal", AsyncSessionLocal)
-    monkeypatch.setattr(bot.services.publish_log_store, "AsyncSessionLocal", AsyncSessionLocal)
-    monkeypatch.setattr(bot.services.tracked_threads_store, "AsyncSessionLocal", AsyncSessionLocal)
-    monkeypatch.setattr(bot.services.team_store, "AsyncSessionLocal", AsyncSessionLocal)
-    monkeypatch.setattr(bot.services.video_task_store, "AsyncSessionLocal", AsyncSessionLocal)
-    monkeypatch.setattr(bot.services.social_trends_store, "AsyncSessionLocal", AsyncSessionLocal)
-    monkeypatch.setattr(bot.services.past_publications_store, "AsyncSessionLocal", AsyncSessionLocal)
-    monkeypatch.setattr(bot.services.content_analytics, "AsyncSessionLocal", AsyncSessionLocal)
-    monkeypatch.setattr(bot.services.analytics_store, "AsyncSessionLocal", AsyncSessionLocal)
-    monkeypatch.setattr(bot.services.digest_store, "AsyncSessionLocal", AsyncSessionLocal)
-    monkeypatch.setattr(miniapp.api.routers.plans, "AsyncSessionLocal", AsyncSessionLocal)
-    monkeypatch.setattr(miniapp.api.routers.misc, "AsyncSessionLocal", AsyncSessionLocal)
+    _patch_all_async_sessions(monkeypatch, AsyncSessionLocal)
 
     # Create tables
     async with engine.begin() as conn:
