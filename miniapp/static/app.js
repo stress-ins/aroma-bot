@@ -2337,20 +2337,20 @@ function setMode(m) {
   elements.modeHandbook.classList.toggle("active", m === "handbook");
   elements.settingsButton?.classList.toggle("active", m === "content" && state.tab === "settings");
   let tabs = MODE_TABS[m] || [];
-  // Section switcher for handbook mode
+  // Section switcher for handbook mode — rendered ABOVE tabs in .tabs-wrapper
+  const tabsWrapper = elements.tabsContainer.parentElement;
+  const oldSectionSwitcher = tabsWrapper?.querySelector(".section-switcher");
+  if (oldSectionSwitcher) oldSectionSwitcher.remove();
+
   if (m === "handbook") {
     const activeSection = HANDBOOK_SECTIONS.find(s => s.tabs.includes(state.tab)) || HANDBOOK_SECTIONS[0];
-    const sectionHtml = HANDBOOK_SECTIONS.map(s =>
+    const sectionEl = document.createElement("div");
+    sectionEl.className = "section-switcher";
+    sectionEl.innerHTML = HANDBOOK_SECTIONS.map(s =>
       `<button class="section-chip${s.id === activeSection.id ? " active" : ""}" data-section="${s.id}" type="button">${s.icon} ${s.label}</button>`
     ).join("");
-    tabs = (MODE_TABS[m] || []).filter(t => activeSection.tabs.includes(t.id));
-    elements.tabsContainer.innerHTML = `<div class="section-switcher">${sectionHtml}</div>` + tabs.map((t) => {
-      const label = HANDBOOK_CATEGORY_META[t.id]
-        ? `${handbookCategoryIcon(t.id)}<span>${escapeHtml(t.label)}</span>`
-        : `<span>${escapeHtml(t.label)}</span>`;
-      return `<button class="tab-button${state.tab === t.id ? " active" : ""}" data-tab="${t.id}" type="button" role="tab" aria-selected="${state.tab === t.id}">${label}</button>`;
-    }).join("");
-    elements.tabsContainer.querySelectorAll(".section-chip").forEach(btn => {
+    tabsWrapper.insertBefore(sectionEl, elements.tabsContainer);
+    sectionEl.querySelectorAll(".section-chip").forEach(btn => {
       btn.addEventListener("click", () => {
         const sec = HANDBOOK_SECTIONS.find(s => s.id === btn.dataset.section);
         if (sec && !sec.tabs.includes(state.tab)) {
@@ -2359,14 +2359,14 @@ function setMode(m) {
         }
       });
     });
-  } else {
-    elements.tabsContainer.innerHTML = tabs.map((t) => {
-      const label = HANDBOOK_CATEGORY_META[t.id]
-        ? `${handbookCategoryIcon(t.id)}<span>${escapeHtml(t.label)}</span>`
-        : `<span>${escapeHtml(t.label)}</span>`;
-      return `<button class="tab-button${state.tab === t.id ? " active" : ""}" data-tab="${t.id}" type="button" role="tab" aria-selected="${state.tab === t.id}">${label}</button>`;
-    }).join("");
+    tabs = (MODE_TABS[m] || []).filter(t => activeSection.tabs.includes(t.id));
   }
+  elements.tabsContainer.innerHTML = tabs.map((t) => {
+    const label = HANDBOOK_CATEGORY_META[t.id]
+      ? `${handbookCategoryIcon(t.id)}<span>${escapeHtml(t.label)}</span>`
+      : `<span>${escapeHtml(t.label)}</span>`;
+    return `<button class="tab-button${state.tab === t.id ? " active" : ""}" data-tab="${t.id}" type="button" role="tab" aria-selected="${state.tab === t.id}">${label}</button>`;
+  }).join("");
   elements.tabsContainer.querySelectorAll(".tab-button").forEach(b => {
     b.addEventListener("click", () => {
       const targetTab = b.dataset.tab;
@@ -2382,7 +2382,6 @@ function setMode(m) {
     });
   });
   // Hide tabs wrapper when no tabs (content mode has no pill tabs)
-  const tabsWrapper = elements.tabsContainer.closest(".tabs-wrapper");
   if (tabsWrapper) tabsWrapper.hidden = tabs.length === 0;
   if (tabsWrapper && tabs.length > 0) {
     const checkScrollEnd = () => {
