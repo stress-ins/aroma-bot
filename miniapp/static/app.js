@@ -83,6 +83,12 @@ const state = {
   videoUpload: { active: false, draftId: null, progress: 0, fileName: "", error: null, xhr: null },
 };
 
+const HANDBOOK_SECTIONS = [
+  { id: "aroma", label: "Ароматерапия", icon: "🌿", tabs: ["aromas", "blends", "symptoms", "concepts"] },
+  { id: "body", label: "Тело", icon: "🤲", tabs: ["practices", "massage", "osteo", "biodynamics"] },
+  { id: "vibration", label: "Звук", icon: "🔔", tabs: ["sounds", "crystals"] },
+];
+
 const MODE_TABS = {
   handbook: [
     { id: "aromas", label: "Ароматы" },
@@ -91,6 +97,8 @@ const MODE_TABS = {
     { id: "concepts", label: "Теория" },
     { id: "practices", label: "Практики" },
     { id: "massage", label: "Массаж" },
+    { id: "osteo", label: "Остеопрактика" },
+    { id: "biodynamics", label: "Биодинамика" },
     { id: "sounds", label: "Звуки" },
     { id: "crystals", label: "Кристаллы" },
   ],
@@ -412,6 +420,28 @@ const HANDBOOK_CATEGORY_META = {
     locked: "Доступ к справочнику массажа ограничен.",
     count: (items) => `${items.length} карточек`,
   },
+  osteo: {
+    category: "osteo",
+    title: "Остеопрактика",
+    label: "остеопатическую технику",
+    searchLabel: "Поиск техники",
+    searchPlaceholder: "краниосакральная, фасции...",
+    empty: "Остеопатические техники не найдены.",
+    selectPrompt: "Выберите технику из списка.",
+    locked: "Доступ к справочнику остеопрактики ограничен.",
+    count: (items) => `${items.length} карточек`,
+  },
+  biodynamics: {
+    category: "biodynamics",
+    title: "Биодинамика",
+    label: "биодинамическую карточку",
+    searchLabel: "Поиск темы",
+    searchPlaceholder: "первичное дыхание, мидлайн...",
+    empty: "Биодинамические карточки не найдены.",
+    selectPrompt: "Выберите карточку из списка.",
+    locked: "Доступ к справочнику биодинамики ограничен.",
+    count: (items) => `${items.length} карточек`,
+  },
   crystals: {
     category: "crystal",
     title: "Кристаллы",
@@ -433,6 +463,8 @@ function handbookCategoryIcon(tabId) {
     concepts: "🧭",
     practices: "🫁",
     massage: "💆",
+    osteo: "🦴",
+    biodynamics: "🌊",
     sounds: "🔔",
     crystals: "💎",
   };
@@ -2304,13 +2336,37 @@ function setMode(m) {
   elements.modeContent.classList.toggle("active", m === "content");
   elements.modeHandbook.classList.toggle("active", m === "handbook");
   elements.settingsButton?.classList.toggle("active", m === "content" && state.tab === "settings");
-  const tabs = MODE_TABS[m] || [];
-  elements.tabsContainer.innerHTML = tabs.map((t) => {
-    const label = HANDBOOK_CATEGORY_META[t.id]
-      ? `${handbookCategoryIcon(t.id)}<span>${escapeHtml(t.label)}</span>`
-      : `<span>${escapeHtml(t.label)}</span>`;
-    return `<button class="tab-button${state.tab === t.id ? " active" : ""}" data-tab="${t.id}" type="button" role="tab" aria-selected="${state.tab === t.id}">${label}</button>`;
-  }).join("");
+  let tabs = MODE_TABS[m] || [];
+  // Section switcher for handbook mode
+  if (m === "handbook") {
+    const activeSection = HANDBOOK_SECTIONS.find(s => s.tabs.includes(state.tab)) || HANDBOOK_SECTIONS[0];
+    const sectionHtml = HANDBOOK_SECTIONS.map(s =>
+      `<button class="section-chip${s.id === activeSection.id ? " active" : ""}" data-section="${s.id}" type="button">${s.icon} ${s.label}</button>`
+    ).join("");
+    tabs = (MODE_TABS[m] || []).filter(t => activeSection.tabs.includes(t.id));
+    elements.tabsContainer.innerHTML = `<div class="section-switcher">${sectionHtml}</div>` + tabs.map((t) => {
+      const label = HANDBOOK_CATEGORY_META[t.id]
+        ? `${handbookCategoryIcon(t.id)}<span>${escapeHtml(t.label)}</span>`
+        : `<span>${escapeHtml(t.label)}</span>`;
+      return `<button class="tab-button${state.tab === t.id ? " active" : ""}" data-tab="${t.id}" type="button" role="tab" aria-selected="${state.tab === t.id}">${label}</button>`;
+    }).join("");
+    elements.tabsContainer.querySelectorAll(".section-chip").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const sec = HANDBOOK_SECTIONS.find(s => s.id === btn.dataset.section);
+        if (sec && !sec.tabs.includes(state.tab)) {
+          setTab(sec.tabs[0]);
+          void safeLoadCurrentTab("Не удалось загрузить вкладку");
+        }
+      });
+    });
+  } else {
+    elements.tabsContainer.innerHTML = tabs.map((t) => {
+      const label = HANDBOOK_CATEGORY_META[t.id]
+        ? `${handbookCategoryIcon(t.id)}<span>${escapeHtml(t.label)}</span>`
+        : `<span>${escapeHtml(t.label)}</span>`;
+      return `<button class="tab-button${state.tab === t.id ? " active" : ""}" data-tab="${t.id}" type="button" role="tab" aria-selected="${state.tab === t.id}">${label}</button>`;
+    }).join("");
+  }
   elements.tabsContainer.querySelectorAll(".tab-button").forEach(b => {
     b.addEventListener("click", () => {
       const targetTab = b.dataset.tab;

@@ -115,6 +115,23 @@ def custom_topics_prompt(
 """
 
 
+PRACTICE_FOCUS_BLOCKS = {
+    "aroma": "",
+    "bodywork": (
+        "\nФокус практики: РАБОТА С ТЕЛОМ (массаж, остеопрактика, биодинамика, миофасциальный релиз).\n"
+        "Подход: раскрой, как аромат поддерживает тело в процессе телесной практики. "
+        "Упоминай конкретные техники (массаж, растяжка, точечное давление), зоны тела и связь масел с телесным опытом. "
+        "Аудитория — массажисты, остеопрактики, специалисты по движению.\n"
+    ),
+    "sound": (
+        "\nФокус практики: ЗВУК И ВИБРАЦИЯ (поющие чаши, гонг, камертон, бинауральные ритмы, голосовые практики).\n"
+        "Подход: раскрой синергию аромата и звуковой вибрации. "
+        "Упоминай конкретные инструменты (чаша, гонг), частоты, резонансы и связь масел со звуковым опытом. "
+        "Аудитория — звукотерапевты, практики гонг-медитации, специалисты по вибрационному целительству.\n"
+    ),
+}
+
+
 def strategist_prompt(
     topic: str,
     goal_key: str,
@@ -123,6 +140,7 @@ def strategist_prompt(
     format_labels: dict[str, str],
     blend_context: dict | None = None,
     rag_context: str = "",
+    practice_focus: str = "aroma",
 ) -> str:
     blend_block = ""
     if blend_context:
@@ -133,6 +151,7 @@ def strategist_prompt(
             "Угол должен раскрывать воздействие смеси через её профиль.\n"
         )
     rag_block = f"\n{rag_context}\n" if rag_context else ""
+    focus_block = PRACTICE_FOCUS_BLOCKS.get(practice_focus, "")
     return f"""\
 {get_brand_context()}
 Роль: ты Content Strategist. Твоя задача — найти угол и первую строку.
@@ -140,7 +159,7 @@ def strategist_prompt(
 Тема: {topic}
 Цель: {goal_guidance[goal_key]}
 Формат: {format_labels[format_key]}
-{rag_block}
+{focus_block}{rag_block}
 Ответь строго в формате (два поля, на русском):
 ANGLE: [1-2 предложения — почему эта тема резонирует СЕЙЧАС с этой аудиторией и под эту цель]
 HOOK: [точная первая строка поста — останавливает скролл, без приветствий, без "Сегодня хочу поделиться"]
@@ -188,6 +207,7 @@ def writer_prompt(
     goal_guidance: dict[str, str],
     blend_context: dict | None = None,
     rag_context: str = "",
+    practice_focus: str = "aroma",
 ) -> str:
     rules = _PLATFORM_RULES_WRITER.get(format_key, _PLATFORM_RULES_WRITER["telegram"])
     blend_block = ""
@@ -204,6 +224,7 @@ def writer_prompt(
             "- Это рассказ, не рецепт\n"
         )
     rag_block = f"\n{rag_context}\n" if rag_context else ""
+    focus_block = PRACTICE_FOCUS_BLOCKS.get(practice_focus, "")
     return f"""\
 {get_brand_context()}
 Роль: ты Platform Writer. Ты получил угол и хук от стратега. Напиши готовый пост.
@@ -212,7 +233,7 @@ def writer_prompt(
 Цель: {goal_guidance[goal_key]}
 Стратегический угол: {angle}
 Первая строка (хук): {hook}
-{blend_block}{rag_block}
+{focus_block}{blend_block}{rag_block}
 {rules}
 
 Дополнительные правила письма:

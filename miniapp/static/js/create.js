@@ -257,6 +257,7 @@ export function createCreateModule(deps) {
                 </div>
               </label>
             </div>
+            <label>Фокус практики<select name="practice_focus"><option value="aroma">🌿 Ароматерапия</option><option value="bodywork">🤲 Работа с телом</option><option value="sound">🔔 Звук и вибрация</option></select></label>
             <button class="primary-button" type="submit">Собрать черновик</button>
           </form>
           ${_trendSuggestionsPanel("instagram")}
@@ -293,6 +294,7 @@ export function createCreateModule(deps) {
             <p class="field-help">Опишите через сцену, состояние или ощущение — так легче получить рабочий сценарий.</p>
             <button type="button" class="suggest-topic-btn">${uiIcon("zap")}<span>Предложи тему</span></button>
             <div class="suggest-topics-dropdown" hidden></div>
+            <label>Фокус практики<select name="practice_focus"><option value="aroma">🌿 Ароматерапия</option><option value="bodywork">🤲 Работа с телом</option><option value="sound">🔔 Звук и вибрация</option></select></label>
             <label class="lightweight-toggle">
               <input type="checkbox" name="lightweight">
               <span>Быстрое планирование</span>
@@ -345,6 +347,7 @@ export function createCreateModule(deps) {
                 </label>
               </div>
             </div>
+            <label>Фокус практики<select name="practice_focus"><option value="aroma">🌿 Ароматерапия</option><option value="bodywork">🤲 Работа с телом</option><option value="sound">🔔 Звук и вибрация</option></select></label>
             <button class="primary-button carousel-cta-disabled" type="submit" id="carouselSubmitBtn" disabled>Собрать карусель</button>
           </form>
         </section>
@@ -377,6 +380,7 @@ export function createCreateModule(deps) {
                 </select>
               </label>
             </div>
+            <label>Фокус практики<select name="practice_focus"><option value="aroma">🌿 Ароматерапия</option><option value="bodywork">🤲 Работа с телом</option><option value="sound">🔔 Звук и вибрация</option></select></label>
             <button class="primary-button" type="submit">Создать серию</button>
           </form>
         </section>
@@ -423,6 +427,7 @@ export function createCreateModule(deps) {
                 </select>
               </label>
             </div>
+            <label>Фокус практики<select name="practice_focus"><option value="aroma">🌿 Ароматерапия</option><option value="bodywork">🤲 Работа с телом</option><option value="sound">🔔 Звук и вибрация</option></select></label>
             <button class="primary-button" type="submit">Создать сценарий</button>
           </form>
         </section>
@@ -494,6 +499,7 @@ export function createCreateModule(deps) {
     if (contentForm) bindTopicForm(contentForm, { pendingText: "Создаю...", onSubmit: async (topic) => {
       const goal = contentForm.querySelector("select[name='goal_key']").value;
       const format = contentForm.querySelector("[name='format_key']:checked")?.value || "instagram";
+      const practice_focus = contentForm.querySelector("select[name='practice_focus']")?.value || "aroma";
       const bcRaw = sessionStorage.getItem("blend_create_context");
       let blend_context = null;
       if (bcRaw) { try { blend_context = JSON.parse(bcRaw); } catch(_e) {} }
@@ -505,7 +511,7 @@ export function createCreateModule(deps) {
         const draft = await fetchJson("/api/generate/content", {
           method: "POST",
           timeout: 45000,
-          body: JSON.stringify({ topic, goal_key: goal, format_key: format, blend_context, daily_oil_context }),
+          body: JSON.stringify({ topic, goal_key: goal, format_key: format, practice_focus, blend_context, daily_oil_context }),
         });
         sessionStorage.removeItem("blend_create_context");
         sessionStorage.removeItem("daily_oil_context");
@@ -531,6 +537,7 @@ export function createCreateModule(deps) {
       const goal = reelsForm.querySelector("select[name='goal']")?.value || "trust";
       const emotion = reelsForm.querySelector("select[name='emotion']")?.value || "calm";
       const lightweight = reelsForm.querySelector("input[name='lightweight']")?.checked || false;
+      const practice_focus = reelsForm.querySelector("select[name='practice_focus']")?.value || "aroma";
       const bcRaw = sessionStorage.getItem("blend_create_context");
       let blend_context = null;
       if (bcRaw) { try { blend_context = JSON.parse(bcRaw); } catch(_e) {} }
@@ -543,7 +550,7 @@ export function createCreateModule(deps) {
         const reel = await fetchJson("/api/generate/reels", {
           method: "POST",
           timeout: 45000,
-          body: JSON.stringify({ topic, goal, emotion, lightweight, blend_context, daily_oil_context }),
+          body: JSON.stringify({ topic, goal, emotion, lightweight, practice_focus, blend_context, daily_oil_context }),
         });
         sessionStorage.removeItem("blend_create_context");
         sessionStorage.removeItem("daily_oil_context");
@@ -613,12 +620,13 @@ export function createCreateModule(deps) {
       let daily_oil_context = null;
       if (doRaw) { try { daily_oil_context = JSON.parse(doRaw); } catch(_e) {} }
       const layoutStyle = carouselForm.querySelector('[name="layout_style"]:checked')?.value || "overlay";
+      const practice_focus = carouselForm.querySelector("select[name='practice_focus']")?.value || "aroma";
       const pending = openPendingDraftCreation("carousel", topic);
       try {
         const draft = await fetchJson("/api/generate/carousel", {
           method: "POST",
           timeout: 45000,
-          body: JSON.stringify({ topic, blend_context, daily_oil_context, layout_style: layoutStyle }),
+          body: JSON.stringify({ topic, practice_focus, blend_context, daily_oil_context, layout_style: layoutStyle }),
         });
         sessionStorage.removeItem("blend_create_context");
         sessionStorage.removeItem("daily_oil_context");
@@ -643,6 +651,7 @@ export function createCreateModule(deps) {
     if (threadsSeriesForm) bindTopicForm(threadsSeriesForm, { pendingText: "Создаю...", onSubmit: async (topic) => {
       const goal_key = threadsSeriesForm.querySelector("select[name='goal_key']")?.value || "trust";
       const emotion = threadsSeriesForm.querySelector("select[name='emotion']")?.value || "";
+      const practice_focus = threadsSeriesForm.querySelector("select[name='practice_focus']")?.value || "aroma";
       const bcRaw = sessionStorage.getItem("blend_create_context");
       let blend_context = null;
       if (bcRaw) { try { blend_context = JSON.parse(bcRaw); } catch(_e) {} }
@@ -654,7 +663,7 @@ export function createCreateModule(deps) {
         const draft = await fetchJson("/api/generate/threads-series", {
           method: "POST",
           timeout: 60000,
-          body: JSON.stringify({ topic, goal_key, emotion, blend_context, daily_oil_context }),
+          body: JSON.stringify({ topic, goal_key, emotion, practice_focus, blend_context, daily_oil_context }),
         });
         sessionStorage.removeItem("blend_create_context");
         sessionStorage.removeItem("daily_oil_context");
@@ -730,12 +739,13 @@ export function createCreateModule(deps) {
         const goal = youtubeForm.querySelector("select[name='goal']")?.value || "trust";
         const emotion = youtubeForm.querySelector("select[name='emotion']")?.value || "calm";
         const duration_target = parseInt(youtubeForm.querySelector("select[name='duration_target']")?.value || "10", 10);
+        const practice_focus = youtubeForm.querySelector("select[name='practice_focus']")?.value || "aroma";
         const pending = openPendingDraftCreation("youtube_video", topic);
         try {
           const draft = await fetchJson("/api/generate/youtube", {
             method: "POST",
             timeout: 90000,
-            body: JSON.stringify({ topic, subformat, goal, emotion, duration_target }),
+            body: JSON.stringify({ topic, subformat, goal, emotion, duration_target, practice_focus }),
           });
           finalizePendingDraftCreation(draft);
           await openDraft(draft.draft_id);

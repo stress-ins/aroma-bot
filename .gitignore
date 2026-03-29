@@ -48,4 +48,6 @@ data/*.json
 !data/crystal_cards_seed.json
 !data/sound_healing_seed.json
 !data/massage_seed.json
+!data/osteo_seed.json
+!data/biodynamics_seed.json
 .coverage

@@ -386,12 +386,12 @@ def _custom_topics_prompt(user_brief: str, goal_key: str, format_key: str) -> st
     return _custom_topics_prompt_impl(user_brief, goal_key, format_key, GOAL_GUIDANCE, FORMAT_LABELS)
 
 
-def _strategist_prompt(topic: str, goal_key: str, format_key: str, blend_context: dict | None = None, rag_context: str = "") -> str:
-    return _strategist_prompt_impl(topic, goal_key, format_key, GOAL_GUIDANCE, FORMAT_LABELS, blend_context=blend_context, rag_context=rag_context)
+def _strategist_prompt(topic: str, goal_key: str, format_key: str, blend_context: dict | None = None, rag_context: str = "", practice_focus: str = "aroma") -> str:
+    return _strategist_prompt_impl(topic, goal_key, format_key, GOAL_GUIDANCE, FORMAT_LABELS, blend_context=blend_context, rag_context=rag_context, practice_focus=practice_focus)
 
 
-def _writer_prompt(topic: str, goal_key: str, format_key: str, angle: str, hook: str, blend_context: dict | None = None, rag_context: str = "") -> str:
-    return _writer_prompt_impl(topic, goal_key, format_key, angle, hook, GOAL_GUIDANCE, blend_context=blend_context, rag_context=rag_context)
+def _writer_prompt(topic: str, goal_key: str, format_key: str, angle: str, hook: str, blend_context: dict | None = None, rag_context: str = "", practice_focus: str = "aroma") -> str:
+    return _writer_prompt_impl(topic, goal_key, format_key, angle, hook, GOAL_GUIDANCE, blend_context=blend_context, rag_context=rag_context, practice_focus=practice_focus)
 
 
 # ── Agent functions ──────────────────────────────────────────────────────────
@@ -442,9 +442,9 @@ def _generate_topics_sync(
         return cache.get(cache_key) or []
 
 
-def _generate_strategist_sync(topic: str, goal_key: str, format_key: str, blend_context: dict | None = None, rag_context: str = "") -> tuple[str, str]:
+def _generate_strategist_sync(topic: str, goal_key: str, format_key: str, blend_context: dict | None = None, rag_context: str = "", practice_focus: str = "aroma") -> tuple[str, str]:
     """Step 1: Strategist finds creative angle and hook line."""
-    raw = _call_claude(_strategist_prompt(topic, goal_key, format_key, blend_context=blend_context, rag_context=rag_context), max_tokens=250)
+    raw = _call_claude(_strategist_prompt(topic, goal_key, format_key, blend_context=blend_context, rag_context=rag_context, practice_focus=practice_focus), max_tokens=250)
     angle = ""
     hook = ""
     for line in raw.strip().splitlines():
@@ -462,14 +462,14 @@ _MAX_QUALITY_RETRIES = 2
 
 
 def _generate_writer_sync(
-    topic: str, goal_key: str, format_key: str, angle: str, hook: str, blend_context: dict | None = None, rag_context: str = ""
+    topic: str, goal_key: str, format_key: str, angle: str, hook: str, blend_context: dict | None = None, rag_context: str = "", practice_focus: str = "aroma"
 ) -> ContentDraft:
     """Step 2: Writer produces platform-native draft. Step 3: Editor polishes."""
     from bot.agents.creative_team import edit_post_sync
 
     token_limit = 900
     raw = _call_claude(
-        _writer_prompt(topic, goal_key, format_key, angle, hook, blend_context=blend_context, rag_context=rag_context), max_tokens=token_limit
+        _writer_prompt(topic, goal_key, format_key, angle, hook, blend_context=blend_context, rag_context=rag_context, practice_focus=practice_focus), max_tokens=token_limit
     )
     draft = parse_content_draft(raw)
     draft.angle = angle
@@ -534,10 +534,10 @@ def _generate_writer_sync(
     return draft
 
 
-def _generate_draft_sync(topic: str, goal_key: str, format_key: str, blend_context: dict | None = None, rag_context: str = "") -> ContentDraft:
+def _generate_draft_sync(topic: str, goal_key: str, format_key: str, blend_context: dict | None = None, rag_context: str = "", practice_focus: str = "aroma") -> ContentDraft:
     """Full 3-agent chain: Strategist → Writer → Editor."""
-    angle, hook = _generate_strategist_sync(topic, goal_key, format_key, blend_context=blend_context, rag_context=rag_context)
-    return _generate_writer_sync(topic, goal_key, format_key, angle, hook, blend_context=blend_context, rag_context=rag_context)
+    angle, hook = _generate_strategist_sync(topic, goal_key, format_key, blend_context=blend_context, rag_context=rag_context, practice_focus=practice_focus)
+    return _generate_writer_sync(topic, goal_key, format_key, angle, hook, blend_context=blend_context, rag_context=rag_context, practice_focus=practice_focus)
 
 
 # ── Public async API ─────────────────────────────────────────────────────────
@@ -583,10 +583,10 @@ async def generate_writer_step(
     )
 
 
-async def generate_content_draft(topic: str, goal_key: str, format_key: str, blend_context: dict | None = None, rag_context: str = "") -> ContentDraft:
+async def generate_content_draft(topic: str, goal_key: str, format_key: str, blend_context: dict | None = None, rag_context: str = "", practice_focus: str = "aroma") -> ContentDraft:
     """Full 3-agent chain as a single async call."""
     loop = asyncio.get_running_loop()
-    return await loop.run_in_executor(_executor, _generate_draft_sync, topic, goal_key, format_key, blend_context, rag_context)
+    return await loop.run_in_executor(_executor, _generate_draft_sync, topic, goal_key, format_key, blend_context, rag_context, practice_focus)
 
 
 def generate_image_bytes(prompt: str) -> bytes | None:

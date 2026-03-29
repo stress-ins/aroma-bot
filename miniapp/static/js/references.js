@@ -20,6 +20,11 @@ const REFERENCE_SOURCE_TYPE_LABELS = {
   technique:      "Техника",
   zone:           "Зона тела",
   protocol:       "Протокол",
+  anatomy:        "Анатомия",
+  dysfunction:    "Дисфункция",
+  principle:      "Принцип",
+  rhythm:         "Ритм",
+  observation:    "Наблюдение",
   singing_bowl:   "Поющая чаша",
   gong:           "Гонг",
   tuning_fork:    "Камертон",
@@ -605,7 +610,7 @@ export function createReferencesModule(deps) {
   }
 
   function renderFilterChips(items, tabId) {
-    if (!["aromas", "blends", "symptoms", "concepts", "practices", "massage", "crystals"].includes(tabId)) return "";
+    if (!["aromas", "blends", "symptoms", "concepts", "practices", "massage", "osteo", "biodynamics", "crystals"].includes(tabId)) return "";
 
     if (tabId === "symptoms") {
       return renderSymptomFilterChips(items);
@@ -1012,6 +1017,39 @@ export function createReferencesModule(deps) {
           ${contraList.length ? renderStructuredList("Противопоказания", contraList.join(". ")) : ""}
         </div>
       `;
+    } else if (state.tab === "osteo" || state.tab === "biodynamics") {
+      const compOilChips = renderCrossRefChips(
+        zipNamesAndSlugs(reference.complementary_oil_names || [], reference.complementary_oils || []),
+        "aromas"
+      );
+      const symptomChips = renderCrossRefChips(
+        zipNamesAndSlugs(reference.related_symptom_names, reference.related_symptom_slugs),
+        "symptoms"
+      );
+      const practiceChips = renderCrossRefChips(
+        zipNamesAndSlugs(reference.related_practice_names || [], reference.related_practices || []),
+        "practices"
+      );
+      const bodyZones = Array.isArray(reference.body_zones) ? reference.body_zones.join(", ") : (reference.body_zones || "");
+      const contraList = Array.isArray(reference.contraindications) ? reference.contraindications : [];
+      const practReq = reference.practitioner_required ? `<p class="practitioner-badge"><i class="ph ph-user-circle-check" style="font-size:16px"></i> Требуется специалист</p>` : "";
+      detailHtml = `
+        <div class="detail-grid">
+          ${renderBackButton()}
+          ${renderReferenceImage(reference)}
+          ${practReq}
+          ${bodyZones ? aromaSection("Зоны работы", bodyZones) : ""}
+          ${renderCollapsibleDescription(reference)}
+          ${renderCollapsibleSection("Терапевтические свойства", Array.isArray(reference.therapeutic_properties) ? reference.therapeutic_properties.join(", ") : reference.therapeutic_properties, 280)}
+          ${renderCollapsibleSection("Психологические свойства", Array.isArray(reference.psychological_properties) ? reference.psychological_properties.join(", ") : reference.psychological_properties, 280)}
+          ${compOilChips ? `<section class="section"><h3><i class="ph ph-drop" style="font-size:16px"></i> Комплементарные масла</h3><div class="detail-preview">${compOilChips}</div></section>` : ""}
+          ${symptomChips ? `<section class="section"><h3><i class="ph ph-heartbeat" style="font-size:16px"></i> Помогает при</h3><div class="detail-preview">${symptomChips}</div></section>` : ""}
+          ${practiceChips ? `<section class="section"><h3><i class="ph ph-wind" style="font-size:16px"></i> Связанные практики</h3><div class="detail-preview">${practiceChips}</div></section>` : ""}
+          ${renderApplicationsWithIcons(reference.applications)}
+          ${renderStructuredList("Меры предосторожности", reference.precautions)}
+          ${contraList.length ? renderStructuredList("Противопоказания", contraList.join(". ")) : ""}
+        </div>
+      `;
     } else if (state.tab === "crystals") {
       const compOilChips = renderCrossRefChips(
         zipNamesAndSlugs(reference.complementary_oils || [], reference.complementary_oil_slugs || []),
@@ -1172,7 +1210,7 @@ export function createReferencesModule(deps) {
   /* ── Smart Search ── */
 
   async function loadAllReferencesForSearch() {
-    const tabs = ["aromas", "blends", "symptoms", "concepts", "practices", "massage", "sounds", "crystals"];
+    const tabs = ["aromas", "blends", "symptoms", "concepts", "practices", "massage", "osteo", "biodynamics", "sounds", "crystals"];
     const promises = tabs.filter(t => !_searchCache[t]).map(async (tabId) => {
       const meta = HANDBOOK_CATEGORY_META[tabId];
       if (!meta) return;
@@ -1226,6 +1264,8 @@ export function createReferencesModule(deps) {
       ...(_searchCache.concepts || []),
       ...(_searchCache.practices || []),
       ...(_searchCache.massage || []),
+      ...(_searchCache.osteo || []),
+      ...(_searchCache.biodynamics || []),
       ...(_searchCache.sounds || []),
       ...(_searchCache.crystals || []),
     ];

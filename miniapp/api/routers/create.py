@@ -162,7 +162,8 @@ async def generate_content(
         team_id=ctx.team_id,
         created_by=ctx.telegram_id,
     )
-    background_tasks.add_task(complete_content_generation, saved.draft_id, enriched_topic, goal_key, format_key, bc)
+    practice_focus = getattr(payload, "practice_focus", "aroma") or "aroma"
+    background_tasks.add_task(complete_content_generation, saved.draft_id, enriched_topic, goal_key, format_key, bc, practice_focus=practice_focus)
     return await serialize_draft(saved)
 
 

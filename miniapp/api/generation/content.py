@@ -13,6 +13,7 @@ async def complete_content_generation(
     goal_key: str,
     format_key: str,
     blend_context: dict | None = None,
+    practice_focus: str = "aroma",
 ) -> None:
     """Background task: generate content draft and update the stub."""
     try:
@@ -21,7 +22,7 @@ async def complete_content_generation(
 
         rag_context = await fetch_rag_context(topic)
 
-        draft_obj = await generate_content_draft(topic, goal_key, format_key, blend_context=blend_context, rag_context=rag_context)
+        draft_obj = await generate_content_draft(topic, goal_key, format_key, blend_context=blend_context, rag_context=rag_context, practice_focus=practice_focus)
         content_payload = build_content_payload(draft_obj, goal_key=goal_key, format_key=format_key)
         if blend_context:
             content_payload["blend_context"] = blend_context

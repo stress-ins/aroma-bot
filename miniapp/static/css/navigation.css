@@ -121,6 +121,39 @@
 .tabs-wrapper.scrolled-end::after {
   opacity: 0;
 }
+/* ── Section switcher ────────────────────────────────────────────────── */
+.section-switcher {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.section-chip {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  border-radius: var(--radius-md);
+  min-height: 34px;
+  padding: 5px 8px;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--muted);
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.section-chip.active {
+  background: linear-gradient(180deg, rgba(var(--brand-rgb), 0.18), rgba(var(--brand-rgb), 0.1));
+  border-color: rgba(var(--brand-rgb), 0.3);
+  color: var(--text);
+  font-weight: 600;
+}
+
 .tabs {
   display: flex;
   gap: var(--space-3);
