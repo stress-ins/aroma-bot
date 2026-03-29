@@ -219,13 +219,13 @@
   height: 22px;
   padding: 0;
   border-radius: 50%;
-  border: 1.5px solid var(--border);
+  border: 1.5px solid var(--muted);
   background: transparent;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--hint);
+  color: var(--muted);
   transition: border-color var(--duration-fast), background var(--duration-fast), color var(--duration-fast);
   min-width: 22px;
   min-height: 22px;
@@ -244,7 +244,7 @@
 .score-star {
   display: inline-flex;
   align-items: center;
-  color: var(--surface-3, var(--border));
+  color: var(--muted);
 }
 
 .score-star svg { width: 14px; height: 14px; }
@@ -672,6 +672,60 @@
   letter-spacing: 0.04em;
   color: var(--brand);
   margin-bottom: 4px;
+}
+
+/* ── Form inputs ────────────────────────────────────────────────────────── */
+
+.form-label {
+  display: block;
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.form-input {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-family: var(--font-ui);
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color var(--duration-fast) var(--ease-standard);
+}
+
+.form-input:focus {
+  border-color: var(--brand);
+}
+
+.form-input::placeholder {
+  color: var(--hint);
+}
+
+textarea.form-input {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.metric-input-item input {
+  width: 100%;
+  padding: 8px 10px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-family: var(--font-ui);
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color var(--duration-fast) var(--ease-standard);
+}
+
+.metric-input-item input:focus {
+  border-color: var(--brand);
 }
 
 /* ── Audit fixes 2026-03-23 ───────────────────────────────────────────── */

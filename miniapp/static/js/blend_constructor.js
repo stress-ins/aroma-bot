@@ -128,7 +128,7 @@ export function createBlendConstructorModule(deps) {
         const isPinned = pinnedNames.has(o.name_ru?.toLowerCase());
         return `<div class="oil-edit-row ${o.active ? "" : "is-removed"} ${isPinned ? "is-pinned" : ""}">
           <button class="oil-edit-toggle ${o.active ? "is-on" : "is-off"}" data-action="blendToggleOil" data-args='${JSON.stringify([id])}'>${o.active ? "\u2713" : "\u2715"}</button>
-          <span class="oil-edit-name">${escapeHtml(o.name_ru)}${isPinned ? ' <span class="oil-pin-icon" title="\u0417\u0430\u043a\u0440\u0435\u043f\u043b\u0435\u043d\u043e">\u{1F4CC}</span>' : ""}</span>
+          <span class="oil-edit-name">${escapeHtml(o.name_ru)}${isPinned ? ' <span class="oil-pin-icon" aria-label="\u0417\u0430\u043a\u0440\u0435\u043f\u043b\u0435\u043d\u043e">\u{1F4CC}</span>' : ""}</span>
           <span class="oil-edit-drops ${changed ? "is-recalculated" : ""}">${o.active ? d + " \u043a\u0430\u043f." : "\u2014"}</span>
           <span class="oil-edit-role">${escapeHtml(o.role)}</span>
         </div>`;

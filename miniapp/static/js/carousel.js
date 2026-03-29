@@ -336,7 +336,7 @@ export function createCarouselModule(deps) {
           ].map(([id, label]) => `
             <button class="divider-option${id === currentDivider ? " is-active" : ""}" type="button"
               data-action="setDividerStyle" data-args='${JSON.stringify([draftId, id])}'
-              title="${escapeHtml(label)}">
+              aria-label="${escapeHtml(label)}">
               <img src="/assets/carousel_dividers/${id}.png" alt="${escapeHtml(label)}" />
             </button>
           `).join("")}

@@ -257,7 +257,7 @@
 .trends-platform-btn {
   flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px;
   padding: 8px 4px; border-radius: 10px; font-size: 13px; font-weight: 500;
-  background: var(--surface, #f7f7f7); border: 1px solid var(--border, #e0e0e0);
+  background: var(--surface); border: 1px solid var(--border);
   color: var(--text); cursor: pointer; transition: all 0.15s;
 }
 .trends-platform-btn.active {
@@ -268,14 +268,14 @@
 .trends-period-btns { display: flex; gap: 4px; flex: 1; }
 .trends-period-btn {
   padding: 5px 12px; border-radius: 8px; font-size: 12px; font-weight: 500;
-  background: var(--surface, #f7f7f7); border: 1px solid var(--border, #e0e0e0);
+  background: var(--surface); border: 1px solid var(--border);
   color: var(--text); cursor: pointer; transition: all 0.12s;
 }
 .trends-period-btn.active { background: var(--brand-bg); border-color: var(--brand-border); color: var(--brand); }
 .trends-refresh-btn {
   display: flex; align-items: center; gap: 4px;
   padding: 5px 10px; border-radius: 8px; font-size: 12px;
-  background: var(--surface, #f7f7f7); border: 1px solid var(--border, #e0e0e0);
+  background: var(--surface); border: 1px solid var(--border);
   color: var(--hint); cursor: pointer;
 }
 .trends-refresh-btn:hover { border-color: var(--brand-border); color: var(--brand); }
@@ -378,7 +378,7 @@
 .trends-monitored-label { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--hint); margin-bottom: 4px; }
 .trends-platform-select {
   padding: 6px 8px; border-radius: 8px; font-size: 13px;
-  background: var(--surface, #f7f7f7); border: 1px solid var(--border, #e0e0e0);
+  background: var(--surface); border: 1px solid var(--border);
   color: var(--text); min-width: 100px;
 }
 
@@ -420,14 +420,14 @@
 /* Hook cards */
 .trends-hook-card {
   padding: 10px 14px; margin: 6px 0; border-radius: 10px;
-  background: var(--surface, #f7f7f7); border: 1px solid var(--border, #e0e0e0);
+  background: var(--surface); border: 1px solid var(--border);
 }
 .trends-hook-quote { font-style: italic; color: var(--text); font-size: 14px; }
 
 /* Insight cards */
 .insight-card {
   padding: 12px 14px; margin: 8px 0; border-radius: 12px;
-  background: var(--surface, #f7f7f7); border: 1px solid var(--border, #e0e0e0);
+  background: var(--surface); border: 1px solid var(--border);
 }
 .insight-card-header {
   display: flex; justify-content: space-between; align-items: center;
@@ -497,10 +497,10 @@
 .trends-repost-preview { flex: 1; color: var(--hint); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* Comparison */
-.trends-compare-cards { display: flex; gap: 10px; padding: 8px 14px; }
+.trends-compare-cards { display: flex; gap: 10px; padding: 8px 14px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .trends-compare-card {
   flex: 1; padding: 14px; border-radius: 12px;
-  background: var(--surface, #f7f7f7); border: 1px solid var(--border, #e0e0e0);
+  background: var(--surface); border: 1px solid var(--border);
 }
 .trends-compare-card-title { font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
 .trends-compare-metric { font-size: 13px; color: var(--text); padding: 3px 0; display: flex; align-items: center; gap: 4px; }

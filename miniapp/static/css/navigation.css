@@ -75,7 +75,7 @@
 }
 
 .toolbar {
-  background: var(--surface);
+  background: var(--bg);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 12px 14px;
@@ -86,8 +86,6 @@
   position: sticky;
   top: var(--tg-content-inset-top, env(safe-area-inset-top, 0px));
   z-index: 40;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
 }
 
 .toolbar:not(:has(> :not([hidden]))) { display: none; }
@@ -466,7 +464,7 @@ body.app-ready .splash {
   display: flex;
   flex-direction: column;
   max-height: calc(100dvh - 180px);
-  overflow: hidden;
+  overflow-y: auto;
 }
 
 .panel-header {
