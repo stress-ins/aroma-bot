@@ -486,7 +486,7 @@ export function createReelsModule(deps) {
     const versionsHtml = versions.length > 0 ? `
       <div class="reels-frame-versions">
         ${versions.map((v, vi) => `
-          <div class="reels-frame-version-thumb${v.is_current ? " is-current" : ""}" title="Версия ${vi + 1}">
+          <div class="reels-frame-version-thumb${v.is_current ? " is-current" : ""}" aria-label="Версия ${vi + 1}">
             ${v.url ? `<img src="${escapeHtml(v.thumb_url || v.url)}" style="width:100%;height:100%;object-fit:cover" />` : ""}
           </div>
         `).join("")}
@@ -706,7 +706,7 @@ export function createReelsModule(deps) {
         <section class="section">
           <h3 style="display:flex;align-items:center">
             ${sectionHeadingIcon("Описание")}Описание рилса
-            ${caption ? `<button class="icon-btn" style="margin-left:auto" data-action="copyReelsCaption" data-args='${JSON.stringify([r.draft_id, null])}' title="Скопировать">${uiIcon("copy")}</button>` : ""}
+            ${caption ? `<button class="icon-btn" style="margin-left:auto" data-action="copyReelsCaption" data-args='${JSON.stringify([r.draft_id, null])}' aria-label="Скопировать">${uiIcon("copy")}</button>` : ""}
           </h3>
           ${caption ? `<div class="detail-markdown">${renderMarkdown(caption)}</div>` : `<p class="detail-empty">Описание не задано</p>`}
           <div class="actions-row" style="margin-top:8px">

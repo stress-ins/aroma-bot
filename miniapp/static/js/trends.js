@@ -731,7 +731,7 @@ export function createTrendsModule(deps) {
       .map((t) => {
         const size = 0.75 + (t.count / maxCount) * 0.75;
         return `<span class="trends-tagcloud-chip" style="font-size: ${size}rem"
-                      title="${escapeHtml(t.tag)}: ${t.count}">#${escapeHtml(t.tag)}</span>`;
+                      aria-label="${escapeHtml(t.tag)}: ${t.count}">#${escapeHtml(t.tag)}</span>`;
       })
       .join("");
 
@@ -762,7 +762,7 @@ export function createTrendsModule(deps) {
         const isTop = count === maxVal && count > 0;
         cells += `<div class="trends-heatmap-cell ${isTop ? "top" : ""}"
                        style="background: rgba(var(--brand-rgb), ${opacity})"
-                       title="${WEEKDAY_LABELS[d]} ${h}:00 — ${count} пост."></div>`;
+                       aria-label="${WEEKDAY_LABELS[d]} ${h}:00 — ${count} пост."></div>`;
       }
       rows += `<div class="trends-heatmap-row">${cells}</div>`;
     }

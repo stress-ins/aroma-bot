@@ -1451,7 +1451,7 @@ export function createSettingsModule(deps) {
         const membersHtml = (detail.members || []).map((m) => {
           const roleLabel = roleLabels[m.role] || m.role;
           const removeBtn = isOwner && m.telegram_id !== detail.created_by
-            ? ` <button class="chip-remove-btn" type="button" data-action="removeTeamMember" data-args='${JSON.stringify([t.team_id, m.telegram_id])}' title="Удалить">&times;</button>`
+            ? ` <button class="chip-remove-btn" type="button" data-action="removeTeamMember" data-args='${JSON.stringify([t.team_id, m.telegram_id])}' aria-label="Удалить">&times;</button>`
             : "";
           const displayName = m.username ? `@${escapeHtml(m.username)}` : m.first_name ? escapeHtml(m.first_name) : `ID: ${m.telegram_id}`;
           return `

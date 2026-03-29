@@ -237,7 +237,7 @@ export function createPlansModule(deps) {
         ${days.map((day) => `
           <button class="plans-cal-day${day.isToday ? " is-today" : ""}${day.isActive ? " is-active" : ""}"
             data-action="setPlanDateFilter" data-args='["${day.dateKey}"]'
-            title="${day.day} ${day.month}">
+            aria-label="${day.day} ${day.month}">
             <div class="plans-cal-day-label">${day.label}</div>
             <div class="plans-cal-day-num">${day.day}</div>
             ${day.hasContent && !day.isActive ? `<div class="plans-cal-day-dot"></div>` : ""}

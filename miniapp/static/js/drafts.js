@@ -469,8 +469,8 @@ export function createDraftsModule(deps) {
               return `<button class="primary-button" data-action="updateDraft" data-args='["status",{"status":"approved"},null]'>${actionLabel("approve", "Согласовать")}</button>`;
             })()}
             <div class="detail-icon-actions">
-              <button class="secondary-button" title="Вернуть на доработку" data-action="updateDraft" data-args='["status",{"status":"rejected"},null]'>${uiIcon("reject")}</button>
-              ${d.kind === "carousel" ? `<button class="secondary-button" title="Обновить все слайды" data-action="regenerateCarouselAll" data-args='${JSON.stringify([d.draft_id, null])}'>${uiIcon("regenerate")}</button>` : ""}
+              <button class="secondary-button" aria-label="Вернуть на доработку" data-action="updateDraft" data-args='["status",{"status":"rejected"},null]'>${uiIcon("reject")}</button>
+              ${d.kind === "carousel" ? `<button class="secondary-button" aria-label="Обновить все слайды" data-action="regenerateCarouselAll" data-args='${JSON.stringify([d.draft_id, null])}'>${uiIcon("regenerate")}</button>` : ""}
             </div>
             ${d.kind === "carousel" && !d.generation_pending ? `
               <div class="carousel-export-row">
@@ -783,7 +783,7 @@ export function createDraftsModule(deps) {
           <div class="actions-row detail-actions">
             <button class="primary-button" data-action="updateDraft" data-args='["status",{"status":"approved"},null]'>${actionLabel("approve", "Согласовать")}</button>
             <div class="detail-icon-actions">
-              <button class="secondary-button" title="Вернуть на доработку" data-action="updateDraft" data-args='["status",{"status":"rejected"},null]'>${uiIcon("reject")}</button>
+              <button class="secondary-button" aria-label="Вернуть на доработку" data-action="updateDraft" data-args='["status",{"status":"rejected"},null]'>${uiIcon("reject")}</button>
             </div>
             ${renderMoveButton(d.draft_id)}
           </div>
@@ -989,7 +989,7 @@ export function createDraftsModule(deps) {
       const data = await fetchJson(`/api/schedule/recommend?topic=${encodeURIComponent(topic)}&platform=instagram`);
       if (data.slots && data.slots.length && container) {
         const slotsHtml = data.slots.map(s =>
-          `<button type="button" class="keyword-chip schedule-slot-chip" data-day="${s.day}" data-hour="${s.hour_msk}" title="${escapeHtml(s.reason)}">${s.day.substring(0, 2).toUpperCase()} ${s.hour_msk}:00 (${(s.score * 100).toFixed(0)}%)</button>`
+          `<button type="button" class="keyword-chip schedule-slot-chip" data-day="${s.day}" data-hour="${s.hour_msk}" aria-label="${escapeHtml(s.reason)}">${s.day.substring(0, 2).toUpperCase()} ${s.hour_msk}:00 (${(s.score * 100).toFixed(0)}%)</button>`
         ).join(" ");
         container.innerHTML = `<div class="schedule-recommend-label">${uiIcon("clock", 14)} Рекомендация${data.cold_start ? " (wellness defaults)" : ""}:</div>${slotsHtml}`;
         container.hidden = false;
