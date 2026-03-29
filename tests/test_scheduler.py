@@ -198,3 +198,98 @@ async def test_run_loop_comments_poll_error_does_not_block():
 
     # Scheduled posts check should still have run despite comments poll failure
     assert scheduled_posts_called, "Scheduled posts check should run even if comments poll fails"
+
+
+# ---------------------------------------------------------------------------
+# Tests for the declarative ScheduledTask registry
+# ---------------------------------------------------------------------------
+
+
+def test_scheduled_task_daily():
+    """ScheduledTask with check='daily' should fire once per day."""
+    from bot.services.scheduler import ScheduledTask
+
+    task = ScheduledTask(
+        name="test_daily",
+        fn=AsyncMock(),
+        hours={9},
+        minute=0,
+        check="daily",
+    )
+
+    now_match = datetime(2026, 3, 15, 9, 0, tzinfo=timezone.utc)
+    now_wrong_hour = datetime(2026, 3, 15, 10, 0, tzinfo=timezone.utc)
+    now_wrong_minute = datetime(2026, 3, 15, 9, 5, tzinfo=timezone.utc)
+
+    assert task.should_run(now_wrong_hour) is False
+    assert task.should_run(now_wrong_minute) is False
+    assert task.should_run(now_match) is True
+    # Second call same day should not fire
+    assert task.should_run(now_match) is False
+    # Next day should fire
+    next_day = datetime(2026, 3, 16, 9, 0, tzinfo=timezone.utc)
+    assert task.should_run(next_day) is True
+
+
+def test_scheduled_task_hourly():
+    """ScheduledTask with check='hourly' should fire once per matching hour."""
+    from bot.services.scheduler import ScheduledTask
+
+    task = ScheduledTask(
+        name="test_hourly",
+        fn=AsyncMock(),
+        hours={0, 6, 12, 18},
+        minute=0,
+        check="hourly",
+    )
+
+    assert task.should_run(datetime(2026, 3, 15, 6, 0, tzinfo=timezone.utc)) is True
+    assert task.should_run(datetime(2026, 3, 15, 6, 0, tzinfo=timezone.utc)) is False  # dedup
+    assert task.should_run(datetime(2026, 3, 15, 7, 0, tzinfo=timezone.utc)) is False  # wrong hour
+    assert task.should_run(datetime(2026, 3, 15, 12, 0, tzinfo=timezone.utc)) is True
+
+
+def test_scheduled_task_every_nm():
+    """ScheduledTask with check='every_Nm' fires on interval minutes."""
+    from bot.services.scheduler import ScheduledTask
+
+    task = ScheduledTask(
+        name="test_every5m",
+        fn=AsyncMock(),
+        check="every_Nm",
+        interval_minutes=5,
+    )
+
+    assert task.should_run(datetime(2026, 3, 15, 9, 0, tzinfo=timezone.utc)) is True
+    assert task.should_run(datetime(2026, 3, 15, 9, 0, tzinfo=timezone.utc)) is False  # dedup
+    assert task.should_run(datetime(2026, 3, 15, 9, 3, tzinfo=timezone.utc)) is False  # not on interval
+    assert task.should_run(datetime(2026, 3, 15, 9, 5, tzinfo=timezone.utc)) is True
+
+
+def test_scheduled_task_every_tick():
+    """ScheduledTask with check='every_tick' fires every time."""
+    from bot.services.scheduler import ScheduledTask
+
+    task = ScheduledTask(
+        name="test_tick",
+        fn=AsyncMock(),
+        check="every_tick",
+    )
+
+    assert task.should_run(datetime(2026, 3, 15, 9, 0, tzinfo=timezone.utc)) is True
+    assert task.should_run(datetime(2026, 3, 15, 9, 1, tzinfo=timezone.utc)) is True
+
+
+def test_build_task_registry():
+    """Registry should contain all expected tasks."""
+    from bot.services.scheduler import _build_task_registry
+
+    registry = _build_task_registry()
+    names = {t.name for t in registry}
+
+    expected = {
+        "daily_digest", "cost_report", "daily_oil", "token_expiry_check",
+        "post_metrics", "thread_monitor", "social_trends_pipeline",
+        "comments_poll", "mentions_poll", "status_monitor", "scheduled_posts",
+    }
+    assert expected == names

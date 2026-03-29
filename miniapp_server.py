@@ -120,6 +120,17 @@ async def _lifespan(app: FastAPI):  # noqa: ARG001
 
 app = FastAPI(lifespan=_lifespan)
 
+# CORS — allow Telegram WebApp origins
+from starlette.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://web.telegram.org", "https://t.me"],
+    allow_methods=["GET", "POST", "PATCH", "DELETE"],
+    allow_headers=["*"],
+    allow_credentials=True,
+)
+
 # Serve Vite-built bundles (hashed filenames, immutable cache)
 if STATIC_DIST_DIR.exists():
     app.mount("/static-dist", StaticFiles(directory=STATIC_DIST_DIR), name="miniapp-static-dist")
