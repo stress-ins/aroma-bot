@@ -93,6 +93,17 @@ async def archive_stats(ctx: TeamContext = Depends(_resolve_team_context)):
     return stats
 
 
+@router.get("/api/archive/tiktok-videos")
+async def tiktok_video_stats(ctx: TeamContext = Depends(_resolve_team_context)):
+    """Fetch TikTok videos with engagement stats (requires video.list scope)."""
+    try:
+        from bot.services.tiktok_publisher import fetch_tiktok_videos
+        videos = await fetch_tiktok_videos(team_id=ctx.team_id, max_count=20)
+        return {"items": videos, "total": len(videos)}
+    except RuntimeError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 # ── Detail ─────────────────────────────────────────────────────────────────
 
 @router.get("/api/archive/{pub_id}")

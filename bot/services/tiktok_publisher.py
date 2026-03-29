@@ -13,8 +13,10 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
-TIKTOK_POST_URL = "https://open.tiktokapis.com/v2/post/publish/video/init/"
-TIKTOK_STATUS_URL = "https://open.tiktokapis.com/v2/post/publish/status/fetch/"
+TIKTOK_API_BASE = "https://open.tiktokapis.com/v2"
+TIKTOK_POST_URL = f"{TIKTOK_API_BASE}/post/publish/video/init/"
+TIKTOK_STATUS_URL = f"{TIKTOK_API_BASE}/post/publish/status/fetch/"
+TIKTOK_VIDEO_LIST_URL = f"{TIKTOK_API_BASE}/video/list/"
 
 # TikTok caption limit
 TIKTOK_CAPTION_MAX_LENGTH = 2200
@@ -149,6 +151,53 @@ async def _poll_publish_status(
         await asyncio.sleep(interval)
 
     raise RuntimeError(f"TikTok publish timed out after {max_attempts} attempts")
+
+
+async def fetch_tiktok_videos(
+    *,
+    team_id: str | None = None,
+    max_count: int = 20,
+) -> list[dict]:
+    """Fetch user's own TikTok videos with engagement stats.
+
+    Requires `video.list` scope. Returns list of video dicts with:
+    id, title, create_time, like_count, comment_count, share_count, view_count.
+    """
+    access_token = await _get_tiktok_token(team_id=team_id)
+
+    fields = "id,title,create_time,like_count,comment_count,share_count,view_count,video_description"
+    videos: list[dict] = []
+    cursor: int | None = None
+    has_more = True
+
+    async with httpx.AsyncClient(timeout=30) as client:
+        while has_more and len(videos) < max_count:
+            body: dict = {"max_count": min(20, max_count - len(videos))}
+            if cursor is not None:
+                body["cursor"] = cursor
+
+            resp = await client.post(
+                TIKTOK_VIDEO_LIST_URL,
+                headers={
+                    "Authorization": f"Bearer {access_token}",
+                    "Content-Type": "application/json; charset=UTF-8",
+                },
+                params={"fields": fields},
+                json=body,
+            )
+            _raise_for_tiktok_error(resp, "TikTok video list")
+
+            data = resp.json().get("data", {})
+            batch = data.get("videos") or []
+            videos.extend(batch)
+            has_more = data.get("has_more", False)
+            cursor = data.get("cursor")
+
+            if not batch:
+                break
+
+    logger.info("Fetched %d TikTok videos", len(videos))
+    return videos
 
 
 def _raise_for_tiktok_error(response: httpx.Response, context: str) -> None:
