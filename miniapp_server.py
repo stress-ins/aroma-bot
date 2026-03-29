@@ -15,6 +15,8 @@ from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
+from miniapp.api.rate_limit import RateLimitMiddleware
+
 BASE_DIR = Path(__file__).parent
 MINIAPP_DIR = BASE_DIR / "miniapp"
 STATIC_DIR = MINIAPP_DIR / "static"
@@ -130,6 +132,9 @@ app.add_middleware(
     allow_headers=["*"],
     allow_credentials=True,
 )
+
+# Rate limiting — must be added before static mounts
+app.add_middleware(RateLimitMiddleware)
 
 # Serve Vite-built bundles (hashed filenames, immutable cache)
 if STATIC_DIST_DIR.exists():
