@@ -131,7 +131,8 @@ async def _seed_test_cards() -> None:
 class TestCardCompleteness:
     """Data completeness checks for aroma cards."""
 
-    async def test_questions_not_empty_and_not_template(self):
+    @pytest.mark.asyncio
+    async def test_questions_not_empty_and_not_template(self, setup_test_db):
         """questions -- not empty AND not template text."""
         await _seed_test_cards()
         cards = await _all_aroma_cards()
@@ -151,7 +152,8 @@ class TestCardCompleteness:
         assert any("test-blue-tansy" in p for p in problems), "Incomplete card should be detected"
         assert any("test-orange" in p for p in problems), "Template questions should be detected"
 
-    async def test_psychological_properties_not_empty(self):
+    @pytest.mark.asyncio
+    async def test_psychological_properties_not_empty(self, setup_test_db):
         """psychological_properties -- not empty, at least 50 chars."""
         await _seed_test_cards()
         cards = await _all_aroma_cards()
@@ -166,7 +168,8 @@ class TestCardCompleteness:
         assert "test-lavender" not in " ".join(problems)
         assert any("test-blue-tansy" in p for p in problems)
 
-    async def test_resource_values_not_empty(self):
+    @pytest.mark.asyncio
+    async def test_resource_values_not_empty(self, setup_test_db):
         """resource_values.plus and resource_values.minus -- not empty."""
         await _seed_test_cards()
         cards = await _all_aroma_cards()
@@ -185,7 +188,8 @@ class TestCardCompleteness:
         assert "test-lavender" not in " ".join(problems)
         assert any("test-blue-tansy" in p for p in problems)
 
-    async def test_history_not_empty(self):
+    @pytest.mark.asyncio
+    async def test_history_not_empty(self, setup_test_db):
         """history -- not empty, at least 50 chars."""
         await _seed_test_cards()
         cards = await _all_aroma_cards()
@@ -200,7 +204,8 @@ class TestCardCompleteness:
         assert "test-lavender" not in " ".join(problems)
         assert any("test-blue-tansy" in p for p in problems)
 
-    async def test_name_is_russian(self):
+    @pytest.mark.asyncio
+    async def test_name_is_russian(self, setup_test_db):
         """name -- must contain Cyrillic characters (not only Latin)."""
         await _seed_test_cards()
         cards = await _all_aroma_cards()
@@ -213,7 +218,8 @@ class TestCardCompleteness:
         assert "test-lavender" not in " ".join(problems)
         assert any("test-blue-tansy" in p for p in problems)
 
-    async def test_name_ru_in_payload(self):
+    @pytest.mark.asyncio
+    async def test_name_ru_in_payload(self, setup_test_db):
         """name_ru in payload -- not empty."""
         await _seed_test_cards()
         cards = await _all_aroma_cards()
@@ -228,7 +234,8 @@ class TestCardCompleteness:
         # All test cards have name_ru set
         assert len(problems) == 0 or all("test-" not in p for p in problems)
 
-    async def test_name_en_in_payload(self):
+    @pytest.mark.asyncio
+    async def test_name_en_in_payload(self, setup_test_db):
         """name_en in payload -- not empty."""
         await _seed_test_cards()
         cards = await _all_aroma_cards()
@@ -242,7 +249,8 @@ class TestCardCompleteness:
 
         assert len(problems) == 0 or all("test-" not in p for p in problems)
 
-    async def test_description_not_empty(self):
+    @pytest.mark.asyncio
+    async def test_description_not_empty(self, setup_test_db):
         """description -- not empty."""
         await _seed_test_cards()
         cards = await _all_aroma_cards()
@@ -261,7 +269,8 @@ class TestCardCompleteness:
 class TestCardCompletenessReport:
     """Aggregate report test -- produces a summary of data quality issues."""
 
-    async def test_completeness_report(self):
+    @pytest.mark.asyncio
+    async def test_completeness_report(self, setup_test_db):
         """Generate a summary report of all data quality issues.
 
         This test always passes -- it's meant to produce diagnostic output.
