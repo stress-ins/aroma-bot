@@ -56,7 +56,7 @@ class TwitterCollector(BaseCollector):
                 error="TWITTER_BEARER_TOKEN не задан",
             )
         try:
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             items = await loop.run_in_executor(_executor, _fetch_twitter)
             return SourceResult(
                 source_name=self.source_name,

@@ -222,7 +222,7 @@ async def _classify_lifecycle_with_llm(
             f"Score history (last {history_days} days):\n{history_text}\n\n"
             "Reply with exactly one word: emerging, growing, peaking, declining, or evergreen."
         )
-        result = await asyncio.get_event_loop().run_in_executor(
+        result = await asyncio.get_running_loop().run_in_executor(
             None, lambda: call_claude(
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=50, model=HAIKU, context="signal_enricher",
@@ -251,7 +251,7 @@ async def analyze_sentiment(keyword: str, sample_texts: list[str]) -> str:
             f"{combined}\n\n"
             "Reply with exactly one word: positive, neutral, or negative."
         )
-        result = await asyncio.get_event_loop().run_in_executor(
+        result = await asyncio.get_running_loop().run_in_executor(
             None, lambda: call_claude(
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=20, model=HAIKU, context="signal_enricher_sentiment",

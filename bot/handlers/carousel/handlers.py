@@ -73,7 +73,7 @@ async def _run_image_generation(
     img_prompts = context.user_data.get("ca_img_prompts", [])
     existing    = context.user_data.get("ca_gemini_images", [])
     n = len(slides)
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
 
     # Start from existing images, extend to n slots
     images: list[bytes | None] = list(existing) + [None] * max(0, n - len(existing))
@@ -273,7 +273,7 @@ async def _run_image_generation(
 async def _run_carousel(query_or_message, context: ContextTypes.DEFAULT_TYPE,
                         topic: str, status_msg) -> None:
     """Generate slide texts only. User then triggers image generation manually."""
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
 
     await status_msg.edit_text(
         f"🎠 Тема: {topic}\n\n⏳ Генерирую черновик → прогоняю через редактора..."
@@ -384,7 +384,7 @@ async def cb_carousel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             cache.set("results", results)
 
         await query.message.edit_text("🧠 Генерирую темы на основе трендов...")
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         topics = await loop.run_in_executor(
             _gen._executor, _pkg()._claude_topics_carousel, _format_trends(results)
         )
@@ -440,7 +440,7 @@ async def cb_carousel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             return
         if not img_prompts:
             gen_msg = await query.message.reply_text("⏳ Генерирую промпты для картинок...")
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             img_prompts = await loop.run_in_executor(
                 _gen._executor, _gen._generate_slide_image_prompts_sync, slides, topic
             )
@@ -574,7 +574,7 @@ async def cb_carousel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             status = await query.message.reply_text(
                 f"🔄 Генерирую новый текст для слайда {idx + 1}..."
             )
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             new_text = await loop.run_in_executor(
                 _gen._executor, _gen._regen_slide_text_sync, topic, slides, idx
             )
@@ -615,7 +615,7 @@ async def cb_carousel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             status = await query.message.reply_text(
                 f"🖼 Генерирую новую картинку для слайда {idx + 1}..."
             )
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             new_img = await loop.run_in_executor(
                 _gen._img_executor, _gen._gemini_slide, img_prompts[idx]
             )
@@ -653,7 +653,7 @@ async def cb_carousel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             await query.message.reply_text("❌ Данные устарели. Сгенерируй карусель заново.")
             return
         status = await query.message.reply_text("⏳ Собираю PPTX...")
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         pptx_bytes = await loop.run_in_executor(_gen._executor, _pptx_mod._build_pptx, slides, images or None)
         await status.delete()
         await query.message.reply_document(
@@ -669,7 +669,7 @@ async def cb_carousel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         if not slides:
             await query.message.reply_text("❌ Данные устарели. Сгенерируй карусель заново.")
             return
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         pptx_bytes = await loop.run_in_executor(_gen._executor, _pptx_mod._build_pptx, slides, None)
         await query.message.reply_document(
             document=io.BytesIO(pptx_bytes),
@@ -699,7 +699,7 @@ async def cb_carousel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
                 logger.warning("Failed to download user image: %s", exc)
                 images.append(None)
 
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         pptx_bytes = await loop.run_in_executor(_gen._executor, _pptx_mod._build_pptx, slides, images)
         await status.delete()
         await query.message.reply_document(
@@ -752,7 +752,7 @@ async def msg_carousel_topic(update: Update, context: ContextTypes.DEFAULT_TYPE)
             status = await update.message.reply_text(
                 f"🖼 Генерирую картинку для слайда {slide_idx_note + 1} с замечанием..."
             )
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             new_img = await loop.run_in_executor(
                 _gen._img_executor, _gen._gemini_slide, img_prompts[slide_idx_note]
             )
@@ -788,7 +788,7 @@ async def msg_carousel_topic(update: Update, context: ContextTypes.DEFAULT_TYPE)
         # Regenerate image for the edited slide
         if img_prompts and slide_idx < len(img_prompts):
             status = await update.message.reply_text("✅ Текст обновлён! 🖼 Генерирую картинку...")
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             new_img = await loop.run_in_executor(
                 _gen._executor, _gen._gemini_slide, img_prompts[slide_idx]
             )

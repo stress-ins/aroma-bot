@@ -58,7 +58,7 @@ class RedditCollector(BaseCollector):
                 error="REDDIT_CLIENT_ID/SECRET не заданы",
             )
         try:
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             items = await loop.run_in_executor(_executor, _fetch_reddit)
             return SourceResult(
                 source_name=self.source_name,

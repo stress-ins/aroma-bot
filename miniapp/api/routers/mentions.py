@@ -143,7 +143,7 @@ async def generate_replies_endpoint(mention_id: str, ctx: TeamContext = Depends(
     if mention.team_id and mention.team_id != ctx.team_id:
         raise HTTPException(status_code=403, detail="team_mismatch")
 
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     from bot.agents.mentions_agent import generate_replies_sync
 
     replies_data = await loop.run_in_executor(

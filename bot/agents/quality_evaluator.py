@@ -216,5 +216,5 @@ async def evaluate_content(text: str, platform: str = "instagram", topic: str = 
             critique="",
             passed=True,
         )
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     return await loop.run_in_executor(_executor, _evaluate_sync, text, platform, topic)

@@ -74,7 +74,7 @@ async def cb_adapt(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             f"⏳ Адаптирую под {platform_label}..."
         )
 
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         adapted = await loop.run_in_executor(_executor, adapt_text_sync, original_text, platform_key)
 
         other_buttons = [

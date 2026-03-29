@@ -123,7 +123,7 @@ async def post_reply(parent_id: str, text: str) -> str:
     """Post a reply to a Threads post. Runs sync ThreadsClient in executor."""
     import asyncio
 
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
 
     def _do():
         client = ThreadsClient()
@@ -136,7 +136,7 @@ async def post_thread(text: str) -> str:
     """Post a standalone Threads post. Runs sync ThreadsClient in executor."""
     import asyncio
 
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
 
     def _do():
         client = ThreadsClient()

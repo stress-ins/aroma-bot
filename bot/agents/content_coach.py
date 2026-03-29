@@ -338,7 +338,7 @@ async def analyze_post_performance(
             "suggested_improvements": str,
         }
     """
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     return await loop.run_in_executor(
         _executor, _analyze_sync, post, team_averages, format_benchmarks, pillar_benchmarks,
     )
@@ -360,7 +360,7 @@ async def generate_coaching_summary(
             "weekly_plan_suggestion": str,
         }
     """
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     return await loop.run_in_executor(
         _executor, _summary_sync, publications, format_performance, pillar_performance,
     )

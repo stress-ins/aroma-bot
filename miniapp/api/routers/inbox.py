@@ -160,7 +160,7 @@ async def generate_inbox_reply(
         context_lines.append(f"{role}: {m.content}")
     conversation_context = "\n".join(context_lines)
 
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     from bot.agents.mentions_agent import generate_replies_sync
 
     last_user_msg = ""

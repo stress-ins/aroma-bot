@@ -66,7 +66,7 @@ class GoogleTrendsENCollector(BaseCollector):
 
     async def collect(self) -> SourceResult:
         try:
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             items = await loop.run_in_executor(_executor, _fetch_en)
             if not items:
                 return SourceResult(source_name=self.source_name, source_key=self.source_key,
@@ -86,7 +86,7 @@ class GoogleTrendsRUCollector(BaseCollector):
 
     async def collect(self) -> SourceResult:
         try:
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             items = await loop.run_in_executor(_executor, _fetch_ru)
             if not items:
                 return SourceResult(source_name=self.source_name, source_key=self.source_key,

@@ -65,7 +65,7 @@ async def cmd_threads_account(update: Update, context: ContextTypes.DEFAULT_TYPE
         return
 
     status = await update.message.reply_text("🔍 Проверяю подключенный Threads-аккаунт...")
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
 
     def _load_profile():
         client = ThreadsClient()
@@ -112,7 +112,7 @@ async def _refresh_inbox_status(status_message, context: ContextTypes.DEFAULT_TY
         await status_message.edit_text("❌ Для /threads_inbox нужен ANTHROPIC_API_KEY.")
         return
 
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
 
     try:
         me, candidates = await loop.run_in_executor(_executor, collect_inbox_candidates_sync)
@@ -170,7 +170,7 @@ async def cb_threads_manager(update: Update, context: ContextTypes.DEFAULT_TYPE)
         else:
             # Fallback: direct Threads API for legacy posts without draft
             status = await query.message.reply_text("🚀 Публикую пост в Threads...")
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             try:
                 post_id = await loop.run_in_executor(_executor, lambda: ThreadsClient().publish_text_post(text))
             except ThreadsAPIError as exc:
@@ -220,7 +220,7 @@ async def cb_threads_manager(update: Update, context: ContextTypes.DEFAULT_TYPE)
         suggestion = suggestions[idx]
         candidate = candidates[suggestion.candidate_index]
         status = await query.message.reply_text("🚀 Публикую ответ в Threads...")
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         try:
             reply_id = await loop.run_in_executor(
                 _executor,
@@ -369,7 +369,7 @@ async def cb_trend_threads(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
     elif action == "reply":
         await query.message.reply_text("✍️ Генерирую ответ...")
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         candidate = ThreadsCandidate(
             thread_id=thread.thread_id,
             source="keyword_match",

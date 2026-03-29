@@ -97,7 +97,7 @@ class InstagramCollector(BaseCollector):
             return SourceResult(source_name=self.source_name, source_key=self.source_key,
                                 icon=self.icon, error="INSTAGRAM_USERNAME/PASSWORD не заданы")
         try:
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             items, err = await loop.run_in_executor(_executor, _fetch_instagram, HASHTAGS_EN)
             return SourceResult(source_name=self.source_name, source_key=self.source_key,
                                 icon=self.icon, items=items, error=err)
@@ -117,7 +117,7 @@ class InstagramRUCollector(BaseCollector):
             return SourceResult(source_name=self.source_name, source_key=self.source_key,
                                 icon=self.icon, error="INSTAGRAM_USERNAME/PASSWORD не заданы")
         try:
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             items, err = await loop.run_in_executor(_executor, _fetch_instagram, HASHTAGS_RU)
             return SourceResult(source_name=self.source_name, source_key=self.source_key,
                                 icon=self.icon, items=items, error=err)

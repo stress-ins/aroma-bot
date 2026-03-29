@@ -32,7 +32,7 @@ async def poll_threads_mentions(access_token: str, team_id: str | None = None) -
     Only external mentions (others mentioning us) and replies from other
     users are saved.
     """
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     client = ThreadsClient(access_token=access_token)
 
     # Determine own usernames to filter out own posts
