@@ -2328,16 +2328,8 @@ window.resetOnboarding = onboarding.resetOnboarding;
 
 sessionCallbacks.refreshReelsDetail = refreshReelsDetail;
 
-function setMode(m) {
-  clearBackgroundRefreshes();
-  state.mode = m;
-  document.body.dataset.mode = m;
-  analytics.trackPageView(m, state.tab);
-  elements.modeContent.classList.toggle("active", m === "content");
-  elements.modeHandbook.classList.toggle("active", m === "handbook");
-  elements.settingsButton?.classList.toggle("active", m === "content" && state.tab === "settings");
+function _renderTabBar(m) {
   let tabs = MODE_TABS[m] || [];
-  // Section switcher for handbook mode — rendered ABOVE tabs in .tabs-wrapper
   const tabsWrapper = elements.tabsContainer.parentElement;
   const oldSectionSwitcher = tabsWrapper?.querySelector(".section-switcher");
   if (oldSectionSwitcher) oldSectionSwitcher.remove();
@@ -2353,8 +2345,10 @@ function setMode(m) {
     sectionEl.querySelectorAll(".section-chip").forEach(btn => {
       btn.addEventListener("click", () => {
         const sec = HANDBOOK_SECTIONS.find(s => s.id === btn.dataset.section);
-        if (sec && !sec.tabs.includes(state.tab)) {
-          setTab(sec.tabs[0]);
+        if (sec) {
+          const targetTab = sec.tabs.includes(state.tab) ? state.tab : sec.tabs[0];
+          setTab(targetTab);
+          _renderTabBar("handbook");
           void safeLoadCurrentTab("Не удалось загрузить вкладку");
         }
       });
@@ -2381,7 +2375,6 @@ function setMode(m) {
       void safeLoadCurrentTab("Не удалось загрузить вкладку");
     });
   });
-  // Hide tabs wrapper when no tabs (content mode has no pill tabs)
   if (tabsWrapper) tabsWrapper.hidden = tabs.length === 0;
   if (tabsWrapper && tabs.length > 0) {
     const checkScrollEnd = () => {
@@ -2392,6 +2385,18 @@ function setMode(m) {
     elements.tabsContainer.addEventListener("scroll", checkScrollEnd, { passive: true });
     requestAnimationFrame(checkScrollEnd);
   }
+}
+
+function setMode(m) {
+  clearBackgroundRefreshes();
+  state.mode = m;
+  document.body.dataset.mode = m;
+  analytics.trackPageView(m, state.tab);
+  elements.modeContent.classList.toggle("active", m === "content");
+  elements.modeHandbook.classList.toggle("active", m === "handbook");
+  elements.settingsButton?.classList.toggle("active", m === "content" && state.tab === "settings");
+  _renderTabBar(m);
+  const tabsWrapper = elements.tabsContainer.parentElement;
   const _contentHidden = ["settings", "create", "inbox", "plans", "schedule", "keywords", "status", "drafts", "trends"];
   if (!(m === "content" && _contentHidden.includes(state.tab)) && tabs.length > 0 && !tabs.find(t => t.id === state.tab)) setTab(tabs[0].id);
   renderContentSubTabs();

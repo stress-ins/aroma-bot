@@ -1317,7 +1317,7 @@ export function createReferencesModule(deps) {
         <button class="blend-constructor-cta" data-action="openBlendConstructor" data-args='${JSON.stringify([query])}'>\ud83e\uddea \u0421\u043e\u0437\u0434\u0430\u0442\u044c \u0441\u043c\u0435\u0441\u044c \u043f\u043e\u0434 \u044d\u0442\u0443 \u0437\u0430\u0434\u0430\u0447\u0443 \u2197</button></div>`;
       return;
     }
-    const groupLabels = {aroma: "\u0410\u0440\u043e\u043c\u0430\u0442\u044b", blend: "\u0421\u043c\u0435\u0441\u0438", symptom: "\u0421\u0438\u043c\u043f\u0442\u043e\u043c\u044b", concept: "\u041a\u043e\u043d\u0446\u0435\u043f\u0446\u0438\u0438", practice: "\u041f\u0440\u0430\u043a\u0442\u0438\u043a\u0438", sound: "\u0417\u0432\u0443\u043a\u0438"};
+    const groupLabels = {aroma: "Ароматы", blend: "Смеси", symptom: "Симптомы", concept: "Концепции", practice: "Практики", massage: "Массаж", osteo: "Остеопрактика", biodynamic: "Биодинамика", sound: "Звуки", crystal: "Кристаллы"};
     let lastType = null;
     const cardsHtml = items.slice(0, 50).map(item => {
       let header = "";
@@ -1331,11 +1331,12 @@ export function createReferencesModule(deps) {
   }
 
   function renderSearchResultCard(item) {
-    const typeLabels = {aroma: "\u043c\u0430\u0441\u043b\u043e", blend: "\u0441\u043c\u0435\u0441\u044c", symptom: "\u0441\u0438\u043c\u043f\u0442\u043e\u043c", concept: "\u043a\u043e\u043d\u0446\u0435\u043f\u0446\u0438\u044f", practice: "\u043f\u0440\u0430\u043a\u0442\u0438\u043a\u0430", sound: "\u0437\u0432\u0443\u043a"};
-    const typeIcons = {aroma: "\ud83c\udf3f", blend: "\ud83e\uddea", symptom: "\ud83e\ude7a", concept: "\ud83d\udca1", practice: "\ud83d\udcbf", sound: "\ud83c\udfb5"};
+    const typeLabels = {aroma: "масло", blend: "смесь", symptom: "симптом", concept: "концепция", practice: "практика", massage: "массаж", osteo: "остеопрактика", biodynamic: "биодинамика", sound: "звук", crystal: "кристалл"};
+    const typeIcons = {aroma: "🌿", blend: "🧪", symptom: "🩺", concept: "💡", practice: "💿", massage: "💆", osteo: "🦴", biodynamic: "🌊", sound: "🎵", crystal: "💎"};
     const typeLabel = typeLabels[item._type] || item._type;
     const typeIcon = typeIcons[item._type] || "";
-    const tabId = item._type + "s";
+    const _typeToTab = {massage: "massage", osteo: "osteo", biodynamic: "biodynamics"};
+    const tabId = _typeToTab[item._type] || (item._type + "s");
     const name = item.name_ru || item.name || "";
     return `<article ${interactiveCardAttrs("\u041e\u0442\u043a\u0440\u044b\u0442\u044c " + name)} class="draft-card overview-card interactive-card"
       data-action="openReference" data-args='${JSON.stringify([item.slug, tabId])}'>
