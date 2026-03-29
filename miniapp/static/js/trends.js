@@ -377,7 +377,7 @@ export function createTrendsModule(deps) {
           <div class="pc-v2-top">
             <span class="pc-v2-account">@${escapeHtml(p.author_username || "—")}</span>
             ${isOwn ? `<span class="pc-v2-own-badge">Свой</span>` : `<span class="pc-v2-competitor-badge">Чужой</span>`}
-            ${p.media_type ? `<span class="pc-v2-type">${MEDIA_LABELS[p.media_type] || p.media_type}</span>` : ""}
+            ${p.media_type ? `<span class="pc-v2-type">${MEDIA_LABELS[p.media_type] || escapeHtml(p.media_type)}</span>` : ""}
             <span class="pc-v2-time">${_relDate(p.posted_at)}</span>
           </div>
           <div class="pc-v2-text">${preview}${p.text && p.text.length > 80 ? "…" : ""}</div>
@@ -1186,7 +1186,7 @@ export function createTrendsModule(deps) {
     );
     const detailAuthor = (post.author_username || "").toLowerCase();
     const isOwnPost = ownUsernames.has(detailAuthor);
-    const _mediaLbl = (mt) => ({ IMAGE: "Фото", VIDEO: "Видео", CAROUSEL_ALBUM: "Карусель", TEXT_POST: "Текст", REEL: "Reels" }[mt] || mt || "");
+    const _mediaLbl = (mt) => ({ IMAGE: "Фото", VIDEO: "Видео", CAROUSEL_ALBUM: "Карусель", TEXT_POST: "Текст", REEL: "Reels" }[mt] || escapeHtml(mt || ""));
 
     elements.draftDetail.innerHTML = `
       ${renderBackButton("К трендам", () => { void loadTrends(); })}

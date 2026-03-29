@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends
 
 from ..auth import _require_webhook_auth
+from ..schemas import TrendIntelligenceResponse
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +75,7 @@ async def trends_health():
     return await get_health_status()
 
 
-@router.get("/api/trends/intelligence")
+@router.get("/api/trends/intelligence", response_model=TrendIntelligenceResponse)
 async def trends_intelligence():
     """Return enriched trend intelligence report."""
     from analytics.trend_intelligence import generate_trend_report

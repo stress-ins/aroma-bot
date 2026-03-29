@@ -154,7 +154,7 @@ class TestListDrafts:
         assert ms["views"] == 100
 
     async def test_list_without_include_metrics(self, team_with_drafts):
-        """By default metrics_summary is not included."""
+        """By default metrics_summary is not included (None)."""
         team, drafts = team_with_drafts
         from miniapp_server import app
         client = TestClient(app)
@@ -165,7 +165,7 @@ class TestListDrafts:
         assert resp.status_code == 200
         data = resp.json()
         for item in data["items"]:
-            assert "metrics_summary" not in item
+            assert item.get("metrics_summary") is None
 
     async def test_list_empty(self, setup_test_db):
         """List returns empty when no drafts exist (but team is auto-created)."""
