@@ -72,6 +72,7 @@ TIKTOK_USERINFO_URL = "https://open.tiktokapis.com/v2/user/info/"
 TIKTOK_DEFAULT_SCOPES = (
     "video.upload",
     "video.publish",
+    "video.list",
 )
 
 CANVA_AUTHORIZE_URL = "https://www.canva.com/api/oauth/authorize"
