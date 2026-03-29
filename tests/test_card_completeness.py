@@ -13,7 +13,7 @@ import re
 import pytest
 
 from db.models import AromaCardModel
-from db.session import AsyncSessionLocal
+import db.session
 from sqlalchemy import select
 
 
@@ -27,7 +27,7 @@ def _has_cyrillic(text: str) -> bool:
 
 async def _all_aroma_cards() -> list[AromaCardModel]:
     """Load all aroma cards from DB."""
-    async with AsyncSessionLocal() as session:
+    async with db.session.AsyncSessionLocal() as session:
         result = await session.execute(
             select(AromaCardModel).where(AromaCardModel.category == "aroma")
         )
@@ -43,7 +43,7 @@ async def _seed_test_cards() -> None:
     from datetime import datetime, timezone
 
     # Check if already seeded
-    async with AsyncSessionLocal() as session:
+    async with db.session.AsyncSessionLocal() as session:
         result = await session.execute(
             select(AromaCardModel).where(AromaCardModel.slug == "test-lavender")
         )
@@ -118,7 +118,7 @@ async def _seed_test_cards() -> None:
         updated_at=now,
     )
 
-    async with AsyncSessionLocal() as session:
+    async with db.session.AsyncSessionLocal() as session:
         session.add_all([complete_card, incomplete_card, template_card])
         await session.commit()
 
