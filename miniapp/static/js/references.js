@@ -82,6 +82,29 @@ export function createReferencesModule(deps) {
   let _smartSearchDebounce = null;
   let _filtersExpanded = false;
 
+  /** Action-group buttons shown at the top of every handbook sub-tab.
+   *  These must be visible regardless of reference access status
+   *  (blend constructor, recommendation wizard, saved blends are independent features). */
+  function _actionGroupHtml() {
+    return `<div class="action-group">
+          <div class="action-item" data-action="openBlendConstructor">
+            <div class="action-icon ai-purple"><i class="ph ph-flask" style="font-size:16px"></i></div>
+            <div class="action-text"><div class="action-title">Создать смесь под задачу</div><div class="action-sub">AI подберёт компоненты</div></div>
+            <span class="action-arrow">\u203a</span>
+          </div>
+          <div class="action-item" data-action="openRecommendationsWizard">
+            <div class="action-icon ai-teal"><i class="ph ph-magnifying-glass" style="font-size:16px"></i></div>
+            <div class="action-text"><div class="action-title">Подобрать масло</div><div class="action-sub">По симптому или цели</div></div>
+            <span class="action-arrow">\u203a</span>
+          </div>
+          <div class="action-item" data-action="openSavedBlends">
+            <div class="action-icon ai-pink"><i class="ph ph-heart" style="font-size:16px"></i></div>
+            <div class="action-text"><div class="action-title">Сохранённое</div><div class="action-sub">Избранные карточки</div></div>
+            <span class="action-arrow">\u203a</span>
+          </div>
+        </div>`;
+  }
+
   function currentHandbookMeta() {
     return HANDBOOK_CATEGORY_META[state.tab] || HANDBOOK_CATEGORY_META.aromas;
   }
@@ -782,23 +805,7 @@ export function createReferencesModule(deps) {
             <button class="smart-search-clear" id="refSearchClear" style="display:none">✕</button>
           </div>
         </div>
-        <div class="action-group">
-          <div class="action-item" data-action="openBlendConstructor">
-            <div class="action-icon ai-purple"><i class="ph ph-flask" style="font-size:16px"></i></div>
-            <div class="action-text"><div class="action-title">Создать смесь под задачу</div><div class="action-sub">AI подберёт компоненты</div></div>
-            <span class="action-arrow">›</span>
-          </div>
-          <div class="action-item" data-action="openRecommendationsWizard">
-            <div class="action-icon ai-teal"><i class="ph ph-magnifying-glass" style="font-size:16px"></i></div>
-            <div class="action-text"><div class="action-title">Подобрать масло</div><div class="action-sub">По симптому или цели</div></div>
-            <span class="action-arrow">›</span>
-          </div>
-          <div class="action-item" data-action="openSavedBlends">
-            <div class="action-icon ai-pink"><i class="ph ph-heart" style="font-size:16px"></i></div>
-            <div class="action-text"><div class="action-title">Сохранённое</div><div class="action-sub">Избранные карточки</div></div>
-            <span class="action-arrow">›</span>
-          </div>
-        </div>
+        ${_actionGroupHtml()}
         <div id="dailyOilBanner"></div>
         <div id="referenceFilterChips"></div>
         <div id="referenceListContainer" class="plans-list"></div>
@@ -1337,7 +1344,7 @@ export function createReferencesModule(deps) {
     elements.listTitle.textContent = meta.title;
     elements.draftCount.textContent = "";
     setEmptyState(true);
-    elements.draftList.innerHTML = renderGuidedState({
+    elements.draftList.innerHTML = _actionGroupHtml() + renderGuidedState({
       eyebrow: meta.title,
       title: "Доступ пока закрыт",
       body: meta.locked,
@@ -1356,7 +1363,7 @@ export function createReferencesModule(deps) {
     elements.listTitle.textContent = meta.title;
     elements.draftCount.textContent = "";
     setEmptyState(true);
-    elements.draftList.innerHTML = renderGuidedState({
+    elements.draftList.innerHTML = _actionGroupHtml() + renderGuidedState({
       eyebrow: meta.title,
       title: "Не удалось открыть справочник",
       body: message,
