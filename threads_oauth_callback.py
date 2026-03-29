@@ -176,6 +176,39 @@ def _parse_meta_webhook_entries(payload: dict, platform: str) -> list[dict]:
     return items
 
 
+def _parse_meta_messaging_entries(payload: dict, platform: str) -> list[dict]:
+    """Extract DM messages from Meta webhook entry[].messaging[] (Instagram Messaging API)."""
+    items: list[dict] = []
+    for entry in payload.get("entry", []):
+        for msg_event in entry.get("messaging", []):
+            message = msg_event.get("message", {})
+            if not message:
+                continue  # skip delivery/read receipts
+            sender_id = str(msg_event.get("sender", {}).get("id", ""))
+            content = message.get("text", "")
+            msg_id = message.get("mid", "")
+            # Convert Unix timestamp to ISO string
+            ts = msg_event.get("timestamp")
+            sent_at = None
+            if ts:
+                from datetime import datetime, timezone
+                try:
+                    sent_at = datetime.fromtimestamp(int(ts), tz=timezone.utc).isoformat()
+                except (ValueError, TypeError, OSError):
+                    sent_at = None
+            items.append({
+                "platform": platform,
+                "participant_id": sender_id,
+                "participant_username": "",
+                "participant_name": "",
+                "sender_type": "user",
+                "content": content,
+                "external_id": msg_id,
+                "sent_at": sent_at,
+            })
+    return items
+
+
 async def _forward_to_ingest(items: list[dict]) -> None:
     """Forward parsed webhook items to local mentions ingest API."""
     if not items:
@@ -204,6 +237,33 @@ async def _forward_to_ingest(items: list[dict]) -> None:
                 logger.exception("Failed to forward webhook item %s", item.get("external_id"))
 
 
+async def _forward_to_inbox_ingest(items: list[dict]) -> None:
+    """Forward parsed messaging webhook items to local inbox ingest API."""
+    if not items:
+        return
+    secret = settings.n8n_webhook_secret
+    if not secret:
+        logger.warning("n8n_webhook_secret not set, cannot forward inbox items")
+        return
+    async with httpx.AsyncClient(timeout=10) as client:
+        for item in items:
+            try:
+                resp = await client.post(
+                    "http://127.0.0.1:8091/api/inbox/ingest",
+                    json=item,
+                    headers={"X-Webhook-Secret": secret},
+                )
+                if resp.status_code >= 400:
+                    logger.error(
+                        "Inbox ingest returned %s for msg %s: %s",
+                        resp.status_code, item.get("external_id"), resp.text,
+                    )
+                else:
+                    logger.info("Forwarded DM %s → inbox ingest %s", item.get("external_id"), resp.status_code)
+            except Exception:
+                logger.exception("Failed to forward DM %s to inbox", item.get("external_id"))
+
+
 @app.get("/webhooks/instagram")
 async def instagram_webhook_verify(request: Request):
     """Instagram webhook verification (hub.mode=subscribe)."""
@@ -219,7 +279,7 @@ async def instagram_webhook_verify(request: Request):
 
 @app.post("/webhooks/instagram")
 async def instagram_webhook_handler(request: Request):
-    """Handle Instagram real-time webhook events."""
+    """Handle Instagram real-time webhook events (comments, mentions, and DMs)."""
     body = await request.body()
     signature = request.headers.get("x-hub-signature-256", "")
     if not _verify_meta_signature(body, signature, settings.instagram_app_secret):
@@ -227,9 +287,19 @@ async def instagram_webhook_handler(request: Request):
         return JSONResponse({"error": "invalid_signature"}, status_code=403)
     payload = await request.json()
     logger.info("Instagram webhook payload: %s", payload)
+
+    # Handle comments/mentions (entry[].changes[])
     items = _parse_meta_webhook_entries(payload, "instagram")
-    logger.info("Parsed %d items from Instagram webhook", len(items))
-    await _forward_to_ingest(items)
+    if items:
+        logger.info("Parsed %d mention/comment items from Instagram webhook", len(items))
+        await _forward_to_ingest(items)
+
+    # Handle DMs (entry[].messaging[])
+    dm_items = _parse_meta_messaging_entries(payload, "instagram")
+    if dm_items:
+        logger.info("Parsed %d DM items from Instagram webhook", len(dm_items))
+        await _forward_to_inbox_ingest(dm_items)
+
     return JSONResponse({"status": "ok"})
 
 
