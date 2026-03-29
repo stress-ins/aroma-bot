@@ -47,6 +47,8 @@ export function createInboxModule(deps) {
 
   // ── Load ───────────────────────────────────────────────────────────────────
 
+  let _initialPollDone = false;
+
   async function loadInbox() {
     const { status } = state.inboxFilter;
     try {
@@ -56,6 +58,18 @@ export function createInboxModule(deps) {
       state.inboxConversations = [];
     }
     renderInbox();
+
+    // Auto-poll on first load if inbox is empty
+    if (!_initialPollDone && state.inboxConversations.length === 0) {
+      _initialPollDone = true;
+      try {
+        await fetchJson("/api/inbox/poll", { method: "POST" });
+        const fresh = await fetchJson(`/api/inbox?status=${status}&limit=50`);
+        state.inboxConversations = fresh.items || [];
+        renderInbox();
+      } catch (_) { /* poll failed silently */ }
+    }
+    _initialPollDone = true;
   }
 
   // ── Render conversation list ───────────────────────────────────────────────

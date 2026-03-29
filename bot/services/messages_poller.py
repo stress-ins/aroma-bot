@@ -25,12 +25,26 @@ logger = logging.getLogger(__name__)
 GRAPH_API_BASE = "https://graph.instagram.com/v21.0"
 
 
+async def _resolve_own_user_id(access_token: str, team_id: str | None) -> str:
+    """Get our Instagram user ID to filter ourselves from conversation participants."""
+    # Try from stored token metadata first
+    uid_row = await get_token_for_team("instagram_user_id", team_id) if team_id else None
+    if uid_row and uid_row.access_token:
+        return uid_row.access_token
+    uid_row = await get_token("instagram_user_id")
+    if uid_row and uid_row.access_token:
+        return uid_row.access_token
+    return getattr(settings, "instagram_user_id", "") or ""
+
+
 async def poll_instagram_conversations(
     access_token: str, team_id: str | None = None
 ) -> tuple[int, int]:
     """Poll Instagram Conversations API. Returns (conversations_polled, messages_saved)."""
     total_convs = 0
     total_msgs = 0
+
+    own_user_id = await _resolve_own_user_id(access_token, team_id)
 
     async with httpx.AsyncClient(timeout=30) as client:
         # Step 1: Get list of conversations
@@ -57,15 +71,18 @@ async def poll_instagram_conversations(
             if not conv_ext_id:
                 continue
 
-            # Extract participant info
+            # Extract the OTHER participant (not us)
             participants = conv.get("participants", {}).get("data", [])
-            # The "other" participant (not the page)
             participant = {}
             for p in participants:
-                # Page's own participant entry usually has the page ID;
-                # we take the first non-page participant
-                participant = p
-                break
+                if p.get("id") != own_user_id:
+                    participant = p
+                    break
+            # Fallback: if we couldn't identify ourselves, take second participant
+            if not participant and len(participants) > 1:
+                participant = participants[1]
+            elif not participant and participants:
+                participant = participants[0]
 
             participant_id = participant.get("id", conv_ext_id)
             participant_name = participant.get("name", "")
@@ -144,12 +161,19 @@ async def poll_instagram_conversations(
                 if created:
                     total_msgs += 1
 
-            # Update preview from latest message
+            # Update conversation preview from latest message
             if messages_data.get("data"):
                 latest = messages_data["data"][0]
                 preview = (latest.get("message") or "")[:200]
-                from bot.services.inbox_store import upsert_conversation as _upsert
-                # Already upserted above with preview from API
+                await upsert_conversation(
+                    platform="instagram",
+                    participant_id=participant_id,
+                    participant_username=participant_username,
+                    participant_name=participant_name,
+                    last_message_preview=preview,
+                    last_message_at=last_msg_at,
+                    team_id=team_id,
+                )
 
     return (total_convs, total_msgs)
 
