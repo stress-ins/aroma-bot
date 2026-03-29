@@ -16,6 +16,7 @@ from ..auth import TeamContext, _resolve_init_data, _resolve_sse_auth, _resolve_
 from ..deps import verify_team_draft
 from ..generation._common import get_generation_event, cleanup_generation_event, sse_msg
 from ..models import DraftContentPayload, DraftFeedbackPayload, DraftMovePayload, DraftStatusPayload
+from ..schemas import DraftDetailResponse, DraftListResponse
 
 import logging
 
@@ -51,7 +52,7 @@ def _draft_chat_message(draft) -> str:
     return f"{draft.kind.title()}\n\nТема: {draft.topic}\n\n{text}".strip()
 
 
-@router.get("/api/drafts")
+@router.get("/api/drafts", response_model=DraftListResponse)
 async def drafts(
     limit: int = Query(default=50, ge=1, le=200),
     kind: str = "",
@@ -79,7 +80,7 @@ async def drafts(
     return {"items": items, "total": len(filtered)}
 
 
-@router.get("/api/drafts/{draft_id}")
+@router.get("/api/drafts/{draft_id}", response_model=DraftDetailResponse)
 async def draft_detail(draft_id: str, ctx: TeamContext = Depends(_resolve_team_context)):
     draft = await get_draft(draft_id)
     if not draft:

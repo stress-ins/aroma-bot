@@ -132,13 +132,13 @@ export function createMentionsModule(deps) {
       const dimClass = m.status !== "pending" ? " mention-card--dim" : "";
       const checkIcon = m.status === "replied" ? `<i class="ph ph-check" style="font-size:12px"></i> ` : "";
       return `
-      <div class="mention-card${dimClass}" data-status="${m.status}" data-action="openMentionDetail" data-args='["${m.mention_id}"]'>
+      <div class="mention-card${dimClass}" data-status="${escapeHtml(m.status)}" data-action="openMentionDetail" data-args='${JSON.stringify([m.mention_id])}'>
         <div class="mention-meta">
           <span class="mention-platform-badge">
-            <i class="ph ph-${platformIcon(m.platform)}"></i> ${platformLabel(m.platform)}
+            <i class="ph ph-${platformIcon(m.platform)}"></i> ${escapeHtml(platformLabel(m.platform))}
           </span>
           <span class="mention-time">${formatTime(m.received_at)}</span>
-          <span class="${statusClass}">${checkIcon}${statusLabel(m.status)}</span>
+          <span class="${statusClass}">${checkIcon}${escapeHtml(statusLabel(m.status))}</span>
         </div>
         <div class="mention-author">@${escapeHtml(m.author_username || m.author_name || "аноним")}</div>
         <div class="mention-preview">${escapeHtml(m.content.substring(0, 120))}${m.content.length > 120 ? "…" : ""}</div>
@@ -217,10 +217,10 @@ export function createMentionsModule(deps) {
       <div class="mention-content">
         <div class="mention-meta">
           <span class="mention-platform-badge">
-            <i class="ph ph-${platformIcon(m.platform)}"></i> ${platformLabel(m.platform)}
+            <i class="ph ph-${platformIcon(m.platform)}"></i> ${escapeHtml(platformLabel(m.platform))}
           </span>
           <span class="mention-time">${formatTime(m.received_at)}</span>
-          <span class="tag-status-${m.status === "pending" ? "warn" : "ok"}">${statusLabel(m.status)}</span>
+          <span class="tag-status-${m.status === "pending" ? "warn" : "ok"}">${escapeHtml(statusLabel(m.status))}</span>
         </div>
         <div class="mention-author">@${escapeHtml(m.author_username || m.author_name || "аноним")}</div>
         ${m.context_post ? `<div class="mention-context">${escapeHtml(m.context_post)}</div>` : ""}

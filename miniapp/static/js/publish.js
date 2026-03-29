@@ -125,9 +125,9 @@ export function createPublishModule(deps) {
     container.innerHTML = `
       <div class="publish-status-list">
         ${logs.map(l => `
-          <div class="publish-status-item publish-status-${l.status}">
-            <span class="publish-status-platform">${PLATFORM_ICONS[l.platform] || l.platform}</span>
-            <span class="publish-status-action">${l.action}</span>
+          <div class="publish-status-item publish-status-${escapeHtml(l.status)}">
+            <span class="publish-status-platform">${PLATFORM_ICONS[l.platform] || escapeHtml(l.platform)}</span>
+            <span class="publish-status-action">${escapeHtml(l.action)}</span>
             ${tagMarkup(l.status, l.status === "success" ? "status-positive" : l.status === "failed" ? "status-negative" : "pending")}
             ${l.error_message ? `<span class="publish-status-error">${escapeHtml(l.error_message)}</span>` : ""}
           </div>

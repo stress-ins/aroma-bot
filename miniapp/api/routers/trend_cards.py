@@ -11,6 +11,7 @@ from bot.services.drafts_store import save_draft
 from bot.services.miniapp_presenter import serialize_draft
 
 from ..auth import TeamContext, _require_auth, _resolve_team_context, require_tier
+from ..schemas import TrendCardsResponse
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -22,7 +23,7 @@ class CreateFromTrendRequest(BaseModel):
     goal_key: str = Field(default="trust")
 
 
-@router.get("/api/trends/cards", dependencies=[Depends(_require_auth)])
+@router.get("/api/trends/cards", dependencies=[Depends(_require_auth)], response_model=TrendCardsResponse)
 async def list_trend_cards(
     limit: int = Query(10, ge=1, le=50),
     lifecycle: str = Query("", description="Filter: emerging, growing, peaking, declining"),

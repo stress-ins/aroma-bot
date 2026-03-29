@@ -21,6 +21,7 @@ from bot.services.content_analytics import (
     get_pillar_performance,
 )
 from ..auth import TeamContext, _require_auth, _resolve_team_context
+from ..schemas import ArchiveListResponse
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +34,7 @@ def _serialize(pub) -> dict:
 
 # ── List ───────────────────────────────────────────────────────────────────
 
-@router.get("/api/archive")
+@router.get("/api/archive", response_model=ArchiveListResponse)
 async def list_archive(
     platform: str = "all",
     filter: str = "all",  # all / rated / unrated
