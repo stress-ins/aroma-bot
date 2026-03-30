@@ -869,8 +869,13 @@ export function createReferencesModule(deps) {
     const _agTarget = elements.draftList.querySelector(".action-group");
     const _agNew = _actionGroupHtml();
     if (_agTarget && _agNew) _agTarget.outerHTML = _agNew;
-    else if (_agTarget && !_agNew) _agTarget.remove();
-    else if (!_agTarget && _agNew) {
+    else if (_agTarget && !_agNew) {
+      // DEBUG: this branch removes action-group — log why _actionGroupHtml returned empty
+      console.warn("[AG] _actionGroupHtml empty for tab:", state.tab,
+        "BODY:", BODY_SECTION_TABS, "includes:", BODY_SECTION_TABS.includes(state.tab),
+        "AROMA:", AROMA_SECTION_TABS, "includes:", AROMA_SECTION_TABS.includes(state.tab));
+      // Keep action-group visible — do NOT remove
+    } else if (!_agTarget && _agNew) {
       const _sb = document.getElementById("refSearchBar");
       if (_sb) _sb.insertAdjacentHTML("afterend", _agNew);
     }
