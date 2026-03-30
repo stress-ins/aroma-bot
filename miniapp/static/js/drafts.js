@@ -166,7 +166,7 @@ export function createDraftsModule(deps) {
     const countEl = document.getElementById("draftCount");
     if (countEl) countEl.textContent = state.drafts.length;
     const fhCount = document.getElementById("fhCount");
-    if (fhCount) fhCount.textContent = `${state.drafts.length} ${_pluralizeDrafts(state.drafts.length)}`;
+    if (fhCount) fhCount.textContent = _pluralizeDrafts(state.drafts.length);
     setEmptyState(state.drafts.length > 0, {
       eyebrow: "Публикации",
       title: "Ничего не найдено",

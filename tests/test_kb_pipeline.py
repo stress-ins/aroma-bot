@@ -53,13 +53,13 @@ class TestMedicalReviewerRuleBased:
         _, _, needs_llm = _rule_based_check(card)
         assert needs_llm is True
 
-    def test_non_aroma_no_llm_flag(self):
+    def test_non_medical_category_no_llm_flag(self):
         from bot.agents.medical_reviewer import _rule_based_check
 
         card = {
-            "name": "Симптом усталости",
-            "category": "symptom",
-            "description": "Хроническая усталость.",
+            "name": "Дыхательная практика",
+            "category": "practice",
+            "description": "Практика осознанного дыхания.",
         }
         _, _, needs_llm = _rule_based_check(card)
         assert needs_llm is False

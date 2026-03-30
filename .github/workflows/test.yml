@@ -58,6 +58,38 @@ jobs:
       - name: Run tests
         run: python -m pytest tests/ -q --ignore=tests/ui --timeout=60 -n auto -m "not slow"
 
+  # ── Card quality review (UX + aromatherapy expert) ──────────────────
+  card-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      TELEGRAM_BOT_TOKEN: test-token
+      REPORT_TARGET_CHAT_ID: test-chat
+      UV_SYSTEM_PYTHON: 1
+      UV_CACHE_DIR: /tmp/uv-cache
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+          cache-dependency-glob: "requirements.txt"
+
+      - name: Install dependencies
+        run: uv pip install -r requirements.txt
+
+      - name: Run card quality review
+        run: python scripts/ci_card_review.py
+
   # ── Smoke tests (always run on main, conditional on PRs) ────────────
   smoke:
     runs-on: ubuntu-latest
@@ -175,8 +207,8 @@ jobs:
       - name: Notify Telegram about UI test failures
         if: failure() && steps.ui.outcome == 'failure'
         env:
-          BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          CHAT_ID: ${{ secrets.REPORT_TARGET_CHAT_ID }}
+          BOT_TOKEN: ${{ secrets.MONITOR_BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.MONITOR_CHAT_ID }}
         run: |
           RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           BRANCH="${{ github.head_ref || github.ref_name }}"
@@ -189,8 +221,8 @@ jobs:
       - name: Notify Telegram about visual diffs
         if: always() && steps.visual.outcome == 'failure'
         env:
-          BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          CHAT_ID: ${{ secrets.REPORT_TARGET_CHAT_ID }}
+          BOT_TOKEN: ${{ secrets.MONITOR_BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.MONITOR_CHAT_ID }}
         run: |
           RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           BRANCH="${{ github.head_ref || github.ref_name }}"
