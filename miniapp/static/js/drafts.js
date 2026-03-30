@@ -721,6 +721,7 @@ export function createDraftsModule(deps) {
     const thumb = p.thumbnail || {};
     const meta = p.metadata || {};
     const subformatLabels = { talking_head: "Talking Head", listicle: "Listicle / Top-N", podcast: "Подкаст / Интервью" };
+    const isApproved = d.status === "approved" || d.status === "scheduled" || d.status === "published";
 
     const _energyRu = { low: "спокойно", medium: "средне", "medium-high": "активно", high: "энергично" };
     const sectionsHtml = sections.length ? sections.map((s, i) => {
@@ -733,13 +734,20 @@ export function createDraftsModule(deps) {
           <span class="youtube-section-time">${escapeHtml(s.timecode || "")}</span>
           ${s.energy ? `<span class="keyword-chip keyword-chip--small">${escapeHtml(_energyRu[s.energy] || s.energy)}</span>` : ""}
         </div>
-        ${speakerText ? `
-          <div class="youtube-speaker-block">
-            <div class="youtube-speaker-label">${uiIcon("text", 14)} Текст спикера</div>
-            <div class="youtube-speaker-text">${escapeHtml(speakerText)}</div>
+        <div class="youtube-speaker-block">
+          <div class="youtube-speaker-label">${uiIcon("text", 14)} Текст спикера</div>
+          ${!isApproved ? `
+            <textarea class="youtube-section-textarea" id="ytSectionText_${d.draft_id}_${i}"
+              placeholder="Текст спикера для этой секции">${escapeHtml(speakerText)}</textarea>
+            <div class="youtube-section-actions">
+              <button class="secondary-button" type="button" data-action="youtubeSaveSection" data-args='${JSON.stringify([d.draft_id, i, null])}'>${uiIcon("save", 14)}<span>Сохранить</span></button>
+              <button class="youtube-copy-btn" type="button" data-action="youtubeCopySection" data-args='${JSON.stringify([i])}'>${uiIcon("copy", 12)} Скопировать</button>
+            </div>
+          ` : `
+            ${speakerText ? `<div class="youtube-speaker-text">${escapeHtml(speakerText)}</div>` : `<div class="youtube-speaker-text youtube-speaker-empty">Нет текста</div>`}
             <button class="youtube-copy-btn" type="button" data-action="youtubeCopySection" data-args='${JSON.stringify([i])}'>${uiIcon("copy", 12)} Скопировать</button>
-          </div>
-        ` : ""}
+          `}
+        </div>
         ${s.screen_text ? `<div class="youtube-section-screen">${uiIcon("image", 14)} <strong>На экране:</strong> ${escapeHtml(s.screen_text)}</div>` : ""}
         ${s.broll_cue ? `<div class="youtube-section-broll">${uiIcon("video", 14)} <strong>B-roll:</strong> ${escapeHtml(s.broll_cue)}</div>` : ""}
         ${s.follow_up ? `<div class="youtube-section-followup">${uiIcon("chat", 14)} <strong>Follow-up:</strong> ${escapeHtml(s.follow_up)}</div>` : ""}
@@ -809,7 +817,7 @@ export function createDraftsModule(deps) {
           </div>
         </div>
 
-        ${d.generation_pending ? renderDetailLoader("Генерирую сценарий", "Пишу сценарий YouTube-видео.", "detail-loader-card-compact") : ""}
+        ${d.generation_pending ? renderDetailLoader("Генерирую сценарий", p.generation_message || "Пишу сценарий YouTube-видео.", "detail-loader-card-compact") : ""}
 
         ${!d.generation_pending && sections.length ? `
           <section class="section section-primary">

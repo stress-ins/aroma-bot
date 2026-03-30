@@ -292,10 +292,15 @@ export function registerWindowBridge(deps) {
 
   // ── YouTube actions ───────────────────────────────────────────────
   window.youtubeRegenScript = async function(draftId) {
+    const noteEl = document.getElementById("youtubeRevisionNote");
+    const revision_note = noteEl ? noteEl.value.trim() : "";
     try {
-      await fetchJson(`/api/youtube/${draftId}/regen-script`, { method: "POST", body: "{}" });
+      await fetchJson(`/api/youtube/${draftId}/regen-script`, {
+        method: "POST",
+        body: JSON.stringify({ revision_note }),
+      });
       showUiNotice("Перегенерация сценария запущена");
-      setTimeout(() => openDraft(draftId), 2000);
+      openDraft(draftId);
     } catch (e) { showRequestError(e); }
   };
   window.youtubeRegenThumbnail = async function(draftId, mode) {
@@ -307,21 +312,34 @@ export function registerWindowBridge(deps) {
         body: JSON.stringify({ mode: mode || "prompt", revision_note }),
       });
       showUiNotice("Генерация обложки запущена");
-      setTimeout(() => openDraft(draftId), 3000);
+      openDraft(draftId);
     } catch (e) { showRequestError(e); }
   };
   window.youtubeGenMetadata = async function(draftId) {
     try {
       await fetchJson(`/api/youtube/${draftId}/metadata`, { method: "POST", body: "{}" });
       showUiNotice("Генерация метаданных запущена");
-      setTimeout(() => openDraft(draftId), 3000);
+      openDraft(draftId);
     } catch (e) { showRequestError(e); }
+  };
+  window.youtubeSaveSection = async function(draftId, sectionIndex, _btn) {
+    const textarea = document.getElementById(`ytSectionText_${draftId}_${sectionIndex}`);
+    const speaker_text = textarea?.value ?? "";
+    const btn = _btn || document.querySelector(`[data-action="youtubeSaveSection"][data-args*="${sectionIndex}"]`);
+    await withButtonFeedback(btn, "Сохраняю...", async () => {
+      await fetchJson(`/api/youtube/${draftId}/section/${sectionIndex}`, {
+        method: "PATCH",
+        body: JSON.stringify({ speaker_text }),
+      });
+      showUiNotice("Секция сохранена", "success");
+    });
   };
   window.youtubeCopySection = function(sectionIndex) {
     const d = state.selected;
     if (!d?.payload?.sections?.[sectionIndex]) return;
-    const s = d.payload.sections[sectionIndex];
-    const text = s.speaker_text || s.host_text || "";
+    // Prefer edited textarea value if available
+    const textarea = document.getElementById(`ytSectionText_${d.draft_id}_${sectionIndex}`);
+    const text = textarea ? textarea.value : (d.payload.sections[sectionIndex].speaker_text || d.payload.sections[sectionIndex].host_text || "");
     if (text) {
       navigator.clipboard.writeText(text).then(() => showUiNotice("Текст скопирован")).catch(() => {});
     }
@@ -330,9 +348,11 @@ export function registerWindowBridge(deps) {
     const d = state.selected;
     const sections = d?.payload?.sections || [];
     const allText = sections
-      .map(s => {
+      .map((s, i) => {
         const label = s.label || s.section_type || "";
-        const text = s.speaker_text || s.host_text || "";
+        // Prefer edited textarea value if available
+        const textarea = document.getElementById(`ytSectionText_${d.draft_id}_${i}`);
+        const text = textarea ? textarea.value : (s.speaker_text || s.host_text || "");
         return text ? `[${label}]\n${text}` : "";
       })
       .filter(Boolean)

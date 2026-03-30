@@ -322,3 +322,11 @@ class SuggestTopicsRequest(BaseModel):
 
 class ThreadActionRequest(BaseModel):
     action: str = Field(default="")
+
+
+class YouTubeRegenScriptPayload(BaseModel):
+    revision_note: str = Field(default="")
+
+
+class YouTubeSectionPatchPayload(BaseModel):
+    speaker_text: str = Field(default="")

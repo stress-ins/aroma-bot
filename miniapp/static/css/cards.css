@@ -261,4 +261,15 @@
   font-size: 13px; resize: vertical;
 }
 .youtube-revision-input:focus { border-color: var(--brand); outline: none; }
+.youtube-section-textarea {
+  width: 100%; min-height: 80px; padding: 10px; border: 1px solid var(--border);
+  border-radius: var(--radius-sm); background: var(--bg); color: var(--text);
+  font-size: 14px; line-height: 1.6; resize: vertical; font-family: inherit;
+  box-sizing: border-box;
+}
+.youtube-section-textarea:focus { border-color: var(--brand); outline: none; }
+.youtube-section-actions {
+  display: flex; align-items: center; gap: 8px; margin-top: 6px; flex-wrap: wrap;
+}
+.youtube-speaker-empty { color: var(--muted); font-style: italic; }
 

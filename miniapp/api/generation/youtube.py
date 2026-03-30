@@ -181,6 +181,7 @@ async def complete_youtube_generation(
 
 async def complete_youtube_regen_script(
     draft_id: str,
+    revision_note: str = "",
 ) -> None:
     """Regenerate script only, keeping B-roll map and thumbnail."""
     try:
@@ -195,13 +196,18 @@ async def complete_youtube_regen_script(
         emotion = payload.get("emotion", "calm")
         duration_target = payload.get("duration_target", 10)
 
+        # Append revision note to topic context if provided
+        effective_topic = topic
+        if revision_note:
+            effective_topic = f"{topic}\n\nЗамечания к переработке сценария: {revision_note}"
+
         loop = asyncio.get_running_loop()
         reference_context = await build_reference_context()
 
         script = await loop.run_in_executor(
             None,
             lambda: generate_youtube_script_sync(
-                topic=topic,
+                topic=effective_topic,
                 subformat=subformat,
                 goal=goal,
                 emotion=emotion,
@@ -216,6 +222,9 @@ async def complete_youtube_regen_script(
         # Re-extract B-roll from new script
         broll_cues = extract_broll_from_sections(script_payload["sections"])
         payload["broll_map"] = broll_map_to_payload(broll_cues)
+
+        if revision_note:
+            payload["last_revision_note"] = revision_note
 
         await update_draft(draft_id, payload=payload)
         await set_generation_state(draft_id, pending=False)
