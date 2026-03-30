@@ -105,7 +105,8 @@ export function createCoreModule(deps) {
     }, duration));
   }
 
-  function renderDetailError(title, message, retryAction = "retryCurrentTab()") {
+  function renderDetailError(title, message, retryAction = "retryCurrentTab", retryArgs = null) {
+    const argsAttr = retryArgs ? ` data-args='${JSON.stringify(retryArgs)}'` : "";
     return `
       <div class="detail-grid">
         ${renderBackButton()}
@@ -115,7 +116,7 @@ export function createCoreModule(deps) {
             <h2>${escapeHtml(title)}</h2>
             <p>${escapeHtml(message)}</p>
           </div>
-          <button class="secondary-button" type="button" data-action="${retryAction}">Повторить</button>
+          <button class="secondary-button" type="button" data-action="${retryAction}"${argsAttr}>Повторить</button>
         </div>
       </div>
     `;
@@ -286,7 +287,7 @@ export function createCoreModule(deps) {
     elements.draftDetail.innerHTML = renderDetailError(
       "Черновик создаётся дольше обычного",
       "Мы продолжаем ждать создание карточки. Откройте Черновики ещё раз или повторите позже.",
-      "retryCurrentTab()",
+      "retryCurrentTab",
     );
     callbacks.syncMobileNavigation();
     return false;

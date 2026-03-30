@@ -371,7 +371,7 @@ export function createSessionModule(deps) {
       const message = error?.message === "request_timeout"
         ? "Карточка открывается слишком долго. Список уже загружен, можно повторить открытие."
         : (error?.message || "Не удалось открыть карточку.");
-      elements.draftDetail.innerHTML = renderDetailError("Не удалось открыть карточку", message, `openDraft('${preferredId}')`);
+      elements.draftDetail.innerHTML = renderDetailError("Не удалось открыть карточку", message, "openDraft", [preferredId]);
       syncMobileNavigation();
     }
   }

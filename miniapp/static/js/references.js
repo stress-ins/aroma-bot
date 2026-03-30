@@ -1488,14 +1488,14 @@ export function createReferencesModule(deps) {
       title: "Не удалось открыть справочник",
       body: message,
       actionLabel: "Повторить",
-      action: "retryCurrentTab()",
+      action: "retryCurrentTab",
     });
     elements.draftDetail.innerHTML = `${renderBackButton()}<div class="detail-empty">${renderGuidedState({
       eyebrow: meta.title,
       title: "Не удалось открыть справочник",
       body: message,
       actionLabel: "Повторить",
-      action: "retryCurrentTab()",
+      action: "retryCurrentTab",
     })}</div>`;
     syncMobileNavigation();
   }

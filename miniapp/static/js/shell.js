@@ -584,6 +584,8 @@ export function createShellModule(deps) {
             return;
           }
           if (state.mode !== "handbook") {
+            // Pre-set tab so _renderTabBar picks the correct section
+            state.tab = rememberedHandbookTab;
             setMode("handbook");
           }
           setTab(rememberedHandbookTab);

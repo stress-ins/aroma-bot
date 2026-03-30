@@ -224,7 +224,7 @@ export function createArchiveModule(deps) {
         title: "Пока пусто",
         body: "Добавьте свои опубликованные посты, чтобы оценить их и получить рекомендации.",
         actionLabel: "+ Добавить публикацию",
-        action: "openArchiveForm()",
+        action: "openArchiveForm",
       });
     } else {
       for (const [month, monthItems] of groups) {

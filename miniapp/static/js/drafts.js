@@ -172,7 +172,7 @@ export function createDraftsModule(deps) {
       title: "Ничего не найдено",
       body: "Создайте первый материал через вкладку «Создать». Выберите формат, укажите тему — AI сделает остальное.",
       actionLabel: "Открыть создание",
-      action: "openCreateTool()",
+      action: "openCreateTool",
     });
     elements.draftList.innerHTML = state.drafts.map((d, idx) => {
       const kind = String(d.kind || "content").toLowerCase();
@@ -674,7 +674,7 @@ export function createDraftsModule(deps) {
           title: "Выберите элемент из списка",
           body: "Откройте карточку слева, чтобы увидеть детали, правки и быстрые действия.",
           actionLabel: "Создать черновик",
-          action: "openCreateTool()",
+          action: "openCreateTool",
         })}
       </div>
     `;

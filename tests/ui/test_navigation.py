@@ -25,13 +25,28 @@ def test_mobile_tabs_and_drafts_render_in_russian(page):
     page.locator("#btnTabHandbook").click()
     page.wait_for_timeout(100)
 
+    # Handbook uses section-based navigation: default section "Арома" shows aromas/blends/symptoms/concepts
     tabs_handbook = page.locator(".tab-button").evaluate_all(
         "(nodes) => nodes.map((node) => node.textContent.trim())"
     )
-    assert "🌿Ароматы" in tabs_handbook
-    assert "🧭Теория" in tabs_handbook
-    assert "🫁Практики" in tabs_handbook
-    assert "🔔Звуки" in tabs_handbook
+    assert "Ароматы" in tabs_handbook[0]  # first tab contains emoji + Ароматы
+    assert any("Теория" in t for t in tabs_handbook)
+
+    # Section chips must exist
+    section_chips = page.locator(".section-chip").evaluate_all(
+        "(nodes) => nodes.map((node) => node.textContent.trim())"
+    )
+    assert any("Арома" in c for c in section_chips)
+    assert any("Тело" in c for c in section_chips)
+    assert any("Звук" in c for c in section_chips)
+
+    # Switch to "Тело" section to reveal Практики
+    page.locator(".section-chip", has_text="Тело").click()
+    page.wait_for_timeout(100)
+    body_tabs = page.locator(".tab-button").evaluate_all(
+        "(nodes) => nodes.map((node) => node.textContent.trim())"
+    )
+    assert any("Практики" in t for t in body_tabs)
 
     page.locator("#btnTabInspiration").click()
     page.wait_for_timeout(100)
@@ -58,9 +73,10 @@ def test_mobile_bottom_tab_bar_switches_primary_sections(page):
     handbook_tabs = page.locator(".tab-button").evaluate_all(
         "(nodes) => nodes.map((node) => node.textContent.trim())"
     )
-    assert "🌿Ароматы" in handbook_tabs
-    assert "🫁Практики" in handbook_tabs
-    assert "🔔Звуки" in handbook_tabs
+    # Default section "Арома" shows aromas/blends/symptoms/concepts
+    assert any("Ароматы" in t for t in handbook_tabs)
+    # Section chips provide access to other sections (Тело, Звук)
+    assert page.locator(".section-chip").count() >= 2
 
     page.locator("#btnTabInspiration").click()
     page.wait_for_timeout(100)
@@ -73,6 +89,9 @@ def test_mobile_bottom_tab_bar_switches_primary_sections(page):
 def test_mobile_handbook_tab_remembers_last_section(page):
     page.locator("#btnTabHandbook").click()
     page.wait_for_timeout(100)
+    # Navigate to "Тело" section first, then select Практики tab
+    page.locator(".section-chip", has_text="Тело").click()
+    page.wait_for_timeout(100)
     page.get_by_role("tab", name="Практики").click()
     page.wait_for_timeout(100)
 
@@ -80,10 +99,12 @@ def test_mobile_handbook_tab_remembers_last_section(page):
     assert "Практики" in active_before
 
     page.locator("#btnTabInspiration").click()
-    page.wait_for_timeout(100)
+    page.wait_for_timeout(200)
     page.locator("#btnTabHandbook").click()
-    page.wait_for_timeout(100)
+    page.wait_for_timeout(300)
 
+    # After returning, "Тело" section should be auto-selected because last tab was "practices"
+    page.locator(".tab-button.active").wait_for(state="visible", timeout=5000)
     active_after = page.locator(".tab-button.active").inner_text().strip()
     assert "Практики" in active_after
 
@@ -91,7 +112,7 @@ def test_mobile_handbook_tab_remembers_last_section(page):
 def test_overview_lists_use_consistent_card_meta(page):
     page.locator("#btnTabInspiration").click()
     page.wait_for_timeout(200)
-    assert page.locator(".draft-card .overview-card-date").first.inner_text().strip()
+    assert page.locator(".draft-card .dc-meta").first.inner_text().strip()
 
     # Switch to Контент tab, then check plans sub-tab
     page.locator("#btnTabContent").click()

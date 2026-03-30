@@ -162,4 +162,4 @@ class TestThreadsPrompts:
         assert 'const data = await fetchJson(`/api/drafts?${filtersToQueryString()}&include_metrics=true`, { timeout: 20000 });' in source
         assert 'await openDraft(preferredId);' in source
         assert 'console.error("miniapp failed to open preferred draft", error);' in source
-        assert 'renderDetailError("Не удалось открыть карточку", message, `openDraft(\'${preferredId}\')`)' in source
+        assert 'renderDetailError("Не удалось открыть карточку", message, "openDraft", [preferredId])' in source
