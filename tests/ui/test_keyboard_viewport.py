@@ -299,10 +299,10 @@ def test_draft_search_input_visible_with_keyboard(page):
 def test_keyboard_open_sets_vv_height_property(page):
     """Verify that the visualViewport resize handler sets --vv-height on body."""
     page.locator("#btnTabInspiration").click()
-    page.wait_for_timeout(DOM_RENDER)
+    page.wait_for_function("document.querySelector('#btnTabInspiration')?.getAttribute('aria-pressed') === 'true'", timeout=5000)
 
     card = page.locator(".draft-card").first
-    card.wait_for(state="visible", timeout=5000)
+    card.wait_for(state="visible", timeout=10000)
     card.click()
     page.wait_for_timeout(DOM_RENDER)
 

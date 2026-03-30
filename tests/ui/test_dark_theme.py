@@ -144,7 +144,8 @@ def test_dark_button_contrast_on_all_tabs(dark_page):
 def test_dark_draft_detail_scroll_and_actions(dark_page):
     dark_page.locator("#btnTabInspiration").click()
     dark_page.wait_for_timeout(100)
-    dark_page.get_by_text("Как мягко выйти из рабочего напряжения").first.click()
+    dark_page.locator(".draft-card").first.wait_for(state="visible", timeout=10000)
+    dark_page.locator(".draft-card").first.click()
     dark_page.wait_for_timeout(100)
 
     dark_page.evaluate(
@@ -190,7 +191,7 @@ def test_dark_reels_scroll_through_frames(dark_page):
 
 def test_dark_handbook_scroll_and_open_cards(dark_page):
     dark_page.locator("#btnTabHandbook").click()
-    dark_page.wait_for_timeout(100)
+    dark_page.locator(".reference-card").first.wait_for(state="visible", timeout=10000)
 
     card_count = dark_page.locator(".reference-card").count()
     assert card_count >= 1, "No reference cards found in handbook default tab"

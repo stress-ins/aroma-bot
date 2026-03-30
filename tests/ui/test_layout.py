@@ -71,9 +71,9 @@ def test_mobile_primary_controls_have_comfortable_hit_targets(page):
 
 def test_mobile_detail_actions_do_not_overlap(page):
     page.locator("#btnTabInspiration").click()
-    page.wait_for_timeout(100)
+    page.wait_for_function("document.querySelector('#btnTabInspiration')?.getAttribute('aria-pressed') === 'true'", timeout=5000)
     page.evaluate("window.goBackToList()")
-    page.locator(".draft-card").first.wait_for(state="visible")
+    page.locator(".draft-card").first.wait_for(state="visible", timeout=10000)
     page.locator(".draft-card").first.click()
     page.wait_for_timeout(100)
 
@@ -148,11 +148,11 @@ def test_no_horizontal_overflow_on_mobile(page):
 def test_detail_card_title_not_clipped_on_mobile(page):
     """Every detail card type: title must be fully visible, not clipped at top."""
     page.locator("#btnTabInspiration").click()
-    page.wait_for_timeout(100)
+    page.wait_for_function("document.querySelector('#btnTabInspiration')?.getAttribute('aria-pressed') === 'true'", timeout=5000)
     page.evaluate("window.goBackToList()")
 
     cards = page.locator(".draft-card")
-    cards.first.wait_for(state="visible")
+    cards.first.wait_for(state="visible", timeout=10000)
     count = cards.count()
 
     checked = 0

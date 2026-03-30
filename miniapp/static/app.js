@@ -2399,7 +2399,16 @@ function setMode(m) {
   const tabsWrapper = elements.tabsContainer.parentElement;
   const _contentHidden = ["settings", "create", "inbox", "plans", "schedule", "keywords", "status", "drafts", "trends"];
   const _modeTabs = MODE_TABS[m] || [];
-  if (!(m === "content" && _contentHidden.includes(state.tab)) && _modeTabs.length > 0 && !_modeTabs.find(t => t.id === state.tab)) setTab(_modeTabs[0].id);
+  if (_modeTabs.length > 0 && !_modeTabs.find(t => t.id === state.tab)) {
+    // Restore last handbook tab if switching back to handbook mode
+    if (m === "handbook" && state._lastHandbookTab && _modeTabs.find(t => t.id === state._lastHandbookTab)) {
+      setTab(state._lastHandbookTab);
+      _renderTabBar(m); // re-render with restored tab
+    } else if (!(m === "content" && _contentHidden.includes(state.tab))) {
+      setTab(_modeTabs[0].id);
+    }
+  }
+  if (m === "handbook") state._lastHandbookTab = state.tab;
   renderContentSubTabs();
   syncMobileNavigation();
 }
@@ -2522,6 +2531,7 @@ function setTab(t) {
   state.selectedCreateTool = null;
   if (t !== "keywords" && t !== "settings") state.selectedKeywordTopicIdx = null;
   elements.settingsButton?.classList.toggle("active", state.mode === "content" && t === "settings");
+  if (HANDBOOK_CATEGORY_META[t]) state._lastHandbookTab = t;
 
   if (HANDBOOK_CATEGORY_META[t]) {
     state.lastHandbookTab = t;

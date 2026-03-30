@@ -308,12 +308,16 @@ export function createDraftsModule(deps) {
               ${sourceBadges}
             </div>
           </div>
-          <div class="actions-row detail-actions">
-            ${!isApproved && posts.length ? `<button class="primary-button" type="button" data-action="approveThreadsSeries" data-args='${JSON.stringify([d.draft_id, null])}'>${actionLabel("approve", "Согласовать")}</button>` : ""}
-            ${isApproved && d.status !== "published" ? `<button class="secondary-button" type="button" data-action="openThreadsScheduler" data-args='${JSON.stringify([d.draft_id])}'>${actionLabel("calendar", "Выбрать дату публикации")}</button>` : ""}
-            ${isApproved && d.status !== "published" ? `<button class="primary-button" type="button" data-action="publishThreadsSeriesNow" data-args='${JSON.stringify([d.draft_id, null])}'>${actionLabel("send", "Опубликовать все сейчас")}</button>` : ""}
-            <button class="secondary-button" data-action="sendDraftToChat" data-args='${JSON.stringify([d.draft_id, null])}'>${actionLabel("chat", "В чат")}</button>
-            ${renderMoveButton(d.draft_id)}
+          <div class="draft-actions-compact">
+            <div class="da-row1">
+              ${!isApproved && posts.length ? `<button class="primary-button" type="button" data-action="approveThreadsSeries" data-args='${JSON.stringify([d.draft_id, null])}'>${actionLabel("approve", "Согласовать")}</button>` : ""}
+              ${isApproved && d.status !== "published" ? `<button class="primary-button" type="button" data-action="publishThreadsSeriesNow" data-args='${JSON.stringify([d.draft_id, null])}'>${actionLabel("send", "Опубликовать")}</button>` : ""}
+            </div>
+            <div class="da-row2">
+              ${isApproved && d.status !== "published" ? `<button class="das-btn" type="button" data-action="openThreadsScheduler" data-args='${JSON.stringify([d.draft_id])}'>${uiIcon("calendar", 14)}<span>Дата</span></button>` : ""}
+
+              ${renderMoveButton(d.draft_id)}
+            </div>
           </div>
           ${schedulerHtml}
         </div>
@@ -478,19 +482,23 @@ export function createDraftsModule(deps) {
             </div>
           </div>
           ${_canvaHeroPreview(p)}
-          <div class="actions-row detail-actions">
-            ${(() => {
-              if (d.kind === "carousel") {
-                const readyCount = (p.slide_images || []).filter(Boolean).length;
-                const slideCount = (p.slides || []).length;
-                const allSlidesReady = slideCount > 0 && readyCount >= slideCount && !d.generation_pending;
-                return `<button class="primary-button${allSlidesReady ? "" : " is-disabled"}" ${allSlidesReady ? "" : "disabled"} data-action="updateDraft" data-args='["status",{"status":"approved"},null]'>${actionLabel("approve", "Согласовать")}</button>${!allSlidesReady && slideCount > 0 ? `<span class="field-help">Готово ${readyCount} из ${slideCount} слайдов</span>` : ""}`;
-              }
-              return `<button class="primary-button" data-action="updateDraft" data-args='["status",{"status":"approved"},null]'>${actionLabel("approve", "Согласовать")}</button>`;
-            })()}
-            <div class="detail-icon-actions">
-              <button class="secondary-button" aria-label="Вернуть на доработку" data-action="updateDraft" data-args='["status",{"status":"rejected"},null]'>${uiIcon("reject")}</button>
-              ${d.kind === "carousel" ? `<button class="secondary-button" aria-label="Обновить все слайды" data-action="regenerateCarouselAll" data-args='${JSON.stringify([d.draft_id, null])}'>${uiIcon("regenerate")}</button>` : ""}
+          <div class="draft-actions-compact">
+            <div class="da-row1">
+              ${(() => {
+                if (d.kind === "carousel") {
+                  const readyCount = (p.slide_images || []).filter(Boolean).length;
+                  const slideCount = (p.slides || []).length;
+                  const allSlidesReady = slideCount > 0 && readyCount >= slideCount && !d.generation_pending;
+                  return `<button class="primary-button${allSlidesReady ? "" : " is-disabled"}" ${allSlidesReady ? "" : "disabled"} data-action="updateDraft" data-args='["status",{"status":"approved"},null]'>${actionLabel("approve", "Согласовать")}</button>`;
+                }
+                return `<button class="primary-button" data-action="updateDraft" data-args='["status",{"status":"approved"},null]'>${actionLabel("approve", "Согласовать")}</button>`;
+              })()}
+              <button class="da-reject" aria-label="Вернуть на доработку" data-action="updateDraft" data-args='["status",{"status":"rejected"},null]'>${uiIcon("reject")}</button>
+              ${d.kind === "carousel" ? `<button class="da-reject" aria-label="Обновить все слайды" data-action="regenerateCarouselAll" data-args='${JSON.stringify([d.draft_id, null])}'>${uiIcon("regenerate")}</button>` : ""}
+            </div>
+            <div class="da-row2">
+
+              ${renderMoveButton(d.draft_id)}
             </div>
             ${d.kind === "carousel" && !d.generation_pending ? `
               <div class="carousel-export-row">
@@ -522,7 +530,6 @@ export function createDraftsModule(deps) {
                 </div>
               </div>
             ` : ""}
-            ${renderMoveButton(d.draft_id)}
           </div>
           ${d.kind === "carousel" ? (() => {
             const curLayout = p.layout_style || "overlay";
@@ -808,12 +815,15 @@ export function createDraftsModule(deps) {
               ${d.generation_pending && draftGenerationLabel(d) ? tagMarkup(draftGenerationLabel(d), "pending") : ""}
             </div>
           </div>
-          <div class="actions-row detail-actions">
-            <button class="primary-button" data-action="updateDraft" data-args='["status",{"status":"approved"},null]'>${actionLabel("approve", "Согласовать")}</button>
-            <div class="detail-icon-actions">
-              <button class="secondary-button" aria-label="Вернуть на доработку" data-action="updateDraft" data-args='["status",{"status":"rejected"},null]'>${uiIcon("reject")}</button>
+          <div class="draft-actions-compact">
+            <div class="da-row1">
+              <button class="primary-button" data-action="updateDraft" data-args='["status",{"status":"approved"},null]'>${actionLabel("approve", "Согласовать")}</button>
+              <button class="da-reject" aria-label="Вернуть на доработку" data-action="updateDraft" data-args='["status",{"status":"rejected"},null]'>${uiIcon("reject")}</button>
             </div>
-            ${renderMoveButton(d.draft_id)}
+            <div class="da-row2">
+
+              ${renderMoveButton(d.draft_id)}
+            </div>
           </div>
         </div>
 
@@ -910,10 +920,14 @@ export function createDraftsModule(deps) {
         </div>
         ${coherenceHtml}
         <div class="series-posts-timeline">${postsHtml}</div>
-        <div class="actions-row detail-actions">
-          <button class="primary-button" type="button" data-action="coherenceCheck" data-args='${JSON.stringify([d.draft_id])}'>${uiIcon("check-circle")}<span>Проверить связность</span></button>
-          <button class="secondary-button" type="button" data-action="regenSeriesAll" data-args='${JSON.stringify([d.draft_id])}'>${uiIcon("refresh-cw")}<span>Перегенерировать всё</span></button>
-          ${d.status === "draft" ? `<button class="primary-button" type="button" data-action="updateDraft" data-args='["status",{"status":"approved"},null]'>${uiIcon("check")}<span>Утвердить</span></button>` : ""}
+        <div class="draft-actions-compact">
+          <div class="da-row1">
+            ${d.status === "draft" ? `<button class="primary-button" type="button" data-action="updateDraft" data-args='["status",{"status":"approved"},null]'>${uiIcon("check")}<span>Утвердить</span></button>` : ""}
+            <button class="das-btn" type="button" data-action="coherenceCheck" data-args='${JSON.stringify([d.draft_id])}'>${uiIcon("check-circle", 14)}<span>Связность</span></button>
+          </div>
+          <div class="da-row2">
+            <button class="das-btn" type="button" data-action="regenSeriesAll" data-args='${JSON.stringify([d.draft_id])}'>${uiIcon("refresh-cw", 14)}<span>Перегенерировать</span></button>
+          </div>
         </div>
       </div>
     `;

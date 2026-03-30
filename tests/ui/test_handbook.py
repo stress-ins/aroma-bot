@@ -10,17 +10,17 @@ def test_handbook_section_titles_are_russian(page):
     page.wait_for_timeout(100)
 
     page.get_by_role("tab", name="Смеси").click()
-    page.wait_for_timeout(100)
+    page.locator(".reference-card").first.wait_for(state="visible", timeout=10000)
     title = page.locator(".topbar-title").inner_text().strip()
     assert title == "Смеси", f"Expected 'Смеси', got '{title}'"
 
     page.get_by_role("tab", name="Симптомы").click()
-    page.wait_for_timeout(100)
+    page.locator(".reference-card").first.wait_for(state="visible", timeout=10000)
     title = page.locator(".topbar-title").inner_text().strip()
     assert title == "Симптомы", f"Expected 'Симптомы', got '{title}'"
 
     page.get_by_role("tab", name="Ароматы").click()
-    page.wait_for_timeout(100)
+    page.locator(".reference-card").first.wait_for(state="visible", timeout=10000)
     title = page.locator(".topbar-title").inner_text().strip()
     assert title == "Ароматы", f"Expected 'Ароматы', got '{title}'"
 
