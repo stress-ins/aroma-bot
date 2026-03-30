@@ -102,11 +102,6 @@ export function createReferencesModule(deps) {
             <div class="action-text"><div class="action-title">Подобрать технику массажа</div><div class="action-sub">По симптому или зоне тела</div></div>
             <span class="action-arrow">\u203a</span>
           </div>
-          <div class="action-item" data-action="openRecommendationsWizard">
-            <div class="action-icon ai-purple"><i class="ph ph-magnifying-glass" style="font-size:16px"></i></div>
-            <div class="action-text"><div class="action-title">Подобрать масло</div><div class="action-sub">По симптому или цели</div></div>
-            <span class="action-arrow">\u203a</span>
-          </div>
           <div class="action-item" data-action="openSavedBlends">
             <div class="action-icon ai-pink"><i class="ph ph-heart" style="font-size:16px"></i></div>
             <div class="action-text"><div class="action-title">Сохранённое</div><div class="action-sub">Избранные карточки</div></div>

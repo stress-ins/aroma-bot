@@ -2555,9 +2555,8 @@ function setTab(t) {
   elements.listTitle.textContent = "Загрузка...";
   // Preserve search bar in handbook tabs — renderReferences will update the count
   if (!HANDBOOK_CATEGORY_META[t]) elements.draftCount.textContent = "";
-  // For handbook tabs, show action-group buttons immediately while data loads
   if (HANDBOOK_CATEGORY_META[t]) {
-    elements.draftList.innerHTML = actionGroupHtml() + renderPanelLoader("Загружаю справочник");
+    elements.draftList.innerHTML = renderPanelLoader("Загружаю справочник");
   } else {
     elements.draftList.innerHTML = renderPanelLoader("Загружаю раздел");
   }
