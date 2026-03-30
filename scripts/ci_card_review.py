@@ -49,14 +49,14 @@ async def _run_reviews(check_all: bool) -> tuple[int, list[str]]:
     """Run UX reviewer and aromatherapy expert. Returns (exit_code, issues)."""
     # Import here so the script can show usage without deps
     from db.session import AsyncSessionLocal  # noqa: E402
-    from db.models import OilModel  # noqa: E402
+    from db.models import AromaCardModel  # noqa: E402
     from sqlalchemy import select  # noqa: E402
 
     issues: list[str] = []
     cards_checked = 0
 
     async with AsyncSessionLocal() as session:
-        stmt = select(OilModel).limit(None if check_all else 20)
+        stmt = select(AromaCardModel).where(AromaCardModel.category == "aroma").limit(None if check_all else 20)
         result = await session.execute(stmt)
         cards = result.scalars().all()
 
@@ -123,7 +123,14 @@ def main() -> None:
             print("No card-related files changed — skipping card review")
             sys.exit(0)
 
-    exit_code, _ = asyncio.run(_run_reviews(check_all))
+    try:
+        exit_code, _ = asyncio.run(_run_reviews(check_all))
+    except Exception as e:
+        # In CI there is no database — skip gracefully
+        if "no such table" in str(e).lower() or "unable to open" in str(e).lower():
+            print(f"No database available — skipping card review ({e})")
+            sys.exit(0)
+        raise
     sys.exit(exit_code)
 
 

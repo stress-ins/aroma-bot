@@ -38,16 +38,19 @@ _MASSAGE_SOURCE_TYPES = {
     "classical", "sports", "lymphatic", "visceral", "deep_tissue",
     "trigger_point", "myofascial", "thai", "shiatsu", "aroma_massage",
     "reflexology", "facial", "prenatal", "pediatric", "cupping",
+    "technique", "zone", "protocol",
 }
 
 _OSTEO_SOURCE_TYPES = {
     "craniosacral", "structural", "visceral_osteo", "biodynamic_osteo",
     "fascial", "functional", "muscle_energy",
+    "technique", "anatomy", "dysfunction",
 }
 
 _BIODYNAMICS_SOURCE_TYPES = {
     "biodynamic_cranial", "biodynamic_breath", "tissue_memory",
     "fluid_dynamics", "embryological",
+    "principle", "rhythm", "observation",
 }
 
 _ALL_BODYWORK_TYPES = _MASSAGE_SOURCE_TYPES | _OSTEO_SOURCE_TYPES | _BIODYNAMICS_SOURCE_TYPES
@@ -60,10 +63,13 @@ _VALID_BODY_ZONES = {
 }
 
 # ── Difficulty levels ───────────────────────────────────────────────
-_DIFFICULTY_LEVELS = {"начинающий", "средний", "продвинутый", "специалист"}
+_DIFFICULTY_LEVELS = {"начинающий", "начальный", "средний", "продвинутый", "специалист"}
 
 # ── Pressure levels ─────────────────────────────────────────────────
-_PRESSURE_LEVELS = {"лёгкое", "среднее", "глубокое", "без давления", "переменное"}
+_PRESSURE_LEVELS = {
+    "лёгкое", "среднее", "глубокое", "без давления", "переменное",
+    "лёгкое–среднее", "среднее–глубокое",
+}
 
 # ── Critical contraindications that MUST be present ─────────────────
 _CRITICAL_CONTRAINDICATIONS = {
@@ -113,7 +119,7 @@ def _basic_verify(card: dict[str, Any], category: str) -> tuple[float, list[str]
         score -= 0.15
 
     # ── Duration validation ─────────────────────────────────────────
-    duration = payload.get("session_duration") or payload.get("duration")
+    duration = payload.get("session_duration") or payload.get("duration") or payload.get("duration_min")
     if not duration:
         issues.append("missing session_duration")
         score -= 0.1
@@ -131,10 +137,18 @@ def _basic_verify(card: dict[str, Any], category: str) -> tuple[float, list[str]
         score -= 0.1
 
     # ── Critical contraindications check ────────────────────────────
-    contra_text = str(payload.get("contraindications") or "").lower()
+    contra_raw = payload.get("contraindications") or ""
+    if isinstance(contra_raw, list):
+        contra_text = " ".join(contra_raw).lower()
+    else:
+        contra_text = str(contra_raw).lower()
     if contra_text:
         required = _CRITICAL_CONTRAINDICATIONS.get(category, _CRITICAL_CONTRAINDICATIONS["massage"])
-        missing = [c for c in required if c not in contra_text]
+        # Use stem matching: "онкология" matches "онкологические заболевания"
+        stems = {"тромбоз": "тромбоз", "онкология": "онколог", "острое воспаление": "воспал",
+                 "лихорадка": "лихорад", "аневризма": "аневризм", "острый инсульт": "инсульт",
+                 "острый психоз": "психоз"}
+        missing = [c for c in required if stems.get(c, c) not in contra_text]
         if missing:
             issues.append(f"contraindications missing critical items: {', '.join(missing)}")
             score -= 0.15
