@@ -2398,7 +2398,8 @@ function setMode(m) {
   _renderTabBar(m);
   const tabsWrapper = elements.tabsContainer.parentElement;
   const _contentHidden = ["settings", "create", "inbox", "plans", "schedule", "keywords", "status", "drafts", "trends"];
-  if (!(m === "content" && _contentHidden.includes(state.tab)) && tabs.length > 0 && !tabs.find(t => t.id === state.tab)) setTab(tabs[0].id);
+  const _modeTabs = MODE_TABS[m] || [];
+  if (!(m === "content" && _contentHidden.includes(state.tab)) && _modeTabs.length > 0 && !_modeTabs.find(t => t.id === state.tab)) setTab(_modeTabs[0].id);
   renderContentSubTabs();
   syncMobileNavigation();
 }
