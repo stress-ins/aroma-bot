@@ -20,8 +20,11 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Add default_domain column to brand_settings table."""
-    with op.batch_alter_table("brand_settings") as batch_op:
-        batch_op.add_column(sa.Column("default_domain", sa.String(20), server_default="aroma", nullable=False))
+    conn = op.get_bind()
+    columns = [row[1] for row in conn.execute(sa.text("PRAGMA table_info('brand_settings')"))]
+    if "default_domain" not in columns:
+        with op.batch_alter_table("brand_settings") as batch_op:
+            batch_op.add_column(sa.Column("default_domain", sa.String(20), server_default="aroma", nullable=False))
 
 
 def downgrade() -> None:
