@@ -356,8 +356,10 @@ export function createReferencesModule(deps) {
 
   function renderApplicationsWithIcons(text) {
     if (!text) return "";
+    // Accept both string and array
+    const raw = Array.isArray(text) ? text.join("\n") : String(text);
     // Split on newlines or semicolons; strip leading bullet chars
-    const lines = text.split(/[\n;]/).map((l) => l.replace(/^[•\-]\s*/, "").trim()).filter(Boolean);
+    const lines = raw.split(/[\n;]/).map((l) => l.replace(/^[•\-]\s*/, "").trim()).filter(Boolean);
     const rendered = lines.map((line) => {
       const lower = line.toLowerCase();
       let icon = "•";
