@@ -1759,6 +1759,7 @@ function generateInboxReply(convId, btn) { return inboxModule.generateInboxReply
 function useAiReply(convId, idx) { inboxModule.useAiReply(convId, idx); }
 function archiveConversation(convId, btn) { return inboxModule.archiveConversation(convId, btn); }
 function pollInbox(btn) { return inboxModule.pollInbox(btn); }
+function checkInboxPermissions(btn) { return inboxModule.checkInboxPermissions(btn); }
 function setInboxFilter(key, value) { inboxModule.setInboxFilter(key, value); }
 
 // Archive action wrappers
@@ -2818,6 +2819,7 @@ registerWindowBridge({
   useAiReply,
   archiveConversation,
   pollInbox,
+  checkInboxPermissions,
   setInboxFilter,
   // Stock photo picker
   searchStockPhotos: (...a) => _stockPhotosMod.searchStockPhotos(...a),

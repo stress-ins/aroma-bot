@@ -94,6 +94,14 @@ export function createReferencesModule(deps) {
   const AROMA_SECTION_TABS = ["aromas", "blends", "symptoms", "concepts"];
   const BODY_SECTION_TABS = ["practices", "massage", "osteo", "biodynamics"];
 
+  function _savedBlendsItem() {
+    return `<div class="action-item" data-action="openSavedBlends">
+            <div class="action-icon ai-pink"><i class="ph ph-heart" style="font-size:16px"></i></div>
+            <div class="action-text"><div class="action-title">Сохранённое</div><div class="action-sub">Избранные карточки</div></div>
+            <span class="action-arrow">\u203a</span>
+          </div>`;
+  }
+
   function _actionGroupHtml() {
     if (BODY_SECTION_TABS.includes(state.tab)) {
       return `<div class="action-group">
@@ -102,12 +110,12 @@ export function createReferencesModule(deps) {
             <div class="action-text"><div class="action-title">Подобрать технику массажа</div><div class="action-sub">По симптому или зоне тела</div></div>
             <span class="action-arrow">\u203a</span>
           </div>
-          <div class="action-item" data-action="openSavedBlends">
-            <div class="action-icon ai-pink"><i class="ph ph-heart" style="font-size:16px"></i></div>
-            <div class="action-text"><div class="action-title">Сохранённое</div><div class="action-sub">Избранные карточки</div></div>
-            <span class="action-arrow">\u203a</span>
-          </div>
+          ${_savedBlendsItem()}
         </div>`;
+    }
+    // Sounds / Crystals — show saved button
+    if (state.tab === "sounds" || state.tab === "crystals") {
+      return `<div class="action-group">${_savedBlendsItem()}</div>`;
     }
     if (!AROMA_SECTION_TABS.includes(state.tab)) return "";
     return `<div class="action-group">
@@ -121,11 +129,7 @@ export function createReferencesModule(deps) {
             <div class="action-text"><div class="action-title">Подобрать масло</div><div class="action-sub">По симптому или цели</div></div>
             <span class="action-arrow">\u203a</span>
           </div>
-          <div class="action-item" data-action="openSavedBlends">
-            <div class="action-icon ai-pink"><i class="ph ph-heart" style="font-size:16px"></i></div>
-            <div class="action-text"><div class="action-title">Сохранённое</div><div class="action-sub">Избранные карточки</div></div>
-            <span class="action-arrow">\u203a</span>
-          </div>
+          ${_savedBlendsItem()}
         </div>`;
   }
 

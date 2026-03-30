@@ -185,6 +185,7 @@ export function registerWindowBridge(deps) {
     archiveConversation,
     pollInbox,
     setInboxFilter,
+    checkInboxPermissions,
     upgradeToFull,
     generateReelsImages,
     moveDraftToTeam,
@@ -528,6 +529,7 @@ export function registerWindowBridge(deps) {
   window.archiveConversation = archiveConversation;
   window.pollInbox = pollInbox;
   window.setInboxFilter = setInboxFilter;
+  window.checkInboxPermissions = checkInboxPermissions;
   window.moveDraftToTeam = moveDraftToTeam;
   window.switchAccountsTeam = switchAccountsTeam;
   window.addTrackedHashtag = addTrackedHashtag;

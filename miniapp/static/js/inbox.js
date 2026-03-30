@@ -242,6 +242,8 @@ export function createInboxModule(deps) {
 
       ${aiRepliesHtml}
 
+      ${_diagnosticBannerHtml()}
+
       <div class="inbox-compose">
         <div class="inbox-compose-row">
           <textarea class="inbox-compose-input" id="inbox-reply-input" rows="2"
@@ -296,7 +298,18 @@ export function createInboxModule(deps) {
           showUiNotice("Сообщение отправлено", "success");
           renderConversationDetail();
         } else {
-          showUiNotice(`Ошибка отправки: ${data.error}`, "error");
+          const is403 = (data.error || "").includes("403");
+          showUiNotice(
+            is403
+              ? "Нет разрешения на отправку DM. Нажмите 'Проверить подключение' ниже."
+              : `Ошибка отправки: ${data.error}`,
+            "error"
+          );
+          if (is403) {
+            // Auto-run diagnostics on 403
+            state._inboxDiagnostics = null;
+            renderConversationDetail();
+          }
         }
       });
     } catch (_e) { /* handled */ }
@@ -367,6 +380,59 @@ export function createInboxModule(deps) {
     loadInbox();
   }
 
+  // ── Diagnostics ──────────────────────────────────────────────────────────
+
+  if (!state._inboxDiagnostics) state._inboxDiagnostics = null;
+
+  async function checkInboxPermissions(btn) {
+    try {
+      await withButtonFeedback(btn, "Проверяю...", async () => {
+        const data = await fetchJson("/api/inbox/diagnostics");
+        state._inboxDiagnostics = data;
+        renderConversationDetail();
+
+        if (data.can_send_dm) {
+          showUiNotice("Токен и разрешения в порядке. Отправка DM доступна.", "success");
+        } else {
+          showUiNotice(data.error || "Обнаружены проблемы с разрешениями", "error");
+        }
+      });
+    } catch (_e) { /* handled */ }
+  }
+
+  function _diagnosticBannerHtml() {
+    const diag = state._inboxDiagnostics;
+    if (!diag) {
+      return `<div class="inbox-diag-banner inbox-diag-check">
+        <i class="ph ph-info" style="font-size:14px;flex-shrink:0"></i>
+        <span>Если отправка не работает — </span>
+        <button class="secondary-button compact" data-action="checkInboxPermissions" data-args="[null]">Проверить подключение</button>
+      </div>`;
+    }
+    if (diag.can_send_dm) {
+      return `<div class="inbox-diag-banner inbox-diag-ok">
+        <i class="ph ph-check-circle" style="font-size:14px;flex-shrink:0;color:var(--success, green)"></i>
+        <span>Токен действителен${diag.page_name ? " (@" + diag.page_name + ")" : ""}. Отправка DM доступна.</span>
+      </div>`;
+    }
+    // Problem detected
+    const items = [];
+    if (!diag.token_configured) items.push("Токен Instagram не настроен");
+    else if (!diag.token_valid) items.push("Токен недействителен — переподключите Instagram");
+    if (diag.missing_permissions?.length) {
+      items.push("Отсутствуют разрешения: " + diag.missing_permissions.join(", "));
+    }
+    return `<div class="inbox-diag-banner inbox-diag-error">
+      <i class="ph ph-warning" style="font-size:14px;flex-shrink:0;color:var(--error, red)"></i>
+      <div>
+        <div style="font-weight:600;margin-bottom:2px">Отправка DM недоступна</div>
+        ${items.map(i => '<div style="font-size:12px">' + i + '</div>').join('')}
+        ${diag.error ? '<div style="font-size:11px;color:var(--muted);margin-top:4px">' + diag.error + '</div>' : ''}
+      </div>
+      <button class="secondary-button compact" data-action="checkInboxPermissions" data-args="[null]" style="margin-left:auto;flex-shrink:0">Повторить</button>
+    </div>`;
+  }
+
   return {
     loadInbox,
     renderInbox,
@@ -379,5 +445,6 @@ export function createInboxModule(deps) {
     archiveConversation,
     pollInbox,
     setInboxFilter,
+    checkInboxPermissions,
   };
 }

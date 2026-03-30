@@ -214,6 +214,76 @@ async def poll_inbox(ctx: TeamContext = Depends(_resolve_team_context)):
     return {"conversations_polled": convs, "messages_saved": msgs}
 
 
+@router.get("/api/inbox/diagnostics")
+async def inbox_diagnostics(ctx: TeamContext = Depends(_resolve_team_context)):
+    """Check Instagram token and permissions for DM sending."""
+    from bot.services.mentions_store import get_token
+
+    result = {
+        "token_configured": False,
+        "token_valid": False,
+        "permissions": [],
+        "missing_permissions": [],
+        "can_send_dm": False,
+        "error": "",
+        "page_name": "",
+    }
+
+    token_row = await get_token("instagram")
+    if not token_row or not token_row.access_token:
+        result["error"] = "Instagram токен не настроен. Подключите Instagram в разделе Настройки."
+        return result
+
+    result["token_configured"] = True
+    token = token_row.access_token
+
+    # Check token validity and permissions via Graph API debug_token
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            # First try /me to check token validity
+            me_resp = await client.get(
+                "https://graph.instagram.com/v21.0/me",
+                params={"access_token": token, "fields": "id,username"},
+            )
+            if me_resp.status_code == 200:
+                me_data = me_resp.json()
+                result["token_valid"] = True
+                result["page_name"] = me_data.get("username", "")
+            else:
+                result["error"] = f"Токен недействителен (HTTP {me_resp.status_code}). Переподключите Instagram."
+                return result
+
+            # Check permissions via /me/permissions
+            perm_resp = await client.get(
+                "https://graph.facebook.com/v21.0/me/permissions",
+                params={"access_token": token},
+            )
+            if perm_resp.status_code == 200:
+                perm_data = perm_resp.json()
+                granted = [
+                    p["permission"] for p in perm_data.get("data", [])
+                    if p.get("status") == "granted"
+                ]
+                result["permissions"] = granted
+
+                required = ["instagram_manage_messages", "pages_messaging"]
+                missing = [p for p in required if p not in granted]
+                result["missing_permissions"] = missing
+                result["can_send_dm"] = len(missing) == 0
+                if missing:
+                    result["error"] = (
+                        f"Отсутствуют разрешения: {', '.join(missing)}. "
+                        "Переподключите Instagram с нужными правами."
+                    )
+            else:
+                result["error"] = "Не удалось проверить разрешения токена."
+
+    except Exception as exc:
+        result["error"] = f"Ошибка проверки: {str(exc)}"
+
+    return result
+
+
 @router.post("/api/inbox/ingest")
 async def ingest_inbox_message(
     payload: InboxIngestPayload,

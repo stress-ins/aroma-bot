@@ -721,6 +721,31 @@ export function createDraftsModule(deps) {
   }
 
   // ── YouTube Video Detail ─────────────────────────────────────────
+
+  function youtubeStepperMarkup(status, generationPending, draftId) {
+    const steps = [
+      { key: "generating", label: "Генерация" },
+      { key: "draft", label: "Сценарий" },
+      { key: "approved", label: "Съёмка" },
+      { key: "scheduled", label: "Публикация" },
+    ];
+    let activeIdx = 0;
+    if (generationPending) {
+      activeIdx = 0;
+    } else if (status === "draft" || status === "rejected") {
+      activeIdx = 1;
+    } else if (status === "approved") {
+      activeIdx = 2;
+    } else if (status === "scheduled" || status === "published") {
+      activeIdx = 3;
+    }
+    return `<div class="reels-stepper">${steps.map((s, i) => {
+      const cls = i < activeIdx ? "done" : i === activeIdx ? "active" : "";
+      const dotContent = i < activeIdx ? uiIcon("check", 10) : i === activeIdx ? '<span style="width:6px;height:6px;border-radius:50%;background:var(--brand);display:block"></span>' : "";
+      return `<div class="reels-step ${cls}"><span class="reels-step-dot">${dotContent}</span><span class="reels-step-label">${s.label}</span></div>`;
+    }).join("")}</div>`;
+  }
+
   function renderYouTubeDetail(d) {
     const p = d.payload || {};
     const sections = p.sections || [];
@@ -799,12 +824,70 @@ export function createDraftsModule(deps) {
       </section>
     ` : "";
 
+    // Draft-mode actions (approve/reject) — shown only before approval
+    const draftActionsHtml = !isApproved ? `
+      <div class="draft-actions-compact">
+        <div class="da-row1">
+          <button class="primary-button" data-action="updateDraft" data-args='["status",{"status":"approved"},null]'>${actionLabel("approve", "Согласовать")}</button>
+          <button class="da-reject" aria-label="Вернуть на доработку" data-action="updateDraft" data-args='["status",{"status":"rejected"},null]'>${uiIcon("reject")}</button>
+        </div>
+        <div class="da-row2">
+          ${renderMoveButton(d.draft_id)}
+        </div>
+      </div>
+    ` : "";
+
+    // Approved-state actions: shooting checklist + return to edit
+    const approvedActionsHtml = isApproved && d.status === "approved" ? `
+      <section class="section section-primary">
+        <div class="section-heading">
+          <h3>${uiIcon("video")}Съёмка и продакшн</h3>
+          <p>Сценарий согласован. Снимите видео по сценарию, затем загрузите на YouTube.</p>
+        </div>
+        <div class="youtube-shooting-checklist">
+          <div class="youtube-checklist-item">
+            <span class="youtube-checklist-icon">${uiIcon("check-circle", 16)}</span>
+            <span>Сценарий готов (${sections.length} секций)</span>
+          </div>
+          ${brollMap.length ? `<div class="youtube-checklist-item">
+            <span class="youtube-checklist-icon">${uiIcon("video", 16)}</span>
+            <span>B-Roll карта (${brollMap.length} точек)</span>
+          </div>` : ""}
+          ${thumb.result_path ? `<div class="youtube-checklist-item">
+            <span class="youtube-checklist-icon">${uiIcon("image", 16)}</span>
+            <span>Обложка готова</span>
+          </div>` : `<div class="youtube-checklist-item youtube-checklist-missing">
+            <span class="youtube-checklist-icon">${uiIcon("image", 16)}</span>
+            <span>Обложка не сгенерирована</span>
+            <button class="secondary-button compact" type="button" data-action="youtubeRegenThumbnail" data-args='${JSON.stringify([d.draft_id, "auto"])}'>${uiIcon("sparkle", 12)}<span>Создать</span></button>
+          </div>`}
+          ${meta.title ? `<div class="youtube-checklist-item">
+            <span class="youtube-checklist-icon">${uiIcon("text", 16)}</span>
+            <span>Метаданные готовы</span>
+          </div>` : `<div class="youtube-checklist-item youtube-checklist-missing">
+            <span class="youtube-checklist-icon">${uiIcon("text", 16)}</span>
+            <span>Метаданные не сгенерированы</span>
+            <button class="secondary-button compact" type="button" data-action="youtubeGenMetadata" data-args='${JSON.stringify([d.draft_id])}'>${uiIcon("sparkle", 12)}<span>Создать</span></button>
+          </div>`}
+        </div>
+        <div class="actions-row" style="margin-top:12px;gap:8px;flex-wrap:wrap">
+          <button class="secondary-button compact" type="button" data-action="updateDraft" data-args='["status",{"status":"draft"},null]'>
+            ${actionLabel("undo", "На доработку")}
+          </button>
+          <button class="secondary-button compact" type="button" data-action="sendDraftToChat" data-args='${JSON.stringify([d.draft_id, null])}'>
+            ${actionLabel("chat", "В чат")}
+          </button>
+        </div>
+      </section>
+    ` : "";
+
     elements.draftDetail.innerHTML = `
       <div class="detail-grid">
         ${renderBackButton()}
+        ${youtubeStepperMarkup(d.status, d.generation_pending, d.draft_id)}
         <div class="detail-top detail-hero">
           <div class="detail-hero-copy">
-            <p class="eyebrow">${contentKindIcon(d.kind)}<span>${escapeHtml(kindLabel(d.kind))}${sourceLabel(d.source) ? " • " + escapeHtml(sourceLabel(d.source)) : ""}</span></p>
+            <p class="eyebrow">${contentKindIcon(d.kind)}<span>${escapeHtml(kindLabel(d.kind))}${sourceLabel(d.source) ? " · " + escapeHtml(sourceLabel(d.source)) : ""}</span></p>
             <h2 class="detail-title">${escapeHtml(p.title || d.topic)}</h2>
             <div class="draft-meta">
               ${d.seq_id ? `<span class="meta-chip meta-chip--muted">#${d.seq_id}</span>` : ""}
@@ -815,19 +898,12 @@ export function createDraftsModule(deps) {
               ${d.generation_pending && draftGenerationLabel(d) ? tagMarkup(draftGenerationLabel(d), "pending") : ""}
             </div>
           </div>
-          <div class="draft-actions-compact">
-            <div class="da-row1">
-              <button class="primary-button" data-action="updateDraft" data-args='["status",{"status":"approved"},null]'>${actionLabel("approve", "Согласовать")}</button>
-              <button class="da-reject" aria-label="Вернуть на доработку" data-action="updateDraft" data-args='["status",{"status":"rejected"},null]'>${uiIcon("reject")}</button>
-            </div>
-            <div class="da-row2">
-
-              ${renderMoveButton(d.draft_id)}
-            </div>
-          </div>
+          ${draftActionsHtml}
         </div>
 
         ${d.generation_pending ? renderDetailLoader("Генерирую сценарий", p.generation_message || "Пишу сценарий YouTube-видео.", "detail-loader-card-compact") : ""}
+
+        ${approvedActionsHtml}
 
         ${!d.generation_pending && sections.length ? `
           <section class="section section-primary">
@@ -839,7 +915,7 @@ export function createDraftsModule(deps) {
             <div class="youtube-copy-all-row">
               <button class="secondary-button" type="button" data-action="youtubeCopyAllText" data-args='${JSON.stringify([d.draft_id])}'>${uiIcon("copy")}<span>Скопировать весь текст для суфлёра</span></button>
             </div>
-            <div class="youtube-script-actions">
+            ${!isApproved ? `<div class="youtube-script-actions">
               <label class="youtube-revision-label">
                 <span>Замечания к сценарию</span>
                 <textarea id="youtubeRevisionNote" class="youtube-revision-input" placeholder="Что изменить, добавить или убрать..."></textarea>
@@ -847,11 +923,13 @@ export function createDraftsModule(deps) {
               <div class="actions-row">
                 <button class="secondary-button" type="button" data-action="youtubeRegenScript" data-args='${JSON.stringify([d.draft_id])}'>${uiIcon("regenerate")}<span>Перегенерировать сценарий</span></button>
               </div>
-            </div>
+            </div>` : ""}
           </section>
         ` : ""}
 
         ${brollHtml}
+        ${thumbHtml}
+        ${metaHtml}
 
         <section class="section">
           <div class="actions-row">

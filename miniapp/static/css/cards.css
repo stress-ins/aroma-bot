@@ -273,3 +273,10 @@
 }
 .youtube-speaker-empty { color: var(--muted); font-style: italic; }
 
+/* YouTube shooting checklist (approved state) */
+.youtube-shooting-checklist { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.youtube-checklist-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text); padding: 6px 0; }
+.youtube-checklist-icon { color: var(--brand); flex-shrink: 0; }
+.youtube-checklist-missing { color: var(--muted); }
+.youtube-checklist-missing .youtube-checklist-icon { color: var(--muted); }
+.youtube-checklist-missing .secondary-button { margin-left: auto; }
