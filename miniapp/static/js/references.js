@@ -105,6 +105,11 @@ export function createReferencesModule(deps) {
   function _actionGroupHtml() {
     if (BODY_SECTION_TABS.includes(state.tab)) {
       return `<div class="action-group">
+          <div class="action-item" data-action="openProtocolWizard" data-args='[]'>
+            <div class="action-icon ai-purple"><i class="ph ph-circles-four" style="font-size:16px"></i></div>
+            <div class="action-text"><div class="action-title">Мультимодальный протокол</div><div class="action-sub">Масло + массаж + звук + кристалл</div></div>
+            <span class="action-arrow">\u203a</span>
+          </div>
           <div class="action-item" data-action="openMassageFinder" data-args='[]'>
             <div class="action-icon ai-teal"><i class="ph ph-hand-palm" style="font-size:16px"></i></div>
             <div class="action-text"><div class="action-title">Подобрать технику массажа</div><div class="action-sub">По симптому или зоне тела</div></div>
@@ -113,9 +118,16 @@ export function createReferencesModule(deps) {
           ${_savedBlendsItem()}
         </div>`;
     }
-    // Sounds / Crystals — show saved button
+    // Sounds / Crystals — protocol + saved
     if (state.tab === "sounds" || state.tab === "crystals") {
-      return `<div class="action-group">${_savedBlendsItem()}</div>`;
+      return `<div class="action-group">
+          <div class="action-item" data-action="openProtocolWizard" data-args='[]'>
+            <div class="action-icon ai-purple"><i class="ph ph-circles-four" style="font-size:16px"></i></div>
+            <div class="action-text"><div class="action-title">Мультимодальный протокол</div><div class="action-sub">Масло + массаж + звук + кристалл</div></div>
+            <span class="action-arrow">\u203a</span>
+          </div>
+          ${_savedBlendsItem()}
+        </div>`;
     }
     if (!AROMA_SECTION_TABS.includes(state.tab)) return "";
     return `<div class="action-group">

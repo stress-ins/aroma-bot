@@ -42,6 +42,23 @@
 .reco-restart-btn { display: block; width: 100%; padding: 10px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; color: var(--text); cursor: pointer; text-align: center; }
 .reco-restart-btn:hover { background: var(--surface-3); }
 
+/* -- Protocol Wizard Results -- */
+.proto-header { text-align: center; margin-bottom: var(--space-4); }
+.proto-description { font-size: 14px; color: var(--muted); line-height: 1.5; margin: var(--space-2) 0; }
+.proto-duration { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: var(--brand); font-weight: 600; }
+.proto-modality-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--brand); margin-bottom: var(--space-2); }
+.proto-modality-badge i { width: 14px; height: 14px; }
+.proto-session-plan { background: var(--surface-2); border-radius: var(--radius-sm); padding: var(--space-4); }
+.proto-session-plan h3 { font-size: 14px; font-weight: 700; color: var(--text); margin: 0 0 var(--space-3); }
+.proto-steps { list-style: none; padding: 0; margin: 0; counter-reset: proto-step; }
+.proto-step-item { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) 0; border-bottom: 1px solid var(--border); font-size: 14px; color: var(--text); line-height: 1.4; }
+.proto-step-item:last-child { border-bottom: none; }
+.proto-step-item i { width: 16px; height: 16px; color: var(--brand); flex-shrink: 0; }
+.proto-step-duration { font-size: 12px; color: var(--muted); white-space: nowrap; margin-left: auto; }
+.proto-synergy { background: linear-gradient(135deg, rgba(var(--brand-rgb),.08), rgba(var(--brand-rgb),.02)); border: 1px solid rgba(var(--brand-rgb),.15); border-radius: var(--radius-sm); padding: var(--space-4); }
+.proto-synergy h3 { font-size: 14px; font-weight: 700; color: var(--brand); margin: 0 0 var(--space-2); }
+.proto-synergy p { margin: 0; font-size: 14px; color: var(--text); line-height: 1.5; }
+
 /* ── Blend Constructor Form ───────────────────────────────────────────── */
 .blend-constructor-form .chip-list,
 .blend-constructor-form .radio-row { gap: 8px; justify-content: center; }

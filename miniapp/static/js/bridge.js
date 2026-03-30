@@ -210,6 +210,16 @@ export function registerWindowBridge(deps) {
     massageSelectExperience,
     massageUpdateContra,
     submitMassageRecommendations,
+    openProtocolWizard,
+    closeProtocolWizard,
+    protoWizardNext,
+    protoWizardBack,
+    protoSelectConcern,
+    protoSelectZone,
+    protoSelectGoal,
+    protoSelectModalities,
+    protoUpdateContra,
+    submitProtocolRecommendations,
     _selectSchedulerDate,
     _renderThreadsSchedulerDates,
     selectTrendsPlatform,
@@ -575,6 +585,18 @@ export function registerWindowBridge(deps) {
   window.massageSelectExperience = massageSelectExperience;
   window.massageUpdateContra = massageUpdateContra;
   window.submitMassageRecommendations = submitMassageRecommendations;
+
+  // Multimodal protocol wizard
+  window.openProtocolWizard = openProtocolWizard;
+  window.closeProtocolWizard = closeProtocolWizard;
+  window.protoWizardNext = protoWizardNext;
+  window.protoWizardBack = protoWizardBack;
+  window.protoSelectConcern = protoSelectConcern;
+  window.protoSelectZone = protoSelectZone;
+  window.protoSelectGoal = protoSelectGoal;
+  window.protoSelectModalities = protoSelectModalities;
+  window.protoUpdateContra = protoUpdateContra;
+  window.submitProtocolRecommendations = submitProtocolRecommendations;
 
   window.openImageFullscreen = function(src, title) {
     const existing = document.getElementById("img-fullscreen-modal");
