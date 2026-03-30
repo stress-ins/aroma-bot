@@ -1,6 +1,6 @@
 """add default_domain to brand_settings
 
-Revision ID: a1b2c3d4e5f6
+Revision ID: 2decb05ae2b6
 Revises: ce52aca42080
 Create Date: 2026-03-30
 
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'a1b2c3d4e5f6'
+revision: str = '2decb05ae2b6'
 down_revision: Union[str, Sequence[str], None] = 'ce52aca42080'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
