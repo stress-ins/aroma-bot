@@ -1,8 +1,6 @@
 """Reels preview modal: overlay text, close button, TG zone safety."""
 from __future__ import annotations
 
-import json
-
 from .helpers import DOM_RENDER
 
 
@@ -11,7 +9,7 @@ def test_reels_preview_modal_opens_with_overlay_text(page):
     page.evaluate("""() => {
         window.openReelsPreview('/generated/reels_assets/reels001/frame_1.png', 'Попробуй сегодня', 'f1', 'd1');
     }""")
-    page.wait_for_timeout(DOM_RENDER)
+    page.locator("#reels-img-modal").wait_for(state="visible", timeout=5000)
 
     modal = page.locator("#reels-img-modal")
     assert modal.is_visible()
@@ -26,11 +24,11 @@ def test_reels_preview_modal_close_button(page):
     page.evaluate("""() => {
         window.openReelsPreview('/generated/reels_assets/reels001/frame_1.png', 'Test', 'f1', 'd1');
     }""")
-    page.wait_for_timeout(DOM_RENDER)
+    page.locator("#reels-img-modal").wait_for(state="visible", timeout=5000)
 
     assert page.locator("#reels-img-modal").is_visible()
     page.locator("#reels-preview-close").click()
-    page.wait_for_timeout(DOM_RENDER)
+    page.locator("#reels-img-modal").wait_for(state="hidden", timeout=3000)
     assert not page.locator("#reels-img-modal").is_visible()
 
 
@@ -39,7 +37,7 @@ def test_reels_preview_close_button_not_in_tg_zone(page):
     page.evaluate("""() => {
         window.openReelsPreview('/generated/reels_assets/reels001/frame_1.png', 'Test overlay', 'f1', 'd1');
     }""")
-    page.wait_for_timeout(DOM_RENDER)
+    page.locator("#reels-img-modal").wait_for(state="visible", timeout=5000)
 
     header = page.locator(".preview-modal-header")
     assert header.is_visible()
@@ -61,7 +59,7 @@ def test_reels_preview_without_overlay_shows_plain_image(page):
     page.evaluate("""() => {
         window.openReelsPreview('/generated/reels_assets/reels001/frame_1.png', '', '', '');
     }""")
-    page.wait_for_timeout(DOM_RENDER)
+    page.locator("#reels-img-modal").wait_for(state="visible", timeout=5000)
 
     assert page.locator("#reels-img-modal").is_visible()
     assert page.locator(".preview-modal-body img").is_visible()

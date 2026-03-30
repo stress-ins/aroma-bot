@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import json
 
+from .helpers import click_bottom_tab, click_content_sub_tab
+
 
 def test_plan_detail_allows_creating_and_opening_linked_draft(page):
     updated_plan = {
@@ -101,18 +103,19 @@ def test_plan_detail_allows_creating_and_opening_linked_draft(page):
         route.continue_()
 
     page.route("**/*", handle_route)
-    page.locator("#btnTabContent").click()
-    page.wait_for_timeout(100)
-    page.locator(".content-sub-tab", has_text="Планы").click()
-    page.wait_for_timeout(100)
+    click_bottom_tab(page, "#btnTabContent")
+    click_content_sub_tab(page, "Планы")
 
     page.locator(".plan-card").first.click()
-    page.wait_for_timeout(100)
+    page.locator("#draftDetail").wait_for(state="visible", timeout=5000)
 
     assert page.get_by_role("button", name="Создать Тредс").is_visible()
     page.get_by_role("button", name="Создать Тредс").click()
-    page.wait_for_timeout(300)
 
     # After async generation UX: navigates directly to draft detail on drafts tab
+    # Wait for the new title (not the plan title) — poll until content changes
+    page.locator(".detail-title", has_text="Почему вечерний ритуал помогает нервной системе").wait_for(
+        state="visible", timeout=10000,
+    )
     assert page.locator(".detail-title").inner_text().strip() == "Почему вечерний ритуал помогает нервной системе"
     assert page.locator("#btnTabInspiration").get_attribute("class")

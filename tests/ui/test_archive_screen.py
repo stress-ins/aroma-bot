@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import pytest
 
+from .helpers import click_bottom_tab, click_content_sub_tab
+
 # Skip entire module on CI — archive sub-tab rendering is flaky on GitHub runners
 pytestmark = pytest.mark.skipif(
     __import__("os").getenv("CI") == "true",
@@ -12,22 +14,14 @@ pytestmark = pytest.mark.skipif(
 
 def _nav_to_archive(page):
     """Navigate to Archive via Контент bottom tab then content sub-tab."""
-    # Click the Контент bottom tab button to enter the plans/content area
-    content_btn = page.locator("#btnTabContent")
-    content_btn.wait_for(state="visible", timeout=5000)
-    content_btn.click()
-    page.wait_for_timeout(1000)
-    page.locator(".content-sub-tab", has_text="Архив").click()
-    page.wait_for_timeout(800)
+    click_bottom_tab(page, "#btnTabContent")
+    click_content_sub_tab(page, "Архив")
 
 
 def test_archive_tab_visible(dark_page):
     """Archive tab appears as a content sub-tab under Контент."""
     page = dark_page
-    content_btn = page.locator("#btnTabContent")
-    content_btn.wait_for(state="visible", timeout=15000)
-    content_btn.click()
-    page.wait_for_timeout(3000)
+    click_bottom_tab(page, "#btnTabContent")
     archive_tab = page.locator(".content-sub-tab", has_text="Архив")
     archive_tab.wait_for(state="visible", timeout=30000)
     assert archive_tab.is_visible()
@@ -62,9 +56,11 @@ def test_archive_detail_opens(dark_page):
     first_card = page.locator(".archive-card").first
     first_card.wait_for(state="visible", timeout=5000)
     first_card.click()
-    page.wait_for_timeout(2000)
 
-    # On mobile, detail view should now contain scoring section
+    # Wait for detail to render
+    page.locator("#draftDetail").wait_for(state="visible", timeout=5000)
+    page.wait_for_timeout(1000)  # wait for detail render
+
     detail_html = page.locator("#draftDetail").inner_html()
     assert "ОЦЕНКА" in detail_html or "score-stars-row" in detail_html, f"Detail should contain scoring. Got: {detail_html[:200]}"
 
@@ -85,9 +81,11 @@ def test_archive_form_opens(dark_page):
     _nav_to_archive(page)
 
     page.locator("button", has_text="Добавить публикацию").click()
-    page.wait_for_timeout(2000)
 
-    # Detail panel should contain form elements
+    # Wait for form to render
+    page.locator("#draftDetail").wait_for(state="visible", timeout=5000)
+    page.wait_for_timeout(1000)  # wait for detail render
+
     detail_html = page.locator("#draftDetail").inner_html()
     assert "archiveImportUrl" in detail_html or "Сохранить" in detail_html, f"Form should appear in detail. Got: {detail_html[:200]}"
 

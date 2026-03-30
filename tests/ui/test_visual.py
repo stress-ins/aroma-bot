@@ -8,35 +8,37 @@ from __future__ import annotations
 
 import pytest
 
-from .helpers import assert_visual_snapshot, open_reels_detail_from_drafts, prepare_visual_state
+from .helpers import (
+    assert_visual_snapshot,
+    click_bottom_tab,
+    click_content_sub_tab,
+    click_draft_card,
+    open_reels_detail_from_drafts,
+    prepare_visual_state,
+)
 
 
 @pytest.mark.visual
 def test_visual_mobile_drafts_list_baseline(page):
-    page.locator("#btnTabInspiration").click()
-    page.wait_for_timeout(100)
+    click_bottom_tab(page, "#btnTabInspiration")
     prepare_visual_state(page)
     assert_visual_snapshot(page.locator(".shell"), "mobile-drafts-list.png")
 
 
 @pytest.mark.visual
 def test_visual_mobile_draft_detail_baseline(page):
-    page.locator("#btnTabInspiration").click()
-    page.wait_for_timeout(100)
-    page.get_by_text("Как мягко выйти из рабочего напряжения").first.click()
-    page.wait_for_timeout(100)
+    click_bottom_tab(page, "#btnTabInspiration")
+    click_draft_card(page, "Как мягко выйти из рабочего напряжения")
     prepare_visual_state(page)
     assert_visual_snapshot(page.locator("#detailPanel"), "mobile-draft-detail.png")
 
 
 @pytest.mark.visual
 def test_visual_mobile_plan_detail_baseline(page):
-    page.locator("#btnTabContent").click()
-    page.wait_for_timeout(100)
-    page.locator(".content-sub-tab", has_text="Планы").click()
-    page.wait_for_timeout(100)
+    click_bottom_tab(page, "#btnTabContent")
+    click_content_sub_tab(page, "Планы")
     page.locator(".plan-card").first.click()
-    page.wait_for_timeout(100)
+    page.locator("#draftDetail").wait_for(state="visible", timeout=5000)
     prepare_visual_state(page)
     assert_visual_snapshot(page.locator("#detailPanel"), "mobile-plan-detail.png")
 
@@ -50,20 +52,18 @@ def test_visual_mobile_reels_detail_baseline(page):
 
 @pytest.mark.visual
 def test_visual_mobile_threads_series_detail_baseline(page):
-    page.locator("#btnTabInspiration").click()
-    page.wait_for_timeout(100)
-    page.get_by_text("Восстановление энергии и ресурса").first.click()
-    page.wait_for_timeout(100)
+    click_bottom_tab(page, "#btnTabInspiration")
+    click_draft_card(page, "Восстановление энергии и ресурса")
     prepare_visual_state(page)
     assert_visual_snapshot(page.locator("#detailPanel"), "mobile-threads-series-detail.png")
 
 
 @pytest.mark.visual
 def test_visual_mobile_handbook_detail_baseline(page):
-    page.locator("#btnTabHandbook").click()
-    page.wait_for_timeout(100)
+    click_bottom_tab(page, "#btnTabHandbook")
+    page.locator(".reference-card").first.wait_for(state="visible", timeout=10000)
     page.locator(".reference-card").first.click()
-    page.wait_for_timeout(200)
+    page.locator("#draftDetail").wait_for(state="visible", timeout=5000)
     prepare_visual_state(page)
     assert_visual_snapshot(page.locator("#detailPanel"), "mobile-handbook-detail.png")
 
@@ -73,6 +73,6 @@ def test_visual_desktop_split_view_baseline(desktop_page):
     # Desktop: wait for app to bootstrap, then open first draft
     desktop_page.wait_for_selector(".draft-card", timeout=10000)
     desktop_page.locator(".draft-card").first.click()
-    desktop_page.wait_for_timeout(200)
+    desktop_page.locator("#draftDetail").wait_for(state="visible", timeout=5000)
     prepare_visual_state(desktop_page)
     assert_visual_snapshot(desktop_page.locator(".shell"), "desktop-split-view.png")

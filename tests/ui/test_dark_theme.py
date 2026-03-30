@@ -8,6 +8,9 @@ import pytest
 from .helpers import (
     WCAG_AA_MIN,
     check_button_contrast,
+    click_bottom_tab,
+    click_content_sub_tab,
+    click_draft_card,
     contrast_ratio,
     open_reels_detail_from_drafts,
     parse_rgb,
@@ -21,7 +24,7 @@ from .helpers import (
 
 def test_dark_theme_class_styles_bottom_tab_bar(page):
     page.evaluate("document.body.classList.add('tg-theme-dark')")
-    page.wait_for_timeout(50)
+    page.wait_for_selector("body.tg-theme-dark", timeout=3000)
 
     theme_state = page.evaluate(
         """
@@ -48,7 +51,7 @@ def test_dark_theme_class_styles_bottom_tab_bar(page):
 def test_dark_theme_keeps_reels_v2_frame_text_readable(page):
     open_reels_detail_from_drafts(page)
     page.evaluate("document.body.classList.add('tg-theme-dark')")
-    page.wait_for_timeout(50)
+    page.wait_for_selector("body.tg-theme-dark", timeout=3000)
 
     frame_style = page.evaluate(
         """
@@ -74,7 +77,7 @@ def test_dark_theme_class_applies_without_js_errors(page):
     page.on("pageerror", lambda err: js_errors.append(str(err)))
 
     page.evaluate("document.body.classList.add('tg-theme-dark')")
-    page.wait_for_timeout(50)
+    page.wait_for_selector("body.tg-theme-dark", timeout=3000)
 
     result = page.evaluate(
         """
@@ -102,7 +105,7 @@ def test_dark_theme_reels_v2_frame_uses_dark_backgrounds(page):
     open_reels_detail_from_drafts(page)
 
     page.evaluate("document.body.classList.add('tg-theme-dark')")
-    page.wait_for_timeout(50)
+    page.wait_for_selector("body.tg-theme-dark", timeout=3000)
 
     styles = page.evaluate(
         """
@@ -130,8 +133,7 @@ def test_dark_button_contrast_on_all_tabs(dark_page):
         ("#btnTabCreate", "Create"),
         ("#btnTabHandbook", "Handbook"),
     ]:
-        dark_page.locator(tab_id).click()
-        dark_page.wait_for_timeout(100)
+        click_bottom_tab(dark_page, tab_id)
         all_failures.extend(check_button_contrast(dark_page, theme_label=label))
 
     assert all_failures == [], (
@@ -142,17 +144,21 @@ def test_dark_button_contrast_on_all_tabs(dark_page):
 
 
 def test_dark_draft_detail_scroll_and_actions(dark_page):
-    dark_page.locator("#btnTabInspiration").click()
-    dark_page.wait_for_timeout(100)
+    click_bottom_tab(dark_page, "#btnTabInspiration")
     dark_page.locator(".draft-card").first.wait_for(state="visible", timeout=10000)
     dark_page.locator(".draft-card").first.click()
-    dark_page.wait_for_timeout(100)
+    dark_page.locator("#draftDetail").wait_for(state="visible", timeout=5000)
+    # Wait for detail content to render (buttons appear async)
+    dark_page.locator("#draftDetail .detail-title, #draftDetail .section, #draftDetail .reels-stepper").first.wait_for(
+        state="visible", timeout=5000,
+    )
 
     dark_page.evaluate(
         "document.querySelector('#detailPanel').scrollTo(0, "
         "document.querySelector('#detailPanel').scrollHeight)"
     )
-    dark_page.wait_for_timeout(100)
+    # Wait for scroll to settle
+    dark_page.wait_for_timeout(200)  # scroll animation settle
 
     actions = dark_page.locator("#draftDetail button").evaluate_all(
         """(nodes) => nodes
@@ -176,7 +182,6 @@ def test_dark_reels_scroll_through_frames(dark_page):
     for i in range(frame_count):
         frame = dark_page.locator(".reels-frame-v2").nth(i)
         frame.scroll_into_view_if_needed()
-        dark_page.wait_for_timeout(50)
 
         title_el = frame.locator(".reels-frame-v2-title").first
         if title_el.count():
@@ -190,19 +195,16 @@ def test_dark_reels_scroll_through_frames(dark_page):
 
 
 def test_dark_handbook_scroll_and_open_cards(dark_page):
-    dark_page.locator("#btnTabHandbook").click()
+    click_bottom_tab(dark_page, "#btnTabHandbook")
     dark_page.locator(".reference-card").first.wait_for(state="visible", timeout=10000)
 
     card_count = dark_page.locator(".reference-card").count()
     assert card_count >= 1, "No reference cards found in handbook default tab"
 
     dark_page.locator(".reference-card").last.scroll_into_view_if_needed()
-    dark_page.wait_for_timeout(100)
-
     dark_page.locator(".reference-card").first.scroll_into_view_if_needed()
-    dark_page.wait_for_timeout(50)
     dark_page.locator(".reference-card").first.click()
-    dark_page.wait_for_timeout(100)
+    dark_page.locator("#detailPanel").wait_for(state="visible", timeout=5000)
 
     detail = dark_page.locator("#detailPanel")
     assert detail.is_visible()
@@ -211,18 +213,16 @@ def test_dark_handbook_scroll_and_open_cards(dark_page):
         "document.querySelector('#detailPanel')?.scrollTo(0, "
         "document.querySelector('#detailPanel')?.scrollHeight || 0)"
     )
-    dark_page.wait_for_timeout(100)
 
     failures = check_button_contrast(dark_page, theme_label="handbook-detail")
     assert failures == [], f"Low contrast in handbook detail: {failures}"
 
 
 def test_dark_create_form_fields_readable(dark_page):
-    dark_page.locator("#btnTabCreate").click()
-    dark_page.wait_for_timeout(100)
+    click_bottom_tab(dark_page, "#btnTabCreate")
 
     dark_page.get_by_role("heading", name="Пост для соцсетей").click()
-    dark_page.wait_for_timeout(100)
+    dark_page.locator("textarea[name='topic']").wait_for(state="visible", timeout=5000)
 
     textarea = dark_page.locator("textarea[name='topic']")
     if textarea.count():
@@ -243,28 +243,22 @@ def test_dark_create_form_fields_readable(dark_page):
 
 
 def test_dark_plans_scroll_and_click(dark_page):
-    dark_page.locator("#btnTabContent").click()
-    dark_page.wait_for_timeout(100)
-    dark_page.locator(".content-sub-tab", has_text="Планы").click()
-    dark_page.wait_for_timeout(100)
+    click_bottom_tab(dark_page, "#btnTabContent")
+    click_content_sub_tab(dark_page, "Планы")
 
     plan_cards = dark_page.locator(".plan-card")
     if plan_cards.count() == 0:
         pytest.skip("No plan cards in test data")
 
     plan_cards.last.scroll_into_view_if_needed()
-    dark_page.wait_for_timeout(100)
-
     plan_cards.first.scroll_into_view_if_needed()
-    dark_page.wait_for_timeout(50)
     plan_cards.first.click()
-    dark_page.wait_for_timeout(100)
+    dark_page.locator("#draftDetail").wait_for(state="visible", timeout=5000)
 
     dark_page.evaluate(
         "document.querySelector('#detailPanel')?.scrollTo(0, "
         "document.querySelector('#detailPanel')?.scrollHeight || 0)"
     )
-    dark_page.wait_for_timeout(100)
 
     title_el = dark_page.locator(".detail-title").first
     if title_el.count():
@@ -276,8 +270,8 @@ def test_dark_plans_scroll_and_click(dark_page):
 
 
 def test_dark_swipe_scroll_draft_list(dark_page):
-    dark_page.locator("#btnTabInspiration").click()
-    dark_page.wait_for_timeout(100)
+    click_bottom_tab(dark_page, "#btnTabInspiration")
+    dark_page.locator(".draft-card").first.wait_for(state="visible", timeout=10000)
 
     initial_scroll = dark_page.evaluate(
         "() => document.querySelector('#listPanel')?.scrollTop || window.scrollY"
@@ -287,6 +281,8 @@ def test_dark_swipe_scroll_draft_list(dark_page):
     dark_page.mouse.down()
     dark_page.mouse.move(215, 300, steps=10)
     dark_page.mouse.up()
+
+    # Brief wait for scroll momentum
     dark_page.wait_for_timeout(100)
 
     after_scroll = dark_page.evaluate(
@@ -308,7 +304,7 @@ def test_dark_swipe_scroll_draft_list(dark_page):
 def test_no_dark_gradient_overlays_on_detail_panel(page):
     """Detail panel must not have ::before/::after gradient overlays that create dark rectangles."""
     page.evaluate("document.body.classList.add('tg-theme-dark', 'is-mobile-layout', 'is-detail-view')")
-    page.wait_for_timeout(50)
+    page.wait_for_selector("body.tg-theme-dark", timeout=3000)
 
     result = page.evaluate("""() => {
       const panel = document.querySelector('.detail-panel');

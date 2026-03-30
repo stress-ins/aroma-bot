@@ -1,13 +1,13 @@
 """Mentions: detail view, button visibility, back navigation."""
 from __future__ import annotations
 
+from .helpers import click_bottom_tab, click_content_sub_tab
+
 
 def _nav_to_mentions(page):
     """Navigate to Mentions via Контент bottom tab then content sub-tab."""
-    page.locator("#btnTabContent").click()
-    page.wait_for_timeout(200)
-    page.locator(".content-sub-tab", has_text="Упоминания").click()
-    page.wait_for_timeout(500)
+    click_bottom_tab(page, "#btnTabContent")
+    click_content_sub_tab(page, "Упоминания")
 
 
 def test_mentions_detail_buttons_visible(dark_page):
@@ -21,7 +21,6 @@ def test_mentions_detail_buttons_visible(dark_page):
     mention_card = page.locator(".mention-card").first
     mention_card.wait_for(state="visible", timeout=5000)
     mention_card.click()
-    page.wait_for_timeout(300)
 
     # Verify back button uses renderBackButton() — .back-button class
     back_btn = page.locator("button.back-button")
@@ -56,13 +55,11 @@ def test_mentions_published_reply_state(dark_page):
 
     # Switch filter to "Отвечено" to see mention002
     page.get_by_text("Отвечено").click()
-    page.wait_for_timeout(500)
+    page.locator(".mention-card").first.wait_for(state="visible", timeout=5000)
 
     # Open the replied mention
     mention_card = page.locator(".mention-card").first
-    mention_card.wait_for(state="visible", timeout=5000)
     mention_card.click()
-    page.wait_for_timeout(300)
 
     # Should show "Опубликовано" badge with tone label
     published_badge = page.locator(".tag-status-ok", has_text="Опубликовано")
@@ -91,14 +88,12 @@ def test_mentions_detail_back_navigation(dark_page):
     # Open mention
     page.locator(".mention-card").first.wait_for(state="visible", timeout=5000)
     page.locator(".mention-card").first.click()
-    page.wait_for_timeout(300)
 
     # We should see the detail view (generate button present)
     page.locator("button.primary-button", has_text="Сгенерировать").wait_for(state="visible", timeout=3000)
 
     # Click back via renderBackButton()
     page.locator("button.back-button").click()
-    page.wait_for_timeout(300)
 
     # Should return to list — mention cards visible again
     page.locator(".mention-card").first.wait_for(state="visible", timeout=3000)

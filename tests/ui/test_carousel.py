@@ -8,6 +8,8 @@ import pytest
 from PIL import Image as _PIL
 from playwright.sync_api import Error
 
+from .helpers import click_bottom_tab, click_draft_card
+
 pytestmark = pytest.mark.skipif(
     os.getenv("CI") == "true",
     reason="Carousel detail loading timeout on CI runners",
@@ -16,12 +18,10 @@ pytestmark = pytest.mark.skipif(
 
 def _navigate_to_carousel(page):
     """Navigate to carousel card in drafts list."""
-    page.locator("#btnTabInspiration").click()
-    page.wait_for_timeout(300)
+    click_bottom_tab(page, "#btnTabInspiration")
     card = page.get_by_text("Сенсорная карусель для вечернего ритуала").first
     card.wait_for(state="visible", timeout=30000)
-    card.click()
-    page.wait_for_timeout(300)
+    click_draft_card(page, "Сенсорная карусель для вечернего ритуала")
 
 
 def test_carousel_detail_shows_prompt_copy_buttons(page):
@@ -60,7 +60,7 @@ def test_carousel_preview_button_opens_modal(page):
     assert modal.locator("img").is_visible(), "Preview modal should contain an image"
 
     modal.locator(".preview-modal-close").click()
-    page.wait_for_timeout(100)
+    page.locator("#previewModal").wait_for(state="hidden", timeout=3000)
     assert not page.locator("#previewModal").is_visible(), "Modal should close"
 
 

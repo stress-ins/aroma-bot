@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 
-from .helpers import open_reels_detail_from_drafts
+from .helpers import click_bottom_tab, click_content_sub_tab, click_draft_card, open_reels_detail_from_drafts
 
 
 def test_reels_tab_opens_storyboard_without_empty_state(page):
@@ -79,10 +79,8 @@ def test_drafts_reels_card_routes_into_storyboard_detail_with_mocked_api(page):
     page.route("**/api/drafts/reels001", _draft_detail)
     page.route("**/api/reels/reels001", _reel_detail)
 
-    page.locator("#btnTabInspiration").click()
-    page.wait_for_timeout(100)
-    page.get_by_text("Вечерний ароматический ритуал").first.click()
-    page.wait_for_timeout(100)
+    click_bottom_tab(page, "#btnTabInspiration")
+    click_draft_card(page, "Вечерний ароматический ритуал")
 
     assert page.locator(".reels-frame-v2").count() == 1
     assert page.get_by_text("Камера идет по флакону и ладони").first.is_visible()
@@ -90,12 +88,10 @@ def test_drafts_reels_card_routes_into_storyboard_detail_with_mocked_api(page):
 
 def test_reels_and_plans_render_markdown_in_detail_views(page):
     """Plans still render markdown correctly; reels use V2 inline layout."""
-    page.locator("#btnTabContent").click()
-    page.wait_for_timeout(100)
-    page.locator(".content-sub-tab", has_text="Планы").click()
-    page.wait_for_timeout(100)
+    click_bottom_tab(page, "#btnTabContent")
+    click_content_sub_tab(page, "Планы")
     page.locator(".plan-card").first.click()
-    page.wait_for_timeout(100)
+    page.locator("#draftDetail").wait_for(state="visible", timeout=5000)
 
     plan_markup = page.locator(".detail-preview.detail-markdown").first.evaluate(
         "(node) => ({ html: node.innerHTML, text: node.textContent })"

@@ -2,11 +2,13 @@
 
 Ensures all buttons across the app follow consistent patterns:
 - Correct CSS classes (primary-button, secondary-button, danger-button, ghost-button)
-- Proper hit targets (≥44px on mobile)
+- Proper hit targets (>=44px on mobile)
 - No orphaned buttons (visible but no handler)
 - CSS variables for colors (no hardcoded hex)
 """
 from __future__ import annotations
+
+from .helpers import click_bottom_tab, click_draft_card
 
 
 # ---------------------------------------------------------------------------
@@ -49,8 +51,8 @@ def _collect_buttons(page):
 
 def test_all_visible_buttons_have_minimum_hit_target(page):
     """Every visible button must have at least 36px height (44px preferred, 36px minimum)."""
-    page.locator("#btnTabInspiration").click()
-    page.wait_for_timeout(200)
+    click_bottom_tab(page, "#btnTabInspiration")
+    page.locator(".draft-card").first.wait_for(state="visible", timeout=5000)
 
     buttons = _collect_buttons(page)
     # Exclude tiny icon-only utility buttons (clear, close)
@@ -70,13 +72,13 @@ def test_all_visible_buttons_have_minimum_hit_target(page):
 
 def test_detail_action_buttons_have_hit_targets(page):
     """Action buttons in draft detail must have at least 40px height."""
-    page.locator("#btnTabInspiration").click()
-    page.wait_for_timeout(200)
+    click_bottom_tab(page, "#btnTabInspiration")
     first = page.locator(".draft-card").first
     if not first.count():
         return
     first.click()
-    page.wait_for_timeout(400)
+    page.locator("#draftDetail").wait_for(state="visible", timeout=5000)
+    page.locator("#draftDetail .detail-title, #draftDetail .section, #draftDetail .reels-stepper").first.wait_for(state="visible", timeout=5000)
 
     buttons = _collect_buttons(page)
     action_buttons = [
@@ -120,8 +122,8 @@ JS_CHECK_HARDCODED_COLORS = """
 
 def test_no_hardcoded_hex_colors_on_buttons(page):
     """Buttons must use CSS variables, not hardcoded hex colors in inline styles."""
-    page.locator("#btnTabHandbook").click()
-    page.wait_for_timeout(300)
+    click_bottom_tab(page, "#btnTabHandbook")
+    page.locator(".reference-card").first.wait_for(state="visible", timeout=10000)
     violations = page.evaluate(JS_CHECK_HARDCODED_COLORS)
     assert not violations, (
         f"Buttons with hardcoded hex colors:\n"
@@ -131,13 +133,13 @@ def test_no_hardcoded_hex_colors_on_buttons(page):
 
 def test_no_hardcoded_hex_in_draft_detail_buttons(page):
     """Draft detail buttons must use CSS variables, not hardcoded colors."""
-    page.locator("#btnTabInspiration").click()
-    page.wait_for_timeout(200)
+    click_bottom_tab(page, "#btnTabInspiration")
     first = page.locator(".draft-card").first
     if not first.count():
         return
     first.click()
-    page.wait_for_timeout(400)
+    page.locator("#draftDetail").wait_for(state="visible", timeout=5000)
+    page.locator("#draftDetail .detail-title, #draftDetail .section, #draftDetail .reels-stepper").first.wait_for(state="visible", timeout=5000)
     violations = page.evaluate(JS_CHECK_HARDCODED_COLORS)
     assert not violations, (
         f"Draft detail buttons with hardcoded hex:\n"
@@ -179,13 +181,13 @@ JS_CHECK_BUTTON_CLASSES = """
 
 def test_action_buttons_use_standard_classes(page):
     """Primary action buttons should use recognized CSS classes."""
-    page.locator("#btnTabInspiration").click()
-    page.wait_for_timeout(200)
+    click_bottom_tab(page, "#btnTabInspiration")
     first = page.locator(".draft-card").first
     if not first.count():
         return
     first.click()
-    page.wait_for_timeout(400)
+    page.locator("#draftDetail").wait_for(state="visible", timeout=5000)
+    page.locator("#draftDetail .detail-title, #draftDetail .section, #draftDetail .reels-stepper").first.wait_for(state="visible", timeout=5000)
 
     buttons = page.evaluate(JS_CHECK_BUTTON_CLASSES)
     # Only flag buttons that have data-action but no standard class
@@ -198,7 +200,6 @@ def test_action_buttons_use_standard_classes(page):
         and not b["isUtility"]
     ]
     # This is a soft check — log but don't fail for now
-    # Uncomment the assert when standardization is complete
     if unclassed:
         import warnings
         warnings.warn(

@@ -1,13 +1,13 @@
 """Inbox: sub-tab renders conversation list, not publications."""
 from __future__ import annotations
 
+from .helpers import click_bottom_tab, click_content_sub_tab
+
 
 def _nav_to_inbox(page):
     """Navigate to Inbox via Контент bottom tab then content sub-tab."""
-    page.locator("#btnTabContent").click()
-    page.wait_for_timeout(200)
-    page.locator(".content-sub-tab", has_text="Входящие").click()
-    page.wait_for_timeout(500)
+    click_bottom_tab(page, "#btnTabContent")
+    click_content_sub_tab(page, "Входящие")
 
 
 def test_inbox_subtab_renders_inbox_not_publications(dark_page):
@@ -53,7 +53,6 @@ def test_inbox_conversation_detail_opens(dark_page):
     card = page.locator(".inbox-card").first
     card.wait_for(state="visible", timeout=5000)
     card.click()
-    page.wait_for_timeout(300)
 
     # Should show back button
     back_btn = page.locator("button.back-button")

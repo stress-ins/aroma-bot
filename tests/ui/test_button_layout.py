@@ -1,21 +1,23 @@
 """Button row layout: equal widths, vertical alignment, centered content."""
 from __future__ import annotations
 
+from .helpers import click_bottom_tab
+
 
 def _navigate_to_threads_detail(page):
     """Go to Drafts tab and open the threads_series draft to get .btn-row buttons."""
-    page.locator("#btnTabInspiration").click()
-    page.wait_for_timeout(300)
+    click_bottom_tab(page, "#btnTabInspiration")
     card = page.locator(".draft-card").filter(has_text="Восстановление энергии").first
     if card.count():
         card.click()
-        page.wait_for_timeout(400)
+        page.locator("#draftDetail").wait_for(state="visible", timeout=5000)
+        page.locator("#draftDetail .detail-title, #draftDetail .section, #draftDetail .reels-stepper").first.wait_for(state="visible", timeout=5000)
         return True
     return False
 
 
 def test_btn_row_buttons_equal_width(page):
-    """All buttons inside .btn-row should have equal width (±2px)."""
+    """All buttons inside .btn-row should have equal width (+-2px)."""
     if not _navigate_to_threads_detail(page):
         return
 
@@ -37,7 +39,7 @@ def test_btn_row_buttons_equal_width(page):
 
 
 def test_btn_row_buttons_same_vertical_level(page):
-    """All buttons in a .btn-row should sit on the same horizontal axis (±2px)."""
+    """All buttons in a .btn-row should sit on the same horizontal axis (+-2px)."""
     if not _navigate_to_threads_detail(page):
         return
 
@@ -59,7 +61,7 @@ def test_btn_row_buttons_same_vertical_level(page):
 
 
 def test_btn_content_vertically_centered(page):
-    """Icons and text inside .btn-row buttons should be vertically centered (±3px)."""
+    """Icons and text inside .btn-row buttons should be vertically centered (+-3px)."""
     if not _navigate_to_threads_detail(page):
         return
 
@@ -90,7 +92,7 @@ def test_btn_content_vertically_centered(page):
 
 
 def test_threads_regen_buttons_equal_width(page):
-    """'Переписать' and 'История' buttons in .threads-regen-row should be equal width."""
+    """Переписать and История buttons in .threads-regen-row should be equal width."""
     if not _navigate_to_threads_detail(page):
         return
 

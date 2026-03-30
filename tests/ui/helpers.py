@@ -184,14 +184,67 @@ def assert_visual_snapshot(locator, snapshot_name: str, *, max_diff_ratio: float
 
 
 # ---------------------------------------------------------------------------
-# Navigation helpers
+# Navigation helpers — deterministic waits (no arbitrary timeouts)
 # ---------------------------------------------------------------------------
 
+def click_bottom_tab(page, tab_id: str, *, timeout: int = 5000) -> None:
+    """Click a bottom tab and wait until it becomes active (aria-pressed)."""
+    page.locator(tab_id).click()
+    page.locator(f'{tab_id}[aria-pressed="true"]').wait_for(state="attached", timeout=timeout)
+
+
+def click_content_sub_tab(page, label: str, *, timeout: int = 5000) -> None:
+    """Click a content sub-tab and wait for it to become active."""
+    page.locator(".content-sub-tab", has_text=label).click()
+    page.locator(".content-sub-tab.active", has_text=label).wait_for(state="visible", timeout=timeout)
+
+
+def click_draft_card(page, text: str, *, timeout: int = 5000) -> None:
+    """Click a draft card by text and wait for detail view to render."""
+    page.get_by_text(text).first.click()
+    page.locator("#draftDetail").wait_for(state="visible", timeout=timeout)
+    # Wait for detail content to actually populate (e.g. detail-title appears)
+    page.locator("#draftDetail .detail-title, #draftDetail .section, #draftDetail .reels-stepper").first.wait_for(
+        state="visible", timeout=timeout,
+    )
+
+
+def click_handbook_tab(page, name: str, *, timeout: int = 10000) -> None:
+    """Click a handbook tab and wait for reference cards to appear."""
+    page.get_by_role("tab", name=name).click()
+    page.locator(".reference-card").first.wait_for(state="visible", timeout=timeout)
+
+
+def click_section_chip(page, label: str, *, timeout: int = 5000) -> None:
+    """Click a handbook section chip and wait for tabs to update."""
+    page.locator(".section-chip", has_text=label).click()
+    page.locator(".tab-button").first.wait_for(state="visible", timeout=timeout)
+
+
+def nav_back_to_list(page, *, timeout: int = 5000) -> None:
+    """Go back to list view and wait for draft cards to appear."""
+    page.evaluate("window.goBackToList()")
+    page.locator(".draft-card").first.wait_for(state="visible", timeout=timeout)
+
+
+def click_create_tool(page, heading: str, *, timeout: int = 5000) -> None:
+    """Click a create tool card and wait for form to appear."""
+    page.get_by_role("heading", name=heading).click()
+    page.locator("[data-create-content], textarea[name='topic'], .reco-wizard").first.wait_for(
+        state="visible", timeout=timeout,
+    )
+
+
 def open_reels_detail_from_drafts(page):
-    page.locator("#btnTabInspiration").click()
-    page.wait_for_timeout(DOM_RENDER)
-    page.get_by_text("Вечерний ароматический ритуал").first.click()
-    page.wait_for_timeout(DOM_RENDER)
+    click_bottom_tab(page, "#btnTabInspiration")
+    click_draft_card(page, "Вечерний ароматический ритуал")
+
+
+def wait_for_detail_panel(page, *, timeout: int = 5000) -> None:
+    """Wait for detail panel to have content."""
+    page.locator("#draftDetail .detail-title, #draftDetail .section, #draftDetail .reels-stepper").first.wait_for(
+        state="visible", timeout=timeout,
+    )
 
 
 # ---------------------------------------------------------------------------
