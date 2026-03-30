@@ -84,7 +84,7 @@ const state = {
 };
 
 const HANDBOOK_SECTIONS = [
-  { id: "aroma", label: "Ароматерапия", icon: "🌿", tabs: ["aromas", "blends", "symptoms", "concepts"] },
+  { id: "aroma", label: "Арома", icon: "🌿", tabs: ["aromas", "blends", "symptoms", "concepts"] },
   { id: "body", label: "Тело", icon: "🤲", tabs: ["practices", "massage", "osteo", "biodynamics"] },
   { id: "vibration", label: "Звук", icon: "🔔", tabs: ["sounds", "crystals"] },
 ];

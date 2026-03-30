@@ -320,9 +320,12 @@ export function createReferencesModule(deps) {
   }
 
   function renderCollapsibleDescription(reference) {
-    // description_short = comprehensive AI synthesis of all card fields (shown in full, no collapse)
-    // description = original raw text (not shown separately to avoid duplication)
-    const text = String(reference.description_short || reference.description || "").trim();
+    // For categories with AI-synthesized description_short, prefer it (aromas, blends, symptoms).
+    // For new categories (massage, osteo, biodynamics) description is the primary text.
+    const preferLong = ["massage", "osteo", "biodynamics", "crystal"].includes(reference.category);
+    const text = preferLong
+      ? String(reference.description || reference.description_short || "").trim()
+      : String(reference.description_short || reference.description || "").trim();
     if (!text) return "";
     return `<section class="section"><h3>Описание</h3><div class="detail-preview">${escapeHtml(text)}</div></section>`;
   }
@@ -354,7 +357,7 @@ export function createReferencesModule(deps) {
     return `<div class="medical-disclaimer">Информация носит ознакомительный характер и не является медицинской рекомендацией. Перед применением проконсультируйтесь с врачом.</div>`;
   }
 
-  function renderApplicationsWithIcons(text) {
+  function renderApplicationsWithIcons(text, title = "Применение и дозировки") {
     if (!text) return "";
     // Accept both string and array
     const raw = Array.isArray(text) ? text.join("\n") : String(text);
@@ -371,7 +374,7 @@ export function createReferencesModule(deps) {
       }
       return `<div class="application-line">${icon} ${escapeHtml(line)}</div>`;
     });
-    return `<section class="section"><h3>💧 Применение и дозировки</h3><div class="detail-preview applications-list">${rendered.join("")}</div></section>`;
+    return `<section class="section"><h3><i class="ph ph-list-checks" style="font-size:16px"></i> ${escapeHtml(title)}</h3><div class="detail-preview applications-list">${rendered.join("")}</div></section>`;
   }
 
   function renderRecipeDrops(ref) {
@@ -589,10 +592,10 @@ export function createReferencesModule(deps) {
         ? rawKeyline
         : (REFERENCE_SOURCE_TYPE_LABELS[reference.source_type] || currentHandbookMeta().title);
     }
-    // Subtitle line below the card title — only for aromas (EN name + family)
+    // Subtitle line below the card title
     let subtitle = "";
-    if (state.tab === "aromas") {
-      const parts = [reference.name_en, keyline].filter(Boolean);
+    if (["aromas", "massage", "osteo", "biodynamics", "crystals"].includes(state.tab)) {
+      const parts = [reference.name_en, state.tab === "aromas" ? keyline : ""].filter(Boolean);
       subtitle = parts.join(" · ");
     }
     // Compact EN name for blends (mirrors card list style)
@@ -1019,8 +1022,8 @@ export function createReferencesModule(deps) {
           ${compOilChips ? `<section class="section"><h3><i class="ph ph-drop" style="font-size:16px"></i> Комплементарные масла</h3><div class="detail-preview">${compOilChips}</div></section>` : ""}
           ${symptomChips ? `<section class="section"><h3><i class="ph ph-heartbeat" style="font-size:16px"></i> Помогает при</h3><div class="detail-preview">${symptomChips}</div></section>` : ""}
           ${practiceChips ? `<section class="section"><h3><i class="ph ph-wind" style="font-size:16px"></i> Связанные практики</h3><div class="detail-preview">${practiceChips}</div></section>` : ""}
-          ${renderApplicationsWithIcons(reference.applications)}
-          ${renderStructuredList("Меры предосторожности", reference.precautions)}
+          ${renderApplicationsWithIcons(reference.applications, "Техника выполнения")}
+          ${renderStructuredList("Меры предосторожности", Array.isArray(reference.precautions) ? reference.precautions.join(". ") : reference.precautions)}
           ${contraList.length ? renderStructuredList("Противопоказания", contraList.join(". ")) : ""}
         </div>
       `;
@@ -1052,8 +1055,8 @@ export function createReferencesModule(deps) {
           ${compOilChips ? `<section class="section"><h3><i class="ph ph-drop" style="font-size:16px"></i> Комплементарные масла</h3><div class="detail-preview">${compOilChips}</div></section>` : ""}
           ${symptomChips ? `<section class="section"><h3><i class="ph ph-heartbeat" style="font-size:16px"></i> Помогает при</h3><div class="detail-preview">${symptomChips}</div></section>` : ""}
           ${practiceChips ? `<section class="section"><h3><i class="ph ph-wind" style="font-size:16px"></i> Связанные практики</h3><div class="detail-preview">${practiceChips}</div></section>` : ""}
-          ${renderApplicationsWithIcons(reference.applications)}
-          ${renderStructuredList("Меры предосторожности", reference.precautions)}
+          ${renderApplicationsWithIcons(reference.applications, "Техника выполнения")}
+          ${renderStructuredList("Меры предосторожности", Array.isArray(reference.precautions) ? reference.precautions.join(". ") : reference.precautions)}
           ${contraList.length ? renderStructuredList("Противопоказания", contraList.join(". ")) : ""}
         </div>
       `;
