@@ -26,13 +26,40 @@
 .create-group-label:first-child { padding-top: 0; }
 
 .draft-card {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 15px 16px;
+  border: 0.5px solid var(--border);
+  border-radius: 14px;
+  padding: 0;
+  overflow: hidden;
   background: transparent;
   cursor: pointer;
   text-align: left;
   transition: border-color var(--duration-fast) var(--ease-standard), background var(--duration-fast) var(--ease-standard), transform var(--duration-medium) var(--ease-standard), box-shadow var(--duration-medium) var(--ease-standard);
+}
+.draft-card .dc-body {
+  padding: 10px 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.draft-card .dc-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.draft-card .dc-title {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.draft-card .dc-sub {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 .draft-card:hover  { border-color: var(--brand-border); box-shadow: 0 10px 26px rgba(60, 40, 20, 0.08); transform: translateY(-1px); }
 .draft-card.active { border-color: var(--brand-border); background: linear-gradient(180deg, rgba(var(--brand-rgb), 0.12), rgba(var(--brand-rgb), 0.05)); box-shadow: 0 10px 24px rgba(var(--brand-rgb), 0.12); }

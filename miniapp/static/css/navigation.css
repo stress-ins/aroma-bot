@@ -231,134 +231,167 @@
   flex: 1 0 100%;
 }
 
-.filters-toggle {
+/* ── Drafts filter: collapsed bar ───────────────────────────────────── */
+.filter-collapsed {
+  background: var(--surface);
+  border-radius: 14px;
+  border: 0.5px solid var(--border);
+  padding: 9px 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 6px;
-  padding: 9px 14px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--muted);
-  background: var(--surface-2, var(--surface));
-  border: 0.5px solid var(--border);
-  border-radius: var(--radius-sm, 10px);
   cursor: pointer;
-  transition: color 0.15s ease;
-  width: 100%;
+  -webkit-tap-highlight-color: transparent;
 }
+.fc-left { display: flex; align-items: center; gap: 8px; }
+.fc-right { display: flex; align-items: center; gap: 8px; }
+.fc-count { color: var(--hint); font-size: 11px; }
+.fc-chevron { font-size: 12px; color: var(--hint); transition: transform 0.2s; }
+.fc-active-pills { display: flex; gap: 5px; }
 
-.filters-toggle:hover { color: var(--text); }
-
-.filters-toggle .ft-left {
+/* ── Drafts filter: expanded panel ─────────────────────────────────── */
+.filter-expanded {
+  background: var(--surface);
+  border-radius: 14px;
+  border: 0.5px solid var(--border);
+  padding: 10px 12px;
+}
+.filter-header {
   display: flex;
   align-items: center;
-  gap: 7px;
-  color: var(--muted);
-  font-size: 13px;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
-
-.filters-toggle .ft-count {
+.fh-left { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; }
+.fh-right { display: flex; align-items: center; gap: 8px; }
+.fh-count { color: var(--hint); font-size: 12px; }
+.filter-section-label {
   color: var(--hint);
-  font-size: 12px;
-  margin-left: auto;
-  margin-right: 4px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 5px;
 }
-
-.filters-toggle .filters-toggle-icon {
-  width: 14px;
-  height: 14px;
-  transition: transform 0.2s ease;
-}
-
-.filters-toggle.is-open .filters-toggle-icon {
-  transform: rotate(180deg);
-}
-
-/* Filter body — chip-based layout */
-.toolbar-inner-filters {
+.pill-row {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
+  gap: 5px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 1px;
+  margin-bottom: 8px;
 }
-
-.filters-body {
-  padding: var(--space-3, 12px);
-  border: 1px solid var(--border);
-  border-radius: var(--radius, 8px);
-  background: var(--surface-raised, var(--surface));
-}
-
-/* Filter chip rows */
-.filters-body .filter-chips-row {
+.pill-row::-webkit-scrollbar { display: none; }
+.filter-search {
   display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.filters-body .filter-chip {
-  background: var(--surface-2, var(--surface));
+  align-items: center;
+  gap: 8px;
+  background: var(--bg);
   border: 0.5px solid var(--border);
   border-radius: 8px;
-  padding: 6px 11px;
+  padding: 7px 10px;
+  margin-top: 4px;
+}
+.filter-search-input {
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--text);
   font-size: 12px;
+  flex: 1;
+  min-width: 0;
+}
+.filter-search-input::placeholder { color: var(--hint); }
+
+/* ── Filter chips (fchip) — colorized by type ──────────────────────── */
+.fchip {
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-size: 12px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 0.5px solid var(--border);
+  background: var(--bg);
   color: var(--muted);
   cursor: pointer;
-  white-space: nowrap;
-  transition: background var(--duration-fast) var(--ease-standard),
-              border-color var(--duration-fast) var(--ease-standard),
-              color var(--duration-fast) var(--ease-standard);
-  font-family: var(--font-ui);
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
 
-.filters-body .filter-chip:hover {
-  border-color: var(--brand);
-  color: var(--text);
-}
-
-.filters-body .filter-chip.active {
-  background: var(--brand-bg);
+/* Active "all" chip */
+.fchip.active, .fchip-active-all.active {
+  background: rgba(var(--brand-rgb), 0.18);
   border-color: var(--brand);
   color: var(--brand);
   font-weight: 600;
 }
 
-/* Search box inside filter body */
-.filters-body .search-box {
-  display: flex;
+/* Type chips — colored borders when active */
+.fchip-type-threads.active   { background: rgba(149,128,255,0.12); border-color: #9580ff; color: #c4a8ff; }
+.fchip-type-reels.active     { background: rgba(196,168,255,0.12); border-color: #c4a8ff; color: #c4a8ff; }
+.fchip-type-carousel.active  { background: rgba(90,138,255,0.12);  border-color: #5a8aff; color: #7aa3ff; }
+.fchip-type-youtube.active   { background: rgba(255,107,107,0.12); border-color: #ff6b6b; color: #ff9090; }
+.fchip-type-instagram.active { background: rgba(225,48,108,0.12);  border-color: #e1306c; color: #f472b6; }
+
+/* Status chips — colored when active */
+.fchip-status-all.active       { background: rgba(var(--brand-rgb), 0.18); border-color: var(--brand); color: var(--brand); }
+.fchip-status-approved.active  { background: rgba(59,203,138,0.12);  border-color: #3bcb8a; color: #3bcb8a; }
+.fchip-status-draft.active     { background: rgba(var(--brand-rgb), 0.08); border-color: var(--border); color: var(--muted); }
+.fchip-status-published.active { background: rgba(90,138,255,0.12);  border-color: #5a8aff; color: #7aa3ff; }
+
+/* ── Draft card: colored top bar ───────────────────────────────────── */
+.dc-topbar { height: 3px; width: 100%; }
+.topbar-threads, .topbar-threads_series { background: #9580ff; }
+.topbar-reels, .topbar-reels_v2        { background: #c4a8ff; }
+.topbar-carousel                        { background: #5a8aff; }
+.topbar-youtube_video                   { background: #ff6b6b; }
+.topbar-instagram                       { background: #e1306c; }
+.topbar-telegram                        { background: #26a5e4; }
+.topbar-content_series                  { background: #5a8aff; }
+
+/* Draft card badge by type */
+.dc-badge {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  background: var(--surface-2, var(--surface));
-  border: 0.5px solid var(--border);
-  border-radius: var(--radius-sm, 10px);
-  padding: 10px 14px;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 6px;
+  padding: 2px 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
+.badge-threads, .badge-threads_series { background: rgba(149,128,255,0.15); color: #c4a8ff; }
+.badge-reels, .badge-reels_v2        { background: rgba(196,168,255,0.15); color: #c4a8ff; }
+.badge-carousel                       { background: rgba(90,138,255,0.15);  color: #7aa3ff; }
+.badge-youtube_video                  { background: rgba(255,107,107,0.15); color: #ff9090; }
+.badge-instagram                      { background: rgba(225,48,108,0.15);  color: #f472b6; }
+.badge-telegram                       { background: rgba(38,165,228,0.15);  color: #26a5e4; }
+.badge-content_series                 { background: rgba(90,138,255,0.15);  color: #7aa3ff; }
 
-.filters-body .search-input {
-  flex: 1;
-  border: none;
-  background: transparent;
-  color: var(--text);
-  font-size: 13px;
-  outline: none;
-  min-width: 0;
+/* Draft card status badges */
+.dc-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 20px;
+  padding: 3px 9px;
+  font-size: 11px;
+  font-weight: 600;
 }
+.dcs-approved  { background: rgba(59,203,138,0.12);  color: #3bcb8a; }
+.dcs-draft     { background: rgba(var(--brand-rgb), 0.06); color: var(--muted); border: 0.5px solid var(--border); }
+.dcs-published { background: rgba(90,138,255,0.12);  color: #7aa3ff; }
+.dcs-in_review { background: rgba(245,166,35,0.12);  color: #f5a623; }
+.dcs-rejected  { background: rgba(255,107,107,0.12); color: #ff6b6b; }
 
-.filters-body .search-input::placeholder {
-  color: var(--hint);
-}
-
-/* Hide label-based filters (replaced by chips) */
-.toolbar-inner-filters > label {
-  display: none;
-}
-
-.toolbar-inner-filters > label > select,
-.toolbar-inner-filters > label > input {
-  min-width: 0;
-  width: 100%;
-  box-sizing: border-box;
-}
+.dc-meta    { color: var(--hint); font-size: 10px; }
+.dc-extras  { color: var(--hint); font-size: 10px; }
+.dc-footer  { display: flex; align-items: center; justify-content: space-between; margin-top: 2px; }
 
 /* All labels after tabs become a flex-wrap row */
 .toolbar > label {

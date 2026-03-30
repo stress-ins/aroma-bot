@@ -147,9 +147,26 @@ export function createDraftsModule(deps) {
     }, "Готово");
   }
 
+  function _draftExtras(d) {
+    const k = String(d.kind || "").toLowerCase();
+    if (k === "threads_series") return `Серия · ${d.payload?.posts?.length || 3} поста`;
+    if (k === "youtube_video") return d.payload?.script ? "Сценарий готов" : `~${d.payload?.duration_target || 10} мин`;
+    if (k === "carousel") return `${d.payload?.slides?.length || 5} слайдов`;
+    if (k === "reels" || k === "reels_v2") return "Instagram";
+    return "";
+  }
+
+  function _draftStatusClass(status) {
+    const map = { approved: "dcs-approved", draft: "dcs-draft", published: "dcs-published", in_review: "dcs-in_review", rejected: "dcs-rejected" };
+    return map[status] || "dcs-draft";
+  }
+
   function renderDraftList() {
     elements.listTitle.textContent = "Вдохновение";
-    elements.draftCount.textContent = _pluralizeDrafts(state.drafts.length);
+    const countEl = document.getElementById("draftCount");
+    if (countEl) countEl.textContent = state.drafts.length;
+    const fhCount = document.getElementById("fhCount");
+    if (fhCount) fhCount.textContent = `${state.drafts.length} ${_pluralizeDrafts(state.drafts.length)}`;
     setEmptyState(state.drafts.length > 0, {
       eyebrow: "Публикации",
       title: "Ничего не найдено",
@@ -157,23 +174,26 @@ export function createDraftsModule(deps) {
       actionLabel: "Открыть создание",
       action: "openCreateTool()",
     });
-    elements.draftList.innerHTML = state.drafts.map((d, idx) => `
+    elements.draftList.innerHTML = state.drafts.map((d, idx) => {
+      const kind = String(d.kind || "content").toLowerCase();
+      const extras = _draftExtras(d);
+      return `
       <article ${interactiveCardAttrs(`Открыть черновик ${d.topic}`)} class="draft-card overview-card${d.draft_id === state.draftId ? " active" : ""}${d.generation_pending ? " is-pending" : ""} interactive-card" data-action="openDraft" data-args='${JSON.stringify([d.draft_id])}'>
-        <div class="overview-card-top">
-          <div class="draft-kind">${contentKindIcon(d.kind)}<span>${escapeHtml(kindLabel(d.kind))}</span></div>
-          <span class="overview-card-date">#${d.seq_id || idx + 1} · ${escapeHtml(formatPlanDate(d.created_at) || "Новый черновик")}</span>
+        <div class="dc-topbar topbar-${escapeHtml(kind)}"></div>
+        <div class="dc-body">
+          <div class="dc-top">
+            <div class="dc-badge badge-${escapeHtml(kind)}">${contentKindIcon(d.kind)}<span>${escapeHtml(kindLabel(d.kind))}</span></div>
+            <span class="dc-meta">#${d.seq_id || idx + 1} · ${escapeHtml(formatPlanDate(d.created_at) || "")}</span>
+          </div>
+          <div class="dc-title">${escapeHtml(d.topic)}</div>
+          <div class="dc-sub">${escapeHtml(stripMarkdown(d.preview || ""))}</div>
+          <div class="dc-footer">
+            <span class="dc-status ${_draftStatusClass(d.status)}">${d.status === "approved" ? "● " : ""}${escapeHtml(statusLabel(d.status))}</span>
+            ${extras ? `<span class="dc-extras">${escapeHtml(extras)}</span>` : ""}
+          </div>
         </div>
-        <h3 class="draft-topic">${escapeHtml(d.topic)}</h3>
-        <div class="draft-preview">${escapeHtml(stripMarkdown(d.preview || "Без превью"))}</div>
-        <div class="draft-meta overview-card-footer">
-          ${tagMarkup(statusLabel(d.status), statusTone(d.status))}
-          ${d.payload?.canva_design_id ? tagMarkup("Canva", "status-positive") : ""}
-          ${d.generation_pending && draftGenerationLabel(d) ? tagMarkup(draftGenerationLabel(d), "pending") : ""}
-          ${tagMarkup(sourceLabel(d.source), sourceTone(d.source))}
-          ${d.metrics_summary ? _metricsBadge(d.metrics_summary) : ""}
-        </div>
-      </article>
-    `).join("");
+      </article>`;
+    }).join("");
     syncMobileNavigation();
   }
 
