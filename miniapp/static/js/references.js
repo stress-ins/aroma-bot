@@ -90,10 +90,31 @@ export function createReferencesModule(deps) {
   let _smartSearchDebounce = null;
   let _filtersExpanded = false;
 
-  /** Action-group buttons shown at the top of every handbook sub-tab.
-   *  These must be visible regardless of reference access status
-   *  (blend constructor, recommendation wizard, saved blends are independent features). */
+  /** Action-group buttons — context-aware per section. */
+  const AROMA_SECTION_TABS = ["aromas", "blends", "symptoms", "concepts"];
+  const BODY_SECTION_TABS = ["practices", "massage", "osteo", "biodynamics"];
+
   function _actionGroupHtml() {
+    if (BODY_SECTION_TABS.includes(state.tab)) {
+      return `<div class="action-group">
+          <div class="action-item" data-action="openMassageFinder">
+            <div class="action-icon ai-teal"><i class="ph ph-hand-palm" style="font-size:16px"></i></div>
+            <div class="action-text"><div class="action-title">Подобрать технику массажа</div><div class="action-sub">По симптому или зоне тела</div></div>
+            <span class="action-arrow">\u203a</span>
+          </div>
+          <div class="action-item" data-action="openRecommendationsWizard">
+            <div class="action-icon ai-purple"><i class="ph ph-magnifying-glass" style="font-size:16px"></i></div>
+            <div class="action-text"><div class="action-title">Подобрать масло</div><div class="action-sub">По симптому или цели</div></div>
+            <span class="action-arrow">\u203a</span>
+          </div>
+          <div class="action-item" data-action="openSavedBlends">
+            <div class="action-icon ai-pink"><i class="ph ph-heart" style="font-size:16px"></i></div>
+            <div class="action-text"><div class="action-title">Сохранённое</div><div class="action-sub">Избранные карточки</div></div>
+            <span class="action-arrow">\u203a</span>
+          </div>
+        </div>`;
+    }
+    if (!AROMA_SECTION_TABS.includes(state.tab)) return "";
     return `<div class="action-group">
           <div class="action-item" data-action="openBlendConstructor">
             <div class="action-icon ai-purple"><i class="ph ph-flask" style="font-size:16px"></i></div>
@@ -798,6 +819,13 @@ export function createReferencesModule(deps) {
     // ── Single scroll container: sticky search + action-group + cards ──
     let listContainer = document.getElementById("referenceListContainer");
     const shellAlive = listContainer && elements.draftList.contains(listContainer);
+    if (shellAlive) {
+      // Update action group in-place when switching tabs within same section
+      const existingAg = elements.draftList.querySelector(".action-group");
+      const newAgHtml = _actionGroupHtml();
+      if (existingAg && !newAgHtml) existingAg.remove();
+      else if (existingAg) existingAg.outerHTML = newAgHtml;
+    }
     if (!shellAlive) {
       elements.draftList.innerHTML = `
         <div class="handbook-search-sticky" id="refSearchBar">

@@ -456,6 +456,14 @@ export function registerWindowBridge(deps) {
   window.toggleDailyOilPicker = toggleDailyOilPicker;
   window.createContentFromDailyOil = createContentFromDailyOil;
   window.toggleReferenceFilters = toggleReferenceFilters;
+  window.openMassageFinder = function() {
+    setTab("massage");
+    retryCurrentTab();
+    setTimeout(() => {
+      const input = document.getElementById("refSearchInput");
+      if (input) input.focus();
+    }, 300);
+  };
   window.openBlendConstructor = openBlendConstructor;
   window.addRecoOilToBlend = addRecoOilToBlend;
   window.toggleEffect = toggleEffect;

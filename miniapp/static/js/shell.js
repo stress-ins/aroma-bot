@@ -83,16 +83,10 @@ export function createShellModule(deps) {
       return;
     }
     if (state._fromContext) {
-      // Guard: stale context from a different tab should not redirect cross-tab
-      if (state._fromContext.tab !== state.tab) {
-        state._fromContext = null;
-        // fall through to normal list navigation below
-      } else {
-        const ctx = state._fromContext;
-        state._fromContext = null;
-        void window.openReference(ctx.slug, ctx.tab);
-        return;
-      }
+      const ctx = state._fromContext;
+      state._fromContext = null;
+      void window.openReference(ctx.slug, ctx.tab);
+      return;
     }
     // Saved blend detail — back to saved list
     if (state.viewingSavedBlend && typeof window.openSavedBlends === "function") {
