@@ -814,16 +814,6 @@ export function createReferencesModule(deps) {
     // ── Single scroll container: sticky search + action-group + cards ──
     let listContainer = document.getElementById("referenceListContainer");
     const shellAlive = listContainer && elements.draftList.contains(listContainer);
-    if (shellAlive) {
-      const existingAg = elements.draftList.querySelector(".action-group");
-      const newAgHtml = _actionGroupHtml();
-      if (existingAg && !newAgHtml) existingAg.remove();
-      else if (existingAg) existingAg.outerHTML = newAgHtml;
-      else if (newAgHtml) {
-        const searchBar = document.getElementById("refSearchBar");
-        if (searchBar) searchBar.insertAdjacentHTML("afterend", newAgHtml);
-      }
-    }
     if (!shellAlive) {
       elements.draftList.innerHTML = `
         <div class="handbook-search-sticky" id="refSearchBar">
@@ -853,6 +843,16 @@ export function createReferencesModule(deps) {
       }
       if (_sc) _sc.addEventListener("click", () => { _si.value = ""; state.referenceSearch = ""; _sc.style.display = "none"; clearSmartSearch(); });
     }
+    // Ensure action-group is always present and up-to-date
+    const _agTarget = elements.draftList.querySelector(".action-group");
+    const _agNew = _actionGroupHtml();
+    if (_agTarget && _agNew) _agTarget.outerHTML = _agNew;
+    else if (_agTarget && !_agNew) _agTarget.remove();
+    else if (!_agTarget && _agNew) {
+      const _sb = document.getElementById("refSearchBar");
+      if (_sb) _sb.insertAdjacentHTML("afterend", _agNew);
+    }
+
     // Update search state
     const refSearchInput = document.getElementById("refSearchInput");
     const refSearchCount = document.getElementById("refSearchCount");
