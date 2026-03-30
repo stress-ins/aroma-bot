@@ -178,7 +178,7 @@ export function createDraftsModule(deps) {
       const kind = String(d.kind || "content").toLowerCase();
       const extras = _draftExtras(d);
       return `
-      <article ${interactiveCardAttrs(`Открыть черновик ${d.topic}`)} class="draft-card overview-card${d.draft_id === state.draftId ? " active" : ""}${d.generation_pending ? " is-pending" : ""} interactive-card" data-action="openDraft" data-args='${JSON.stringify([d.draft_id])}'>
+      <article ${interactiveCardAttrs(`Открыть черновик ${d.topic}`)} class="draft-card${d.draft_id === state.draftId ? " active" : ""}${d.generation_pending ? " is-pending" : ""} interactive-card" data-action="openDraft" data-args='${JSON.stringify([d.draft_id])}'>
         <div class="dc-topbar topbar-${escapeHtml(kind)}"></div>
         <div class="dc-body">
           <div class="dc-top">

@@ -33,6 +33,8 @@
   background: transparent;
   cursor: pointer;
   text-align: left;
+  display: flex;
+  flex-direction: column;
   transition: border-color var(--duration-fast) var(--ease-standard), background var(--duration-fast) var(--ease-standard), transform var(--duration-medium) var(--ease-standard), box-shadow var(--duration-medium) var(--ease-standard);
 }
 .draft-card .dc-body {
