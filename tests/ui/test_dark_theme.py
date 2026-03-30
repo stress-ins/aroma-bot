@@ -152,6 +152,8 @@ def test_dark_draft_detail_scroll_and_actions(dark_page):
     dark_page.locator("#draftDetail .detail-title, #draftDetail .section, #draftDetail .reels-stepper").first.wait_for(
         state="visible", timeout=5000,
     )
+    # Wait for action buttons to render (they load async after detail content)
+    dark_page.locator("#draftDetail button").first.wait_for(state="visible", timeout=5000)
 
     dark_page.evaluate(
         "document.querySelector('#detailPanel').scrollTo(0, "

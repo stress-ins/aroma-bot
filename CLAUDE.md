@@ -90,6 +90,31 @@ ssh root@46.32.186.192 'screen -S symptom-reseed -d -m bash -c "cd /opt/aroma &&
 
 Если UI-тесты не проходят — исправить ДО создания PR. Failing CI блокирует деплой.
 
+### Правила написания UI-тестов (Playwright)
+
+**ЗАПРЕЩЕНО** использовать `page.wait_for_timeout()` для ожидания рендера, навигации, данных или анимаций.
+Единственные допустимые случаи для `wait_for_timeout()`: keyboard simulation delay, scroll momentum settle, visual snapshot stabilization.
+
+**ОБЯЗАТЕЛЬНО** использовать хелперы из `tests/ui/helpers.py`:
+
+| Хелпер | Когда использовать |
+|--------|-------------------|
+| `click_bottom_tab(page, "#btnTabXxx")` | Переключение нижних табов (ждёт `aria-pressed`) |
+| `click_content_sub_tab(page, "Лейбл")` | Переключение контентных саб-табов (ждёт `.active`) |
+| `click_draft_card(page, "Текст")` | Клик по карточке черновика (ждёт detail + контент) |
+| `click_handbook_tab(page, "Название")` | Переключение табов справочника (ждёт `.reference-card`) |
+| `click_section_chip(page, "Лейбл")` | Клик по секции-чипу (ждёт табы) |
+| `nav_back_to_list(page)` | Возврат к списку (`goBackToList()` + ждёт карточки) |
+| `click_create_tool(page, "Заголовок")` | Клик по инструменту создания (ждёт форму) |
+| `wait_for_detail_panel(page)` | Ожидание контента в detail panel |
+| `wait_visible(page, selector)` | Ожидание видимости элемента |
+| `wait_hidden(page, selector)` | Ожидание скрытия элемента |
+| `wait_for_app_ready(page)` | Ожидание `body.app-ready` |
+
+**Принцип:** вместо "подождать N мс" → "подождать пока элемент появится/исчезнет". Это устраняет race conditions и flaky tests.
+
+**Для новых элементов:** если кнопки/контент загружаются асинхронно, ВСЕГДА добавить `locator.wait_for(state="visible")` перед assert. Не полагаться на то, что предыдущий wait гарантирует рендер дочерних элементов.
+
 ---
 
 ## Чеклист после каждого изменения
