@@ -162,6 +162,8 @@ export function createReferencesModule(deps) {
     if (state.referenceAccess === null) {
       await loadReferenceAccess();
     }
+    // Guard: user may have switched tabs during async access check
+    if (state.tab !== tabId) return;
     if (state.referenceAccess === null) {
       renderReferencesUnavailable();
       return;
@@ -195,6 +197,10 @@ export function createReferencesModule(deps) {
     // renderReferences itself when the detail fetch completes, preventing a
     // race condition where the list load overwrites the detail with empty state.
     if (openReferenceInFlight) return;
+
+    // Guard: if the user switched to a different tab while we were fetching,
+    // do not render stale data — the new tab's load will handle rendering.
+    if (state.tab !== tabId) return;
 
     const selectedSlug = state.selectedReference?.category === meta.category
       ? state.selectedReference?.slug

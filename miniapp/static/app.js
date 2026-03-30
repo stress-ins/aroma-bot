@@ -2568,7 +2568,8 @@ function setTab(t) {
   // Preserve search bar in handbook tabs — renderReferences will update the count
   if (!HANDBOOK_CATEGORY_META[t]) elements.draftCount.textContent = "";
   if (HANDBOOK_CATEGORY_META[t]) {
-    elements.draftList.innerHTML = renderPanelLoader("Загружаю справочник");
+    const _agHtml = typeof actionGroupHtml === "function" ? actionGroupHtml() : "";
+    elements.draftList.innerHTML = _agHtml + renderPanelLoader("Загружаю справочник");
   } else {
     elements.draftList.innerHTML = renderPanelLoader("Загружаю раздел");
   }
