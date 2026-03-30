@@ -30,11 +30,12 @@
   border-radius: 14px;
   padding: 0;
   overflow: hidden;
-  background: transparent;
+  background: var(--surface);
   cursor: pointer;
   text-align: left;
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
   transition: border-color var(--duration-fast) var(--ease-standard), background var(--duration-fast) var(--ease-standard), transform var(--duration-medium) var(--ease-standard), box-shadow var(--duration-medium) var(--ease-standard);
 }
 .draft-card .dc-body {
