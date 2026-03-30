@@ -18,7 +18,7 @@ from db.session import AsyncSessionLocal
 BASE_DIR = Path(__file__).resolve().parents[3]
 SEED_FILE = BASE_DIR / "data" / "reference_cards_seed.json"
 EXTRA_SEED_FILE = BASE_DIR / "data" / "reference_cards_extra.json"
-REFERENCE_CATEGORIES = {"aroma", "practice", "sound", "concept", "blend", "symptom", "crystal"}
+REFERENCE_CATEGORIES = {"aroma", "practice", "sound", "concept", "blend", "symptom", "crystal", "massage", "osteo", "biodynamics"}
 REFERENCE_IMAGES_DIR = BASE_DIR / "assets" / "reference_images"
 INTERNAL_SEED_KEY = "__seed_payload"
 INTERNAL_OVERRIDES_KEY = "__manual_overrides"
@@ -27,6 +27,12 @@ REFERENCE_CONTEXT_TITLES = {
     "concept": "Теория",
     "practice": "Практики",
     "sound": "Звуки",
+    "crystal": "Кристаллы",
+    "massage": "Массаж",
+    "osteo": "Остеопрактика",
+    "biodynamics": "Биодинамика",
+    "blend": "Смеси",
+    "symptom": "Симптомы",
 }
 EDITABLE_FIELDS = (
     "description",
@@ -77,6 +83,10 @@ def _image_label(category: str) -> str:
         "practice": "образ практики",
         "concept": "теоретическая карточка",
         "sound": "источник звука",
+        "massage": "техника массажа",
+        "osteo": "остеопрактика",
+        "biodynamics": "биодинамика",
+        "crystal": "кристалл",
     }.get(category, "справочник")
 
 
@@ -116,6 +126,14 @@ def _source_illustration_key(source_type: str, title: str) -> str:
         "sound": "sound-wave",
         "instrument": "sound-bowl",
         "voice": "voice-wave",
+        "technique": "body-line",
+        "zone": "body-line",
+        "protocol": "breath-wave",
+        "anatomy": "body-line",
+        "dysfunction": "body-line",
+        "principle": "meditation-stone",
+        "rhythm": "sound-wave",
+        "observation": "meditation-stone",
     }
     return fallback.get(source_type, "leafy-herb")
 
@@ -720,7 +738,7 @@ async def get_reference_card(category: str, slug_or_name: str) -> dict[str, obje
                 serialized = await _enrich_symptom_cross_refs(serialized)
             elif category == "blend":
                 serialized = await _enrich_blend_cross_refs(serialized)
-            elif category in ("crystal", "sound"):
+            elif category in ("crystal", "sound", "massage", "osteo", "biodynamics"):
                 serialized = await _enrich_complementary_oil_refs(serialized)
             await set_cached(cache_key, serialized)
             return serialized
