@@ -2,39 +2,94 @@
 
 ---
 
-## Режимы работы
+## Режим работы: Software Factory (единственный)
 
-Проект использует два режима. Выбирай нужный по контексту задачи.
+**Режим один. Других нет. Любая задача — фича, баг, мелкая правка, опечатка — проходит через pipeline. Без исключений.**
 
----
-
-### Режим 1 — Software Factory (разработка фич)
-
-Применяется когда: план согласован, задача описана через acceptance criteria + UX-вариант.
-
-**Человек участвует ТОЛЬКО в двух точках:**
+Человек участвует ТОЛЬКО в двух точках:
 1. Утверждение UX-варианта (если выбор из нескольких дизайнов)
 2. Утверждение критериев приёмки (что считать "готово")
 
-**Всё остальное — полностью автономно:**
+Всё остальное — полностью автономно:
 - Написать план → **не ждать подтверждения**, сразу реализовывать
-- Создать ветку → написать код → запустить тесты → создать PR
+- Создать ветку → написать тесты → написать код → прогнать тесты → создать PR
 - Дождаться зелёного CI → **смержить PR самостоятельно**
 - После мержа: `git push origin main` → проверить деплой
 
 **Пользователь НЕ проверяет и НЕ апрувит PR.** PR мержится автоматически после зелёного CI.
 
-**Порядок шагов в Software Factory:**
+---
+
+### Pipeline: последовательность этапов
+
+Каждая задача проходит **полный** pipeline. PM (@pm) определяет scope, но НЕ может пропустить этап — каждый агент явно подтверждает "N/A для данной задачи" или выполняет свою работу.
+
+```
+Этап 1: @analyst           — требования, AC, scope, затрагиваемые компоненты
+Этап 2: @product-designer  — user flow, wireframes, UX-варианты
+         @architect          — техническое решение, API-контракты, декомпозиция
+         (параллельно)
+Этап 3: @backend/@frontend  — TDD: сначала тесты (RED), потом код (GREEN), рефакторинг
+         @designer           — CSS, темизация, визуальная консистентность
+         (параллельно)
+Этап 4: @code-reviewer      — ревью кода, стандарты проекта, безопасность
+         /codex:adversarial-review — второе мнение, максимально придирчивое
+         (параллельно)
+Этап 5: @qa                 — ВСЕ тесты зелёные (backend + UI + image QA)
+Этап 6: @ux-reviewer        — проверка UI во всех 6 темах
+Этап 7: @deploy             — PR, CI, мерж, push, проверка production
+```
+
+**Что значит N/A:** Агент получает задачу, смотрит scope и выносит вердикт:
+- "N/A: задача не затрагивает UI, дизайн-ревью не требуется" — это ОК
+- Пропустить этап молча без вердикта агента — **ЗАПРЕЩЕНО**
+
+Примеры:
+- Баг в API: @product-designer = N/A, @designer = N/A, @ux-reviewer = N/A
+- Опечатка в UI: @architect = N/A (если нет архитектурных изменений)
+- Новый экран: все этапы полностью, без N/A
+
+---
+
+### TDD: Test-Driven Development (обязательно)
+
+Разработчик (@backend/@frontend) работает строго по TDD:
+
+1. **RED** — написать тест, который падает (описывает ожидаемое поведение)
+2. **GREEN** — написать минимальный код, чтобы тест прошёл
+3. **REFACTOR** — улучшить код, сохраняя зелёные тесты
+
+**Порядок работы разработчика:**
+1. Получить AC от @analyst + техрешение от @architect
+2. Создать ветку `feature/...` (или `fix/...`, `chore/...`)
+3. **Сначала написать тесты** на acceptance criteria
+4. Убедиться что тесты красные (fail) — если зелёные сразу, тест бессмысленный
+5. Написать код, пока тесты не станут зелёные
+6. Рефакторинг при необходимости
+7. Запустить ВСЕ тесты — убедиться нет регрессий
+
+**Минимум тестового покрытия:**
+- Backend: каждый новый/изменённый endpoint, сервис, модель
+- Frontend (UI-тесты): каждый новый/изменённый экран, компонент, user flow
+- Edge cases: пустые данные, длинные строки, ошибки API, отсутствие данных
+
+---
+
+### Порядок шагов (технический)
+
 1. Создать ветку `feature/...`
-2. Реализовать фичу
-3. Запустить тесты локально: `.venv/bin/python -m pytest tests/ -q --ignore=tests/ui -n auto`
-4. Создать PR через `gh pr create`
-5. Проверить: `gh pr view <N> --json mergeable,mergeStateStatus` → MERGEABLE
-6. Дождаться: `gh pr checks <N>` → все зелёные
-7. Смержить: `gh pr merge <N> --squash --auto` (или `--merge`)
-8. `git checkout main && git pull origin main`
-9. `git push origin main` → запускает деплой
-10. Проверить GitHub Actions "Deploy" → сообщить пользователю о результате
+2. Написать тесты (RED)
+3. Написать код (GREEN + REFACTOR)
+4. Запустить тесты локально: `.venv/bin/python -m pytest tests/ -q --ignore=tests/ui -n auto`
+5. Запустить UI-тесты: `.venv/bin/python -m pytest tests/ui/ -q`
+6. **Codex Review:** `/codex:adversarial-review --base main` — исправить findings high/critical
+7. Создать PR через `gh pr create`
+8. Проверить: `gh pr view <N> --json mergeable,mergeStateStatus` → MERGEABLE
+9. Дождаться: `gh pr checks <N>` → все зелёные
+10. Смержить: `gh pr merge <N> --squash --auto` (или `--merge`)
+11. `git checkout main && git pull origin main`
+12. `git push origin main` → запускает деплой
+13. Проверить GitHub Actions "Deploy" → сообщить пользователю о результате
 
 **Software Factory checkpoints (обязательно для PRs с изменением карточек):**
 1. **QA Agent:** `pytest tests/ -q` + проверить что все тесты зелёные
@@ -52,21 +107,7 @@ ssh root@46.32.186.192 'screen -S symptom-reseed -d -m bash -c "cd /opt/aroma &&
 
 ---
 
-### Режим 2 — Обычная разработка (парное программирование)
-
-Применяется когда: разовая задача, эксперимент, правка бага без плана.
-
-**Порядок:**
-1. Написать план — дождаться явного подтверждения пользователя
-2. Реализовать
-3. Создать PR
-4. Дождаться зелёного CI
-5. **Показать PR пользователю и ждать его одобрения** перед мержем
-6. После одобрения: смержить → `git push origin main` → проверить деплой
-
----
-
-## Git-правила (оба режима)
+## Git-правила
 
 - **ЗАПРЕЩЕНО коммитить напрямую в `main`** — только через Pull Request
 - Все изменения в отдельной ветке (`git checkout -b feature/...`)
@@ -123,15 +164,16 @@ ssh root@46.32.186.192 'screen -S symptom-reseed -d -m bash -c "cd /opt/aroma &&
 |---|-------|-------------------|
 | 1 | ✅/❌ Тесты запущены и все зелёные | всегда |
 | 2 | ✅/❌ Новые тесты добавлены | если изменилась логика/функция |
-| 3 | ✅/❌ README.md обновлён | если добавлена новая команда или фича |
-| 4 | ✅/❌ HELP_TEXT / WELCOME_TEXT обновлены | если добавлена новая команда |
-| 5 | ✅/❌ n8n workflow обновлён и задеплоен | если изменился промпт или логика флоу |
-| 6 | ✅/❌ PR создан и CI зелёный | всегда |
-| 7 | ✅/❌ PR смержен (SF: авто; Regular: после апрува) | всегда |
-| 8 | ✅/❌ `git push origin main` выполнен | после мержа |
-| 9 | ✅/❌ Деплой проверен на VPS | после пуша в main |
-| 10 | ✅/❌ Данные проверены на VPS после обогащения | после скриптов enrich/summarize/generate |
-| 11 | ✅/❌ UI проверен во всех 6 цветовых темах | если изменился UI/CSS |
+| 3 | ✅/❌ **Codex adversarial-review пройден** | **всегда перед PR** |
+| 4 | ✅/❌ README.md обновлён | если добавлена новая команда или фича |
+| 5 | ✅/❌ HELP_TEXT / WELCOME_TEXT обновлены | если добавлена новая команда |
+| 6 | ✅/❌ n8n workflow обновлён и задеплоен | если изменился промпт или логика флоу |
+| 7 | ✅/❌ PR создан и CI зелёный | всегда |
+| 8 | ✅/❌ PR смержен автоматически после зелёного CI | всегда |
+| 9 | ✅/❌ `git push origin main` выполнен | после мержа |
+| 10 | ✅/❌ Деплой проверен на VPS | после пуша в main |
+| 11 | ✅/❌ Данные проверены на VPS после обогащения | после скриптов enrich/summarize/generate |
+| 12 | ✅/❌ UI проверен во всех 6 цветовых темах | если изменился UI/CSS |
 
 ---
 
@@ -157,6 +199,54 @@ Miniapp поддерживает 6 цветовых тем:
 - Визуально проверить компонент в каждой из 6 тем через `document.body.dataset.theme = "X"`
 - Минимальный контраст текста: WCAG AA (4.5:1 для обычного текста, 3:1 для крупного)
 - Особое внимание: тема `champagne` — самая светлая из тёмных, `raspberry`/`teal` — нетипичные акценты
+
+---
+
+## Codex Review (обязательно перед каждым PR)
+
+Проект использует OpenAI Codex (`@openai/codex`) как **второе мнение** для code review. Codex запускается через Claude Code plugin — `/codex:adversarial-review`.
+
+**Принцип:** Codex должен быть **максимально придирчивым**. Его задача — найти причины НЕ мержить. Findings с severity high/critical блокируют мерж.
+
+### Базовый review (каждый PR)
+```
+/codex:adversarial-review --base main
+```
+Codex проверяет: auth bypass, data loss, race conditions, idempotency, error handling, state management.
+
+### Content Factory review (при изменении агентов/промптов)
+Запускать при любых изменениях в `bot/agents/`, `bot/agents/prompts/`, `bot/services/miniapp_references/`:
+```
+/codex:adversarial-review --base main focus on:
+1. Prompt injection vectors — user input flowing into LLM prompts
+2. Quality threshold bypass — can weak content pass quality_evaluator?
+3. Brand voice drift — are prompts consistent with brand_guardian rules?
+4. Retry/fallback behaviour — what happens on LLM failure? Silent data loss?
+5. Medical safety — contraindications, healing claims, NAHA/IFA compliance
+6. Cross-reference integrity — slug resolution, missing cards, stale references
+```
+
+### Content Factory состав (44 агента, 6 промпт-файлов)
+
+**Генерация:** content.py (orchestrator), creative_team.py (editor), planner.py, hashtag_recommender.py, platform_optimizer.py, tone_adapter.py, repurpose_agent.py
+
+**Видео:** youtube_script_agent.py, youtube_metadata_agent.py, broll_director.py, reels_agent.py, video_coach.py
+
+**Карусели:** carousel_editor.py, carousel_editorial.py, carousel_preview_agent.py, carousel_export_agent.py, image_prompt_engineer.py, image_prompt_router.py, nanobanana_prompt_expert.py
+
+**Серии:** series_orchestrator.py, series_writer.py, series_coherence.py, thread_scorer.py, threads_replies.py
+
+**Quality gates:** quality_evaluator.py (порог 0.65), brand_guardian.py, medical_reviewer.py, ux_reviewer.py
+
+**Доменные эксперты:** aromatherapy_expert.py, wellness_expert.py, bodywork_expert.py, sound_healing_expert.py
+
+**Рекомендации:** recommendation_agent.py, massage_recommendation_agent.py, protocol_recommendation_agent.py
+
+**Промпты:** content_prompts.py, reels_prompts.py, youtube_prompts.py, series_prompts.py, tone_prompts.py, hashtag_prompts.py
+
+### Когда НЕ использовать Codex
+- **НЕ использовать `/codex:rescue`** для фиксов — конфликт двух LLM в одном проекте
+- Мелкие правки (typo, README) — можно пропустить review (но пункт в чеклисте остаётся)
 
 ---
 
