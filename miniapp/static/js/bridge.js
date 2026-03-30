@@ -199,6 +199,16 @@ export function registerWindowBridge(deps) {
     recoToggleAroma,
     recoUpdateContra,
     submitRecommendations,
+    openMassageFinder,
+    closeMassageFinder,
+    massageWizardNext,
+    massageWizardBack,
+    massageSelectConcern,
+    massageSelectZone,
+    massageSelectGoal,
+    massageSelectExperience,
+    massageUpdateContra,
+    submitMassageRecommendations,
     _selectSchedulerDate,
     _renderThreadsSchedulerDates,
     selectTrendsPlatform,
@@ -456,14 +466,6 @@ export function registerWindowBridge(deps) {
   window.toggleDailyOilPicker = toggleDailyOilPicker;
   window.createContentFromDailyOil = createContentFromDailyOil;
   window.toggleReferenceFilters = toggleReferenceFilters;
-  window.openMassageFinder = function() {
-    setTab("massage");
-    retryCurrentTab();
-    setTimeout(() => {
-      const input = document.getElementById("refSearchInput");
-      if (input) input.focus();
-    }, 300);
-  };
   window.openBlendConstructor = openBlendConstructor;
   window.addRecoOilToBlend = addRecoOilToBlend;
   window.toggleEffect = toggleEffect;
@@ -539,6 +541,18 @@ export function registerWindowBridge(deps) {
   window.recoToggleAroma = recoToggleAroma;
   window.recoUpdateContra = recoUpdateContra;
   window.submitRecommendations = submitRecommendations;
+
+  // Massage technique finder wizard
+  window.openMassageFinder = openMassageFinder;
+  window.closeMassageFinder = closeMassageFinder;
+  window.massageWizardNext = massageWizardNext;
+  window.massageWizardBack = massageWizardBack;
+  window.massageSelectConcern = massageSelectConcern;
+  window.massageSelectZone = massageSelectZone;
+  window.massageSelectGoal = massageSelectGoal;
+  window.massageSelectExperience = massageSelectExperience;
+  window.massageUpdateContra = massageUpdateContra;
+  window.submitMassageRecommendations = submitMassageRecommendations;
 
   window.openImageFullscreen = function(src, title) {
     const existing = document.getElementById("img-fullscreen-modal");

@@ -82,6 +82,17 @@ export function createShellModule(deps) {
       }
       return;
     }
+    if (state._massageWizardOpen) {
+      window.Telegram?.WebApp?.BackButton?.hide();
+      elements.detailPanel.classList.remove("swipe-back-exit", "swipe-back-hint", "swipe-back-ready");
+      elements.detailPanel.style.removeProperty("--swipe-offset");
+      if (state._massageWizardStep > 0) {
+        window.massageWizardBack?.();
+      } else {
+        window.closeMassageFinder?.();
+      }
+      return;
+    }
     if (state._fromContext) {
       const ctx = state._fromContext;
       state._fromContext = null;

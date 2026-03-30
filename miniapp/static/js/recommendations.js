@@ -43,5 +43,142 @@ export function createRecommendationsModule(deps) {
     try { const result = await fetchJson("/api/recommendations/personal", { method: "POST", timeout: 45000, body: JSON.stringify(_wizardData) }); _wizardResults = result; try { sessionStorage.setItem("reco_last_result", JSON.stringify(result)); } catch(_e) {} _wizardLoading = false; renderWizard(); }
     catch (err) { _wizardLoading = false; renderWizard(); showUiNotice("Ошибка подбора. Попробуйте ещё раз.", "error"); }
   }
-  return { openRecommendationsWizard, closeRecommendationsWizard, isWizardOpen, renderWizard, recoWizardNext, recoWizardBack, recoSelectMood, recoSelectGoal, recoUpdateSymptoms, recoToggleAroma, recoUpdateContra, submitRecommendations };
+  // ── Massage Technique Finder Wizard ──────────────────────────────────
+
+  let _massageWizardOpen = false, _massageStep = 0, _massageData = _emptyMassage(), _massageResults = null, _massageLoading = false;
+  function _emptyMassage() { return { concern: "", body_zone: "", goal: "", experience: "some", contraindications: "" }; }
+
+  const CONCERN_OPTIONS = [
+    {value:"pain",label:"Боль / напряжение",icon:"lightning"},
+    {value:"stress",label:"Стресс",icon:"cloud-lightning"},
+    {value:"stiffness",label:"Скованность",icon:"lock-simple"},
+    {value:"recovery",label:"Восстановление",icon:"heartbeat"},
+    {value:"relaxation",label:"Расслабление",icon:"moon"},
+    {value:"headache",label:"Головная боль",icon:"head-circuit"},
+  ];
+  const ZONE_OPTIONS = [
+    {value:"back",label:"Спина"},
+    {value:"neck",label:"Шея и голова"},
+    {value:"feet",label:"Стопы"},
+    {value:"face",label:"Лицо"},
+    {value:"abdomen",label:"Живот"},
+    {value:"full_body",label:"Всё тело"},
+    {value:"legs",label:"Ноги"},
+  ];
+  const MASSAGE_GOAL_OPTIONS = [
+    {value:"relieve_pain",label:"Снять боль"},
+    {value:"relax",label:"Расслабиться"},
+    {value:"restore",label:"Восстановиться"},
+    {value:"improve_mobility",label:"Улучшить подвижность"},
+    {value:"detox",label:"Детоксикация"},
+  ];
+  const EXP_OPTIONS = [
+    {value:"beginner",label:"Новичок",icon:"baby"},
+    {value:"some",label:"Есть опыт",icon:"user"},
+    {value:"experienced",label:"Опытный",icon:"user-circle-check"},
+  ];
+
+  function openMassageFinder() {
+    _massageWizardOpen = true; _massageStep = 0; _massageData = _emptyMassage(); _massageResults = null; _massageLoading = false;
+    state._massageWizardOpen = true; state._massageWizardStep = 0;
+    _renderMassageWizard(); enterDetailView();
+  }
+  function closeMassageFinder() {
+    _massageWizardOpen = false; _massageStep = 0; _massageResults = null; _massageLoading = false;
+    state._massageWizardOpen = false; state._massageWizardStep = 0;
+    state.mobileView = "list"; syncMobileNavigation();
+  }
+
+  function _renderMassageWizard() {
+    if (!_massageWizardOpen) return;
+    if (_massageLoading) {
+      elements.draftDetail.innerHTML = '<div class="detail-grid">' + renderBackButton("closeMassageFinder") + renderDetailLoader("Подбираем технику", "Анализируем запрос и подбираем подходящие массажные техники.") + '</div>';
+      return;
+    }
+    if (_massageResults) { _renderMassageResults(); return; }
+
+    const steps = [_renderConcernStep, _renderZoneStep, _renderMassageGoalStep, _renderExperienceStep, _renderMassageContraStep];
+    const titles = ["Что беспокоит?", "Какая зона тела?", "Какая цель?", "Ваш опыт массажа", "Противопоказания"];
+    const stepContent = steps[_massageStep]();
+    const isLast = _massageStep === steps.length - 1;
+    const canProceed = _massageStep === 0 ? !!_massageData.concern : _massageStep === 1 ? !!_massageData.body_zone : _massageStep === 2 ? !!_massageData.goal : true;
+    const dots = Array.from({length: 5}, (_, i) => '<div class="reco-progress-dot' + (i <= _massageStep ? " active" : "") + '"></div>').join("");
+    const navBtn = isLast
+      ? '<button class="reco-submit-btn primary-button" data-action="submitMassageRecommendations"' + (!canProceed ? " disabled" : "") + '>Подобрать технику</button>'
+      : '<button class="reco-next-btn primary-button" data-action="massageWizardNext"' + (!canProceed ? " disabled" : "") + '>Далее</button>';
+    elements.draftDetail.innerHTML = renderBackButton(_massageStep > 0 ? "massageWizardBack" : "closeMassageFinder") +
+      '<div class="reco-wizard"><div class="reco-progress">' + dots + '</div><h2 class="reco-step-title">' + titles[_massageStep] + '</h2><div class="reco-step">' + stepContent + '</div><div class="reco-nav">' + navBtn + '</div></div>';
+  }
+
+  function _renderConcernStep() {
+    return '<div class="reco-chips">' + CONCERN_OPTIONS.map(o =>
+      '<button class="reco-chip' + (_massageData.concern === o.value ? " active" : "") + '" data-action="massageSelectConcern" data-args=\'' + JSON.stringify([o.value]) + '\'><i class="ph ph-' + o.icon + ' reco-chip-icon"></i> ' + escapeHtml(o.label) + '</button>'
+    ).join("") + '</div>';
+  }
+  function _renderZoneStep() {
+    return '<div class="reco-chips">' + ZONE_OPTIONS.map(o =>
+      '<button class="reco-chip' + (_massageData.body_zone === o.value ? " active" : "") + '" data-action="massageSelectZone" data-args=\'' + JSON.stringify([o.value]) + '\'>' + escapeHtml(o.label) + '</button>'
+    ).join("") + '</div>';
+  }
+  function _renderMassageGoalStep() {
+    return '<div class="reco-chips">' + MASSAGE_GOAL_OPTIONS.map(o =>
+      '<button class="reco-chip' + (_massageData.goal === o.value ? " active" : "") + '" data-action="massageSelectGoal" data-args=\'' + JSON.stringify([o.value]) + '\'>' + escapeHtml(o.label) + '</button>'
+    ).join("") + '</div>';
+  }
+  function _renderExperienceStep() {
+    return '<div class="reco-chips">' + EXP_OPTIONS.map(o =>
+      '<button class="reco-chip' + (_massageData.experience === o.value ? " active" : "") + '" data-action="massageSelectExperience" data-args=\'' + JSON.stringify([o.value]) + '\'><i class="ph ph-' + o.icon + ' reco-chip-icon"></i> ' + escapeHtml(o.label) + '</button>'
+    ).join("") + '</div>';
+  }
+  function _renderMassageContraStep() {
+    return '<p class="reco-hint">Необязательно.</p><textarea class="reco-textarea" placeholder="Тромбоз, беременность, кожные заболевания..." data-on-input="massageUpdateContra" data-args=\'' + JSON.stringify([]) + '\'>' + escapeHtml(_massageData.contraindications) + '</textarea>';
+  }
+
+  function _renderMassageResults() {
+    const recs = _massageResults.recommendations || [], advice = _massageResults.general_advice || "";
+    const cards = recs.map(rec => {
+      const card = rec.card;
+      const img = card && card.image_url ? '<img class="reco-card-image" src="' + escapeHtml(card.image_url) + '" alt="' + escapeHtml(rec.name_ru) + '" loading="lazy">' : "";
+      const oilsHtml = (rec.oils && rec.oils.length) ? '<div class="reco-card-practice"><strong>Масла:</strong><p>' + escapeHtml(rec.oils.join(", ")) + '</p></div>' : "";
+      return '<article class="reco-card">' + img +
+        '<div class="reco-card-body"><h3 class="reco-card-title">' + escapeHtml(rec.name_ru) + '</h3>' +
+        '<p class="reco-card-reason">' + escapeHtml(rec.reason) + '</p>' +
+        '<div class="reco-card-practice"><strong>Рекомендация на сеанс:</strong><p>' + escapeHtml(rec.session_advice) + '</p></div>' +
+        oilsHtml +
+        '<div class="reco-card-actions">' +
+        (rec.slug ? '<button class="reco-card-btn reco-card-btn-detail" data-action="openReference" data-args=\'' + JSON.stringify([rec.slug, "massage"]) + '\'>Подробнее</button>' : '') +
+        '</div></div></article>';
+    }).join("");
+    elements.draftDetail.innerHTML = renderBackButton("closeMassageFinder") +
+      '<div class="reco-wizard"><h2 class="reco-step-title">Рекомендованные техники</h2><div class="reco-results">' + cards +
+      (advice ? '<div class="reco-general-advice"><p>' + escapeHtml(advice) + '</p></div>' : '') +
+      '<button class="reco-restart-btn" data-action="openMassageFinder">Подобрать ещё</button></div></div>';
+  }
+
+  function massageWizardNext() { if (_massageStep < 4) { _massageStep++; state._massageWizardStep = _massageStep; _renderMassageWizard(); } }
+  function massageWizardBack() { if (_massageStep > 0) { _massageStep--; state._massageWizardStep = _massageStep; _renderMassageWizard(); } }
+  function massageSelectConcern(v) { _massageData.concern = v; _renderMassageWizard(); }
+  function massageSelectZone(v) { _massageData.body_zone = v; _renderMassageWizard(); }
+  function massageSelectGoal(v) { _massageData.goal = v; _renderMassageWizard(); }
+  function massageSelectExperience(v) { _massageData.experience = v; _renderMassageWizard(); }
+  function massageUpdateContra(v) { _massageData.contraindications = v; }
+
+  async function submitMassageRecommendations() {
+    _massageLoading = true; _renderMassageWizard();
+    try {
+      const result = await fetchJson("/api/recommendations/massage", { method: "POST", timeout: 45000, body: JSON.stringify(_massageData) });
+      _massageResults = result;
+      _massageLoading = false; _renderMassageWizard();
+    } catch (err) {
+      _massageLoading = false; _renderMassageWizard();
+      showUiNotice("Ошибка подбора. Попробуйте ещё раз.", "error");
+    }
+  }
+
+  return {
+    openRecommendationsWizard, closeRecommendationsWizard, isWizardOpen, renderWizard,
+    recoWizardNext, recoWizardBack, recoSelectMood, recoSelectGoal, recoUpdateSymptoms, recoToggleAroma, recoUpdateContra, submitRecommendations,
+    openMassageFinder, closeMassageFinder, massageWizardNext, massageWizardBack,
+    massageSelectConcern, massageSelectZone, massageSelectGoal, massageSelectExperience, massageUpdateContra, submitMassageRecommendations,
+  };
 }

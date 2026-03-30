@@ -97,7 +97,7 @@ export function createReferencesModule(deps) {
   function _actionGroupHtml() {
     if (BODY_SECTION_TABS.includes(state.tab)) {
       return `<div class="action-group">
-          <div class="action-item" data-action="openMassageFinder">
+          <div class="action-item" data-action="openMassageFinder" data-args='[]'>
             <div class="action-icon ai-teal"><i class="ph ph-hand-palm" style="font-size:16px"></i></div>
             <div class="action-text"><div class="action-title">Подобрать технику массажа</div><div class="action-sub">По симптому или зоне тела</div></div>
             <span class="action-arrow">\u203a</span>

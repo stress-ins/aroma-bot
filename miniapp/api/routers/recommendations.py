@@ -39,3 +39,50 @@ async def personal_recommendations(body: PersonalRecommendationRequest, telegram
     response = {"recommendations": enriched, "general_advice": result.get("general_advice", "")}
     await set_cached(cache_key, "recommendation", response, ttl_hours=24, telegram_id=scope_tid)
     return response
+
+
+class MassageRecommendationRequest(BaseModel):
+    concern: str
+    body_zone: str
+    goal: str
+    experience: str = "some"
+    contraindications: str = ""
+
+
+@router.post("/api/recommendations/massage")
+async def massage_recommendations(body: MassageRecommendationRequest, telegram_id: int = Depends(_resolve_telegram_id)):
+    if not body.concern.strip() or not body.body_zone.strip():
+        raise HTTPException(status_code=400, detail="concern and body_zone are required")
+    from bot.agents.massage_recommendation_agent import recommend_massage_sync
+    from bot.services.llm_cache import get_cached, make_cache_key, set_cached
+    from bot.services.miniapp_references import build_reference_context, list_reference_cards
+
+    cache_key = make_cache_key("reco_massage", concern=body.concern, body_zone=body.body_zone, goal=body.goal, experience=body.experience, contraindications=body.contraindications.strip().lower())
+    cached = await get_cached(cache_key)
+    if cached:
+        return cached
+
+    reference_context = await build_reference_context(categories=("massage",), max_items_per_category=20, max_total_chars=4000)
+    loop = asyncio.get_running_loop()
+    result = await loop.run_in_executor(None, recommend_massage_sync, body.concern, body.body_zone, body.goal, body.experience, body.contraindications, reference_context)
+    recommendations = result.get("recommendations", [])
+    massage_cards = await list_reference_cards("massage")
+    card_map = {}
+    for c in massage_cards:
+        for key in ((c.get("slug") or "").lower(), (c.get("name") or "").lower(), (c.get("name_en") or "").lower()):
+            if key:
+                card_map[key] = c
+    enriched = []
+    for rec in recommendations[:3]:
+        card = card_map.get((rec.get("slug") or "").lower()) or card_map.get((rec.get("name_ru") or "").lower())
+        enriched.append({
+            "slug": rec.get("slug", ""),
+            "name_ru": rec.get("name_ru", ""),
+            "reason": rec.get("reason", ""),
+            "session_advice": rec.get("session_advice", ""),
+            "oils": rec.get("oils", []),
+            "card": card,
+        })
+    response = {"recommendations": enriched, "general_advice": result.get("general_advice", "")}
+    await set_cached(cache_key, "recommendation_massage", response, ttl_hours=24, telegram_id=telegram_id)
+    return response
