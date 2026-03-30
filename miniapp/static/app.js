@@ -55,7 +55,7 @@ const state = {
   settingsSection: "status",
   settingsInDetail: false,
   mobileView: "list", // 'list' or 'detail'
-  lastHandbookTab: "aromas",
+  lastHandbookTab: (() => { const d = localStorage.getItem("aromara_default_domain"); const m = { aroma: "aromas", body: "practices", sound: "sounds" }; return m[d] || "aromas"; })(),
   pendingCarouselNotes: {},
   pendingCarouselOps: {},
   pendingReelsNotes: {},

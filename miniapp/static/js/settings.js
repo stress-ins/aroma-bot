@@ -1446,6 +1446,12 @@ export function createSettingsModule(deps) {
       for (const t of teams) {
         const detail = await fetchJson(`/api/teams/${t.team_id}`);
         const isOwner = detail.role === "owner";
+        // Sync default_domain to localStorage for instant handbook tab on next load
+        if (detail.default_domain) {
+          localStorage.setItem("aromara_default_domain", detail.default_domain);
+          const domainTabMap = { aroma: "aromas", body: "practices", sound: "sounds" };
+          state.lastHandbookTab = domainTabMap[detail.default_domain] || "aromas";
+        }
         const roleLabels = { owner: "Владелец", editor: "Редактор", viewer: "Читатель" };
 
         const membersHtml = (detail.members || []).map((m) => {
@@ -1495,11 +1501,28 @@ export function createSettingsModule(deps) {
                </div>`
             : "";
 
+        // Domain selector (only for owner)
+        const currentDomain = detail.default_domain || "aroma";
+        const domainOptions = [
+          { value: "aroma", label: "Ароматерапия", icon: "flower-lotus" },
+          { value: "body", label: "Тело", icon: "hand-heart" },
+          { value: "sound", label: "Звук", icon: "music-notes" },
+        ];
+        const domainChipsHtml = isOwner
+          ? `<div class="team-domain-section">
+               <h4>Основное направление</h4>
+               <p class="settings-hint">Определяет первый раздел справочника и контекст генерации контента</p>
+               <div class="domain-chips">${domainOptions.map((d) => `<button class="chip-selectable${d.value === currentDomain ? " is-selected" : ""}" type="button" data-action="setTeamDomain" data-args='${JSON.stringify([t.team_id, d.value])}'>${uiIcon(d.icon)}<span>${escapeHtml(d.label)}</span></button>`).join("")}</div>
+             </div>`
+          : "";
+
+
         html += `
           <section class="section settings-section">
             <h3>${uiIcon("users")}<span>${escapeHtml(t.name)}</span></h3>
             <p class="settings-hint">Ваша роль: <strong>${escapeHtml(roleLabels[detail.role] || detail.role)}</strong></p>
             ${avatarHtml}
+            ${domainChipsHtml}
             <div class="team-members-list">${membersHtml}</div>
             ${connectedAccountsHtml}
             <div id="inviteResult-${t.team_id}"></div>
@@ -1582,6 +1605,23 @@ export function createSettingsModule(deps) {
       renderTeam();
     } catch (_err) {
       showUiNotice("Не удалось удалить участника", "error");
+    }
+  }
+
+  async function setTeamDomain(teamId, domain) {
+    try {
+      await fetchJson(`/api/teams/${teamId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ default_domain: domain }),
+      });
+      // Update handbook default tab based on new domain
+      const domainTabMap = { aroma: "aromas", body: "practices", sound: "sounds" };
+      state.lastHandbookTab = domainTabMap[domain] || "aromas";
+      localStorage.setItem("aromara_default_domain", domain);
+      showUiNotice("Направление обновлено", "success");
+      renderTeam();
+    } catch (_err) {
+      showUiNotice("Не удалось обновить направление", "error");
     }
   }
 
@@ -1850,6 +1890,7 @@ export function createSettingsModule(deps) {
     renderMonitoredAccounts,
     addMonitoredAccountFromSettings,
     removeMonitoredAccountFromSettings,
+    setTeamDomain,
     renderTeam,
     createNewTeam,
     createTeamInvite,

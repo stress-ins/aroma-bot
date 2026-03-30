@@ -31,6 +31,8 @@ class BrandSettingsModel(Base):
     city_lat: Mapped[float] = mapped_column(Float, default=55.7558)
     city_lon: Mapped[float] = mapped_column(Float, default=37.6173)
     theme: Mapped[str] = mapped_column(String(32), default="terracotta")
+    # Default domain for handbook and content generation (aroma / body / sound)
+    default_domain: Mapped[str] = mapped_column(String(20), default="aroma")
     # Content pillars for archive scoring
     content_pillars: Mapped[list] = mapped_column(MutableList.as_mutable(JSON), default=list)
     updated_at: Mapped[datetime] = mapped_column(

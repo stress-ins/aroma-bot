@@ -26,12 +26,28 @@ _BRAND_CONTEXT_DEFAULT = """\
 """
 
 
-def get_brand_context() -> str:
-    """Вернуть brand_voice из БД или fallback."""
+_DOMAIN_CONTEXT = {
+    "aroma": "Основной фокус: ароматерапия, эфирные масла, ольфактотерапия.",
+    "body": "Основной фокус: телесные практики, массаж, остеопрактика, биодинамика.",
+    "sound": "Основной фокус: звуковое целительство, гонг-медитации, звуковые ванны.",
+}
+
+
+def get_brand_context(team_id: str | None = None) -> str:
+    """Вернуть brand_voice из БД или fallback, с учётом default_domain."""
     try:
-        bs = get_brand_settings_cached()
+        bs = get_brand_settings_cached(team_id)
+        voice = ""
         if bs and bs.brand_voice and len(bs.brand_voice.strip()) > 50:
-            return bs.brand_voice.strip()
+            voice = bs.brand_voice.strip()
+        else:
+            voice = _BRAND_CONTEXT_DEFAULT
+        # Append domain-specific context
+        domain = getattr(bs, "default_domain", "aroma") or "aroma"
+        domain_hint = _DOMAIN_CONTEXT.get(domain, "")
+        if domain_hint:
+            voice = voice + "\n\n" + domain_hint
+        return voice
     except Exception:
         logger.warning("get_brand_context: get_brand_settings_cached failed", exc_info=True)
         pass
