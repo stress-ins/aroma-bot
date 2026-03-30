@@ -815,11 +815,14 @@ export function createReferencesModule(deps) {
     let listContainer = document.getElementById("referenceListContainer");
     const shellAlive = listContainer && elements.draftList.contains(listContainer);
     if (shellAlive) {
-      // Update action group in-place when switching tabs within same section
       const existingAg = elements.draftList.querySelector(".action-group");
       const newAgHtml = _actionGroupHtml();
       if (existingAg && !newAgHtml) existingAg.remove();
       else if (existingAg) existingAg.outerHTML = newAgHtml;
+      else if (newAgHtml) {
+        const searchBar = document.getElementById("refSearchBar");
+        if (searchBar) searchBar.insertAdjacentHTML("afterend", newAgHtml);
+      }
     }
     if (!shellAlive) {
       elements.draftList.innerHTML = `
