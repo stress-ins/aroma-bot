@@ -197,11 +197,9 @@ export function createReferencesModule(deps) {
     openReferenceInFlight = true;
     try {
       // Track cross-tab navigation context for back button
-      // Only set _fromContext when explicitly navigating cross-tab from a detail view
       if (tabId !== state.tab && state.selectedReference?.slug) {
         state._fromContext = { tab: state.tab, slug: state.selectedReference.slug };
       } else {
-        // Same-tab navigation or no prior card: always clear stale context
         state._fromContext = null;
       }
       state.selectedReference = await fetchJson(`/api/references/${meta.category}/${encodeURIComponent(slug)}`);
@@ -210,6 +208,13 @@ export function createReferencesModule(deps) {
       elements.tabsContainer.querySelectorAll(".tab-button").forEach((b) => b.classList.toggle("active", b.dataset.tab === tabId));
       renderReferences();
       enterDetailView();
+    } catch (err) {
+      if (!quiet) {
+        elements.draftDetail.innerHTML = renderDetailError(
+          "Не удалось загрузить",
+          err?.message === "paywall" ? "Доступ ограничен тарифом." : "Попробуйте ещё раз."
+        );
+      }
     } finally {
       openReferenceInFlight = false;
     }
