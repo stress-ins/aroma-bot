@@ -120,12 +120,13 @@ def test_smart_search_shows_helps_with_badge(page):
 def test_themed_handbook_sections_render(themed_page):
     """Handbook sections render in both themes."""
     themed_page.locator("#btnTabHandbook").click()
-    themed_page.wait_for_timeout(300)
+    # Wait for default tab (Ароматы) to load
+    themed_page.locator(".reference-card").first.wait_for(state="visible", timeout=10000)
 
     themed_page.get_by_role("tab", name="Смеси").click()
-    themed_page.locator(".reference-card").first.wait_for(state="visible", timeout=5000)
+    themed_page.locator(".reference-card").first.wait_for(state="visible", timeout=10000)
     assert themed_page.locator(".reference-card").count() >= 1
 
     themed_page.get_by_role("tab", name="Симптомы").click()
-    themed_page.locator(".reference-card").first.wait_for(state="visible", timeout=5000)
+    themed_page.locator(".reference-card").first.wait_for(state="visible", timeout=10000)
     assert themed_page.locator(".reference-card").count() >= 1

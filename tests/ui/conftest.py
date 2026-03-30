@@ -253,6 +253,7 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
             "MINIAPP_AROMA_ALLOWED_USER_IDS": "12345",
             "AROMA_BYPASS_AUTH": "1",
             "AROMA_ENV": "test",
+            "AROMA_RATE_LIMIT_DISABLED": "1",
         }
     )
 
