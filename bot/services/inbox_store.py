@@ -61,6 +61,7 @@ async def upsert_conversation(
     participant_id: str,
     participant_username: str = "",
     participant_name: str = "",
+    profile_picture_url: str = "",
     last_message_preview: str = "",
     last_message_at: datetime | None = None,
     team_id: str | None = None,
@@ -75,6 +76,7 @@ async def upsert_conversation(
                 .values(
                     participant_username=participant_username or existing.participant_username,
                     participant_name=participant_name or existing.participant_name,
+                    profile_picture_url=profile_picture_url or existing.profile_picture_url,
                     last_message_preview=last_message_preview or existing.last_message_preview,
                     last_message_at=last_message_at or existing.last_message_at,
                     unread_count=ConversationModel.unread_count + 1,
@@ -92,6 +94,7 @@ async def upsert_conversation(
             participant_id=participant_id,
             participant_username=participant_username,
             participant_name=participant_name,
+            profile_picture_url=profile_picture_url,
             last_message_preview=last_message_preview,
             last_message_at=last_message_at or datetime.now(timezone.utc),
             status="active",

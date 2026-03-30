@@ -53,6 +53,7 @@ def _serialize_conversation(c) -> dict:
         "participant_id": c.participant_id,
         "participant_username": c.participant_username,
         "participant_name": c.participant_name,
+        "profile_picture_url": getattr(c, "profile_picture_url", "") or "",
         "last_message_preview": c.last_message_preview,
         "last_message_at": c.last_message_at.isoformat() if isinstance(c.last_message_at, datetime) else str(c.last_message_at or ""),
         "status": c.status,
@@ -274,6 +275,12 @@ async def _send_instagram_message(recipient_id: str, text: str, team_id: str | N
                 "tag": "HUMAN_AGENT",
             },
         )
+        if r.status_code == 403:
+            body = r.json() if r.headers.get("content-type", "").startswith("application/json") else {}
+            error_msg = body.get("error", {}).get("message", "")
+            raise ValueError(
+                f"Instagram API 403: {error_msg or 'нет разрешения instagram_manage_messages или токен истёк'}"
+            )
         r.raise_for_status()
 
 

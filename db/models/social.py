@@ -138,6 +138,7 @@ class ConversationModel(Base):
     participant_id: Mapped[str] = mapped_column(String(255), default="")
     participant_username: Mapped[str] = mapped_column(String(255), default="")
     participant_name: Mapped[str] = mapped_column(String(255), default="")
+    profile_picture_url: Mapped[str] = mapped_column(String(1024), default="")
     last_message_preview: Mapped[str] = mapped_column(String(500), default="")
     last_message_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
     status: Mapped[str] = mapped_column(String(32), default="active", index=True)

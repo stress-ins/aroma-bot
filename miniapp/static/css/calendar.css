@@ -120,7 +120,8 @@
 }
 
 .cal-cell--today {
-  background: rgba(var(--brand-rgb), 0.06);
+  background: rgba(var(--brand-rgb), 0.08);
+  box-shadow: inset 0 0 0 1.5px rgba(var(--brand-rgb), 0.3);
 }
 
 .cal-cell--today .cal-cell-num {
@@ -341,8 +342,20 @@
   background: rgba(255, 255, 255, 0.6) !important;
 }
 
+.cal-week-strip-day--today .cal-week-strip-cell {
+  background: rgba(var(--brand-rgb), 0.12);
+  border: 1.5px solid rgba(var(--brand-rgb), 0.35);
+  border-radius: 8px;
+}
+
 .cal-week-strip-day--today .cal-week-strip-num {
   color: var(--brand);
+  font-weight: 700;
+}
+
+.cal-week-strip-day--today .cal-week-strip-wd {
+  color: var(--brand);
+  font-weight: 600;
 }
 
 .cal-week-strip-dots {

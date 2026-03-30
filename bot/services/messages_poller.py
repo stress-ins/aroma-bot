@@ -25,6 +25,26 @@ logger = logging.getLogger(__name__)
 GRAPH_API_BASE = "https://graph.instagram.com/v21.0"
 
 
+async def _fetch_profile_picture(client: httpx.AsyncClient, user_id: str, access_token: str) -> str:
+    """Fetch Instagram profile picture URL for a user."""
+    if not user_id:
+        return ""
+    try:
+        r = await client.get(
+            f"{GRAPH_API_BASE}/{user_id}",
+            params={
+                "fields": "profile_picture_url",
+                "access_token": access_token,
+            },
+        )
+        if r.status_code == 200:
+            data = r.json()
+            return data.get("profile_picture_url", "")
+    except Exception:
+        logger.debug("Could not fetch profile picture for user %s", user_id)
+    return ""
+
+
 async def _resolve_own_user_id(access_token: str, team_id: str | None) -> str:
     """Get our Instagram user ID to filter ourselves from conversation participants."""
     # Try from stored token metadata first
@@ -88,6 +108,9 @@ async def poll_instagram_conversations(
             participant_name = participant.get("name", "")
             participant_username = participant.get("username", participant_name)
 
+            # Fetch profile picture for the participant
+            profile_pic_url = await _fetch_profile_picture(client, participant_id, access_token)
+
             updated_time = conv.get("updated_time")
             last_msg_at = None
             if updated_time:
@@ -102,6 +125,7 @@ async def poll_instagram_conversations(
                 participant_id=participant_id,
                 participant_username=participant_username,
                 participant_name=participant_name,
+                profile_picture_url=profile_pic_url,
                 last_message_at=last_msg_at,
                 team_id=team_id,
             )
@@ -170,6 +194,7 @@ async def poll_instagram_conversations(
                     participant_id=participant_id,
                     participant_username=participant_username,
                     participant_name=participant_name,
+                    profile_picture_url=profile_pic_url,
                     last_message_preview=preview,
                     last_message_at=last_msg_at,
                     team_id=team_id,
