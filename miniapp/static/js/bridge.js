@@ -677,8 +677,13 @@ export function registerWindowBridge(deps) {
   };
 
   window._scheduleThreadsSeriesFromBtn = function(el) {
-    console.log("[schedule] el:", el, "draftId:", el?.dataset?.draftId, "date:", el?.dataset?.date);
-    scheduleThreadsSeries(el.dataset.draftId, el.dataset.date, ["morning", "day", "evening"], el);
+    const draftId = el?.dataset?.draftId;
+    const date = el?.dataset?.date;
+    console.log("[schedule] el:", el, "draftId:", draftId, "date:", date);
+    // Read actual slot names from data attribute (set during render) instead of hardcoding
+    let slots;
+    try { slots = JSON.parse(el?.dataset?.slots || "null"); } catch { slots = null; }
+    scheduleThreadsSeries(draftId, date, slots || ["morning", "day", "evening"], el);
   };
 
   window._copyCodeBlock = function(el) {

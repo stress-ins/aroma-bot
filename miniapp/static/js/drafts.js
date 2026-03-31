@@ -253,7 +253,7 @@ export function createDraftsModule(deps) {
           <div class="threads-slot-header">
             <span class="threads-slot-icon">${icon}</span>
             <span class="threads-slot-label">${escapeHtml(name)}</span>
-            <input class="threads-slot-time" id="slotTime_${post.slot}_${d.draft_id}" type="time" value="${escapeHtml(post.scheduled_time || "")}" ${isApproved ? "readonly" : ""}>
+            <span class="threads-slot-time-label">${escapeHtml(post.scheduled_time || "")}</span>
           </div>
           <div class="threads-slot-body">
             ${!isApproved ? `<textarea
@@ -290,7 +290,7 @@ export function createDraftsModule(deps) {
       <div id="scheduler_${d.draft_id}" hidden>
         <div class="date-picker-row" id="schedulerDates_${d.draft_id}"></div>
         <div class="actions-row" style="margin-top:8px">
-          <button class="primary-button" id="schedulerSubmit_${d.draft_id}" type="button" data-date="" data-draft-id="${d.draft_id}" disabled
+          <button class="primary-button" id="schedulerSubmit_${d.draft_id}" type="button" data-date="" data-draft-id="${d.draft_id}" data-slots='${JSON.stringify(posts.map(p => p.slot))}' disabled
             data-action="_scheduleThreadsSeriesFromBtn" data-args='[null]'>
             ${actionLabel("approve", "Запланировать публикацию")}
           </button>

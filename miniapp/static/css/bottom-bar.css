@@ -206,6 +206,13 @@
   flex: 0 0 auto;
 }
 
+.threads-slot-time-label {
+  font-size: 13px;
+  color: var(--muted);
+  flex: 0 0 auto;
+  padding: 4px 0;
+}
+
 .threads-slot-body {
   position: relative;
 }
