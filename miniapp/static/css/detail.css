@@ -53,7 +53,8 @@
   flex-wrap: wrap;
   gap: 10px;
 }
-.guided-state-actions .secondary-button {
+.guided-state-actions .secondary-button,
+.guided-state-actions .primary-button {
   min-height: 44px;
 }
 

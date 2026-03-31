@@ -245,7 +245,7 @@
 
 .cal-legend-item span {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 /* ── Week strip (compact mode when day selected) ─────────────────────── */

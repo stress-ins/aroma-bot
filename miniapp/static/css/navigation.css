@@ -166,6 +166,20 @@
   min-width: 0;
 }
 .tabs::-webkit-scrollbar { display: none; }
+.tabs-scroll-wrap {
+  position: relative;
+}
+.tabs-scroll-wrap::after {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0; right: 0;
+  width: 32px;
+  background: linear-gradient(to right, transparent, var(--bg));
+  pointer-events: none;
+  z-index: 1;
+  transition: opacity var(--duration-fast);
+}
+.tabs-scroll-wrap.scrolled-end::after { opacity: 0; }
 
 .tab-button {
   display: inline-flex;

@@ -108,7 +108,7 @@ export function createReferencesModule(deps) {
       return `<div class="action-group">
           <div class="action-item" data-action="openProtocolWizard" data-args='[]'>
             <div class="action-icon ai-purple"><i class="ph ph-circles-four" style="font-size:16px"></i></div>
-            <div class="action-text"><div class="action-title">Мультимодальный протокол</div><div class="action-sub">Масло + массаж + звук + кристалл</div></div>
+            <div class="action-text"><div class="action-title">Составить протокол</div><div class="action-sub">Масло + массаж + звук + кристалл</div></div>
             <span class="action-arrow">\u203a</span>
           </div>
           <div class="action-item" data-action="openMassageFinder" data-args='[]'>
@@ -124,7 +124,7 @@ export function createReferencesModule(deps) {
       return `<div class="action-group">
           <div class="action-item" data-action="openProtocolWizard" data-args='[]'>
             <div class="action-icon ai-purple"><i class="ph ph-circles-four" style="font-size:16px"></i></div>
-            <div class="action-text"><div class="action-title">Мультимодальный протокол</div><div class="action-sub">Масло + массаж + звук + кристалл</div></div>
+            <div class="action-text"><div class="action-title">Составить протокол</div><div class="action-sub">Масло + массаж + звук + кристалл</div></div>
             <span class="action-arrow">\u203a</span>
           </div>
           ${_savedBlendsItem()}

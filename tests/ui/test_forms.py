@@ -40,8 +40,8 @@ def test_settings_and_keywords_use_guided_detail_copy(desktop_page):
     assert desktop_page.get_by_role("heading", name="Источники данных").is_visible()
 
     desktop_page.evaluate("window.openSettingsSection('brand')")
-    desktop_page.get_by_role("heading", name="Бренд и ключи").wait_for(state="visible", timeout=5000)
-    assert desktop_page.get_by_role("heading", name="Бренд и ключи").is_visible()
+    desktop_page.get_by_role("heading", name="Фирменный стиль").wait_for(state="visible", timeout=5000)
+    assert desktop_page.get_by_role("heading", name="Фирменный стиль").is_visible()
 
 
 def test_keywords_detail_supports_add_and_remove(page):

@@ -139,7 +139,7 @@ def test_draft_editor_notes_visible_with_keyboard(page):
 def test_settings_brand_input_visible_with_keyboard(page):
     """Settings -> Brand: forbidden phrase input stays visible with keyboard."""
     click_bottom_tab(page, "#btnTabSettings")
-    page.get_by_text("Бренд и ключи").click()
+    page.get_by_text("Фирменный стиль").click()
     page.locator("#forbiddenPhraseInput").wait_for(state="visible", timeout=5000)
 
     input_el = page.locator("#forbiddenPhraseInput")

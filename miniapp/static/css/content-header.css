@@ -43,6 +43,20 @@
 }
 .content-sub-tabs::-webkit-scrollbar { display: none; }
 .content-sub-tabs:empty { display: none; }
+.content-sub-tabs-wrap {
+  position: relative;
+}
+.content-sub-tabs-wrap::after {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0; right: 0;
+  width: 32px;
+  background: linear-gradient(to right, transparent, var(--bg));
+  pointer-events: none;
+  z-index: 1;
+  transition: opacity var(--duration-fast);
+}
+.content-sub-tabs-wrap.scrolled-end::after { opacity: 0; }
 
 .content-sub-tab {
   padding: 5px 14px;
@@ -321,6 +335,26 @@ body[data-theme="raspberry"] {
   --bad-rgb:      212, 86, 74;
   --sage:         #7a9450;
   --sage-rgb:     122, 148, 80;
+}
+
+/* ── Champagne theme contrast fixes ──────────────────────────────────────── */
+body[data-theme="champagne"] .guided-state,
+body[data-theme="champagne"] .boot-fallback-inline {
+  border-color: rgba(200, 168, 106, 0.30);
+}
+body[data-theme="champagne"] .ui-notice {
+  border: 1px solid rgba(200, 168, 106, 0.35);
+}
+
+/* ── Violet theme section-chip active ────────────────────────────────────── */
+body[data-theme="violet"] .section-chip.active {
+  background: linear-gradient(180deg, rgba(144, 96, 200, 0.22), rgba(144, 96, 200, 0.12));
+  border-color: rgba(144, 96, 200, 0.35);
+}
+body[data-theme="violet"] .tab-button.active {
+  color: var(--brand);
+  border-color: rgba(144, 96, 200, 0.35);
+  background: linear-gradient(180deg, rgba(144, 96, 200, 0.22), rgba(144, 96, 200, 0.12));
 }
 
 /* ── Theme picker grid (settings screen) ─────────────────────────────────── */

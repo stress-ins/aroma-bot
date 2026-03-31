@@ -100,7 +100,7 @@ export function createSettingsModule(deps) {
     html += `<div class="settings-menu-group">
       <div class="settings-menu-group-header">Контент</div>
       <div class="settings-menu-list">
-        ${settingsMenuRow("palette", "#FF9500", "Бренд и ключи", "brand", null)}
+        ${settingsMenuRow("palette", "#FF9500", "Фирменный стиль", "brand", null)}
         ${settingsMenuRow("link", "#34C759", "Аккаунты", "accounts", connectedCount)}
         ${settingsMenuRow("hash", "#5856D6", "Теги для мониторинга", "hashtags", hashtagCount)}
         ${settingsMenuRow("eye", "#00C7BE", "Аккаунты на мониторинг", "monitored", monitoredCount)}
@@ -418,7 +418,7 @@ export function createSettingsModule(deps) {
     const selectedTopic = topics.find((t) => t.topic_idx === state.selectedKeywordTopicIdx) || null;
 
     elements.listTitle.textContent = "Настройки";
-    elements.draftCount.textContent = "Бренд и ключи";
+    elements.draftCount.textContent = "Фирменный стиль";
 
     // Left panel: keyword topics list
     elements.draftList.innerHTML = `
@@ -466,7 +466,7 @@ export function createSettingsModule(deps) {
       <div class="detail-grid">
         <div class="detail-top">
           <p class="eyebrow">${uiIcon("palette")}<span>Настройки</span></p>
-          <h2 class="detail-title">Бренд и ключи</h2>
+          <h2 class="detail-title">Фирменный стиль</h2>
         </div>
         <section class="section settings-section">
           <h3>Запрещённые фразы</h3>

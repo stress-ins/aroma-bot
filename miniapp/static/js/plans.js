@@ -355,6 +355,7 @@ export function createPlansModule(deps) {
         body: "Публикации с ошибками за последние 30 дней не найдены.",
         actionLabel: "+ Создать контент",
         action: "openCreateTool",
+        primaryCta: true,
       });
     }
     if (filters.platform !== "all") {
@@ -364,6 +365,7 @@ export function createPlansModule(deps) {
         body: `Публикаций для ${escapeHtml(filters.platform)} не найдено.`,
         actionLabel: "+ Создать контент",
         action: "openCreateTool",
+        primaryCta: true,
       });
     }
     if (filters.date) {
@@ -373,6 +375,7 @@ export function createPlansModule(deps) {
         body: "На этот день ничего не запланировано.",
         actionLabel: "+ Создать контент",
         action: "openCreateTool",
+        primaryCta: true,
       });
     }
     return renderGuidedState({
@@ -381,6 +384,7 @@ export function createPlansModule(deps) {
       body: "Контент-план помогает планировать публикации на неделю вперёд. Создайте план и начните заполнять.",
       actionLabel: "+ Создать контент",
       action: "setTab('create')",
+      primaryCta: true,
     });
   }
 
@@ -588,6 +592,9 @@ export function createPlansModule(deps) {
         eyebrow: "КОНТЕНТ-ПЛАНЫ",
         title: "Планов пока нет",
         body: "Создайте контент-план для системного подхода к публикациям.",
+        actionLabel: "Создать план",
+        action: "openCreateTool",
+        primaryCta: true,
       })}</div>`;
       syncMobileNavigation();
       return;

@@ -194,6 +194,9 @@
   body.is-mobile-layout .list-panel:has(.guided-state) {
     flex: 0 1 auto;
   }
+  body.is-mobile-layout .draft-list:has(.guided-state) {
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  }
 
   body.is-mobile-layout .list-panel {
     max-height: calc(var(--tg-viewport-stable-height, 100dvh) - 160px);

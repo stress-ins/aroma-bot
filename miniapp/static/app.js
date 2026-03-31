@@ -154,6 +154,22 @@ function initScrollFade(container) {
   update();
 }
 
+// ── Horizontal scroll fade (marks container as scrolled-end when at right edge) ──
+function initHorizontalScrollFade(container) {
+  if (!container || container._hScrollFadeInit) return;
+  container._hScrollFadeInit = true;
+  const parent = container.parentElement;
+  if (!parent) return;
+  const update = () => {
+    const atEnd = container.scrollLeft + container.clientWidth >= container.scrollWidth - 4;
+    parent.classList.toggle("scrolled-end", atEnd);
+  };
+  container.addEventListener("scroll", update, { passive: true });
+  if (window.ResizeObserver) new ResizeObserver(update).observe(container);
+  new MutationObserver(update).observe(container, { childList: true, subtree: true });
+  update();
+}
+
 // ── Range slider fill color (WebKit doesn't support ::-webkit-slider-progress) ──
 function _updateRangeFill(el) {
   const min = parseFloat(el.min) || 0;
@@ -1418,6 +1434,7 @@ const coreCallbacks = {
   isBootstrapped: () => appBootstrapped,
   renderReels: () => renderReels(),
   renderReelsDetail: (draft) => renderReelsDetail(draft),
+  getSectionTitle: () => SECTION_TITLES[state.tab] || state.tab,
 };
 
 function getInitDataHeaders() {
@@ -2912,6 +2929,8 @@ bootstrap()
   .then(() => {
     refreshIcons();
     initScrollFade(elements.draftList);
+    initHorizontalScrollFade(elements.tabsContainer);
+    initHorizontalScrollFade(elements.contentSubTabs);
   })
   .catch((err) => {
     console.error("bootstrap failed", err);
