@@ -3,9 +3,11 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
 from bot.services.inbox_store import (
@@ -21,6 +23,10 @@ from ..auth import TeamContext, _require_webhook_auth, _resolve_team_context
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+# ── Avatar proxy cache (in-memory, TTL 5 min) ───────────────────────────────
+_avatar_cache: dict[str, tuple[bytes, str, float]] = {}  # conv_id -> (body, content_type, timestamp)
+_AVATAR_TTL = 300  # 5 minutes
 
 
 # ── Pydantic models ──────────────────────────────────────────────────────────
@@ -73,6 +79,53 @@ def _serialize_message(m) -> dict:
 
 
 # ── Endpoints ────────────────────────────────────────────────────────────────
+
+@router.get("/api/inbox/avatar/{conversation_id}")
+async def inbox_avatar_proxy(
+    conversation_id: str,
+    ctx: TeamContext = Depends(_resolve_team_context),
+):
+    """Proxy conversation partner's profile picture to avoid CDN blocks in WebView."""
+    # Check cache first
+    now = time.monotonic()
+    cached = _avatar_cache.get(conversation_id)
+    if cached:
+        body, content_type, ts = cached
+        if now - ts < _AVATAR_TTL:
+            return Response(content=body, media_type=content_type, headers={"Cache-Control": "public, max-age=300"})
+        else:
+            del _avatar_cache[conversation_id]
+
+    conv = await get_conversation(conversation_id)
+    if not conv:
+        raise HTTPException(status_code=404, detail="conversation_not_found")
+    if conv.team_id and conv.team_id != ctx.team_id:
+        raise HTTPException(status_code=403, detail="team_mismatch")
+
+    profile_url = getattr(conv, "profile_picture_url", "") or ""
+    if not profile_url:
+        raise HTTPException(status_code=404, detail="no_avatar")
+
+    try:
+        async with httpx.AsyncClient(timeout=10, follow_redirects=True) as client:
+            resp = await client.get(profile_url)
+            resp.raise_for_status()
+    except Exception:
+        logger.warning("Failed to fetch avatar for conversation %s", conversation_id)
+        raise HTTPException(status_code=404, detail="fetch_failed")
+
+    content_type = resp.headers.get("content-type", "image/jpeg")
+    body = resp.content
+
+    # Store in cache
+    _avatar_cache[conversation_id] = (body, content_type, now)
+
+    return Response(
+        content=body,
+        media_type=content_type,
+        headers={"Cache-Control": "public, max-age=300"},
+    )
+
 
 @router.get("/api/inbox")
 async def list_inbox(

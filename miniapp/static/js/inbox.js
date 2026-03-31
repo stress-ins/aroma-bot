@@ -24,11 +24,11 @@ export function createInboxModule(deps) {
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 
-  function avatarHtml(url, size, iconSize) {
-    if (url) {
-      return '<img src="' + escapeHtml(url) + '" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover">';
-    }
-    return '<i class="ph ph-user" style="font-size:' + iconSize + 'px;color:var(--muted)"></i>';
+  function avatarHtml(conversationId, size, iconSize) {
+    const fallback = '<i class="ph ph-user" style="font-size:' + iconSize + 'px;color:var(--muted)"></i>';
+    if (!conversationId) return fallback;
+    const src = '/api/inbox/avatar/' + encodeURIComponent(conversationId);
+    return '<img src="' + src + '" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover" onerror="this.outerHTML=\'<i class=\\\'ph ph-user\\\' style=\\\'font-size:' + iconSize + 'px;color:var(--muted)\\\'></i>\'">';
   }
 
 
@@ -158,7 +158,7 @@ export function createInboxModule(deps) {
       return `
       <div class="inbox-card${dimClass}" data-action="openConversation" data-args='["${c.conversation_id}"]'>
         <div class="inbox-card-avatar">
-          ${avatarHtml(c.profile_picture_url, 40, 20)}
+          ${avatarHtml(c.conversation_id, 40, 20)}
         </div>
         <div class="inbox-card-body">
           <div class="inbox-card-header">
@@ -234,7 +234,7 @@ export function createInboxModule(deps) {
       ${renderBackButton()}
       <div class="inbox-chat-header">
         <div class="inbox-chat-avatar">
-          ${avatarHtml(c.profile_picture_url, 36, 18)}
+          ${avatarHtml(c.conversation_id, 36, 18)}
         </div>
         <div>
           <div class="inbox-chat-name">${escapeHtml(c.participant_name || c.participant_username || "Пользователь")}</div>
