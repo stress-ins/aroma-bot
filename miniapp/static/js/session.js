@@ -175,7 +175,7 @@ export function createSessionModule(deps) {
         es.close();
         _reelsEventSource = null;
         if (attempts > 0) {
-          // Retry SSE after a short delay; fall back to polling after 3 SSE retries
+          // Retry SSE after short delay; fall back to polling after retries exhausted
           window.setTimeout(() => scheduleReelsRefresh(draftId, attempts - 1), 3000);
         } else {
           _pollReelsRefresh(draftId, 90);
