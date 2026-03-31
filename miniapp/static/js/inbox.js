@@ -51,6 +51,17 @@ export function createInboxModule(deps) {
     return d.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
   }
 
+  /** Force-focus the compose textarea — helps Telegram WebApp open keyboard */
+  function _focusComposeInput() {
+    const input = document.getElementById("inbox-reply-input");
+    if (!input) return;
+    input.focus();
+    // Scroll textarea into view so it's not hidden behind on-screen keyboard
+    setTimeout(() => {
+      input.scrollIntoView({ block: "center", behavior: "smooth" });
+    }, 300);
+  }
+
   function toneLabel(tone) {
     return { official: "Официальный", warm: "Тёплый", provocative: "Провокационный" }[tone] || tone;
   }
@@ -260,10 +271,17 @@ export function createInboxModule(deps) {
         </div>
       </div>`;
 
-    // Scroll to bottom of messages
+    // Scroll to bottom of messages and focus textarea for keyboard
     requestAnimationFrame(() => {
       const msgContainer = document.getElementById("inbox-messages-container");
       if (msgContainer) msgContainer.scrollTop = msgContainer.scrollHeight;
+
+      // Programmatic focus on textarea to help Telegram WebApp open keyboard
+      const replyInput = document.getElementById("inbox-reply-input");
+      if (replyInput) {
+        replyInput.addEventListener("touchstart", _focusComposeInput, { once: false, passive: true });
+        replyInput.addEventListener("click", _focusComposeInput, { once: false });
+      }
     });
   }
 

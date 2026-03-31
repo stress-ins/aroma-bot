@@ -81,9 +81,9 @@
 }
 
 .inbox-bubble {
-  max-width: 80%; padding: 10px 14px;
+  max-width: 78%; padding: 10px 14px;
   border-radius: 16px; font-size: 14px; line-height: 1.45;
-  word-break: break-word;
+  word-break: break-word; width: fit-content;
 }
 
 .inbox-bubble--incoming {
