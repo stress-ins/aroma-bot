@@ -1,5 +1,9 @@
 """Tests for split_threads_posts, _extract_why_it_works, and _strip_format_labels."""
-from bot.agents.content import split_threads_posts, _extract_why_it_works, _strip_format_labels, _THREADS_MAX_WORDS, SERIES_TEMPLATES, _detect_template_from_caption, pick_series_template
+from bot.agents.content import (
+    split_threads_posts, _extract_why_it_works, _strip_format_labels, _THREADS_MAX_WORDS,
+    SERIES_TEMPLATES, _detect_template_from_caption, pick_series_template,
+    build_dynamic_slots,
+)
 
 
 def test_extract_why_it_works_present():
@@ -137,7 +141,7 @@ def test_series_templates_have_required_keys():
         assert "name" in tpl, f"Template {key} missing 'name'"
         assert "slots" in tpl, f"Template {key} missing 'slots'"
         assert "default_times" in tpl, f"Template {key} missing 'default_times'"
-        assert len(tpl["slots"]) == 3, f"Template {key} must have exactly 3 slots"
+        assert len(tpl["slots"]) >= 3, f"Template {key} must have at least 3 slots"
         for slot in tpl["slots"]:
             assert "slot" in slot
             assert "label" in slot
@@ -150,7 +154,7 @@ def test_pick_series_template_returns_valid():
     tpl = pick_series_template()
     assert "name" in tpl
     assert "slots" in tpl
-    assert len(tpl["slots"]) == 3
+    assert len(tpl["slots"]) >= 3
 
 
 def test_split_myth_reality_template():
@@ -240,3 +244,83 @@ def test_split_with_explicit_template():
     assert posts[0]["icon"] == "x-circle"
     assert posts[1]["icon"] == "check-circle"
     assert posts[2]["icon"] == "hand"
+
+
+# ── Dynamic slots tests ──────────────────────────────────────────────────
+
+def test_build_dynamic_slots_3():
+    tpl = SERIES_TEMPLATES["time_of_day"]
+    slots, times = build_dynamic_slots(3, tpl)
+    assert len(slots) == 3
+    assert len(times) == 3
+    assert slots[0]["slot"] == "morning"
+    assert slots[1]["slot"] == "day"
+    assert slots[2]["slot"] == "evening"
+
+
+def test_build_dynamic_slots_5():
+    tpl = SERIES_TEMPLATES["myth_reality"]
+    slots, times = build_dynamic_slots(5, tpl)
+    assert len(slots) == 5
+    # First 3 slots come from template
+    assert slots[0]["slot"] == "myth"
+    assert slots[1]["slot"] == "reality"
+    assert slots[2]["slot"] == "practice"
+    # Extra slots are numbered
+    assert slots[3]["slot"] == "post_4"
+    assert slots[4]["slot"] == "post_5"
+    assert slots[3]["label"] == "ПОСТ 4"
+    assert "desc" in slots[3]
+    # All have times
+    for s in slots:
+        assert s["slot"] in times
+
+
+def test_build_dynamic_slots_8():
+    tpl = SERIES_TEMPLATES["story_arc"]
+    slots, times = build_dynamic_slots(8, tpl)
+    assert len(slots) == 8
+    assert slots[0]["slot"] == "setup"
+    assert slots[7]["slot"] == "post_8"
+    # Times spread across day
+    first_time = times[slots[0]["slot"]]
+    last_time = times[slots[-1]["slot"]]
+    assert first_time < last_time
+
+
+def test_build_dynamic_slots_times_spread():
+    tpl = SERIES_TEMPLATES["time_of_day"]
+    slots, times = build_dynamic_slots(6, tpl)
+    time_values = sorted(times.values())
+    assert time_values[0].startswith("09")
+    # All times unique
+    assert len(set(time_values)) == 6
+
+
+def test_split_dynamic_posts():
+    """Test that split_threads_posts works with dynamic N-post templates."""
+    tpl = SERIES_TEMPLATES["myth_reality"]
+    dyn_slots, dyn_times = build_dynamic_slots(5, tpl)
+    dyn_template = {"name": tpl["name"], "slots": dyn_slots, "default_times": dyn_times}
+
+    caption = """МИФ
+Масла лечат.
+
+РЕАЛЬНОСТЬ
+Нет, поддерживают.
+
+ПРАКТИКА
+Лаванда перед сном.
+
+ПОСТ 4
+Ещё один факт.
+
+ПОСТ 5
+Финальный вывод."""
+
+    posts = split_threads_posts(caption, template=dyn_template)
+    assert len(posts) == 5
+    assert posts[0]["slot"] == "myth"
+    assert posts[3]["slot"] == "post_4"
+    assert "факт" in posts[3]["text"]
+    assert posts[4]["slot"] == "post_5"

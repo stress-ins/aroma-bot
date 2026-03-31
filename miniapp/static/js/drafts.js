@@ -152,7 +152,9 @@ export function createDraftsModule(deps) {
     if (k === "threads_series") {
       const tplName = d.payload?.series_template_name;
       const tplSuffix = tplName && tplName !== "Утро / День / Вечер" ? ` · ${tplName}` : "";
-      return `Серия · ${d.payload?.threads_posts?.length || 3} поста${tplSuffix}`;
+      const cnt = d.payload?.threads_posts?.length || 3;
+      const postWord = cnt === 1 ? "пост" : cnt < 5 ? "поста" : "постов";
+      return `Серия · ${cnt} ${postWord}${tplSuffix}`;
     }
     if (k === "youtube_video") return d.payload?.script ? "Сценарий готов" : `~${d.payload?.duration_target || 10} мин`;
     if (k === "carousel") return `${d.payload?.slides?.length || 5} слайдов`;

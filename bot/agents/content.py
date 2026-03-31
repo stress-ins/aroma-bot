@@ -197,6 +197,102 @@ def pick_series_template() -> dict:
     return random.choice(list(SERIES_TEMPLATES.values()))
 
 
+# ── AI expert: determine optimal post count for a topic ──────────────────────
+
+_SERIES_SIZE_SYSTEM = """\
+Ты — эксперт по контент-стратегии в Threads. Твоя задача — определить оптимальное \
+количество постов в серии на один день для заданной темы.
+
+Правила:
+- Минимум 3, максимум 8 постов
+- Простая тема (один совет, один факт) → 3 поста
+- Средняя тема (несколько аспектов, история + практика) → 4-5 постов
+- Глубокая тема (пошаговый гайд, разбор мифов, серия историй) → 6-8 постов
+- Учитывай: каждый пост должен быть самодостаточным и ценным, не нужно раздувать ради количества
+- Лучше 4 сильных поста, чем 6 с водой
+
+Ответь ТОЛЬКО числом (3, 4, 5, 6, 7 или 8). Ничего больше."""
+
+_SERIES_SIZE_PROMPT = """\
+Тема серии: {topic}
+Цель: {goal}
+Формат: серия постов в Threads на один день
+
+Сколько постов оптимально для раскрытия этой темы?"""
+
+
+def determine_series_size_sync(topic: str, goal_key: str) -> int:
+    """AI expert determines optimal number of posts (3-8) for a Threads series."""
+    from bot.services.claude_client import call_claude
+
+    goal_text = GOAL_GUIDANCE.get(goal_key, "Доверие")
+    prompt = _SERIES_SIZE_PROMPT.format(topic=topic, goal=goal_text)
+    try:
+        raw = call_claude(
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=10,
+            system=_SERIES_SIZE_SYSTEM,
+            context="series size expert",
+        )
+        count = int(raw.strip())
+        return max(3, min(8, count))
+    except (ValueError, TypeError):
+        logger.debug("Series size expert returned non-numeric, defaulting to 3")
+        return 3
+    except Exception:
+        logger.debug("Series size expert failed, defaulting to 3", exc_info=True)
+        return 3
+
+
+def build_dynamic_slots(post_count: int, template: dict) -> tuple[list[dict], dict]:
+    """Build N slot definitions with evenly distributed times across 09:00-21:00.
+
+    Uses the base template's first 3 slots as the narrative foundation,
+    then generates additional numbered slots for posts 4+.
+
+    Returns (slots, default_times).
+    """
+    base_slots = template["slots"]
+    slots: list[dict] = []
+    default_times: dict[str, str] = {}
+
+    # Distribute times evenly across 09:00-21:00
+    start_hour, end_hour = 9, 21
+    interval = (end_hour - start_hour) / post_count
+
+    for i in range(post_count):
+        hour = int(start_hour + i * interval)
+        minute = int((start_hour + i * interval - hour) * 60)
+        time_str = f"{hour:02d}:{minute:02d}"
+
+        if i < len(base_slots):
+            slot = dict(base_slots[i])
+            slot_id = slot["slot"]
+        else:
+            slot_id = f"post_{i + 1}"
+            # Generate descriptive labels for extra slots
+            extra_descs = [
+                "развитие темы, углубление, новый аспект",
+                "конкретный пример, кейс, история из практики",
+                "неожиданный поворот, контринтуитивный факт",
+                "практическое упражнение, чеклист, шаги",
+                "обобщение, рефлексия, взгляд с другой стороны",
+            ]
+            desc = extra_descs[(i - len(base_slots)) % len(extra_descs)]
+            slot = {
+                "slot": slot_id,
+                "label": f"ПОСТ {i + 1}",
+                "marker": f"ПОСТ {i + 1}",
+                "icon": "hash",
+                "desc": desc,
+            }
+
+        slots.append(slot)
+        default_times[slot["slot"]] = time_str
+
+    return slots, default_times
+
+
 _FORMAT_LABELS_RE = None
 
 
@@ -544,15 +640,24 @@ def _generate_writer_sync(
     """Step 2: Writer produces platform-native draft. Step 3: Editor polishes."""
     from bot.agents.creative_team import edit_post_sync
 
-    # Pick a random series template for threads_series to diversify content
+    # Pick a random series template and determine post count for threads_series
     series_template = None
     series_template_key = ""
     if format_key == "threads_series":
         import random
         series_template_key = random.choice(list(SERIES_TEMPLATES.keys()))
-        series_template = SERIES_TEMPLATES[series_template_key]
+        base_template = SERIES_TEMPLATES[series_template_key]
+        # AI expert determines optimal post count for the topic
+        post_count = determine_series_size_sync(topic, goal_key)
+        dynamic_slots, dynamic_times = build_dynamic_slots(post_count, base_template)
+        series_template = {
+            "name": base_template["name"],
+            "slots": dynamic_slots,
+            "default_times": dynamic_times,
+            "post_count": post_count,
+        }
 
-    token_limit = 900
+    token_limit = max(900, 300 * (series_template["post_count"] if series_template else 3))
     raw = _call_claude(
         _writer_prompt(topic, goal_key, format_key, angle, hook, blend_context=blend_context, rag_context=rag_context, practice_focus=practice_focus, series_template=series_template), max_tokens=token_limit
     )

@@ -51,12 +51,13 @@ def build_threads_output_format(template: dict) -> str:
         )
     markers_str = ", ".join(s["marker"] for s in slots)
     return (
-        f"ОБЯЗАТЕЛЬНЫЙ ФОРМАТ — верни ровно 3 поста. Пропуск любого = провал:\n\n"
+        f"ОБЯЗАТЕЛЬНЫЙ ФОРМАТ — верни ровно {len(slots)} постов. Пропуск любого = провал:\n\n"
         + "\n\n".join(slot_blocks)
         + "\n\n"
         "VISUAL_PROMPT: [на английском, до 25 слов, terracotta/beige/sage palette, soft light, atmospheric lifestyle]\n"
         "STOCK_KEYWORDS: [5-8 English keywords for stock photo search, comma-separated]\n\n"
-        f"Каждое слово {markers_str} стоит СТРОГО на отдельной строке. Все три секции обязательны.\n"
+        f"Каждое слово-маркер ({markers_str}) стоит СТРОГО на отдельной строке. Все {len(slots)} секций обязательны.\n"
+        f"Все {len(slots)} постов публикуются в один день. Каждый пост — самодостаточный, но связан с остальными единой темой.\n"
     )
 
 OUTPUT_FORMAT_DEFAULT = """\
