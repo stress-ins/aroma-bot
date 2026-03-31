@@ -210,12 +210,21 @@ export function createContentModule(deps) {
       ? reel.frames.filter((f) => f?.current_asset?.url || f?.image_status === "ready").length
       : 0;
     const hasGeneratingFrames = Array.isArray(reel.frames) && reel.frames.some((f) => f?.image_status === "generating");
+    // Detect generation just finished (was pending, now done)
+    const wasPending = state.reels.find((r) => r.draft_id === draftId)?.generation_pending
+      || state.selectedReels?.draft_id === draftId && state.selectedReels?.generation_pending;
+    const justFinished = wasPending && !reel.generation_pending;
+
     state.reels = state.reels.map((item) => item.draft_id === reel.draft_id ? { ...item, ...reel } : item);
     state.drafts = state.drafts.map((item) => item.draft_id === reel.draft_id ? { ...item, ...reel } : item);
     if (isCurrentReelsDetail(reel.draft_id)) {
       state.selectedReels = reel;
       renderReels();
       if (!isEditingDetailForm()) renderReelsDetail(reel);
+    } else if (justFinished) {
+      // User is NOT on this reel's detail — show toast with link
+      const title = reel.topic || reel.draft_id?.slice(0, 8) || "Рилс";
+      showUiNotice(`Рилс «${title}» готов ✓`, "success");
     }
     if (typeof callbacks.renderDraftList === "function") callbacks.renderDraftList();
     return {

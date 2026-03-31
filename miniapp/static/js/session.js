@@ -174,8 +174,12 @@ export function createSessionModule(deps) {
       es.onerror = () => {
         es.close();
         _reelsEventSource = null;
-        // Fallback to polling on SSE failure
-        _pollReelsRefresh(draftId, attempts);
+        if (attempts > 0) {
+          // Retry SSE after a short delay; fall back to polling after 3 SSE retries
+          window.setTimeout(() => scheduleReelsRefresh(draftId, attempts - 1), 3000);
+        } else {
+          _pollReelsRefresh(draftId, 90);
+        }
       };
     } else {
       _pollReelsRefresh(draftId, attempts);
