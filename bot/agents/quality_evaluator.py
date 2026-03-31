@@ -22,10 +22,10 @@ class ContentScore(TypedDict):
     humanness: float           # 0..1 — reads like written by a human, not AI
     overall: float             # 0..1 — weighted average
     critique: str              # human-readable feedback for retry prompt
-    passed: bool               # overall >= threshold (default 0.65)
+    passed: bool               # overall >= threshold (default 0.75)
 
 
-_THRESHOLD = 0.65
+_THRESHOLD = 0.75
 
 _EVAL_SYSTEM = """\
 Ты — строгий редактор контента для специалиста по регуляции нервной системы через сенсорные практики.
@@ -85,9 +85,9 @@ def _call_claude(prompt: str, system: str = "") -> str:
 def _recalc_overall(scores: dict) -> None:
     """Recalculate overall score and passed flag."""
     scores["overall"] = round(
-        scores["hook_strength"] * 0.25
-        + scores["coherence"] * 0.20
-        + scores["cta_clarity"] * 0.15
+        scores["hook_strength"] * 0.35
+        + scores["coherence"] * 0.15
+        + scores["cta_clarity"] * 0.10
         + scores["brand_fit"] * 0.20
         + scores["humanness"] * 0.20,
         3,
@@ -173,7 +173,7 @@ def _evaluate_sync(text: str, platform: str, topic: str) -> ContentScore:
         cta = float(data.get("cta_clarity", 0.5))
         brand = float(data.get("brand_fit", 0.5))
         humanness = float(data.get("humanness", 0.5))
-        overall = round((hook * 0.25 + coherence * 0.20 + cta * 0.15 + brand * 0.20 + humanness * 0.20), 3)
+        overall = round((hook * 0.35 + coherence * 0.15 + cta * 0.10 + brand * 0.20 + humanness * 0.20), 3)
         critique = str(data.get("critique", ""))
         scores = {
             "hook_strength": round(hook, 3),

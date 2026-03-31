@@ -149,7 +149,11 @@ export function createDraftsModule(deps) {
 
   function _draftExtras(d) {
     const k = String(d.kind || "").toLowerCase();
-    if (k === "threads_series") return `Серия · ${d.payload?.posts?.length || 3} поста`;
+    if (k === "threads_series") {
+      const tplName = d.payload?.series_template_name;
+      const tplSuffix = tplName && tplName !== "Утро / День / Вечер" ? ` · ${tplName}` : "";
+      return `Серия · ${d.payload?.threads_posts?.length || 3} поста${tplSuffix}`;
+    }
     if (k === "youtube_video") return d.payload?.script ? "Сценарий готов" : `~${d.payload?.duration_target || 10} мин`;
     if (k === "carousel") return `${d.payload?.slides?.length || 5} слайдов`;
     if (k === "reels" || k === "reels_v2") return "Instagram";
@@ -225,8 +229,9 @@ export function createDraftsModule(deps) {
     const p = d.payload || {};
     const posts = Array.isArray(p.threads_posts) ? p.threads_posts : [];
     const isApproved = d.status === "approved" || d.status === "scheduled" || d.status === "published";
-    const SLOT_ICONS = { morning: uiIcon("sunrise"), day: uiIcon("sun"), evening: uiIcon("moon") };
-    const SLOT_NAMES = { morning: "Утро", day: "День", evening: "Вечер" };
+    // Dynamic slot icons — use icon from payload if available, fallback to time-of-day defaults
+    const DEFAULT_SLOT_ICONS = { morning: "sunrise", day: "sun", evening: "moon", myth: "x-circle", reality: "check-circle", practice: "hand", problem: "alert-triangle", analysis: "search", action: "zap", setup: "book-open", twist: "refresh-cw", takeaway: "lightbulb" };
+    const DEFAULT_SLOT_NAMES = { morning: "Утро", day: "День", evening: "Вечер", myth: "Миф", reality: "Реальность", practice: "Практика", problem: "Проблема", analysis: "Разбор", action: "Действие", setup: "Завязка", twist: "Поворот", takeaway: "Вывод" };
     const GOAL_LABELS = { trust: "Доверие", authority: "Экспертность", engagement: "Вовлечённость", sales: "Продажи" };
     const EMOTION_LABELS = { calm: "Спокойная", inspiration: "Вдохновляющая", curiosity: "Любопытство", trust: "Доверие", joy: "Радость" };
 
@@ -235,9 +240,12 @@ export function createDraftsModule(deps) {
       p.handbook_source ? tagMarkup("Из справочника", "status-neutral") : "",
     ].filter(Boolean).join(" ");
 
+    const templateName = p.series_template_name || "Утро / День / Вечер";
+
     const slotsHtml = posts.map((post) => {
-      const icon = SLOT_ICONS[post.slot] || "";
-      const name = SLOT_NAMES[post.slot] || post.slot;
+      const iconName = post.icon || DEFAULT_SLOT_ICONS[post.slot] || "circle";
+      const icon = uiIcon(iconName);
+      const name = DEFAULT_SLOT_NAMES[post.slot] || post.label || post.slot;
       const charCount = (post.text || "").length;
       const isOver = charCount > 500;
       return `
@@ -306,6 +314,7 @@ export function createDraftsModule(deps) {
               ${p.goal ? tagMarkup(GOAL_LABELS[p.goal] || p.goal, "status-neutral") : ""}
               ${p.emotion ? tagMarkup(EMOTION_LABELS[p.emotion] || p.emotion, "status-neutral") : ""}
               ${sourceBadges}
+              ${templateName !== "Утро / День / Вечер" ? tagMarkup(templateName, "status-accent") : ""}
             </div>
           </div>
           <div class="draft-actions-compact">

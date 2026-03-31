@@ -41,8 +41,17 @@ def build_threads_series_payload(
     emotion: str = "",
 ) -> dict[str, object]:
     """Build rich payload for threads_series kind with per-slot status and version history."""
-    default_times = {"morning": "08:54", "day": "13:12", "evening": "20:30"}
-    posts = split_threads_posts(draft.caption) if draft.caption else []
+    from bot.agents.content import SERIES_TEMPLATES
+
+    # Resolve the template used for this draft
+    template = None
+    template_key = getattr(draft, "series_template_key", "") or ""
+    if template_key and template_key in SERIES_TEMPLATES:
+        template = SERIES_TEMPLATES[template_key]
+
+    posts = split_threads_posts(draft.caption, template=template) if draft.caption else []
+    default_times = template["default_times"] if template else {"morning": "08:54", "day": "13:12", "evening": "20:30"}
+
     threads_posts: list[dict[str, object]] = []
     for post in posts:
         threads_posts.append({
@@ -50,15 +59,18 @@ def build_threads_series_payload(
             "label": post["label"],
             "text": post["text"],
             "why_it_works": post.get("why_it_works", ""),
-            "scheduled_time": default_times.get(post["slot"], "09:00"),
+            "scheduled_time": default_times.get(post["slot"], "12:00"),
             "status": "draft",
             "error_message": None,
             "versions": [],
+            "icon": post.get("icon", ""),
         })
     return {
         "goal": goal_key,
         "emotion": emotion,
         "series_summary": draft.angle or "",
+        "series_template": template_key,
+        "series_template_name": template["name"] if template else "Утро / День / Вечер",
         "threads_posts": threads_posts,
         "generation_pending": False,
     }

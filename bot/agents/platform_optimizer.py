@@ -31,6 +31,30 @@ _PLATFORM_KNOWLEDGE: dict[str, str] = {
         "- Comments and saves are the strongest algorithm signals\n"
         "- Niche hashtags (3-5) outperform broad ones"
     ),
+    "threads": (
+        "Platform: Threads (Meta)\n"
+        "- First line is everything: must stop the scroll in under 2 seconds\n"
+        "- Controversial or counterintuitive takes drive replies and shares\n"
+        "- Series of 3 posts perform better than single posts (algorithm rewards consecutive engagement)\n"
+        "- Questions at the end boost reply rate significantly\n"
+        "- No hashtags needed — discovery is algorithmic, not hashtag-based\n"
+        "- Short posts (40-80 words) outperform long ones\n"
+        "- Personal stories and 'hot takes' get the most engagement\n"
+        "- Replies to own posts within 30 min boost visibility\n"
+        "- Saves and shares are stronger signals than likes"
+    ),
+    "threads_series": (
+        "Platform: Threads (Meta) — Series of 3 posts\n"
+        "- First line is everything: must stop the scroll in under 2 seconds\n"
+        "- Series format: each post should stand alone but connect to the next\n"
+        "- Variety in structure (not always same pattern) keeps audience engaged\n"
+        "- Questions and calls to reply drive algorithm boost\n"
+        "- Personal vulnerability and specific situations outperform generic advice\n"
+        "- Short posts (40-80 words) outperform long ones\n"
+        "- No hashtags — algorithm handles discovery\n"
+        "- Posting with 4-6 hour gaps between series posts is optimal\n"
+        "- Saves and shares are stronger signals than likes"
+    ),
 }
 
 _CONTENT_TYPE_CONTEXT: dict[str, str] = {

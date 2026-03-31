@@ -38,6 +38,27 @@ STOCK_KEYWORDS: [5-8 English keywords for stock photo search, comma-separated]
 Каждое слово УТРО, ДЕНЬ, ВЕЧЕР стоит СТРОГО на отдельной строке. Все три секции обязательны.
 """
 
+
+def build_threads_output_format(template: dict) -> str:
+    """Build dynamic output format block based on the chosen series template."""
+    slots = template["slots"]
+    slot_blocks = []
+    for s in slots:
+        slot_blocks.append(
+            f'{s["marker"]}\n'
+            f'[текст поста, 40-80 слов. Задача этого поста: {s["desc"]}]\n'
+            f'ПОЧЕМУ ЭТО СРАБОТАЕТ: [одно предложение]'
+        )
+    markers_str = ", ".join(s["marker"] for s in slots)
+    return (
+        f"ОБЯЗАТЕЛЬНЫЙ ФОРМАТ — верни ровно 3 поста. Пропуск любого = провал:\n\n"
+        + "\n\n".join(slot_blocks)
+        + "\n\n"
+        "VISUAL_PROMPT: [на английском, до 25 слов, terracotta/beige/sage palette, soft light, atmospheric lifestyle]\n"
+        "STOCK_KEYWORDS: [5-8 English keywords for stock photo search, comma-separated]\n\n"
+        f"Каждое слово {markers_str} стоит СТРОГО на отдельной строке. Все три секции обязательны.\n"
+    )
+
 OUTPUT_FORMAT_DEFAULT = """\
 Верни строго в формате:
 CAPTION: [полный текст поста, начиная с хука, с хэштегами согласно правилам платформы]
@@ -47,8 +68,10 @@ STOCK_KEYWORDS: [5-8 English keywords for stock photo search, comma-separated, e
 """
 
 
-def threads_output_format(format_key: str) -> str:
+def threads_output_format(format_key: str, series_template: dict | None = None) -> str:
     if format_key == "threads_series":
+        if series_template:
+            return build_threads_output_format(series_template)
         return OUTPUT_FORMAT_THREADS
     return OUTPUT_FORMAT_DEFAULT
 
@@ -154,15 +177,32 @@ def strategist_prompt(
     focus_block = PRACTICE_FOCUS_BLOCKS.get(practice_focus, "")
     return f"""\
 {get_brand_context()}
-Роль: ты Content Strategist. Твоя задача — найти угол и первую строку.
+Роль: ты Content Strategist. Твоя задача — найти угол и убийственную первую строку.
 
 Тема: {topic}
 Цель: {goal_guidance[goal_key]}
 Формат: {format_labels[format_key]}
 {focus_block}{rag_block}
+
+ПАТТЕРНЫ СИЛЬНЫХ ХУКОВ (используй один из них):
+1. Контринтуитивное утверждение: «Чем больше ты стараешься расслабиться, тем сильнее зажимаешься»
+2. Конкретная ситуация-триггер: «Ты лежишь в кровати, телефон заряжается, а голова нет»
+3. Неожиданный факт: «Лаванда, которую тебе советуют от бессонницы, может её усилить»
+4. Провокационный вопрос: «А что если твой "стресс" — это просто тело, которое забыло, как дышать?»
+5. Признание/уязвимость: «Я три года рассказывала про дыхание, а сама не могла выдохнуть после рабочего дня»
+6. Разрушение мифа: «"Эфирные масла лечат" — нет. Но они умеют кое-что полезнее»
+
+ANTI-PATTERNS (так писать ЗАПРЕЩЕНО):
+- «В современном мире стресс стал...» — скучное начало, все пролистнут
+- «Сегодня хочу поделиться...» — не интригует
+- «Задумывались ли вы...» — избитый шаблон
+- «Каждый из нас...» — обезличено, не цепляет
+- «Ароматерапия — это...» — лекция, а не хук
+- Любое начало с определения или объяснения термина
+
 Ответь строго в формате (два поля, на русском):
 ANGLE: [1-2 предложения — почему эта тема резонирует СЕЙЧАС с этой аудиторией и под эту цель]
-HOOK: [точная первая строка поста — останавливает скролл, без приветствий, без "Сегодня хочу поделиться"]
+HOOK: [точная первая строка поста — останавливает скролл. Должна вызывать реакцию «ого» или «это про меня»]
 
 Пунктуация: тире (— –) → запятая. Запрещено: "важно отметить", "данный", "осуществляется", "в рамках", markdown-форматирование.
 {blend_block}"""
@@ -208,6 +248,7 @@ def writer_prompt(
     blend_context: dict | None = None,
     rag_context: str = "",
     practice_focus: str = "aroma",
+    series_template: dict | None = None,
 ) -> str:
     rules = _PLATFORM_RULES_WRITER.get(format_key, _PLATFORM_RULES_WRITER["telegram"])
     blend_block = ""
@@ -251,4 +292,4 @@ def writer_prompt(
 - Запрещено использовать markdown-форматирование: # заголовки, **жирный**, > цитаты, ``` код. Посты для соцсетей пишутся простым текстом.
 - Если ты вернёшь анализ или разбор вместо текста поста — это провал задания.
 
-{threads_output_format(format_key)}"""
+{threads_output_format(format_key, series_template=series_template)}"""

@@ -101,18 +101,74 @@ def edit_post_sync(raw: str, topic: str, platform: str = "default", user_forbidd
     cleaned = humanize(policy_result.text, platform)
     humanized = humanize_llm(cleaned, platform) if platform != "threads_series" else cleaned
 
-    # Brand Guardian validation pass
+    # Brand Guardian validation pass — blocking for severity=error violations
     from bot.agents.brand_guardian import audit_brand_sync
 
     try:
         audit = audit_brand_sync(humanized, platform)
-        if not audit.get("passed", True) and audit.get("cleaned_text"):
-            humanized = audit["cleaned_text"]
+        if not audit.get("passed", True):
+            if audit.get("cleaned_text"):
+                humanized = audit["cleaned_text"]
+            else:
+                # If there are error-level violations but no cleaned_text,
+                # log a warning so the quality evaluator will catch it downstream
+                errors = [v for v in audit.get("violations", []) if v.get("severity") == "error"]
+                if errors:
+                    logger.warning(
+                        "Brand Guardian: %d error-level violations remain after edit: %s",
+                        len(errors),
+                        "; ".join(v.get("detail", "") for v in errors),
+                    )
     except Exception:
-        logger.warning("creative_team: suppressed exception", exc_info=True)
-        pass  # Never let brand guardian break the pipeline
+        logger.warning("creative_team: brand guardian failed", exc_info=True)
+        # On exception, still return the humanized text — don't break pipeline on infra errors
 
     return humanized
+
+
+def _auto_apply_optimizations(
+    text: str,
+    optimization: dict,
+    topic: str,
+    platform: str,
+) -> str:
+    """Auto-apply high-impact suggestions from platform optimizer via LLM rewrite."""
+    high_impact = [
+        opt for opt in optimization.get("optimizations", [])
+        if opt.get("impact") == "high" and opt.get("suggested")
+    ]
+    if not high_impact:
+        return text
+
+    from bot.services.claude_client import call_claude
+
+    suggestions_block = "\n".join(
+        f"- {opt['type']}: {opt['suggested']}" for opt in high_impact[:3]
+    )
+    prompt = (
+        f"Перепиши текст поста, применив следующие оптимизации для алгоритма {platform}:\n"
+        f"{suggestions_block}\n\n"
+        f"Тема: {topic}\n\n"
+        f"Текст:\n{text}\n\n"
+        f"Правила:\n"
+        f"- Сохрани основную мысль, тон и длину\n"
+        f"- Примени указанные улучшения\n"
+        f"- Верни ТОЛЬКО текст поста, без комментариев\n"
+        f"- Без markdown-форматирования"
+    )
+    try:
+        result = call_claude(
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=700,
+            context=f"optimizer auto-apply ({platform})",
+        )
+        result = result.strip()
+        if len(result) > 30:
+            logger.info("Auto-applied %d high-impact optimizations for %s", len(high_impact), platform)
+            return result
+    except Exception:
+        logger.warning("_auto_apply_optimizations: LLM rewrite failed", exc_info=True)
+    return text
 
 
 def edit_post_with_optimization_sync(
@@ -140,9 +196,12 @@ def edit_post_with_optimization_sync(
             platform=platform,
             content_type=content_type,
         )
+
+        # Auto-apply high-impact suggestions from platform optimizer
+        if platform_optimization:
+            text = _auto_apply_optimizations(text, platform_optimization, topic, platform)
     except Exception:
-        logger.warning("edit_post_with_optimization_sync: suppressed exception", exc_info=True)
-        pass  # Never let platform optimizer break the pipeline
+        logger.warning("edit_post_with_optimization_sync: optimizer failed", exc_info=True)
 
     return {
         "text": text,

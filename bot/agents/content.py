@@ -55,6 +55,7 @@ class ContentDraft:
     stock_keywords: list[str] = field(default_factory=list)
     slides: list[str] = field(default_factory=list)
     quality_score: dict | None = None
+    series_template_key: str = ""
 
 
 def goal_label(goal_key: str) -> str:
@@ -149,6 +150,52 @@ _THREADS_SLOTS = [
 
 _THREADS_DEFAULT_TIMES = {"morning": "09:00", "day": "13:00", "evening": "19:00"}
 
+# ── Series templates for diverse Threads formats ─────────────────────────────
+# Each template defines 3 slots with slot id, label, marker (for parsing), icon hint, and description.
+SERIES_TEMPLATES = {
+    "time_of_day": {
+        "name": "Утро / День / Вечер",
+        "slots": [
+            {"slot": "morning", "label": "УТРО", "marker": "УТРО", "icon": "sunrise", "desc": "провокация, спорное мнение, байт на обсуждение"},
+            {"slot": "day", "label": "ДЕНЬ", "marker": "ДЕНЬ", "icon": "sun", "desc": "конкретный совет, мясо, для сохранений"},
+            {"slot": "evening", "label": "ВЕЧЕР", "marker": "ВЕЧЕР", "icon": "moon", "desc": "личная история, факап, рефлексия"},
+        ],
+        "default_times": {"morning": "09:00", "day": "13:00", "evening": "19:00"},
+    },
+    "myth_reality": {
+        "name": "Миф / Реальность / Практика",
+        "slots": [
+            {"slot": "myth", "label": "МИФ", "marker": "МИФ", "icon": "x-circle", "desc": "распространённое заблуждение, которое цепляет и вызывает реакцию"},
+            {"slot": "reality", "label": "РЕАЛЬНОСТЬ", "marker": "РЕАЛЬНОСТЬ", "icon": "check-circle", "desc": "как обстоят дела на самом деле, с фактами и примерами"},
+            {"slot": "practice", "label": "ПРАКТИКА", "marker": "ПРАКТИКА", "icon": "hand", "desc": "что конкретно делать, применимый совет"},
+        ],
+        "default_times": {"myth": "09:00", "reality": "13:00", "practice": "19:00"},
+    },
+    "problem_solution": {
+        "name": "Проблема / Разбор / Действие",
+        "slots": [
+            {"slot": "problem", "label": "ПРОБЛЕМА", "marker": "ПРОБЛЕМА", "icon": "alert-triangle", "desc": "конкретная боль аудитории, ситуация из жизни"},
+            {"slot": "analysis", "label": "РАЗБОР", "marker": "РАЗБОР", "icon": "search", "desc": "почему это происходит, механизм, объяснение"},
+            {"slot": "action", "label": "ДЕЙСТВИЕ", "marker": "ДЕЙСТВИЕ", "icon": "zap", "desc": "что делать прямо сейчас, одно конкретное действие"},
+        ],
+        "default_times": {"problem": "09:00", "analysis": "13:00", "action": "19:00"},
+    },
+    "story_arc": {
+        "name": "Завязка / Поворот / Вывод",
+        "slots": [
+            {"slot": "setup", "label": "ЗАВЯЗКА", "marker": "ЗАВЯЗКА", "icon": "book-open", "desc": "сцена, история, ситуация — затянуть в рассказ"},
+            {"slot": "twist", "label": "ПОВОРОТ", "marker": "ПОВОРОТ", "icon": "refresh-cw", "desc": "неожиданный поворот, инсайт, противоречие"},
+            {"slot": "takeaway", "label": "ВЫВОД", "marker": "ВЫВОД", "icon": "lightbulb", "desc": "чему это учит, что можно забрать себе"},
+        ],
+        "default_times": {"setup": "09:00", "twist": "13:00", "takeaway": "19:00"},
+    },
+}
+
+def pick_series_template() -> dict:
+    """Randomly pick a series template for variety in Threads content."""
+    import random
+    return random.choice(list(SERIES_TEMPLATES.values()))
+
 
 _FORMAT_LABELS_RE = None
 
@@ -183,17 +230,34 @@ def _extract_why_it_works(text: str) -> tuple[str, str]:
     return text, ""
 
 
-def split_threads_posts(caption: str) -> list[dict[str, str]]:
-    """Split a threads caption containing УТРО/ДЕНЬ/ВЕЧЕР sections into 3 posts."""
+def _detect_template_from_caption(caption: str) -> dict:
+    """Detect which series template was used based on markers in caption."""
+    import re
+    for tpl_key, tpl in SERIES_TEMPLATES.items():
+        markers = [s["marker"] for s in tpl["slots"]]
+        found = sum(1 for m in markers if re.search(rf"\b{re.escape(m)}\b", caption, re.IGNORECASE))
+        if found >= 2:
+            return tpl
+    # Default to time_of_day
+    return SERIES_TEMPLATES["time_of_day"]
+
+
+def split_threads_posts(caption: str, template: dict | None = None) -> list[dict[str, str]]:
+    """Split a threads caption into 3 posts using the detected or provided template."""
     import logging
     import re
 
     _logger = logging.getLogger(__name__)
 
+    if template is None:
+        template = _detect_template_from_caption(caption)
+
+    slots_def = template["slots"]
+    default_times = template.get("default_times", {})
+
     posts: list[dict[str, str]] = []
-    markers = [s["marker"] for s in _THREADS_SLOTS]
+    markers = [s["marker"] for s in slots_def]
     # Expanded regex: handle emoji prefixes, numbering, hashtags, brackets
-    # e.g. "🌅 УТРО", "1. УТРО", "#УТРО", "[УТРО]", "**УТРО**"
     pattern = "|".join(re.escape(m) for m in markers)
     parts = re.split(
         rf"(?:^|\n)\s*(?:[\U0001f300-\U0001faff\u2600-\u27bf]\s*)?(?:\d+[\.\)]\s*)?(?:#)?(?:\[)?(?:\*\*)?({pattern})(?:\*\*)?(?:\])?[:\s]*\n?",
@@ -207,8 +271,8 @@ def split_threads_posts(caption: str) -> list[dict[str, str]]:
     while i < len(parts) - 1:
         marker = parts[i].strip().upper()
         raw_text = parts[i + 1].strip()
-        for s in _THREADS_SLOTS:
-            if s["marker"] == marker:
+        for s in slots_def:
+            if s["marker"].upper() == marker:
                 cleaned, why = _extract_why_it_works(raw_text)
                 slot_texts[s["slot"]] = _strip_format_labels(cleaned)
                 slot_why[s["slot"]] = why
@@ -216,25 +280,25 @@ def split_threads_posts(caption: str) -> list[dict[str, str]]:
         i += 2
 
     # Fallback: if regex didn't find markers but text is non-empty, split by double newline
-    has_content = any(slot_texts.get(s["slot"]) for s in _THREADS_SLOTS)
+    has_content = any(slot_texts.get(s["slot"]) for s in slots_def)
     if not has_content and caption.strip():
         _logger.warning("split_threads_posts: markers not found, using double-newline fallback")
         chunks = re.split(r"\n\s*\n", caption.strip())
-        # Filter out very short chunks (likely artifacts)
         chunks = [c.strip() for c in chunks if len(c.strip()) > 20]
-        for idx, slot_info in enumerate(_THREADS_SLOTS):
+        for idx, slot_info in enumerate(slots_def):
             if idx < len(chunks):
                 cleaned, why = _extract_why_it_works(chunks[idx])
                 slot_texts[slot_info["slot"]] = _strip_format_labels(cleaned)
                 slot_why[slot_info["slot"]] = why
 
-    for slot_info in _THREADS_SLOTS:
+    for slot_info in slots_def:
         posts.append({
             "slot": slot_info["slot"],
             "label": slot_info["label"],
             "text": slot_texts.get(slot_info["slot"], ""),
-            "default_time": _THREADS_DEFAULT_TIMES[slot_info["slot"]],
+            "default_time": default_times.get(slot_info["slot"], "12:00"),
             "why_it_works": slot_why.get(slot_info["slot"], ""),
+            "icon": slot_info.get("icon", ""),
         })
 
     return posts
@@ -390,8 +454,8 @@ def _strategist_prompt(topic: str, goal_key: str, format_key: str, blend_context
     return _strategist_prompt_impl(topic, goal_key, format_key, GOAL_GUIDANCE, FORMAT_LABELS, blend_context=blend_context, rag_context=rag_context, practice_focus=practice_focus)
 
 
-def _writer_prompt(topic: str, goal_key: str, format_key: str, angle: str, hook: str, blend_context: dict | None = None, rag_context: str = "", practice_focus: str = "aroma") -> str:
-    return _writer_prompt_impl(topic, goal_key, format_key, angle, hook, GOAL_GUIDANCE, blend_context=blend_context, rag_context=rag_context, practice_focus=practice_focus)
+def _writer_prompt(topic: str, goal_key: str, format_key: str, angle: str, hook: str, blend_context: dict | None = None, rag_context: str = "", practice_focus: str = "aroma", series_template: dict | None = None) -> str:
+    return _writer_prompt_impl(topic, goal_key, format_key, angle, hook, GOAL_GUIDANCE, blend_context=blend_context, rag_context=rag_context, practice_focus=practice_focus, series_template=series_template)
 
 
 # ── Agent functions ──────────────────────────────────────────────────────────
@@ -444,7 +508,20 @@ def _generate_topics_sync(
 
 def _generate_strategist_sync(topic: str, goal_key: str, format_key: str, blend_context: dict | None = None, rag_context: str = "", practice_focus: str = "aroma") -> tuple[str, str]:
     """Step 1: Strategist finds creative angle and hook line."""
-    raw = _call_claude(_strategist_prompt(topic, goal_key, format_key, blend_context=blend_context, rag_context=rag_context, practice_focus=practice_focus), max_tokens=250)
+    # Enrich with performance feedback from past publications
+    enriched_rag = rag_context
+    try:
+        import asyncio
+        from bot.services.content_analytics import build_strategist_feedback_text
+        loop = asyncio.new_event_loop()
+        feedback_text = loop.run_until_complete(build_strategist_feedback_text())
+        loop.close()
+        if feedback_text:
+            enriched_rag = (enriched_rag + "\n" + feedback_text) if enriched_rag else feedback_text
+    except Exception:
+        logger.debug("Failed to load strategist feedback", exc_info=True)
+
+    raw = _call_claude(_strategist_prompt(topic, goal_key, format_key, blend_context=blend_context, rag_context=enriched_rag, practice_focus=practice_focus), max_tokens=250)
     angle = ""
     hook = ""
     for line in raw.strip().splitlines():
@@ -467,12 +544,21 @@ def _generate_writer_sync(
     """Step 2: Writer produces platform-native draft. Step 3: Editor polishes."""
     from bot.agents.creative_team import edit_post_sync
 
+    # Pick a random series template for threads_series to diversify content
+    series_template = None
+    series_template_key = ""
+    if format_key == "threads_series":
+        import random
+        series_template_key = random.choice(list(SERIES_TEMPLATES.keys()))
+        series_template = SERIES_TEMPLATES[series_template_key]
+
     token_limit = 900
     raw = _call_claude(
-        _writer_prompt(topic, goal_key, format_key, angle, hook, blend_context=blend_context, rag_context=rag_context, practice_focus=practice_focus), max_tokens=token_limit
+        _writer_prompt(topic, goal_key, format_key, angle, hook, blend_context=blend_context, rag_context=rag_context, practice_focus=practice_focus, series_template=series_template), max_tokens=token_limit
     )
     draft = parse_content_draft(raw)
     draft.angle = angle
+    draft.series_template_key = series_template_key
     if not draft.hook:
         draft.hook = hook
 

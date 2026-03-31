@@ -138,6 +138,73 @@ async def get_score_distribution(team_id: str | None = None) -> dict[int, int]:
     return dist
 
 
+async def get_top_hooks(team_id: str | None = None, limit: int = 5) -> list[dict[str, Any]]:
+    """Return first lines (hooks) from top-performing published content."""
+    M = PastPublicationModel
+    avg_expr = (
+        func.coalesce(M.score_engagement, 0)
+        + func.coalesce(M.score_brand_fit, 0)
+        + func.coalesce(M.score_craft, 0)
+        + func.coalesce(M.score_goal_hit, 0)
+    ) / (
+        case((M.score_engagement.isnot(None), 1), else_=0)
+        + case((M.score_brand_fit.isnot(None), 1), else_=0)
+        + case((M.score_craft.isnot(None), 1), else_=0)
+        + case((M.score_goal_hit.isnot(None), 1), else_=0)
+    )
+    query = (
+        select(M.caption, M.topic, M.kind, avg_expr.label("avg_score"))
+        .filter(M.score_engagement.isnot(None), M.caption != "")
+        .order_by(avg_expr.desc())
+        .limit(limit)
+    )
+    if team_id:
+        query = query.filter(M.team_id == team_id)
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(query)
+        rows = result.all()
+        hooks = []
+        for r in rows:
+            first_line = (r.caption or "").split("\n")[0].strip()
+            if first_line and len(first_line) > 10:
+                hooks.append({
+                    "hook": first_line[:150],
+                    "topic": r.topic,
+                    "kind": r.kind,
+                    "score": round(float(r.avg_score), 1) if r.avg_score else 0,
+                })
+        return hooks
+
+
+async def build_strategist_feedback_text(team_id: str | None = None) -> str:
+    """Build performance feedback block for strategist prompt enrichment."""
+    try:
+        hooks = await get_top_hooks(team_id, limit=5)
+        formats = await get_format_performance(team_id)
+    except Exception:
+        logger.debug("content_analytics: failed to build strategist feedback", exc_info=True)
+        return ""
+
+    if not hooks and not formats:
+        return ""
+
+    parts = ["\nДанные о прошлых публикациях (используй для выбора угла и хука):"]
+
+    if hooks:
+        parts.append("Лучшие хуки (первые строки постов с высоким вовлечением):")
+        for h in hooks:
+            parts.append(f'  - «{h["hook"]}» ({h["kind"]}, {h["score"]}★)')
+        parts.append("Ориентируйся на стиль этих хуков: конкретные, провокационные, из жизни.")
+
+    if formats:
+        best = max(formats, key=lambda f: f["avg_score"])
+        worst = min(formats, key=lambda f: f["avg_score"])
+        if best["avg_score"] != worst["avg_score"]:
+            parts.append(f"Лучший формат: {best['kind']} (ø {best['avg_score']}★). Худший: {worst['kind']} (ø {worst['avg_score']}★).")
+
+    return "\n".join(parts)
+
+
 async def build_own_performance_text(team_id: str) -> str:
     """Build past publication stats for plan prompt enrichment."""
     try:
