@@ -5,6 +5,8 @@ from __future__ import annotations
 import logging
 import re
 
+from bot.utils.json_parser import extract_json
+
 logger = logging.getLogger(__name__)
 
 
@@ -45,7 +47,35 @@ def _format_posts_for_review(posts: list[dict]) -> str:
 
 
 def _parse_coherence(raw: str) -> dict:
-    """Parse coherence check response."""
+    """Parse coherence check response from JSON.
+
+    Falls back to legacy text parsing if JSON extraction fails.
+    """
+    # Try JSON parsing first
+    try:
+        data = extract_json(raw)
+        if isinstance(data, dict):
+            score = float(data.get("score", 0.7))
+            score = max(0.0, min(1.0, score))
+            issues = data.get("issues", [])
+            if not isinstance(issues, list):
+                issues = []
+            suggestion = data.get("suggestion", "")
+            if not isinstance(suggestion, str):
+                suggestion = ""
+            return {
+                "score": round(score, 2),
+                "issues": [str(i) for i in issues],
+                "suggestion": suggestion,
+            }
+    except (ValueError, TypeError):
+        logger.warning("series_coherence: JSON parsing failed, trying legacy text parser")
+
+    return _parse_coherence_legacy(raw)
+
+
+def _parse_coherence_legacy(raw: str) -> dict:
+    """Legacy parser: extract coherence from SCORE/ISSUES/SUGGESTION text markers."""
     score = 0.7
     issues = []
     suggestion = ""
@@ -61,7 +91,6 @@ def _parse_coherence(raw: str) -> dict:
                 score = float(val)
                 score = max(0.0, min(1.0, score))
             except (ValueError, IndexError):
-                logger.warning("_parse_coherence: split failed", exc_info=True)
                 pass
         elif cleaned.upper().startswith("ISSUES:"):
             raw_issues = cleaned.split(":", 1)[1].strip()

@@ -6,6 +6,7 @@ import logging
 import re
 
 from bot.services.humanizer import humanize
+from bot.utils.json_parser import extract_json
 
 logger = logging.getLogger(__name__)
 
@@ -27,13 +28,6 @@ def generate_posts_batch_sync(
     from bot.agents.prompts.series_prompts import writer_batch_prompt
     from bot.services.claude_client import call_claude
 
-    format_labels = {
-        "threads_series": "Серия Threads",
-        "instagram": "Instagram",
-        "telegram": "Telegram",
-        "carousel": "Карусель",
-    }
-
     prompt = writer_batch_prompt(
         topic, goal_key, format_key, outline_text, positions,
         previous_summaries, goal_guidance, rag_context=rag_context,
@@ -49,7 +43,61 @@ def generate_posts_batch_sync(
 
 
 def _parse_posts_batch(raw: str, positions: list[dict]) -> list[dict]:
-    """Parse batch of posts from Claude response."""
+    """Parse batch of posts from Claude JSON response.
+
+    Expects a JSON array of objects with keys: index, caption, cta, visual_prompt.
+    Falls back to legacy text-marker parsing if JSON extraction fails.
+    """
+    # Try JSON parsing first
+    try:
+        items = extract_json(raw, expect_array=True)
+        if isinstance(items, list):
+            return _map_json_posts(items, positions)
+    except (ValueError, TypeError):
+        logger.warning("series_writer: JSON parsing failed, trying legacy text parser")
+
+    # Fallback: legacy ===POST N=== text parsing
+    return _parse_posts_batch_legacy(raw, positions)
+
+
+def _map_json_posts(items: list, positions: list[dict]) -> list[dict]:
+    """Map parsed JSON items to expected positions."""
+    posts_by_idx: dict[int, dict] = {}
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        try:
+            idx = int(item.get("index", 0))
+        except (ValueError, TypeError):
+            idx = 0
+        if idx >= 1:
+            idx -= 1  # Convert 1-based to 0-based
+        posts_by_idx[idx] = {
+            "index": idx,
+            "caption": humanize(item.get("caption", "")),
+            "cta": humanize(item.get("cta", "")),
+            "visual_prompt": item.get("visual_prompt", ""),
+            "hashtags": item.get("hashtags", ""),
+        }
+
+    result = []
+    for pos in positions:
+        idx = pos["index"]
+        if idx in posts_by_idx:
+            result.append(posts_by_idx[idx])
+        else:
+            result.append({
+                "index": idx,
+                "caption": "",
+                "cta": "",
+                "visual_prompt": "",
+                "hashtags": "",
+            })
+    return result
+
+
+def _parse_posts_batch_legacy(raw: str, positions: list[dict]) -> list[dict]:
+    """Legacy parser: extract posts from ===POST N=== text markers."""
     posts = []
     current_post = None
     current_field = ""
@@ -57,7 +105,6 @@ def _parse_posts_batch(raw: str, positions: list[dict]) -> list[dict]:
     for line in raw.strip().splitlines():
         line = line.strip()
 
-        # ===POST N===
         m = re.match(r"={2,}POST\s+(\d+)={2,}", line, re.IGNORECASE)
         if m:
             if current_post is not None:
@@ -95,17 +142,13 @@ def _parse_posts_batch(raw: str, positions: list[dict]) -> list[dict]:
     if current_post is not None:
         posts.append(current_post)
 
-    # Map posts to expected positions
-    result = []
     posts_by_idx = {p["index"]: p for p in posts}
-
+    result = []
     for pos in positions:
         idx = pos["index"]
         if idx in posts_by_idx:
-            p = posts_by_idx[idx]
-            result.append(p)
+            result.append(posts_by_idx[idx])
         else:
-            # Fallback: empty post
             result.append({
                 "index": idx,
                 "caption": "",
@@ -113,7 +156,6 @@ def _parse_posts_batch(raw: str, positions: list[dict]) -> list[dict]:
                 "visual_prompt": "",
                 "hashtags": "",
             })
-
     return result
 
 

@@ -5,6 +5,8 @@ from __future__ import annotations
 import logging
 import re
 
+from bot.utils.json_parser import extract_json
+
 logger = logging.getLogger(__name__)
 
 
@@ -40,7 +42,51 @@ def generate_outline_sync(
 
 
 def _parse_outline(raw: str, expected_count: int, topic: str) -> dict:
-    """Parse outline from Claude response."""
+    """Parse outline from Claude JSON response.
+
+    Falls back to legacy text parsing if JSON extraction fails.
+    """
+    # Try JSON parsing first
+    try:
+        data = extract_json(raw)
+        if isinstance(data, dict):
+            return _map_json_outline(data, expected_count, topic)
+    except (ValueError, TypeError):
+        logger.warning("series_orchestrator: JSON parsing failed, trying legacy text parser")
+
+    return _parse_outline_legacy(raw, expected_count, topic)
+
+
+def _map_json_outline(data: dict, expected_count: int, topic: str) -> dict:
+    """Map parsed JSON outline to expected format."""
+    summary = data.get("summary", "")
+    raw_positions = data.get("positions", [])
+
+    positions = []
+    for item in raw_positions:
+        if not isinstance(item, dict):
+            continue
+        try:
+            idx = int(item.get("index", 0))
+        except (ValueError, TypeError):
+            idx = 0
+        if idx >= 1:
+            idx -= 1  # Convert 1-based to 0-based
+        role = str(item.get("role", "middle")).lower()
+        if role not in ("intro", "middle", "climax", "cta"):
+            role = "middle"
+        positions.append({
+            "index": idx,
+            "title": item.get("title", f"Пост {idx + 1}"),
+            "angle": item.get("angle", ""),
+            "role": role,
+        })
+
+    return _finalize_outline(positions, expected_count, topic, summary)
+
+
+def _parse_outline_legacy(raw: str, expected_count: int, topic: str) -> dict:
+    """Legacy parser: extract outline from POST N: text markers."""
     positions = []
     summary = ""
 
@@ -50,7 +96,6 @@ def _parse_outline(raw: str, expected_count: int, topic: str) -> dict:
         if not line:
             continue
 
-        # POST N: title
         m = re.match(r"POST\s+(\d+)\s*:\s*(.+)", line, re.IGNORECASE)
         if m:
             if current_post is not None:
@@ -79,7 +124,11 @@ def _parse_outline(raw: str, expected_count: int, topic: str) -> dict:
     if current_post is not None:
         positions.append(current_post)
 
-    # Ensure we have the right count, fill missing with defaults
+    return _finalize_outline(positions, expected_count, topic, summary)
+
+
+def _finalize_outline(positions: list[dict], expected_count: int, topic: str, summary: str) -> dict:
+    """Ensure correct count and enforce role constraints."""
     while len(positions) < expected_count:
         idx = len(positions)
         role = "middle"
@@ -96,7 +145,6 @@ def _parse_outline(raw: str, expected_count: int, topic: str) -> dict:
             "role": role,
         })
 
-    # Enforce role constraints
     if positions:
         positions[0]["role"] = "intro"
         positions[-1]["role"] = "cta"
