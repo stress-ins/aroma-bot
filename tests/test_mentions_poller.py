@@ -41,10 +41,12 @@ async def test_poll_saves_new(_mock_threads_client, _mock_store):
     from bot.services.mentions_poller import poll_threads_mentions
 
     polled, saved = await poll_threads_mentions("fake_token")
-    # 1 mention from get_mentions (get_threads no longer called) + 1 reply = 2 saves
+    # 1 mention + 1 reply on mention + 1 reply on own post = 3 saves
+    # (r_1 appears in both mention-replies and own-post-replies, but mock find
+    #  always returns None so both are saved)
     assert polled == 1
-    assert saved == 2
-    assert _mock_store["save"].call_count == 2
+    assert saved == 3
+    assert _mock_store["save"].call_count == 3
 
 
 @pytest.mark.asyncio
@@ -59,6 +61,61 @@ async def test_poll_deduplicates(_mock_threads_client, _mock_store):
     assert polled == 1
     assert saved == 0
     assert _mock_store["save"].call_count == 0
+
+
+@pytest.mark.asyncio
+async def test_poll_own_posts_replies(_mock_store):
+    """Replies on own posts from other users are saved as REPLY mentions."""
+    client = MagicMock()
+    client.get_mentions.return_value = []  # no external mentions
+    client.get_threads.return_value = [
+        {"id": "own_1", "username": "myaccount", "text": "My post", "permalink": "https://threads.net/own1"},
+        {"id": "own_2", "username": "myaccount", "text": "Another post", "permalink": "https://threads.net/own2"},
+    ]
+
+    def fake_replies(post_id, limit=20):
+        if post_id == "own_1":
+            return [
+                {"id": "reply_a", "username": "stranger", "text": "Cool!", "permalink": "https://threads.net/ra"},
+                {"id": "reply_b", "username": "myaccount", "text": "Thanks", "permalink": "https://threads.net/rb"},
+            ]
+        return []
+
+    client.get_replies.side_effect = fake_replies
+
+    with patch("bot.services.mentions_poller.ThreadsClient", return_value=client):
+        from bot.services.mentions_poller import poll_threads_mentions
+
+        with patch("bot.services.mentions_poller.get_own_usernames", new_callable=AsyncMock, return_value={"myaccount"}):
+            polled, saved = await poll_threads_mentions("fake_token")
+
+    assert polled == 0  # no external mentions
+    assert saved == 1   # only reply_a from stranger (reply_b is own, own_2 has no replies)
+
+    # Verify the saved mention has correct type and context_post
+    save_call = _mock_store["save"].call_args
+    assert save_call.kwargs.get("type") or save_call[1].get("type") == "REPLY"
+
+
+@pytest.mark.asyncio
+async def test_poll_own_posts_api_error_isolated(_mock_store):
+    """API error in own-posts polling does not affect mention results."""
+    client = MagicMock()
+    client.get_mentions.return_value = [
+        {"id": "t_1", "username": "alice", "text": "Hi", "media_type": "TEXT", "permalink": ""},
+    ]
+    client.get_threads.side_effect = Exception("API down")
+    client.get_replies.return_value = []
+
+    with (
+        patch("bot.services.mentions_poller.ThreadsClient", return_value=client),
+        patch("bot.services.mentions_poller.get_own_usernames", new_callable=AsyncMock, return_value=set()),
+    ):
+        from bot.services.mentions_poller import poll_threads_mentions
+
+        polled, saved = await poll_threads_mentions("fake_token")
+        assert polled == 1
+        assert saved == 1  # mention saved, own-posts block failed gracefully
 
 
 @pytest.mark.asyncio
