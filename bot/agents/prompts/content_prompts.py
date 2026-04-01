@@ -61,11 +61,16 @@ def build_threads_output_format(template: dict) -> str:
     )
 
 OUTPUT_FORMAT_DEFAULT = """\
-Верни строго в формате:
-CAPTION: [полный текст поста, начиная с хука, с хэштегами согласно правилам платформы]
-CTA: [отдельный CTA если ещё не в тексте, иначе пусто]
-VISUAL_PROMPT: [на английском, до 25 слов, terracotta/beige/sage palette, soft light, atmospheric lifestyle]
-STOCK_KEYWORDS: [5-8 English keywords for stock photo search, comma-separated, e.g. "aromatherapy, essential oils, lavender, spa, wellness"]
+Верни ответ строго как JSON (без markdown-обёртки, без текста до/после):
+
+{
+  "caption": "полный текст поста, начиная с хука, с хэштегами согласно правилам платформы",
+  "cta": "отдельный CTA если ещё не в тексте, иначе пустая строка",
+  "visual_prompt": "на английском, до 25 слов, terracotta/beige/sage palette, soft light, atmospheric lifestyle",
+  "stock_keywords": ["keyword1", "keyword2", "keyword3"]
+}
+
+Верни ТОЛЬКО валидный JSON, ничего больше.
 """
 
 

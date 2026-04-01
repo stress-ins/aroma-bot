@@ -292,22 +292,25 @@ BROLL_DIRECTOR_PROMPT = """\
 Визуальный стиль: терракота, беж, шалфей; природные текстуры, травы, свечи, руки, мягкий свет.
 Формат: горизонтальный 16:9.
 
-Для каждой B-Roll вставки создай запись в СТРОГО этом формате:
+Верни ответ строго как JSON-массив (без markdown-обёртки, без текста до/после):
 
-BROLL_1:
-SECTION: [имя секции из сценария]
-TIMESTAMP: [примерное время начала вставки, напр. 1:45]
-DURATION: [3-5]
-DESCRIPTION: [детальное описание визуала на русском — что в кадре, какой план, свет, движение]
-SOURCE_TYPE: [stock_photo | stock_video | generated_image]
-SEARCH_KEYWORDS: [3-5 ключевых слов на английском для поиска стока, через запятую]
-CAMERA_MOTION: [slow_zoom_in | pan_left | pan_right | static | parallax | slow_zoom_out]
-MOOD: [calm | dynamic | educational | warm | mysterious]
+[
+  {{
+    "section": "имя секции из сценария",
+    "timestamp": "1:45",
+    "duration": 4,
+    "description": "детальное описание визуала на русском",
+    "source_type": "stock_photo",
+    "search_keywords": ["keyword1", "keyword2", "keyword3"],
+    "camera_motion": "slow_zoom_in",
+    "mood": "calm"
+  }}
+]
 
-BROLL_2:
-...
-
-(и так далее для каждой вставки)
+Допустимые source_type: stock_photo, stock_video, generated_image.
+Допустимые camera_motion: slow_zoom_in, pan_left, pan_right, static, parallax, slow_zoom_out.
+Допустимые mood: calm, dynamic, educational, warm, mysterious.
+Верни ТОЛЬКО валидный JSON-массив, ничего больше.
 """
 
 # ---------------------------------------------------------------------------
@@ -326,24 +329,24 @@ METADATA_PROMPT = """\
 
 ДЛИТЕЛЬНОСТЬ ВИДЕО: {total_duration}
 
-Создай метаданные для YouTube-видео в СТРОГО этом формате:
+Верни ответ строго как JSON (без markdown-обёртки, без текста до/после):
 
-TITLE: [заголовок ≤70 символов, SEO-оптимизированный, с ключевым словом в начале]
+{{
+  "title": "заголовок ≤70 символов, SEO-оптимизированный, с ключевым словом в начале",
+  "description": "полное описание видео включая таймкоды, хэштеги и ссылки (multiline string с \\n)",
+  "tags": ["keyword1", "keyword2", "до 30 тегов"],
+  "category_id": 26,
+  "chapters": [
+    {{"time": 0, "title": "Intro"}},
+    {{"time": 90, "title": "Основная часть"}}
+  ]
+}}
 
-DESCRIPTION:
-[2-3 предложения — о чём видео, для кого, какая польза]
-
-⏱ Таймкоды:
-[для каждой секции: HH:MM:SS — Название секции]
-
-🔗 Полезные ссылки:
-[placeholder для ссылок]
-
-#[5-8 хэштегов через пробел]
-
-TAGS: [до 30 тегов через запятую — ключевые слова для YouTube поиска]
-
-CATEGORY: [номер категории YouTube: 22=People&Blogs, 26=Howto&Style, 27=Education]
+Правила:
+- description включает: 2-3 предложения, таймкоды (HH:MM:SS — Название), ссылки-placeholder, 5-8 хэштегов
+- category_id: 22=People&Blogs, 26=Howto&Style, 27=Education
+- chapters.time — в секундах от начала видео
+- Верни ТОЛЬКО валидный JSON, ничего больше
 """
 
 # ---------------------------------------------------------------------------

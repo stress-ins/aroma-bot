@@ -10,6 +10,7 @@ import re
 from dataclasses import dataclass, field
 
 from bot.services.claude_client import call_claude
+from bot.utils.json_parser import extract_json
 
 logger = logging.getLogger(__name__)
 
@@ -30,10 +31,43 @@ class BRollCue:
 
 
 def _parse_broll_map(raw: str) -> list[BRollCue]:
-    """Parse the B-Roll Director response into BRollCue list."""
+    """Parse B-Roll map. Tries JSON first, falls back to text markers."""
+    try:
+        items = extract_json(raw, expect_array=True)
+        if isinstance(items, list):
+            cues = []
+            for item in items:
+                if not isinstance(item, dict):
+                    continue
+                try:
+                    dur = float(item.get("duration", 4.0))
+                except (ValueError, TypeError):
+                    dur = 4.0
+                kw = item.get("search_keywords", [])
+                if isinstance(kw, str):
+                    kw = [k.strip() for k in kw.split(",") if k.strip()]
+                cues.append(BRollCue(
+                    section_name=item.get("section", ""),
+                    timestamp=item.get("timestamp", ""),
+                    duration=min(max(dur, 2.0), 8.0),
+                    description=item.get("description", ""),
+                    source_type=item.get("source_type", "stock_photo"),
+                    search_keywords=kw[:5],
+                    camera_motion=item.get("camera_motion", "slow_zoom_in"),
+                    mood=item.get("mood", "calm"),
+                ))
+            if cues:
+                return cues
+    except (ValueError, TypeError):
+        logger.debug("_parse_broll_map: JSON failed, using legacy parser")
+
+    return _parse_broll_map_legacy(raw)
+
+
+def _parse_broll_map_legacy(raw: str) -> list[BRollCue]:
+    """Legacy parser: BROLL_N:/SECTION:/TIMESTAMP:/etc markers."""
     cues: list[BRollCue] = []
 
-    # Split by BROLL_N: markers
     blocks = re.split(r'(?=^BROLL_\d+:)', raw, flags=re.MULTILINE)
     for block in blocks:
         block = block.strip()
@@ -71,7 +105,7 @@ def _parse_broll_map(raw: str) -> list[BRollCue]:
             cues.append(BRollCue(
                 section_name=section,
                 timestamp=timestamp,
-                duration=min(max(duration, 2.0), 8.0),  # clamp 2-8 sec
+                duration=min(max(duration, 2.0), 8.0),
                 description=description,
                 source_type=source_type or "stock_photo",
                 search_keywords=keywords[:5],

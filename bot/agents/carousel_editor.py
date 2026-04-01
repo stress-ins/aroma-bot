@@ -7,6 +7,7 @@ from bot.agents.platform_rules import HUMAN_WRITING_RULES, get_brand_context
 from bot.services.brand_settings_store import get_brand_settings_cached
 from bot.services.humanizer import humanize
 from bot.services.policy_engine import enforce_policy, load_policy_config
+from bot.utils.json_parser import extract_json
 
 _EDITOR_PROMPT = """\
 {brand_context}
@@ -79,8 +80,11 @@ _EDITOR_PROMPT = """\
 Черновик слайдов:
 {raw_slides}
 
-Верни строго в формате (ничего кроме этого):
-{slide_format}
+Верни ответ строго как JSON-массив из {slide_count} слайдов (без markdown-обёртки, без текста до/после):
+
+["текст слайда 1", "текст слайда 2", "текст слайда 3"]
+
+Верни ТОЛЬКО валидный JSON-массив строк, ничего больше.
 """
 
 
@@ -137,7 +141,19 @@ def edit_carousel_sync(raw_slides: list[str], topic: str, user_forbidden: list[s
         context="carousel editor",
     )
 
-    slides = [humanize(_sanitize_slide_text(item), "instagram") for item in _parse_slides(text, count=slide_count)]
+    # Try JSON parsing first
+    parsed_slides = None
+    try:
+        items = extract_json(text, expect_array=True)
+        if isinstance(items, list) and all(isinstance(s, str) for s in items):
+            parsed_slides = items
+    except (ValueError, TypeError):
+        pass
+
+    if parsed_slides is None:
+        parsed_slides = _parse_slides(text, count=slide_count)
+
+    slides = [humanize(_sanitize_slide_text(item), "instagram") for item in parsed_slides]
 
     # Fallback: return originals if parsing failed
     return slides[:slide_count] if len(slides) >= max(4, slide_count - 1) else raw_slides

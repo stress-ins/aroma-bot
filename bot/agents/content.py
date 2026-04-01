@@ -15,6 +15,7 @@ from bot.agents.platform_rules import (
 )
 from bot.services.gemini_images import generate_gemini_image_sync
 from bot.services.humanizer import humanize
+from bot.utils.json_parser import extract_json
 from config import settings
 
 _executor = ThreadPoolExecutor(max_workers=2)
@@ -86,6 +87,38 @@ def parse_numbered_list(raw: str, limit: int = 10) -> list[str]:
 
 
 def parse_content_draft(raw: str) -> ContentDraft:
+    """Parse Claude response into ContentDraft. Tries JSON first, falls back to text markers."""
+    try:
+        data = extract_json(raw)
+        if isinstance(data, dict):
+            return _map_json_content_draft(data)
+    except (ValueError, TypeError):
+        logger.debug("parse_content_draft: JSON failed, using legacy text parser")
+
+    return _parse_content_draft_legacy(raw)
+
+
+def _map_json_content_draft(data: dict) -> ContentDraft:
+    draft = ContentDraft()
+    draft.angle = humanize(data.get("angle", ""))
+    draft.hook = humanize(data.get("hook", ""))
+    draft.caption = humanize(data.get("caption", ""))
+    draft.cta = humanize(data.get("cta", ""))
+    draft.hashtags = humanize(data.get("hashtags", ""))
+    draft.visual_prompt = data.get("visual_prompt", "")
+    kw = data.get("stock_keywords", [])
+    if isinstance(kw, list):
+        draft.stock_keywords = [str(k).strip() for k in kw if str(k).strip()]
+    elif isinstance(kw, str):
+        draft.stock_keywords = [k.strip() for k in kw.split(",") if k.strip()]
+    slides = data.get("slides", [])
+    if isinstance(slides, list):
+        draft.slides = [humanize(str(s)) for s in slides]
+    return draft
+
+
+def _parse_content_draft_legacy(raw: str) -> ContentDraft:
+    """Legacy parser: extract fields from CAPTION:/CTA:/etc text markers."""
     draft = ContentDraft()
     current_field = ""
     for line in raw.strip().splitlines():
