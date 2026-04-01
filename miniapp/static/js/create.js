@@ -198,10 +198,22 @@ export function createCreateModule(deps) {
       return;
     }
 
-    renderCreateTool(state.selectedCreateTool);
+    renderCreateTool(state.selectedCreateTool, /* isRefresh */ true);
   }
 
-  function renderCreateTool(toolId) {
+  function _isEditingCreateForm() {
+    const active = document.activeElement;
+    if (!active || !(active instanceof HTMLElement)) return false;
+    if (!elements.draftDetail.contains(active)) return false;
+    return active.matches("textarea, input, select, [contenteditable='true']");
+  }
+
+  function renderCreateTool(toolId, isRefresh = false) {
+    // When refreshing (background re-render), skip if user is actively typing
+    if (isRefresh && toolId === state.selectedCreateTool && _isEditingCreateForm()) {
+      return;
+    }
+
     state.selectedCreateTool = toolId;
 
     elements.draftList.querySelectorAll(".create-card").forEach((card) => {

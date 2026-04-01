@@ -1766,6 +1766,7 @@ function generateReplies(mentionId, btn) { return mentionsModule.generateReplies
 function publishReply(mentionId, replyId, btn) { return mentionsModule.publishReply(mentionId, replyId, btn); }
 function ignoreMentionAction(mentionId, btn) { return mentionsModule.ignoreMentionAction(mentionId, btn); }
 function setMentionsFilter(key, value) { mentionsModule.setMentionsFilter(key, value); }
+function pollMentionsNow(btn) { return mentionsModule.pollMentionsNow(btn); }
 
 // Inbox action wrappers
 function openConversation(convId) { inboxModule.openConversation(convId); }
@@ -2775,6 +2776,7 @@ registerWindowBridge({
   publishReply,
   ignoreMentionAction,
   setMentionsFilter,
+  pollMentionsNow,
   openArchiveDetail,
   openArchiveForm,
   savePublication,

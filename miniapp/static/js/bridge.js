@@ -176,6 +176,7 @@ export function registerWindowBridge(deps) {
     publishReply,
     ignoreMentionAction,
     setMentionsFilter,
+    pollMentionsNow,
     openConversation,
     closeConversation,
     sendInboxReply,
@@ -530,6 +531,7 @@ export function registerWindowBridge(deps) {
   window.publishReply = publishReply;
   window.ignoreMentionAction = ignoreMentionAction;
   window.setMentionsFilter = setMentionsFilter;
+  window.pollMentionsNow = pollMentionsNow;
   window.openConversation = openConversation;
   window.closeConversation = closeConversation;
   window.sendInboxReply = sendInboxReply;
