@@ -118,6 +118,12 @@ export function createDraftsModule(deps) {
         scheduled_time: String(document.getElementById(`threadsPostTime${i}`)?.value || "").trim(),
       });
     }
+    // Hard limit: Threads API rejects > 500 chars
+    const tooLong = posts.find(p => p.text.length > 500);
+    if (tooLong) {
+      showUiNotice(`Пост «${tooLong.label}» превышает 500 символов (${tooLong.text.length}). Сократите текст.`, "error");
+      return;
+    }
     const payload = {
       threads_posts: posts,
       angle: String(document.getElementById("contentAngleField")?.value || "").trim(),

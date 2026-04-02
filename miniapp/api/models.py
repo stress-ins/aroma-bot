@@ -182,7 +182,7 @@ class ThreadsSeriesCreateRequest(BaseModel):
 
 class ThreadsSlotPatchRequest(BaseModel):
     slot: str = Field(default="")
-    text: str | None = Field(default=None)
+    text: str | None = Field(default=None, max_length=500)
     scheduled_time: str | None = Field(default=None)
 
 

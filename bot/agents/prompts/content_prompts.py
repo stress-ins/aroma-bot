@@ -21,21 +21,22 @@ OUTPUT_FORMAT_THREADS = """\
 ОБЯЗАТЕЛЬНЫЙ ФОРМАТ — верни ровно 3 поста. Пропуск любого = провал:
 
 УТРО
-[текст поста, 40-80 слов]
+[текст поста, 40-70 слов, СТРОГО до 500 символов]
 ПОЧЕМУ ЭТО СРАБОТАЕТ: [одно предложение]
 
 ДЕНЬ
-[текст поста, 40-80 слов]
+[текст поста, 40-70 слов, СТРОГО до 500 символов]
 ПОЧЕМУ ЭТО СРАБОТАЕТ: [одно предложение]
 
 ВЕЧЕР
-[текст поста, 40-80 слов]
+[текст поста, 40-70 слов, СТРОГО до 500 символов]
 ПОЧЕМУ ЭТО СРАБОТАЕТ: [одно предложение]
 
 VISUAL_PROMPT: [на английском, до 25 слов, terracotta/beige/sage palette, soft light, atmospheric lifestyle]
 STOCK_KEYWORDS: [5-8 English keywords for stock photo search, comma-separated]
 
 Каждое слово УТРО, ДЕНЬ, ВЕЧЕР стоит СТРОГО на отдельной строке. Все три секции обязательны.
+ЖЁСТКОЕ ОГРАНИЧЕНИЕ: каждый пост НЕ БОЛЕЕ 500 символов (включая пробелы). Threads API отклонит длинный текст.
 """
 
 
@@ -46,7 +47,7 @@ def build_threads_output_format(template: dict) -> str:
     for s in slots:
         slot_blocks.append(
             f'{s["marker"]}\n'
-            f'[текст поста, 40-80 слов. Задача этого поста: {s["desc"]}]\n'
+            f'[текст поста, 40-70 слов, СТРОГО до 500 символов. Задача этого поста: {s["desc"]}]\n'
             f'ПОЧЕМУ ЭТО СРАБОТАЕТ: [одно предложение]'
         )
     markers_str = ", ".join(s["marker"] for s in slots)
@@ -57,6 +58,7 @@ def build_threads_output_format(template: dict) -> str:
         "VISUAL_PROMPT: [на английском, до 25 слов, terracotta/beige/sage palette, soft light, atmospheric lifestyle]\n"
         "STOCK_KEYWORDS: [5-8 English keywords for stock photo search, comma-separated]\n\n"
         f"Каждое слово-маркер ({markers_str}) стоит СТРОГО на отдельной строке. Все {len(slots)} секций обязательны.\n"
+        f"ЖЁСТКОЕ ОГРАНИЧЕНИЕ: каждый пост НЕ БОЛЕЕ 500 символов (включая пробелы). Threads API отклонит длинный текст.\n"
         f"Все {len(slots)} постов публикуются в один день. Каждый пост — самодостаточный, но связан с остальными единой темой.\n"
     )
 

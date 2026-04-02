@@ -145,6 +145,12 @@ def _format_audit(scores: dict, text: str, platform: str) -> dict:
             issues.append(f"Markdown formatting detected ({md_count} instances)")
             scores["humanness"] = min(scores.get("humanness", 0.5), 0.4)
 
+    # Threads hard limit: 500 characters
+    if platform == "threads" and len(text) > 500:
+        issues.append(f"Threads text exceeds 500 chars ({len(text)})")
+        scores["passed"] = False
+        scores["overall"] = min(scores.get("overall", 0.5), 0.3)
+
     if issues:
         audit_note = " Format audit: " + "; ".join(issues) + "."
         scores["critique"] = scores.get("critique", "") + audit_note

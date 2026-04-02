@@ -106,6 +106,11 @@ async def patch_slot(
     for post in posts:
         if post["slot"] == payload.slot:
             if payload.text is not None:
+                if len(payload.text) > _THREADS_MAX_CHARS:
+                    raise HTTPException(
+                        status_code=422,
+                        detail=f"Текст превышает {_THREADS_MAX_CHARS} символов ({len(payload.text)})",
+                    )
                 post["text"] = payload.text
             if payload.scheduled_time is not None:
                 post["scheduled_time"] = payload.scheduled_time

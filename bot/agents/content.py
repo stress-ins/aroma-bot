@@ -436,16 +436,19 @@ def split_threads_posts(caption: str, template: dict | None = None) -> list[dict
 _THREADS_MAX_WORDS = 120
 
 
+_THREADS_MAX_CHARS = 500
+
+
 def _trim_thread_post_sync(text: str, topic: str) -> str:
-    """If a threads post exceeds _THREADS_MAX_WORDS, ask Claude to shorten it."""
+    """If a threads post exceeds _THREADS_MAX_WORDS or 500 chars, ask Claude to shorten it."""
     word_count = len(text.split())
-    if word_count <= _THREADS_MAX_WORDS:
+    if word_count <= _THREADS_MAX_WORDS and len(text) <= _THREADS_MAX_CHARS:
         return text
     prompt = (
-        f"Сократи этот пост для Threads до СТРОГО 80-110 слов. "
+        f"Сократи этот пост для Threads до СТРОГО 60-70 слов и НЕ БОЛЕЕ 500 символов. "
         f"Сохрани первую строку (хук) и основную мысль. Убери лишние детали. "
         f"Тема: {topic}\n\nТекст:\n{text}\n\n"
-        f"Верни ТОЛЬКО сокращённый текст, ничего больше."
+        f"Верни ТОЛЬКО сокращённый текст, ничего больше. Лимит: 500 символов."
     )
     result = _call_claude(prompt, max_tokens=400)
     trimmed = humanize(result.strip())
