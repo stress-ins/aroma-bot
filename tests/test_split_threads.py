@@ -324,3 +324,119 @@ def test_split_dynamic_posts():
     assert posts[3]["slot"] == "post_4"
     assert "факт" in posts[3]["text"]
     assert posts[4]["slot"] == "post_5"
+
+
+# ── JSON parsing tests ──────────────────────────────────────────────────────
+
+
+def test_json_content_draft_threads_posts():
+    """parse_content_draft extracts threads_posts from JSON with posts array."""
+    from bot.agents.content import parse_content_draft
+
+    raw = '''{
+      "posts": [
+        {"marker": "МИФ", "text": "Лаванда лечит всё.", "why_it_works": "Провокация"},
+        {"marker": "РЕАЛЬНОСТЬ", "text": "Нет, поддерживает.", "why_it_works": "Факт"},
+        {"marker": "ПРАКТИКА", "text": "Перед сном.", "why_it_works": "Совет"}
+      ],
+      "visual_prompt": "essential oils terracotta",
+      "stock_keywords": ["lavender", "oils"]
+    }'''
+
+    draft = parse_content_draft(raw)
+    assert len(draft.threads_posts) == 3
+    assert draft.threads_posts[0]["marker"] == "МИФ"
+    assert draft.threads_posts[0]["text"] == "Лаванда лечит всё."
+    assert draft.threads_posts[0]["why_it_works"] == "Провокация"
+    assert draft.threads_posts[1]["marker"] == "РЕАЛЬНОСТЬ"
+    assert draft.threads_posts[2]["marker"] == "ПРАКТИКА"
+    assert draft.visual_prompt == "essential oils terracotta"
+    assert draft.stock_keywords == ["lavender", "oils"]
+
+
+def test_json_threads_posts_with_markdown_fence():
+    """JSON wrapped in markdown fence is still parsed."""
+    from bot.agents.content import parse_content_draft
+
+    raw = '''```json
+    {
+      "posts": [
+        {"marker": "УТРО", "text": "Утренний пост.", "why_it_works": "Хук"},
+        {"marker": "ДЕНЬ", "text": "Дневной пост.", "why_it_works": "Факт"},
+        {"marker": "ВЕЧЕР", "text": "Вечерний пост.", "why_it_works": "Эмоция"}
+      ],
+      "visual_prompt": "soft morning light",
+      "stock_keywords": ["morning", "ritual"]
+    }
+    ```'''
+
+    draft = parse_content_draft(raw)
+    assert len(draft.threads_posts) == 3
+    assert draft.threads_posts[0]["text"] == "Утренний пост."
+
+
+def test_structured_posts_to_payload():
+    """build_threads_series_payload uses threads_posts directly without re-parsing."""
+    from bot.agents.content import ContentDraft
+    from bot.services.miniapp_generator import build_threads_series_payload
+
+    draft = ContentDraft()
+    draft.series_template_key = "myth_reality"
+    draft.threads_posts = [
+        {"marker": "МИФ", "text": "Миф текст.", "why_it_works": "Провокация"},
+        {"marker": "РЕАЛЬНОСТЬ", "text": "Реальность текст.", "why_it_works": "Факт"},
+        {"marker": "ПРАКТИКА", "text": "Практика текст.", "why_it_works": "Совет"},
+    ]
+
+    payload = build_threads_series_payload(draft, goal_key="trust")
+    posts = payload["threads_posts"]
+    assert len(posts) == 3
+    assert posts[0]["slot"] == "myth"
+    assert posts[0]["label"] == "МИФ"
+    assert posts[0]["text"] == "Миф текст."
+    assert posts[1]["slot"] == "reality"
+    assert posts[2]["slot"] == "practice"
+
+
+def test_structured_posts_fallback_to_text_parsing():
+    """If threads_posts is empty, falls back to caption text parsing."""
+    from bot.agents.content import ContentDraft
+    from bot.services.miniapp_generator import build_threads_series_payload
+
+    draft = ContentDraft()
+    draft.series_template_key = "time_of_day"
+    draft.caption = """УТРО
+Утренний текст.
+
+ДЕНЬ
+Дневной текст.
+
+ВЕЧЕР
+Вечерний текст."""
+
+    payload = build_threads_series_payload(draft, goal_key="trust")
+    posts = payload["threads_posts"]
+    assert len(posts) == 3
+    assert posts[0]["text"] == "Утренний текст."
+    assert posts[1]["text"] == "Дневной текст."
+    assert posts[2]["text"] == "Вечерний текст."
+
+
+def test_json_empty_posts_filtered():
+    """Posts with empty text are filtered out from threads_posts."""
+    from bot.agents.content import parse_content_draft
+
+    raw = '''{
+      "posts": [
+        {"marker": "МИФ", "text": "Реальный текст.", "why_it_works": "ок"},
+        {"marker": "РЕАЛЬНОСТЬ", "text": "", "why_it_works": ""},
+        {"marker": "ПРАКТИКА", "text": "Ещё текст.", "why_it_works": "да"}
+      ],
+      "visual_prompt": "test",
+      "stock_keywords": []
+    }'''
+
+    draft = parse_content_draft(raw)
+    assert len(draft.threads_posts) == 2
+    assert draft.threads_posts[0]["marker"] == "МИФ"
+    assert draft.threads_posts[1]["marker"] == "ПРАКТИКА"

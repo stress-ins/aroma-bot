@@ -18,48 +18,45 @@ from bot.agents.platform_rules import (
 # ---------------------------------------------------------------------------
 
 OUTPUT_FORMAT_THREADS = """\
-ОБЯЗАТЕЛЬНЫЙ ФОРМАТ — верни ровно 3 поста. Пропуск любого = провал:
+Верни ответ строго как JSON (без markdown-обёртки, без текста до/после):
 
-УТРО
-[текст поста, 40-70 слов, СТРОГО до 500 символов]
-ПОЧЕМУ ЭТО СРАБОТАЕТ: [одно предложение]
+{
+  "posts": [
+    {"marker": "УТРО", "text": "текст поста, 40-70 слов, СТРОГО до 500 символов", "why_it_works": "одно предложение"},
+    {"marker": "ДЕНЬ", "text": "текст поста, 40-70 слов, СТРОГО до 500 символов", "why_it_works": "одно предложение"},
+    {"marker": "ВЕЧЕР", "text": "текст поста, 40-70 слов, СТРОГО до 500 символов", "why_it_works": "одно предложение"}
+  ],
+  "visual_prompt": "на английском, до 25 слов, terracotta/beige/sage palette, soft light, atmospheric lifestyle",
+  "stock_keywords": ["keyword1", "keyword2", "keyword3"]
+}
 
-ДЕНЬ
-[текст поста, 40-70 слов, СТРОГО до 500 символов]
-ПОЧЕМУ ЭТО СРАБОТАЕТ: [одно предложение]
-
-ВЕЧЕР
-[текст поста, 40-70 слов, СТРОГО до 500 символов]
-ПОЧЕМУ ЭТО СРАБОТАЕТ: [одно предложение]
-
-VISUAL_PROMPT: [на английском, до 25 слов, terracotta/beige/sage palette, soft light, atmospheric lifestyle]
-STOCK_KEYWORDS: [5-8 English keywords for stock photo search, comma-separated]
-
-Каждое слово УТРО, ДЕНЬ, ВЕЧЕР стоит СТРОГО на отдельной строке. Все три секции обязательны.
-ЖЁСТКОЕ ОГРАНИЧЕНИЕ: каждый пост НЕ БОЛЕЕ 500 символов (включая пробелы). Threads API отклонит длинный текст.
+ОБЯЗАТЕЛЬНО: ровно 3 объекта в массиве posts. Пропуск любого = провал.
+ЖЁСТКОЕ ОГРАНИЧЕНИЕ: каждый text НЕ БОЛЕЕ 500 символов (включая пробелы). Threads API отклонит длинный текст.
+Верни ТОЛЬКО валидный JSON, ничего больше.
 """
 
 
 def build_threads_output_format(template: dict) -> str:
-    """Build dynamic output format block based on the chosen series template."""
+    """Build dynamic JSON output format block based on the chosen series template."""
     slots = template["slots"]
-    slot_blocks = []
+    post_examples = []
     for s in slots:
-        slot_blocks.append(
-            f'{s["marker"]}\n'
-            f'[текст поста, 40-70 слов, СТРОГО до 500 символов. Задача этого поста: {s["desc"]}]\n'
-            f'ПОЧЕМУ ЭТО СРАБОТАЕТ: [одно предложение]'
+        post_examples.append(
+            f'    {{"marker": "{s["marker"]}", '
+            f'"text": "текст поста, 40-70 слов, СТРОГО до 500 символов. Задача: {s["desc"]}", '
+            f'"why_it_works": "одно предложение"}}'
         )
-    markers_str = ", ".join(s["marker"] for s in slots)
+    posts_json = ",\n".join(post_examples)
     return (
-        f"ОБЯЗАТЕЛЬНЫЙ ФОРМАТ — верни ровно {len(slots)} постов. Пропуск любого = провал:\n\n"
-        + "\n\n".join(slot_blocks)
-        + "\n\n"
-        "VISUAL_PROMPT: [на английском, до 25 слов, terracotta/beige/sage palette, soft light, atmospheric lifestyle]\n"
-        "STOCK_KEYWORDS: [5-8 English keywords for stock photo search, comma-separated]\n\n"
-        f"Каждое слово-маркер ({markers_str}) стоит СТРОГО на отдельной строке. Все {len(slots)} секций обязательны.\n"
-        f"ЖЁСТКОЕ ОГРАНИЧЕНИЕ: каждый пост НЕ БОЛЕЕ 500 символов (включая пробелы). Threads API отклонит длинный текст.\n"
+        f"Верни ответ строго как JSON (без markdown-обёртки, без текста до/после):\n\n"
+        f'{{\n  "posts": [\n{posts_json}\n  ],\n'
+        f'  "visual_prompt": "на английском, до 25 слов, terracotta/beige/sage palette, soft light, atmospheric lifestyle",\n'
+        f'  "stock_keywords": ["keyword1", "keyword2", "keyword3"]\n'
+        f'}}\n\n'
+        f"ОБЯЗАТЕЛЬНО: ровно {len(slots)} объектов в массиве posts. Пропуск любого = провал.\n"
+        f"ЖЁСТКОЕ ОГРАНИЧЕНИЕ: каждый text НЕ БОЛЕЕ 500 символов (включая пробелы). Threads API отклонит длинный текст.\n"
         f"Все {len(slots)} постов публикуются в один день. Каждый пост — самодостаточный, но связан с остальными единой темой.\n"
+        f"Верни ТОЛЬКО валидный JSON, ничего больше.\n"
     )
 
 OUTPUT_FORMAT_DEFAULT = """\

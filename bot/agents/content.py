@@ -57,6 +57,7 @@ class ContentDraft:
     slides: list[str] = field(default_factory=list)
     quality_score: dict | None = None
     series_template_key: str = ""
+    threads_posts: list[dict] = field(default_factory=list)
 
 
 def goal_label(goal_key: str) -> str:
@@ -114,6 +115,18 @@ def _map_json_content_draft(data: dict) -> ContentDraft:
     slides = data.get("slides", [])
     if isinstance(slides, list):
         draft.slides = [humanize(str(s)) for s in slides]
+    # Threads series JSON: {"posts": [{"marker": "...", "text": "...", "why_it_works": "..."}]}
+    posts = data.get("posts", [])
+    if isinstance(posts, list) and posts:
+        draft.threads_posts = [
+            {
+                "marker": humanize(str(p.get("marker", ""))),
+                "text": humanize(str(p.get("text", ""))),
+                "why_it_works": humanize(str(p.get("why_it_works", ""))),
+            }
+            for p in posts
+            if isinstance(p, dict) and p.get("text")
+        ]
     return draft
 
 
@@ -706,17 +719,29 @@ def _generate_writer_sync(
     if not _has_structured_content(draft) and raw.strip():
         draft.caption = humanize(raw.strip())
 
-    # Threads format uses УТРО/ДЕНЬ/ВЕЧЕР markers, not CAPTION: —
-    # parse_content_draft won't capture the text, but split_threads_posts needs it in caption.
-    if format_key == "threads_series" and not draft.caption and raw.strip():
-        draft.caption = raw.strip()
+    # Threads series: JSON parsed into threads_posts directly.
+    # Legacy fallback: if JSON parsing failed, caption holds raw text with markers.
+    if format_key == "threads_series":
+        if not draft.threads_posts and not draft.caption and raw.strip():
+            draft.caption = raw.strip()
+        # Strip markdown from individual post texts
+        if draft.threads_posts:
+            for p in draft.threads_posts:
+                p["text"] = _strip_markdown_formatting(p["text"])
+        # Store template info for downstream use
+        if series_template:
+            draft._series_template = series_template
 
     # Strip markdown formatting from caption (forbidden in social posts)
     if draft.caption:
         draft.caption = _strip_markdown_formatting(draft.caption)
 
-    # Step 3: Editor pass
-    if draft.caption:
+    # Step 3: Editor pass (skip for threads_series with structured posts — edit each post individually)
+    if format_key == "threads_series" and draft.threads_posts:
+        for p in draft.threads_posts:
+            if p.get("text"):
+                p["text"] = edit_post_sync(p["text"], topic, platform=format_key)
+    elif draft.caption:
         pre_edit = draft.caption
         draft.caption = edit_post_sync(draft.caption, topic, platform=format_key)
         # If editor destroyed threads markers, fall back to pre-edit caption
@@ -728,10 +753,14 @@ def _generate_writer_sync(
     # Step 4: Quality evaluation with retry
     from bot.agents.quality_evaluator import _evaluate_sync
     score = None
+    # For threads_series with structured posts, evaluate concatenated text
+    eval_text = draft.caption
+    if format_key == "threads_series" and draft.threads_posts:
+        eval_text = "\n\n".join(p["text"] for p in draft.threads_posts if p.get("text"))
     for attempt in range(_MAX_QUALITY_RETRIES):
-        if not draft.caption:
+        if not eval_text:
             break
-        score = _evaluate_sync(draft.caption, format_key, topic)
+        score = _evaluate_sync(eval_text, format_key, topic)
         if score["passed"]:
             break
         if attempt < _MAX_QUALITY_RETRIES - 1:
@@ -744,7 +773,15 @@ def _generate_writer_sync(
             )
             raw2 = _call_claude(critique_prompt, max_tokens=token_limit)
             draft2 = parse_content_draft(raw2)
-            if draft2.caption:
+            if format_key == "threads_series" and draft2.threads_posts:
+                for p in draft2.threads_posts:
+                    if p.get("text"):
+                        p["text"] = edit_post_sync(p["text"], topic, platform=format_key)
+                draft2.angle = angle
+                draft2.hook = hook
+                draft = draft2
+                eval_text = "\n\n".join(p["text"] for p in draft.threads_posts if p.get("text"))
+            elif draft2.caption:
                 pre_edit2 = draft2.caption
                 draft2.caption = edit_post_sync(draft2.caption, topic, platform=format_key)
                 if format_key == "threads_series":
