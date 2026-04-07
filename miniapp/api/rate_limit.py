@@ -35,8 +35,14 @@ _limiter = MovingWindowRateLimiter(_storage)
 
 # Parsed limit objects
 LIMIT_DEFAULT = parse_limit("60/minute")
-LIMIT_GENERATION = parse_limit("10/minute")
+LIMIT_GENERATION = parse_limit("20/minute")
 LIMIT_READONLY = parse_limit("120/minute")
+
+# Admin Telegram IDs exempt from rate limiting
+_ADMIN_IDS: set[str] = set()
+_admin_raw = os.getenv("ADMIN_TELEGRAM_CHAT_ID", "")
+if _admin_raw:
+    _ADMIN_IDS = {f"tg:{uid.strip()}" for uid in _admin_raw.split(",") if uid.strip()}
 
 
 # ---------------------------------------------------------------------------
@@ -139,6 +145,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         key = get_user_key(request)
+
+        # Admin users are exempt from rate limiting
+        if key in _ADMIN_IDS:
+            return await call_next(request)
+
         # Namespace by limit tier to keep counters separate
         namespace = f"rl:{limit.amount}/{limit.multiples}"
 

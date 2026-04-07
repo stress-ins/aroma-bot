@@ -8,6 +8,25 @@ from bot.agents.reels_agent import StoryboardFrame
 CONTENT_GOAL_OPTIONS = {"trust", "authority", "engagement", "sales"}
 CONTENT_FORMAT_OPTIONS = {"instagram", "telegram", "threads_series"}
 
+_THREADS_MAX_CHARS = 500
+
+
+def _hard_truncate_500(text: str) -> str:
+    """Truncate text to 500 chars at the last sentence boundary."""
+    if len(text) <= _THREADS_MAX_CHARS:
+        return text
+    truncated = text[:_THREADS_MAX_CHARS]
+    # Try to cut at last sentence end
+    for sep in [". ", ".\n", "! ", "!\n", "? ", "?\n"]:
+        idx = truncated.rfind(sep)
+        if idx > 200:
+            return truncated[: idx + 1].rstrip()
+    # Fall back to last space
+    idx = truncated.rfind(" ")
+    if idx > 200:
+        return truncated[:idx].rstrip() + "…"
+    return truncated.rstrip() + "…"
+
 
 def is_valid_content_goal(goal_key: str) -> bool:
     return goal_key in CONTENT_GOAL_OPTIONS
@@ -63,16 +82,22 @@ def build_threads_series_payload(
 
     threads_posts: list[dict[str, object]] = []
     for post in posts:
+        text = post["text"]
+        over_limit = len(text) > 500
+        if over_limit:
+            # Hard truncate at last sentence boundary within 500 chars
+            text = _hard_truncate_500(text)
         threads_posts.append({
             "slot": post["slot"],
             "label": post["label"],
-            "text": post["text"],
+            "text": text,
             "why_it_works": post.get("why_it_works", ""),
             "scheduled_time": default_times.get(post["slot"], "12:00"),
             "status": "draft",
             "error_message": None,
             "versions": [],
             "icon": post.get("icon", ""),
+            "over_limit": over_limit,
         })
     return {
         "goal": goal_key,
@@ -106,12 +131,13 @@ def _map_structured_posts_to_slots(
 
     for i, jp in enumerate(json_posts):
         marker = jp.get("marker", "").strip().upper()
+        text = jp.get("text", "")
         slot_info = marker_to_slot.get(marker)
         if slot_info:
             result.append({
                 "slot": slot_info["slot"],
                 "label": slot_info["label"],
-                "text": jp.get("text", ""),
+                "text": text,
                 "why_it_works": jp.get("why_it_works", ""),
                 "icon": slot_info.get("icon", ""),
             })
@@ -121,7 +147,7 @@ def _map_structured_posts_to_slots(
             result.append({
                 "slot": slot_id,
                 "label": marker or f"ПОСТ {i + 1}",
-                "text": jp.get("text", ""),
+                "text": text,
                 "why_it_works": jp.get("why_it_works", ""),
                 "icon": "",
             })

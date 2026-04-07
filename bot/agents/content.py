@@ -421,12 +421,34 @@ def split_threads_posts(caption: str, template: dict | None = None) -> list[dict
                 break
         i += 2
 
+    # Check: if only 1 slot has content but all text ended up there, redistribute
+    filled_slots = [s["slot"] for s in slots_def if slot_texts.get(s["slot"])]
+    if len(filled_slots) == 1 and len(slots_def) > 1:
+        # All text merged into one slot — try to split it
+        merged_text = slot_texts[filled_slots[0]]
+        if len(merged_text) > 600:  # suspiciously long for a single post
+            _logger.warning("split_threads_posts: all text in one slot (%d chars), redistributing", len(merged_text))
+            sub_chunks = re.split(r"\n\s*\n", merged_text.strip())
+            sub_chunks = [c.strip() for c in sub_chunks if len(c.strip()) > 20]
+            if len(sub_chunks) >= len(slots_def):
+                slot_texts.clear()
+                slot_why.clear()
+                for idx, slot_info in enumerate(slots_def):
+                    if idx < len(sub_chunks):
+                        cleaned, why = _extract_why_it_works(sub_chunks[idx])
+                        slot_texts[slot_info["slot"]] = _strip_format_labels(cleaned)
+                        slot_why[slot_info["slot"]] = why
+
     # Fallback: if regex didn't find markers but text is non-empty, split by double newline
     has_content = any(slot_texts.get(s["slot"]) for s in slots_def)
     if not has_content and caption.strip():
         _logger.warning("split_threads_posts: markers not found, using double-newline fallback")
         chunks = re.split(r"\n\s*\n", caption.strip())
         chunks = [c.strip() for c in chunks if len(c.strip()) > 20]
+        # If still not enough chunks, try single-newline split
+        if len(chunks) < len(slots_def):
+            chunks = re.split(r"\n", caption.strip())
+            chunks = [c.strip() for c in chunks if len(c.strip()) > 20]
         for idx, slot_info in enumerate(slots_def):
             if idx < len(chunks):
                 cleaned, why = _extract_why_it_works(chunks[idx])
