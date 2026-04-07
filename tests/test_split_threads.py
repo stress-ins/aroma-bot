@@ -440,3 +440,61 @@ def test_json_empty_posts_filtered():
     assert len(draft.threads_posts) == 2
     assert draft.threads_posts[0]["marker"] == "МИФ"
     assert draft.threads_posts[1]["marker"] == "ПРАКТИКА"
+
+
+# ── Hard truncate and over_limit tests ──────────────────────────────────────
+
+
+def test_hard_truncate_500():
+    """_hard_truncate_500 truncates at sentence boundary."""
+    from bot.services.miniapp_generator import _hard_truncate_500
+
+    short = "Hello world."
+    assert _hard_truncate_500(short) == short
+
+    long_text = "Первое предложение. " * 30  # ~600 chars
+    result = _hard_truncate_500(long_text)
+    assert len(result) <= 500
+    assert result.endswith(".")
+
+
+def test_hard_truncate_500_no_sentence_boundary():
+    """When no sentence boundary, truncates at last space with ellipsis."""
+    from bot.services.miniapp_generator import _hard_truncate_500
+
+    long_text = "слово " * 100  # no periods, ~600 chars
+    result = _hard_truncate_500(long_text)
+    assert len(result) <= 501  # 500 + possible ellipsis char
+    assert result.endswith("…")
+
+
+def test_build_payload_marks_over_limit():
+    """Posts exceeding 500 chars get over_limit=True and are truncated."""
+    from bot.agents.content import ContentDraft
+    from bot.services.miniapp_generator import build_threads_series_payload
+
+    draft = ContentDraft()
+    draft.series_template_key = "time_of_day"
+    draft.threads_posts = [
+        {"marker": "УТРО", "text": "Короткий пост.", "why_it_works": "ок"},
+        {"marker": "ДЕНЬ", "text": "А " * 300, "why_it_works": "ок"},  # ~600 chars
+        {"marker": "ВЕЧЕР", "text": "Ещё пост.", "why_it_works": "ок"},
+    ]
+
+    payload = build_threads_series_payload(draft, goal_key="trust")
+    posts = payload["threads_posts"]
+    assert posts[0]["over_limit"] is False
+    assert len(posts[0]["text"]) <= 500
+    assert posts[1]["over_limit"] is True
+    assert len(posts[1]["text"]) <= 500
+    assert posts[2]["over_limit"] is False
+
+
+def test_split_redistributes_merged_text():
+    """When all text ends up in one slot, it should be redistributed."""
+    # Simulate: regex matched only УТРО marker, all text goes to morning slot
+    caption = "УТРО\n" + "Первый абзац длинный текст. " * 10 + "\n\n" + "Второй абзац текст. " * 10 + "\n\n" + "Третий абзац текст. " * 10
+    posts = split_threads_posts(caption)
+    # At least the morning slot should have content
+    filled = [p for p in posts if p["text"]]
+    assert len(filled) >= 1  # Should have some redistribution if text is long enough

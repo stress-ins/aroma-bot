@@ -295,6 +295,14 @@ async def approve_series(draft_id: str, ctx: TeamContext = Depends(_resolve_team
     if not posts:
         raise HTTPException(status_code=400, detail="no_posts_to_approve")
 
+    over = [p for p in posts if len(p.get("text", "")) > _THREADS_MAX_CHARS]
+    if over:
+        labels = ", ".join(p.get("label", p.get("slot", "?")) for p in over)
+        raise HTTPException(
+            status_code=400,
+            detail=f"posts_over_500_chars: {labels}",
+        )
+
     saved = await update_draft(draft_id, status="approved")
     if not saved:
         raise HTTPException(status_code=404, detail="draft_not_found")

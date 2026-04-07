@@ -327,7 +327,10 @@ export function createDraftsModule(deps) {
           </div>
           <div class="draft-actions-compact">
             <div class="da-row1">
-              ${!isApproved && posts.length ? `<button class="primary-button" type="button" data-action="approveThreadsSeries" data-args='${JSON.stringify([d.draft_id, null])}'>${actionLabel("approve", "Согласовать")}</button>` : ""}
+              ${!isApproved && posts.length ? (() => {
+                const anyOver500 = posts.some(p => (p.text || "").length > 500);
+                return `<button class="primary-button${anyOver500 ? " is-disabled" : ""}" type="button" ${anyOver500 ? "disabled" : ""} data-action="approveThreadsSeries" data-args='${JSON.stringify([d.draft_id, null])}'>${actionLabel("approve", "Согласовать")}</button>`;
+              })() : ""}
               ${isApproved && d.status !== "published" ? `<button class="primary-button" type="button" data-action="publishThreadsSeriesNow" data-args='${JSON.stringify([d.draft_id, null])}'>${actionLabel("send", "Опубликовать")}</button>` : ""}
             </div>
             <div class="da-row2">
@@ -345,6 +348,7 @@ export function createDraftsModule(deps) {
             <p>${isApproved ? "Серия согласована. Запланируйте публикацию." : d.generation_pending && !posts.length ? "Генерируем посты..." : posts.length ? "Отредактируйте каждый пост, затем согласуйте серию." : "Посты не были сгенерированы. Попробуйте заново."}</p>
           </div>
           ${d.generation_pending && !posts.length ? renderDetailLoader("Генерирую серию", "Создаю три поста: утро, день, вечер.<br>Займёт 15–30 секунд.", "detail-loader-card-compact") : ""}
+          ${posts.some(p => (p.text || "").length > 500) && !isApproved ? `<div class="notice notice-warning" style="margin-bottom: var(--space-3)">Некоторые посты превышают лимит 500 символов Threads API. Сократите текст или перегенерируйте.</div>` : ""}
           ${slotsHtml}
           ${!posts.length && !isApproved && !d.generation_pending ? `
           <div class="actions-row" style="margin-top: var(--space-3)">
