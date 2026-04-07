@@ -490,6 +490,47 @@ def test_build_payload_marks_over_limit():
     assert posts[2]["over_limit"] is False
 
 
+def test_strip_series_meta_removes_headers():
+    """_strip_series_meta removes LLM meta-headers from post text."""
+    from bot.agents.content import _strip_series_meta
+
+    # Case 1: "Серия постов на Threads: ..." header
+    text1 = "Серия постов на Threads: Ночная ароматерапия\nПОСТ 1 (от тренда)\nЗапах лаванды на работе, это не забота."
+    result1 = _strip_series_meta(text1)
+    assert "Серия постов" not in result1
+    assert "ПОСТ 1" not in result1
+    assert "Запах лаванды" in result1
+
+    # Case 2: "THREADS: Серия постов" header
+    text2 = "THREADS: Серия постов (3-8 штук)\nПОСТ 1 (тренд + факт)\nЛаванда помогает расслабиться."
+    result2 = _strip_series_meta(text2)
+    assert "THREADS" not in result2
+    assert "Лаванда помогает" in result2
+
+    # Case 3: clean text stays unchanged
+    text3 = "Ты когда-нибудь замечал, что запах может вернуть тебя в момент?"
+    assert _strip_series_meta(text3) == text3
+
+
+def test_json_posts_stripped_of_meta():
+    """JSON-parsed posts should have meta-headers stripped."""
+    from bot.agents.content import parse_content_draft
+
+    raw = '''{
+      "posts": [
+        {"marker": "УТРО", "text": "Серия постов на Threads: Тема\\nПОСТ 1 (от тренда)\\nРеальный текст поста.", "why_it_works": "ок"},
+        {"marker": "ДЕНЬ", "text": "Чистый текст дня.", "why_it_works": "ок"},
+        {"marker": "ВЕЧЕР", "text": "Чистый текст вечера.", "why_it_works": "ок"}
+      ],
+      "visual_prompt": "test",
+      "stock_keywords": []
+    }'''
+    draft = parse_content_draft(raw)
+    assert "Серия постов" not in draft.threads_posts[0]["text"]
+    assert "ПОСТ 1" not in draft.threads_posts[0]["text"]
+    assert "Реальный текст поста" in draft.threads_posts[0]["text"]
+
+
 def test_split_redistributes_merged_text():
     """When all text ends up in one slot, it should be redistributed."""
     # Simulate: regex matched only УТРО marker, all text goes to morning slot

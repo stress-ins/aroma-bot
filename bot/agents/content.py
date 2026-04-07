@@ -121,7 +121,7 @@ def _map_json_content_draft(data: dict) -> ContentDraft:
         draft.threads_posts = [
             {
                 "marker": humanize(str(p.get("marker", ""))),
-                "text": humanize(str(p.get("text", ""))),
+                "text": _strip_series_meta(humanize(str(p.get("text", "")))),
                 "why_it_works": humanize(str(p.get("why_it_works", ""))),
             }
             for p in posts
@@ -342,6 +342,51 @@ def build_dynamic_slots(post_count: int, template: dict) -> tuple[list[dict], di
 _FORMAT_LABELS_RE = None
 
 
+def _strip_series_meta(text: str) -> str:
+    """Remove meta-headers that LLM sometimes leaks into post text.
+
+    Examples removed:
+      "Серия постов на Threads: Тема\\nПОСТ 1 (от тренда)\\n..."
+      "THREADS: Серия постов (3-8 штук)\\nПОСТ 1..."
+      "НОЧНАЯ АРОМАТЕРАПИЯ: СЕРИЯ ПОСТОВ\\nПОСТ 1 (ТРЕНД)\\n..."
+    """
+    import re
+    # Remove leading lines that look like series headers or post numbering
+    lines = text.split("\n")
+    cleaned: list[str] = []
+    for line in lines:
+        stripped = line.strip()
+        # Skip meta-headers
+        if re.match(
+            r"^(?:Серия постов|СЕРИЯ ПОСТОВ|THREADS|Threads)\b",
+            stripped,
+            re.IGNORECASE,
+        ):
+            continue
+        # Lines that are just a topic title in ALL CAPS
+        if re.match(r"^[А-ЯЁ\s,:\-]{10,}$", stripped) and "СЕРИЯ" in stripped.upper():
+            continue
+        if re.match(
+            r"^ПОСТ\s+\d+\s*[\(:]",
+            stripped,
+            re.IGNORECASE,
+        ):
+            continue
+        if re.match(
+            r"^(?:ПЕРВЫЙ|ВТОРОЙ|ТРЕТИЙ|ЧЕТВЁРТЫЙ|ПЯТЫЙ|ШЕСТОЙ|СЕДЬМОЙ|ВОСЬМОЙ)\s+ПОСТ\b",
+            stripped,
+            re.IGNORECASE,
+        ):
+            continue
+        # Skip FIRST/SECOND/etc. POST headers in ALL CAPS
+        if re.match(r"^ПЕРВЫЙ\s+ПОСТ|^ВТОРОЙ\s+ПОСТ|^ТРЕТИЙ\s+ПОСТ", stripped, re.IGNORECASE):
+            continue
+        cleaned.append(line)
+    result = "\n".join(cleaned).strip()
+    # If we stripped everything, return original
+    return result if len(result) > 20 else text.strip()
+
+
 def _strip_format_labels(text: str) -> str:
     """Remove parenthetical format labels like (Hot Take) that leak from slot descriptions."""
     import re
@@ -416,7 +461,7 @@ def split_threads_posts(caption: str, template: dict | None = None) -> list[dict
         for s in slots_def:
             if s["marker"].upper() == marker:
                 cleaned, why = _extract_why_it_works(raw_text)
-                slot_texts[s["slot"]] = _strip_format_labels(cleaned)
+                slot_texts[s["slot"]] = _strip_series_meta(_strip_format_labels(cleaned))
                 slot_why[s["slot"]] = why
                 break
         i += 2
@@ -436,7 +481,7 @@ def split_threads_posts(caption: str, template: dict | None = None) -> list[dict
                 for idx, slot_info in enumerate(slots_def):
                     if idx < len(sub_chunks):
                         cleaned, why = _extract_why_it_works(sub_chunks[idx])
-                        slot_texts[slot_info["slot"]] = _strip_format_labels(cleaned)
+                        slot_texts[slot_info["slot"]] = _strip_series_meta(_strip_format_labels(cleaned))
                         slot_why[slot_info["slot"]] = why
 
     # Fallback: if regex didn't find markers but text is non-empty, split by double newline
@@ -452,7 +497,7 @@ def split_threads_posts(caption: str, template: dict | None = None) -> list[dict
         for idx, slot_info in enumerate(slots_def):
             if idx < len(chunks):
                 cleaned, why = _extract_why_it_works(chunks[idx])
-                slot_texts[slot_info["slot"]] = _strip_format_labels(cleaned)
+                slot_texts[slot_info["slot"]] = _strip_series_meta(_strip_format_labels(cleaned))
                 slot_why[slot_info["slot"]] = why
 
     for slot_info in slots_def:
