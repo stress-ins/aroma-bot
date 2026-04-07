@@ -356,30 +356,32 @@ def _strip_series_meta(text: str) -> str:
     cleaned: list[str] = []
     for line in lines:
         stripped = line.strip()
-        # Skip meta-headers
+        # Skip meta-headers: "Серия постов...", "THREADS...", topic titles with "серия"
         if re.match(
             r"^(?:Серия постов|СЕРИЯ ПОСТОВ|THREADS|Threads)\b",
             stripped,
             re.IGNORECASE,
         ):
             continue
+        # "ПОСТЫ НА THREADS", "POSTS FOR THREADS" etc.
+        if re.search(r"\b(?:ПОСТЫ?|СЕРИЯ)\s+(?:НА\s+)?THREADS\b", stripped, re.IGNORECASE):
+            continue
+        # Lines containing "серия постов" anywhere (e.g. "ароматерапия: серия постов")
+        if re.search(r"\bсерия\s+постов\b", stripped, re.IGNORECASE):
+            continue
         # Lines that are just a topic title in ALL CAPS
         if re.match(r"^[А-ЯЁ\s,:\-]{10,}$", stripped) and "СЕРИЯ" in stripped.upper():
             continue
-        if re.match(
-            r"^ПОСТ\s+\d+\s*[\(:]",
-            stripped,
-            re.IGNORECASE,
-        ):
+        # "ПОСТ 1 (от тренда)", "Пост 1️⃣"
+        if re.match(r"^ПОСТ\s+\d", stripped, re.IGNORECASE):
+            continue
+        if re.match(r"^Пост\s+[\d️⃣]", stripped):
             continue
         if re.match(
             r"^(?:ПЕРВЫЙ|ВТОРОЙ|ТРЕТИЙ|ЧЕТВЁРТЫЙ|ПЯТЫЙ|ШЕСТОЙ|СЕДЬМОЙ|ВОСЬМОЙ)\s+ПОСТ\b",
             stripped,
             re.IGNORECASE,
         ):
-            continue
-        # Skip FIRST/SECOND/etc. POST headers in ALL CAPS
-        if re.match(r"^ПЕРВЫЙ\s+ПОСТ|^ВТОРОЙ\s+ПОСТ|^ТРЕТИЙ\s+ПОСТ", stripped, re.IGNORECASE):
             continue
         cleaned.append(line)
     result = "\n".join(cleaned).strip()
