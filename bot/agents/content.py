@@ -385,9 +385,9 @@ def _strip_series_meta(text: str) -> str:
             continue
         cleaned.append(line)
     result = "\n".join(cleaned).strip()
-    # If we stripped everything, return original
-    if len(result) <= 20:
-        return text.strip()
+    # If we stripped everything, return empty
+    if not result:
+        return ""
     # If "ПОСТ 2" leaked into single-slot text, truncate at that boundary
     m = re.search(r"\n\s*(?:ПОСТ\s+[2-9]|Пост\s+[2-9️⃣])", result)
     if m:
@@ -399,7 +399,7 @@ def _strip_series_meta(text: str) -> str:
         result,
         flags=re.IGNORECASE | re.DOTALL,
     ).rstrip()
-    return result if len(result) > 20 else text.strip()
+    return result
 
 
 def _strip_format_labels(text: str) -> str:
