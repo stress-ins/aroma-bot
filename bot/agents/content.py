@@ -356,9 +356,9 @@ def _strip_series_meta(text: str) -> str:
     cleaned: list[str] = []
     for line in lines:
         stripped = line.strip()
-        # Skip meta-headers: "Серия постов...", "THREADS...", topic titles with "серия"
+        # Skip meta-headers: "Серия постов...", "THREADS...", "Тема поста:..."
         if re.match(
-            r"^(?:Серия постов|СЕРИЯ ПОСТОВ|THREADS|Threads)\b",
+            r"^(?:Серия постов|СЕРИЯ ПОСТОВ|THREADS|Threads|Тема поста|Тема:)\b",
             stripped,
             re.IGNORECASE,
         ):
