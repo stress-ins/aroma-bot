@@ -511,6 +511,14 @@ def test_strip_series_meta_removes_headers():
     text3 = "Ты когда-нибудь замечал, что запах может вернуть тебя в момент?"
     assert _strip_series_meta(text3) == text3
 
+    # Case 4: merged posts — truncate at ПОСТ 2
+    text4 = "ПОСТ 1\nРеальный текст поста.\n\nПочему это сработает: хорошо.\nПОСТ 2\nВторой пост."
+    result4 = _strip_series_meta(text4)
+    assert "ПОСТ 2" not in result4
+    assert "Второй пост" not in result4
+    assert "Почему это сработает" not in result4
+    assert "Реальный текст поста" in result4
+
 
 def test_json_posts_stripped_of_meta():
     """JSON-parsed posts should have meta-headers stripped."""

@@ -386,6 +386,19 @@ def _strip_series_meta(text: str) -> str:
         cleaned.append(line)
     result = "\n".join(cleaned).strip()
     # If we stripped everything, return original
+    if len(result) <= 20:
+        return text.strip()
+    # If "ПОСТ 2" leaked into single-slot text, truncate at that boundary
+    m = re.search(r"\n\s*(?:ПОСТ\s+[2-9]|Пост\s+[2-9️⃣])", result)
+    if m:
+        result = result[:m.start()].rstrip()
+    # Strip trailing "Почему это сработает:" annotation (belongs in why_it_works field)
+    result = re.sub(
+        r"\n?\s*Почему это сработает\s*:.*$",
+        "",
+        result,
+        flags=re.IGNORECASE | re.DOTALL,
+    ).rstrip()
     return result if len(result) > 20 else text.strip()
 
 
