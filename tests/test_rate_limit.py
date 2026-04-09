@@ -156,12 +156,12 @@ async def test_rate_limit_per_user_isolation(client):
 
 @pytest.mark.asyncio
 async def test_rate_limit_admin_exempt(client, monkeypatch):
-    """Admin users (ADMIN_TELEGRAM_CHAT_ID) are exempt from rate limiting."""
+    """Allowed team members are exempt from rate limiting."""
     admin_uid = 88888
     monkeypatch.setenv("ADMIN_TELEGRAM_CHAT_ID", str(admin_uid))
-    # Re-initialize admin IDs
+    # Re-initialize exempt IDs
     from miniapp.api import rate_limit as rl_mod
-    rl_mod._ADMIN_IDS = {f"tg:{admin_uid}"}
+    rl_mod._EXEMPT_IDS = {f"tg:{admin_uid}"}
 
     headers = {"x-telegram-init-data": _make_init_data(admin_uid)}
     # Send more than the generation limit — admin should never get 429

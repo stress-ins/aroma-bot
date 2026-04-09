@@ -38,11 +38,25 @@ LIMIT_DEFAULT = parse_limit("60/minute")
 LIMIT_GENERATION = parse_limit("20/minute")
 LIMIT_READONLY = parse_limit("120/minute")
 
-# Admin Telegram IDs exempt from rate limiting
-_ADMIN_IDS: set[str] = set()
-_admin_raw = os.getenv("ADMIN_TELEGRAM_CHAT_ID", "")
-if _admin_raw:
-    _ADMIN_IDS = {f"tg:{uid.strip()}" for uid in _admin_raw.split(",") if uid.strip()}
+# Allowed users exempt from rate limiting (team members, not public users)
+_EXEMPT_IDS: set[str] = set()
+
+
+def _build_exempt_ids() -> set[str]:
+    """Build exempt set from admin ID + allowed user IDs."""
+    ids: set[str] = set()
+    admin_raw = os.getenv("ADMIN_TELEGRAM_CHAT_ID", "")
+    if admin_raw:
+        for uid in admin_raw.split(","):
+            if uid.strip():
+                ids.add(f"tg:{uid.strip()}")
+    try:
+        from config import settings
+        for uid in settings.miniapp_aroma_allowed_user_id_set:
+            ids.add(f"tg:{uid}")
+    except Exception:
+        pass
+    return ids
 
 
 # ---------------------------------------------------------------------------
@@ -146,8 +160,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         key = get_user_key(request)
 
-        # Admin users are exempt from rate limiting
-        if key in _ADMIN_IDS:
+        # Allowed team members are exempt from rate limiting
+        global _EXEMPT_IDS
+        if not _EXEMPT_IDS:
+            _EXEMPT_IDS = _build_exempt_ids()
+        if key in _EXEMPT_IDS:
             return await call_next(request)
 
         # Namespace by limit tier to keep counters separate
