@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from bot.agents import ContentDraft
-from bot.agents.content import split_threads_posts
+from bot.agents.content import split_threads_posts, _strip_series_meta
 from bot.agents.reels_agent import StoryboardFrame
 
 
@@ -82,7 +82,7 @@ def build_threads_series_payload(
 
     threads_posts: list[dict[str, object]] = []
     for post in posts:
-        text = post["text"]
+        text = _strip_series_meta(post["text"])
         over_limit = len(text) > 500
         if over_limit:
             # Hard truncate at last sentence boundary within 500 chars

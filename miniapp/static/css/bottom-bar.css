@@ -218,12 +218,10 @@
 }
 
 .threads-char-counter {
-  position: absolute;
-  bottom: 8px;
-  right: 10px;
+  text-align: right;
+  padding: 2px 10px 0;
   font-size: 11px;
   color: var(--text-secondary);
-  pointer-events: none;
 }
 
 .threads-char-counter.is-warn {
