@@ -201,8 +201,8 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
     )
     # Inbox conversations + messages for testing Входящие tab
     cursor.execute(
-        "INSERT INTO conversations (conversation_id, platform, participant_id, participant_username, participant_name, last_message_preview, last_message_at, status, unread_count, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        ("conv001", "instagram", "ext_user_001", "wellness_dm", "Wellness DM User", "Подскажите, как использовать масло лаванды?", now, "active", 1, now),
+        "INSERT INTO conversations (conversation_id, platform, participant_id, participant_username, participant_name, profile_picture_url, last_message_preview, last_message_at, status, unread_count, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        ("conv001", "instagram", "ext_user_001", "wellness_dm", "Wellness DM User", "", "Подскажите, как использовать масло лаванды?", now, "active", 1, now),
     )
     cursor.execute(
         "INSERT INTO direct_messages (message_id, conversation_id, sender_type, content, sent_at, external_id) VALUES (?, ?, ?, ?, ?, ?)",
@@ -253,6 +253,7 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
             "MINIAPP_AROMA_ALLOWED_USER_IDS": "12345",
             "AROMA_BYPASS_AUTH": "1",
             "AROMA_ENV": "test",
+            "AROMA_RATE_LIMIT_DISABLED": "1",
         }
     )
 

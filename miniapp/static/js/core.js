@@ -59,7 +59,7 @@ export function createCoreModule(deps) {
     return `
       <div class="boot-fallback boot-fallback-inline is-error">
         <div class="boot-fallback-copy">
-          <p class="eyebrow">Нужна повторная попытка</p>
+          <p class="eyebrow">Не удалось загрузить</p>
           <h2>${escapeHtml(title)}</h2>
           <p>${escapeHtml(message)}</p>
         </div>
@@ -75,7 +75,9 @@ export function createCoreModule(deps) {
     actionLabel = "",
     action = "",
     tone = "soft",
+    primaryCta = false,
   } = {}) {
+    const btnClass = primaryCta ? "primary-button" : "secondary-button";
     return `
       <div class="guided-state tone-${escapeHtml(tone)}">
         <div class="guided-state-copy">
@@ -83,7 +85,7 @@ export function createCoreModule(deps) {
           <h3>${escapeHtml(title || "Пока ничего не выбрано")}</h3>
           ${body ? `<p>${escapeHtml(body)}</p>` : ""}
         </div>
-        ${actionLabel && action ? `<div class="guided-state-actions"><button class="secondary-button" type="button" data-action="${action}">${escapeHtml(actionLabel)}</button></div>` : ""}
+        ${actionLabel && action ? `<div class="guided-state-actions"><button class="${btnClass}" type="button" data-action="${action}">${escapeHtml(actionLabel)}</button></div>` : ""}
       </div>
     `;
   }
@@ -105,17 +107,18 @@ export function createCoreModule(deps) {
     }, duration));
   }
 
-  function renderDetailError(title, message, retryAction = "retryCurrentTab()") {
+  function renderDetailError(title, message, retryAction = "retryCurrentTab", retryArgs = null) {
+    const argsAttr = retryArgs ? ` data-args='${JSON.stringify(retryArgs)}'` : "";
     return `
       <div class="detail-grid">
         ${renderBackButton()}
         <div class="boot-fallback boot-fallback-inline is-error">
           <div class="boot-fallback-copy">
-            <p class="eyebrow">Нужна повторная попытка</p>
+            <p class="eyebrow">Не удалось загрузить</p>
             <h2>${escapeHtml(title)}</h2>
             <p>${escapeHtml(message)}</p>
           </div>
-          <button class="secondary-button" type="button" data-action="${retryAction}">Повторить</button>
+          <button class="secondary-button" type="button" data-action="${retryAction}"${argsAttr}>Повторить</button>
         </div>
       </div>
     `;
@@ -286,7 +289,7 @@ export function createCoreModule(deps) {
     elements.draftDetail.innerHTML = renderDetailError(
       "Черновик создаётся дольше обычного",
       "Мы продолжаем ждать создание карточки. Откройте Черновики ещё раз или повторите позже.",
-      "retryCurrentTab()",
+      "retryCurrentTab",
     );
     callbacks.syncMobileNavigation();
     return false;
@@ -344,6 +347,12 @@ export function createCoreModule(deps) {
     if (message === "Load failed" || message === "Failed to fetch") {
       return "Не удалось связаться с сервером. Проверьте соединение и попробуйте ещё раз.";
     }
+    if (/^403\b/.test(message) || message === "forbidden" || message === "access_denied") {
+      return "Нет доступа к разделу. Проверьте подписку или обратитесь к администратору.";
+    }
+    if (/^5\d{2}\b/.test(message) || message === "server_error") {
+      return "Ошибка сервера. Попробуйте ещё раз через несколько минут.";
+    }
     return message;
   }
 
@@ -362,8 +371,9 @@ export function createCoreModule(deps) {
     }
     hideBootFallback();
     setEmptyState(true);
-    elements.listTitle.textContent = "Загрузка";
+    elements.listTitle.textContent = callbacks.getSectionTitle ? callbacks.getSectionTitle() : prefix;
     elements.draftCount.textContent = "";
+    if (elements.filtersContainer) elements.filtersContainer.hidden = true;
     elements.draftList.innerHTML = renderPanelError(prefix, humanMessage);
     if (!elements.draftDetail.innerHTML.trim()) {
       elements.draftDetail.innerHTML = renderDetailLoader("Подождите ещё немного");

@@ -3,9 +3,11 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
 from bot.services.inbox_store import (
@@ -21,6 +23,10 @@ from ..auth import TeamContext, _require_webhook_auth, _resolve_team_context
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+# ── Avatar proxy cache (in-memory, TTL 5 min) ───────────────────────────────
+_avatar_cache: dict[str, tuple[bytes, str, float]] = {}  # conv_id -> (body, content_type, timestamp)
+_AVATAR_TTL = 300  # 5 minutes
 
 
 # ── Pydantic models ──────────────────────────────────────────────────────────
@@ -53,6 +59,7 @@ def _serialize_conversation(c) -> dict:
         "participant_id": c.participant_id,
         "participant_username": c.participant_username,
         "participant_name": c.participant_name,
+        "profile_picture_url": getattr(c, "profile_picture_url", "") or "",
         "last_message_preview": c.last_message_preview,
         "last_message_at": c.last_message_at.isoformat() if isinstance(c.last_message_at, datetime) else str(c.last_message_at or ""),
         "status": c.status,
@@ -72,6 +79,53 @@ def _serialize_message(m) -> dict:
 
 
 # ── Endpoints ────────────────────────────────────────────────────────────────
+
+@router.get("/api/inbox/avatar/{conversation_id}")
+async def inbox_avatar_proxy(
+    conversation_id: str,
+    ctx: TeamContext = Depends(_resolve_team_context),
+):
+    """Proxy conversation partner's profile picture to avoid CDN blocks in WebView."""
+    # Check cache first
+    now = time.monotonic()
+    cached = _avatar_cache.get(conversation_id)
+    if cached:
+        body, content_type, ts = cached
+        if now - ts < _AVATAR_TTL:
+            return Response(content=body, media_type=content_type, headers={"Cache-Control": "public, max-age=300"})
+        else:
+            del _avatar_cache[conversation_id]
+
+    conv = await get_conversation(conversation_id)
+    if not conv:
+        raise HTTPException(status_code=404, detail="conversation_not_found")
+    if conv.team_id and conv.team_id != ctx.team_id:
+        raise HTTPException(status_code=403, detail="team_mismatch")
+
+    profile_url = getattr(conv, "profile_picture_url", "") or ""
+    if not profile_url:
+        raise HTTPException(status_code=404, detail="no_avatar")
+
+    try:
+        async with httpx.AsyncClient(timeout=10, follow_redirects=True) as client:
+            resp = await client.get(profile_url)
+            resp.raise_for_status()
+    except Exception:
+        logger.warning("Failed to fetch avatar for conversation %s", conversation_id)
+        raise HTTPException(status_code=404, detail="fetch_failed")
+
+    content_type = resp.headers.get("content-type", "image/jpeg")
+    body = resp.content
+
+    # Store in cache
+    _avatar_cache[conversation_id] = (body, content_type, now)
+
+    return Response(
+        content=body,
+        media_type=content_type,
+        headers={"Cache-Control": "public, max-age=300"},
+    )
+
 
 @router.get("/api/inbox")
 async def list_inbox(
@@ -213,6 +267,76 @@ async def poll_inbox(ctx: TeamContext = Depends(_resolve_team_context)):
     return {"conversations_polled": convs, "messages_saved": msgs}
 
 
+@router.get("/api/inbox/diagnostics")
+async def inbox_diagnostics(ctx: TeamContext = Depends(_resolve_team_context)):
+    """Check Instagram token and permissions for DM sending."""
+    from bot.services.mentions_store import get_token
+
+    result = {
+        "token_configured": False,
+        "token_valid": False,
+        "permissions": [],
+        "missing_permissions": [],
+        "can_send_dm": False,
+        "error": "",
+        "page_name": "",
+    }
+
+    token_row = await get_token("instagram")
+    if not token_row or not token_row.access_token:
+        result["error"] = "Instagram токен не настроен. Подключите Instagram в разделе Настройки."
+        return result
+
+    result["token_configured"] = True
+    token = token_row.access_token
+
+    # Check token validity and permissions via Graph API debug_token
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            # First try /me to check token validity
+            me_resp = await client.get(
+                "https://graph.instagram.com/v21.0/me",
+                params={"access_token": token, "fields": "id,username"},
+            )
+            if me_resp.status_code == 200:
+                me_data = me_resp.json()
+                result["token_valid"] = True
+                result["page_name"] = me_data.get("username", "")
+            else:
+                result["error"] = f"Токен недействителен (HTTP {me_resp.status_code}). Переподключите Instagram."
+                return result
+
+            # Check permissions via /me/permissions
+            perm_resp = await client.get(
+                "https://graph.facebook.com/v21.0/me/permissions",
+                params={"access_token": token},
+            )
+            if perm_resp.status_code == 200:
+                perm_data = perm_resp.json()
+                granted = [
+                    p["permission"] for p in perm_data.get("data", [])
+                    if p.get("status") == "granted"
+                ]
+                result["permissions"] = granted
+
+                required = ["instagram_manage_messages", "pages_messaging"]
+                missing = [p for p in required if p not in granted]
+                result["missing_permissions"] = missing
+                result["can_send_dm"] = len(missing) == 0
+                if missing:
+                    result["error"] = (
+                        f"Отсутствуют разрешения: {', '.join(missing)}. "
+                        "Переподключите Instagram с нужными правами."
+                    )
+            else:
+                result["error"] = "Не удалось проверить разрешения токена."
+
+    except Exception as exc:
+        result["error"] = f"Ошибка проверки: {str(exc)}"
+
+    return result
+
+
 @router.post("/api/inbox/ingest")
 async def ingest_inbox_message(
     payload: InboxIngestPayload,
@@ -274,6 +398,12 @@ async def _send_instagram_message(recipient_id: str, text: str, team_id: str | N
                 "tag": "HUMAN_AGENT",
             },
         )
+        if r.status_code == 403:
+            body = r.json() if r.headers.get("content-type", "").startswith("application/json") else {}
+            error_msg = body.get("error", {}).get("message", "")
+            raise ValueError(
+                f"Instagram API 403: {error_msg or 'нет разрешения instagram_manage_messages или токен истёк'}"
+            )
         r.raise_for_status()
 
 

@@ -55,7 +55,7 @@ const state = {
   settingsSection: "status",
   settingsInDetail: false,
   mobileView: "list", // 'list' or 'detail'
-  lastHandbookTab: "aromas",
+  lastHandbookTab: (() => { const d = localStorage.getItem("aromara_default_domain"); const m = { aroma: "aromas", body: "practices", sound: "sounds" }; return m[d] || "aromas"; })(),
   pendingCarouselNotes: {},
   pendingCarouselOps: {},
   pendingReelsNotes: {},
@@ -83,6 +83,12 @@ const state = {
   videoUpload: { active: false, draftId: null, progress: 0, fileName: "", error: null, xhr: null },
 };
 
+const HANDBOOK_SECTIONS = [
+  { id: "aroma", label: "Арома", icon: "🌿", tabs: ["aromas", "blends", "symptoms", "concepts"] },
+  { id: "body", label: "Тело", icon: "🤲", tabs: ["practices", "massage", "osteo", "biodynamics"] },
+  { id: "vibration", label: "Звук", icon: "🔔", tabs: ["sounds", "crystals"] },
+];
+
 const MODE_TABS = {
   handbook: [
     { id: "aromas", label: "Ароматы" },
@@ -90,7 +96,11 @@ const MODE_TABS = {
     { id: "symptoms", label: "Симптомы" },
     { id: "concepts", label: "Теория" },
     { id: "practices", label: "Практики" },
+    { id: "massage", label: "Массаж" },
+    { id: "osteo", label: "Остеопрактика" },
+    { id: "biodynamics", label: "Биодинамика" },
     { id: "sounds", label: "Звуки" },
+    { id: "crystals", label: "Кристаллы" },
   ],
 };
 
@@ -139,6 +149,22 @@ function initScrollFade(container) {
   };
 
   container.addEventListener('scroll', update, { passive: true });
+  if (window.ResizeObserver) new ResizeObserver(update).observe(container);
+  new MutationObserver(update).observe(container, { childList: true, subtree: true });
+  update();
+}
+
+// ── Horizontal scroll fade (marks container as scrolled-end when at right edge) ──
+function initHorizontalScrollFade(container) {
+  if (!container || container._hScrollFadeInit) return;
+  container._hScrollFadeInit = true;
+  const parent = container.parentElement;
+  if (!parent) return;
+  const update = () => {
+    const atEnd = container.scrollLeft + container.clientWidth >= container.scrollWidth - 4;
+    parent.classList.toggle("scrolled-end", atEnd);
+  };
+  container.addEventListener("scroll", update, { passive: true });
   if (window.ResizeObserver) new ResizeObserver(update).observe(container);
   new MutationObserver(update).observe(container, { childList: true, subtree: true });
   update();
@@ -399,6 +425,50 @@ const HANDBOOK_CATEGORY_META = {
     locked: "Доступ к разделу Симптомы закрыт.",
     count: (items) => `${items.length} симптомов`,
   },
+  massage: {
+    category: "massage",
+    title: "Массаж",
+    label: "массажную технику",
+    searchLabel: "Поиск техники",
+    searchPlaceholder: "аромамассаж, рефлексология...",
+    empty: "Массажные техники не найдены.",
+    selectPrompt: "Выберите массажную технику из списка.",
+    locked: "Доступ к справочнику массажа ограничен.",
+    count: (items) => `${items.length} карточек`,
+  },
+  osteo: {
+    category: "osteo",
+    title: "Остеопрактика",
+    label: "остеопатическую технику",
+    searchLabel: "Поиск техники",
+    searchPlaceholder: "краниосакральная, фасции...",
+    empty: "Остеопатические техники не найдены.",
+    selectPrompt: "Выберите технику из списка.",
+    locked: "Доступ к справочнику остеопрактики ограничен.",
+    count: (items) => `${items.length} карточек`,
+  },
+  biodynamics: {
+    category: "biodynamics",
+    title: "Биодинамика",
+    label: "биодинамическую карточку",
+    searchLabel: "Поиск темы",
+    searchPlaceholder: "первичное дыхание, мидлайн...",
+    empty: "Биодинамические карточки не найдены.",
+    selectPrompt: "Выберите карточку из списка.",
+    locked: "Доступ к справочнику биодинамики ограничен.",
+    count: (items) => `${items.length} карточек`,
+  },
+  crystals: {
+    category: "crystal",
+    title: "Кристаллы",
+    label: "кристалл",
+    searchLabel: "Поиск кристалла",
+    searchPlaceholder: "аметист, кварц, турмалин...",
+    empty: "Кристаллы не найдены.",
+    selectPrompt: "Выберите кристалл из списка.",
+    locked: "Доступ к справочнику кристаллов ограничен.",
+    count: (items) => `${items.length} карточек`,
+  },
 };
 
 function handbookCategoryIcon(tabId) {
@@ -408,7 +478,11 @@ function handbookCategoryIcon(tabId) {
     symptoms: "🫀",
     concepts: "🧭",
     practices: "🫁",
+    massage: "💆",
+    osteo: "🦴",
+    biodynamics: "🌊",
     sounds: "🔔",
+    crystals: "💎",
   };
   const glyph = glyphMap[String(tabId || "").toLowerCase()] || "•";
   return `<span class="kind-glyph handbook-glyph" aria-hidden="true">${glyph}</span>`;
@@ -1360,6 +1434,7 @@ const coreCallbacks = {
   isBootstrapped: () => appBootstrapped,
   renderReels: () => renderReels(),
   renderReelsDetail: (draft) => renderReelsDetail(draft),
+  getSectionTitle: () => SECTION_TITLES[state.tab] || state.tab,
 };
 
 function getInitDataHeaders() {
@@ -1691,6 +1766,7 @@ function generateReplies(mentionId, btn) { return mentionsModule.generateReplies
 function publishReply(mentionId, replyId, btn) { return mentionsModule.publishReply(mentionId, replyId, btn); }
 function ignoreMentionAction(mentionId, btn) { return mentionsModule.ignoreMentionAction(mentionId, btn); }
 function setMentionsFilter(key, value) { mentionsModule.setMentionsFilter(key, value); }
+function pollMentionsNow(btn) { return mentionsModule.pollMentionsNow(btn); }
 
 // Inbox action wrappers
 function openConversation(convId) { inboxModule.openConversation(convId); }
@@ -1701,6 +1777,7 @@ function generateInboxReply(convId, btn) { return inboxModule.generateInboxReply
 function useAiReply(convId, idx) { inboxModule.useAiReply(convId, idx); }
 function archiveConversation(convId, btn) { return inboxModule.archiveConversation(convId, btn); }
 function pollInbox(btn) { return inboxModule.pollInbox(btn); }
+function checkInboxPermissions(btn) { return inboxModule.checkInboxPermissions(btn); }
 function setInboxFilter(key, value) { inboxModule.setInboxFilter(key, value); }
 
 // Archive action wrappers
@@ -1923,6 +2000,26 @@ const {
   recoToggleAroma,
   recoUpdateContra,
   submitRecommendations,
+  openMassageFinder,
+  closeMassageFinder,
+  massageWizardNext,
+  massageWizardBack,
+  massageSelectConcern,
+  massageSelectZone,
+  massageSelectGoal,
+  massageSelectExperience,
+  massageUpdateContra,
+  submitMassageRecommendations,
+  openProtocolWizard,
+  closeProtocolWizard,
+  protoWizardNext,
+  protoWizardBack,
+  protoSelectConcern,
+  protoSelectZone,
+  protoSelectGoal,
+  protoSelectModalities,
+  protoUpdateContra,
+  submitProtocolRecommendations,
 } = createRecommendationsModule({
   state,
   elements,
@@ -2270,15 +2367,33 @@ window.resetOnboarding = onboarding.resetOnboarding;
 
 sessionCallbacks.refreshReelsDetail = refreshReelsDetail;
 
-function setMode(m) {
-  clearBackgroundRefreshes();
-  state.mode = m;
-  document.body.dataset.mode = m;
-  analytics.trackPageView(m, state.tab);
-  elements.modeContent.classList.toggle("active", m === "content");
-  elements.modeHandbook.classList.toggle("active", m === "handbook");
-  elements.settingsButton?.classList.toggle("active", m === "content" && state.tab === "settings");
-  const tabs = MODE_TABS[m] || [];
+function _renderTabBar(m) {
+  let tabs = MODE_TABS[m] || [];
+  const tabsWrapper = elements.tabsContainer.parentElement;
+  const oldSectionSwitcher = tabsWrapper?.querySelector(".section-switcher");
+  if (oldSectionSwitcher) oldSectionSwitcher.remove();
+
+  if (m === "handbook") {
+    const activeSection = HANDBOOK_SECTIONS.find(s => s.tabs.includes(state.tab)) || HANDBOOK_SECTIONS[0];
+    const sectionEl = document.createElement("div");
+    sectionEl.className = "section-switcher";
+    sectionEl.innerHTML = HANDBOOK_SECTIONS.map(s =>
+      `<button class="section-chip${s.id === activeSection.id ? " active" : ""}" data-section="${s.id}" type="button">${s.icon} ${s.label}</button>`
+    ).join("");
+    tabsWrapper.insertBefore(sectionEl, elements.tabsContainer);
+    sectionEl.querySelectorAll(".section-chip").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const sec = HANDBOOK_SECTIONS.find(s => s.id === btn.dataset.section);
+        if (sec) {
+          const targetTab = sec.tabs.includes(state.tab) ? state.tab : sec.tabs[0];
+          setTab(targetTab);
+          _renderTabBar("handbook");
+          void safeLoadCurrentTab("Не удалось загрузить вкладку");
+        }
+      });
+    });
+    tabs = (MODE_TABS[m] || []).filter(t => activeSection.tabs.includes(t.id));
+  }
   elements.tabsContainer.innerHTML = tabs.map((t) => {
     const label = HANDBOOK_CATEGORY_META[t.id]
       ? `${handbookCategoryIcon(t.id)}<span>${escapeHtml(t.label)}</span>`
@@ -2299,8 +2414,6 @@ function setMode(m) {
       void safeLoadCurrentTab("Не удалось загрузить вкладку");
     });
   });
-  // Hide tabs wrapper when no tabs (content mode has no pill tabs)
-  const tabsWrapper = elements.tabsContainer.closest(".tabs-wrapper");
   if (tabsWrapper) tabsWrapper.hidden = tabs.length === 0;
   if (tabsWrapper && tabs.length > 0) {
     const checkScrollEnd = () => {
@@ -2311,8 +2424,30 @@ function setMode(m) {
     elements.tabsContainer.addEventListener("scroll", checkScrollEnd, { passive: true });
     requestAnimationFrame(checkScrollEnd);
   }
+}
+
+function setMode(m) {
+  clearBackgroundRefreshes();
+  state.mode = m;
+  document.body.dataset.mode = m;
+  analytics.trackPageView(m, state.tab);
+  elements.modeContent.classList.toggle("active", m === "content");
+  elements.modeHandbook.classList.toggle("active", m === "handbook");
+  elements.settingsButton?.classList.toggle("active", m === "content" && state.tab === "settings");
+  _renderTabBar(m);
+  const tabsWrapper = elements.tabsContainer.parentElement;
   const _contentHidden = ["settings", "create", "inbox", "plans", "schedule", "keywords", "status", "drafts", "trends"];
-  if (!(m === "content" && _contentHidden.includes(state.tab)) && tabs.length > 0 && !tabs.find(t => t.id === state.tab)) setTab(tabs[0].id);
+  const _modeTabs = MODE_TABS[m] || [];
+  if (_modeTabs.length > 0 && !_modeTabs.find(t => t.id === state.tab)) {
+    // Restore last handbook tab if switching back to handbook mode
+    if (m === "handbook" && state._lastHandbookTab && _modeTabs.find(t => t.id === state._lastHandbookTab)) {
+      setTab(state._lastHandbookTab);
+      _renderTabBar(m); // re-render with restored tab
+    } else if (!(m === "content" && _contentHidden.includes(state.tab))) {
+      setTab(_modeTabs[0].id);
+    }
+  }
+  if (m === "handbook") state._lastHandbookTab = state.tab;
   renderContentSubTabs();
   syncMobileNavigation();
 }
@@ -2435,6 +2570,7 @@ function setTab(t) {
   state.selectedCreateTool = null;
   if (t !== "keywords" && t !== "settings") state.selectedKeywordTopicIdx = null;
   elements.settingsButton?.classList.toggle("active", state.mode === "content" && t === "settings");
+  if (HANDBOOK_CATEGORY_META[t]) state._lastHandbookTab = t;
 
   if (HANDBOOK_CATEGORY_META[t]) {
     state.lastHandbookTab = t;
@@ -2469,9 +2605,9 @@ function setTab(t) {
   elements.listTitle.textContent = "Загрузка...";
   // Preserve search bar in handbook tabs — renderReferences will update the count
   if (!HANDBOOK_CATEGORY_META[t]) elements.draftCount.textContent = "";
-  // For handbook tabs, show action-group buttons immediately while data loads
   if (HANDBOOK_CATEGORY_META[t]) {
-    elements.draftList.innerHTML = actionGroupHtml() + renderPanelLoader("Загружаю справочник");
+    const _agHtml = typeof actionGroupHtml === "function" ? actionGroupHtml() : "";
+    elements.draftList.innerHTML = _agHtml + renderPanelLoader("Загружаю справочник");
   } else {
     elements.draftList.innerHTML = renderPanelLoader("Загружаю раздел");
   }
@@ -2640,6 +2776,7 @@ registerWindowBridge({
   publishReply,
   ignoreMentionAction,
   setMentionsFilter,
+  pollMentionsNow,
   openArchiveDetail,
   openArchiveForm,
   savePublication,
@@ -2683,6 +2820,26 @@ registerWindowBridge({
   recoToggleAroma,
   recoUpdateContra,
   submitRecommendations,
+  openMassageFinder,
+  closeMassageFinder,
+  massageWizardNext,
+  massageWizardBack,
+  massageSelectConcern,
+  massageSelectZone,
+  massageSelectGoal,
+  massageSelectExperience,
+  massageUpdateContra,
+  submitMassageRecommendations,
+  openProtocolWizard,
+  closeProtocolWizard,
+  protoWizardNext,
+  protoWizardBack,
+  protoSelectConcern,
+  protoSelectZone,
+  protoSelectGoal,
+  protoSelectModalities,
+  protoUpdateContra,
+  submitProtocolRecommendations,
   _selectSchedulerDate,
   _renderThreadsSchedulerDates,
   selectTrendsPlatform,
@@ -2722,6 +2879,7 @@ registerWindowBridge({
   useAiReply,
   archiveConversation,
   pollInbox,
+  checkInboxPermissions,
   setInboxFilter,
   // Stock photo picker
   searchStockPhotos: (...a) => _stockPhotosMod.searchStockPhotos(...a),
@@ -2773,6 +2931,8 @@ bootstrap()
   .then(() => {
     refreshIcons();
     initScrollFade(elements.draftList);
+    initHorizontalScrollFade(elements.tabsContainer);
+    initHorizontalScrollFade(elements.contentSubTabs);
   })
   .catch((err) => {
     console.error("bootstrap failed", err);

@@ -35,8 +35,28 @@ _limiter = MovingWindowRateLimiter(_storage)
 
 # Parsed limit objects
 LIMIT_DEFAULT = parse_limit("60/minute")
-LIMIT_GENERATION = parse_limit("10/minute")
+LIMIT_GENERATION = parse_limit("20/minute")
 LIMIT_READONLY = parse_limit("120/minute")
+
+# Allowed users exempt from rate limiting (team members, not public users)
+_EXEMPT_IDS: set[str] = set()
+
+
+def _build_exempt_ids() -> set[str]:
+    """Build exempt set from admin ID + allowed user IDs."""
+    ids: set[str] = set()
+    admin_raw = os.getenv("ADMIN_TELEGRAM_CHAT_ID", "")
+    if admin_raw:
+        for uid in admin_raw.split(","):
+            if uid.strip():
+                ids.add(f"tg:{uid.strip()}")
+    try:
+        from config import settings
+        for uid in settings.miniapp_aroma_allowed_user_id_set:
+            ids.add(f"tg:{uid}")
+    except Exception:
+        pass
+    return ids
 
 
 # ---------------------------------------------------------------------------
@@ -139,6 +159,14 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         key = get_user_key(request)
+
+        # Allowed team members are exempt from rate limiting
+        global _EXEMPT_IDS
+        if not _EXEMPT_IDS:
+            _EXEMPT_IDS = _build_exempt_ids()
+        if key in _EXEMPT_IDS:
+            return await call_next(request)
+
         # Namespace by limit tier to keep counters separate
         namespace = f"rl:{limit.amount}/{limit.multiples}"
 

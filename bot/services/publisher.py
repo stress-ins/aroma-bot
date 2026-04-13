@@ -118,6 +118,8 @@ async def publish_threads_series_slot(draft_id: str, slot: str) -> dict[str, Any
     text = slot_post.get("text", "")
     if not text.strip():
         raise RuntimeError(f"Slot {slot} has no text")
+    if len(text) > 500:
+        raise RuntimeError(f"Slot {slot} text exceeds 500 chars ({len(text)}). Edit before publishing.")
 
     result = await publish_to_threads(text)
     logger.info(

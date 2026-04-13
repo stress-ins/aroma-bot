@@ -7,6 +7,7 @@ from bot.agents.content import _HUMAN_WRITING_RULES
 from bot.services.claude_client import call_claude
 from bot.services.brand_settings_store import get_brand_settings_cached
 from bot.services.humanizer import humanize
+from bot.utils.json_parser import extract_json
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +66,30 @@ class FramePromptV2:
 
 
 def _parse_storyboard(raw: str) -> list[StoryboardFrame]:
+    """Parse storyboard frames. Tries JSON first, falls back to text markers."""
+    try:
+        items = extract_json(raw, expect_array=True)
+        if isinstance(items, list):
+            frames = []
+            for item in items:
+                if not isinstance(item, dict):
+                    continue
+                frames.append(StoryboardFrame(
+                    timecode=item.get("timecode", ""),
+                    scene=item.get("scene", ""),
+                    angle=item.get("angle", ""),
+                    gemini_prompt=item.get("prompt", ""),
+                ))
+            if frames:
+                return frames
+    except (ValueError, TypeError):
+        logger.debug("_parse_storyboard: JSON failed, using legacy parser")
+
+    return _parse_storyboard_legacy(raw)
+
+
+def _parse_storyboard_legacy(raw: str) -> list[StoryboardFrame]:
+    """Legacy parser: КАДРN_ТАЙМКОД/СЦЕНА/РАКУРС/ПРОМПТ markers."""
     normalized_lines: list[str] = []
     for line in raw.splitlines():
         probe = line.strip()
@@ -177,17 +202,31 @@ def generate_reels_director_sync(topic: str, script: str) -> list[StoryboardFram
 
 
 def _parse_draft(raw: str) -> ReelsV2Draft:
-    """Parse structured Claude response into ReelsV2Draft.
+    """Parse Claude response into ReelsV2Draft. Tries JSON first, falls back to text markers."""
+    try:
+        data = extract_json(raw)
+        if isinstance(data, dict) and data.get("concept"):
+            return ReelsV2Draft(
+                concept=data.get("concept", ""),
+                hook=data.get("hook", ""),
+                scenario=data.get("scenario", ""),
+                caption=data.get("caption", ""),
+                music_mood=data.get("music_mood", ""),
+            )
+    except (ValueError, TypeError):
+        logger.debug("_parse_draft: JSON failed, using legacy parser")
 
-    Handles both plain-text (CONCEPT:) and markdown (**CONCEPT:**) formats.
-    """
+    return _parse_draft_legacy(raw)
+
+
+def _parse_draft_legacy(raw: str) -> ReelsV2Draft:
+    """Legacy parser: CONCEPT:/HOOK:/SCENARIO:/CAPTION:/MUSIC_MOOD: markers."""
     concept = hook = caption = music_mood = ""
     in_scenario = False
     scenario_buf: list[str] = []
 
     for line in raw.splitlines():
         stripped = line.strip()
-        # Strip markdown bold/heading markers: **CONCEPT:** → CONCEPT:
         clean = stripped.lstrip("#").strip().replace("**", "").strip()
 
         if clean.startswith("CONCEPT:"):
@@ -210,29 +249,24 @@ def _parse_draft(raw: str) -> ReelsV2Draft:
         elif in_scenario:
             scenario_buf.append(line)
 
-    # Fallback: regex extraction if concept still empty
     if not concept:
         import re
-        # Try various patterns Claude might use
         for pattern in [
             r'CONCEPT:\s*(.+)',
             r'Концепция:\s*(.+)',
             r'Concept:\s*(.+)',
-            r'[«"]\s*(.{10,80})\s*[»"]',  # first quoted phrase ≥10 chars
+            r'[«"]\s*(.{10,80})\s*[»"]',
         ]:
             m = re.search(pattern, raw, re.IGNORECASE)
             if m:
                 concept = m.group(1).strip().strip("*\"«»").strip()
                 if concept:
-                    logger.info("Concept extracted via fallback pattern %r: %s", pattern, concept[:100])
                     break
-    # Last resort: use first non-empty meaningful line as concept
     if not concept:
         for line in raw.splitlines():
             candidate = line.strip().lstrip("#").strip().replace("**", "").strip()
             if len(candidate) >= 15 and not candidate.startswith(("HOOK", "SCENARIO", "CAPTION", "MUSIC")):
                 concept = candidate[:200]
-                logger.info("Concept extracted as first meaningful line: %s", concept[:100])
                 break
 
     return ReelsV2Draft(
@@ -245,12 +279,33 @@ def _parse_draft(raw: str) -> ReelsV2Draft:
 
 
 def _parse_frame_prompts(raw: str, n_frames: int = 4) -> list[FramePromptV2]:
-    """Parse structured FRAME1_TIMECODE / FRAME1_OVERLAY / FRAME1_PROMPT blocks."""
+    """Parse frame prompts. Tries JSON first, falls back to text markers."""
+    try:
+        items = extract_json(raw, expect_array=True)
+        if isinstance(items, list):
+            frames = []
+            for item in items:
+                if not isinstance(item, dict):
+                    continue
+                frames.append(FramePromptV2(
+                    timecode=item.get("timecode", ""),
+                    overlay_text=item.get("overlay", ""),
+                    image_prompt=item.get("prompt", ""),
+                ))
+            if frames:
+                return frames[:n_frames]
+    except (ValueError, TypeError):
+        logger.debug("_parse_frame_prompts: JSON failed, using legacy parser")
+
+    return _parse_frame_prompts_legacy(raw, n_frames)
+
+
+def _parse_frame_prompts_legacy(raw: str, n_frames: int = 4) -> list[FramePromptV2]:
+    """Legacy parser: FRAMEN_TIMECODE/OVERLAY/PROMPT markers."""
     frames: list[FramePromptV2] = []
     for i in range(1, n_frames + 1):
         timecode = overlay = prompt = ""
         for line in raw.splitlines():
-            # Strip markdown bold/heading markers
             clean = line.strip().lstrip("#").strip().replace("**", "").strip()
             key_tc = f"FRAME{i}_TIMECODE:"
             key_ov = f"FRAME{i}_OVERLAY:"

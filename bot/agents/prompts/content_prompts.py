@@ -18,37 +18,67 @@ from bot.agents.platform_rules import (
 # ---------------------------------------------------------------------------
 
 OUTPUT_FORMAT_THREADS = """\
-ОБЯЗАТЕЛЬНЫЙ ФОРМАТ — верни ровно 3 поста. Пропуск любого = провал:
+Верни ответ строго как JSON (без markdown-обёртки, без текста до/после):
 
-УТРО
-[текст поста, 40-80 слов]
-ПОЧЕМУ ЭТО СРАБОТАЕТ: [одно предложение]
+{
+  "posts": [
+    {"marker": "УТРО", "text": "текст поста, 40-70 слов, СТРОГО до 500 символов", "why_it_works": "одно предложение"},
+    {"marker": "ДЕНЬ", "text": "текст поста, 40-70 слов, СТРОГО до 500 символов", "why_it_works": "одно предложение"},
+    {"marker": "ВЕЧЕР", "text": "текст поста, 40-70 слов, СТРОГО до 500 символов", "why_it_works": "одно предложение"}
+  ],
+  "visual_prompt": "на английском, до 25 слов, terracotta/beige/sage palette, soft light, atmospheric lifestyle",
+  "stock_keywords": ["keyword1", "keyword2", "keyword3"]
+}
 
-ДЕНЬ
-[текст поста, 40-80 слов]
-ПОЧЕМУ ЭТО СРАБОТАЕТ: [одно предложение]
-
-ВЕЧЕР
-[текст поста, 40-80 слов]
-ПОЧЕМУ ЭТО СРАБОТАЕТ: [одно предложение]
-
-VISUAL_PROMPT: [на английском, до 25 слов, terracotta/beige/sage palette, soft light, atmospheric lifestyle]
-STOCK_KEYWORDS: [5-8 English keywords for stock photo search, comma-separated]
-
-Каждое слово УТРО, ДЕНЬ, ВЕЧЕР стоит СТРОГО на отдельной строке. Все три секции обязательны.
+ОБЯЗАТЕЛЬНО: ровно 3 объекта в массиве posts. Пропуск любого = провал.
+ЖЁСТКОЕ ОГРАНИЧЕНИЕ: каждый text НЕ БОЛЕЕ 500 символов (включая пробелы). Threads API отклонит длинный текст.
+ЗАПРЕЩЕНО в text: "Тема поста:", "Серия постов", "ПОСТ 1", "ПОСТ 2", нумерация постов, повторение темы как заголовка. Поле text — это ГОТОВЫЙ текст для публикации, начинающийся сразу с хука.
+Верни ТОЛЬКО валидный JSON, ничего больше.
 """
+
+
+def build_threads_output_format(template: dict) -> str:
+    """Build dynamic JSON output format block based on the chosen series template."""
+    slots = template["slots"]
+    post_examples = []
+    for s in slots:
+        post_examples.append(
+            f'    {{"marker": "{s["marker"]}", '
+            f'"text": "текст поста, 40-70 слов, СТРОГО до 500 символов. Задача: {s["desc"]}", '
+            f'"why_it_works": "одно предложение"}}'
+        )
+    posts_json = ",\n".join(post_examples)
+    return (
+        f"Верни ответ строго как JSON (без markdown-обёртки, без текста до/после):\n\n"
+        f'{{\n  "posts": [\n{posts_json}\n  ],\n'
+        f'  "visual_prompt": "на английском, до 25 слов, terracotta/beige/sage palette, soft light, atmospheric lifestyle",\n'
+        f'  "stock_keywords": ["keyword1", "keyword2", "keyword3"]\n'
+        f'}}\n\n'
+        f"ОБЯЗАТЕЛЬНО: ровно {len(slots)} объектов в массиве posts. Пропуск любого = провал.\n"
+        f"ЖЁСТКОЕ ОГРАНИЧЕНИЕ: каждый text НЕ БОЛЕЕ 500 символов (включая пробелы). Threads API отклонит длинный текст.\n"
+        f"Все {len(slots)} постов публикуются в один день. Каждый пост — самодостаточный, но связан с остальными единой темой.\n"
+        f"ЗАПРЕЩЕНО в text: «Тема поста:», «Серия постов», «ПОСТ 1», нумерация, повторение темы как заголовка. text — ГОТОВЫЙ текст для публикации, сразу с хука.\n"
+        f"Верни ТОЛЬКО валидный JSON, ничего больше.\n"
+    )
 
 OUTPUT_FORMAT_DEFAULT = """\
-Верни строго в формате:
-CAPTION: [полный текст поста, начиная с хука, с хэштегами согласно правилам платформы]
-CTA: [отдельный CTA если ещё не в тексте, иначе пусто]
-VISUAL_PROMPT: [на английском, до 25 слов, terracotta/beige/sage palette, soft light, atmospheric lifestyle]
-STOCK_KEYWORDS: [5-8 English keywords for stock photo search, comma-separated, e.g. "aromatherapy, essential oils, lavender, spa, wellness"]
+Верни ответ строго как JSON (без markdown-обёртки, без текста до/после):
+
+{
+  "caption": "полный текст поста, начиная с хука, с хэштегами согласно правилам платформы",
+  "cta": "отдельный CTA если ещё не в тексте, иначе пустая строка",
+  "visual_prompt": "на английском, до 25 слов, terracotta/beige/sage palette, soft light, atmospheric lifestyle",
+  "stock_keywords": ["keyword1", "keyword2", "keyword3"]
+}
+
+Верни ТОЛЬКО валидный JSON, ничего больше.
 """
 
 
-def threads_output_format(format_key: str) -> str:
+def threads_output_format(format_key: str, series_template: dict | None = None) -> str:
     if format_key == "threads_series":
+        if series_template:
+            return build_threads_output_format(series_template)
         return OUTPUT_FORMAT_THREADS
     return OUTPUT_FORMAT_DEFAULT
 
@@ -115,6 +145,23 @@ def custom_topics_prompt(
 """
 
 
+PRACTICE_FOCUS_BLOCKS = {
+    "aroma": "",
+    "bodywork": (
+        "\nФокус практики: РАБОТА С ТЕЛОМ (массаж, остеопрактика, биодинамика, миофасциальный релиз).\n"
+        "Подход: раскрой, как аромат поддерживает тело в процессе телесной практики. "
+        "Упоминай конкретные техники (массаж, растяжка, точечное давление), зоны тела и связь масел с телесным опытом. "
+        "Аудитория — массажисты, остеопрактики, специалисты по движению.\n"
+    ),
+    "sound": (
+        "\nФокус практики: ЗВУК И ВИБРАЦИЯ (поющие чаши, гонг, камертон, бинауральные ритмы, голосовые практики).\n"
+        "Подход: раскрой синергию аромата и звуковой вибрации. "
+        "Упоминай конкретные инструменты (чаша, гонг), частоты, резонансы и связь масел со звуковым опытом. "
+        "Аудитория — звукотерапевты, практики гонг-медитации, специалисты по вибрационному целительству.\n"
+    ),
+}
+
+
 def strategist_prompt(
     topic: str,
     goal_key: str,
@@ -123,6 +170,7 @@ def strategist_prompt(
     format_labels: dict[str, str],
     blend_context: dict | None = None,
     rag_context: str = "",
+    practice_focus: str = "aroma",
 ) -> str:
     blend_block = ""
     if blend_context:
@@ -133,17 +181,35 @@ def strategist_prompt(
             "Угол должен раскрывать воздействие смеси через её профиль.\n"
         )
     rag_block = f"\n{rag_context}\n" if rag_context else ""
+    focus_block = PRACTICE_FOCUS_BLOCKS.get(practice_focus, "")
     return f"""\
 {get_brand_context()}
-Роль: ты Content Strategist. Твоя задача — найти угол и первую строку.
+Роль: ты Content Strategist. Твоя задача — найти угол и убийственную первую строку.
 
 Тема: {topic}
 Цель: {goal_guidance[goal_key]}
 Формат: {format_labels[format_key]}
-{rag_block}
+{focus_block}{rag_block}
+
+ПАТТЕРНЫ СИЛЬНЫХ ХУКОВ (используй один из них):
+1. Контринтуитивное утверждение: «Чем больше ты стараешься расслабиться, тем сильнее зажимаешься»
+2. Конкретная ситуация-триггер: «Ты лежишь в кровати, телефон заряжается, а голова нет»
+3. Неожиданный факт: «Лаванда, которую тебе советуют от бессонницы, может её усилить»
+4. Провокационный вопрос: «А что если твой "стресс" — это просто тело, которое забыло, как дышать?»
+5. Признание/уязвимость: «Я три года рассказывала про дыхание, а сама не могла выдохнуть после рабочего дня»
+6. Разрушение мифа: «"Эфирные масла лечат" — нет. Но они умеют кое-что полезнее»
+
+ANTI-PATTERNS (так писать ЗАПРЕЩЕНО):
+- «В современном мире стресс стал...» — скучное начало, все пролистнут
+- «Сегодня хочу поделиться...» — не интригует
+- «Задумывались ли вы...» — избитый шаблон
+- «Каждый из нас...» — обезличено, не цепляет
+- «Ароматерапия — это...» — лекция, а не хук
+- Любое начало с определения или объяснения термина
+
 Ответь строго в формате (два поля, на русском):
 ANGLE: [1-2 предложения — почему эта тема резонирует СЕЙЧАС с этой аудиторией и под эту цель]
-HOOK: [точная первая строка поста — останавливает скролл, без приветствий, без "Сегодня хочу поделиться"]
+HOOK: [точная первая строка поста — останавливает скролл. Должна вызывать реакцию «ого» или «это про меня»]
 
 Пунктуация: тире (— –) → запятая. Запрещено: "важно отметить", "данный", "осуществляется", "в рамках", markdown-форматирование.
 {blend_block}"""
@@ -188,6 +254,8 @@ def writer_prompt(
     goal_guidance: dict[str, str],
     blend_context: dict | None = None,
     rag_context: str = "",
+    practice_focus: str = "aroma",
+    series_template: dict | None = None,
 ) -> str:
     rules = _PLATFORM_RULES_WRITER.get(format_key, _PLATFORM_RULES_WRITER["telegram"])
     blend_block = ""
@@ -204,6 +272,7 @@ def writer_prompt(
             "- Это рассказ, не рецепт\n"
         )
     rag_block = f"\n{rag_context}\n" if rag_context else ""
+    focus_block = PRACTICE_FOCUS_BLOCKS.get(practice_focus, "")
     return f"""\
 {get_brand_context()}
 Роль: ты Platform Writer. Ты получил угол и хук от стратега. Напиши готовый пост.
@@ -212,7 +281,7 @@ def writer_prompt(
 Цель: {goal_guidance[goal_key]}
 Стратегический угол: {angle}
 Первая строка (хук): {hook}
-{blend_block}{rag_block}
+{focus_block}{blend_block}{rag_block}
 {rules}
 
 Дополнительные правила письма:
@@ -230,4 +299,4 @@ def writer_prompt(
 - Запрещено использовать markdown-форматирование: # заголовки, **жирный**, > цитаты, ``` код. Посты для соцсетей пишутся простым текстом.
 - Если ты вернёшь анализ или разбор вместо текста поста — это провал задания.
 
-{threads_output_format(format_key)}"""
+{threads_output_format(format_key, series_template=series_template)}"""

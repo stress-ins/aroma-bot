@@ -176,6 +176,7 @@ export function registerWindowBridge(deps) {
     publishReply,
     ignoreMentionAction,
     setMentionsFilter,
+    pollMentionsNow,
     openConversation,
     closeConversation,
     sendInboxReply,
@@ -185,6 +186,7 @@ export function registerWindowBridge(deps) {
     archiveConversation,
     pollInbox,
     setInboxFilter,
+    checkInboxPermissions,
     upgradeToFull,
     generateReelsImages,
     moveDraftToTeam,
@@ -199,6 +201,26 @@ export function registerWindowBridge(deps) {
     recoToggleAroma,
     recoUpdateContra,
     submitRecommendations,
+    openMassageFinder,
+    closeMassageFinder,
+    massageWizardNext,
+    massageWizardBack,
+    massageSelectConcern,
+    massageSelectZone,
+    massageSelectGoal,
+    massageSelectExperience,
+    massageUpdateContra,
+    submitMassageRecommendations,
+    openProtocolWizard,
+    closeProtocolWizard,
+    protoWizardNext,
+    protoWizardBack,
+    protoSelectConcern,
+    protoSelectZone,
+    protoSelectGoal,
+    protoSelectModalities,
+    protoUpdateContra,
+    submitProtocolRecommendations,
     _selectSchedulerDate,
     _renderThreadsSchedulerDates,
     selectTrendsPlatform,
@@ -282,10 +304,15 @@ export function registerWindowBridge(deps) {
 
   // ── YouTube actions ───────────────────────────────────────────────
   window.youtubeRegenScript = async function(draftId) {
+    const noteEl = document.getElementById("youtubeRevisionNote");
+    const revision_note = noteEl ? noteEl.value.trim() : "";
     try {
-      await fetchJson(`/api/youtube/${draftId}/regen-script`, { method: "POST", body: "{}" });
+      await fetchJson(`/api/youtube/${draftId}/regen-script`, {
+        method: "POST",
+        body: JSON.stringify({ revision_note }),
+      });
       showUiNotice("Перегенерация сценария запущена");
-      setTimeout(() => openDraft(draftId), 2000);
+      openDraft(draftId);
     } catch (e) { showRequestError(e); }
   };
   window.youtubeRegenThumbnail = async function(draftId, mode) {
@@ -297,21 +324,34 @@ export function registerWindowBridge(deps) {
         body: JSON.stringify({ mode: mode || "prompt", revision_note }),
       });
       showUiNotice("Генерация обложки запущена");
-      setTimeout(() => openDraft(draftId), 3000);
+      openDraft(draftId);
     } catch (e) { showRequestError(e); }
   };
   window.youtubeGenMetadata = async function(draftId) {
     try {
       await fetchJson(`/api/youtube/${draftId}/metadata`, { method: "POST", body: "{}" });
       showUiNotice("Генерация метаданных запущена");
-      setTimeout(() => openDraft(draftId), 3000);
+      openDraft(draftId);
     } catch (e) { showRequestError(e); }
+  };
+  window.youtubeSaveSection = async function(draftId, sectionIndex, _btn) {
+    const textarea = document.getElementById(`ytSectionText_${draftId}_${sectionIndex}`);
+    const speaker_text = textarea?.value ?? "";
+    const btn = _btn || document.querySelector(`[data-action="youtubeSaveSection"][data-args*="${sectionIndex}"]`);
+    await withButtonFeedback(btn, "Сохраняю...", async () => {
+      await fetchJson(`/api/youtube/${draftId}/section/${sectionIndex}`, {
+        method: "PATCH",
+        body: JSON.stringify({ speaker_text }),
+      });
+      showUiNotice("Секция сохранена", "success");
+    });
   };
   window.youtubeCopySection = function(sectionIndex) {
     const d = state.selected;
     if (!d?.payload?.sections?.[sectionIndex]) return;
-    const s = d.payload.sections[sectionIndex];
-    const text = s.speaker_text || s.host_text || "";
+    // Prefer edited textarea value if available
+    const textarea = document.getElementById(`ytSectionText_${d.draft_id}_${sectionIndex}`);
+    const text = textarea ? textarea.value : (d.payload.sections[sectionIndex].speaker_text || d.payload.sections[sectionIndex].host_text || "");
     if (text) {
       navigator.clipboard.writeText(text).then(() => showUiNotice("Текст скопирован")).catch(() => {});
     }
@@ -320,9 +360,11 @@ export function registerWindowBridge(deps) {
     const d = state.selected;
     const sections = d?.payload?.sections || [];
     const allText = sections
-      .map(s => {
+      .map((s, i) => {
         const label = s.label || s.section_type || "";
-        const text = s.speaker_text || s.host_text || "";
+        // Prefer edited textarea value if available
+        const textarea = document.getElementById(`ytSectionText_${d.draft_id}_${i}`);
+        const text = textarea ? textarea.value : (s.speaker_text || s.host_text || "");
         return text ? `[${label}]\n${text}` : "";
       })
       .filter(Boolean)
@@ -489,6 +531,7 @@ export function registerWindowBridge(deps) {
   window.publishReply = publishReply;
   window.ignoreMentionAction = ignoreMentionAction;
   window.setMentionsFilter = setMentionsFilter;
+  window.pollMentionsNow = pollMentionsNow;
   window.openConversation = openConversation;
   window.closeConversation = closeConversation;
   window.sendInboxReply = sendInboxReply;
@@ -498,6 +541,7 @@ export function registerWindowBridge(deps) {
   window.archiveConversation = archiveConversation;
   window.pollInbox = pollInbox;
   window.setInboxFilter = setInboxFilter;
+  window.checkInboxPermissions = checkInboxPermissions;
   window.moveDraftToTeam = moveDraftToTeam;
   window.switchAccountsTeam = switchAccountsTeam;
   window.addTrackedHashtag = addTrackedHashtag;
@@ -531,6 +575,30 @@ export function registerWindowBridge(deps) {
   window.recoToggleAroma = recoToggleAroma;
   window.recoUpdateContra = recoUpdateContra;
   window.submitRecommendations = submitRecommendations;
+
+  // Massage technique finder wizard
+  window.openMassageFinder = openMassageFinder;
+  window.closeMassageFinder = closeMassageFinder;
+  window.massageWizardNext = massageWizardNext;
+  window.massageWizardBack = massageWizardBack;
+  window.massageSelectConcern = massageSelectConcern;
+  window.massageSelectZone = massageSelectZone;
+  window.massageSelectGoal = massageSelectGoal;
+  window.massageSelectExperience = massageSelectExperience;
+  window.massageUpdateContra = massageUpdateContra;
+  window.submitMassageRecommendations = submitMassageRecommendations;
+
+  // Multimodal protocol wizard
+  window.openProtocolWizard = openProtocolWizard;
+  window.closeProtocolWizard = closeProtocolWizard;
+  window.protoWizardNext = protoWizardNext;
+  window.protoWizardBack = protoWizardBack;
+  window.protoSelectConcern = protoSelectConcern;
+  window.protoSelectZone = protoSelectZone;
+  window.protoSelectGoal = protoSelectGoal;
+  window.protoSelectModalities = protoSelectModalities;
+  window.protoUpdateContra = protoUpdateContra;
+  window.submitProtocolRecommendations = submitProtocolRecommendations;
 
   window.openImageFullscreen = function(src, title) {
     const existing = document.getElementById("img-fullscreen-modal");
@@ -611,8 +679,13 @@ export function registerWindowBridge(deps) {
   };
 
   window._scheduleThreadsSeriesFromBtn = function(el) {
-    console.log("[schedule] el:", el, "draftId:", el?.dataset?.draftId, "date:", el?.dataset?.date);
-    scheduleThreadsSeries(el.dataset.draftId, el.dataset.date, ["morning", "day", "evening"], el);
+    const draftId = el?.dataset?.draftId;
+    const date = el?.dataset?.date;
+    console.log("[schedule] el:", el, "draftId:", draftId, "date:", date);
+    // Read actual slot names from data attribute (set during render) instead of hardcoding
+    let slots;
+    try { slots = JSON.parse(el?.dataset?.slots || "null"); } catch { slots = null; }
+    scheduleThreadsSeries(draftId, date, slots || ["morning", "day", "evening"], el);
   };
 
   window._copyCodeBlock = function(el) {
@@ -642,6 +715,22 @@ export function registerWindowBridge(deps) {
   window._dismissDailyOilContext = function() {
     sessionStorage.removeItem("daily_oil_context");
     renderCreateTool(state.selectedCreateTool);
+  };
+
+  // ── Shop promo link ──────────────────────────────────────────────
+  window.openShopLink = async function(url) {
+    const code = "AROMARA";
+    try {
+      await copyText(code);
+    } catch { /* best-effort */ }
+    showUiNotice(`Промокод ${code} скопирован — скидка 7%`, "success");
+    setTimeout(() => {
+      if (window.Telegram?.WebApp?.openLink) {
+        window.Telegram.WebApp.openLink(url);
+      } else {
+        window.open(url, "_blank", "noopener");
+      }
+    }, 600);
   };
 
   // Trends

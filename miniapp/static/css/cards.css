@@ -26,13 +26,43 @@
 .create-group-label:first-child { padding-top: 0; }
 
 .draft-card {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 15px 16px;
-  background: transparent;
+  border: 0.5px solid var(--border);
+  border-radius: 14px;
+  padding: 0;
+  overflow: hidden;
+  background: var(--surface);
   cursor: pointer;
   text-align: left;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
   transition: border-color var(--duration-fast) var(--ease-standard), background var(--duration-fast) var(--ease-standard), transform var(--duration-medium) var(--ease-standard), box-shadow var(--duration-medium) var(--ease-standard);
+}
+.draft-card .dc-body {
+  padding: 10px 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.draft-card .dc-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.draft-card .dc-title {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.draft-card .dc-sub {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 .draft-card:hover  { border-color: var(--brand-border); box-shadow: 0 10px 26px rgba(60, 40, 20, 0.08); transform: translateY(-1px); }
 .draft-card.active { border-color: var(--brand-border); background: linear-gradient(180deg, rgba(var(--brand-rgb), 0.12), rgba(var(--brand-rgb), 0.05)); box-shadow: 0 10px 24px rgba(var(--brand-rgb), 0.12); }
@@ -176,7 +206,7 @@
 .youtube-section-card {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  padding: 12px;
+  padding: 10px;
   background: var(--surface);
 }
 .youtube-section-header {
@@ -191,7 +221,7 @@
 .youtube-section-time { color: var(--muted); font-size: 12px; margin-left: auto; }
 .youtube-speaker-block {
   background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm);
-  padding: 10px 12px; margin-bottom: 8px;
+  padding: 8px 10px; margin-bottom: 6px;
 }
 .youtube-speaker-label {
   font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
@@ -231,4 +261,22 @@
   font-size: 13px; resize: vertical;
 }
 .youtube-revision-input:focus { border-color: var(--brand); outline: none; }
+.youtube-section-textarea {
+  width: 100%; min-height: 80px; padding: 10px; border: 1px solid var(--border);
+  border-radius: var(--radius-sm); background: var(--bg); color: var(--text);
+  font-size: 14px; line-height: 1.6; resize: vertical; font-family: inherit;
+  box-sizing: border-box;
+}
+.youtube-section-textarea:focus { border-color: var(--brand); outline: none; }
+.youtube-section-actions {
+  display: flex; align-items: center; gap: 8px; margin-top: 6px; flex-wrap: wrap;
+}
+.youtube-speaker-empty { color: var(--muted); font-style: italic; }
 
+/* YouTube shooting checklist (approved state) */
+.youtube-shooting-checklist { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.youtube-checklist-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text); padding: 6px 0; }
+.youtube-checklist-icon { color: var(--brand); flex-shrink: 0; }
+.youtube-checklist-missing { color: var(--muted); }
+.youtube-checklist-missing .youtube-checklist-icon { color: var(--muted); }
+.youtube-checklist-missing .secondary-button { margin-left: auto; }

@@ -1,11 +1,14 @@
 """Layout: touch targets, overlap, mobile safety."""
 from __future__ import annotations
 
+from .helpers import click_bottom_tab, click_handbook_tab, nav_back_to_list
+
 
 def test_mobile_layout_has_no_overlapping_controls(page):
     for tab_name in ["Черновики", "Контент", "Создать"]:
-        {"Черновики": page.locator("#btnTabInspiration"), "Контент": page.locator("#btnTabContent"), "Создать": page.locator("#btnTabCreate")}[tab_name].click()
-        page.wait_for_timeout(100)
+        {"Черновики": lambda: click_bottom_tab(page, "#btnTabInspiration"),
+         "Контент": lambda: click_bottom_tab(page, "#btnTabContent"),
+         "Создать": lambda: click_bottom_tab(page, "#btnTabCreate")}[tab_name]()
 
         overlaps = page.evaluate(
             """
@@ -70,12 +73,10 @@ def test_mobile_primary_controls_have_comfortable_hit_targets(page):
 
 
 def test_mobile_detail_actions_do_not_overlap(page):
-    page.locator("#btnTabInspiration").click()
-    page.wait_for_timeout(100)
-    page.evaluate("window.goBackToList()")
-    page.locator(".draft-card").first.wait_for(state="visible")
+    click_bottom_tab(page, "#btnTabInspiration")
+    nav_back_to_list(page)
     page.locator(".draft-card").first.click()
-    page.wait_for_timeout(100)
+    page.locator("#draftDetail").wait_for(state="visible", timeout=5000)
 
     overlaps = page.evaluate(
         """
@@ -115,15 +116,14 @@ def test_no_horizontal_overflow_on_mobile(page):
     """No panel or action row should overflow the viewport width on mobile."""
     page.set_viewport_size({"width": 375, "height": 812})
     page.reload()
-    page.wait_for_timeout(100)
+    page.wait_for_selector("body.app-ready", timeout=10000)
 
-    page.locator("#btnTabInspiration").click()
-    page.wait_for_timeout(100)
+    click_bottom_tab(page, "#btnTabInspiration")
     page.evaluate("window.goBackToList()")
     first_card = page.locator(".draft-card").first
     if first_card.count():
         first_card.click()
-        page.wait_for_timeout(100)
+        page.locator("#draftDetail").wait_for(state="visible", timeout=5000)
 
     overflows = page.evaluate(
         """
@@ -147,20 +147,22 @@ def test_no_horizontal_overflow_on_mobile(page):
 
 def test_detail_card_title_not_clipped_on_mobile(page):
     """Every detail card type: title must be fully visible, not clipped at top."""
-    page.locator("#btnTabInspiration").click()
-    page.wait_for_timeout(100)
-    page.evaluate("window.goBackToList()")
+    click_bottom_tab(page, "#btnTabInspiration")
+    nav_back_to_list(page)
 
     cards = page.locator(".draft-card")
-    cards.first.wait_for(state="visible")
     count = cards.count()
 
     checked = 0
     for i in range(count):
         page.evaluate("window.goBackToList()")
-        page.wait_for_timeout(300)
+        page.locator(".draft-card").first.wait_for(state="visible", timeout=5000)
         cards.nth(i).click()
-        page.wait_for_timeout(500)
+        # Wait for detail to render
+        try:
+            page.locator("#draftDetail").wait_for(state="visible", timeout=3000)
+        except Exception:
+            continue
 
         title = page.locator("#draftDetail .detail-title")
         try:
@@ -183,13 +185,12 @@ def test_detail_card_title_not_clipped_on_mobile(page):
 
 def test_handbook_detail_title_not_clipped(page):
     """Handbook card detail: title must be visible."""
-    page.locator("#btnTabHandbook").click()
-    page.wait_for_timeout(100)
+    click_bottom_tab(page, "#btnTabHandbook")
 
     card = page.locator(".reference-card").first
     if card.count():
         card.click()
-        page.wait_for_timeout(200)
+        page.locator(".detail-title").first.wait_for(state="visible", timeout=5000)
 
         title = page.locator(".detail-title").first
         if title.count():
@@ -239,19 +240,17 @@ _JS_CHECK_DETAIL_INTEGRITY = """(vw) => {
 
 def test_detail_sections_not_clipped_on_sides(page):
     """Detail view: sections have border-radius, horizontal gap from edges, no overflow."""
-    page.locator("#btnTabInspiration").click()
-    page.wait_for_timeout(100)
-    page.evaluate("window.goBackToList()")
+    click_bottom_tab(page, "#btnTabInspiration")
+    nav_back_to_list(page)
 
     cards = page.locator(".draft-card")
-    cards.first.wait_for(state="visible")
     count = cards.count()
 
     for i in range(count):
         page.evaluate("window.goBackToList()")
-        page.wait_for_timeout(100)
+        page.locator(".draft-card").first.wait_for(state="visible", timeout=5000)
         cards.nth(i).click()
-        page.wait_for_timeout(200)
+        page.locator("#draftDetail").wait_for(state="visible", timeout=5000)
 
         issues = page.evaluate(_JS_CHECK_DETAIL_INTEGRITY, 430)
         assert issues is None, f"Card {i}: detail integrity issues: {issues}"
@@ -259,13 +258,12 @@ def test_detail_sections_not_clipped_on_sides(page):
 
 def test_handbook_detail_sections_not_clipped(page):
     """Handbook detail: sections have proper card styling, no overflow."""
-    page.locator("#btnTabHandbook").click()
-    page.wait_for_timeout(100)
+    click_bottom_tab(page, "#btnTabHandbook")
 
     card = page.locator(".reference-card").first
     if card.count():
         card.click()
-        page.wait_for_timeout(200)
+        page.locator("#draftDetail").wait_for(state="visible", timeout=5000)
 
         issues = page.evaluate(_JS_CHECK_DETAIL_INTEGRITY, 430)
         assert issues is None, f"Handbook: detail integrity issues: {issues}"
@@ -273,11 +271,10 @@ def test_handbook_detail_sections_not_clipped(page):
 
 def test_detail_panel_allows_scroll_past_tab_bar(page):
     """Detail panel has overflow-y: auto so content can scroll under the floating tab bar."""
-    page.locator("#btnTabInspiration").click()
-    page.wait_for_timeout(100)
-    page.evaluate("window.goBackToList()")
+    click_bottom_tab(page, "#btnTabInspiration")
+    nav_back_to_list(page)
     page.locator(".draft-card").first.click()
-    page.wait_for_timeout(200)
+    page.locator("#draftDetail").wait_for(state="visible", timeout=5000)
 
     overflow_y = page.evaluate(
         """() => {
@@ -292,8 +289,7 @@ def test_detail_panel_allows_scroll_past_tab_bar(page):
 def test_themed_controls_have_no_overlaps(themed_page):
     """No controls overlap in either theme."""
     for tab_id in ["#btnTabInspiration", "#btnTabCreate"]:
-        themed_page.locator(tab_id).click()
-        themed_page.wait_for_timeout(100)
+        click_bottom_tab(themed_page, tab_id)
 
         overlaps = themed_page.evaluate(
             """

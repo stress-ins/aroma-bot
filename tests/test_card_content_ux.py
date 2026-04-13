@@ -522,9 +522,10 @@ def test_enrich_short_descriptions_script_exists():
 # ---------------------------------------------------------------------------
 
 def test_back_nav_clears_stale_from_context():
-    """goBackToList must guard against _fromContext from a different tab."""
+    """goBackToList must clear _fromContext and navigate back via openReference."""
     src = (ROOT / "miniapp" / "static" / "js" / "shell.js").read_text(encoding="utf-8")
-    assert "_fromContext.tab !== state.tab" in src
+    assert "state._fromContext = null" in src
+    assert "openReference(ctx.slug, ctx.tab)" in src
 
 
 def test_open_reference_clears_context_on_same_tab():

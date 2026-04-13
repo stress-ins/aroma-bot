@@ -13,28 +13,32 @@
 
 ## Архитектура
 
-<!-- Новые записи добавлять сюда -->
+- [ ] [high] SQLite в проде — не масштабируется, нет конкурентной записи; Phase 3 — PostgreSQL (2026-03-25)
 
 ## Производительность
 
-<!-- Новые записи добавлять сюда -->
+- [ ] [medium] pytrends deprecated (2020) — ненадёжный парсинг Google Trends, заменить на SerpAPI/DataForSEO (2026-03-25)
 
 ## Безопасность
 
-<!-- Новые записи добавлять сюда -->
+- [ ] [high] Нет rate limiting на FastAPI endpoints — злоупотребление генерационными endpoints, top priority (2026-03-25)
+- [ ] [high] Pin all unversioned packages — anthropic, instagrapi, TikTokApi, edge-tts, faiss-cpu; supply chain risk (2026-03-25)
 
 ## Код
 
-<!-- Новые записи добавлять сюда -->
+- [ ] [medium] 58 скриптов в scripts/ без тестов — могут ломаться незаметно (2026-03-25)
+- [ ] [medium] instaloader unmaintained — может перестать работать в любой момент (2026-03-25)
 
 ## Тесты
 
-<!-- Новые записи добавлять сюда -->
+- [ ] [medium] Software Factory pipeline не инструментализирован — агенты существуют но не вызываются как этапы CI (2026-03-30)
 
 ## Инфраструктура / CI / Deploy
 
-<!-- Новые записи добавлять сюда -->
+- [ ] [medium] n8n workflow import с `|| true` — ошибки импорта проглатываются молча (2026-03-25)
+- [ ] [medium] Нет rollback strategy в deploy.yml — если деплой ломает прод, откат ручной (2026-03-25)
+- [ ] [low] Нет cascade delete rules в DB models — при удалении parent остаются orphans (2026-03-25)
 
 ---
 
-*Последний пересмотр: —*
+*Последний пересмотр: 2026-03-30*

@@ -105,3 +105,54 @@ async def test_symptom_list_includes_parent_group():
     item = next((s for s in symptoms if s["slug"] == "symptom-anemia"), None)
     assert item is not None
     assert item["parent_group"] == "КРОВЕНОСНАЯ СИСТЕМА"
+
+
+@pytest.mark.asyncio
+async def test_massage_items_stay_in_massage_list():
+    """Items from list_reference_cards('massage') must all have category='massage'."""
+    await _insert_card("massage-aroma", "Аромамассаж", "massage", "technique", {"category": "massage"})
+    await _insert_card("aroma-lavender2", "Лаванда2", "aroma", "flower", {"category": "aroma"})
+    cards = await list_reference_cards("massage")
+    for item in cards:
+        assert item["category"] == "massage", (
+            f"Non-massage item in massage list: slug={item['slug']}, category={item['category']}"
+        )
+
+
+@pytest.mark.asyncio
+async def test_osteo_items_stay_in_osteo_list():
+    """Items from list_reference_cards('osteo') must all have category='osteo'."""
+    await _insert_card("osteo-cranio", "Краниосакральная техника", "osteo", "technique", {"category": "osteo"})
+    cards = await list_reference_cards("osteo")
+    for item in cards:
+        assert item["category"] == "osteo"
+
+
+@pytest.mark.asyncio
+async def test_biodynamics_items_stay_in_biodynamics_list():
+    """Items from list_reference_cards('biodynamics') must all have category='biodynamics'."""
+    await _insert_card("bio-primary", "Первичное дыхание", "biodynamics", "principle", {"category": "biodynamics"})
+    cards = await list_reference_cards("biodynamics")
+    for item in cards:
+        assert item["category"] == "biodynamics"
+
+
+@pytest.mark.asyncio
+async def test_massage_detail_returns_card():
+    """get_reference_card for massage must return the correct card."""
+    await _insert_card(
+        "massage-lymph", "Лимфодренажный массаж", "massage", "technique",
+        {"category": "massage", "name_en": "Lymphatic Drainage", "description_short": "Мягкий массаж"},
+    )
+    card = await get_reference_card("massage", "massage-lymph")
+    assert card is not None
+    assert card["slug"] == "massage-lymph"
+    assert card["description_short"] == "Мягкий массаж"
+
+
+@pytest.mark.asyncio
+async def test_reference_categories_include_bodywork():
+    """REFERENCE_CATEGORIES must include massage, osteo, biodynamics."""
+    from bot.services.miniapp_references.common import REFERENCE_CATEGORIES
+    for cat in ("massage", "osteo", "biodynamics"):
+        assert cat in REFERENCE_CATEGORIES, f"{cat} missing from REFERENCE_CATEGORIES"

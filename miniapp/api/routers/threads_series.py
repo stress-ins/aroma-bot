@@ -21,7 +21,12 @@ router = APIRouter()
 
 _executor = ThreadPoolExecutor(max_workers=2)
 
-_SLOT_LABELS = {"morning": "УТРО", "day": "ДЕНЬ", "evening": "ВЕЧЕР"}
+_SLOT_LABELS = {
+    "morning": "УТРО", "day": "ДЕНЬ", "evening": "ВЕЧЕР",
+    "myth": "МИФ", "reality": "РЕАЛЬНОСТЬ", "practice": "ПРАКТИКА",
+    "problem": "ПРОБЛЕМА", "analysis": "РАЗБОР", "action": "ДЕЙСТВИЕ",
+    "setup": "ЗАВЯЗКА", "twist": "ПОВОРОТ", "takeaway": "ВЫВОД",
+}
 
 _ANALYSIS_RE = re.compile(
     r"(?:"
@@ -67,6 +72,15 @@ _SLOT_DESCRIPTIONS = {
     "morning": "провокационный тезис или спорное мнение + открытый вопрос (Hot Take, байт на обсуждение)",
     "day": "лаконичный список, мясной совет или быстрый туториал (для сохранений и репостов)",
     "evening": "личная история, факап, шутка или рефлексия (эмоция, уютный чат в комментариях)",
+    "myth": "распространённое заблуждение, которое цепляет и вызывает реакцию",
+    "reality": "как обстоят дела на самом деле, с фактами и примерами",
+    "practice": "что конкретно делать, применимый совет",
+    "problem": "конкретная боль аудитории, ситуация из жизни",
+    "analysis": "почему это происходит, механизм, объяснение",
+    "action": "что делать прямо сейчас, одно конкретное действие",
+    "setup": "сцена, история, ситуация — затянуть в рассказ",
+    "twist": "неожиданный поворот, инсайт, противоречие",
+    "takeaway": "чему это учит, что можно забрать себе",
 }
 
 
@@ -92,6 +106,11 @@ async def patch_slot(
     for post in posts:
         if post["slot"] == payload.slot:
             if payload.text is not None:
+                if len(payload.text) > _THREADS_MAX_CHARS:
+                    raise HTTPException(
+                        status_code=422,
+                        detail=f"Текст превышает {_THREADS_MAX_CHARS} символов ({len(payload.text)})",
+                    )
                 post["text"] = payload.text
             if payload.scheduled_time is not None:
                 post["scheduled_time"] = payload.scheduled_time
@@ -275,6 +294,14 @@ async def approve_series(draft_id: str, ctx: TeamContext = Depends(_resolve_team
     posts = (draft.payload or {}).get("threads_posts", [])
     if not posts:
         raise HTTPException(status_code=400, detail="no_posts_to_approve")
+
+    over = [p for p in posts if len(p.get("text", "")) > _THREADS_MAX_CHARS]
+    if over:
+        labels = ", ".join(p.get("label", p.get("slot", "?")) for p in over)
+        raise HTTPException(
+            status_code=400,
+            detail=f"posts_over_500_chars: {labels}",
+        )
 
     saved = await update_draft(draft_id, status="approved")
     if not saved:

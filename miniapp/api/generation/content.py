@@ -13,6 +13,7 @@ async def complete_content_generation(
     goal_key: str,
     format_key: str,
     blend_context: dict | None = None,
+    practice_focus: str = "aroma",
 ) -> None:
     """Background task: generate content draft and update the stub."""
     try:
@@ -21,7 +22,7 @@ async def complete_content_generation(
 
         rag_context = await fetch_rag_context(topic)
 
-        draft_obj = await generate_content_draft(topic, goal_key, format_key, blend_context=blend_context, rag_context=rag_context)
+        draft_obj = await generate_content_draft(topic, goal_key, format_key, blend_context=blend_context, rag_context=rag_context, practice_focus=practice_focus)
         content_payload = build_content_payload(draft_obj, goal_key=goal_key, format_key=format_key)
         if blend_context:
             content_payload["blend_context"] = blend_context
@@ -122,26 +123,23 @@ async def complete_threads_series_generation(
         extra_context, ctx_metadata = await _build_threads_extra_context(team_id, topic)
         enriched_topic = topic
         if extra_context:
-            enriched_topic = f"{topic}\n\n{extra_context}\n\nИнструкция: утренний пост может отталкиваться от тренда, дневной — от факта из справочника, вечерний — от личного опыта."
+            enriched_topic = f"{topic}\n\n{extra_context}\n\nИнструкция: первые посты могут отталкиваться от тренда, средние — от фактов из справочника, последние — от личного опыта."
 
         rag_context = await fetch_rag_context(topic)
 
         draft_obj = await generate_content_draft(enriched_topic, goal_key, "threads_series", blend_context=blend_context, rag_context=rag_context)
         ts_payload = build_threads_series_payload(draft_obj, goal_key=goal_key, emotion=emotion)
-        # Check ALL 3 slots have content, not just any
-        all_slots_filled = all(p.get("text") for p in ts_payload.get("threads_posts", []))
-        if not all_slots_filled:
+        # Check that at least half of slots have content
+        posts = ts_payload.get("threads_posts", [])
+        filled_count = sum(1 for p in posts if p.get("text"))
+        if filled_count < max(1, len(posts) // 2):
             import logging as _logging
-            empty_slots = [p["slot"] for p in ts_payload.get("threads_posts", []) if not p.get("text")]
+            empty_slots = [p["slot"] for p in posts if not p.get("text")]
             _logging.getLogger(__name__).warning(
-                "threads_series first attempt has empty slots %s for %s, retrying with marker hint",
+                "threads_series first attempt has empty slots %s for %s, retrying",
                 empty_slots, draft_id,
             )
-            retry_topic = enriched_topic + (
-                "\n\nВАЖНО: используй ТОЧНО три маркера: УТРО, ДЕНЬ, ВЕЧЕР — каждый на отдельной строке."
-                " Все три секции ОБЯЗАТЕЛЬНЫ. Пропуск любой секции = провал задания."
-            )
-            draft_obj = await generate_content_draft(retry_topic, goal_key, "threads_series", blend_context=blend_context)
+            draft_obj = await generate_content_draft(enriched_topic, goal_key, "threads_series", blend_context=blend_context)
             ts_payload = build_threads_series_payload(draft_obj, goal_key=goal_key, emotion=emotion)
             has_any_content = any(p.get("text") for p in ts_payload.get("threads_posts", []))
             if not has_any_content:

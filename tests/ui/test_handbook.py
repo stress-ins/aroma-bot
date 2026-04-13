@@ -3,54 +3,50 @@ from __future__ import annotations
 
 import json
 
+from .helpers import click_bottom_tab, click_handbook_tab, click_section_chip
+
 
 def test_handbook_section_titles_are_russian(page):
     """Topbar title must show Russian name when navigating handbook tabs."""
-    page.locator("#btnTabHandbook").click()
-    page.wait_for_timeout(100)
+    click_bottom_tab(page, "#btnTabHandbook")
 
-    page.get_by_role("tab", name="Смеси").click()
-    page.wait_for_timeout(100)
+    click_handbook_tab(page, "Смеси")
     title = page.locator(".topbar-title").inner_text().strip()
     assert title == "Смеси", f"Expected 'Смеси', got '{title}'"
 
-    page.get_by_role("tab", name="Симптомы").click()
-    page.wait_for_timeout(100)
+    click_handbook_tab(page, "Симптомы")
     title = page.locator(".topbar-title").inner_text().strip()
     assert title == "Симптомы", f"Expected 'Симптомы', got '{title}'"
 
-    page.get_by_role("tab", name="Ароматы").click()
-    page.wait_for_timeout(100)
+    click_handbook_tab(page, "Ароматы")
     title = page.locator(".topbar-title").inner_text().strip()
     assert title == "Ароматы", f"Expected 'Ароматы', got '{title}'"
 
 
 def test_handbook_cards_open_in_all_sections(page):
     """Clicking a card in each handbook section must open the detail view."""
-    page.locator("#btnTabHandbook").click()
-    page.wait_for_timeout(100)
+    click_bottom_tab(page, "#btnTabHandbook")
 
+    # (section_chip_text, tab_label, card_name)
+    # section=None means already visible in default "Арома" section
     sections = [
-        ("Ароматы", "Лаванда"),
-        ("Смеси", "Grounding"),
-        ("Симптомы", "Стресс"),
-        ("Практики", "Квадратное дыхание"),
-        ("Звуки", "Гонг"),
+        (None, "Ароматы", "Лаванда"),
+        (None, "Смеси", "Grounding"),
+        (None, "Симптомы", "Стресс"),
+        ("Тело", "Практики", "Квадратное дыхание"),
+        ("Звук", "Звуки", "Гонг"),
     ]
 
-    for tab_label, card_name in sections:
-        page.get_by_role("tab", name=tab_label).click()
-        # Wait for cards to load (API fetch + render)
-        page.locator(".reference-card").first.wait_for(state="visible", timeout=5000)
+    for section_chip, tab_label, card_name in sections:
+        if section_chip:
+            click_section_chip(page, section_chip)
+        click_handbook_tab(page, tab_label)
 
         card = page.locator(".reference-card").filter(has_text=card_name).first
         card.wait_for(state="visible", timeout=3000)
         assert card.is_visible(), f"Card '{card_name}' not found in '{tab_label}' tab"
         card.click()
-        page.wait_for_function(
-            f"() => (document.querySelector('#draftDetail') || {{innerText: ''}}).innerText.includes({json.dumps(card_name)})",
-            timeout=5000,
-        )
+        page.locator("#draftDetail", has_text=card_name).wait_for(state="visible", timeout=5000)
 
         detail = page.locator("#draftDetail")
         assert card_name in detail.inner_text(), (
@@ -60,16 +56,14 @@ def test_handbook_cards_open_in_all_sections(page):
         back_btn = page.locator("#draftDetail .back-button")
         if back_btn.count() > 0:
             back_btn.first.click()
-            page.wait_for_timeout(100)
+            page.locator(".reference-card").first.wait_for(state="visible", timeout=5000)
 
 
 def test_filter_chips_no_horizontal_overflow(page):
     """Filter chips bar in Symptoms tab must not cause horizontal document overflow."""
-    page.locator("#btnTabHandbook").click()
-    page.wait_for_timeout(100)
+    click_bottom_tab(page, "#btnTabHandbook")
 
-    page.get_by_role("tab", name="Симптомы").click()
-    page.wait_for_timeout(100)
+    click_handbook_tab(page, "Симптомы")
 
     page.wait_for_selector(".filter-chips", timeout=3000)
 
@@ -84,12 +78,12 @@ def test_filter_chips_no_horizontal_overflow(page):
 
 def test_smart_search_surfaces_oils_from_matching_symptoms(page):
     """When searching a symptom name, cross-referenced oils/blends must appear in results."""
-    page.locator("#btnTabHandbook").click()
-    page.wait_for_timeout(100)
+    click_bottom_tab(page, "#btnTabHandbook")
 
     search_input = page.locator("#refSearchInput")
     search_input.fill("тревож")
-    page.wait_for_timeout(600)  # debounce 300ms + render
+    # debounce 300ms + render — wait for results to appear
+    page.locator("#referenceListContainer", has_text="Тревожность").wait_for(state="visible", timeout=5000)
 
     results_text = page.locator("#referenceListContainer").inner_text()
     assert "Тревожность" in results_text, "Symptom 'Тревожность' should appear (direct match)"
@@ -98,12 +92,11 @@ def test_smart_search_surfaces_oils_from_matching_symptoms(page):
 
 def test_smart_search_shows_helps_with_badge(page):
     """Cross-referenced oil cards must show 'Помогает при' badge with symptom name."""
-    page.locator("#btnTabHandbook").click()
-    page.wait_for_timeout(100)
+    click_bottom_tab(page, "#btnTabHandbook")
 
     search_input = page.locator("#refSearchInput")
     search_input.fill("тревож")
-    page.wait_for_timeout(600)
+    page.locator(".search-symptom-tag").first.wait_for(state="visible", timeout=5000)
 
     badge = page.locator(".search-symptom-tag").first
     assert badge.is_visible(), "Expected .search-symptom-tag badge to be visible"
@@ -114,13 +107,12 @@ def test_smart_search_shows_helps_with_badge(page):
 
 def test_themed_handbook_sections_render(themed_page):
     """Handbook sections render in both themes."""
-    themed_page.locator("#btnTabHandbook").click()
-    themed_page.wait_for_timeout(100)
+    click_bottom_tab(themed_page, "#btnTabHandbook")
+    # Wait for default tab (Ароматы) to load
+    themed_page.locator(".reference-card").first.wait_for(state="visible", timeout=10000)
 
-    themed_page.get_by_role("tab", name="Смеси").click()
-    themed_page.wait_for_timeout(100)
+    click_handbook_tab(themed_page, "Смеси")
     assert themed_page.locator(".reference-card").count() >= 1
 
-    themed_page.get_by_role("tab", name="Симптомы").click()
-    themed_page.wait_for_timeout(100)
+    click_handbook_tab(themed_page, "Симптомы")
     assert themed_page.locator(".reference-card").count() >= 1

@@ -408,6 +408,113 @@ class TestYouTubeMetadata:
         assert resp.json()["ok"] is True
 
 
+
+
+# ---------------------------------------------------------------------------
+# PATCH /api/youtube/{id}/section/{index}
+# ---------------------------------------------------------------------------
+
+class TestYouTubeSectionPatch:
+    async def test_patch_section_not_found(self, team_ready):
+        from miniapp_server import app
+        client = TestClient(app)
+        resp = client.patch(
+            "/api/youtube/nonexistent/section/0",
+            json={"speaker_text": "hello"},
+            headers=HEADERS,
+        )
+        assert resp.status_code == 404
+
+    async def test_patch_section_wrong_kind(self, team_ready):
+        from bot.services.drafts_store import save_draft
+        draft = await save_draft(
+            kind="instagram", topic="t", source="ai", payload={},
+            team_id=team_ready.team_id, created_by=12345,
+        )
+        from miniapp_server import app
+        client = TestClient(app)
+        resp = client.patch(
+            f"/api/youtube/{draft.draft_id}/section/0",
+            json={"speaker_text": "hello"},
+            headers=HEADERS,
+        )
+        assert resp.status_code == 404
+
+    async def test_patch_section_invalid_index(self, team_ready):
+        from bot.services.drafts_store import save_draft
+        draft = await save_draft(
+            kind="youtube_video", topic="YT", source="ai",
+            payload={"sections": [{"speaker_text": "original"}]},
+            team_id=team_ready.team_id, created_by=12345,
+        )
+        from miniapp_server import app
+        client = TestClient(app)
+        resp = client.patch(
+            f"/api/youtube/{draft.draft_id}/section/5",
+            json={"speaker_text": "hello"},
+            headers=HEADERS,
+        )
+        assert resp.status_code == 400
+        assert resp.json()["detail"] == "invalid_section_index"
+
+    async def test_patch_section_success(self, team_ready):
+        from bot.services.drafts_store import save_draft, get_draft
+        draft = await save_draft(
+            kind="youtube_video", topic="YT", source="ai",
+            payload={"sections": [
+                {"speaker_text": "original text", "label": "Intro"},
+                {"speaker_text": "second section", "label": "Main"},
+            ]},
+            team_id=team_ready.team_id, created_by=12345,
+        )
+        from miniapp_server import app
+        client = TestClient(app)
+        resp = client.patch(
+            f"/api/youtube/{draft.draft_id}/section/0",
+            json={"speaker_text": "edited text"},
+            headers=HEADERS,
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["ok"] is True
+        assert data["section_index"] == 0
+
+        # Verify the section was updated
+        updated = await get_draft(draft.draft_id)
+        assert updated.payload["sections"][0]["speaker_text"] == "edited text"
+        # Verify version history was saved
+        assert len(updated.payload["sections"][0]["versions"]) == 1
+        assert updated.payload["sections"][0]["versions"][0]["text"] == "original text"
+        # Verify second section wasn't modified
+        assert updated.payload["sections"][1]["speaker_text"] == "second section"
+
+
+class TestYouTubeRegenScriptWithNote:
+    async def test_regen_script_with_revision_note(self, team_ready):
+        from bot.services.drafts_store import save_draft
+        draft = await save_draft(
+            kind="youtube_video", topic="YT", source="ai",
+            payload={"subformat": "talking_head"},
+            team_id=team_ready.team_id, created_by=12345,
+        )
+        from miniapp_server import app
+        client = TestClient(app, raise_server_exceptions=False)
+        with patch("miniapp.api.routers.create.complete_youtube_regen_script", new_callable=AsyncMock):
+            resp = client.post(
+                f"/api/youtube/{draft.draft_id}/regen-script",
+                json={"revision_note": "add more humor"},
+                headers=HEADERS,
+            )
+        assert resp.status_code == 200
+        assert resp.json()["ok"] is True
+
+        # Verify pending state was set
+        from bot.services.drafts_store import get_draft
+        updated = await get_draft(draft.draft_id)
+        assert updated.payload.get("generation_pending") is True
+        assert updated.payload.get("generation_stage") == "script"
+
+
 # ---------------------------------------------------------------------------
 # _validate_topic helper
 # ---------------------------------------------------------------------------

@@ -67,8 +67,8 @@ jobs:
       - name: Restart and verify ALL services
         run: |
           ssh root@46.32.186.192 'systemctl restart aroma-bot'
-          # Graceful reload for miniapp (gunicorn HUP — zero-downtime)
-          ssh root@46.32.186.192 'systemctl reload aroma-miniapp || systemctl restart aroma-miniapp'
+          # Full restart to ensure Vite manifest cache is invalidated
+          ssh root@46.32.186.192 'systemctl restart aroma-miniapp'
           sleep 5
           ssh root@46.32.186.192 'systemctl is-active aroma-bot'
           ssh root@46.32.186.192 'systemctl is-active threads-oauth'
@@ -132,6 +132,12 @@ jobs:
           ssh root@46.32.186.192 'cd /opt/aroma && \
             .venv/bin/python scripts/fill_complementary_oils_from_pdf.py --force 2>&1 | tail -5' \
             || echo "Complementary oils step failed (non-blocking)"
+
+      - name: Populate shop URLs for aroma cards (idempotent)
+        run: |
+          ssh root@46.32.186.192 'cd /opt/aroma && \
+            .venv/bin/python scripts/populate_shop_urls.py 2>&1 | tail -5' \
+            || echo "Shop URLs step failed (non-blocking)"
 
       - name: Run AI enrichment scripts (idempotent, skip if already done)
         run: |

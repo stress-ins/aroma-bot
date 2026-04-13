@@ -28,6 +28,7 @@ def _extract_themes_sync(text: str, platform: str) -> list[str]:
     """Extract themes from post text via Claude."""
     from bot.agents.prompts.hashtag_prompts import extract_themes_prompt
     from bot.services.claude_client import call_claude
+    from bot.utils.json_parser import extract_json
 
     prompt = extract_themes_prompt(text, platform)
     raw = call_claude(
@@ -36,6 +37,22 @@ def _extract_themes_sync(text: str, platform: str) -> list[str]:
         context="hashtag_themes",
     )
 
+    # Try JSON first
+    try:
+        data = extract_json(raw)
+        if isinstance(data, dict):
+            raw_themes = data.get("themes", [])
+            if isinstance(raw_themes, list):
+                themes = []
+                for t in raw_themes:
+                    parts = [p.strip().lower() for p in str(t).split("|")]
+                    themes.extend(parts)
+                if themes:
+                    return themes
+    except (ValueError, TypeError):
+        pass
+
+    # Legacy fallback
     themes = []
     for line in raw.strip().splitlines():
         line = line.strip()

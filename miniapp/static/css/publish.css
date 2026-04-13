@@ -27,7 +27,9 @@
 .plans-calendar-strip::-webkit-scrollbar { display: none; }
 
 .plans-cal-day { flex-shrink: 0; text-align: center; padding: 6px 8px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--border); cursor: pointer; min-width: 36px; transition: background var(--duration-fast), border-color var(--duration-fast); }
-.plans-cal-day.is-today { border-color: rgba(var(--brand-rgb), 0.3); }
+.plans-cal-day.is-today { border-color: rgba(var(--brand-rgb), 0.4); background: rgba(var(--brand-rgb), 0.08); }
+.plans-cal-day.is-today .plans-cal-day-num { color: var(--brand); font-weight: 800; }
+.plans-cal-day.is-today .plans-cal-day-label { color: var(--brand); }
 .plans-cal-day.is-active { background: var(--brand); border-color: var(--brand-border); }
 .plans-cal-day-label { font-size: 9px; color: var(--hint); margin-bottom: 2px; }
 .plans-cal-day.is-active .plans-cal-day-label { color: rgba(255,255,255,.7); }

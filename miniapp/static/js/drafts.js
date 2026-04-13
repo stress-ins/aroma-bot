@@ -118,6 +118,12 @@ export function createDraftsModule(deps) {
         scheduled_time: String(document.getElementById(`threadsPostTime${i}`)?.value || "").trim(),
       });
     }
+    // Hard limit: Threads API rejects > 500 chars
+    const tooLong = posts.find(p => p.text.length > 500);
+    if (tooLong) {
+      showUiNotice(`Пост «${tooLong.label}» превышает 500 символов (${tooLong.text.length}). Сократите текст.`, "error");
+      return;
+    }
     const payload = {
       threads_posts: posts,
       angle: String(document.getElementById("contentAngleField")?.value || "").trim(),
@@ -147,33 +153,59 @@ export function createDraftsModule(deps) {
     }, "Готово");
   }
 
+  function _draftExtras(d) {
+    const k = String(d.kind || "").toLowerCase();
+    if (k === "threads_series") {
+      const tplName = d.payload?.series_template_name;
+      const tplSuffix = tplName && tplName !== "Утро / День / Вечер" ? ` · ${tplName}` : "";
+      const cnt = d.payload?.threads_posts?.length || 3;
+      const postWord = cnt === 1 ? "пост" : cnt < 5 ? "поста" : "постов";
+      return `Серия · ${cnt} ${postWord}${tplSuffix}`;
+    }
+    if (k === "youtube_video") return d.payload?.script ? "Сценарий готов" : `~${d.payload?.duration_target || 10} мин`;
+    if (k === "carousel") return `${d.payload?.slides?.length || 5} слайдов`;
+    if (k === "reels" || k === "reels_v2") return "Instagram";
+    return "";
+  }
+
+  function _draftStatusClass(status) {
+    const map = { approved: "dcs-approved", draft: "dcs-draft", published: "dcs-published", in_review: "dcs-in_review", rejected: "dcs-rejected" };
+    return map[status] || "dcs-draft";
+  }
+
   function renderDraftList() {
     elements.listTitle.textContent = "Вдохновение";
-    elements.draftCount.textContent = _pluralizeDrafts(state.drafts.length);
+    const countEl = document.getElementById("draftCount");
+    if (countEl) countEl.textContent = state.drafts.length;
+    const fhCount = document.getElementById("fhCount");
+    if (fhCount) fhCount.textContent = _pluralizeDrafts(state.drafts.length);
     setEmptyState(state.drafts.length > 0, {
       eyebrow: "Публикации",
       title: "Ничего не найдено",
       body: "Создайте первый материал через вкладку «Создать». Выберите формат, укажите тему — AI сделает остальное.",
       actionLabel: "Открыть создание",
-      action: "openCreateTool()",
+      action: "openCreateTool",
     });
-    elements.draftList.innerHTML = state.drafts.map((d, idx) => `
-      <article ${interactiveCardAttrs(`Открыть черновик ${d.topic}`)} class="draft-card overview-card${d.draft_id === state.draftId ? " active" : ""}${d.generation_pending ? " is-pending" : ""} interactive-card" data-action="openDraft" data-args='${JSON.stringify([d.draft_id])}'>
-        <div class="overview-card-top">
-          <div class="draft-kind">${contentKindIcon(d.kind)}<span>${escapeHtml(kindLabel(d.kind))}</span></div>
-          <span class="overview-card-date">#${d.seq_id || idx + 1} · ${escapeHtml(formatPlanDate(d.created_at) || "Новый черновик")}</span>
+    elements.draftList.innerHTML = state.drafts.map((d, idx) => {
+      const kind = String(d.kind || "content").toLowerCase();
+      const extras = _draftExtras(d);
+      return `
+      <article ${interactiveCardAttrs(`Открыть черновик ${d.topic}`)} class="draft-card${d.draft_id === state.draftId ? " active" : ""}${d.generation_pending ? " is-pending" : ""} interactive-card" data-action="openDraft" data-args='${JSON.stringify([d.draft_id])}'>
+        <div class="dc-topbar topbar-${escapeHtml(kind)}"></div>
+        <div class="dc-body">
+          <div class="dc-top">
+            <div class="dc-badge badge-${escapeHtml(kind)}">${contentKindIcon(d.kind)}<span>${escapeHtml(kindLabel(d.kind))}</span></div>
+            <span class="dc-meta">#${d.seq_id || idx + 1} · ${escapeHtml(formatPlanDate(d.created_at) || "")}</span>
+          </div>
+          <div class="dc-title">${escapeHtml(d.topic)}</div>
+          <div class="dc-sub">${escapeHtml(stripMarkdown(d.preview || ""))}</div>
+          <div class="dc-footer">
+            <span class="dc-status ${_draftStatusClass(d.status)}">${d.status === "approved" ? "● " : ""}${escapeHtml(statusLabel(d.status))}</span>
+            ${extras ? `<span class="dc-extras">${escapeHtml(extras)}</span>` : ""}
+          </div>
         </div>
-        <h3 class="draft-topic">${escapeHtml(d.topic)}</h3>
-        <div class="draft-preview">${escapeHtml(stripMarkdown(d.preview || "Без превью"))}</div>
-        <div class="draft-meta overview-card-footer">
-          ${tagMarkup(statusLabel(d.status), statusTone(d.status))}
-          ${d.payload?.canva_design_id ? tagMarkup("Canva", "status-positive") : ""}
-          ${d.generation_pending && draftGenerationLabel(d) ? tagMarkup(draftGenerationLabel(d), "pending") : ""}
-          ${tagMarkup(sourceLabel(d.source), sourceTone(d.source))}
-          ${d.metrics_summary ? _metricsBadge(d.metrics_summary) : ""}
-        </div>
-      </article>
-    `).join("");
+      </article>`;
+    }).join("");
     syncMobileNavigation();
   }
 
@@ -205,8 +237,9 @@ export function createDraftsModule(deps) {
     const p = d.payload || {};
     const posts = Array.isArray(p.threads_posts) ? p.threads_posts : [];
     const isApproved = d.status === "approved" || d.status === "scheduled" || d.status === "published";
-    const SLOT_ICONS = { morning: uiIcon("sunrise"), day: uiIcon("sun"), evening: uiIcon("moon") };
-    const SLOT_NAMES = { morning: "Утро", day: "День", evening: "Вечер" };
+    // Dynamic slot icons — use icon from payload if available, fallback to time-of-day defaults
+    const DEFAULT_SLOT_ICONS = { morning: "sunrise", day: "sun", evening: "moon", myth: "x-circle", reality: "check-circle", practice: "hand", problem: "alert-triangle", analysis: "search", action: "zap", setup: "book-open", twist: "refresh-cw", takeaway: "lightbulb" };
+    const DEFAULT_SLOT_NAMES = { morning: "Утро", day: "День", evening: "Вечер", myth: "Миф", reality: "Реальность", practice: "Практика", problem: "Проблема", analysis: "Разбор", action: "Действие", setup: "Завязка", twist: "Поворот", takeaway: "Вывод" };
     const GOAL_LABELS = { trust: "Доверие", authority: "Экспертность", engagement: "Вовлечённость", sales: "Продажи" };
     const EMOTION_LABELS = { calm: "Спокойная", inspiration: "Вдохновляющая", curiosity: "Любопытство", trust: "Доверие", joy: "Радость" };
 
@@ -215,9 +248,12 @@ export function createDraftsModule(deps) {
       p.handbook_source ? tagMarkup("Из справочника", "status-neutral") : "",
     ].filter(Boolean).join(" ");
 
+    const templateName = p.series_template_name || "Утро / День / Вечер";
+
     const slotsHtml = posts.map((post) => {
-      const icon = SLOT_ICONS[post.slot] || "";
-      const name = SLOT_NAMES[post.slot] || post.slot;
+      const iconName = post.icon || DEFAULT_SLOT_ICONS[post.slot] || "circle";
+      const icon = uiIcon(iconName);
+      const name = DEFAULT_SLOT_NAMES[post.slot] || post.label || post.slot;
       const charCount = (post.text || "").length;
       const isOver = charCount > 500;
       return `
@@ -225,7 +261,7 @@ export function createDraftsModule(deps) {
           <div class="threads-slot-header">
             <span class="threads-slot-icon">${icon}</span>
             <span class="threads-slot-label">${escapeHtml(name)}</span>
-            <input class="threads-slot-time" id="slotTime_${post.slot}_${d.draft_id}" type="time" value="${escapeHtml(post.scheduled_time || "")}" ${isApproved ? "readonly" : ""}>
+            <span class="threads-slot-time-label">${escapeHtml(post.scheduled_time || "")}</span>
           </div>
           <div class="threads-slot-body">
             ${!isApproved ? `<textarea
@@ -262,7 +298,7 @@ export function createDraftsModule(deps) {
       <div id="scheduler_${d.draft_id}" hidden>
         <div class="date-picker-row" id="schedulerDates_${d.draft_id}"></div>
         <div class="actions-row" style="margin-top:8px">
-          <button class="primary-button" id="schedulerSubmit_${d.draft_id}" type="button" data-date="" data-draft-id="${d.draft_id}" disabled
+          <button class="primary-button" id="schedulerSubmit_${d.draft_id}" type="button" data-date="" data-draft-id="${d.draft_id}" data-slots='${JSON.stringify(posts.map(p => p.slot))}' disabled
             data-action="_scheduleThreadsSeriesFromBtn" data-args='[null]'>
             ${actionLabel("approve", "Запланировать публикацию")}
           </button>
@@ -286,14 +322,22 @@ export function createDraftsModule(deps) {
               ${p.goal ? tagMarkup(GOAL_LABELS[p.goal] || p.goal, "status-neutral") : ""}
               ${p.emotion ? tagMarkup(EMOTION_LABELS[p.emotion] || p.emotion, "status-neutral") : ""}
               ${sourceBadges}
+              ${templateName !== "Утро / День / Вечер" ? tagMarkup(templateName, "status-accent") : ""}
             </div>
           </div>
-          <div class="actions-row detail-actions">
-            ${!isApproved && posts.length ? `<button class="primary-button" type="button" data-action="approveThreadsSeries" data-args='${JSON.stringify([d.draft_id, null])}'>${actionLabel("approve", "Согласовать")}</button>` : ""}
-            ${isApproved && d.status !== "published" ? `<button class="secondary-button" type="button" data-action="openThreadsScheduler" data-args='${JSON.stringify([d.draft_id])}'>${actionLabel("calendar", "Выбрать дату публикации")}</button>` : ""}
-            ${isApproved && d.status !== "published" ? `<button class="primary-button" type="button" data-action="publishThreadsSeriesNow" data-args='${JSON.stringify([d.draft_id, null])}'>${actionLabel("send", "Опубликовать все сейчас")}</button>` : ""}
-            <button class="secondary-button" data-action="sendDraftToChat" data-args='${JSON.stringify([d.draft_id, null])}'>${actionLabel("chat", "В чат")}</button>
-            ${renderMoveButton(d.draft_id)}
+          <div class="draft-actions-compact">
+            <div class="da-row1">
+              ${!isApproved && posts.length ? (() => {
+                const anyOver500 = posts.some(p => (p.text || "").length > 500);
+                return `<button class="primary-button${anyOver500 ? " is-disabled" : ""}" type="button" ${anyOver500 ? "disabled" : ""} data-action="approveThreadsSeries" data-args='${JSON.stringify([d.draft_id, null])}'>${actionLabel("approve", "Согласовать")}</button>`;
+              })() : ""}
+              ${isApproved && d.status !== "published" ? `<button class="primary-button" type="button" data-action="publishThreadsSeriesNow" data-args='${JSON.stringify([d.draft_id, null])}'>${actionLabel("send", "Опубликовать")}</button>` : ""}
+            </div>
+            <div class="da-row2">
+              ${isApproved && d.status !== "published" ? `<button class="das-btn" type="button" data-action="openThreadsScheduler" data-args='${JSON.stringify([d.draft_id])}'>${uiIcon("calendar", 14)}<span>Дата</span></button>` : ""}
+
+              ${renderMoveButton(d.draft_id)}
+            </div>
           </div>
           ${schedulerHtml}
         </div>
@@ -304,6 +348,7 @@ export function createDraftsModule(deps) {
             <p>${isApproved ? "Серия согласована. Запланируйте публикацию." : d.generation_pending && !posts.length ? "Генерируем посты..." : posts.length ? "Отредактируйте каждый пост, затем согласуйте серию." : "Посты не были сгенерированы. Попробуйте заново."}</p>
           </div>
           ${d.generation_pending && !posts.length ? renderDetailLoader("Генерирую серию", "Создаю три поста: утро, день, вечер.<br>Займёт 15–30 секунд.", "detail-loader-card-compact") : ""}
+          ${posts.some(p => (p.text || "").length > 500) && !isApproved ? `<div class="notice notice-warning" style="margin-bottom: var(--space-3)">Некоторые посты превышают лимит 500 символов Threads API. Сократите текст или перегенерируйте.</div>` : ""}
           ${slotsHtml}
           ${!posts.length && !isApproved && !d.generation_pending ? `
           <div class="actions-row" style="margin-top: var(--space-3)">
@@ -458,19 +503,23 @@ export function createDraftsModule(deps) {
             </div>
           </div>
           ${_canvaHeroPreview(p)}
-          <div class="actions-row detail-actions">
-            ${(() => {
-              if (d.kind === "carousel") {
-                const readyCount = (p.slide_images || []).filter(Boolean).length;
-                const slideCount = (p.slides || []).length;
-                const allSlidesReady = slideCount > 0 && readyCount >= slideCount && !d.generation_pending;
-                return `<button class="primary-button${allSlidesReady ? "" : " is-disabled"}" ${allSlidesReady ? "" : "disabled"} data-action="updateDraft" data-args='["status",{"status":"approved"},null]'>${actionLabel("approve", "Согласовать")}</button>${!allSlidesReady && slideCount > 0 ? `<span class="field-help">Готово ${readyCount} из ${slideCount} слайдов</span>` : ""}`;
-              }
-              return `<button class="primary-button" data-action="updateDraft" data-args='["status",{"status":"approved"},null]'>${actionLabel("approve", "Согласовать")}</button>`;
-            })()}
-            <div class="detail-icon-actions">
-              <button class="secondary-button" aria-label="Вернуть на доработку" data-action="updateDraft" data-args='["status",{"status":"rejected"},null]'>${uiIcon("reject")}</button>
-              ${d.kind === "carousel" ? `<button class="secondary-button" aria-label="Обновить все слайды" data-action="regenerateCarouselAll" data-args='${JSON.stringify([d.draft_id, null])}'>${uiIcon("regenerate")}</button>` : ""}
+          <div class="draft-actions-compact">
+            <div class="da-row1">
+              ${(() => {
+                if (d.kind === "carousel") {
+                  const readyCount = (p.slide_images || []).filter(Boolean).length;
+                  const slideCount = (p.slides || []).length;
+                  const allSlidesReady = slideCount > 0 && readyCount >= slideCount && !d.generation_pending;
+                  return `<button class="primary-button${allSlidesReady ? "" : " is-disabled"}" ${allSlidesReady ? "" : "disabled"} data-action="updateDraft" data-args='["status",{"status":"approved"},null]'>${actionLabel("approve", "Согласовать")}</button>`;
+                }
+                return `<button class="primary-button" data-action="updateDraft" data-args='["status",{"status":"approved"},null]'>${actionLabel("approve", "Согласовать")}</button>`;
+              })()}
+              <button class="da-reject" aria-label="Вернуть на доработку" data-action="updateDraft" data-args='["status",{"status":"rejected"},null]'>${uiIcon("reject")}</button>
+              ${d.kind === "carousel" ? `<button class="da-reject" aria-label="Обновить все слайды" data-action="regenerateCarouselAll" data-args='${JSON.stringify([d.draft_id, null])}'>${uiIcon("regenerate")}</button>` : ""}
+            </div>
+            <div class="da-row2">
+
+              ${renderMoveButton(d.draft_id)}
             </div>
             ${d.kind === "carousel" && !d.generation_pending ? `
               <div class="carousel-export-row">
@@ -502,7 +551,6 @@ export function createDraftsModule(deps) {
                 </div>
               </div>
             ` : ""}
-            ${renderMoveButton(d.draft_id)}
           </div>
           ${d.kind === "carousel" ? (() => {
             const curLayout = p.layout_style || "overlay";
@@ -654,7 +702,7 @@ export function createDraftsModule(deps) {
           title: "Выберите элемент из списка",
           body: "Откройте карточку слева, чтобы увидеть детали, правки и быстрые действия.",
           actionLabel: "Создать черновик",
-          action: "openCreateTool()",
+          action: "openCreateTool",
         })}
       </div>
     `;
@@ -694,6 +742,31 @@ export function createDraftsModule(deps) {
   }
 
   // ── YouTube Video Detail ─────────────────────────────────────────
+
+  function youtubeStepperMarkup(status, generationPending, draftId) {
+    const steps = [
+      { key: "generating", label: "Генерация" },
+      { key: "draft", label: "Сценарий" },
+      { key: "approved", label: "Съёмка" },
+      { key: "scheduled", label: "Публикация" },
+    ];
+    let activeIdx = 0;
+    if (generationPending) {
+      activeIdx = 0;
+    } else if (status === "draft" || status === "rejected") {
+      activeIdx = 1;
+    } else if (status === "approved") {
+      activeIdx = 2;
+    } else if (status === "scheduled" || status === "published") {
+      activeIdx = 3;
+    }
+    return `<div class="reels-stepper">${steps.map((s, i) => {
+      const cls = i < activeIdx ? "done" : i === activeIdx ? "active" : "";
+      const dotContent = i < activeIdx ? uiIcon("check", 10) : i === activeIdx ? '<span style="width:6px;height:6px;border-radius:50%;background:var(--brand);display:block"></span>' : "";
+      return `<div class="reels-step ${cls}"><span class="reels-step-dot">${dotContent}</span><span class="reels-step-label">${s.label}</span></div>`;
+    }).join("")}</div>`;
+  }
+
   function renderYouTubeDetail(d) {
     const p = d.payload || {};
     const sections = p.sections || [];
@@ -701,6 +774,7 @@ export function createDraftsModule(deps) {
     const thumb = p.thumbnail || {};
     const meta = p.metadata || {};
     const subformatLabels = { talking_head: "Talking Head", listicle: "Listicle / Top-N", podcast: "Подкаст / Интервью" };
+    const isApproved = d.status === "approved" || d.status === "scheduled" || d.status === "published";
 
     const _energyRu = { low: "спокойно", medium: "средне", "medium-high": "активно", high: "энергично" };
     const sectionsHtml = sections.length ? sections.map((s, i) => {
@@ -713,13 +787,20 @@ export function createDraftsModule(deps) {
           <span class="youtube-section-time">${escapeHtml(s.timecode || "")}</span>
           ${s.energy ? `<span class="keyword-chip keyword-chip--small">${escapeHtml(_energyRu[s.energy] || s.energy)}</span>` : ""}
         </div>
-        ${speakerText ? `
-          <div class="youtube-speaker-block">
-            <div class="youtube-speaker-label">${uiIcon("text", 14)} Текст спикера</div>
-            <div class="youtube-speaker-text">${escapeHtml(speakerText)}</div>
+        <div class="youtube-speaker-block">
+          <div class="youtube-speaker-label">${uiIcon("text", 14)} Текст спикера</div>
+          ${!isApproved ? `
+            <textarea class="youtube-section-textarea" id="ytSectionText_${d.draft_id}_${i}"
+              placeholder="Текст спикера для этой секции">${escapeHtml(speakerText)}</textarea>
+            <div class="youtube-section-actions">
+              <button class="secondary-button" type="button" data-action="youtubeSaveSection" data-args='${JSON.stringify([d.draft_id, i, null])}'>${uiIcon("save", 14)}<span>Сохранить</span></button>
+              <button class="youtube-copy-btn" type="button" data-action="youtubeCopySection" data-args='${JSON.stringify([i])}'>${uiIcon("copy", 12)} Скопировать</button>
+            </div>
+          ` : `
+            ${speakerText ? `<div class="youtube-speaker-text">${escapeHtml(speakerText)}</div>` : `<div class="youtube-speaker-text youtube-speaker-empty">Нет текста</div>`}
             <button class="youtube-copy-btn" type="button" data-action="youtubeCopySection" data-args='${JSON.stringify([i])}'>${uiIcon("copy", 12)} Скопировать</button>
-          </div>
-        ` : ""}
+          `}
+        </div>
         ${s.screen_text ? `<div class="youtube-section-screen">${uiIcon("image", 14)} <strong>На экране:</strong> ${escapeHtml(s.screen_text)}</div>` : ""}
         ${s.broll_cue ? `<div class="youtube-section-broll">${uiIcon("video", 14)} <strong>B-roll:</strong> ${escapeHtml(s.broll_cue)}</div>` : ""}
         ${s.follow_up ? `<div class="youtube-section-followup">${uiIcon("chat", 14)} <strong>Follow-up:</strong> ${escapeHtml(s.follow_up)}</div>` : ""}
@@ -764,12 +845,70 @@ export function createDraftsModule(deps) {
       </section>
     ` : "";
 
+    // Draft-mode actions (approve/reject) — shown only before approval
+    const draftActionsHtml = !isApproved ? `
+      <div class="draft-actions-compact">
+        <div class="da-row1">
+          <button class="primary-button" data-action="updateDraft" data-args='["status",{"status":"approved"},null]'>${actionLabel("approve", "Согласовать")}</button>
+          <button class="da-reject" aria-label="Вернуть на доработку" data-action="updateDraft" data-args='["status",{"status":"rejected"},null]'>${uiIcon("reject")}</button>
+        </div>
+        <div class="da-row2">
+          ${renderMoveButton(d.draft_id)}
+        </div>
+      </div>
+    ` : "";
+
+    // Approved-state actions: shooting checklist + return to edit
+    const approvedActionsHtml = isApproved && d.status === "approved" ? `
+      <section class="section section-primary">
+        <div class="section-heading">
+          <h3>${uiIcon("video")}Съёмка и продакшн</h3>
+          <p>Сценарий согласован. Снимите видео по сценарию, затем загрузите на YouTube.</p>
+        </div>
+        <div class="youtube-shooting-checklist">
+          <div class="youtube-checklist-item">
+            <span class="youtube-checklist-icon">${uiIcon("check-circle", 16)}</span>
+            <span>Сценарий готов (${sections.length} секций)</span>
+          </div>
+          ${brollMap.length ? `<div class="youtube-checklist-item">
+            <span class="youtube-checklist-icon">${uiIcon("video", 16)}</span>
+            <span>B-Roll карта (${brollMap.length} точек)</span>
+          </div>` : ""}
+          ${thumb.result_path ? `<div class="youtube-checklist-item">
+            <span class="youtube-checklist-icon">${uiIcon("image", 16)}</span>
+            <span>Обложка готова</span>
+          </div>` : `<div class="youtube-checklist-item youtube-checklist-missing">
+            <span class="youtube-checklist-icon">${uiIcon("image", 16)}</span>
+            <span>Обложка не сгенерирована</span>
+            <button class="secondary-button compact" type="button" data-action="youtubeRegenThumbnail" data-args='${JSON.stringify([d.draft_id, "auto"])}'>${uiIcon("sparkle", 12)}<span>Создать</span></button>
+          </div>`}
+          ${meta.title ? `<div class="youtube-checklist-item">
+            <span class="youtube-checklist-icon">${uiIcon("text", 16)}</span>
+            <span>Метаданные готовы</span>
+          </div>` : `<div class="youtube-checklist-item youtube-checklist-missing">
+            <span class="youtube-checklist-icon">${uiIcon("text", 16)}</span>
+            <span>Метаданные не сгенерированы</span>
+            <button class="secondary-button compact" type="button" data-action="youtubeGenMetadata" data-args='${JSON.stringify([d.draft_id])}'>${uiIcon("sparkle", 12)}<span>Создать</span></button>
+          </div>`}
+        </div>
+        <div class="actions-row" style="margin-top:12px;gap:8px;flex-wrap:wrap">
+          <button class="secondary-button compact" type="button" data-action="updateDraft" data-args='["status",{"status":"draft"},null]'>
+            ${actionLabel("undo", "На доработку")}
+          </button>
+          <button class="secondary-button compact" type="button" data-action="sendDraftToChat" data-args='${JSON.stringify([d.draft_id, null])}'>
+            ${actionLabel("chat", "В чат")}
+          </button>
+        </div>
+      </section>
+    ` : "";
+
     elements.draftDetail.innerHTML = `
       <div class="detail-grid">
         ${renderBackButton()}
+        ${youtubeStepperMarkup(d.status, d.generation_pending, d.draft_id)}
         <div class="detail-top detail-hero">
           <div class="detail-hero-copy">
-            <p class="eyebrow">${contentKindIcon(d.kind)}<span>${escapeHtml(kindLabel(d.kind))}${sourceLabel(d.source) ? " • " + escapeHtml(sourceLabel(d.source)) : ""}</span></p>
+            <p class="eyebrow">${contentKindIcon(d.kind)}<span>${escapeHtml(kindLabel(d.kind))}${sourceLabel(d.source) ? " · " + escapeHtml(sourceLabel(d.source)) : ""}</span></p>
             <h2 class="detail-title">${escapeHtml(p.title || d.topic)}</h2>
             <div class="draft-meta">
               ${d.seq_id ? `<span class="meta-chip meta-chip--muted">#${d.seq_id}</span>` : ""}
@@ -780,16 +919,12 @@ export function createDraftsModule(deps) {
               ${d.generation_pending && draftGenerationLabel(d) ? tagMarkup(draftGenerationLabel(d), "pending") : ""}
             </div>
           </div>
-          <div class="actions-row detail-actions">
-            <button class="primary-button" data-action="updateDraft" data-args='["status",{"status":"approved"},null]'>${actionLabel("approve", "Согласовать")}</button>
-            <div class="detail-icon-actions">
-              <button class="secondary-button" aria-label="Вернуть на доработку" data-action="updateDraft" data-args='["status",{"status":"rejected"},null]'>${uiIcon("reject")}</button>
-            </div>
-            ${renderMoveButton(d.draft_id)}
-          </div>
+          ${draftActionsHtml}
         </div>
 
-        ${d.generation_pending ? renderDetailLoader("Генерирую сценарий", "Пишу сценарий YouTube-видео.", "detail-loader-card-compact") : ""}
+        ${d.generation_pending ? renderDetailLoader("Генерирую сценарий", p.generation_message || "Пишу сценарий YouTube-видео.", "detail-loader-card-compact") : ""}
+
+        ${approvedActionsHtml}
 
         ${!d.generation_pending && sections.length ? `
           <section class="section section-primary">
@@ -801,7 +936,7 @@ export function createDraftsModule(deps) {
             <div class="youtube-copy-all-row">
               <button class="secondary-button" type="button" data-action="youtubeCopyAllText" data-args='${JSON.stringify([d.draft_id])}'>${uiIcon("copy")}<span>Скопировать весь текст для суфлёра</span></button>
             </div>
-            <div class="youtube-script-actions">
+            ${!isApproved ? `<div class="youtube-script-actions">
               <label class="youtube-revision-label">
                 <span>Замечания к сценарию</span>
                 <textarea id="youtubeRevisionNote" class="youtube-revision-input" placeholder="Что изменить, добавить или убрать..."></textarea>
@@ -809,11 +944,13 @@ export function createDraftsModule(deps) {
               <div class="actions-row">
                 <button class="secondary-button" type="button" data-action="youtubeRegenScript" data-args='${JSON.stringify([d.draft_id])}'>${uiIcon("regenerate")}<span>Перегенерировать сценарий</span></button>
               </div>
-            </div>
+            </div>` : ""}
           </section>
         ` : ""}
 
         ${brollHtml}
+        ${thumbHtml}
+        ${metaHtml}
 
         <section class="section">
           <div class="actions-row">
@@ -882,10 +1019,14 @@ export function createDraftsModule(deps) {
         </div>
         ${coherenceHtml}
         <div class="series-posts-timeline">${postsHtml}</div>
-        <div class="actions-row detail-actions">
-          <button class="primary-button" type="button" data-action="coherenceCheck" data-args='${JSON.stringify([d.draft_id])}'>${uiIcon("check-circle")}<span>Проверить связность</span></button>
-          <button class="secondary-button" type="button" data-action="regenSeriesAll" data-args='${JSON.stringify([d.draft_id])}'>${uiIcon("refresh-cw")}<span>Перегенерировать всё</span></button>
-          ${d.status === "draft" ? `<button class="primary-button" type="button" data-action="updateDraft" data-args='["status",{"status":"approved"},null]'>${uiIcon("check")}<span>Утвердить</span></button>` : ""}
+        <div class="draft-actions-compact">
+          <div class="da-row1">
+            ${d.status === "draft" ? `<button class="primary-button" type="button" data-action="updateDraft" data-args='["status",{"status":"approved"},null]'>${uiIcon("check")}<span>Утвердить</span></button>` : ""}
+            <button class="das-btn" type="button" data-action="coherenceCheck" data-args='${JSON.stringify([d.draft_id])}'>${uiIcon("check-circle", 14)}<span>Связность</span></button>
+          </div>
+          <div class="da-row2">
+            <button class="das-btn" type="button" data-action="regenSeriesAll" data-args='${JSON.stringify([d.draft_id])}'>${uiIcon("refresh-cw", 14)}<span>Перегенерировать</span></button>
+          </div>
         </div>
       </div>
     `;

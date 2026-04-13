@@ -26,11 +26,12 @@ logger = logging.getLogger(__name__)
 
 
 async def poll_threads_mentions(access_token: str, team_id: str | None = None) -> tuple[int, int]:
-    """Poll Threads API for external mentions only. Returns (polled, saved).
+    """Poll Threads API for external mentions and replies on own posts.
 
-    Own posts are NOT ingested as mentions — they belong in social trends.
-    Only external mentions (others mentioning us) and replies from other
-    users are saved.
+    Returns (polled, saved). Own posts are NOT ingested as mentions —
+    they belong in social trends. Only external mentions (others mentioning
+    us) and replies from other users (both on mentions and on own posts)
+    are saved.
     """
     loop = asyncio.get_running_loop()
     client = ThreadsClient(access_token=access_token)
@@ -100,6 +101,45 @@ async def poll_threads_mentions(access_token: str, team_id: str | None = None) -
                 saved += 1
         except Exception:
             logger.warning("mentions_poller: get_replies failed for %s", ext_id, exc_info=True)
+
+    # --- Poll replies on OWN posts (not just mentions) ---
+    try:
+        own_posts = await loop.run_in_executor(None, lambda: client.get_threads(limit=15))
+        for post in own_posts:
+            post_id = post.get("id", "")
+            if not post_id:
+                continue
+            try:
+                replies = await loop.run_in_executor(
+                    None, lambda pid=post_id: client.get_replies(pid, limit=20),
+                )
+            except Exception:
+                logger.warning("mentions_poller: get_replies failed for own post %s", post_id, exc_info=True)
+                continue
+            post_text = (post.get("text") or "")[:200]
+            for r in replies:
+                r_id = r.get("id", "")
+                if not r_id:
+                    continue
+                reply_author = (r.get("username") or "").lower().lstrip("@")
+                if reply_author and reply_author in own_usernames:
+                    continue
+                if await find_mention_by_external_id("threads", r_id):
+                    continue
+                await save_mention(
+                    platform="threads",
+                    external_id=r_id,
+                    type="REPLY",
+                    author_username=r.get("username", ""),
+                    author_name="",
+                    content=r.get("text", ""),
+                    url=r.get("permalink", ""),
+                    context_post=post_text,
+                    team_id=team_id,
+                )
+                saved += 1
+    except Exception:
+        logger.warning("mentions_poller: own-posts replies polling failed", exc_info=True)
 
     return (len(raw_items), saved)
 

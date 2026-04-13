@@ -2,7 +2,7 @@ const STORAGE_KEY = "aroma_onboarded";
 const WALKTHROUGH_KEY = "aroma_walkthrough_done";
 
 const SLIDES = [
-  { icon: "book-open", title: "База знаний", body: "74 эфирных масла, смеси и симптомы. Используйте поиск и фильтры для быстрого доступа к карточкам." },
+  { icon: "book-open", title: "База знаний", body: "Десятки эфирных масел, смеси и симптомы. Используйте поиск и фильтры для быстрого доступа к карточкам." },
   { icon: "pen-tool", title: "Контент-студия", body: "Создавайте посты, карусели и Reels. AI готовит черновик — вы редактируете и публикуете." },
   { icon: "sparkles", title: "Идеи и планирование", body: "Тренды, контент-планы и AI-рекомендации помогут вести соцсети системно." },
 ];
@@ -21,7 +21,7 @@ const WALKTHROUGH_STEPS = [
   {
     selector: '#bottomTabBar [data-tab="aromas"]',
     title: "Справочник масел и смесей",
-    body: "74 масла, готовые смеси и поиск по симптомам — всё в одном месте.",
+    body: "Масла, готовые смеси и поиск по симптомам — всё в одном месте.",
   },
   {
     selector: '#bottomTabBar [data-tab="settings"]',
@@ -41,7 +41,7 @@ const HELP_MAP = {
   "content/mentions": "Отслеживание упоминаний бренда в Telegram, Threads и Instagram. Новые упоминания приходят автоматически.",
   "content/trends": "Актуальные тренды ароматерапии из соцсетей. Нажмите на тренд, чтобы создать пост на его основе.",
   "content/settings": "Настройки приложения: цветовая тема, выбор AI-моделей, управление командой и подпиской.",
-  "handbook/aromas": "74 эфирных масла: свойства, дозировки, противопоказания и вопросы для рефлексии. Используйте поиск или фильтр по симптомам.",
+  "handbook/aromas": "Десятки эфирных масел: свойства, дозировки, противопоказания и вопросы для рефлексии. Используйте поиск или фильтр по симптомам.",
   "handbook/blends": "Готовые смеси с рецептами и пропорциями. Нажмите на ингредиент для перехода к карточке масла. Можно создать свою смесь в конструкторе.",
   "handbook/symptoms": "Поиск масла по симптому или состоянию. Выберите проблему — получите список масел с рекомендациями по применению.",
 };
@@ -57,8 +57,9 @@ export function createOnboardingModule(deps) {
     try { return localStorage.getItem(WALKTHROUGH_KEY) === "1"; } catch { return true; }
   }
 
-  function buildProgressIndicator(step) {
-    return `<div class="onboarding-progress">Шаг ${step} из ${TOTAL_STEPS}</div>`;
+  function buildProgressIndicator(_step) {
+    // Removed text "Шаг X из 7" — dots already show progress
+    return "";
   }
 
   function maybeShow() {

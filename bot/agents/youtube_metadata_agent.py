@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 
 from bot.agents.prompts.youtube_prompts import METADATA_PROMPT
 from bot.services.claude_client import call_claude
+from bot.utils.json_parser import extract_json
 
 logger = logging.getLogger(__name__)
 
@@ -47,11 +48,43 @@ def build_timecodes_block(sections_with_durations: list[dict]) -> str:
 
 
 def _parse_metadata(raw: str) -> YouTubeMetadata:
-    """Parse Claude's metadata response."""
+    """Parse metadata. Tries JSON first, falls back to text markers."""
+    try:
+        data = extract_json(raw)
+        if isinstance(data, dict) and data.get("title"):
+            tags = data.get("tags", [])
+            if isinstance(tags, str):
+                tags = [t.strip() for t in tags.split(",") if t.strip()]
+            try:
+                cat_id = int(data.get("category_id", 26))
+            except (ValueError, TypeError):
+                cat_id = 26
+            chapters = []
+            for ch in data.get("chapters", []):
+                if isinstance(ch, dict):
+                    try:
+                        chapters.append({"time": int(ch.get("time", 0)), "title": ch.get("title", "")})
+                    except (ValueError, TypeError):
+                        pass
+            return YouTubeMetadata(
+                title=data["title"],
+                description=data.get("description", ""),
+                tags=tags[:30],
+                category_id=cat_id,
+                chapters=chapters,
+            )
+    except (ValueError, TypeError):
+        logger.debug("_parse_metadata: JSON failed, using legacy parser")
+
+    return _parse_metadata_legacy(raw)
+
+
+def _parse_metadata_legacy(raw: str) -> YouTubeMetadata:
+    """Legacy parser: TITLE:/DESCRIPTION:/TAGS:/CATEGORY: markers."""
     title = ""
     description_lines: list[str] = []
     tags: list[str] = []
-    category_id = 26  # default: Howto & Style
+    category_id = 26
     in_description = False
 
     for line in raw.splitlines():
@@ -76,11 +109,10 @@ def _parse_metadata(raw: str) -> YouTubeMetadata:
             except (AttributeError, ValueError):
                 category_id = 26
         elif in_description:
-            description_lines.append(line)  # preserve formatting
+            description_lines.append(line)
 
     description = "\n".join(description_lines).strip()
 
-    # Extract chapters from description timecodes
     chapters: list[dict] = []
     for match in re.finditer(r'(\d+:\d{2}(?::\d{2})?)\s*[—–-]\s*(.+)', description):
         tc_str = match.group(1)

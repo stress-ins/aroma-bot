@@ -17,6 +17,14 @@ const REFERENCE_SOURCE_TYPE_LABELS = {
   halide:         "Галоид",
   oxide:          "Оксид",
   volcanic_glass: "Вулканическое стекло",
+  technique:      "Техника",
+  zone:           "Зона тела",
+  protocol:       "Протокол",
+  anatomy:        "Анатомия",
+  dysfunction:    "Дисфункция",
+  principle:      "Принцип",
+  rhythm:         "Ритм",
+  observation:    "Наблюдение",
   singing_bowl:   "Поющая чаша",
   gong:           "Гонг",
   tuning_fork:    "Камертон",
@@ -82,10 +90,47 @@ export function createReferencesModule(deps) {
   let _smartSearchDebounce = null;
   let _filtersExpanded = false;
 
-  /** Action-group buttons shown at the top of every handbook sub-tab.
-   *  These must be visible regardless of reference access status
-   *  (blend constructor, recommendation wizard, saved blends are independent features). */
+  /** Action-group buttons — context-aware per section. */
+  const AROMA_SECTION_TABS = ["aromas", "blends", "symptoms", "concepts"];
+  const BODY_SECTION_TABS = ["practices", "massage", "osteo", "biodynamics"];
+
+  function _savedBlendsItem() {
+    return `<div class="action-item" data-action="openSavedBlends">
+            <div class="action-icon ai-pink"><i class="ph ph-heart" style="font-size:16px"></i></div>
+            <div class="action-text"><div class="action-title">Сохранённое</div><div class="action-sub">Избранные карточки</div></div>
+            <span class="action-arrow">\u203a</span>
+          </div>`;
+  }
+
   function _actionGroupHtml() {
+    // Body section: massage finder + saved
+    if (BODY_SECTION_TABS.includes(state.tab)) {
+      return `<div class="action-group">
+          <div class="action-item" data-action="openProtocolWizard" data-args='[]'>
+            <div class="action-icon ai-purple"><i class="ph ph-circles-four" style="font-size:16px"></i></div>
+            <div class="action-text"><div class="action-title">Составить протокол</div><div class="action-sub">Масло + массаж + звук + кристалл</div></div>
+            <span class="action-arrow">\u203a</span>
+          </div>
+          <div class="action-item" data-action="openMassageFinder" data-args='[]'>
+            <div class="action-icon ai-teal"><i class="ph ph-hand-palm" style="font-size:16px"></i></div>
+            <div class="action-text"><div class="action-title">Подобрать технику массажа</div><div class="action-sub">По симптому или зоне тела</div></div>
+            <span class="action-arrow">\u203a</span>
+          </div>
+          ${_savedBlendsItem()}
+        </div>`;
+    }
+    // Sounds / Crystals — protocol + saved
+    if (state.tab === "sounds" || state.tab === "crystals") {
+      return `<div class="action-group">
+          <div class="action-item" data-action="openProtocolWizard" data-args='[]'>
+            <div class="action-icon ai-purple"><i class="ph ph-circles-four" style="font-size:16px"></i></div>
+            <div class="action-text"><div class="action-title">Составить протокол</div><div class="action-sub">Масло + массаж + звук + кристалл</div></div>
+            <span class="action-arrow">\u203a</span>
+          </div>
+          ${_savedBlendsItem()}
+        </div>`;
+    }
+    // Default: blend constructor + recommendations + saved (for aroma tabs and any other)
     return `<div class="action-group">
           <div class="action-item" data-action="openBlendConstructor">
             <div class="action-icon ai-purple"><i class="ph ph-flask" style="font-size:16px"></i></div>
@@ -97,11 +142,7 @@ export function createReferencesModule(deps) {
             <div class="action-text"><div class="action-title">Подобрать масло</div><div class="action-sub">По симптому или цели</div></div>
             <span class="action-arrow">\u203a</span>
           </div>
-          <div class="action-item" data-action="openSavedBlends">
-            <div class="action-icon ai-pink"><i class="ph ph-heart" style="font-size:16px"></i></div>
-            <div class="action-text"><div class="action-title">Сохранённое</div><div class="action-sub">Избранные карточки</div></div>
-            <span class="action-arrow">\u203a</span>
-          </div>
+          ${_savedBlendsItem()}
         </div>`;
   }
 
@@ -134,6 +175,8 @@ export function createReferencesModule(deps) {
     if (state.referenceAccess === null) {
       await loadReferenceAccess();
     }
+    // Guard: user may have switched tabs during async access check
+    if (state.tab !== tabId) return;
     if (state.referenceAccess === null) {
       renderReferencesUnavailable();
       return;
@@ -168,6 +211,10 @@ export function createReferencesModule(deps) {
     // race condition where the list load overwrites the detail with empty state.
     if (openReferenceInFlight) return;
 
+    // Guard: if the user switched to a different tab while we were fetching,
+    // do not render stale data — the new tab's load will handle rendering.
+    if (state.tab !== tabId) return;
+
     const selectedSlug = state.selectedReference?.category === meta.category
       ? state.selectedReference?.slug
       : "";
@@ -189,11 +236,9 @@ export function createReferencesModule(deps) {
     openReferenceInFlight = true;
     try {
       // Track cross-tab navigation context for back button
-      // Only set _fromContext when explicitly navigating cross-tab from a detail view
       if (tabId !== state.tab && state.selectedReference?.slug) {
         state._fromContext = { tab: state.tab, slug: state.selectedReference.slug };
       } else {
-        // Same-tab navigation or no prior card: always clear stale context
         state._fromContext = null;
       }
       state.selectedReference = await fetchJson(`/api/references/${meta.category}/${encodeURIComponent(slug)}`);
@@ -202,6 +247,13 @@ export function createReferencesModule(deps) {
       elements.tabsContainer.querySelectorAll(".tab-button").forEach((b) => b.classList.toggle("active", b.dataset.tab === tabId));
       renderReferences();
       enterDetailView();
+    } catch (err) {
+      if (!quiet) {
+        elements.draftDetail.innerHTML = renderDetailError(
+          "Не удалось загрузить",
+          err?.message === "paywall" ? "Доступ ограничен тарифом." : "Попробуйте ещё раз."
+        );
+      }
     } finally {
       openReferenceInFlight = false;
     }
@@ -307,9 +359,12 @@ export function createReferencesModule(deps) {
   }
 
   function renderCollapsibleDescription(reference) {
-    // description_short = comprehensive AI synthesis of all card fields (shown in full, no collapse)
-    // description = original raw text (not shown separately to avoid duplication)
-    const text = String(reference.description_short || reference.description || "").trim();
+    // For categories with AI-synthesized description_short, prefer it (aromas, blends, symptoms).
+    // For new categories (massage, osteo, biodynamics) description is the primary text.
+    const preferLong = ["massage", "osteo", "biodynamics", "crystal"].includes(reference.category);
+    const text = preferLong
+      ? String(reference.description || reference.description_short || "").trim()
+      : String(reference.description_short || reference.description || "").trim();
     if (!text) return "";
     return `<section class="section"><h3>Описание</h3><div class="detail-preview">${escapeHtml(text)}</div></section>`;
   }
@@ -341,10 +396,12 @@ export function createReferencesModule(deps) {
     return `<div class="medical-disclaimer">Информация носит ознакомительный характер и не является медицинской рекомендацией. Перед применением проконсультируйтесь с врачом.</div>`;
   }
 
-  function renderApplicationsWithIcons(text) {
+  function renderApplicationsWithIcons(text, title = "Применение и дозировки") {
     if (!text) return "";
+    // Accept both string and array
+    const raw = Array.isArray(text) ? text.join("\n") : String(text);
     // Split on newlines or semicolons; strip leading bullet chars
-    const lines = text.split(/[\n;]/).map((l) => l.replace(/^[•\-]\s*/, "").trim()).filter(Boolean);
+    const lines = raw.split(/[\n;]/).map((l) => l.replace(/^[•\-]\s*/, "").trim()).filter(Boolean);
     const rendered = lines.map((line) => {
       const lower = line.toLowerCase();
       let icon = "•";
@@ -356,7 +413,7 @@ export function createReferencesModule(deps) {
       }
       return `<div class="application-line">${icon} ${escapeHtml(line)}</div>`;
     });
-    return `<section class="section"><h3>💧 Применение и дозировки</h3><div class="detail-preview applications-list">${rendered.join("")}</div></section>`;
+    return `<section class="section"><h3><i class="ph ph-list-checks" style="font-size:16px"></i> ${escapeHtml(title)}</h3><div class="detail-preview applications-list">${rendered.join("")}</div></section>`;
   }
 
   function renderRecipeDrops(ref) {
@@ -574,10 +631,10 @@ export function createReferencesModule(deps) {
         ? rawKeyline
         : (REFERENCE_SOURCE_TYPE_LABELS[reference.source_type] || currentHandbookMeta().title);
     }
-    // Subtitle line below the card title — only for aromas (EN name + family)
+    // Subtitle line below the card title
     let subtitle = "";
-    if (state.tab === "aromas") {
-      const parts = [reference.name_en, keyline].filter(Boolean);
+    if (["aromas", "massage", "osteo", "biodynamics", "crystals"].includes(state.tab)) {
+      const parts = [reference.name_en, state.tab === "aromas" ? keyline : ""].filter(Boolean);
       subtitle = parts.join(" · ");
     }
     // Compact EN name for blends (mirrors card list style)
@@ -602,7 +659,7 @@ export function createReferencesModule(deps) {
   }
 
   function renderFilterChips(items, tabId) {
-    if (!["aromas", "blends", "symptoms", "concepts", "practices", "crystals"].includes(tabId)) return "";
+    if (!["aromas", "blends", "symptoms", "concepts", "practices", "massage", "osteo", "biodynamics", "crystals"].includes(tabId)) return "";
 
     if (tabId === "symptoms") {
       return renderSymptomFilterChips(items);
@@ -809,6 +866,15 @@ export function createReferencesModule(deps) {
       }
       if (_sc) _sc.addEventListener("click", () => { _si.value = ""; state.referenceSearch = ""; _sc.style.display = "none"; clearSmartSearch(); });
     }
+    // Ensure action-group is always present and up-to-date
+    const _agTarget = elements.draftList.querySelector(".action-group");
+    const _agNew = _actionGroupHtml();
+    if (_agTarget && _agNew) _agTarget.outerHTML = _agNew;
+    else if (!_agTarget && _agNew) {
+      const _sb = document.getElementById("refSearchBar");
+      if (_sb) _sb.insertAdjacentHTML("afterend", _agNew);
+    }
+
     // Update search state
     const refSearchInput = document.getElementById("refSearchInput");
     const refSearchCount = document.getElementById("refSearchCount");
@@ -876,6 +942,13 @@ export function createReferencesModule(deps) {
           ${renderBackButton()}
           ${renderReferenceImage(reference)}
           ${renderCollapsibleDescription(reference)}
+          ${reference.shop_url ? `<section class="section shop-buy-section">
+            <button class="shop-buy-btn" type="button" data-action="openShopLink" data-args='${JSON.stringify([reference.shop_url])}'>
+              <i class="ph ph-shopping-cart" style="font-size:18px"></i>
+              <span class="shop-buy-label">Купить смесь</span>
+              <span class="shop-buy-promo">Промокод <strong>AROMARA</strong> — скидка 7%</span>
+            </button>
+          </section>` : ""}
           ${aromaSection("Терапевтические свойства", reference.therapeutic_properties)}
           ${renderStructuredList("При каких состояниях", reference.conditions_for_use)}
           ${recipeHtml}
@@ -960,6 +1033,79 @@ export function createReferencesModule(deps) {
           ${practiceChips ? `<section class="section"><h3>🧘 Практики</h3><div class="detail-preview">${practiceChips}</div></section>` : ""}
           ${blendsChips ? `<section class="section"><h3>🌀 Входит в смеси</h3><div class="detail-preview">${blendsChips}</div></section>` : ""}
           ${aromaSection("Материалы курса", reference.course_notes)}
+        </div>
+      `;
+    } else if (state.tab === "massage") {
+      const compOilChips = renderCrossRefChips(
+        zipNamesAndSlugs(reference.complementary_oil_names || [], reference.complementary_oils || []),
+        "aromas"
+      );
+      const symptomChips = renderCrossRefChips(
+        zipNamesAndSlugs(reference.related_symptom_names, reference.related_symptom_slugs),
+        "symptoms"
+      );
+      const practiceChips = renderCrossRefChips(
+        zipNamesAndSlugs(reference.related_practice_names || [], reference.related_practices || []),
+        "practices"
+      );
+      const bodyZones = Array.isArray(reference.body_zones) ? reference.body_zones.join(", ") : (reference.body_zones || "");
+      const contraList = Array.isArray(reference.contraindications) ? reference.contraindications : [];
+      const durationStr = reference.duration_min ? `${reference.duration_min} мин` : "";
+      const pressureStr = reference.pressure_level || "";
+      const difficultyStr = reference.difficulty_level || "";
+      const passportParts = [
+        durationStr ? `<p><strong>Длительность:</strong> ${escapeHtml(durationStr)}</p>` : "",
+        pressureStr ? `<p><strong>Давление:</strong> ${escapeHtml(pressureStr)}</p>` : "",
+        difficultyStr ? `<p><strong>Уровень:</strong> ${escapeHtml(difficultyStr)}</p>` : "",
+        bodyZones ? `<p><strong>Зоны:</strong> ${escapeHtml(bodyZones)}</p>` : "",
+      ].filter(Boolean).join("");
+      detailHtml = `
+        <div class="detail-grid">
+          ${renderBackButton()}
+          ${renderReferenceImage(reference)}
+          ${passportParts ? aromaHtmlSection("Паспорт техники", passportParts) : ""}
+          ${renderCollapsibleDescription(reference)}
+          ${renderCollapsibleSection("Терапевтические свойства", Array.isArray(reference.therapeutic_properties) ? reference.therapeutic_properties.join(", ") : reference.therapeutic_properties, 280)}
+          ${renderCollapsibleSection("Психологические свойства", Array.isArray(reference.psychological_properties) ? reference.psychological_properties.join(", ") : reference.psychological_properties, 280)}
+          ${compOilChips ? `<section class="section"><h3><i class="ph ph-drop" style="font-size:16px"></i> Комплементарные масла</h3><div class="detail-preview">${compOilChips}</div></section>` : ""}
+          ${symptomChips ? `<section class="section"><h3><i class="ph ph-heartbeat" style="font-size:16px"></i> Помогает при</h3><div class="detail-preview">${symptomChips}</div></section>` : ""}
+          ${practiceChips ? `<section class="section"><h3><i class="ph ph-wind" style="font-size:16px"></i> Связанные практики</h3><div class="detail-preview">${practiceChips}</div></section>` : ""}
+          ${renderApplicationsWithIcons(reference.applications, "Техника выполнения")}
+          ${renderStructuredList("Меры предосторожности", Array.isArray(reference.precautions) ? reference.precautions.join(". ") : reference.precautions)}
+          ${contraList.length ? renderStructuredList("Противопоказания", contraList.join(". ")) : ""}
+        </div>
+      `;
+    } else if (state.tab === "osteo" || state.tab === "biodynamics") {
+      const compOilChips = renderCrossRefChips(
+        zipNamesAndSlugs(reference.complementary_oil_names || [], reference.complementary_oils || []),
+        "aromas"
+      );
+      const symptomChips = renderCrossRefChips(
+        zipNamesAndSlugs(reference.related_symptom_names, reference.related_symptom_slugs),
+        "symptoms"
+      );
+      const practiceChips = renderCrossRefChips(
+        zipNamesAndSlugs(reference.related_practice_names || [], reference.related_practices || []),
+        "practices"
+      );
+      const bodyZones = Array.isArray(reference.body_zones) ? reference.body_zones.join(", ") : (reference.body_zones || "");
+      const contraList = Array.isArray(reference.contraindications) ? reference.contraindications : [];
+      const practReq = reference.practitioner_required ? `<p class="practitioner-badge"><i class="ph ph-user-circle-check" style="font-size:16px"></i> Требуется специалист</p>` : "";
+      detailHtml = `
+        <div class="detail-grid">
+          ${renderBackButton()}
+          ${renderReferenceImage(reference)}
+          ${practReq}
+          ${bodyZones ? aromaSection("Зоны работы", bodyZones) : ""}
+          ${renderCollapsibleDescription(reference)}
+          ${renderCollapsibleSection("Терапевтические свойства", Array.isArray(reference.therapeutic_properties) ? reference.therapeutic_properties.join(", ") : reference.therapeutic_properties, 280)}
+          ${renderCollapsibleSection("Психологические свойства", Array.isArray(reference.psychological_properties) ? reference.psychological_properties.join(", ") : reference.psychological_properties, 280)}
+          ${compOilChips ? `<section class="section"><h3><i class="ph ph-drop" style="font-size:16px"></i> Комплементарные масла</h3><div class="detail-preview">${compOilChips}</div></section>` : ""}
+          ${symptomChips ? `<section class="section"><h3><i class="ph ph-heartbeat" style="font-size:16px"></i> Помогает при</h3><div class="detail-preview">${symptomChips}</div></section>` : ""}
+          ${practiceChips ? `<section class="section"><h3><i class="ph ph-wind" style="font-size:16px"></i> Связанные практики</h3><div class="detail-preview">${practiceChips}</div></section>` : ""}
+          ${renderApplicationsWithIcons(reference.applications, "Техника выполнения")}
+          ${renderStructuredList("Меры предосторожности", Array.isArray(reference.precautions) ? reference.precautions.join(". ") : reference.precautions)}
+          ${contraList.length ? renderStructuredList("Противопоказания", contraList.join(". ")) : ""}
         </div>
       `;
     } else if (state.tab === "crystals") {
@@ -1084,6 +1230,13 @@ export function createReferencesModule(deps) {
           ${renderReferenceImage(reference)}
           ${dailyOilHtml}
           ${aromaHtmlSection("Паспорт аромата", renderReferencePassport(reference))}
+          ${reference.shop_url ? `<section class="section shop-buy-section">
+            <button class="shop-buy-btn" type="button" data-action="openShopLink" data-args='${JSON.stringify([reference.shop_url])}'>
+              <i class="ph ph-shopping-cart" style="font-size:18px"></i>
+              <span class="shop-buy-label">Купить масло</span>
+              <span class="shop-buy-promo">Промокод <strong>AROMARA</strong> — скидка 7%</span>
+            </button>
+          </section>` : ""}
           ${renderCollapsibleDescription(reference)}
           ${blendsChips ? `<section class="section"><h3>🌀 Входит в смеси</h3><div class="detail-preview">${blendsChips}</div></section>` : ""}
           ${symptomChips ? `<section class="section"><h3>💊 Помогает при</h3><div class="detail-preview">${symptomChips}</div></section>` : ""}
@@ -1115,7 +1268,7 @@ export function createReferencesModule(deps) {
   /* ── Smart Search ── */
 
   async function loadAllReferencesForSearch() {
-    const tabs = ["aromas", "blends", "symptoms", "concepts", "practices", "sounds", "crystals"];
+    const tabs = ["aromas", "blends", "symptoms", "concepts", "practices", "massage", "osteo", "biodynamics", "sounds", "crystals"];
     const promises = tabs.filter(t => !_searchCache[t]).map(async (tabId) => {
       const meta = HANDBOOK_CATEGORY_META[tabId];
       if (!meta) return;
@@ -1168,6 +1321,9 @@ export function createReferencesModule(deps) {
       ...(_searchCache.symptoms || []),
       ...(_searchCache.concepts || []),
       ...(_searchCache.practices || []),
+      ...(_searchCache.massage || []),
+      ...(_searchCache.osteo || []),
+      ...(_searchCache.biodynamics || []),
       ...(_searchCache.sounds || []),
       ...(_searchCache.crystals || []),
     ];
@@ -1219,7 +1375,7 @@ export function createReferencesModule(deps) {
         <button class="blend-constructor-cta" data-action="openBlendConstructor" data-args='${JSON.stringify([query])}'>\ud83e\uddea \u0421\u043e\u0437\u0434\u0430\u0442\u044c \u0441\u043c\u0435\u0441\u044c \u043f\u043e\u0434 \u044d\u0442\u0443 \u0437\u0430\u0434\u0430\u0447\u0443 \u2197</button></div>`;
       return;
     }
-    const groupLabels = {aroma: "\u0410\u0440\u043e\u043c\u0430\u0442\u044b", blend: "\u0421\u043c\u0435\u0441\u0438", symptom: "\u0421\u0438\u043c\u043f\u0442\u043e\u043c\u044b", concept: "\u041a\u043e\u043d\u0446\u0435\u043f\u0446\u0438\u0438", practice: "\u041f\u0440\u0430\u043a\u0442\u0438\u043a\u0438", sound: "\u0417\u0432\u0443\u043a\u0438"};
+    const groupLabels = {aroma: "Ароматы", blend: "Смеси", symptom: "Симптомы", concept: "Концепции", practice: "Практики", massage: "Массаж", osteo: "Остеопрактика", biodynamic: "Биодинамика", sound: "Звуки", crystal: "Кристаллы"};
     let lastType = null;
     const cardsHtml = items.slice(0, 50).map(item => {
       let header = "";
@@ -1233,11 +1389,12 @@ export function createReferencesModule(deps) {
   }
 
   function renderSearchResultCard(item) {
-    const typeLabels = {aroma: "\u043c\u0430\u0441\u043b\u043e", blend: "\u0441\u043c\u0435\u0441\u044c", symptom: "\u0441\u0438\u043c\u043f\u0442\u043e\u043c", concept: "\u043a\u043e\u043d\u0446\u0435\u043f\u0446\u0438\u044f", practice: "\u043f\u0440\u0430\u043a\u0442\u0438\u043a\u0430", sound: "\u0437\u0432\u0443\u043a"};
-    const typeIcons = {aroma: "\ud83c\udf3f", blend: "\ud83e\uddea", symptom: "\ud83e\ude7a", concept: "\ud83d\udca1", practice: "\ud83d\udcbf", sound: "\ud83c\udfb5"};
+    const typeLabels = {aroma: "масло", blend: "смесь", symptom: "симптом", concept: "концепция", practice: "практика", massage: "массаж", osteo: "остеопрактика", biodynamic: "биодинамика", sound: "звук", crystal: "кристалл"};
+    const typeIcons = {aroma: "🌿", blend: "🧪", symptom: "🩺", concept: "💡", practice: "💿", massage: "💆", osteo: "🦴", biodynamic: "🌊", sound: "🎵", crystal: "💎"};
     const typeLabel = typeLabels[item._type] || item._type;
     const typeIcon = typeIcons[item._type] || "";
-    const tabId = item._type + "s";
+    const _typeToTab = {massage: "massage", osteo: "osteo", biodynamic: "biodynamics"};
+    const tabId = _typeToTab[item._type] || (item._type + "s");
     const name = item.name_ru || item.name || "";
     return `<article ${interactiveCardAttrs("\u041e\u0442\u043a\u0440\u044b\u0442\u044c " + name)} class="draft-card overview-card interactive-card"
       data-action="openReference" data-args='${JSON.stringify([item.slug, tabId])}'>
@@ -1353,14 +1510,14 @@ export function createReferencesModule(deps) {
       title: "Не удалось открыть справочник",
       body: message,
       actionLabel: "Повторить",
-      action: "retryCurrentTab()",
+      action: "retryCurrentTab",
     });
     elements.draftDetail.innerHTML = `${renderBackButton()}<div class="detail-empty">${renderGuidedState({
       eyebrow: meta.title,
       title: "Не удалось открыть справочник",
       body: message,
       actionLabel: "Повторить",
-      action: "retryCurrentTab()",
+      action: "retryCurrentTab",
     })}</div>`;
     syncMobileNavigation();
   }

@@ -115,13 +115,19 @@ export function createMentionsModule(deps) {
       </div>`;
 
     if (!state.mentions.length) {
+      const emptyPollBtn = `
+        <div style="margin-top:12px;text-align:center">
+          <button class="secondary-button compact" data-action="pollMentionsNow">
+            <i class="ph ph-arrow-clockwise"></i> Загрузить сейчас
+          </button>
+        </div>`;
       container.innerHTML = filterBar + renderGuidedState({
         eyebrow: "Упоминания",
         title: "Упоминаний пока нет",
         body: "Здесь появятся упоминания вашего бренда в социальных сетях. Убедитесь что аккаунты для мониторинга настроены.",
         actionLabel: "Настроить мониторинг",
         action: "openSettingsSection",
-      });
+      }) + emptyPollBtn;
       return;
     }
 
@@ -145,7 +151,14 @@ export function createMentionsModule(deps) {
       </div>`;
     }).join("");
 
-    container.innerHTML = summaryRow + filterBar + `<div class="mention-list">${cards}</div>`;
+    const pollBtn = `
+      <div style="margin-bottom:12px">
+        <button class="secondary-button compact" data-action="pollMentionsNow">
+          <i class="ph ph-arrow-clockwise"></i> Загрузить сейчас
+        </button>
+      </div>`;
+
+    container.innerHTML = summaryRow + filterBar + pollBtn + `<div class="mention-list">${cards}</div>`;
   }
 
   // ── Detail view ────────────────────────────────────────────────────────────
@@ -306,6 +319,21 @@ export function createMentionsModule(deps) {
     }
   }
 
+  // ── Poll now ───────────────────────────────────────────────────────────────
+
+  async function pollMentionsNow(btn) {
+    try {
+      await withButtonFeedback(btn, "Загрузка…", async () => {
+        const data = await fetchJson("/api/mentions/poll-threads", { method: "POST" });
+        const count = data.new_count ?? data.count ?? 0;
+        showUiNotice(count > 0 ? `Загружено ${count} новых упоминаний` : "Новых упоминаний нет", count > 0 ? "success" : "info");
+        await loadMentions();
+      });
+    } catch (_e) {
+      // withButtonFeedback already showed error via showUiNotice
+    }
+  }
+
   // ── Filter bridge ──────────────────────────────────────────────────────────
 
   function setMentionsFilter(key, value) {
@@ -322,5 +350,6 @@ export function createMentionsModule(deps) {
     publishReply,
     ignoreMentionAction,
     setMentionsFilter,
+    pollMentionsNow,
   };
 }

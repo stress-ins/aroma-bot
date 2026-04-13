@@ -207,6 +207,8 @@ body[data-theme] .reels-overview-card {
   display: grid;
   gap: 8px;
   order: 1;
+  overflow: hidden;
+  border-radius: var(--radius-md);
 }
 
 .reference-hero-media::after {
@@ -215,10 +217,10 @@ body[data-theme] .reels-overview-card {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 50%;
+  height: 60%;
   background: linear-gradient(to bottom, transparent, var(--bg));
   pointer-events: none;
-  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  z-index: 1;
 }
 
 .aroma-image {

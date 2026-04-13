@@ -304,6 +304,15 @@
 .team-avatar-preview { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border); }
 #teamContent > .settings-section + .settings-section { margin-top: 16px; }
 
+/* ── Domain selector chips ── */
+.team-domain-section { margin: 12px 0; padding: 12px 14px; background: var(--surface-2); border-radius: var(--radius-md); }
+.team-domain-section h4 { font-size: 13px; font-weight: 600; color: var(--text); margin: 0 0 4px; }
+.team-domain-section .settings-hint { margin: 0 0 10px; }
+.domain-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.domain-chips .chip-selectable { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 99px; border: 1px solid var(--border); background: var(--surface-2); font-size: 13px; font-weight: 500; color: var(--muted); cursor: pointer; transition: 0.15s; }
+.domain-chips .chip-selectable.is-selected { background: var(--brand-bg); border-color: var(--brand-border); color: var(--brand); font-weight: 600; }
+.domain-chips .chip-selectable i { font-size: 16px; }
+
 /* ── Avatar cropper modal ── */
 .avatar-cropper-backdrop {
   position: fixed; inset: 0; z-index: var(--z-max, 9999);

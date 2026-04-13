@@ -18,6 +18,10 @@ _FORBIDDEN_WORDS = [
     "терапия рака",
     "лечение диабета",
     "лечение covid",
+    "вправляет позвонки",
+    "лечит грыжу",
+    "устраняет сколиоз",
+    "лечит артрит",
 ]
 
 _DOCTOR_SYSTEM_PROMPT = """Ты — врач и медицинский редактор. Проверяй карточку ароматерапии.
@@ -31,7 +35,10 @@ _DOCTOR_SYSTEM_PROMPT = """Ты — врач и медицинский реда�
 Если данных недостаточно — {"passed": true, "score": 0.8, "issues": [], "corrections": {}}.
 """
 
-_CATEGORIES_REQUIRING_PRECAUTIONS = {"aroma", "blend", "symptom"}
+_CATEGORIES_REQUIRING_PRECAUTIONS = {
+    "aroma", "blend", "symptom",
+    "massage", "osteo", "biodynamics", "sound",
+}
 
 _BLEND_REVIEW_PROMPT = """\
 Ты — врач-консультант. Оцени безопасность смеси эфирных масел.
@@ -113,9 +120,9 @@ def _rule_based_check(card: dict[str, Any]) -> tuple[float, list[str], bool]:
             issues.append(f"CRITICAL: forbidden medical claim found: '{word}'")
             score -= 0.4
 
-    # Check if aroma card is missing precautions/contraindications
+    # Check if card is missing precautions/contraindications
     category = str(card.get("category", "") or "").lower()
-    if category == "aroma":
+    if category in _CATEGORIES_REQUIRING_PRECAUTIONS:
         has_precautions = bool(card.get("precautions") or card.get("contraindications"))
         if not has_precautions:
             needs_llm = True  # Ask LLM to evaluate if precautions are needed

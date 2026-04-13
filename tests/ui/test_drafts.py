@@ -3,15 +3,22 @@ from __future__ import annotations
 
 import json
 
-from .helpers import WCAG_AA_MIN, contrast_ratio, parse_rgb
+from .helpers import (
+    WCAG_AA_MIN,
+    click_bottom_tab,
+    click_draft_card,
+    contrast_ratio,
+    nav_back_to_list,
+    parse_rgb,
+    wait_for_detail_panel,
+)
 
 
 def test_filter_panel_layout_no_overflow(page):
     """Filter selects stay within viewport and labels stack vertically."""
-    page.locator("#btnTabInspiration").click()
-    page.wait_for_timeout(100)
+    click_bottom_tab(page, "#btnTabInspiration")
     page.locator("#filtersToggleBtn").click()
-    page.wait_for_timeout(100)
+    page.locator("#filtersBody").wait_for(state="visible", timeout=5000)
 
     metrics = page.evaluate(
         """
@@ -66,11 +73,10 @@ def test_filter_panel_layout_no_overflow(page):
 
 
 def test_draft_search_empty_state_offers_guidance(page):
-    page.locator("#btnTabInspiration").click()
-    page.wait_for_timeout(100)
+    click_bottom_tab(page, "#btnTabInspiration")
     # Expand collapsed filters to access the search field
     page.locator("#filtersToggleBtn").click()
-    page.wait_for_timeout(100)
+    page.locator("#filtersBody").wait_for(state="visible", timeout=5000)
     page.locator("#queryFilter").fill("совсем-нет-такой-темы")
     # Search has a 300ms debounce — wait for API round-trip too
     page.locator("#emptyState .guided-state").wait_for(state="visible", timeout=8000)
@@ -120,33 +126,31 @@ def test_content_review_detail_supports_save_polish_and_feedback(page):
         route.continue_()
 
     page.route("**/*", handle_route)
-    page.locator("#btnTabInspiration").click()
-    page.wait_for_timeout(100)
-    page.get_by_text("Как мягко выйти из рабочего напряжения").first.click()
-    page.wait_for_timeout(100)
+    click_bottom_tab(page, "#btnTabInspiration")
+    click_draft_card(page, "Как мягко выйти из рабочего напряжения")
 
     page.locator("#contentCaptionField").fill("Обновленный текст для Threads.")
     page.locator("#contentEditorNotesField").fill("Сделать подачу мягче.")
     page.get_by_role("button", name="Сохранить версию").click()
-    page.wait_for_timeout(100)
+    page.wait_for_timeout(500)  # wait for save response
 
     assert page.locator("#contentEditorNotesField").input_value() == "Сделать подачу мягче."
     assert page.get_by_text("Откликнулось").count() >= 1
 
     page.get_by_role("button", name="Уточнить через AI").click()
-    page.wait_for_timeout(100)
+    page.locator("#contentCaptionField").wait_for(state="visible", timeout=5000)
+    # Content is filled asynchronously
+    page.wait_for_timeout(500)
     assert page.locator("#contentCaptionField").input_value() == "Отполированный текст для Threads."
 
     page.get_by_role("button", name="Не дало результата").click()
-    page.wait_for_timeout(100)
+    page.wait_for_timeout(500)  # feedback state update
     assert page.get_by_text("Не дало результата").count() >= 1
 
 
 def test_content_review_detail_highlights_editor_focus_and_summary(page):
-    page.locator("#btnTabInspiration").click()
-    page.wait_for_timeout(100)
-    page.get_by_text("Как мягко выйти из рабочего напряжения").first.click()
-    page.wait_for_timeout(100)
+    click_bottom_tab(page, "#btnTabInspiration")
+    click_draft_card(page, "Как мягко выйти из рабочего напряжения")
 
     metrics = page.evaluate(
         """
@@ -233,12 +237,11 @@ def test_create_carousel_routes_into_draft_detail(page):
         route.continue_()
 
     page.route("**/*", handle_route)
-    page.locator("#btnTabCreate").click()
-    page.wait_for_timeout(100)
+    click_bottom_tab(page, "#btnTabCreate")
     page.get_by_role("heading", name="Карусель").click()
     page.locator("textarea[name='topic']").fill("Тестовая карусель")
     page.get_by_role("button", name="Собрать карусель").click()
-    page.wait_for_timeout(100)
+    page.locator(".detail-title").wait_for(state="visible", timeout=10000)
 
     assert page.locator(".detail-title").inner_text().strip() == "Тестовая карусель"
     assert page.locator(".slide").count() == 2
@@ -247,10 +250,8 @@ def test_create_carousel_routes_into_draft_detail(page):
 
 def test_themed_draft_detail_renders(themed_page):
     """Draft detail view renders with readable text in both themes."""
-    themed_page.locator("#btnTabInspiration").click()
-    themed_page.wait_for_timeout(100)
-    themed_page.get_by_text("Как мягко выйти из рабочего напряжения").first.click()
-    themed_page.wait_for_timeout(100)
+    click_bottom_tab(themed_page, "#btnTabInspiration")
+    click_draft_card(themed_page, "Как мягко выйти из рабочего напряжения")
 
     title = themed_page.locator(".detail-title").inner_text().strip()
     assert "Как мягко выйти" in title

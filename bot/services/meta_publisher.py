@@ -56,6 +56,11 @@ async def publish_to_threads(
         raise RuntimeError("threads_token_not_configured")
     access_token, user_id = creds
 
+    # Threads API limit: 500 characters max for text
+    THREADS_MAX_CHARS = 500
+    if len(text) > THREADS_MAX_CHARS:
+        text = text[: THREADS_MAX_CHARS - 1] + "…"
+
     async with httpx.AsyncClient(timeout=60) as client:
         # Step 1: Create media container
         container_params: dict[str, Any] = {

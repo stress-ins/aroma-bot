@@ -24,6 +24,17 @@
 .onboarding-dot.active { background: var(--brand); }
 .onboarding-actions { display: flex; flex-direction: column; gap: var(--space-2); width: 100%; margin-top: auto; }
 .onboarding-actions .primary-button { width: 100%; justify-content: center; }
+.onboarding-actions .ghost-button,
+.walkthrough-tooltip-actions .ghost-button {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  background: none;
+  border: none;
+  padding: 8px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
 
 /* ── Help FAB ───────────────────────────────────────────────────────────── */
 .help-fab {
@@ -99,6 +110,7 @@
 .search-type-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 99px; background: var(--surface-2); font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--hint); margin-bottom: 4px; }
 .search-results-header { font-size: 12px; color: var(--hint); margin-bottom: 8px; padding: 0 2px; }
 .search-group-header { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 16px 0 6px; padding: 0 2px; }
+#referenceListContainer { gap: 12px; }
 .search-empty { text-align: center; padding: 24px 12px; color: var(--muted); font-size: 13px; }
 .search-empty .blend-constructor-cta { margin-top: 12px; }
 .search-symptom-tag { display: block; margin-top: 4px; padding: 2px 0; font-size: 11px; font-weight: 500; color: var(--brand); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -507,7 +519,7 @@
 /* ── Walkthrough (interactive spotlight tour) ─────────────────────────── */
 .walkthrough-overlay {
   position: fixed; inset: 0; z-index: 9600;
-  background: rgba(0, 0, 0, 0.65);
+  background: rgba(0, 0, 0, 0.85);
   animation: walkthroughFadeIn 0.25s ease;
 }
 .walkthrough-overlay.is-leaving { animation: walkthroughFadeOut 0.3s ease forwards; }
@@ -517,7 +529,7 @@
 .walkthrough-spotlight {
   position: fixed;
   border-radius: var(--radius-md);
-  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.65);
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.85);
   z-index: 9601;
   pointer-events: none;
   transition: top 0.3s ease, left 0.3s ease, width 0.3s ease, height 0.3s ease;

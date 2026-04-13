@@ -56,11 +56,11 @@
             <button id="modeHandbook" class="mode-button" type="button">Справочник</button>
           </div>
         </div>
-        <div id="contentSubTabs" class="content-sub-tabs"></div>
+        <div class="content-sub-tabs-wrap"><div id="contentSubTabs" class="content-sub-tabs"></div></div>
       </section>
 
       <section class="toolbar">
-        <div class="tabs-wrapper">
+        <div class="tabs-wrapper tabs-scroll-wrap">
           <div class="tabs" id="tabsContainer" role="tablist">
             <!-- Tabs injected by JS based on mode -->
           </div>
@@ -83,52 +83,72 @@
           <div class="panel-header">
             <div class="panel-filter-row">
               <div class="filters-collapse" id="filtersContainer">
-                <button class="filters-toggle filters-toggle--compact" id="filtersToggleBtn" type="button">
-                  <span class="ft-left"><i class="ph ph-sliders-horizontal" style="font-size:14px"></i> <span id="filtersToggleLabel">Фильтры</span></span>
-                  <span id="draftCount" class="meta ft-count"></span>
-                  <i class="ph ph-caret-down filters-toggle-icon"></i>
-                </button>
-                <div class="toolbar-inner-filters filters-body" id="filtersBody" hidden>
-                  <!-- Hidden selects (preserve JS filter logic) -->
-                  <select id="kindFilter" hidden>
-                    <option value="">Все</option>
-                    <option value="threads">Threads</option>
-                    <option value="instagram">Instagram</option>
-                    <option value="telegram">Telegram</option>
-                    <option value="reels">Reels</option>
-                    <option value="carousel">Карусель</option>
-                  </select>
-                  <select id="statusFilter" hidden>
-                    <option value="">Все</option>
-                    <option value="draft">Черновик</option>
-                    <option value="in_review">На согласовании</option>
-                    <option value="approved">Согласовано</option>
-                    <option value="rejected">Не согласовано</option>
-                    <option value="published">Опубликовано</option>
-                  </select>
-                  <select id="feedbackFilter" hidden>
-                    <option value="">Все</option>
-                    <option value="worked">Сработало</option>
-                    <option value="missed">Не сработало</option>
-                  </select>
-                  <!-- Chip-based filter rows -->
-                  <div class="filter-chips-row" id="kindChipsRow">
-                    <button class="filter-chip active" data-filter="kind" data-value="">Все типы</button>
-                    <button class="filter-chip" data-filter="kind" data-value="threads">Threads</button>
-                    <button class="filter-chip" data-filter="kind" data-value="instagram">Instagram</button>
-                    <button class="filter-chip" data-filter="kind" data-value="reels">Reels</button>
-                    <button class="filter-chip" data-filter="kind" data-value="carousel">Карусель</button>
+                <!-- Hidden selects (preserve JS filter logic) -->
+                <select id="kindFilter" hidden>
+                  <option value="">Все</option>
+                  <option value="threads">Threads</option>
+                  <option value="threads_series">Серия</option>
+                  <option value="instagram">Instagram</option>
+                  <option value="telegram">Telegram</option>
+                  <option value="reels">Reels</option>
+                  <option value="carousel">Карусель</option>
+                  <option value="youtube_video">YouTube</option>
+                </select>
+                <select id="statusFilter" hidden>
+                  <option value="">Все</option>
+                  <option value="draft">Черновик</option>
+                  <option value="in_review">На согласовании</option>
+                  <option value="approved">Согласовано</option>
+                  <option value="rejected">Не согласовано</option>
+                  <option value="published">Опубликовано</option>
+                </select>
+                <select id="feedbackFilter" hidden>
+                  <option value="">Все</option>
+                  <option value="worked">Сработало</option>
+                  <option value="missed">Не сработало</option>
+                </select>
+                <!-- Collapsed filter bar -->
+                <div class="filter-collapsed" id="filtersToggleBtn">
+                  <div class="fc-left">
+                    <i class="ph ph-sliders-horizontal" style="font-size:14px"></i>
+                    <div class="fc-active-pills" id="fcActivePills">
+                      <span class="fchip fchip-active-all" id="fcKindLabel">Все типы</span>
+                      <span class="fchip fchip-status-all" id="fcStatusLabel">Все</span>
+                    </div>
                   </div>
-                  <div class="filter-chips-row" id="statusChipsRow">
-                    <button class="filter-chip active" data-filter="status" data-value="">Все</button>
-                    <button class="filter-chip" data-filter="status" data-value="approved">Согласовано</button>
-                    <button class="filter-chip" data-filter="status" data-value="draft">Черновик</button>
-                    <button class="filter-chip" data-filter="status" data-value="published">Опубликовано</button>
+                  <div class="fc-right">
+                    <span class="fc-count" id="draftCount"></span>
+                    <i class="ph ph-caret-down fc-chevron"></i>
                   </div>
-                  <!-- Search box -->
-                  <div class="search-box">
-                    <i class="ph ph-magnifying-glass" style="font-size:14px;color:var(--hint)"></i>
-                    <input id="queryFilter" type="search" placeholder="Тема, формат, источник..." class="search-input" />
+                </div>
+                <!-- Expanded filter panel -->
+                <div class="filter-expanded filters-body" id="filtersBody" hidden>
+                  <div class="filter-header" id="filtersCloseBtn">
+                    <div class="fh-left"><i class="ph ph-sliders-horizontal" style="font-size:14px"></i> Фильтры</div>
+                    <div class="fh-right">
+                      <span class="fh-count" id="fhCount"></span>
+                      <i class="ph ph-caret-up fc-chevron"></i>
+                    </div>
+                  </div>
+                  <div class="filter-section-label">Тип контента</div>
+                  <div class="pill-row filter-chips-row" id="kindChipsRow">
+                    <button class="fchip fchip-active-all active" data-filter="kind" data-value="">Все</button>
+                    <button class="fchip fchip-type-threads" data-filter="kind" data-value="threads"><i class="ph ph-at" style="font-size:11px"></i> Тредс</button>
+                    <button class="fchip fchip-type-reels" data-filter="kind" data-value="reels"><i class="ph ph-film-slate" style="font-size:11px"></i> Рилс</button>
+                    <button class="fchip fchip-type-carousel" data-filter="kind" data-value="carousel"><i class="ph ph-stack" style="font-size:11px"></i> Карусель</button>
+                    <button class="fchip fchip-type-youtube" data-filter="kind" data-value="youtube_video"><i class="ph ph-youtube-logo" style="font-size:11px"></i> YouTube</button>
+                    <button class="fchip fchip-type-instagram" data-filter="kind" data-value="instagram"><i class="ph ph-instagram-logo" style="font-size:11px"></i> Instagram</button>
+                  </div>
+                  <div class="filter-section-label">Статус</div>
+                  <div class="pill-row filter-chips-row" id="statusChipsRow">
+                    <button class="fchip fchip-status-all active" data-filter="status" data-value="">Все</button>
+                    <button class="fchip fchip-status-approved" data-filter="status" data-value="approved">● Согласовано</button>
+                    <button class="fchip fchip-status-draft" data-filter="status" data-value="draft">Черновик</button>
+                    <button class="fchip fchip-status-published" data-filter="status" data-value="published">Опубликовано</button>
+                  </div>
+                  <div class="filter-search">
+                    <i class="ph ph-magnifying-glass" style="font-size:13px;color:var(--hint)"></i>
+                    <input id="queryFilter" type="search" placeholder="Тема, формат, источник..." class="filter-search-input" />
                   </div>
                 </div>
               </div>

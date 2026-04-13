@@ -1910,7 +1910,7 @@ class TestMiniAppRussianLocale:
         assert 'bindCardKeyboardActivation();' in _miniapp_js_bundle()
         assert 'role=\"button\" tabindex=\"0\" aria-label=' in core_js
         assert 'class="create-card${_cc("content")} interactive-card"' in create_js
-        assert 'class=\"draft-card overview-card${d.draft_id === state.draftId ? \" active\" : \"\"}${d.generation_pending ? \" is-pending\" : \"\"} interactive-card\"' in drafts_js
+        assert 'class="draft-card${d.draft_id === state.draftId ? " active" : ""}${d.generation_pending ? " is-pending" : ""} interactive-card"' in drafts_js
         assert ".interactive-card:focus-visible" in app_css
 
     def test_create_flow_reopens_full_draft_and_dismisses_keyboard(self):

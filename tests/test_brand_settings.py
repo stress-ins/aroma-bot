@@ -118,3 +118,32 @@ async def test_per_team_brand_settings(in_memory_db):
     # Global unchanged
     global_check = await bs_mod.get_brand_settings(team_id=None)
     assert global_check.brand_voice == bs_mod._DEFAULT_BRAND_VOICE
+
+
+# ------------------------------------------------------------------
+# default_domain
+# ------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_default_domain_has_default_value(in_memory_db):
+    row = await bs_mod.get_brand_settings()
+    assert row.default_domain == "aroma"
+
+
+@pytest.mark.asyncio
+async def test_update_default_domain(in_memory_db):
+    await bs_mod.get_brand_settings()
+    updated = await bs_mod.update_brand_settings(default_domain="body")
+    assert updated.default_domain == "body"
+
+    # Verify persistence
+    row = await bs_mod.get_brand_settings()
+    assert row.default_domain == "body"
+
+
+@pytest.mark.asyncio
+async def test_update_default_domain_sound(in_memory_db):
+    await bs_mod.get_brand_settings()
+    updated = await bs_mod.update_brand_settings(default_domain="sound")
+    assert updated.default_domain == "sound"

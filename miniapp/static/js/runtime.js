@@ -157,29 +157,39 @@ export function createRuntimeModule(deps) {
         if (!select) return;
         select.value = filterValue;
         select.dispatchEvent(new Event("change"));
-        // Update active state on chips in same row
         chip.parentElement.querySelectorAll("[data-filter]").forEach((c) => c.classList.remove("active"));
         chip.classList.add("active");
+        _updateFiltersToggleLabel();
       });
     });
 
-    // Filters collapse toggle
+    // Filters collapse/expand toggle
     const filtersToggleBtn = document.getElementById("filtersToggleBtn");
+    const filtersCloseBtn = document.getElementById("filtersCloseBtn");
     const filtersBody = document.getElementById("filtersBody");
     const _updateFiltersToggleLabel = () => {
-      const label = document.getElementById("filtersToggleLabel");
-      if (!label) return;
-      const active = [elements.kindFilter, elements.statusFilter, elements.feedbackFilter]
-        .filter((f) => f && f.value).length + (elements.queryFilter?.value ? 1 : 0);
-      label.textContent = active > 0 ? `Фильтры (${active})` : "Фильтры";
+      const kindLabel = document.getElementById("fcKindLabel");
+      const statusLabel = document.getElementById("fcStatusLabel");
+      if (kindLabel) {
+        const kv = elements.kindFilter?.value;
+        const activeChip = document.querySelector(`#kindChipsRow [data-value="${kv || ""}"]`);
+        kindLabel.textContent = activeChip?.textContent?.trim() || "Все типы";
+        kindLabel.className = "fchip " + (kv ? `fchip-type-${kv} active` : "fchip-active-all active");
+      }
+      if (statusLabel) {
+        const sv = elements.statusFilter?.value;
+        const activeChip = document.querySelector(`#statusChipsRow [data-value="${sv || ""}"]`);
+        statusLabel.textContent = activeChip?.textContent?.trim() || "Все";
+        statusLabel.className = "fchip " + (sv ? `fchip-status-${sv} active` : "fchip-status-all active");
+      }
     };
-    if (filtersToggleBtn && filtersBody) {
-      filtersToggleBtn.addEventListener("click", () => {
-        const isHidden = filtersBody.hidden;
-        filtersBody.hidden = !isHidden;
-        filtersToggleBtn.classList.toggle("is-open", isHidden);
-      });
-    }
+    const _toggleFilters = () => {
+      const isHidden = filtersBody.hidden;
+      filtersBody.hidden = !isHidden;
+      if (filtersToggleBtn) filtersToggleBtn.hidden = !filtersBody.hidden;
+    };
+    if (filtersToggleBtn) filtersToggleBtn.addEventListener("click", _toggleFilters);
+    if (filtersCloseBtn) filtersCloseBtn.addEventListener("click", _toggleFilters);
 
     elements.queryFilter.addEventListener("input", () => {
       _updateFiltersToggleLabel();

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Path
 
 import logging
 
@@ -13,8 +13,8 @@ from bot.services.miniapp_presenter import serialize_draft
 from bot.services.miniapp_reels import serialize_reels_draft
 from config import settings
 from ..auth import TeamContext, _check_content_limit, _require_auth, _resolve_team_context, require_tier
-from ..generation import complete_carousel_generation, complete_content_generation, complete_reels_lightweight_generation, complete_reels_v2_generation, complete_series_generation, complete_threads_series_generation, complete_youtube_generation, complete_youtube_generate_thumbnail, complete_youtube_generate_metadata, complete_youtube_regen_script
-from ..models import ContentSeriesCreateRequest, CreateCarouselPayload, CreateContentPayload, CreateReelsV2Payload, CreateYouTubePayload, YouTubeThumbnailPayload, SuggestTopicsRequest, ThreadsSeriesCreateRequest
+from ..generation import complete_carousel_generation, complete_content_generation, complete_reels_lightweight_generation, complete_reels_v2_generation, complete_series_generation, complete_threads_series_generation, complete_youtube_generation, complete_youtube_generate_thumbnail, complete_youtube_generate_metadata, complete_youtube_regen_script, set_generation_state
+from ..models import ContentSeriesCreateRequest, CreateCarouselPayload, CreateContentPayload, CreateReelsV2Payload, CreateYouTubePayload, YouTubeThumbnailPayload, YouTubeRegenScriptPayload, YouTubeSectionPatchPayload, SuggestTopicsRequest, ThreadsSeriesCreateRequest
 
 router = APIRouter()
 
@@ -162,7 +162,8 @@ async def generate_content(
         team_id=ctx.team_id,
         created_by=ctx.telegram_id,
     )
-    background_tasks.add_task(complete_content_generation, saved.draft_id, enriched_topic, goal_key, format_key, bc)
+    practice_focus = getattr(payload, "practice_focus", "aroma") or "aroma"
+    background_tasks.add_task(complete_content_generation, saved.draft_id, enriched_topic, goal_key, format_key, bc, practice_focus=practice_focus)
     return await serialize_draft(saved)
 
 
@@ -405,7 +406,8 @@ async def generate_youtube(
 @router.post("/api/youtube/{draft_id}/regen-script", dependencies=[Depends(require_tier("expert"))])
 async def youtube_regen_script(
     draft_id: str,
-    background_tasks: BackgroundTasks,
+    payload: YouTubeRegenScriptPayload = YouTubeRegenScriptPayload(),
+    background_tasks: BackgroundTasks = None,
     _auth=Depends(_require_auth),
 ):
     from bot.services.drafts_store import get_draft as _get
@@ -413,7 +415,14 @@ async def youtube_regen_script(
     if not draft or draft.kind != "youtube_video":
         raise HTTPException(status_code=404, detail="draft_not_found")
 
-    background_tasks.add_task(complete_youtube_regen_script, draft_id)
+    await set_generation_state(
+        draft_id, pending=True, stage="script",
+        message="Перегенерирую сценарий YouTube-видео.",
+    )
+    background_tasks.add_task(
+        complete_youtube_regen_script, draft_id,
+        revision_note=payload.revision_note,
+    )
     return {"ok": True, "draft_id": draft_id}
 
 
@@ -429,6 +438,10 @@ async def youtube_thumbnail(
     if not draft or draft.kind != "youtube_video":
         raise HTTPException(status_code=404, detail="draft_not_found")
 
+    await set_generation_state(
+        draft_id, pending=True, stage="thumbnail",
+        message="Генерирую обложку видео.",
+    )
     background_tasks.add_task(
         complete_youtube_generate_thumbnail,
         draft_id,
@@ -449,5 +462,47 @@ async def youtube_metadata(
     if not draft or draft.kind != "youtube_video":
         raise HTTPException(status_code=404, detail="draft_not_found")
 
+    await set_generation_state(
+        draft_id, pending=True, stage="metadata",
+        message="Генерирую метаданные YouTube.",
+    )
     background_tasks.add_task(complete_youtube_generate_metadata, draft_id)
     return {"ok": True, "draft_id": draft_id}
+
+
+@router.patch("/api/youtube/{draft_id}/section/{index}", dependencies=[Depends(require_tier("expert"))])
+async def youtube_patch_section(
+    draft_id: str,
+    index: int = Path(..., ge=0, le=50),
+    body: YouTubeSectionPatchPayload = ...,
+    _auth=Depends(_require_auth),
+):
+    """Edit speaker text of a single YouTube script section."""
+    from bot.services.drafts_store import get_draft as _get, update_draft
+    draft = await _get(draft_id)
+    if not draft or draft.kind != "youtube_video":
+        raise HTTPException(status_code=404, detail="draft_not_found")
+
+    payload = dict(draft.payload or {})
+    sections = payload.get("sections", [])
+    if index >= len(sections):
+        raise HTTPException(status_code=400, detail="invalid_section_index")
+
+    section = dict(sections[index])
+
+    # Save current version before editing
+    if section.get("speaker_text") and body.speaker_text is not None:
+        from datetime import datetime, timezone
+        versions = section.get("versions", [])
+        versions.append({
+            "text": section["speaker_text"],
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        })
+        section["versions"] = versions[-10:]
+
+    section["speaker_text"] = body.speaker_text
+    sections = list(sections)
+    sections[index] = section
+    payload["sections"] = sections
+    await update_draft(draft_id, payload=payload)
+    return {"ok": True, "section_index": index}

@@ -105,16 +105,16 @@ async def test_rate_limit_default_returns_429(client):
 
 @pytest.mark.asyncio
 async def test_rate_limit_generation_returns_429(client):
-    """Generation endpoints have a stricter limit (10/min)."""
+    """Generation endpoints have a stricter limit (20/min)."""
     headers = {"x-telegram-init-data": _make_init_data(99002)}
-    for i in range(10):
+    for i in range(20):
         resp = await client.post(
             "/api/generate/content", headers=headers,
             json={"topic": "test", "format": "carousel"},
         )
         assert resp.status_code != 429, f"Got 429 on request #{i + 1}"
 
-    # 11th should be rate-limited
+    # 21st should be rate-limited
     resp = await client.post(
         "/api/generate/content", headers=headers,
         json={"topic": "test", "format": "carousel"},
@@ -142,7 +142,7 @@ async def test_rate_limit_per_user_isolation(client):
     headers_b = {"x-telegram-init-data": _make_init_data(99005)}
 
     # Exhaust user A's generation limit
-    for _ in range(10):
+    for _ in range(20):
         await client.post("/api/generate/content", headers=headers_a, json={"topic": "t", "format": "carousel"})
 
     # User A is limited
@@ -155,13 +155,29 @@ async def test_rate_limit_per_user_isolation(client):
 
 
 @pytest.mark.asyncio
+async def test_rate_limit_admin_exempt(client, monkeypatch):
+    """Allowed team members are exempt from rate limiting."""
+    admin_uid = 88888
+    monkeypatch.setenv("ADMIN_TELEGRAM_CHAT_ID", str(admin_uid))
+    # Re-initialize exempt IDs
+    from miniapp.api import rate_limit as rl_mod
+    rl_mod._EXEMPT_IDS = {f"tg:{admin_uid}"}
+
+    headers = {"x-telegram-init-data": _make_init_data(admin_uid)}
+    # Send more than the generation limit — admin should never get 429
+    for _ in range(25):
+        resp = await client.post("/api/generate/content", headers=headers, json={"topic": "t", "format": "carousel"})
+        assert resp.status_code != 429
+
+
+@pytest.mark.asyncio
 async def test_rate_limit_disabled_env(client, monkeypatch):
     """When AROMA_RATE_LIMIT_DISABLED=1, no rate limiting occurs."""
     monkeypatch.setenv("AROMA_RATE_LIMIT_DISABLED", "1")
     headers = {"x-telegram-init-data": _make_init_data(99006)}
 
     # Send more than the generation limit
-    for _ in range(15):
+    for _ in range(25):
         resp = await client.post("/api/generate/content", headers=headers, json={"topic": "t", "format": "carousel"})
         assert resp.status_code != 429
 
@@ -179,7 +195,7 @@ async def test_429_response_format(client):
     """Verify 429 body matches the format expected by core.js fetchJson."""
     headers = {"x-telegram-init-data": _make_init_data(99007)}
     # Exhaust generation limit quickly
-    for _ in range(10):
+    for _ in range(20):
         await client.post("/api/generate/content", headers=headers, json={"topic": "t", "format": "carousel"})
 
     resp = await client.post("/api/generate/content", headers=headers, json={"topic": "t", "format": "carousel"})

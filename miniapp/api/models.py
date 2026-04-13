@@ -77,6 +77,7 @@ class CreateContentPayload(BaseModel):
     topic: str = Field(default="")
     goal_key: str = Field(default="")
     format_key: str = Field(default="")
+    practice_focus: str = Field(default="aroma")
     blend_context: BlendContext | None = Field(default=None)
     daily_oil_context: DailyOilContext | None = Field(default=None)
 
@@ -90,6 +91,7 @@ class CreateReelsV2Payload(BaseModel):
     goal: str = Field(default="trust")
     emotion: str = Field(default="calm")
     lightweight: bool = Field(default=False)
+    practice_focus: str = Field(default="aroma")
     blend_context: BlendContext | None = Field(default=None)
     daily_oil_context: DailyOilContext | None = Field(default=None)
 
@@ -121,6 +123,7 @@ class CreateYouTubePayload(BaseModel):
     goal: str = Field(default="trust")
     emotion: str = Field(default="calm")
     duration_target: int = Field(default=10)  # minutes
+    practice_focus: str = Field(default="aroma")
     item_count: int = Field(default=7)  # for listicle
     question_count: int = Field(default=6)  # for podcast
     guest_description: str = Field(default="")  # for podcast
@@ -138,6 +141,7 @@ class YouTubeMetadataPayload(BaseModel):
 
 class CreateCarouselPayload(BaseModel):
     topic: str = Field(default="")
+    practice_focus: str = Field(default="aroma")
     blend_context: BlendContext | None = Field(default=None)
     daily_oil_context: DailyOilContext | None = Field(default=None)
     layout_style: str = Field(default="overlay")  # "overlay" | "editorial"
@@ -171,13 +175,14 @@ class ThreadsSeriesCreateRequest(BaseModel):
     topic: str = Field(default="")
     goal_key: str = Field(default="trust")
     emotion: str = Field(default="")
+    practice_focus: str = Field(default="aroma")
     blend_context: BlendContext | None = Field(default=None)
     daily_oil_context: DailyOilContext | None = Field(default=None)
 
 
 class ThreadsSlotPatchRequest(BaseModel):
     slot: str = Field(default="")
-    text: str | None = Field(default=None)
+    text: str | None = Field(default=None, max_length=500)
     scheduled_time: str | None = Field(default=None)
 
 
@@ -317,3 +322,11 @@ class SuggestTopicsRequest(BaseModel):
 
 class ThreadActionRequest(BaseModel):
     action: str = Field(default="")
+
+
+class YouTubeRegenScriptPayload(BaseModel):
+    revision_note: str = Field(default="")
+
+
+class YouTubeSectionPatchPayload(BaseModel):
+    speaker_text: str = Field(default="")

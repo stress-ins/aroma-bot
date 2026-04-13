@@ -24,6 +24,14 @@ export function createInboxModule(deps) {
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 
+  function avatarHtml(conversationId, size, iconSize) {
+    const fallback = '<i class="ph ph-user" style="font-size:' + iconSize + 'px;color:var(--muted)"></i>';
+    if (!conversationId) return fallback;
+    const src = '/api/inbox/avatar/' + encodeURIComponent(conversationId);
+    return '<img src="' + src + '" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover" onerror="this.outerHTML=\'<i class=\\\'ph ph-user\\\' style=\\\'font-size:' + iconSize + 'px;color:var(--muted)\\\'></i>\'">';
+  }
+
+
   function formatTime(isoStr) {
     if (!isoStr) return "";
     const d = new Date(isoStr);
@@ -41,6 +49,17 @@ export function createInboxModule(deps) {
     const d = new Date(isoStr);
     if (isNaN(d.getTime())) return "";
     return d.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+  }
+
+  /** Force-focus the compose textarea — helps Telegram WebApp open keyboard */
+  function _focusComposeInput() {
+    const input = document.getElementById("inbox-reply-input");
+    if (!input) return;
+    input.focus();
+    // Scroll textarea into view so it's not hidden behind on-screen keyboard
+    setTimeout(() => {
+      input.scrollIntoView({ block: "center", behavior: "smooth" });
+    }, 300);
   }
 
   function toneLabel(tone) {
@@ -139,7 +158,7 @@ export function createInboxModule(deps) {
       return `
       <div class="inbox-card${dimClass}" data-action="openConversation" data-args='["${c.conversation_id}"]'>
         <div class="inbox-card-avatar">
-          <i class="ph ph-user" style="font-size:20px;color:var(--muted)"></i>
+          ${avatarHtml(c.conversation_id, 40, 20)}
         </div>
         <div class="inbox-card-body">
           <div class="inbox-card-header">
@@ -215,7 +234,7 @@ export function createInboxModule(deps) {
       ${renderBackButton()}
       <div class="inbox-chat-header">
         <div class="inbox-chat-avatar">
-          <i class="ph ph-user" style="font-size:18px;color:var(--muted)"></i>
+          ${avatarHtml(c.conversation_id, 36, 18)}
         </div>
         <div>
           <div class="inbox-chat-name">${escapeHtml(c.participant_name || c.participant_username || "Пользователь")}</div>
@@ -234,6 +253,8 @@ export function createInboxModule(deps) {
 
       ${aiRepliesHtml}
 
+      ${_diagnosticBannerHtml()}
+
       <div class="inbox-compose">
         <div class="inbox-compose-row">
           <textarea class="inbox-compose-input" id="inbox-reply-input" rows="2"
@@ -250,10 +271,17 @@ export function createInboxModule(deps) {
         </div>
       </div>`;
 
-    // Scroll to bottom of messages
+    // Scroll to bottom of messages and focus textarea for keyboard
     requestAnimationFrame(() => {
       const msgContainer = document.getElementById("inbox-messages-container");
       if (msgContainer) msgContainer.scrollTop = msgContainer.scrollHeight;
+
+      // Programmatic focus on textarea to help Telegram WebApp open keyboard
+      const replyInput = document.getElementById("inbox-reply-input");
+      if (replyInput) {
+        replyInput.addEventListener("touchstart", _focusComposeInput, { once: false, passive: true });
+        replyInput.addEventListener("click", _focusComposeInput, { once: false });
+      }
     });
   }
 
@@ -288,7 +316,18 @@ export function createInboxModule(deps) {
           showUiNotice("Сообщение отправлено", "success");
           renderConversationDetail();
         } else {
-          showUiNotice(`Ошибка отправки: ${data.error}`, "error");
+          const is403 = (data.error || "").includes("403");
+          showUiNotice(
+            is403
+              ? "Нет разрешения на отправку DM. Нажмите 'Проверить подключение' ниже."
+              : `Ошибка отправки: ${data.error}`,
+            "error"
+          );
+          if (is403) {
+            // Auto-run diagnostics on 403
+            state._inboxDiagnostics = null;
+            renderConversationDetail();
+          }
         }
       });
     } catch (_e) { /* handled */ }
@@ -359,6 +398,59 @@ export function createInboxModule(deps) {
     loadInbox();
   }
 
+  // ── Diagnostics ──────────────────────────────────────────────────────────
+
+  if (!state._inboxDiagnostics) state._inboxDiagnostics = null;
+
+  async function checkInboxPermissions(btn) {
+    try {
+      await withButtonFeedback(btn, "Проверяю...", async () => {
+        const data = await fetchJson("/api/inbox/diagnostics");
+        state._inboxDiagnostics = data;
+        renderConversationDetail();
+
+        if (data.can_send_dm) {
+          showUiNotice("Токен и разрешения в порядке. Отправка DM доступна.", "success");
+        } else {
+          showUiNotice(data.error || "Обнаружены проблемы с разрешениями", "error");
+        }
+      });
+    } catch (_e) { /* handled */ }
+  }
+
+  function _diagnosticBannerHtml() {
+    const diag = state._inboxDiagnostics;
+    if (!diag) {
+      return `<div class="inbox-diag-banner inbox-diag-check">
+        <i class="ph ph-info" style="font-size:14px;flex-shrink:0"></i>
+        <span>Если отправка не работает — </span>
+        <button class="secondary-button compact" data-action="checkInboxPermissions" data-args="[null]">Проверить подключение</button>
+      </div>`;
+    }
+    if (diag.can_send_dm) {
+      return `<div class="inbox-diag-banner inbox-diag-ok">
+        <i class="ph ph-check-circle" style="font-size:14px;flex-shrink:0;color:var(--success, green)"></i>
+        <span>Токен действителен${diag.page_name ? " (@" + diag.page_name + ")" : ""}. Отправка DM доступна.</span>
+      </div>`;
+    }
+    // Problem detected
+    const items = [];
+    if (!diag.token_configured) items.push("Токен Instagram не настроен");
+    else if (!diag.token_valid) items.push("Токен недействителен — переподключите Instagram");
+    if (diag.missing_permissions?.length) {
+      items.push("Отсутствуют разрешения: " + diag.missing_permissions.join(", "));
+    }
+    return `<div class="inbox-diag-banner inbox-diag-error">
+      <i class="ph ph-warning" style="font-size:14px;flex-shrink:0;color:var(--error, red)"></i>
+      <div>
+        <div style="font-weight:600;margin-bottom:2px">Отправка DM недоступна</div>
+        ${items.map(i => '<div style="font-size:12px">' + i + '</div>').join('')}
+        ${diag.error ? '<div style="font-size:11px;color:var(--muted);margin-top:4px">' + diag.error + '</div>' : ''}
+      </div>
+      <button class="secondary-button compact" data-action="checkInboxPermissions" data-args="[null]" style="margin-left:auto;flex-shrink:0">Повторить</button>
+    </div>`;
+  }
+
   return {
     loadInbox,
     renderInbox,
@@ -371,5 +463,6 @@ export function createInboxModule(deps) {
     archiveConversation,
     pollInbox,
     setInboxFilter,
+    checkInboxPermissions,
   };
 }

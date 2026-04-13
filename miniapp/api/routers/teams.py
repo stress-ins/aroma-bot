@@ -18,6 +18,7 @@ from bot.services.team_store import (
     remove_member,
     update_role,
 )
+from bot.services.brand_settings_store import get_brand_settings, update_brand_settings
 from config import settings
 from ..auth import TeamContext, TelegramUser, _resolve_telegram_id, _resolve_telegram_user, _resolve_team_context, require_team_role
 
@@ -38,7 +39,8 @@ class UpdateRolePayload(BaseModel):
 
 
 class RenameTeamPayload(BaseModel):
-    name: str
+    name: str | None = None
+    default_domain: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -109,6 +111,10 @@ async def get_team_detail(
     avatar_file = avatar_dir / f"team_{team_id}.jpg"
     has_avatar = avatar_file.exists()
 
+    # Default domain preference
+    bs = await get_brand_settings(team_id)
+    default_domain = getattr(bs, "default_domain", "aroma") or "aroma"
+
     return {
         "team_id": team.team_id,
         "name": team.name,
@@ -119,6 +125,7 @@ async def get_team_detail(
         "connected_accounts": connected_accounts,
         "has_avatar": has_avatar,
         "avatar_url": f"/api/teams/{team_id}/avatar" if has_avatar else None,
+        "default_domain": default_domain,
     }
 
 
@@ -130,17 +137,28 @@ async def rename_team(
 ):
     if ctx.team_id != team_id:
         raise HTTPException(status_code=403, detail="team_mismatch")
-    from sqlalchemy import update as sa_update
-    from db.models import TeamModel
-    from db.session import AsyncSessionLocal
 
-    async with AsyncSessionLocal() as session:
-        await session.execute(
-            sa_update(TeamModel)
-            .where(TeamModel.team_id == team_id)
-            .values(name=body.name.strip())
-        )
-        await session.commit()
+    # Update team name if provided
+    if body.name is not None:
+        from sqlalchemy import update as sa_update
+        from db.models import TeamModel
+        from db.session import AsyncSessionLocal
+
+        async with AsyncSessionLocal() as session:
+            await session.execute(
+                sa_update(TeamModel)
+                .where(TeamModel.team_id == team_id)
+                .values(name=body.name.strip())
+            )
+            await session.commit()
+
+    # Update default_domain if provided
+    if body.default_domain is not None:
+        valid_domains = ("aroma", "body", "sound")
+        if body.default_domain not in valid_domains:
+            raise HTTPException(status_code=400, detail="invalid_domain")
+        await update_brand_settings(team_id, default_domain=body.default_domain)
+
     return {"ok": True}
 
 

@@ -50,7 +50,49 @@ def test_templates_roles_correct():
 # ---------------------------------------------------------------------------
 
 
-def test_parse_outline():
+def test_parse_outline_json():
+    """Parse outline from JSON response (primary format)."""
+    from bot.agents.series_orchestrator import _parse_outline
+
+    raw = json.dumps({
+        "summary": "Серия о лаванде как универсальном масле для каждого дня",
+        "positions": [
+            {"index": 1, "title": "Знакомство с лавандой", "angle": "Первое впечатление и аромат", "role": "intro"},
+            {"index": 2, "title": "Терапевтические свойства", "angle": "Что умеет лаванда", "role": "middle"},
+            {"index": 3, "title": "Применение в жизни", "angle": "Практические рецепты", "role": "middle"},
+            {"index": 4, "title": "История лаванды", "angle": "Культурный контекст", "role": "climax"},
+            {"index": 5, "title": "Итоги серии", "angle": "Собираем вместе", "role": "cta"},
+        ],
+    })
+
+    outline = _parse_outline(raw, 5, "Лаванда")
+    assert len(outline["positions"]) == 5
+    assert outline["positions"][0]["role"] == "intro"
+    assert outline["positions"][0]["title"] == "Знакомство с лавандой"
+    assert outline["positions"][-1]["role"] == "cta"
+    assert outline["positions"][-2]["role"] == "climax"
+    assert "лаванд" in outline["summary"].lower()
+
+
+def test_parse_outline_json_in_markdown_fence():
+    """Parse outline from JSON wrapped in markdown fences."""
+    from bot.agents.series_orchestrator import _parse_outline
+
+    raw = '```json\n' + json.dumps({
+        "summary": "Серия о лаванде",
+        "positions": [
+            {"index": 1, "title": "Intro", "angle": "A", "role": "intro"},
+            {"index": 2, "title": "End", "angle": "B", "role": "cta"},
+        ],
+    }) + '\n```'
+
+    outline = _parse_outline(raw, 2, "Лаванда")
+    assert len(outline["positions"]) == 2
+    assert outline["positions"][0]["role"] == "intro"
+
+
+def test_parse_outline_legacy():
+    """Legacy text format still works as fallback."""
     from bot.agents.series_orchestrator import _parse_outline
 
     raw = """POST 1: Знакомство с лавандой
@@ -87,11 +129,13 @@ SUMMARY: Серия о лаванде как универсальном масл
 def test_parse_outline_fills_missing():
     from bot.agents.series_orchestrator import _parse_outline
 
-    raw = """POST 1: Intro
-ROLE: intro
-
-POST 2: Middle
-ROLE: middle"""
+    raw = json.dumps({
+        "summary": "Тест",
+        "positions": [
+            {"index": 1, "title": "Intro", "angle": "", "role": "intro"},
+            {"index": 2, "title": "Middle", "angle": "", "role": "middle"},
+        ],
+    })
 
     outline = _parse_outline(raw, 5, "Тест")
     assert len(outline["positions"]) == 5
@@ -104,18 +148,36 @@ def test_parse_outline_enforces_roles():
     """Even if Claude assigns wrong roles, enforce constraints."""
     from bot.agents.series_orchestrator import _parse_outline
 
-    raw = """POST 1: First
-ROLE: middle
-
-POST 2: Second
-ROLE: middle
-
-POST 3: Third
-ROLE: middle"""
+    raw = json.dumps({
+        "summary": "Тест",
+        "positions": [
+            {"index": 1, "title": "First", "angle": "", "role": "middle"},
+            {"index": 2, "title": "Second", "angle": "", "role": "middle"},
+            {"index": 3, "title": "Third", "angle": "", "role": "middle"},
+        ],
+    })
 
     outline = _parse_outline(raw, 3, "Тест")
     assert outline["positions"][0]["role"] == "intro"
     assert outline["positions"][-1]["role"] == "cta"
+
+
+def test_parse_outline_string_index():
+    """Claude sometimes returns index as string — must handle gracefully."""
+    from bot.agents.series_orchestrator import _parse_outline
+
+    raw = json.dumps({
+        "summary": "Тест",
+        "positions": [
+            {"index": "1", "title": "First", "angle": "", "role": "intro"},
+            {"index": "2", "title": "Second", "angle": "", "role": "cta"},
+        ],
+    })
+
+    outline = _parse_outline(raw, 2, "Тест")
+    assert len(outline["positions"]) == 2
+    assert outline["positions"][0]["title"] == "First"
+    assert outline["positions"][1]["title"] == "Second"
 
 
 # ---------------------------------------------------------------------------
@@ -123,7 +185,65 @@ ROLE: middle"""
 # ---------------------------------------------------------------------------
 
 
-def test_parse_posts_batch():
+def test_parse_posts_batch_json():
+    """Parse posts from JSON response (primary format)."""
+    from bot.agents.series_writer import _parse_posts_batch
+
+    raw = json.dumps([
+        {
+            "index": 1,
+            "caption": "Знаете момент, когда вечером наконец выдыхаешь?",
+            "cta": "Сохраняй, чтобы не потерять",
+            "visual_prompt": "lavender field sunset soft light",
+        },
+        {
+            "index": 2,
+            "caption": "Лаванда, это больше чем запах перед сном.",
+            "cta": "Напиши в директ",
+            "visual_prompt": "essential oil bottle botanical",
+        },
+    ])
+
+    positions = [{"index": 0}, {"index": 1}]
+    posts = _parse_posts_batch(raw, positions)
+    assert len(posts) == 2
+    assert "выдыхаешь" in posts[0]["caption"]
+    assert "Лаванда" in posts[1]["caption"]
+    assert posts[0]["visual_prompt"] == "lavender field sunset soft light"
+
+
+def test_parse_posts_batch_string_index():
+    """Claude sometimes returns index as string — must handle gracefully."""
+    from bot.agents.series_writer import _parse_posts_batch
+
+    raw = json.dumps([
+        {"index": "1", "caption": "Первый пост", "cta": "", "visual_prompt": "test"},
+        {"index": "2", "caption": "Второй пост", "cta": "", "visual_prompt": "test2"},
+    ])
+
+    positions = [{"index": 0}, {"index": 1}]
+    posts = _parse_posts_batch(raw, positions)
+    assert len(posts) == 2
+    assert "Первый" in posts[0]["caption"]
+    assert "Второй" in posts[1]["caption"]
+
+
+def test_parse_posts_batch_json_in_markdown():
+    """Parse posts from JSON wrapped in markdown fences."""
+    from bot.agents.series_writer import _parse_posts_batch
+
+    raw = '```json\n' + json.dumps([
+        {"index": 1, "caption": "Пост один", "cta": "", "visual_prompt": "test"},
+    ]) + '\n```'
+
+    positions = [{"index": 0}]
+    posts = _parse_posts_batch(raw, positions)
+    assert len(posts) == 1
+    assert "один" in posts[0]["caption"]
+
+
+def test_parse_posts_batch_legacy():
+    """Legacy ===POST N=== format still works as fallback."""
     from bot.agents.series_writer import _parse_posts_batch
 
     raw = """===POST 1===
@@ -162,7 +282,37 @@ def test_summarize_posts():
 # ---------------------------------------------------------------------------
 
 
-def test_parse_coherence():
+def test_parse_coherence_json():
+    """Parse coherence from JSON response (primary format)."""
+    from bot.agents.series_coherence import _parse_coherence
+
+    raw = json.dumps({
+        "score": 0.85,
+        "issues": ["Пост 3 повторяет идею из поста 2", "Финал слишком резкий"],
+        "suggestion": "Добавить переход между постами 2 и 3",
+    })
+
+    result = _parse_coherence(raw)
+    assert result["score"] == 0.85
+    assert len(result["issues"]) == 2
+    assert "повторяет" in result["issues"][0]
+    assert "переход" in result["suggestion"]
+
+
+def test_parse_coherence_json_perfect():
+    """Parse perfect coherence from JSON."""
+    from bot.agents.series_coherence import _parse_coherence
+
+    raw = json.dumps({"score": 1.0, "issues": [], "suggestion": ""})
+
+    result = _parse_coherence(raw)
+    assert result["score"] == 1.0
+    assert result["issues"] == []
+    assert result["suggestion"] == ""
+
+
+def test_parse_coherence_legacy():
+    """Legacy SCORE/ISSUES/SUGGESTION format still works as fallback."""
     from bot.agents.series_coherence import _parse_coherence
 
     raw = """SCORE: 0.85
@@ -176,7 +326,7 @@ SUGGESTION: Добавить переход между постами 2 и 3"""
     assert "переход" in result["suggestion"]
 
 
-def test_parse_coherence_perfect():
+def test_parse_coherence_legacy_perfect():
     from bot.agents.series_coherence import _parse_coherence
 
     raw = """SCORE: 1.0
@@ -208,7 +358,7 @@ def test_outline_prompt():
     )
     assert "Лаванда" in result
     assert "5" in result
-    assert "POST 1" in result
+    assert "JSON" in result
 
 
 def test_outline_prompt_with_rag():
@@ -246,15 +396,15 @@ def test_writer_batch_prompt():
     )
     assert "POST 1" in result
     assert "POST 2" in result
-    assert "===POST 1===" in result
+    assert "JSON" in result
 
 
 def test_coherence_prompt():
     from bot.agents.prompts.series_prompts import coherence_prompt
 
     result = coherence_prompt("Тест", "Пост 1...\nПост 2...", 2)
-    assert "SCORE:" in result
-    assert "ISSUES:" in result
+    assert "score" in result
+    assert "issues" in result
 
 
 # ---------------------------------------------------------------------------
@@ -275,38 +425,22 @@ async def test_complete_series_generation_mocked():
         payload={"generation_pending": True, "post_count": 3, "template_key": "custom"},
     )
 
-    outline_response = """POST 1: Знакомство
-ANGLE: Первое впечатление
-ROLE: intro
+    outline_response = json.dumps({
+        "summary": "Серия о лаванде",
+        "positions": [
+            {"index": 1, "title": "Знакомство", "angle": "Первое впечатление", "role": "intro"},
+            {"index": 2, "title": "Свойства", "angle": "Deep dive", "role": "middle"},
+            {"index": 3, "title": "Итог", "angle": "Завершение", "role": "cta"},
+        ],
+    })
 
-POST 2: Свойства
-ANGLE: Deep dive
-ROLE: middle
+    writer_response = json.dumps([
+        {"index": 1, "caption": "Знаете момент, когда вечером наконец выдыхаешь?", "cta": "Сохрани", "visual_prompt": "lavender field"},
+        {"index": 2, "caption": "Лаванда это больше чем запах", "cta": "Попробуй", "visual_prompt": "essential oil"},
+        {"index": 3, "caption": "За эту неделю мы узнали о лаванде всё", "cta": "Записаться", "visual_prompt": "person relaxing"},
+    ])
 
-POST 3: Итог
-ANGLE: Завершение
-ROLE: cta
-
-SUMMARY: Серия о лаванде"""
-
-    writer_response = """===POST 1===
-CAPTION: Знаете момент, когда вечером наконец выдыхаешь?
-CTA: Сохрани
-VISUAL_PROMPT: lavender field
-
-===POST 2===
-CAPTION: Лаванда это больше чем запах
-CTA: Попробуй
-VISUAL_PROMPT: essential oil
-
-===POST 3===
-CAPTION: За эту неделю мы узнали о лаванде всё
-CTA: Записаться
-VISUAL_PROMPT: person relaxing"""
-
-    coherence_response = """SCORE: 0.9
-ISSUES: нет
-SUGGESTION: нет"""
+    coherence_response = json.dumps({"score": 0.9, "issues": [], "suggestion": ""})
 
     call_count = {"n": 0}
     responses = [outline_response, writer_response, coherence_response]

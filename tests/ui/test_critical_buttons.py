@@ -8,6 +8,8 @@ Every critical section MUST have its expected action buttons.
 """
 from __future__ import annotations
 
+from .helpers import click_bottom_tab, click_content_sub_tab, click_draft_card
+
 
 # ---------------------------------------------------------------------------
 # Generic: every data-action button must have a registered handler
@@ -66,54 +68,53 @@ REFERENCE_ACTION_GROUP_LABELS = [
 
 def test_handbook_action_group_buttons_present(page):
     """Action-group buttons (blend constructor, wizard, saved) must be visible in handbook."""
-    page.locator("#btnTabHandbook").click()
-    page.wait_for_timeout(300)
+    click_bottom_tab(page, "#btnTabHandbook")
+    page.locator(".reference-card").first.wait_for(state="visible", timeout=10000)
 
     for action in REFERENCE_ACTION_GROUP_ACTIONS:
         btn = page.locator(f'[data-action="{action}"]')
-        assert btn.count() > 0, f"Action-group button data-action=\"{action}\" missing from handbook"
-        assert btn.first.is_visible(), f"Action-group button data-action=\"{action}\" is hidden"
+        assert btn.count() > 0, f'Action-group button data-action="{action}" missing from handbook'
+        assert btn.first.is_visible(), f'Action-group button data-action="{action}" is hidden'
 
     for label in REFERENCE_ACTION_GROUP_LABELS:
         assert page.locator(".action-group").get_by_text(label).is_visible(), (
-            f"Action-group label \"{label}\" not visible"
+            f'Action-group label "{label}" not visible'
         )
 
 
 def test_handbook_action_group_has_handlers(page):
     """Each action-group button must have a registered handler in window."""
-    page.locator("#btnTabHandbook").click()
-    page.wait_for_timeout(300)
+    click_bottom_tab(page, "#btnTabHandbook")
+    page.locator(".reference-card").first.wait_for(state="visible", timeout=10000)
 
     _assert_no_dead_buttons(page, context="in handbook")
 
 
 def test_handbook_action_group_survives_tab_switch(page):
     """Action-group must persist after switching tabs and returning (regression #870, #873)."""
-    page.locator("#btnTabHandbook").click()
-    page.wait_for_timeout(300)
+    click_bottom_tab(page, "#btnTabHandbook")
+    page.locator(".reference-card").first.wait_for(state="visible", timeout=10000)
 
     # Verify initial state
     for action in REFERENCE_ACTION_GROUP_ACTIONS:
         assert page.locator(f'[data-action="{action}"]').is_visible()
 
     # Switch to another section and back
-    page.locator("#btnTabInspiration").click()
-    page.wait_for_timeout(200)
-    page.locator("#btnTabHandbook").click()
-    page.wait_for_timeout(300)
+    click_bottom_tab(page, "#btnTabInspiration")
+    click_bottom_tab(page, "#btnTabHandbook")
+    page.locator(".reference-card").first.wait_for(state="visible", timeout=10000)
 
     # Buttons must still be there
     for action in REFERENCE_ACTION_GROUP_ACTIONS:
         btn = page.locator(f'[data-action="{action}"]')
-        assert btn.count() > 0, f"Action-group button \"{action}\" disappeared after tab switch"
-        assert btn.first.is_visible(), f"Action-group button \"{action}\" hidden after tab switch"
+        assert btn.count() > 0, f'Action-group button "{action}" disappeared after tab switch'
+        assert btn.first.is_visible(), f'Action-group button "{action}" hidden after tab switch'
 
 
 def test_handbook_action_group_survives_subtab_switch(page):
     """Action-group persists when switching between handbook sub-tabs."""
-    page.locator("#btnTabHandbook").click()
-    page.wait_for_timeout(300)
+    click_bottom_tab(page, "#btnTabHandbook")
+    page.locator(".reference-card").first.wait_for(state="visible", timeout=10000)
 
     for action in REFERENCE_ACTION_GROUP_ACTIONS:
         assert page.locator(f'[data-action="{action}"]').is_visible()
@@ -122,12 +123,12 @@ def test_handbook_action_group_survives_subtab_switch(page):
     theory_tab = page.get_by_role("tab", name="Теория")
     if theory_tab.count():
         theory_tab.click()
-        page.wait_for_timeout(300)
+        page.locator('[data-action="openBlendConstructor"]').wait_for(state="visible", timeout=5000)
 
         for action in REFERENCE_ACTION_GROUP_ACTIONS:
             btn = page.locator(f'[data-action="{action}"]')
-            assert btn.count() > 0, f"Action-group button \"{action}\" gone after sub-tab switch"
-            assert btn.first.is_visible(), f"Action-group button \"{action}\" hidden after sub-tab switch"
+            assert btn.count() > 0, f'Action-group button "{action}" gone after sub-tab switch'
+            assert btn.first.is_visible(), f'Action-group button "{action}" hidden after sub-tab switch'
 
 
 # ---------------------------------------------------------------------------
@@ -136,13 +137,13 @@ def test_handbook_action_group_survives_subtab_switch(page):
 
 def test_threads_detail_has_action_buttons(page):
     """Threads draft detail must show save/polish/feedback action buttons."""
-    page.locator("#btnTabInspiration").click()
-    page.wait_for_timeout(200)
+    click_bottom_tab(page, "#btnTabInspiration")
     card = page.locator(".draft-card").filter(has_text="Как мягко выйти из рабочего напряжения").first
     if not card.count():
         return
     card.click()
-    page.wait_for_timeout(400)
+    page.locator("#draftDetail").wait_for(state="visible", timeout=5000)
+    page.locator("#draftDetail .detail-title, #draftDetail .section, #draftDetail .reels-stepper").first.wait_for(state="visible", timeout=5000)
 
     # Must have at least save and polish buttons
     buttons = _assert_no_dead_buttons(page, context="in threads detail")
@@ -154,13 +155,13 @@ def test_threads_detail_has_action_buttons(page):
 
 def test_reels_detail_has_action_buttons(page):
     """Reels draft detail must show concept/scenario/caption action buttons."""
-    page.locator("#btnTabInspiration").click()
-    page.wait_for_timeout(200)
+    click_bottom_tab(page, "#btnTabInspiration")
     card = page.locator(".draft-card").filter(has_text="Вечерний ароматический ритуал").first
     if not card.count():
         return
     card.click()
-    page.wait_for_timeout(400)
+    page.locator("#draftDetail").wait_for(state="visible", timeout=5000)
+    page.locator("#draftDetail .detail-title, #draftDetail .section, #draftDetail .reels-stepper").first.wait_for(state="visible", timeout=5000)
 
     buttons = _assert_no_dead_buttons(page, context="in reels detail")
     action_names = [b["action"] for b in buttons]
@@ -173,13 +174,13 @@ def test_reels_detail_has_action_buttons(page):
 
 def test_carousel_detail_has_action_buttons(page):
     """Carousel draft detail must show export/approve/regenerate action buttons."""
-    page.locator("#btnTabInspiration").click()
-    page.wait_for_timeout(200)
+    click_bottom_tab(page, "#btnTabInspiration")
     card = page.locator(".draft-card").filter(has_text="Сенсорная карусель для вечернего ритуала").first
     if not card.count():
         return
     card.click()
-    page.wait_for_timeout(400)
+    page.locator("#draftDetail").wait_for(state="visible", timeout=5000)
+    page.locator("#draftDetail .detail-title, #draftDetail .section, #draftDetail .reels-stepper").first.wait_for(state="visible", timeout=5000)
 
     buttons = _assert_no_dead_buttons(page, context="in carousel detail")
     action_names = [b["action"] for b in buttons]
@@ -194,13 +195,13 @@ def test_carousel_detail_has_action_buttons(page):
 
 def test_threads_series_detail_has_action_buttons(page):
     """Threads series detail must have approve/publish/regenerate buttons."""
-    page.locator("#btnTabInspiration").click()
-    page.wait_for_timeout(200)
+    click_bottom_tab(page, "#btnTabInspiration")
     card = page.locator(".draft-card").filter(has_text="Восстановление энергии").first
     if not card.count():
         return
     card.click()
-    page.wait_for_timeout(400)
+    page.locator("#draftDetail").wait_for(state="visible", timeout=5000)
+    page.locator("#draftDetail .detail-title, #draftDetail .section, #draftDetail .reels-stepper").first.wait_for(state="visible", timeout=5000)
 
     buttons = _assert_no_dead_buttons(page, context="in threads series detail")
     action_names = [b["action"] for b in buttons]
@@ -219,35 +220,29 @@ def test_threads_series_detail_has_action_buttons(page):
 
 def test_no_dead_buttons_on_drafts_list(page):
     """Drafts list must not have any dead data-action buttons."""
-    page.locator("#btnTabInspiration").click()
-    page.wait_for_timeout(300)
+    click_bottom_tab(page, "#btnTabInspiration")
+    page.locator(".draft-card").first.wait_for(state="visible", timeout=5000)
     _assert_no_dead_buttons(page, context="on drafts list")
 
 
 def test_no_dead_buttons_on_plans(page):
     """Plans section must not have any dead data-action buttons."""
-    page.locator("#btnTabContent").click()
-    page.wait_for_timeout(200)
-    page.locator(".content-sub-tab", has_text="Планы").click()
-    page.wait_for_timeout(300)
+    click_bottom_tab(page, "#btnTabContent")
+    click_content_sub_tab(page, "Планы")
     _assert_no_dead_buttons(page, context="on plans")
 
 
 def test_no_dead_buttons_on_mentions(page):
     """Mentions section must not have any dead data-action buttons."""
-    page.locator("#btnTabContent").click()
-    page.wait_for_timeout(200)
-    page.locator(".content-sub-tab", has_text="Упоминания").click()
-    page.wait_for_timeout(300)
+    click_bottom_tab(page, "#btnTabContent")
+    click_content_sub_tab(page, "Упоминания")
     _assert_no_dead_buttons(page, context="on mentions list")
 
 
 def test_no_dead_buttons_on_archive(page):
     """Archive section must not have any dead data-action buttons."""
-    page.locator("#btnTabContent").click()
-    page.wait_for_timeout(200)
-    page.locator(".content-sub-tab", has_text="Архив").click()
-    page.wait_for_timeout(300)
+    click_bottom_tab(page, "#btnTabContent")
+    click_content_sub_tab(page, "Архив")
     _assert_no_dead_buttons(page, context="on archive list")
 
 
@@ -257,19 +252,19 @@ def test_no_dead_buttons_on_archive(page):
 
 def test_handbook_action_group_buttons_present_dark(dark_page):
     """Action-group buttons must be visible in dark theme."""
-    dark_page.locator("#btnTabHandbook").click()
-    dark_page.wait_for_timeout(300)
+    click_bottom_tab(dark_page, "#btnTabHandbook")
+    dark_page.locator(".reference-card").first.wait_for(state="visible", timeout=10000)
 
     for action in REFERENCE_ACTION_GROUP_ACTIONS:
         btn = dark_page.locator(f'[data-action="{action}"]')
-        assert btn.count() > 0, f"Action-group button \"{action}\" missing in dark theme"
-        assert btn.first.is_visible(), f"Action-group button \"{action}\" hidden in dark theme"
+        assert btn.count() > 0, f'Action-group button "{action}" missing in dark theme'
+        assert btn.first.is_visible(), f'Action-group button "{action}" hidden in dark theme'
 
 
 def test_no_dead_buttons_on_handbook_dark(dark_page):
     """No dead buttons in handbook in dark theme."""
-    dark_page.locator("#btnTabHandbook").click()
-    dark_page.wait_for_timeout(300)
+    click_bottom_tab(dark_page, "#btnTabHandbook")
+    dark_page.locator(".reference-card").first.wait_for(state="visible", timeout=10000)
     _assert_no_dead_buttons(dark_page, context="in handbook (dark theme)")
 
 
@@ -283,20 +278,16 @@ def test_no_data_action_console_errors_during_navigation(page):
     page.on("console", lambda msg: errors.append(msg.text) if "[data-action]" in msg.text else None)
 
     # Navigate through main sections
-    page.locator("#btnTabInspiration").click()
-    page.wait_for_timeout(200)
-    page.locator("#btnTabContent").click()
-    page.wait_for_timeout(200)
-    page.locator("#btnTabHandbook").click()
-    page.wait_for_timeout(200)
+    click_bottom_tab(page, "#btnTabInspiration")
+    click_bottom_tab(page, "#btnTabContent")
+    click_bottom_tab(page, "#btnTabHandbook")
 
     # Open a draft
-    page.locator("#btnTabInspiration").click()
-    page.wait_for_timeout(200)
+    click_bottom_tab(page, "#btnTabInspiration")
     first_card = page.locator(".draft-card").first
     if first_card.count():
         first_card.click()
-        page.wait_for_timeout(300)
+        page.locator("#draftDetail").wait_for(state="visible", timeout=5000)
 
     assert not errors, (
         f"[data-action] console errors detected:\n" + "\n".join(f"  - {e}" for e in errors)

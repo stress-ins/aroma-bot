@@ -108,6 +108,9 @@ async def get_brand_settings(team_id: str | None = None) -> BrandSettingsModel:
 
 async def update_brand_settings(team_id: str | None = None, **kwargs) -> BrandSettingsModel:
     """Update brand settings for a team and refresh the cache."""
+    # Ensure settings row exists (creates default if absent)
+    await get_brand_settings(team_id)
+
     async with AsyncSessionLocal() as session:
         if team_id:
             result = await session.execute(
@@ -121,19 +124,7 @@ async def update_brand_settings(team_id: str | None = None, **kwargs) -> BrandSe
             )
         row = result.scalar_one_or_none()
         if row is None:
-            row = await get_brand_settings(team_id)
-            async with AsyncSessionLocal() as s2:
-                if team_id:
-                    result = await s2.execute(
-                        select(BrandSettingsModel).where(BrandSettingsModel.team_id == team_id)
-                    )
-                else:
-                    result = await s2.execute(
-                        select(BrandSettingsModel)
-                        .where(BrandSettingsModel.team_id.is_(None))
-                        .limit(1)
-                    )
-                row = result.scalar_one_or_none()
+            raise RuntimeError(f"BrandSettings row missing after get_brand_settings(team_id={team_id!r})")
         for key, value in kwargs.items():
             if hasattr(row, key):
                 setattr(row, key, value)

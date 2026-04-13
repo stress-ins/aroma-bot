@@ -417,3 +417,78 @@ class TestAcceptInvite:
         )
         assert resp.status_code == 404
         assert resp.json()["detail"] == "invite_not_found_or_expired"
+
+
+# ---------------------------------------------------------------------------
+# Default domain (GET + PATCH)
+# ---------------------------------------------------------------------------
+
+
+class TestDefaultDomain:
+    async def test_get_team_detail_includes_default_domain(self, team):
+        client = _client()
+        resp = client.get(f"/api/teams/{team.team_id}", headers=OWNER_HEADERS)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "default_domain" in data
+        assert data["default_domain"] == "aroma"  # default value
+
+    async def test_patch_default_domain_as_owner(self, team):
+        client = _client()
+        resp = client.patch(
+            f"/api/teams/{team.team_id}",
+            json={"default_domain": "body"},
+            headers={**OWNER_HEADERS, "X-Team-Id": team.team_id},
+        )
+        assert resp.status_code == 200
+        assert resp.json()["ok"] is True
+
+        # Verify domain persisted
+        detail = client.get(f"/api/teams/{team.team_id}", headers=OWNER_HEADERS)
+        assert detail.json()["default_domain"] == "body"
+
+    async def test_patch_default_domain_sound(self, team):
+        client = _client()
+        resp = client.patch(
+            f"/api/teams/{team.team_id}",
+            json={"default_domain": "sound"},
+            headers={**OWNER_HEADERS, "X-Team-Id": team.team_id},
+        )
+        assert resp.status_code == 200
+
+        detail = client.get(f"/api/teams/{team.team_id}", headers=OWNER_HEADERS)
+        assert detail.json()["default_domain"] == "sound"
+
+    async def test_patch_invalid_domain_rejected(self, team):
+        client = _client()
+        resp = client.patch(
+            f"/api/teams/{team.team_id}",
+            json={"default_domain": "invalid_domain"},
+            headers={**OWNER_HEADERS, "X-Team-Id": team.team_id},
+        )
+        assert resp.status_code == 400
+        assert resp.json()["detail"] == "invalid_domain"
+
+    async def test_patch_domain_forbidden_for_editor(self, team):
+        client = _client()
+        resp = client.patch(
+            f"/api/teams/{team.team_id}",
+            json={"default_domain": "body"},
+            headers={**OTHER_HEADERS, "X-Team-Id": team.team_id},
+        )
+        assert resp.status_code == 403
+
+    async def test_patch_domain_only_without_name(self, team):
+        """PATCH with only default_domain should not require name."""
+        client = _client()
+        resp = client.patch(
+            f"/api/teams/{team.team_id}",
+            json={"default_domain": "sound"},
+            headers={**OWNER_HEADERS, "X-Team-Id": team.team_id},
+        )
+        assert resp.status_code == 200
+
+        # Team name unchanged
+        detail = client.get(f"/api/teams/{team.team_id}", headers=OWNER_HEADERS)
+        assert detail.json()["name"] == "Test Team"
+        assert detail.json()["default_domain"] == "sound"

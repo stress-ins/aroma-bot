@@ -174,8 +174,12 @@ export function createSessionModule(deps) {
       es.onerror = () => {
         es.close();
         _reelsEventSource = null;
-        // Fallback to polling on SSE failure
-        _pollReelsRefresh(draftId, attempts);
+        if (attempts > 0) {
+          // Retry SSE after short delay; fall back to polling after retries exhausted
+          window.setTimeout(() => scheduleReelsRefresh(draftId, attempts - 1), 3000);
+        } else {
+          _pollReelsRefresh(draftId, 90);
+        }
       };
     } else {
       _pollReelsRefresh(draftId, attempts);
@@ -371,7 +375,7 @@ export function createSessionModule(deps) {
       const message = error?.message === "request_timeout"
         ? "Карточка открывается слишком долго. Список уже загружен, можно повторить открытие."
         : (error?.message || "Не удалось открыть карточку.");
-      elements.draftDetail.innerHTML = renderDetailError("Не удалось открыть карточку", message, `openDraft('${preferredId}')`);
+      elements.draftDetail.innerHTML = renderDetailError("Не удалось открыть карточку", message, "openDraft", [preferredId]);
       syncMobileNavigation();
     }
   }

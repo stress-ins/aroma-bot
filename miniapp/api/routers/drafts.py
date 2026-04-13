@@ -137,6 +137,15 @@ async def update_content(draft_id: str, payload: DraftContentPayload, ctx: TeamC
     if not draft:
         raise HTTPException(status_code=404, detail="draft_not_found")
     verify_team_draft(draft, ctx)
+    # Validate Threads posts: hard 500-char limit per post
+    if payload.threads_posts:
+        for i, post in enumerate(payload.threads_posts):
+            text = post.get("text", "") if isinstance(post, dict) else ""
+            if len(text) > 500:
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"Пост {i + 1} для Threads превышает 500 символов ({len(text)})",
+                )
     updated = await update_content_review_draft(
         draft_id,
         topic=payload.topic,

@@ -54,14 +54,14 @@ class TestPlanParser:
 
 
 class TestThreadsPrompts:
-    def test_writer_rules_for_threads_define_three_daily_posts(self):
+    def test_writer_rules_for_threads_define_series_posts(self):
         from bot.agents.content import _PLATFORM_RULES_WRITER
 
         rules = _PLATFORM_RULES_WRITER["threads_series"]
-        assert "3" in rules and ("пост" in rules or "секци" in rules)
+        assert "пост" in rules or "серия" in rules
         assert "5-10" in rules
         assert "40-80" in rules
-        assert "УТРО" in rules and "ДЕНЬ" in rules and "ВЕЧЕР" in rules
+        assert "HARD LIMIT" in rules
 
     def test_legacy_threads_prompt_uses_new_daily_pack_format(self):
         from bot.handlers.threads import _PROMPT_POST
@@ -162,4 +162,4 @@ class TestThreadsPrompts:
         assert 'const data = await fetchJson(`/api/drafts?${filtersToQueryString()}&include_metrics=true`, { timeout: 20000 });' in source
         assert 'await openDraft(preferredId);' in source
         assert 'console.error("miniapp failed to open preferred draft", error);' in source
-        assert 'renderDetailError("Не удалось открыть карточку", message, `openDraft(\'${preferredId}\')`)' in source
+        assert 'renderDetailError("Не удалось открыть карточку", message, "openDraft", [preferredId])' in source

@@ -194,6 +194,9 @@
   body.is-mobile-layout .list-panel:has(.guided-state) {
     flex: 0 1 auto;
   }
+  body.is-mobile-layout .draft-list:has(.guided-state) {
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  }
 
   body.is-mobile-layout .list-panel {
     max-height: calc(var(--tg-viewport-stable-height, 100dvh) - 160px);
@@ -283,6 +286,35 @@
   .feedback-button,
   .primary-button {
     min-height: 44px;
+  }
+
+  /* ── YouTube detail: tighter padding on mobile to maximize content area ── */
+  body.is-mobile-layout .detail-grid .section {
+    padding: var(--space-3) 10px;
+  }
+
+  body.is-mobile-layout .youtube-section-card {
+    padding: 8px;
+  }
+
+  body.is-mobile-layout .youtube-speaker-block {
+    padding: 6px 8px;
+    margin-bottom: 4px;
+  }
+
+  body.is-mobile-layout .youtube-sections-list {
+    gap: 8px;
+  }
+
+  body.is-mobile-layout .youtube-section-textarea {
+    padding: 8px;
+    min-height: 72px;
+  }
+
+  /* ── Inbox compose: full width on mobile ─────────────────────────────── */
+  body.is-mobile-layout .inbox-compose-input {
+    width: 100%;
+    box-sizing: border-box;
   }
 }
 

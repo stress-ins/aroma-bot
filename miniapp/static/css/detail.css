@@ -53,7 +53,8 @@
   flex-wrap: wrap;
   gap: 10px;
 }
-.guided-state-actions .secondary-button {
+.guided-state-actions .secondary-button,
+.guided-state-actions .primary-button {
   min-height: 44px;
 }
 
@@ -96,5 +97,55 @@
 @keyframes detail-loader-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.55; }
+}
+
+/* ── Shop buy button ────────────────────────────────────────────────────── */
+.shop-buy-section {
+  padding: 0 !important;
+}
+
+.shop-buy-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid rgba(var(--brand-rgb), 0.25);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, rgba(var(--brand-rgb), 0.08) 0%, rgba(var(--brand-rgb), 0.04) 100%);
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.shop-buy-btn:active {
+  background: rgba(var(--brand-rgb), 0.15);
+  border-color: rgba(var(--brand-rgb), 0.4);
+}
+
+.shop-buy-btn > i {
+  color: var(--brand);
+  flex-shrink: 0;
+}
+
+.shop-buy-label {
+  font-weight: 600;
+  font-size: 15px;
+  white-space: nowrap;
+}
+
+.shop-buy-promo {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: right;
+  line-height: 1.3;
+}
+
+.shop-buy-promo strong {
+  color: var(--brand);
+  letter-spacing: 0.5px;
 }
 
