@@ -18,7 +18,7 @@ from bot.services.miniapp_plans import serialize_plan
 from bot.services.plan_activation import activate_plan
 from bot.services.miniapp_presenter import serialize_draft
 from bot.services.miniapp_inbox import list_inbox_items
-from miniapp.api.generation import complete_content_generation, complete_reels_v2_generation
+from miniapp.api.generation import complete_content_generation, complete_reels_v2_generation, complete_threads_series_generation
 from bot.services.plans_store import get_plan, list_recent_plans, save_plan, update_plan_status
 from config import settings
 from db.models import DraftModel
@@ -332,6 +332,26 @@ async def plan_generate(plan_id: str, payload: PlanGeneratePayload, background_t
         return {"kind": "draft", "draft": draft}
 
     goal_key = normalize_plan_goal(str(entry.get("goal", "")))
+    emotion = str(entry.get("emotion", "")).strip() or "calm"
+
+    if target == "threads_series":
+        saved = await save_draft(
+            kind=target,
+            topic=topic,
+            source="/plan",
+            payload={
+                "generation_pending": True,
+                "generation_stage": "content",
+                "generation_message": "Собираю серию Threads...",
+            },
+        )
+        background_tasks.add_task(
+            complete_threads_series_generation,
+            saved.draft_id, topic, goal_key, emotion,
+        )
+        draft = await serialize_draft(saved)
+        return {"kind": "draft", "draft": draft}
+
     saved = await save_draft(
         kind=target,
         topic=topic,
