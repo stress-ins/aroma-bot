@@ -11,6 +11,21 @@ from bot.utils.json_parser import extract_json
 
 logger = logging.getLogger(__name__)
 
+
+def _to_str(val: object) -> str:
+    """Coerce a value to string — handles dicts/lists that Claude may return instead of plain text."""
+    if isinstance(val, str):
+        return val
+    if isinstance(val, list):
+        return "\n".join(_to_str(item) for item in val)
+    if isinstance(val, dict):
+        # Try to build a readable representation from dict values
+        parts = []
+        for v in val.values():
+            parts.append(_to_str(v))
+        return "\n".join(parts)
+    return str(val) if val else ""
+
 from bot.agents.prompts.reels_prompts import (
     TOPICS_PROMPT as _TOPICS_PROMPT,
     SCENARIO_PROMPT as _SCENARIO_PROMPT,
@@ -207,11 +222,11 @@ def _parse_draft(raw: str) -> ReelsV2Draft:
         data = extract_json(raw)
         if isinstance(data, dict) and data.get("concept"):
             return ReelsV2Draft(
-                concept=data.get("concept", ""),
-                hook=data.get("hook", ""),
-                scenario=data.get("scenario", ""),
-                caption=data.get("caption", ""),
-                music_mood=data.get("music_mood", ""),
+                concept=_to_str(data.get("concept", "")),
+                hook=_to_str(data.get("hook", "")),
+                scenario=_to_str(data.get("scenario", "")),
+                caption=_to_str(data.get("caption", "")),
+                music_mood=_to_str(data.get("music_mood", "")),
             )
     except (ValueError, TypeError):
         logger.debug("_parse_draft: JSON failed, using legacy parser")
@@ -459,7 +474,7 @@ def generate_reels_v2_caption_sync(
         brand_context=bs.brand_voice,
         topic=topic,
         concept=concept,
-        scenario_preview=scenario[:800],
+        scenario_preview=_to_str(scenario)[:800],
         forbidden_block=forbidden_block,
     )
     return call_claude(

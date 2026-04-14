@@ -135,7 +135,7 @@ def review_scenario_sync(
         storyboard_block = "STORYBOARD:\n" + "\n".join(storyboard_lines)
 
     user_msg = _USER_TEMPLATE.format(
-        scenario_text=scenario_text[:3000],
+        scenario_text=str(scenario_text)[:3000],
         storyboard_block=storyboard_block,
     )
 
