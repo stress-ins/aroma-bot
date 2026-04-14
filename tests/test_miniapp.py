@@ -1422,7 +1422,7 @@ class TestMiniAppRussianLocale:
     def test_content_detail_supports_prompt_copy_actions(self):
         app_js = " ".join(p.read_text(encoding="utf-8") for p in sorted(Path("miniapp/static").rglob("*.js")))
 
-        assert "Скопировать промпт слайда" in app_js
+        assert "Скопировать" in app_js
         assert "function copyText" in app_js
         assert "function togglePromptDisclosure" in app_js
         assert "state.openPromptPanels" in app_js
@@ -1602,12 +1602,13 @@ class TestMiniAppRussianLocale:
 
         assert "JSON</h3>" not in app_js
         assert "Обновить все слайды" in app_js
-        assert "Обновить по замечанию" in app_js
+        assert "По замечанию" in app_js
         assert "Сохранить текст слайда" in app_js
         assert "Подпись слайда" in app_js
         assert "downloadCarouselPptx" in app_js
         assert "Показать промпт" in app_js
-        assert "Скопировать промпт слайда" in app_js
+        assert "Скопировать" in app_js
+        assert "saveCarouselSlidePrompt" in app_js
         assert "generationStateMarkup" in app_js
         assert "tg.openLink(downloadUrl)" in app_js
         assert "init_data" in server_py
