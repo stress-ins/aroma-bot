@@ -277,15 +277,21 @@ export function createCarouselModule(deps) {
             <div class="prompt-disclosure${discOpen ? " is-open" : ""}" data-prompt-key="${escapeHtml(`carousel:${draftId}:${index}`)}">
               <button class="secondary-button prompt-toggle" type="button" aria-expanded="${discOpen ? "true" : "false"}" data-default-open="${!img?.url ? "true" : "false"}" data-open-label="Показать промпт" data-close-label="Скрыть промпт" data-action="togglePromptDisclosure" data-args='${JSON.stringify([`carousel:${draftId}:${index}`, null])}'>${actionLabel(discOpen ? "chevron-up" : "chevron-down", discOpen ? "Скрыть промпт" : "Показать промпт")}</button>
               <div class="prompt-card"${discOpen ? "" : " hidden"}>
-                <div class="detail-preview prompt-preview">${escapeHtml(prompt)}</div>
+                <label class="prompt-note-field">
+                  <span>Промпт для изображения</span>
+                  <textarea id="slidePrompt_${index}" data-original="${escapeHtml(prompt)}" placeholder="Промпт для генерации изображения">${escapeHtml(prompt)}</textarea>
+                </label>
+                <div class="actions-row prompt-actions actions-grid-two">
+                  <button class="primary-button" type="button" data-action="saveCarouselSlidePrompt" data-args='${JSON.stringify([draftId, index, null])}'>${actionLabel("text", "Сохранить промпт")}</button>
+                  <button class="secondary-button" type="button" data-action="copyText" data-args='${JSON.stringify([prompt])}'>${actionLabel("copy", "Скопировать")}</button>
+                </div>
                 <label class="prompt-note-field">
                   <span>Замечание к картинке</span>
                   <textarea id="${slideNoteId(index)}" placeholder="Например: теплее свет, крупнее объект, меньше деталей на фоне" data-on-input="handleCarouselSlideNoteInput" data-args='${JSON.stringify([draftId, index])}'>${escapeHtml(note)}</textarea>
                 </label>
                 <div class="actions-row prompt-actions actions-grid-two">
-                  <button class="secondary-button" type="button" data-action="copyText" data-args='${JSON.stringify([prompt])}'>${actionLabel("copy", "Скопировать промпт слайда")}</button>
-                  <button class="secondary-button" type="button" data-action="regenerateCarouselSlide" data-args='${JSON.stringify([draftId, index, null])}'>${actionLabel("regenerate", "Обновить изображение")}</button>
-                  <button class="primary-button" type="button" data-action="regenerateCarouselSlide" data-args='${JSON.stringify([draftId, index, null])}'>${actionLabel("note", "Обновить по замечанию")}</button>
+                  <button class="secondary-button" type="button" data-action="regenerateCarouselSlide" data-args='${JSON.stringify([draftId, index, null])}'>${actionLabel("regenerate", "Новый вариант")}</button>
+                  <button class="primary-button" type="button" data-action="regenerateCarouselSlide" data-args='${JSON.stringify([draftId, index, null])}'>${actionLabel("note", "По замечанию")}</button>
                 </div>
               </div>
             </div>
@@ -394,6 +400,26 @@ export function createCarouselModule(deps) {
       if (isCurrentDraftDetail(draft.draft_id)) renderDraftDetail(draft);
       // Auto-refresh preview in background
       _refreshSlidePreview(draftId, slideIndex);
+    };
+    if (button instanceof HTMLElement) {
+      await withButtonFeedback(button, "Сохраняю...", apply, "Сохранено");
+      return;
+    }
+    await apply();
+  }
+
+  async function saveCarouselSlidePrompt(draftId, slideIndex, button) {
+    const promptField = document.getElementById(`slidePrompt_${slideIndex}`);
+    const prompt = String(promptField?.value || "").trim();
+    if (!prompt) return;
+    const apply = async () => {
+      const draft = await fetchJson(`/api/carousel/${draftId}/slides/${slideIndex}/prompt`, {
+        method: "POST",
+        body: JSON.stringify({ prompt }),
+      });
+      mergeDraftIntoState(draft);
+      renderDraftList();
+      if (isCurrentDraftDetail(draft.draft_id)) renderDraftDetail(draft);
     };
     if (button instanceof HTMLElement) {
       await withButtonFeedback(button, "Сохраняю...", apply, "Сохранено");
@@ -1261,6 +1287,7 @@ export function createCarouselModule(deps) {
     uploadSlideImageFromInput,
     setDividerStyle,
     saveCarouselSlideText,
+    saveCarouselSlidePrompt,
     handleCarouselSlideNoteInput,
     regenerateCarouselSlide,
     regenerateCarouselAll,

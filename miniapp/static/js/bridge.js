@@ -22,6 +22,7 @@ export function registerWindowBridge(deps) {
     sendDraftToChat,
     deleteDraft,
     saveCarouselSlideText,
+    saveCarouselSlidePrompt,
     regenerateCarouselSlide,
     regenerateCarouselAll,
     selectCarouselSlideVersion,
@@ -375,6 +376,7 @@ export function registerWindowBridge(deps) {
   };
 
   window.saveCarouselSlideText = saveCarouselSlideText;
+  window.saveCarouselSlidePrompt = saveCarouselSlidePrompt;
   window.regenerateCarouselSlide = regenerateCarouselSlide;
   window.regenerateCarouselAll = regenerateCarouselAll;
   window.selectCarouselSlideVersion = selectCarouselSlideVersion;
