@@ -68,6 +68,10 @@ export function createCarouselModule(deps) {
     if (operation) {
       return `<div class="slide-status is-pending">${uiIcon("sparkle")}<span>${escapeHtml(operation)}</span></div>`;
     }
+    // Fallback: show pending status when generation is active (e.g. after page reload)
+    if (state.selected?.generation_pending && state.selected?.generation_stage === "images" && hasImage) {
+      return `<div class="slide-status is-pending">${uiIcon("sparkle")}<span>Обновляю картинку…</span></div>`;
+    }
     if (hasImage) {
       return `<div class="slide-status is-ready">${uiIcon("approve")}<span>Картинка готова</span></div>`;
     }
@@ -238,8 +242,11 @@ export function createCarouselModule(deps) {
       const versions = Array.isArray(versionItems[index]) ? versionItems[index] : [];
       const genFailed = !img?.url && state.selected?.generation_stage === "error" && !state.selected?.generation_pending;
       const slideOp = carouselSlideOperation(draftId, index);
+      // Show overlay when slideOp is set OR when draft has generation_pending
+      // with stage "images" (handles page reload during background regeneration)
+      const isRegenerating = slideOp || (state.selected?.generation_pending && state.selected?.generation_stage === "images");
       const _slideSrc = img?.thumb_url || img?.url;
-      const imgHtml = slideOp && img?.url
+      const imgHtml = isRegenerating && img?.url
         ? `<div class="carousel-slide-image-wrap carousel-slide-regenerating"><img src="${escapeHtml(_slideSrc)}" data-full="${escapeHtml(img.url)}" alt="Слайд ${index + 1}" class="progressive-carousel-img" /><div class="carousel-slide-loading-overlay"><span class="button-spinner" aria-hidden="true"></span></div></div>`
         : img?.url
         ? `<div class="carousel-slide-image-wrap"><img src="${escapeHtml(_slideSrc)}" data-full="${escapeHtml(img.url)}" alt="Слайд ${index + 1}" class="progressive-carousel-img" style="cursor:pointer" data-action="openImageFullscreen" data-args='${JSON.stringify([img.url, `Слайд ${index + 1}`])}' /></div>`
@@ -502,7 +509,11 @@ export function createCarouselModule(deps) {
     } catch (error) {
       showRequestError("Не удалось перегенерировать картинку", error);
     } finally {
-      setCarouselSlideOperation(draftId, slideIndex, "");
+      // Only clear the slide operation if background generation is no longer pending.
+      // SSE handler (_refreshCarouselState) clears operations when the new image arrives.
+      if (!state.selected?.generation_pending) {
+        setCarouselSlideOperation(draftId, slideIndex, "");
+      }
       if (isCurrentDraftDetail(draftId) && state.selected?.draft_id === draftId) {
         renderDraftDetail(state.selected);
       }

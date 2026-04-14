@@ -238,19 +238,25 @@ class TestRegenerateSlide:
         )
         assert resp.status_code == 404
 
-    async def test_regenerate_slide_regen_limit(self, setup_test_db):
-        """Hitting regen limit returns 429."""
+    async def test_regenerate_slide_monthly_regen_limit(self, setup_test_db):
+        """Hitting monthly regen limit returns 429."""
         from bot.services.team_store import create_team
         from bot.services.drafts_store import save_draft
 
         team = await create_team("T", creator_telegram_id=12345)
         draft = await save_draft(
             kind="carousel", topic="t", source="ai",
-            payload={"slides": [{"heading": "S1"}], "regen_count": 5},
+            payload={"slides": [{"heading": "S1"}]},
             team_id=team.team_id, created_by=12345,
         )
         client = _client()
-        with patch("bot.handlers.monitor.notify_owner_throttled"):
+        with (
+            patch("bot.handlers.monitor.notify_owner_throttled"),
+            patch(
+                "bot.services.subscription_store.check_monthly_regen_limit",
+                new_callable=AsyncMock, return_value=(30, 30),
+            ),
+        ):
             resp = client.post(
                 f"/api/carousel/{draft.draft_id}/slides/0/regenerate",
                 json={},

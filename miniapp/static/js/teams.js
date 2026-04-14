@@ -129,7 +129,13 @@ export function createTeamsModule(deps) {
   }
 
   async function loadAndRenderSwitcher() {
-    const teams = await loadTeams();
+    let teams;
+    try {
+      teams = await loadTeams();
+    } catch (_err) {
+      console.warn("Failed to load teams for switcher:", _err);
+      return [];
+    }
     state.teams = teams;
     // Auto-select first team if none active
     if (!state.activeTeamId && teams.length > 0) {

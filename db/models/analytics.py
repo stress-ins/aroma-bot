@@ -126,6 +126,7 @@ class UsageLog(Base):
     telegram_id: Mapped[int] = mapped_column(BigInteger, index=True)
     date: Mapped[str] = mapped_column(String(16))  # "2026-03-15" (UTC date string)
     cards_created: Mapped[int] = mapped_column(Integer, default=0)
+    regens_used: Mapped[int] = mapped_column(Integer, default=0)
 
     __table_args__ = (UniqueConstraint("telegram_id", "date"),)
 
