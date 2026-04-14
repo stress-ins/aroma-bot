@@ -11,6 +11,7 @@ from bot.agents.reels_agent import (
     _parse_draft,
     _parse_frame_prompts,
     _parse_storyboard,
+    _to_str,
     generate_reels_topics_sync,
     generate_reels_scenario_sync,
     ReelsV2Draft,
@@ -151,6 +152,61 @@ MUSIC_MOOD: Тихо.
         draft = _parse_draft(raw)
         assert "Строка 1" in draft.scenario
         assert "Строка 3" in draft.scenario
+
+
+class TestToStr:
+    def test_str_passthrough(self):
+        assert _to_str("hello") == "hello"
+
+    def test_dict_values_joined(self):
+        result = _to_str({"scene1": "Открытие", "scene2": "Крупный план"})
+        assert "Открытие" in result
+        assert "Крупный план" in result
+
+    def test_list_joined(self):
+        result = _to_str(["Строка 1", "Строка 2"])
+        assert "Строка 1\nСтрока 2" == result
+
+    def test_none_returns_empty(self):
+        assert _to_str(None) == ""
+
+    def test_nested_dict_in_list(self):
+        result = _to_str([{"a": "x"}, "plain"])
+        assert "x" in result
+        assert "plain" in result
+
+
+class TestParseDraftDictScenario:
+    """Regression: Claude sometimes returns scenario as a dict instead of str."""
+
+    def test_dict_scenario_coerced_to_str(self):
+        import json
+        raw = json.dumps({
+            "concept": "Концепция рилса",
+            "hook": "Хук",
+            "scenario": {"scene1": "Открытие флакона", "scene2": "Крупный план капли"},
+            "caption": "Подпись",
+            "music_mood": "calm",
+        })
+        draft = _parse_draft(raw)
+        assert isinstance(draft.scenario, str)
+        assert "Открытие флакона" in draft.scenario
+        assert "Крупный план капли" in draft.scenario
+        # Must be sliceable without KeyError
+        _ = draft.scenario[:800]
+
+    def test_list_scenario_coerced_to_str(self):
+        import json
+        raw = json.dumps({
+            "concept": "Тест",
+            "hook": "",
+            "scenario": ["Сцена 1: вступление", "Сцена 2: кульминация"],
+            "caption": "",
+            "music_mood": "",
+        })
+        draft = _parse_draft(raw)
+        assert isinstance(draft.scenario, str)
+        assert "Сцена 1" in draft.scenario
 
 
 class TestFramePromptsParser:

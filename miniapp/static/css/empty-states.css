@@ -207,6 +207,8 @@ body.is-mobile-layout .detail-top::after {
   letter-spacing: -0.03em;
   margin: 0;
   text-align: left;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .kind-glyph {
