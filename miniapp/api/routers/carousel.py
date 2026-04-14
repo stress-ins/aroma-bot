@@ -20,7 +20,7 @@ from bot.handlers.carousel import _build_pptx
 from bot.services.drafts_store import DraftRecord, get_draft, update_draft
 from bot.services.draft_revisions_store import create_revision
 from bot.services.miniapp_presenter import serialize_draft
-from ..auth import _require_auth, _resolve_init_data, _resolve_sse_auth, require_tier
+from ..auth import _require_auth, _resolve_init_data, _resolve_sse_auth, _resolve_telegram_id, require_tier
 from ..deps import require_draft
 from ..generation import complete_carousel_regen_slide, complete_carousel_regenerate_all, set_generation_state
 from ..generation._common import get_generation_event, cleanup_generation_event, sse_msg
@@ -117,35 +117,35 @@ async def _auto_populate_carousel(draft_id: str) -> None:
         )
 
 
-REGEN_LIMIT_PER_CARD = 5
-
-
 @router.post("/api/carousel/{draft_id}/slides/{slide_index}/regenerate", dependencies=[Depends(require_tier("expert"))])
 async def regenerate_carousel_slide(
     draft_id: str,
     slide_index: int,
     payload: CarouselSlideRegeneratePayload,
     background_tasks: BackgroundTasks,
-    _: None = Depends(_require_auth),
+    telegram_id: int = Depends(_resolve_telegram_id),
 ):
     draft = await get_draft(draft_id)
     if not draft:
         raise HTTPException(status_code=404, detail="carousel_not_found")
-    regen_count = draft.payload.get("regen_count", 0)
-    if regen_count >= REGEN_LIMIT_PER_CARD:
+    from bot.services.subscription_store import check_monthly_regen_limit, increment_regen_usage
+
+    used, max_allowed = await check_monthly_regen_limit(telegram_id)
+    if used >= max_allowed:
         from bot.handlers.monitor import notify_owner_throttled
 
         notify_owner_throttled(
-            f"⚠️ <b>Regen limit hit</b>\n"
-            f"Draft: <code>{draft_id}</code>\n"
-            f"Regens: {regen_count}/{REGEN_LIMIT_PER_CARD}",
-            dedup_key=f"regen_limit:{draft_id}",
+            f"⚠️ <b>Monthly regen limit hit</b>\n"
+            f"User: <code>{telegram_id}</code>\n"
+            f"Regens: {used}/{max_allowed}",
+            dedup_key=f"regen_limit:{telegram_id}",
             cooldown=3600,
         )
         raise HTTPException(
             status_code=429,
-            detail={"error": "regen_limit", "used": regen_count, "max": REGEN_LIMIT_PER_CARD},
+            detail={"error": "regen_limit", "used": used, "max": max_allowed},
         )
+    await increment_regen_usage(telegram_id)
     from bot.services.draft_revisions_store import snapshot_before_regen
     await snapshot_before_regen(draft_id, note=payload.note or f"regen slide {slide_index}")
     await set_generation_state(

@@ -13,6 +13,7 @@ from db.session import AsyncSessionLocal
 
 TIER_RANK: dict[str, int] = {"free": 0, "student": 1, "expert": 2}
 FREE_DAILY_LIMIT = 10
+MONTHLY_REGEN_LIMIT = 30
 TRIAL_DAYS = 7
 
 
@@ -75,6 +76,39 @@ async def increment_daily_usage(telegram_id: int) -> None:
             .on_conflict_do_update(
                 index_elements=["telegram_id", "date"],
                 set_={"cards_created": UsageLog.cards_created + 1},
+            )
+        )
+        await session.execute(stmt)
+        await session.commit()
+
+
+async def check_monthly_regen_limit(telegram_id: int) -> tuple[int, int]:
+    """Return (used_this_month, max_allowed) for image regenerations."""
+    now = _now()
+    month_start = now.strftime("%Y-%m-01")
+    month_end = now.strftime("%Y-%m-32")  # safe upper bound — any date > last day
+    async with AsyncSessionLocal() as session:
+        from sqlalchemy import func
+
+        stmt = select(func.coalesce(func.sum(UsageLog.regens_used), 0)).where(
+            UsageLog.telegram_id == telegram_id,
+            UsageLog.date >= month_start,
+            UsageLog.date < month_end,
+        )
+        used = (await session.execute(stmt)).scalar() or 0
+    return int(used), MONTHLY_REGEN_LIMIT
+
+
+async def increment_regen_usage(telegram_id: int) -> None:
+    """Upsert UsageLog — increment regens_used for today."""
+    today = _today_utc()
+    async with AsyncSessionLocal() as session:
+        stmt = (
+            sqlite_insert(UsageLog)
+            .values(telegram_id=telegram_id, date=today, cards_created=0, regens_used=1)
+            .on_conflict_do_update(
+                index_elements=["telegram_id", "date"],
+                set_={"regens_used": UsageLog.regens_used + 1},
             )
         )
         await session.execute(stmt)
