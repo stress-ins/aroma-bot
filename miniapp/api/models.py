@@ -159,6 +159,10 @@ class CarouselSlideNotePayload(BaseModel):
     note: str = Field(default="")
 
 
+class CarouselSlidePromptPayload(BaseModel):
+    prompt: str = Field(default="")
+
+
 class CarouselCaptionPayload(BaseModel):
     caption: str = Field(default="")
 

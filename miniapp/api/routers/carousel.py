@@ -14,6 +14,7 @@ from bot.services.carousel_assets import (
     save_carousel_slide_asset,
     select_carousel_slide_version,
     update_carousel_slide_note,
+    update_carousel_slide_prompt,
     update_carousel_slide_text,
 )
 from bot.handlers.carousel import _build_pptx
@@ -27,6 +28,7 @@ from ..generation._common import get_generation_event, cleanup_generation_event,
 from ..models import (
     CarouselCaptionPayload,
     CarouselSlideNotePayload,
+    CarouselSlidePromptPayload,
     CarouselSlideRegeneratePayload,
     CarouselSlideTextPayload,
 )
@@ -167,6 +169,22 @@ async def update_carousel_slide_copy(
     _: None = Depends(_require_auth),
 ):
     updated_payload = await update_carousel_slide_text(draft_id, slide_index, payload.text)
+    if updated_payload is None:
+        raise HTTPException(status_code=404, detail="carousel_slide_not_found")
+    draft = await get_draft(draft_id)
+    if not draft:
+        raise HTTPException(status_code=404, detail="carousel_not_found")
+    return await serialize_draft(draft)
+
+
+@router.post("/api/carousel/{draft_id}/slides/{slide_index}/prompt")
+async def update_carousel_slide_prompt_endpoint(
+    draft_id: str,
+    slide_index: int,
+    payload: CarouselSlidePromptPayload,
+    _: None = Depends(_require_auth),
+):
+    updated_payload = await update_carousel_slide_prompt(draft_id, slide_index, payload.prompt)
     if updated_payload is None:
         raise HTTPException(status_code=404, detail="carousel_slide_not_found")
     draft = await get_draft(draft_id)

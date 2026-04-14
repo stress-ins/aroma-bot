@@ -511,6 +511,14 @@ async def update_carousel_slide_note(
     )
 
 
+async def update_carousel_slide_prompt(
+    draft_id: str,
+    slide_index: int,
+    prompt: str,
+) -> dict[str, object] | None:
+    return await _update_carousel_list_field(draft_id, "img_prompts", slide_index, prompt)
+
+
 async def _update_carousel_list_field(
     draft_id: str,
     field_key: str,
