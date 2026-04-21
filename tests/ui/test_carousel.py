@@ -71,3 +71,24 @@ def test_mobile_carousel_actions_use_two_columns(page):
         "(node) => getComputedStyle(node).gridTemplateColumns"
     )
     assert columns.count(" ") == 0
+
+
+def test_carousel_failed_slot_shows_retry_plate(page):
+    """When cleanup_expired marks a slot as {failed: true, error: 'timeout'},
+    the UI must render the "Не удалось сгенерировать" plate instead of the
+    eternal "Изображение ещё готовится" spinner."""
+    click_bottom_tab(page, "#btnTabInspiration")
+    card = page.get_by_text("Карусель с залипшим слайдом").first
+    card.wait_for(state="visible", timeout=30000)
+    click_draft_card(page, "Карусель с залипшим слайдом")
+
+    # The failed slide (index 1) shows the retry plate.
+    page.get_by_text(
+        "Не удалось сгенерировать картинку. Нажмите «Новый вариант» чтобы попробовать снова."
+    ).first.wait_for(state="visible", timeout=10000)
+
+    # The ready slide still renders its image (no regression).
+    assert page.locator(".slide img").count() >= 1
+
+    # The failed slot must not render the eternal spinner.
+    assert page.get_by_text("Изображение ещё готовится").count() == 0

@@ -38,9 +38,22 @@ _KIE_PLAYGROUND_URL = "https://api.kie.ai/api/v1/playground/pageRecordListByDori
 _AUTH_TOKEN = "35888dd0-f4d6-422b-9593-8f6dea2e8123"
 _UNIQUE_ID = "8faa0c08d720624fb035847b149326a0"
 _PAGE_SIZE = 50
-# Time window: covers all relevant generations
-_BEGIN_TIME = 1773349200000  # 2026-03-10T00:00:00 approx
-_END_TIME = 1774040399999    # 2026-03-18T23:59:59 approx
+# Time window defaults to the last 30 days. Override with --days or --begin/--end.
+_DEFAULT_WINDOW_DAYS = 30
+_begin_time_ms = 0
+_end_time_ms = 0
+
+
+def _configure_window(days: int | None = None, begin_ms: int | None = None, end_ms: int | None = None) -> tuple[int, int]:
+    """Compute the begin/end window in ms since epoch."""
+    global _begin_time_ms, _end_time_ms
+    if begin_ms and end_ms:
+        _begin_time_ms, _end_time_ms = begin_ms, end_ms
+    else:
+        now_ms = int(time.time() * 1000)
+        span = (days or _DEFAULT_WINDOW_DAYS) * 86400 * 1000
+        _begin_time_ms, _end_time_ms = now_ms - span, now_ms
+    return _begin_time_ms, _end_time_ms
 
 
 def fetch_playground_page(page: int) -> dict:
@@ -56,8 +69,8 @@ def fetch_playground_page(page: int) -> dict:
             json={
                 "pageNum": page,
                 "pageSize": _PAGE_SIZE,
-                "beginTime": _BEGIN_TIME,
-                "endTime": _END_TIME,
+                "beginTime": _begin_time_ms,
+                "endTime": _end_time_ms,
                 "successFlag": "",
             },
         )
@@ -269,6 +282,11 @@ async def match_and_recover(
             payload["slide_image_versions"] = slide_versions
             payload["images_ready"] = sum(1 for img in slide_images if isinstance(img, dict) and img.get("url"))
             payload["generation_pending"] = False
+            any_missing = any(
+                not (isinstance(img, dict) and img.get("url"))
+                for img in slide_images
+            )
+            payload["generation_stage"] = "error" if any_missing else ""
             updated = await update_draft(draft.draft_id, payload=payload)
             if updated:
                 logger.info("  Draft %s updated (%d/%d images ready)",
@@ -363,7 +381,18 @@ async def match_and_recover(
 def main() -> None:
     parser = argparse.ArgumentParser(description="Recover KIE images and bind to carousel/reels_v2 drafts")
     parser.add_argument("--dry-run", action="store_true", help="Show matches without downloading/saving")
+    parser.add_argument("--days", type=int, default=_DEFAULT_WINDOW_DAYS,
+                        help="How many days back to scan (default: 30)")
+    parser.add_argument("--begin-ms", type=int, default=0, help="Explicit begin timestamp (ms since epoch)")
+    parser.add_argument("--end-ms", type=int, default=0, help="Explicit end timestamp (ms since epoch)")
     args = parser.parse_args()
+
+    begin, end = _configure_window(
+        days=args.days,
+        begin_ms=args.begin_ms or None,
+        end_ms=args.end_ms or None,
+    )
+    logger.info("Scanning KIE Playground window: [%d … %d]", begin, end)
 
     logger.info("Step 1: Fetching all KIE tasks from Playground API...")
     prompt_map = fetch_all_kie_tasks()
