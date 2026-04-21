@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, patch
 
 import httpx
@@ -10,6 +10,12 @@ import pytest
 
 from analytics.instagram_trends import InstagramTrendsCollector
 from bot.services.social_trends_store import list_social_posts
+
+
+def _ts(days_ago: int) -> str:
+    """Return ISO timestamp `days_ago` days before now — keeps mock posts
+    inside the 30-day collector window without timezone drift over time."""
+    return (datetime.now(timezone.utc) - timedelta(days=days_ago)).strftime("%Y-%m-%dT%H:%M:%S+0000")
 
 
 def _mock_response(data: dict, status_code: int = 200) -> httpx.Response:
@@ -37,7 +43,7 @@ class TestCollectFromAccounts:
                             "caption": "Great #wellness post about #aroma therapy",
                             "like_count": 42,
                             "comments_count": 5,
-                            "timestamp": "2026-03-18T10:00:00+0000",
+                            "timestamp": _ts(1),
                         },
                         {
                             "id": "ig_post_2",
@@ -46,7 +52,7 @@ class TestCollectFromAccounts:
                             "caption": "Another post",
                             "like_count": 10,
                             "comments_count": 1,
-                            "timestamp": "2026-03-17T08:00:00+0000",
+                            "timestamp": _ts(2),
                         },
                     ]
                 },
@@ -92,7 +98,7 @@ class TestCollectFromHashtags:
                     "caption": "Post with #wellness",
                     "like_count": 20,
                     "comments_count": 3,
-                    "timestamp": "2026-03-18T12:00:00+0000",
+                    "timestamp": _ts(1),
                 }
             ]
         })

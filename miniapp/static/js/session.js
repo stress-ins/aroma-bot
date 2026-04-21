@@ -256,7 +256,7 @@ export function createSessionModule(deps) {
     const payload = draft.payload || {};
     const slideImages = Array.isArray(payload.slide_images) ? payload.slide_images : [];
     const slideCount = Array.isArray(payload.slides) ? payload.slides.length : 0;
-    const readyCount = slideImages.filter(Boolean).length;
+    const readyCount = slideImages.filter((img) => img && typeof img === "object" && img.url).length;
     const prevPayload = state.selected?.draft_id === draftId ? (state.selected.payload || {}) : {};
     const prevImages = Array.isArray(prevPayload.slide_images) ? prevPayload.slide_images : [];
     slideImages.forEach((img, idx) => {
@@ -282,7 +282,9 @@ export function createSessionModule(deps) {
       const stateUnchanged = draft.generation_pending && prev?.generation_pending
         && prev.generation_stage === draft.generation_stage
         && prev.generation_message === draft.generation_message
-        && readyCount === (Array.isArray(prevPayload.slide_images) ? prevPayload.slide_images.filter(Boolean).length : 0);
+        && readyCount === (Array.isArray(prevPayload.slide_images)
+          ? prevPayload.slide_images.filter((img) => img && typeof img === "object" && img.url).length
+          : 0);
       if (!stateUnchanged && !isEditingDetailForm() && !detailHasFocus && !hasPendingCarouselOperations(draft.draft_id)) {
         renderDraftDetail(draft);
       }

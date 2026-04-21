@@ -127,6 +127,25 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
         "img_prompt_notes": ["", ""],
         "cta": "Напиши, если хочешь такую карусель под свой проект.",
     }
+    carousel_failed_payload = {
+        "slides": [
+            "Первый слайд — всё получилось.",
+            "Второй слайд — генерация картинки истекла по таймауту.",
+        ],
+        "img_prompts": ["good prompt", "timed-out prompt"],
+        "slide_images": [
+            {
+                "url": "/generated/carousel_assets/carousel001/slide_1.png",
+                "filename": "slide_1.png",
+                "generated_at": "2026-03-11T18:00:00+00:00",
+            },
+            {"failed": True, "error": "timeout", "prompt": "timed-out prompt"},
+        ],
+        "slide_image_versions": [[], []],
+        "img_prompt_notes": ["", ""],
+        "generation_pending": False,
+        "generation_stage": "error",
+    }
 
     now = "2026-03-11T18:00:00+00:00"
     cursor.execute(
@@ -140,6 +159,10 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
     cursor.execute(
         "INSERT INTO drafts (draft_id, kind, topic, source, status, feedback, payload, publish_platforms, external_ids, revision_notes, error, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, '[]', '{}', '', '', ?)",
         ("carousel001", "carousel", "Сенсорная карусель для вечернего ритуала", "/miniapp", "draft", "", json.dumps(carousel_payload), now),
+    )
+    cursor.execute(
+        "INSERT INTO drafts (draft_id, kind, topic, source, status, feedback, payload, publish_platforms, external_ids, revision_notes, error, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, '[]', '{}', '', '', ?)",
+        ("carousel_failed", "carousel", "Карусель с залипшим слайдом", "/miniapp", "draft", "", json.dumps(carousel_failed_payload), now),
     )
     threads_series_payload = {
         "series_summary": "Опорная мысль серии про восстановление.",

@@ -1,7 +1,7 @@
 """Tests for ThreadsTrendsCollector — mock httpx responses."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, patch
 
 import httpx
@@ -9,6 +9,12 @@ import pytest
 
 from analytics.threads_trends_api import ThreadsTrendsCollector
 from bot.services.social_trends_store import list_social_posts
+
+
+def _ts(days_ago: int) -> str:
+    """Return ISO timestamp `days_ago` days before now — keeps mock posts
+    inside the 30-day collector window without timezone drift over time."""
+    return (datetime.now(timezone.utc) - timedelta(days=days_ago)).strftime("%Y-%m-%dT%H:%M:%S+0000")
 
 
 def _mock_response(data: dict, status_code: int = 200) -> httpx.Response:
@@ -29,7 +35,7 @@ class TestCollectFromAccounts:
                 {
                     "id": "th_1",
                     "text": "First thread about wellness",
-                    "timestamp": "2026-03-18T10:00:00+0000",
+                    "timestamp": _ts(1),
                     "permalink": "https://threads.net/@user/post/1",
                     "username": "competitor1",
                     "media_type": "TEXT_POST",
@@ -41,7 +47,7 @@ class TestCollectFromAccounts:
                 {
                     "id": "th_2",
                     "text": "Second thread about aroma",
-                    "timestamp": "2026-03-17T14:00:00+0000",
+                    "timestamp": _ts(2),
                     "permalink": "https://threads.net/@user/post/2",
                     "username": "competitor1",
                     "media_type": "TEXT_POST",
@@ -76,7 +82,7 @@ class TestCollectFromAccounts:
                 {
                     "id": f"th_page1_{i}",
                     "text": f"Post {i}",
-                    "timestamp": "2026-03-18T10:00:00+0000",
+                    "timestamp": _ts(1),
                     "username": "user1",
                     "media_type": "TEXT_POST",
                     "like_count": 5,
@@ -93,7 +99,7 @@ class TestCollectFromAccounts:
                 {
                     "id": "th_page2_0",
                     "text": "Last post",
-                    "timestamp": "2026-03-17T10:00:00+0000",
+                    "timestamp": _ts(2),
                     "username": "user1",
                     "media_type": "TEXT_POST",
                     "like_count": 3,

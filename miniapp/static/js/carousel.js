@@ -215,7 +215,7 @@ export function createCarouselModule(deps) {
     const noteItems = Array.isArray(promptNotes) ? promptNotes : [];
     const versionItems = Array.isArray(slideVersions) ? slideVersions : [];
     if (!slideItems.length) return "";
-    const readyCount = imageItems.filter(Boolean).length;
+    const readyCount = imageItems.filter((img) => img && typeof img === "object" && img.url).length;
     const header = readyCount > 0
       ? `Слайды карусели <span class="meta">${readyCount} / ${slideItems.length} с картинкой</span>`
       : "Слайды карусели";
@@ -240,11 +240,17 @@ export function createCarouselModule(deps) {
       const prompt = String(promptItems[index] || "");
       const note = bufferedCarouselNote(draftId, index, String(noteItems[index] || ""));
       const versions = Array.isArray(versionItems[index]) ? versionItems[index] : [];
-      const genFailed = !img?.url && state.selected?.generation_stage === "error" && !state.selected?.generation_pending;
       const slideOp = carouselSlideOperation(draftId, index);
       // Show overlay when slideOp is set OR when draft has generation_pending
       // with stage "images" (handles page reload during background regeneration)
       const isRegenerating = slideOp || (state.selected?.generation_pending && state.selected?.generation_stage === "images");
+      // A slot is failed when either the backend explicitly marked it
+      // (img.failed === true — see kie_task_store.cleanup_expired) or the
+      // draft-level stage is "error". We don't show the failed plate while
+      // a regeneration is running.
+      const slotFailed = !!(img && typeof img === "object" && img.failed === true);
+      const genFailed = !img?.url && !isRegenerating
+        && (slotFailed || state.selected?.generation_stage === "error");
       const _slideSrc = img?.thumb_url || img?.url;
       const imgHtml = isRegenerating && img?.url
         ? `<div class="carousel-slide-image-wrap carousel-slide-regenerating"><img src="${escapeHtml(_slideSrc)}" data-full="${escapeHtml(img.url)}" alt="Слайд ${index + 1}" class="progressive-carousel-img" /><div class="carousel-slide-loading-overlay"><span class="button-spinner" aria-hidden="true"></span></div></div>`
