@@ -248,6 +248,132 @@ def test_create_carousel_routes_into_draft_detail(page):
     assert page.locator("#btnTabInspiration").get_attribute("class")
 
 
+def test_create_carousel_form_has_goal_and_emotion_selects(page):
+    """Carousel create form must expose goal_key and emotion selects
+    (consistent with threads_series form)."""
+    click_bottom_tab(page, "#btnTabCreate")
+    page.get_by_role("heading", name="Карусель").click()
+    page.get_by_role("heading", name="Создать карусель").wait_for(state="visible", timeout=5000)
+
+    carousel_form = page.locator("form[data-create-carousel]")
+    carousel_form.wait_for(state="visible", timeout=5000)
+
+    goal_select = carousel_form.locator("select[name='goal_key']")
+    emotion_select = carousel_form.locator("select[name='emotion']")
+
+    goal_select.wait_for(state="visible", timeout=5000)
+    emotion_select.wait_for(state="visible", timeout=5000)
+
+    # Default values must match server fallbacks.
+    assert goal_select.input_value() == "trust"
+    assert emotion_select.input_value() == "calm"
+
+    # Full option set matches architect's contract.
+    goal_values = goal_select.evaluate(
+        "el => Array.from(el.options).map(o => o.value)"
+    )
+    emotion_values = emotion_select.evaluate(
+        "el => Array.from(el.options).map(o => o.value)"
+    )
+    assert goal_values == ["trust", "authority", "engagement", "sales"], goal_values
+    assert emotion_values == [
+        "calm", "inspiration", "curiosity", "trust", "joy", "warm"
+    ], emotion_values
+
+
+def test_create_carousel_submits_goal_and_emotion(page):
+    """Selected goal_key + emotion values must go into the POST body
+    when submitting the carousel form."""
+    captured = {}
+    created = {
+        "draft_id": "newcar02",
+        "kind": "carousel",
+        "topic": "Вечерняя карусель",
+        "source": "/miniapp",
+        "status": "draft",
+        "feedback": "",
+        "created_at": "2026-03-12T02:00:00+00:00",
+        "preview": "Первый / Второй",
+        "slides_count": 2,
+        "storyboard_count": 0,
+        "payload": {
+            "slides": ["Первый", "Второй"],
+            "img_prompts": ["p1", "p2"],
+            "slide_images": [],
+            "img_prompt_notes": ["", ""],
+            "images_ready": 0,
+        },
+    }
+
+    def handle_route(route):
+        url = route.request.url
+        if url.endswith("/api/generate/carousel") and route.request.method == "POST":
+            try:
+                captured["body"] = json.loads(route.request.post_data or "{}")
+            except (TypeError, ValueError):
+                captured["body"] = {}
+            route.fulfill(
+                status=200, content_type="application/json",
+                body=json.dumps(created, ensure_ascii=False),
+            )
+            return
+        if "/api/drafts?" in url:
+            route.fulfill(
+                status=200, content_type="application/json",
+                body=json.dumps(
+                    {
+                        "items": [
+                            {
+                                "draft_id": created["draft_id"],
+                                "kind": "carousel",
+                                "topic": created["topic"],
+                                "source": created["source"],
+                                "created_at": created["created_at"],
+                                "status": created["status"],
+                                "feedback": "",
+                                "preview": created["preview"],
+                                "slides_count": 2,
+                                "storyboard_count": 0,
+                                "images_ready": 0,
+                                "generation_pending": True,
+                            }
+                        ],
+                        "total": 1,
+                    },
+                    ensure_ascii=False,
+                ),
+            )
+            return
+        if url.endswith(f"/api/drafts/{created['draft_id']}"):
+            route.fulfill(
+                status=200, content_type="application/json",
+                body=json.dumps(created, ensure_ascii=False),
+            )
+            return
+        route.continue_()
+
+    page.route("**/*", handle_route)
+
+    click_bottom_tab(page, "#btnTabCreate")
+    page.get_by_role("heading", name="Карусель").click()
+
+    carousel_form = page.locator("form[data-create-carousel]")
+    carousel_form.wait_for(state="visible", timeout=5000)
+
+    # Select non-default values to prove they propagate to the request.
+    carousel_form.locator("select[name='goal_key']").select_option("sales")
+    carousel_form.locator("select[name='emotion']").select_option("inspiration")
+    carousel_form.locator("textarea[name='topic']").fill("Вечерняя карусель")
+
+    page.get_by_role("button", name="Собрать карусель").click()
+    page.locator(".detail-title").wait_for(state="visible", timeout=10000)
+
+    assert "body" in captured, "POST /api/generate/carousel was not captured"
+    assert captured["body"].get("goal_key") == "sales", captured["body"]
+    assert captured["body"].get("emotion") == "inspiration", captured["body"]
+    assert captured["body"].get("topic") == "Вечерняя карусель"
+
+
 def test_themed_draft_detail_renders(themed_page):
     """Draft detail view renders with readable text in both themes."""
     click_bottom_tab(themed_page, "#btnTabInspiration")

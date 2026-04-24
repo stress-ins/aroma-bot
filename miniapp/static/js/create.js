@@ -335,6 +335,26 @@ export function createCreateModule(deps) {
             <p class="field-help">Лучше работает тема с обещанием результата: что человек поймет, почувствует или сможет сделать после карусели.</p>
             <button type="button" class="suggest-topic-btn">${uiIcon("zap")}<span>Предложи тему</span></button>
             <div class="suggest-topics-dropdown" hidden></div>
+            <div class="field-grid">
+              <label>Цель поста
+                <select name="goal_key">
+                  <option value="trust">Доверие</option>
+                  <option value="authority">Экспертность</option>
+                  <option value="engagement">Вовлечённость</option>
+                  <option value="sales">Продажи</option>
+                </select>
+              </label>
+              <label>Эмоциональный тон
+                <select name="emotion">
+                  <option value="calm">Спокойная</option>
+                  <option value="inspiration">Вдохновляющая</option>
+                  <option value="curiosity">Любопытство</option>
+                  <option value="trust">Доверие</option>
+                  <option value="joy">Радость</option>
+                  <option value="warm">Тёплая</option>
+                </select>
+              </label>
+            </div>
             <div class="carousel-layout-picker">
               <p class="field-label">Раскладка слайда</p>
               <div class="layout-option-row">
@@ -602,7 +622,7 @@ export function createCreateModule(deps) {
     const carouselForm = elements.draftDetail.querySelector("[data-create-carousel]");
     if (carouselForm) {
       bindSuggestButton(carouselForm, () => ({
-        goal_key: "trust",
+        goal_key: carouselForm.querySelector("select[name='goal_key']")?.value || "trust",
         format_key: "carousel",
       }));
       carouselForm.querySelectorAll('[name="layout_style"]').forEach((radio) => {
@@ -633,12 +653,14 @@ export function createCreateModule(deps) {
       if (doRaw) { try { daily_oil_context = JSON.parse(doRaw); } catch(_e) {} }
       const layoutStyle = carouselForm.querySelector('[name="layout_style"]:checked')?.value || "overlay";
       const practice_focus = carouselForm.querySelector("select[name='practice_focus']")?.value || "aroma";
+      const goal_key = carouselForm.querySelector("select[name='goal_key']")?.value || "trust";
+      const emotion = carouselForm.querySelector("select[name='emotion']")?.value || "calm";
       const pending = openPendingDraftCreation("carousel", topic);
       try {
         const draft = await fetchJson("/api/generate/carousel", {
           method: "POST",
           timeout: 45000,
-          body: JSON.stringify({ topic, practice_focus, blend_context, daily_oil_context, layout_style: layoutStyle }),
+          body: JSON.stringify({ topic, practice_focus, blend_context, daily_oil_context, layout_style: layoutStyle, goal_key, emotion }),
         });
         sessionStorage.removeItem("blend_create_context");
         sessionStorage.removeItem("daily_oil_context");

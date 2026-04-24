@@ -70,6 +70,12 @@ async def complete_repurpose_generation(
         enriched_topic = f"{source.topic}\n\nCore: {core['core_message']}"
         target_draft_entries = []
 
+        # Inherit mood fields from source draft when present, else use the same
+        # defaults as direct /api/generate/carousel so downstream regen + analytics
+        # see consistent values.
+        inherited_goal = payload.get("goal_key", "trust") or "trust"
+        inherited_emotion = payload.get("emotion", "calm") or "calm"
+
         for fmt in target_formats:
             if fmt == source.kind:
                 continue  # Skip same format as source
@@ -80,9 +86,12 @@ async def complete_repurpose_generation(
                 "generation_message": f"Адаптирую в {fmt}...",
                 "repurpose_group_id": group_id,
                 "repurpose_source_draft_id": source_draft_id,
-                "goal_key": payload.get("goal_key", "trust"),
+                "goal_key": inherited_goal,
                 "format_key": fmt if fmt not in ("reels_v2",) else "instagram",
             }
+            if fmt == "carousel":
+                # Carousel-specific: persist mood fields so regen + analytics see them.
+                stub_payload["emotion"] = inherited_emotion
 
             draft = await save_draft(
                 kind=fmt,
@@ -121,10 +130,13 @@ async def complete_repurpose_generation(
         for entry in target_draft_entries:
             fmt = entry["format"]
             did = entry["draft_id"]
-            goal = payload.get("goal_key", "trust")
+            goal = inherited_goal
 
             if fmt == "carousel":
-                tasks.append(complete_carousel_generation(did, enriched_topic, None))
+                tasks.append(complete_carousel_generation(
+                    did, enriched_topic, None,
+                    goal_key=goal, emotion=inherited_emotion,
+                ))
             elif fmt == "reels_v2":
                 tasks.append(complete_reels_v2_generation(did, enriched_topic, goal, "calm", None))
             elif fmt == "threads_series":

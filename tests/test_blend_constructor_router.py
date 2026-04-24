@@ -71,3 +71,47 @@ class TestBlendOfWeek:
         task_names = {t[0] for t in bg_tasks}
         assert "complete_carousel_generation" in task_names
         assert "complete_content_generation" in task_names
+
+    async def test_blend_of_week_carousel_payload_has_mood_defaults(self, setup_test_db):
+        """Carousel draft created from blend-of-week must persist goal_key/emotion defaults
+        in payload — same shape as direct /api/generate/carousel call."""
+        from bot.services.team_store import create_team
+        team = await create_team("Mood Defaults", creator_telegram_id=12345)
+
+        from miniapp_server import app
+
+        bg_tasks: list[tuple[str, tuple, dict]] = []
+
+        def capture_tasks(self, func, *args, **kwargs):
+            bg_tasks.append((func.__name__, args, kwargs))
+
+        with patch("fastapi.BackgroundTasks.add_task", capture_tasks):
+            client = TestClient(app)
+            resp = client.post(
+                "/api/blend-constructor/blend-of-week",
+                json={
+                    "title": "Утро",
+                    "brief": "тонус",
+                    "oils": [{"name_ru": "Лимон", "name_en": "Lemon", "drops": 3, "role": "основа"}],
+                    "total_drops": 3,
+                    "profile": {"focus": 50, "energy": 30, "creativity": 10, "calm": 10},
+                    "expert_note": "ok",
+                    "application_guide": "В диффузор",
+                    "tags": ["утро"],
+                },
+                headers={**HEADERS, "X-Team-Id": team.team_id},
+            )
+        assert resp.status_code == 200
+        carousel_draft_id = resp.json()["carousel_draft_id"]
+
+        from bot.services.drafts_store import get_draft
+        carousel = await get_draft(carousel_draft_id)
+        assert carousel is not None
+        assert carousel.payload.get("goal_key") == "trust"
+        assert carousel.payload.get("emotion") == "calm"
+
+        # And the background task call must mirror those values via kwargs
+        carousel_call = next(t for t in bg_tasks if t[0] == "complete_carousel_generation")
+        kwargs = carousel_call[2]
+        assert kwargs.get("goal_key") == "trust"
+        assert kwargs.get("emotion") == "calm"
