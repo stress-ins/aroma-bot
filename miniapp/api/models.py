@@ -145,6 +145,8 @@ class CreateCarouselPayload(BaseModel):
     blend_context: BlendContext | None = Field(default=None)
     daily_oil_context: DailyOilContext | None = Field(default=None)
     layout_style: str = Field(default="overlay")  # "overlay" | "editorial"
+    goal_key: str = Field(default="trust", max_length=64)
+    emotion: str = Field(default="calm", max_length=64)
 
 
 class CarouselSlideRegeneratePayload(BaseModel):

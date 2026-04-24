@@ -262,6 +262,10 @@ async def generate_reels(
     return draft
 
 
+_CAROUSEL_ALLOWED_GOALS = {"trust", "authority", "engagement", "sales"}
+_CAROUSEL_ALLOWED_EMOTIONS = {"calm", "inspiration", "curiosity", "trust", "joy", "warm"}
+
+
 @router.post("/api/generate/carousel", dependencies=[Depends(require_tier("expert")), Depends(_check_content_limit)])
 async def generate_carousel(
     payload: CreateCarouselPayload,
@@ -273,6 +277,20 @@ async def generate_carousel(
     bc = _extract_blend_context(payload)
     doc = _extract_daily_oil_context(payload)
     enriched_topic = _enrich_topic_with_daily_oil(topic, doc)
+
+    raw_goal = (payload.goal_key or "").strip().lower() or "trust"
+    if raw_goal not in _CAROUSEL_ALLOWED_GOALS:
+        logger.warning("carousel invalid goal_key=%r, falling back to trust", payload.goal_key)
+        goal_key = "trust"
+    else:
+        goal_key = raw_goal
+    raw_emotion = (payload.emotion or "").strip().lower() or "calm"
+    if raw_emotion not in _CAROUSEL_ALLOWED_EMOTIONS:
+        logger.warning("carousel invalid emotion=%r, falling back to calm", payload.emotion)
+        emotion = "calm"
+    else:
+        emotion = raw_emotion
+
     carousel_payload: dict = {
         "slides": [],
         "img_prompts": [],
@@ -284,6 +302,8 @@ async def generate_carousel(
         "generation_pending": True,
         "generation_stage": "slides",
         "generation_message": "Собираю структуру карусели.",
+        "goal_key": goal_key,
+        "emotion": emotion,
     }
     if bc:
         carousel_payload["blend_context"] = bc
@@ -307,7 +327,15 @@ async def generate_carousel(
         team_id=ctx.team_id,
         created_by=ctx.telegram_id,
     )
-    background_tasks.add_task(complete_carousel_generation, saved.draft_id, enriched_topic, bc, layout_style)
+    background_tasks.add_task(
+        complete_carousel_generation,
+        saved.draft_id,
+        enriched_topic,
+        bc,
+        layout_style,
+        goal_key=goal_key,
+        emotion=emotion,
+    )
     return await serialize_draft(saved)
 
 

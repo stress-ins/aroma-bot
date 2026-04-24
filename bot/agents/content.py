@@ -677,8 +677,8 @@ def _custom_topics_prompt(user_brief: str, goal_key: str, format_key: str) -> st
     return _custom_topics_prompt_impl(user_brief, goal_key, format_key, GOAL_GUIDANCE, FORMAT_LABELS)
 
 
-def _strategist_prompt(topic: str, goal_key: str, format_key: str, blend_context: dict | None = None, rag_context: str = "", practice_focus: str = "aroma") -> str:
-    return _strategist_prompt_impl(topic, goal_key, format_key, GOAL_GUIDANCE, FORMAT_LABELS, blend_context=blend_context, rag_context=rag_context, practice_focus=practice_focus)
+def _strategist_prompt(topic: str, goal_key: str, format_key: str, blend_context: dict | None = None, rag_context: str = "", practice_focus: str = "aroma", emotion: str = "") -> str:
+    return _strategist_prompt_impl(topic, goal_key, format_key, GOAL_GUIDANCE, FORMAT_LABELS, blend_context=blend_context, rag_context=rag_context, practice_focus=practice_focus, emotion=emotion)
 
 
 def _writer_prompt(topic: str, goal_key: str, format_key: str, angle: str, hook: str, blend_context: dict | None = None, rag_context: str = "", practice_focus: str = "aroma", series_template: dict | None = None) -> str:
@@ -733,7 +733,7 @@ def _generate_topics_sync(
         return cache.get(cache_key) or []
 
 
-def _generate_strategist_sync(topic: str, goal_key: str, format_key: str, blend_context: dict | None = None, rag_context: str = "", practice_focus: str = "aroma") -> tuple[str, str]:
+def _generate_strategist_sync(topic: str, goal_key: str, format_key: str, blend_context: dict | None = None, rag_context: str = "", practice_focus: str = "aroma", emotion: str = "") -> tuple[str, str]:
     """Step 1: Strategist finds creative angle and hook line."""
     # Enrich with performance feedback from past publications
     enriched_rag = rag_context
@@ -748,7 +748,7 @@ def _generate_strategist_sync(topic: str, goal_key: str, format_key: str, blend_
     except Exception:
         logger.debug("Failed to load strategist feedback", exc_info=True)
 
-    raw = _call_claude(_strategist_prompt(topic, goal_key, format_key, blend_context=blend_context, rag_context=enriched_rag, practice_focus=practice_focus), max_tokens=250)
+    raw = _call_claude(_strategist_prompt(topic, goal_key, format_key, blend_context=blend_context, rag_context=enriched_rag, practice_focus=practice_focus, emotion=emotion), max_tokens=250)
     angle = ""
     hook = ""
     for line in raw.strip().splitlines():

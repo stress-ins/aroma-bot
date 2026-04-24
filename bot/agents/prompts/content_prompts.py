@@ -162,6 +162,16 @@ PRACTICE_FOCUS_BLOCKS = {
 }
 
 
+EMOTION_LABELS: dict[str, str] = {
+    "calm": "спокойствие",
+    "inspiration": "вдохновение",
+    "curiosity": "любопытство",
+    "trust": "доверие",
+    "joy": "радость",
+    "warm": "тёплая близость",
+}
+
+
 def strategist_prompt(
     topic: str,
     goal_key: str,
@@ -171,6 +181,7 @@ def strategist_prompt(
     blend_context: dict | None = None,
     rag_context: str = "",
     practice_focus: str = "aroma",
+    emotion: str = "",
 ) -> str:
     blend_block = ""
     if blend_context:
@@ -182,6 +193,20 @@ def strategist_prompt(
         )
     rag_block = f"\n{rag_context}\n" if rag_context else ""
     focus_block = PRACTICE_FOCUS_BLOCKS.get(practice_focus, "")
+    # Why: emotion is optional — legacy callers (content/series) pass empty string
+    # and should see zero change in the prompt. Only carousel currently threads a real value.
+    # Defence-in-depth: if the key is not in our whitelist (EMOTION_LABELS), drop the
+    # block entirely. Routers already validate the value, but never trust the input —
+    # an unknown key here would otherwise leak raw user text into the LLM prompt.
+    emotion_block = ""
+    key = (emotion or "").strip().lower()
+    if key:
+        label = EMOTION_LABELS.get(key)
+        if label is not None:
+            emotion_block = (
+                f"\nЭмоциональный регистр: {label}. "
+                f"Угол и хук должны звучать именно в этой тональности — лексика, ритм и образы подстраиваются под неё.\n"
+            )
     return f"""\
 {get_brand_context()}
 Роль: ты Content Strategist. Твоя задача — найти угол и убийственную первую строку.
@@ -189,7 +214,7 @@ def strategist_prompt(
 Тема: {topic}
 Цель: {goal_guidance[goal_key]}
 Формат: {format_labels[format_key]}
-{focus_block}{rag_block}
+{focus_block}{emotion_block}{rag_block}
 
 ПАТТЕРНЫ СИЛЬНЫХ ХУКОВ (используй один из них):
 1. Контринтуитивное утверждение: «Чем больше ты стараешься расслабиться, тем сильнее зажимаешься»

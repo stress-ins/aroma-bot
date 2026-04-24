@@ -20,13 +20,23 @@ async def complete_carousel_generation(
     topic: str,
     blend_context: dict | None = None,
     layout_style: str = "overlay",
+    *,
+    goal_key: str = "trust",
+    emotion: str = "calm",
 ) -> None:
     try:
         loop = asyncio.get_running_loop()
         forbidden = load_forbidden_phrases()
         render_style = "editorial" if layout_style == "editorial" else "overlay"
         slides, img_prompts, _angle, _hook = await loop.run_in_executor(
-            None, _generate_carousel_sync, topic, forbidden, blend_context, render_style
+            None,
+            _generate_carousel_sync,
+            topic,
+            forbidden,
+            blend_context,
+            render_style,
+            goal_key,
+            emotion,
         )
         if not slides:
             raise RuntimeError("carousel_generation_failed")

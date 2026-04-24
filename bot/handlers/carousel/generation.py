@@ -283,7 +283,14 @@ def _generate_slide_image_prompts_sync(slides: list[str], topic: str, blend_cont
     return optimized
 
 
-def _generate_carousel_sync(topic: str, user_forbidden: list[str] | None = None, blend_context: dict | None = None, render_style: str = "overlay") -> tuple[list[str], list[str], str, str]:
+def _generate_carousel_sync(
+    topic: str,
+    user_forbidden: list[str] | None = None,
+    blend_context: dict | None = None,
+    render_style: str = "overlay",
+    goal_key: str = "trust",
+    emotion: str = "calm",
+) -> tuple[list[str], list[str], str, str]:
     """Draft -> editor -> refined slides + per-slide image prompts.
 
     Returns (slides, img_prompts, angle, hook).
@@ -292,7 +299,13 @@ def _generate_carousel_sync(topic: str, user_forbidden: list[str] | None = None,
     import time
 
     from bot.agents.content import _generate_strategist_sync
-    angle, hook = _generate_strategist_sync(topic, goal_key="trust", format_key="carousel", blend_context=blend_context)
+    angle, hook = _generate_strategist_sync(
+        topic,
+        goal_key=goal_key,
+        format_key="carousel",
+        blend_context=blend_context,
+        emotion=emotion,
+    )
 
     for attempt in range(2):
         try:

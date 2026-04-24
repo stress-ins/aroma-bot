@@ -170,19 +170,29 @@ async def blend_of_week(
     bc = body.model_dump()
     topic = build_blend_of_week_topic(bc)
 
-    # 1. Create carousel draft
+    # 1. Create carousel draft.
+    # Defaults mirror /api/generate/carousel so regen + analytics see consistent values.
+    carousel_goal_key = "trust"
+    carousel_emotion = "calm"
     carousel_payload = {
         "generation_pending": True,
         "generation_stage": "content",
         "generation_message": "Собираю карусель для смеси недели.",
         "blend_context": bc,
+        "goal_key": carousel_goal_key,
+        "emotion": carousel_emotion,
     }
     carousel_draft = await save_draft(
         kind="carousel", topic=topic, source="/miniapp",
         payload=carousel_payload, team_id=ctx.team_id, created_by=ctx.telegram_id,
     )
     background_tasks.add_task(
-        complete_carousel_generation, carousel_draft.draft_id, topic, blend_context=bc,
+        complete_carousel_generation,
+        carousel_draft.draft_id,
+        topic,
+        blend_context=bc,
+        goal_key=carousel_goal_key,
+        emotion=carousel_emotion,
     )
 
     # 2. Create threads/content draft

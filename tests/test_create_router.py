@@ -135,6 +135,139 @@ class TestGenerateCarousel:
         assert "draft_id" in data
         assert data["kind"] == "carousel"
 
+    async def test_defaults_when_no_goal_emotion(self, team_ready):
+        """Back-compat: POST without goal_key/emotion defaults to trust/calm."""
+        from miniapp_server import app
+        from bot.services.drafts_store import get_draft
+        client = TestClient(app, raise_server_exceptions=False)
+        with patch("miniapp.api.routers.create.complete_carousel_generation", new_callable=AsyncMock):
+            resp = client.post(
+                "/api/generate/carousel",
+                json={"topic": "Morning ritual"},
+                headers=HEADERS,
+            )
+        assert resp.status_code == 200
+        draft_id = resp.json()["draft_id"]
+        draft = await get_draft(draft_id)
+        assert draft is not None
+        assert draft.payload.get("goal_key") == "trust"
+        assert draft.payload.get("emotion") == "calm"
+
+    async def test_goal_emotion_saved_in_payload(self, team_ready):
+        """POST with goal_key/emotion stores them in draft.payload."""
+        from miniapp_server import app
+        from bot.services.drafts_store import get_draft
+        client = TestClient(app, raise_server_exceptions=False)
+        with patch("miniapp.api.routers.create.complete_carousel_generation", new_callable=AsyncMock):
+            resp = client.post(
+                "/api/generate/carousel",
+                json={"topic": "Evening ritual", "goal_key": "sales", "emotion": "inspiration"},
+                headers=HEADERS,
+            )
+        assert resp.status_code == 200
+        draft_id = resp.json()["draft_id"]
+        draft = await get_draft(draft_id)
+        assert draft is not None
+        assert draft.payload.get("goal_key") == "sales"
+        assert draft.payload.get("emotion") == "inspiration"
+
+    async def test_invalid_goal_falls_back_to_default(self, team_ready):
+        """Unknown goal_key is coerced to the trust default (not 400)."""
+        from miniapp_server import app
+        from bot.services.drafts_store import get_draft
+        client = TestClient(app, raise_server_exceptions=False)
+        with patch("miniapp.api.routers.create.complete_carousel_generation", new_callable=AsyncMock):
+            resp = client.post(
+                "/api/generate/carousel",
+                json={"topic": "Any", "goal_key": "invalid_goal", "emotion": "calm"},
+                headers=HEADERS,
+            )
+        assert resp.status_code == 200
+        draft_id = resp.json()["draft_id"]
+        draft = await get_draft(draft_id)
+        assert draft is not None
+        assert draft.payload.get("goal_key") == "trust"
+        assert draft.payload.get("emotion") == "calm"
+
+    async def test_invalid_emotion_falls_back_to_default(self, team_ready):
+        """Unknown emotion is coerced to the calm default (not 400)."""
+        from miniapp_server import app
+        from bot.services.drafts_store import get_draft
+        client = TestClient(app, raise_server_exceptions=False)
+        with patch("miniapp.api.routers.create.complete_carousel_generation", new_callable=AsyncMock):
+            resp = client.post(
+                "/api/generate/carousel",
+                json={"topic": "Any", "goal_key": "trust", "emotion": "rage"},
+                headers=HEADERS,
+            )
+        assert resp.status_code == 200
+        draft_id = resp.json()["draft_id"]
+        draft = await get_draft(draft_id)
+        assert draft is not None
+        assert draft.payload.get("goal_key") == "trust"
+        assert draft.payload.get("emotion") == "calm"
+
+    async def test_values_normalized_uppercase_whitespace(self, team_ready):
+        """Values are normalized via .strip().lower()."""
+        from miniapp_server import app
+        from bot.services.drafts_store import get_draft
+        client = TestClient(app, raise_server_exceptions=False)
+        with patch("miniapp.api.routers.create.complete_carousel_generation", new_callable=AsyncMock):
+            resp = client.post(
+                "/api/generate/carousel",
+                json={"topic": "Any", "goal_key": "  AUTHORITY  ", "emotion": " Joy "},
+                headers=HEADERS,
+            )
+        assert resp.status_code == 200
+        draft_id = resp.json()["draft_id"]
+        draft = await get_draft(draft_id)
+        assert draft is not None
+        assert draft.payload.get("goal_key") == "authority"
+        assert draft.payload.get("emotion") == "joy"
+
+    async def test_background_task_receives_goal_emotion(self, team_ready):
+        """Background task is invoked with goal_key and emotion kwargs."""
+        from miniapp_server import app
+        client = TestClient(app, raise_server_exceptions=False)
+        with patch("miniapp.api.routers.create.complete_carousel_generation", new_callable=AsyncMock) as mock_gen:
+            resp = client.post(
+                "/api/generate/carousel",
+                json={"topic": "Some topic", "goal_key": "engagement", "emotion": "curiosity"},
+                headers=HEADERS,
+            )
+        assert resp.status_code == 200
+        # FastAPI's BackgroundTasks runs async tasks via `await`, so the AsyncMock
+        # records an await — assert that explicitly to avoid ambiguity.
+        assert mock_gen.await_count == 1
+        call = mock_gen.call_args
+        kwargs = call.kwargs
+        assert kwargs.get("goal_key") == "engagement"
+        assert kwargs.get("emotion") == "curiosity"
+
+    async def test_oversize_goal_key_rejected(self, team_ready):
+        """goal_key longer than 64 chars must be rejected with 422 (pydantic validation)."""
+        from miniapp_server import app
+        client = TestClient(app, raise_server_exceptions=False)
+        oversize = "x" * 65
+        resp = client.post(
+            "/api/generate/carousel",
+            json={"topic": "Test", "goal_key": oversize, "emotion": "calm"},
+            headers=HEADERS,
+        )
+        assert resp.status_code == 422
+
+    async def test_oversize_emotion_rejected(self, team_ready):
+        """emotion longer than 64 chars must be rejected with 422 (pydantic validation)."""
+        from miniapp_server import app
+        client = TestClient(app, raise_server_exceptions=False)
+        oversize = "y" * 65
+        resp = client.post(
+            "/api/generate/carousel",
+            json={"topic": "Test", "goal_key": "trust", "emotion": oversize},
+            headers=HEADERS,
+        )
+        assert resp.status_code == 422
+
 
 # ---------------------------------------------------------------------------
 # POST /api/generate/threads-series — validation
