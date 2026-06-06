@@ -51,3 +51,6 @@ data/*.json
 !data/osteo_seed.json
 !data/biodynamics_seed.json
 .coverage
+
+# graphify knowledge graph (rebuilt locally via .githooks; do not commit)
+graphify-out/

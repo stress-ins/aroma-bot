@@ -1,0 +1,49 @@
+# .graphifyignore — держим knowledge graph ЛИНЗОЙ кода (AST), а не свалкой.
+# По образцу kartracers/.graphifyignore и laba/.graphifyignore.
+#
+# Здоровый граф = AST-граф кода (bot/ Python + miniapp/ JS + db/).
+# Штатный путь (bootstrap `graphify update` + post-commit) держит AST-граф без LLM.
+# Семантика заносится только полным `/graphify`.
+#
+# Синтаксис gitignore-style. На git-трекинг НЕ влияет — файлы остаются в репозитории.
+
+# --- Python окружение и кеш ---
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# --- Вендоренные зависимости ---
+node_modules/
+
+# --- Состояние агента ---
+.claude/
+
+# --- Собственный вывод graphify (страховка от рекурсии) ---
+graphify-out/
+
+# --- Билд / сгенерированные артефакты ---
+static-dist/
+generated/
+cache/
+remotion/
+
+# --- Ассеты (картинки через vision = токены) ---
+assets/
+screenshots/
+gallery-skill/
+
+# --- Данные / БД (binary + большие JSON/CSV) ---
+data/
+*.db
+*.sqlite
+*.sqlite3
+*.csv
+
+# --- n8n workflow JSON (конфиг-дампы, не код) ---
+n8n/
+
+# --- Playwright UI-спеки (повторяющийся UI-тест, мало сигнала; юнит tests/ оставляем) ---
+tests/ui/
+test-results/
+playwright-report/

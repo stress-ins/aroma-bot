@@ -2,6 +2,22 @@
 
 ---
 
+## Graphify — обязательный первый инструмент исследования
+
+ЛЮБОЙ ответ на «где X / что использует Y / как связаны A и B / найди вызовы Z» НАЧИНАЕТСЯ с `graphify query`. Grep/Read/find — ТОЛЬКО fallback после графа.
+
+```bash
+graphify query "<вопрос>"
+graphify path "NodeA" "NodeB"
+graphify explain "NodeName"
+# явный --graph если CLI не находит graphify-out/:
+graphify query "<вопрос>" --graph "$(git rev-parse --show-toplevel)/graphify-out/graph.json"
+```
+
+Auto-update через tracked `.githooks/post-commit` / `.githooks/post-checkout` (code-only re-extract, без LLM). Активируются один раз: `bash scripts/graphify-bootstrap.sh` (ставит `core.hooksPath=.githooks` + строит граф; idempotent). Если граф отсутствует → запустить bootstrap. Линза графа настроена `.graphifyignore` (исключает .venv/data/assets/n8n — держим AST-граф кода `bot/`+`miniapp/`+`db/`).
+
+---
+
 ## Режим работы: Software Factory (единственный)
 
 **Режим один. Других нет. Любая задача — фича, баг, мелкая правка, опечатка — проходит через pipeline. Без исключений.**
@@ -215,38 +231,12 @@ Miniapp поддерживает 6 цветовых тем:
 Codex проверяет: auth bypass, data loss, race conditions, idempotency, error handling, state management.
 
 ### Content Factory review (при изменении агентов/промптов)
-Запускать при любых изменениях в `bot/agents/`, `bot/agents/prompts/`, `bot/services/miniapp_references/`:
-```
-/codex:adversarial-review --base main focus on:
-1. Prompt injection vectors — user input flowing into LLM prompts
-2. Quality threshold bypass — can weak content pass quality_evaluator?
-3. Brand voice drift — are prompts consistent with brand_guardian rules?
-4. Retry/fallback behaviour — what happens on LLM failure? Silent data loss?
-5. Medical safety — contraindications, healing claims, NAHA/IFA compliance
-6. Cross-reference integrity — slug resolution, missing cards, stale references
-```
+При изменениях в `bot/agents/`, `bot/agents/prompts/`, `bot/services/miniapp_references/` — adversarial-review с расширенным focus-промптом (prompt injection, quality bypass, brand drift, retry/fallback, medical safety, cross-reference). Полный focus-промпт + состав агентов (~47) и промпт-файлов — в **[`docs/CONTENT-FACTORY.md`](docs/CONTENT-FACTORY.md)** (читать по необходимости, не грузится автоматически).
 
-### Content Factory состав (44 агента, 6 промпт-файлов)
-
-**Генерация:** content.py (orchestrator), creative_team.py (editor), planner.py, hashtag_recommender.py, platform_optimizer.py, tone_adapter.py, repurpose_agent.py
-
-**Видео:** youtube_script_agent.py, youtube_metadata_agent.py, broll_director.py, reels_agent.py, video_coach.py
-
-**Карусели:** carousel_editor.py, carousel_editorial.py, carousel_preview_agent.py, carousel_export_agent.py, image_prompt_engineer.py, image_prompt_router.py, nanobanana_prompt_expert.py
-
-**Серии:** series_orchestrator.py, series_writer.py, series_coherence.py, thread_scorer.py, threads_replies.py
-
-**Quality gates:** quality_evaluator.py (порог 0.65), brand_guardian.py, medical_reviewer.py, ux_reviewer.py
-
-**Доменные эксперты:** aromatherapy_expert.py, wellness_expert.py, bodywork_expert.py, sound_healing_expert.py
-
-**Рекомендации:** recommendation_agent.py, massage_recommendation_agent.py, protocol_recommendation_agent.py
-
-**Промпты:** content_prompts.py, reels_prompts.py, youtube_prompts.py, series_prompts.py, tone_prompts.py, hashtag_prompts.py
-
-### Когда НЕ использовать Codex
-- **НЕ использовать `/codex:rescue`** для фиксов — конфликт двух LLM в одном проекте
-- Мелкие правки (typo, README) — можно пропустить review (но пункт в чеклисте остаётся)
+### Роль Codex (единая линия со всеми проектами)
+- **Codex — primary reviewer/verifier.** `/codex:adversarial-review` обязателен на гейте перед PR (см. выше). Это основной режим использования Codex в проекте.
+- **`codex:rescue` — только для разблокировки**, когда Claude-pipeline застрял (3+ итерации без прогресса) или нужна независимая диагностика/верификация сложного решения. НЕ рутинный fix-механизм: обычные фиксы делает разработчик (@backend/@frontend), не Codex.
+- Мелкие правки (typo, README) — можно пропустить review (но пункт в чеклисте остаётся).
 
 ---
 
@@ -260,12 +250,14 @@ Codex проверяет: auth bypass, data loss, race conditions, idempotency, 
 
 ## Icon Policy
 
+Проект использует **Phosphor Icons** (НЕ Lucide — миграция выполнена; Lucide не загружается, `data-lucide` даёт пустые/сломанные иконки).
+
 - **NEVER use raw inline SVG strings** for icons in miniapp code.
-- **Always use Lucide Icons** via `icon(name, size)` helper → `<i data-lucide="...">`.
-- After any dynamic DOM render that injects icons, call `if (window.lucide) lucide.createIcons()`.
-- The MutationObserver on `#app` (falls back to `document.body`) handles most cases automatically.
-- **Prefer Lucide over emoji** for UI elements (buttons, tabs, badges). Emoji OK only for category/sentiment indicators in text content.
-- Before choosing an icon name, verify it exists at: https://lucide.dev/icons/
+- **Always use Phosphor Icons** via `<i class="ph ph-{name}">` — напрямую или через helper'ы `icon(name, size)` / `uiIcon(name)` в `miniapp/static/app.js`.
+- Семантические алиасы — в `PHOSPHOR_MAP` (`app.js`, напр. "note" → "pencil-line", "reel" → "video-camera"). Проверять там перед выбором имени.
+- **NEVER use `data-lucide`** attributes или любые ссылки на Lucide.
+- **Prefer Phosphor over emoji** for UI elements (buttons, tabs, badges). Emoji OK only for category/sentiment indicators in text content.
+- Before choosing an icon name, verify it exists at: https://phosphoricons.com/
 
 ---
 
