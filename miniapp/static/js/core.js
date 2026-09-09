@@ -170,8 +170,29 @@ export function createCoreModule(deps) {
   }
 
   function generationStateMarkup(item, kind = "draft") {
-    if (!item?.generation_pending) return "";
-    const stage = String(item.generation_stage || "").trim();
+    const payload = item?.payload || {};
+    const pending = item?.generation_pending || payload.generation_pending;
+    if (kind === "draft" && item?.kind === "carousel" && !pending) {
+      const empty = !Array.isArray(payload.slides) || !payload.slides.some((slide) => {
+        if (typeof slide === "string") return Boolean(slide.trim());
+        return slide && typeof slide === "object" && ["heading", "body", "text"].some(
+          (key) => typeof slide[key] === "string" && Boolean(slide[key].trim()),
+        );
+      });
+      const failed = (item.generation_stage || payload.generation_stage) === "error";
+      if (empty || failed) {
+        const message = item.generation_message || payload.generation_message;
+        return `<section class="section section-accent" role="status">
+          <div class="section-heading">
+            <h3>${empty ? "Карусель не создана" : "Не удалось закончить карусель"}</h3>
+            <p>${escapeHtml(message || "Генерация прервалась. Тема сохранена — попробуйте ещё раз.")}</p>
+          </div>
+          <button class="primary-button" type="button" data-action="regenerateCarouselAll" data-args='${escapeHtml(JSON.stringify([item.draft_id, null]))}'>Повторить генерацию</button>
+        </section>`;
+      }
+    }
+    if (!pending) return "";
+    const stage = String(item.generation_stage || payload.generation_stage || "").trim();
     if (kind === "draft" && stage === "images") return "";
     if (kind === "draft" && item.kind === "carousel") {
       const payload = item.payload || {};

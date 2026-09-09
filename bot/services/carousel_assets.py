@@ -267,10 +267,7 @@ async def populate_carousel_slide_assets(draft_id: str, layout_style: str = "ove
     payload = dict(draft.payload)
     payload["slide_images"] = slide_images
     payload["slide_image_versions"] = slide_versions
-    payload["images_ready"] = sum(
-        1 for img in slide_images
-        if isinstance(img, dict) and img.get("filename")
-    )
+    payload["images_ready"] = sum(1 for img in slide_images if img)
 
     if has_pending_callback:
         payload["generation_stage"] = "awaiting_callback"
@@ -384,6 +381,8 @@ async def regenerate_all_carousel_slide_assets(draft_id: str) -> dict[str, objec
     blend_mood = _get_blend_mood_from_payload(draft.payload)
 
     changed = False
+    has_pending_callback = False
+    has_failure = False
     for index, prompt in enumerate(img_prompts):
         # regenerate-all always uses text-to-image (fresh generation)
         image_urls = None
@@ -415,22 +414,46 @@ async def regenerate_all_carousel_slide_assets(draft_id: str) -> dict[str, objec
             )
         except Exception:
             logger.exception("carousel_assets: regenerate-all failed on slide %d for draft %s", index + 1, draft_id)
+            has_failure = True
             continue
-        if not result.image_bytes:
+        if result.image_bytes:
+            version = save_carousel_slide_asset(draft_id, index, result.image_bytes, prompt=final_prompt)
+            slide_images[index] = version
+            slide_versions[index].append(version)
+            changed = True
             continue
-        version = save_carousel_slide_asset(draft_id, index, result.image_bytes, prompt=final_prompt)
-        slide_images[index] = version
-        slide_versions[index].append(version)
-        changed = True
+        if result.kie_task_id and not result.error:
+            slide_images[index] = {
+                "kie_task_id": result.kie_task_id,
+                "pending_callback": True,
+                "prompt": final_prompt,
+            }
+            has_pending_callback = True
+            changed = True
+            continue
+        logger.warning(
+            "carousel_assets: regenerate-all produced no image for slide %d of draft %s: %s",
+            index + 1, draft_id, result.error,
+        )
+        has_failure = True
 
-    if not changed:
+    if not changed and not has_failure:
         return dict(draft.payload)
 
     payload = dict(draft.payload)
     payload["slide_images"] = slide_images
     payload["slide_image_versions"] = slide_versions
     payload["img_prompt_notes"] = notes
-    payload["images_ready"] = sum(1 for img in slide_images if img)
+    payload["images_ready"] = sum(
+        1 for img in slide_images
+        if isinstance(img, dict) and img.get("filename")
+    )
+    if has_failure:
+        payload["generation_stage"] = "error"
+    elif has_pending_callback:
+        payload["generation_stage"] = "awaiting_callback"
+    else:
+        payload.pop("generation_stage", None)
     updated = await update_draft(draft_id, payload=payload)
     return dict(updated.payload) if updated else None
 

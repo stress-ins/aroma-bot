@@ -12,7 +12,77 @@ from bot.services.carousel_assets import (
 from bot.services.drafts_store import get_draft, update_draft
 from bot.services.forbidden_phrases import load_forbidden_phrases
 
-from ._common import _run_generation_task, set_generation_state
+from ._common import set_generation_state
+
+
+def has_complete_carousel_text(payload: dict | None) -> bool:
+    """Whether a draft has a complete text/prompt pair for every slide."""
+    payload = payload or {}
+    slides = payload.get("slides")
+    img_prompts = payload.get("img_prompts")
+    if not isinstance(slides, list) or not isinstance(img_prompts, list):
+        return False
+    if not slides or len(slides) != len(img_prompts):
+        return False
+
+    def has_slide_text(slide: object) -> bool:
+        if isinstance(slide, str):
+            return bool(slide.strip())
+        if isinstance(slide, dict):
+            return any(
+                isinstance(slide.get(key), str) and bool(slide[key].strip())
+                for key in ("heading", "body", "text")
+            )
+        return False
+
+    return all(has_slide_text(slide) for slide in slides) and all(
+        isinstance(prompt, str) and bool(prompt.strip()) for prompt in img_prompts
+    )
+
+
+def needs_carousel_text_recovery(payload: dict | None) -> bool:
+    """Only rebuild text when no usable slide text remains at all."""
+    slides = (payload or {}).get("slides")
+    if not isinstance(slides, list) or not slides:
+        return True
+    for slide in slides:
+        if isinstance(slide, str) and slide.strip():
+            return False
+        if isinstance(slide, dict) and any(
+            isinstance(slide.get(key), str) and bool(slide[key].strip())
+            for key in ("heading", "body", "text")
+        ):
+            return False
+    return True
+
+
+async def _finish_carousel_asset_generation(draft_id: str, result: str | None) -> None:
+    """Keep callback and failure outcomes reported by the asset service intact."""
+    if result == "awaiting_callback":
+        await set_generation_state(
+            draft_id,
+            pending=True,
+            stage="awaiting_callback",
+            message="Картинки генерируются, ожидаем результат…",
+        )
+    elif result == "error":
+        await set_generation_state(
+            draft_id,
+            pending=False,
+            stage="error",
+            message="Не удалось сгенерировать картинки. Попробуйте ещё раз.",
+            error="carousel_assets_failed",
+        )
+    else:
+        await set_generation_state(draft_id, pending=False)
+
+
+def _carousel_assets_changed(before: dict, after: dict) -> bool:
+    """Detect whether image-only regeneration produced a new saved asset."""
+    return (
+        before.get("slide_images") != after.get("slide_images")
+        or before.get("slide_image_versions") != after.get("slide_image_versions")
+    )
 
 
 async def complete_carousel_generation(
@@ -38,7 +108,7 @@ async def complete_carousel_generation(
             goal_key,
             emotion,
         )
-        if not slides:
+        if not has_complete_carousel_text({"slides": slides, "img_prompts": img_prompts}):
             raise RuntimeError("carousel_generation_failed")
         draft = await get_draft(draft_id)
         if not draft:
@@ -61,14 +131,21 @@ async def complete_carousel_generation(
         if blend_context:
             payload["blend_context"] = blend_context
         await update_draft(draft_id, payload=payload, status="draft")
-        await populate_carousel_slide_assets(draft_id, layout_style=layout_style)
-        await set_generation_state(draft_id, pending=False)
+        result = await populate_carousel_slide_assets(draft_id, layout_style=layout_style)
+        await _finish_carousel_asset_generation(draft_id, result)
     except Exception as exc:
+        from bot.services.claude_client import ReplicatePaymentError, ReplicateRateLimitError
+
+        message = (
+            "Сервис генерации временно недоступен. Попробуйте позже."
+            if isinstance(exc, (ReplicatePaymentError, ReplicateRateLimitError))
+            else "Не удалось закончить генерацию карусели. Попробуйте ещё раз."
+        )
         await set_generation_state(
             draft_id,
             pending=False,
             stage="error",
-            message="Не удалось закончить генерацию карусели. Попробуйте ещё раз.",
+            message=message,
             error=str(exc),
         )
 
@@ -165,8 +242,51 @@ async def complete_carousel_regen_caption(draft_id: str) -> None:
 
 
 async def complete_carousel_regenerate_all(draft_id: str) -> None:
-    await _run_generation_task(
-        draft_id,
-        regenerate_all_carousel_slide_assets(draft_id),
-        "Не удалось перегенерировать все картинки. Попробуйте ещё раз.",
-    )
+    """Regenerate images, or rebuild text first when a failed draft has none."""
+    try:
+        draft = await get_draft(draft_id)
+        if not draft or draft.kind != "carousel":
+            raise RuntimeError("carousel_not_found")
+
+        payload = draft.payload or {}
+        if needs_carousel_text_recovery(payload):
+            layout_style = payload.get("layout_style", "overlay")
+            await complete_carousel_generation(
+                draft_id,
+                draft.topic,
+                payload.get("blend_context"),
+                layout_style,
+                goal_key=payload.get("goal_key", "trust") or "trust",
+                emotion=payload.get("emotion", "calm") or "calm",
+            )
+            return
+
+        if not has_complete_carousel_text(payload):
+            raise RuntimeError("carousel_image_prompts_missing")
+
+        result = await regenerate_all_carousel_slide_assets(draft_id)
+        if result is None:
+            raise RuntimeError("carousel_regenerate_all_failed")
+
+        stage = result.get("generation_stage")
+        if stage == "error" and any(
+            isinstance(image, dict) and image.get("pending_callback")
+            for image in result.get("slide_images", [])
+        ):
+            await set_generation_state(
+                draft_id, pending=True, stage="error",
+                message="Часть картинок не удалось создать. Ожидаем остальные результаты…",
+                error="carousel_assets_failed",
+            )
+            return
+        if stage not in ("awaiting_callback", "error") and not _carousel_assets_changed(payload, result):
+            raise RuntimeError("carousel_regenerate_all_failed")
+        await _finish_carousel_asset_generation(draft_id, stage)
+    except Exception as exc:
+        await set_generation_state(
+            draft_id,
+            pending=False,
+            stage="error",
+            message="Не удалось перегенерировать все картинки. Попробуйте ещё раз.",
+            error=str(exc),
+        )

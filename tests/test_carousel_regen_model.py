@@ -107,3 +107,41 @@ async def test_regenerate_all_always_text2img():
         for call in mock_gen.call_args_list:
             image_urls = call.kwargs.get("image_urls") or call[1].get("image_urls")
             assert image_urls is None
+
+
+@pytest.mark.asyncio
+async def test_regenerate_all_keeps_callback_pending_state():
+    """A Kie submission must leave the batch awaiting its webhook callback."""
+    draft = _make_carousel_draft(slide_count=1)
+    with (
+        patch(f"{_MODULE}.get_draft", new_callable=AsyncMock, return_value=draft),
+        patch(f"{_MODULE}.update_draft", new_callable=AsyncMock, return_value=draft) as update,
+        patch(f"{_MODULE}.generate_gemini_image_sync", return_value=MagicMock(image_bytes=None, kie_task_id="kie-1", error=None)),
+        patch("bot.agents.image_prompt_router.optimize_image_prompt", side_effect=lambda p, **kw: p),
+    ):
+        from bot.services.carousel_assets import regenerate_all_carousel_slide_assets
+
+        await regenerate_all_carousel_slide_assets("d1")
+
+    payload = update.await_args.kwargs["payload"]
+    assert payload["generation_stage"] == "awaiting_callback"
+    assert payload["slide_images"][0]["pending_callback"] is True
+    assert payload["images_ready"] == 0
+
+
+@pytest.mark.asyncio
+async def test_regenerate_all_marks_partial_failures_as_error():
+    """A successful replacement cannot hide another slide's failed generation."""
+    draft = _make_carousel_draft(slide_count=2)
+    with (
+        patch(f"{_MODULE}.get_draft", new_callable=AsyncMock, return_value=draft),
+        patch(f"{_MODULE}.update_draft", new_callable=AsyncMock, return_value=draft) as update,
+        patch(f"{_MODULE}.generate_gemini_image_sync", side_effect=[MagicMock(image_bytes=b"png"), MagicMock(image_bytes=None, error="provider failed")]),
+        patch(f"{_MODULE}.save_carousel_slide_asset", return_value={"filename": "new.png", "url": "/new.png"}),
+        patch("bot.agents.image_prompt_router.optimize_image_prompt", side_effect=lambda p, **kw: p),
+    ):
+        from bot.services.carousel_assets import regenerate_all_carousel_slide_assets
+
+        await regenerate_all_carousel_slide_assets("d1")
+
+    assert update.await_args.kwargs["payload"]["generation_stage"] == "error"

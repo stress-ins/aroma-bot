@@ -402,6 +402,7 @@ export function createDraftsModule(deps) {
     }
 
     const p = d.payload || {};
+    d = { ...d, generation_pending: Boolean(d.generation_pending || p.generation_pending) };
     const mainText = p.caption || p.scenario || "";
 
     const threadsPosts = Array.isArray(p.threads_posts) && p.threads_posts.length ? p.threads_posts : null;
@@ -507,7 +508,7 @@ export function createDraftsModule(deps) {
             <div class="da-row1">
               ${(() => {
                 if (d.kind === "carousel") {
-                  const readyCount = (p.slide_images || []).filter(Boolean).length;
+                  const readyCount = (p.slide_images || []).filter((image) => image?.url && !image.failed).length;
                   const slideCount = (p.slides || []).length;
                   const allSlidesReady = slideCount > 0 && readyCount >= slideCount && !d.generation_pending;
                   return `<button class="primary-button${allSlidesReady ? "" : " is-disabled"}" ${allSlidesReady ? "" : "disabled"} data-action="updateDraft" data-args='["status",{"status":"approved"},null]'>${actionLabel("approve", "Согласовать")}</button>`;
@@ -515,13 +516,14 @@ export function createDraftsModule(deps) {
                 return `<button class="primary-button" data-action="updateDraft" data-args='["status",{"status":"approved"},null]'>${actionLabel("approve", "Согласовать")}</button>`;
               })()}
               <button class="da-reject" aria-label="Вернуть на доработку" data-action="updateDraft" data-args='["status",{"status":"rejected"},null]'>${uiIcon("reject")}</button>
-              ${d.kind === "carousel" ? `<button class="da-reject" aria-label="Обновить все слайды" data-action="regenerateCarouselAll" data-args='${JSON.stringify([d.draft_id, null])}'>${uiIcon("regenerate")}</button>` : ""}
+              ${d.kind === "carousel" ? `<button class="da-reject" ${d.generation_pending ? "disabled" : ""} aria-label="Обновить все слайды" data-action="regenerateCarouselAll" data-args='${JSON.stringify([d.draft_id, null])}'>${uiIcon("regenerate")}</button>` : ""}
             </div>
             <div class="da-row2">
 
               ${renderMoveButton(d.draft_id)}
             </div>
-            ${d.kind === "carousel" && !d.generation_pending ? `
+            ${d.kind === "carousel" ? generationStateMarkup(d, "draft") : ""}
+            ${d.kind === "carousel" && !d.generation_pending && (p.slides || []).length > 0 ? `
               <div class="carousel-export-row">
                 <div class="export-group">
                   <div class="export-group-label">PPTX файл</div>
@@ -575,7 +577,7 @@ export function createDraftsModule(deps) {
         ${payloadSection("Угол", p.angle)}
         ${payloadSection("Текст", mainText)}
         ${payloadSection("CTA", p.cta)}
-        ${generationStateMarkup(d, "draft")}
+        ${d.kind === "carousel" ? "" : generationStateMarkup(d, "draft")}
         ${reviewActions}
         ${d.kind === "carousel" && (d.status === "approved" || d.status === "scheduled") ? `
           <section class="section section-primary">

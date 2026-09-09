@@ -3,11 +3,14 @@ from __future__ import annotations
 import asyncio
 import contextvars
 import logging
+import math
 import threading
 import time
 from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 
 import anthropic
+import httpx
 
 from config import settings
 
@@ -29,6 +32,17 @@ current_telegram_id: contextvars.ContextVar[int | None] = contextvars.ContextVar
 )
 
 _client: anthropic.Anthropic | None = None
+
+_REPLICATE_MAX_ATTEMPTS = 3
+_REPLICATE_MAX_RETRY_DELAY_SECONDS = 30.0
+
+
+class ReplicatePaymentError(RuntimeError):
+    """Replicate cannot process requests until its billing issue is resolved."""
+
+
+class ReplicateRateLimitError(RuntimeError):
+    """Replicate's rate-limit retry budget was exhausted."""
 
 
 def _get_client() -> anthropic.Anthropic:
@@ -87,6 +101,43 @@ def _has_images(messages: list[dict]) -> bool:
     return False
 
 
+def _replicate_retry_delay(response: httpx.Response, attempt: int) -> float | None:
+    """Return a safe retry delay, or None when Retry-After exceeds our budget."""
+    retry_after = response.headers.get("Retry-After")
+    from_header = bool(retry_after)
+    if retry_after:
+        try:
+            delay = float(retry_after)
+        except ValueError:
+            try:
+                retry_at = parsedate_to_datetime(retry_after)
+                if retry_at.tzinfo is None:
+                    retry_at = retry_at.replace(tzinfo=timezone.utc)
+                delay = (retry_at - datetime.now(timezone.utc)).total_seconds()
+            except (TypeError, ValueError, IndexError, OverflowError):
+                from_header = False
+                delay = 10.0 * (2 ** attempt)
+    else:
+        delay = 10.0 * (2 ** attempt)
+    if not math.isfinite(delay):
+        from_header = False
+        delay = 10.0 * (2 ** attempt)
+    if from_header and delay > _REPLICATE_MAX_RETRY_DELAY_SECONDS:
+        return None
+    return min(max(delay, 0.0), _REPLICATE_MAX_RETRY_DELAY_SECONDS)
+
+
+def _is_replicate_payment_error(response: httpx.Response) -> bool:
+    """Identify credit/payment failures that cannot succeed on a retry."""
+    if response.status_code == 402:
+        return True
+    try:
+        body = response.text.lower()
+    except Exception:
+        return False
+    return any(marker in body for marker in ("insufficient credit", "insufficient funds", "payment required"))
+
+
 def call_claude(
     *,
     messages: list[dict],
@@ -104,8 +155,9 @@ def call_claude(
         # Route image requests to Gemini Vision
         use_vision = _has_images(messages)
 
+        attempts = min(max(retries, 1), _REPLICATE_MAX_ATTEMPTS)
         last_exc: Exception | None = None
-        for attempt in range(retries):
+        for attempt in range(attempts):
             try:
                 if use_vision:
                     text = _call_replicate_gemini_vision(
@@ -116,17 +168,53 @@ def call_claude(
                         messages=messages, max_tokens=max_tokens, system=system, context=context,
                     )
                 return text
+            except httpx.HTTPStatusError as exc:
+                last_exc = exc
+                response = exc.response
+                if _is_replicate_payment_error(response):
+                    logger.warning(
+                        "Replicate payment/credit error for context=%s: %s", context, exc,
+                    )
+                    raise ReplicatePaymentError(
+                        "Replicate payment or credit is unavailable"
+                    ) from exc
+                if response.status_code == 429:
+                    logger.warning(
+                        "Replicate rate limit (attempt %d/%d, context=%s): %s",
+                        attempt + 1, attempts, context, exc,
+                    )
+                    if attempt == attempts - 1:
+                        raise ReplicateRateLimitError(
+                            "Replicate rate-limit retry budget exhausted"
+                        ) from exc
+                    delay = _replicate_retry_delay(response, attempt)
+                    if delay is None:
+                        logger.warning(
+                            "Replicate Retry-After exceeds %ss; not retrying (context=%s)",
+                            _REPLICATE_MAX_RETRY_DELAY_SECONDS, context,
+                        )
+                        raise ReplicateRateLimitError(
+                            "Replicate Retry-After exceeds the retry budget"
+                        ) from exc
+                    time.sleep(delay)
+                    continue
+                logger.warning(
+                    "Replicate HTTP error (attempt %d/%d, context=%s): %s",
+                    attempt + 1, attempts, context, exc,
+                )
+                if attempt < attempts - 1:
+                    time.sleep(2 ** attempt)
             except Exception as exc:
                 last_exc = exc
                 logger.warning(
                     "Replicate Claude attempt %d/%d failed for context=%s: %s",
-                    attempt + 1, retries, context, exc,
+                    attempt + 1, attempts, context, exc,
                 )
-                if attempt < retries - 1:
+                if attempt < attempts - 1:
                     time.sleep(2 ** attempt)
 
         notify_owner_throttled(
-            f"\U0001f534 <b>Replicate Claude failed after {retries} attempts</b>\n"
+            f"\U0001f534 <b>Replicate Claude failed after {attempts} attempts</b>\n"
             f"Context: {context}\nError: <code>{str(last_exc)[:200]}</code>",
             dedup_key=f"claude:replicate_failed:{context}",
         )
@@ -212,8 +300,6 @@ def _call_replicate_claude(
     context: str = "Replicate Claude fallback",
 ) -> str:
     """Fallback: call Claude Haiku via Replicate prediction API."""
-    import httpx
-
     # Build prompt from messages (Replicate uses prompt, not messages format)
     parts: list[str] = []
     for msg in messages:
@@ -238,23 +324,17 @@ def _call_replicate_claude(
     if system:
         payload["input"]["system"] = system
 
-    for _attempt in range(3):
-        resp = httpx.post(
-            "https://api.replicate.com/v1/models/anthropic/claude-4.5-haiku/predictions",
-            headers={
-                "Authorization": f"Token {settings.replicate_api_key}",
-                "Content-Type": "application/json",
-                "Prefer": "wait=60",
-            },
-            json=payload,
-            timeout=65.0,
-        )
-        if resp.status_code == 429 and _attempt < 2:
-            logger.warning("Replicate 429, retrying in 10s (attempt %d/3)", _attempt + 1)
-            time.sleep(10)
-            continue
-        resp.raise_for_status()
-        break
+    resp = httpx.post(
+        "https://api.replicate.com/v1/models/anthropic/claude-4.5-haiku/predictions",
+        headers={
+            "Authorization": f"Token {settings.replicate_api_key}",
+            "Content-Type": "application/json",
+            "Prefer": "wait=60",
+        },
+        json=payload,
+        timeout=65.0,
+    )
+    resp.raise_for_status()
     data = resp.json()
 
     if data.get("status") != "succeeded":
@@ -298,8 +378,6 @@ def _call_replicate_gemini_vision(
     context: str = "Replicate Gemini Vision",
 ) -> str:
     """Call Gemini 2.0 Flash via Replicate for multimodal (image+text) requests."""
-    import httpx
-
     # Extract text and image from messages
     text_parts: list[str] = []
     image_uri: str | None = None
@@ -334,23 +412,17 @@ def _call_replicate_gemini_vision(
 
     payload: dict = {"input": input_payload}
 
-    for _attempt in range(3):
-        resp = httpx.post(
-            "https://api.replicate.com/v1/models/google/gemini-2.0-flash/predictions",
-            headers={
-                "Authorization": f"Token {settings.replicate_api_key}",
-                "Content-Type": "application/json",
-                "Prefer": "wait=90",
-            },
-            json=payload,
-            timeout=95.0,
-        )
-        if resp.status_code == 429 and _attempt < 2:
-            logger.warning("Replicate Gemini 429, retrying in 10s (attempt %d/3)", _attempt + 1)
-            time.sleep(10)
-            continue
-        resp.raise_for_status()
-        break
+    resp = httpx.post(
+        "https://api.replicate.com/v1/models/google/gemini-2.0-flash/predictions",
+        headers={
+            "Authorization": f"Token {settings.replicate_api_key}",
+            "Content-Type": "application/json",
+            "Prefer": "wait=90",
+        },
+        json=payload,
+        timeout=95.0,
+    )
+    resp.raise_for_status()
 
     data = resp.json()
     if data.get("status") != "succeeded":
@@ -378,5 +450,3 @@ def _call_replicate_gemini_vision(
         pass
 
     return text
-
-
