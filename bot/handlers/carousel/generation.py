@@ -296,6 +296,7 @@ def _generate_carousel_sync(
     Returns (slides, img_prompts, angle, hook).
     """
     from bot.agents.carousel_editor import edit_carousel_sync
+    from bot.services.claude_client import ReplicatePaymentError, ReplicateRateLimitError
     import time
 
     from bot.agents.content import _generate_strategist_sync
@@ -329,6 +330,8 @@ def _generate_carousel_sync(
                 from bot.agents.carousel_editorial import editorial_image_prompt_modifier
                 img_prompts = [editorial_image_prompt_modifier(p) for p in img_prompts]
             return refined, img_prompts, angle, hook
+        except (ReplicatePaymentError, ReplicateRateLimitError):
+            raise
         except Exception:
             logger.exception("_generate_carousel_sync attempt %d failed for topic: %s", attempt + 1, topic)
             if attempt == 0:

@@ -10,6 +10,8 @@ from ._common import _run_generation_task as _run_generation_task
 from .carousel import complete_carousel_generation as complete_carousel_generation
 from .carousel import complete_carousel_regen_slide as complete_carousel_regen_slide
 from .carousel import complete_carousel_regenerate_all as complete_carousel_regenerate_all
+from .carousel import has_complete_carousel_text as has_complete_carousel_text
+from .carousel import needs_carousel_text_recovery as needs_carousel_text_recovery
 from .content import complete_content_generation as complete_content_generation
 from .content import complete_threads_series_generation as complete_threads_series_generation
 from .plan import generate_blend_construct as generate_blend_construct
@@ -34,6 +36,8 @@ __all__ = [
     "complete_carousel_generation",
     "complete_carousel_regen_slide",
     "complete_carousel_regenerate_all",
+    "has_complete_carousel_text",
+    "needs_carousel_text_recovery",
     "complete_content_generation",
     "complete_reels_generation",
     "complete_reels_regenerate_all",

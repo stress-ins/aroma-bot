@@ -23,7 +23,13 @@ from bot.services.draft_revisions_store import create_revision
 from bot.services.miniapp_presenter import serialize_draft
 from ..auth import _require_auth, _resolve_init_data, _resolve_sse_auth, _resolve_telegram_id, require_tier
 from ..deps import require_draft
-from ..generation import complete_carousel_regen_slide, complete_carousel_regenerate_all, set_generation_state
+from ..generation import (
+    complete_carousel_regen_slide,
+    complete_carousel_regenerate_all,
+    has_complete_carousel_text,
+    needs_carousel_text_recovery,
+    set_generation_state,
+)
 from ..generation._common import get_generation_event, cleanup_generation_event, sse_msg
 from ..models import (
     CarouselCaptionPayload,
@@ -359,8 +365,32 @@ async def regenerate_carousel_all(
     background_tasks: BackgroundTasks,
     draft: DraftRecord = Depends(require_draft("carousel")),
 ):
+    payload = draft.payload or {}
+    if payload.get("generation_pending"):
+        raise HTTPException(status_code=409, detail="carousel_generation_in_progress")
+
+    missing_text = needs_carousel_text_recovery(payload)
+    if not missing_text and not has_complete_carousel_text(payload):
+        await set_generation_state(
+            draft.draft_id,
+            pending=False,
+            stage="error",
+            message="Не удалось перегенерировать картинки: отсутствуют промпты слайдов.",
+            error="carousel_image_prompts_missing",
+        )
+        refreshed = await get_draft(draft.draft_id)
+        if not refreshed:
+            raise HTTPException(status_code=404, detail="carousel_not_found")
+        return await serialize_draft(refreshed)
     await set_generation_state(
-        draft.draft_id, pending=True, stage="images", message="Перегенерирую все картинки в карусели."
+        draft.draft_id,
+        pending=True,
+        stage="content" if missing_text else "images",
+        message=(
+            "Восстанавливаю тексты и картинки карусели."
+            if missing_text
+            else "Перегенерирую все картинки в карусели."
+        ),
     )
     background_tasks.add_task(complete_carousel_regenerate_all, draft.draft_id)
     refreshed = await get_draft(draft.draft_id)

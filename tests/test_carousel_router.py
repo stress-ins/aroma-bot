@@ -406,6 +406,39 @@ class TestRegenerateAll:
         )
         assert resp.status_code == 404
 
+    async def test_regenerate_all_rebuilds_missing_text(self, setup_test_db):
+        from bot.services.drafts_store import save_draft
+        from bot.services.team_store import create_team
+
+        team = await create_team("T", creator_telegram_id=12345)
+        draft = await save_draft(
+            kind="carousel", topic="Recovery", source="ai",
+            payload={"slides": [], "img_prompts": [], "generation_stage": "error"},
+            team_id=team.team_id, created_by=12345,
+        )
+        client = _client()
+        with (
+            patch("miniapp.api.routers.carousel.complete_carousel_regenerate_all", new_callable=AsyncMock),
+            patch("miniapp.api.routers.carousel.set_generation_state", new_callable=AsyncMock) as set_state,
+        ):
+            resp = client.post(f"/api/carousel/{draft.draft_id}/regenerate-all", headers=HEADERS)
+
+        assert resp.status_code == 200
+        assert set_state.await_args.kwargs["stage"] == "content"
+
+    async def test_regenerate_all_rejects_pending_generation(self, carousel_draft):
+        _, draft = carousel_draft
+        from bot.services.drafts_store import update_draft
+
+        payload = dict(draft.payload)
+        payload["generation_pending"] = True
+        await update_draft(draft.draft_id, payload=payload)
+        client = _client()
+        resp = client.post(f"/api/carousel/{draft.draft_id}/regenerate-all", headers=HEADERS)
+
+        assert resp.status_code == 409
+        assert resp.json()["detail"] == "carousel_generation_in_progress"
+
 
 # ---------------------------------------------------------------------------
 # GET /api/carousel/{id}/slides/{idx}/preview
