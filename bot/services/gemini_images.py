@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import time
@@ -101,6 +102,21 @@ def _extract_kie_image_url(data: dict) -> str | None:
             if src.get(key):
                 return src[key]
     return None
+
+
+def _complete_kie_task_sync(task_id: str, image_url: str) -> None:
+    """Persist a polled completion when no callback URL is configured."""
+    try:
+        from bot.services.kie_task_store import complete_task
+
+        loop = asyncio.new_event_loop()
+        try:
+            loop.run_until_complete(complete_task(task_id, image_url))
+        finally:
+            loop.close()
+    except Exception as exc:
+        # The generated image is still valid even if tracking persistence fails.
+        logger.debug("complete_kie_task_sync failed: %s", exc)
 
 
 def _kie_submit(
@@ -411,6 +427,8 @@ def generate_gemini_image_sync(
             if image_url:
                 img_bytes = _download_image(image_url, log_context)
                 if img_bytes:
+                    if db_check_id:
+                        _complete_kie_task_sync(kie_task_id, image_url)
                     return ImageGenResult(image_bytes=img_bytes, kie_task_id=kie_task_id, image_url=image_url)
         logger.warning("%s: Kie.ai failed, trying NanoBanana fallback", log_context)
 

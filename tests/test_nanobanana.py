@@ -71,6 +71,42 @@ class TestKieSubmitAndPollSuccess:
         assert result.kie_task_id == "kie-123"
 
 
+class TestKieTaskTracking:
+    def test_polled_registered_task_completes_only_after_image_download(self):
+        with patch(_SETTINGS_PATH, _make_settings()), \
+             patch("bot.services.gemini_images._kie_submit", return_value="kie-123"), \
+             patch("bot.services.gemini_images._kie_poll", return_value="https://cdn.example.com/img.png"), \
+             patch("bot.services.gemini_images._download_image", return_value=b"\x89PNG" + b"x" * 128), \
+             patch("bot.services.kie_task_store.register_task_sync") as register_task, \
+             patch("bot.services.gemini_images._complete_kie_task_sync") as complete_task:
+            result = generate_gemini_image_sync(
+                "test prompt",
+                draft_id="draft-1",
+                content_type="carousel_slide",
+                slot_key="0",
+            )
+
+        assert result.image_bytes is not None
+        register_task.assert_called_once()
+        complete_task.assert_called_once_with("kie-123", "https://cdn.example.com/img.png")
+
+    def test_polled_registered_task_stays_pending_when_download_fails(self):
+        with patch(_SETTINGS_PATH, _make_settings()), \
+             patch("bot.services.gemini_images._kie_submit", return_value="kie-123"), \
+             patch("bot.services.gemini_images._kie_poll", return_value="https://cdn.example.com/img.png"), \
+             patch("bot.services.gemini_images._download_image", return_value=None), \
+             patch("bot.services.kie_task_store.register_task_sync"), \
+             patch("bot.services.gemini_images._complete_kie_task_sync") as complete_task, \
+             patch("bot.services.gemini_images._notify_image_failure"):
+            generate_gemini_image_sync(
+                "test prompt",
+                draft_id="draft-1",
+                content_type="carousel_slide",
+            )
+
+        complete_task.assert_not_called()
+
+
 class TestKieSubmitFailFallsBackToNano:
     def test_fallback(self):
         responses = [
