@@ -54,3 +54,7 @@ data/*.json
 
 # graphify knowledge graph (rebuilt locally via .githooks; do not commit)
 graphify-out/
+
+# site autopilot: curated data (state file stays ignored)
+!data/site_facts.json
+!data/site_topics.json

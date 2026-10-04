@@ -291,5 +291,6 @@ def test_build_task_registry():
         "daily_digest", "cost_report", "daily_oil", "token_expiry_check",
         "post_metrics", "thread_monitor", "social_trends_pipeline",
         "comments_poll", "mentions_poll", "status_monitor", "scheduled_posts",
+        "site_autopilot",
     }
     assert expected == names
