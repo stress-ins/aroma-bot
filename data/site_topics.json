@@ -1,512 +1,482 @@
 [
- {
-  "id": "gong_private-01",
-  "cluster": "gong_private",
-  "query": "гонг медитация москва индивидуально",
-  "angle": "Как проходит индивидуальная гонг-сессия от первого сообщения до интеграции",
-  "service": "gong-session-private",
-  "slug": "individualnaya-gong-sessiya-moskva",
-  "slug_en": "private-gong-session-moscow",
-  "image": "/images/05_gong_session.webp"
- },
- {
-  "id": "gong_private-02",
-  "cluster": "gong_private",
-  "query": "гонг медитация польза для тела",
-  "angle": "Что чувствует тело на гонг-сессии: вибрации, дыхание, расслабление, без мистики",
-  "service": "gong-session-private",
-  "slug": "chto-chuvstvuet-telo-na-gong-sessii",
-  "slug_en": "what-the-body-feels-in-a-gong-session",
-  "image": "/images/05_gong_session.webp"
- },
- {
-  "id": "gong_private-03",
-  "cluster": "gong_private",
-  "query": "звуковая медитация для начинающих",
-  "angle": "Первый раз на звуковой сессии: чего ждать и как подготовиться",
-  "service": "gong-session-private",
-  "slug": "zvukovaya-meditaciya-dlya-nachinayushchih",
-  "slug_en": "sound-meditation-for-beginners",
-  "image": "/images/05_gong_session.webp"
- },
- {
-  "id": "gong_private-04",
-  "cluster": "gong_private",
-  "query": "гонг медитация с выездом на дом",
-  "angle": "Гонг-сессия дома: как это устроено, что нужно от вас",
-  "service": "gong-session-private",
-  "slug": "gong-sessiya-na-domu",
-  "slug_en": "gong-session-at-home",
-  "image": "/images/05_gong_session.webp"
- },
- {
-  "id": "gong_private-05",
-  "cluster": "gong_private",
-  "query": "гонг медитация противопоказания",
-  "angle": "Кому гонг-сессия не подходит и что учесть заранее; честный разговор о границах формата",
-  "service": "gong-session-private",
-  "slug": "gong-sessiya-komu-ne-podhodit",
-  "slug_en": "who-a-gong-session-is-not-for",
-  "image": "/images/05_gong_session.webp"
- },
- {
-  "id": "gong_private-06",
-  "cluster": "gong_private",
-  "query": "не получается медитировать что делать",
-  "angle": "Почему не получается отключить голову и как тело помогает там, где не работает дыхание",
-  "service": "gong-session-private",
-  "slug": "ne-poluchaetsya-meditirovat",
-  "slug_en": "cant-meditate-what-helps",
-  "image": "/images/05_gong_session.webp"
- },
- {
-  "id": "gong_private-07",
-  "cluster": "gong_private",
-  "query": "групповая гонг медитация москва",
-  "angle": "Групповая гонг-медитация: когда проходит, как попасть, чем отличается от индивидуальной",
-  "service": "gong-session-private",
-  "slug": "gruppovaya-gong-meditaciya-moskva",
-  "slug_en": "group-gong-meditation-moscow",
-  "image": "/images/05_gong_session.webp"
- },
- {
-  "id": "gong_corporate-08",
-  "cluster": "gong_corporate",
-  "query": "гонг медитация для сотрудников",
-  "angle": "Как организовать гонг-сессию для сотрудников: площадка, время, подготовка организатора",
-  "service": "gong-session-corporate",
-  "slug": "gong-sessiya-dlya-sotrudnikov",
-  "slug_en": "gong-session-for-employees",
-  "image": "/images/05_gong_session.webp"
- },
- {
-  "id": "gong_corporate-09",
-  "cluster": "gong_corporate",
-  "query": "гонг медитация на корпоративе",
-  "angle": "Гонг в программе выезда или корпоратива: куда поставить в расписании",
-  "service": "gong-session-corporate",
-  "slug": "gong-v-programme-vyezda",
-  "slug_en": "gong-in-an-offsite-program",
-  "image": "/images/05_gong_session.webp"
- },
- {
-  "id": "gong_corporate-10",
-  "cluster": "gong_corporate",
-  "query": "гонг для скептиков команда",
-  "angle": "Скептики в команде: как гонг-сессия работает без веры и настроя",
-  "service": "gong-session-corporate",
-  "slug": "gong-dlya-skeptikov-v-komande",
-  "slug_en": "gong-for-skeptics-on-your-team",
-  "image": "/images/05_gong_session.webp"
- },
- {
-  "id": "gong_corporate-11",
-  "cluster": "gong_corporate",
-  "query": "гонг сессия после тяжёлого проекта",
-  "angle": "Восстановление команды после релиза, сезона или дедлайна",
-  "service": "gong-session-corporate",
-  "slug": "gong-posle-tyazhelogo-proekta",
-  "slug_en": "gong-after-a-hard-project",
-  "image": "/images/05_gong_session.webp"
- },
- {
-  "id": "gong_corporate-12",
-  "cluster": "gong_corporate",
-  "query": "что нужно для гонг сессии в офисе",
-  "angle": "Практический чеклист организатора: помещение, коврики, тишина, длительность",
-  "service": "gong-session-corporate",
-  "slug": "gong-sessiya-v-ofise-chek-list",
-  "slug_en": "gong-session-in-the-office-checklist",
-  "image": "/images/05_gong_session.webp"
- },
- {
-  "id": "aroma_diagnostics-13",
-  "cluster": "aroma_diagnostics",
-  "query": "аромодиагностика москва",
-  "angle": "Аромодиагностика в Москве: для кого и что даёт личный опыт",
-  "service": "resource-aroma",
-  "slug": "aromodiagnostika-moskva",
-  "slug_en": "aroma-diagnostics-moscow",
-  "image": "/images/04_aroma_still_life.webp"
- },
- {
-  "id": "aroma_diagnostics-14",
-  "cluster": "aroma_diagnostics",
-  "query": "как подобрать эфирные масла по состоянию",
-  "angle": "Почему реакция на запах информативна: обоняние и лимбическая система простым языком",
-  "service": "resource-aroma",
-  "slug": "kak-podobrat-efirnye-masla-po-sostoyaniyu",
-  "slug_en": "how-to-choose-oils-by-state",
-  "image": "/images/04_aroma_still_life.webp"
- },
- {
-  "id": "aroma_diagnostics-15",
-  "cluster": "aroma_diagnostics",
-  "query": "ресурсный аромат что это",
-  "angle": "Что такое ресурсный аромат и чем он отличается от обычных духов",
-  "service": "resource-aroma",
-  "slug": "resursnyj-aromat-chto-eto",
-  "slug_en": "what-is-a-resource-aroma",
-  "image": "/images/04_aroma_still_life.webp"
- },
- {
-  "id": "aroma_diagnostics-16",
-  "cluster": "aroma_diagnostics",
-  "query": "аромат на каждый день для спокойствия",
-  "angle": "Персональный аромат как якорь на рабочий день",
-  "service": "resource-aroma",
-  "slug": "aromat-kak-yakor-na-den",
-  "slug_en": "scent-as-a-daily-anchor",
-  "image": "/images/04_aroma_still_life.webp"
- },
- {
-  "id": "aroma_diagnostics-17",
-  "cluster": "aroma_diagnostics",
-  "query": "онлайн аромадиагностика",
-  "angle": "Как проходит онлайн-сессия с набором пробников",
-  "service": "resource-aroma",
-  "slug": "onlajn-aromadiagnostika",
-  "slug_en": "online-aroma-diagnostics",
-  "image": "/images/04_aroma_still_life.webp"
- },
- {
-  "id": "bespoke_aroma-18",
-  "cluster": "bespoke_aroma",
-  "query": "духи на заказ москва",
-  "angle": "Индивидуальные духи под запрос: как идёт работа от разговора до флакона",
-  "service": "bespoke-aroma",
-  "slug": "duhi-na-zakaz-moskva",
-  "slug_en": "custom-perfume-moscow",
-  "image": "/images/04_aroma_still_life.webp"
- },
- {
-  "id": "bespoke_aroma-19",
-  "cluster": "bespoke_aroma",
-  "query": "персональный аромат в подарок",
-  "angle": "Подарок, который составляют под человека: как договориться и что получится",
-  "service": "bespoke-aroma",
-  "slug": "personalnyj-aromat-v-podarok",
-  "slug_en": "a-personal-scent-as-a-gift",
-  "image": "/images/04_aroma_still_life.webp"
- },
- {
-  "id": "bespoke_aroma-20",
-  "cluster": "bespoke_aroma",
-  "query": "как составляются духи эфирные масла",
-  "angle": "Ноты, базы и отклик: как собирается композиция на сессии",
-  "service": "bespoke-aroma",
-  "slug": "kak-sostavlyayutsya-duhi",
-  "slug_en": "how-a-perfume-is-composed",
-  "image": "/images/04_aroma_still_life.webp"
- },
- {
-  "id": "aroma_bar-21",
-  "cluster": "aroma_bar",
-  "query": "арома бар на корпоратив",
-  "angle": "Арома-бар на мероприятии: формат, логистика, пропускная способность",
-  "service": "aroma-bar",
-  "slug": "aroma-bar-na-korporativ",
-  "slug_en": "aroma-bar-for-corporate-events",
-  "image": "/images/04_aroma_still_life.webp"
- },
- {
-  "id": "aroma_bar-22",
-  "cluster": "aroma_bar",
-  "query": "именные духи для гостей мероприятия",
-  "angle": "Именные духи как точка притяжения на мероприятии",
-  "service": "aroma-bar",
-  "slug": "imennye-duhi-dlya-gostej",
-  "slug_en": "named-perfume-for-event-guests",
-  "image": "/images/04_aroma_still_life.webp"
- },
- {
-  "id": "aroma_bar-23",
-  "cluster": "aroma_bar",
-  "query": "активности для большого корпоратива",
-  "angle": "Чем занять 100+ гостей, чтобы формат не конкурировал с программой",
-  "service": "aroma-bar",
-  "slug": "aktivnosti-dlya-bolshogo-korporativa",
-  "slug_en": "activities-for-a-large-corporate-event",
-  "image": "/images/04_aroma_still_life.webp"
- },
- {
-  "id": "masterclass-24",
-  "cluster": "masterclass",
-  "query": "мастер класс по эфирным маслам москва",
-  "angle": "Мастер-класс по эфирным маслам: что делают участники и с чем уходят",
-  "service": "essential-oils-masterclass",
-  "slug": "master-klass-po-efirnym-maslam-moskva",
-  "slug_en": "essential-oils-masterclass-moscow",
-  "image": "/images/03_workshop_corporate.webp"
- },
- {
-  "id": "masterclass-25",
-  "cluster": "masterclass",
-  "query": "мастер класс создание духов своими руками",
-  "angle": "Как сделать духи, скраб или масло на мастер-классе: ход занятия",
-  "service": "essential-oils-masterclass",
-  "slug": "master-klass-sozdanie-duhov",
-  "slug_en": "make-your-own-perfume-masterclass",
-  "image": "/images/03_workshop_corporate.webp"
- },
- {
-  "id": "masterclass-26",
-  "cluster": "masterclass",
-  "query": "мастер класс для команды тимбилдинг",
-  "angle": "Мастер-класс как альтернатива классическому тимбилдингу",
-  "service": "essential-oils-masterclass",
-  "slug": "master-klass-vmesto-timbildinga",
-  "slug_en": "masterclass-instead-of-team-building",
-  "image": "/images/03_workshop_corporate.webp"
- },
- {
-  "id": "masterclass-27",
-  "cluster": "masterclass",
-  "query": "эфирные масла для начинающих",
-  "angle": "С чего начать знакомство с маслами: что понюхать первым и как не ошибиться",
-  "service": "essential-oils-masterclass",
-  "slug": "efirnye-masla-dlya-nachinayushchih",
-  "slug_en": "essential-oils-for-beginners",
-  "image": "/images/03_workshop_corporate.webp"
- },
- {
-  "id": "workshop-28",
-  "cluster": "workshop",
-  "query": "воркшоп для руководителей",
-  "angle": "Воркшоп для лидерской команды перед стратегической сессией",
-  "service": "deep-workshop",
-  "slug": "vorkshop-dlya-rukovoditelej",
-  "slug_en": "workshop-for-leadership-teams",
-  "image": "/images/03_workshop_corporate.webp"
- },
- {
-  "id": "workshop-29",
-  "cluster": "workshop",
-  "query": "как понять что вы перегружены",
-  "angle": "Сигналы перегрузки в теле и поведении и что с ними делать на воркшопе",
-  "service": "deep-workshop",
-  "slug": "signaly-peregruzki-v-tele",
-  "slug_en": "overload-signals-in-the-body",
-  "image": "/images/03_workshop_corporate.webp"
- },
- {
-  "id": "workshop-30",
-  "cluster": "workshop",
-  "query": "командная работа с состоянием",
-  "angle": "Малая команда до восьми человек: зачем камерный формат",
-  "service": "deep-workshop",
-  "slug": "kameryj-format-dlya-komandy",
-  "slug_en": "small-group-format-for-teams",
-  "image": "/images/03_workshop_corporate.webp"
- },
- {
-  "id": "wellbeing_corporate-31",
-  "cluster": "wellbeing_corporate",
-  "query": "день здоровья для сотрудников",
-  "angle": "День заботы о команде: как собрать программу из нескольких форматов",
-  "service": "gong-session-corporate",
-  "slug": "den-zdorovya-dlya-sotrudnikov",
-  "slug_en": "employee-wellbeing-day",
-  "image": "/images/06_brand_atmosphere.webp"
- },
- {
-  "id": "wellbeing_corporate-32",
-  "cluster": "wellbeing_corporate",
-  "query": "wellbeing сотрудников программа",
-  "angle": "Корпоративное wellbeing без галочки: что реально вспомнят через месяц",
-  "service": "gong-session-corporate",
-  "slug": "corporate-wellbeing-bez-galochki",
-  "slug_en": "corporate-wellbeing-without-box-ticking",
-  "image": "/images/06_brand_atmosphere.webp"
- },
- {
-  "id": "wellbeing_corporate-33",
-  "cluster": "wellbeing_corporate",
-  "query": "профилактика выгорания в команде",
-  "angle": "Что может сделать организатор, чтобы команда восстанавливалась",
-  "service": "gong-session-corporate",
-  "slug": "profilaktika-vygoraniya-v-komande",
-  "slug_en": "preventing-burnout-in-a-team",
-  "image": "/images/06_brand_atmosphere.webp"
- },
- {
-  "id": "wellbeing_corporate-34",
-  "cluster": "wellbeing_corporate",
-  "query": "бюджет на корпоративный wellbeing",
-  "angle": "Сколько стоят форматы и как собрать программу под бюджет, по ценам с сайта",
-  "service": "gong-session-corporate",
-  "slug": "byudzhet-na-wellbeing-komandy",
-  "slug_en": "wellbeing-budget-for-a-team",
-  "image": "/images/06_brand_atmosphere.webp"
- },
- {
-  "id": "wellbeing_corporate-35",
-  "cluster": "wellbeing_corporate",
-  "query": "выездная программа для команды москва",
-  "angle": "Как встроить сенсорный формат в выезд",
-  "service": "deep-workshop",
-  "slug": "vyezd-komandy-moskva-formaty",
-  "slug_en": "team-offsite-formats-moscow",
-  "image": "/images/06_brand_atmosphere.webp"
- },
- {
-  "id": "oils_home_office-36",
-  "cluster": "oils_home_office",
-  "query": "эфирные масла в домашних условиях как использовать",
-  "angle": "Как пользоваться эфирными маслами дома спокойно и без перегиба",
-  "service": "essential-oils-masterclass",
-  "slug": "efirnye-masla-doma",
-  "slug_en": "essential-oils-at-home",
-  "image": "/images/04_aroma_still_life.webp"
- },
- {
-  "id": "oils_home_office-37",
-  "cluster": "oils_home_office",
-  "query": "аромадиффузор в офисе",
-  "angle": "Диффузор в офисе: дозировка, этика, коллеги с чувствительностью к запахам",
-  "service": "essential-oils-masterclass",
-  "slug": "diffuzor-v-ofise",
-  "slug_en": "diffuser-at-the-office",
-  "image": "/images/04_aroma_still_life.webp"
- },
- {
-  "id": "oils_home_office-38",
-  "cluster": "oils_home_office",
-  "query": "какие эфирные масла для работы и концентрации",
-  "angle": "Что выбирать для рабочего стола и как проверить по своей реакции",
-  "service": "resource-aroma",
-  "slug": "masla-dlya-koncentracii",
-  "slug_en": "oils-for-focus",
-  "image": "/images/04_aroma_still_life.webp"
- },
- {
-  "id": "oils_home_office-39",
-  "cluster": "oils_home_office",
-  "query": "как хранить эфирные масла",
-  "angle": "Хранение, срок годности и признаки, что масло пора заменить",
-  "service": "essential-oils-masterclass",
-  "slug": "kak-hranit-efirnye-masla",
-  "slug_en": "how-to-store-essential-oils",
-  "image": "/images/04_aroma_still_life.webp"
- },
- {
-  "id": "oils_home_office-40",
-  "cluster": "oils_home_office",
-  "query": "аромат в переговорной",
-  "angle": "Запах в рабочем пространстве: что уместно, а что отвлекает",
-  "service": "essential-oils-masterclass",
-  "slug": "aromat-v-peregovornoj",
-  "slug_en": "scent-in-meeting-rooms",
-  "image": "/images/04_aroma_still_life.webp"
- },
- {
-  "id": "sleep_stress-41",
-  "cluster": "sleep_stress",
-  "query": "как успокоиться после рабочего дня",
-  "angle": "Вечерний ритуал переключения: звук, запах, пауза",
-  "service": "gong-session-private",
-  "slug": "kak-vyjti-iz-rabochego-rezhima-vecherom",
-  "slug_en": "how-to-switch-off-after-work",
-  "image": "/images/06_brand_atmosphere.webp"
- },
- {
-  "id": "sleep_stress-42",
-  "cluster": "sleep_stress",
-  "query": "аромат для сна эфирные масла",
-  "angle": "Ароматы перед сном: что пробуют, как проверять реакцию, чего не обещать",
-  "service": "resource-aroma",
-  "slug": "aromat-pered-snom",
-  "slug_en": "scent-before-sleep",
-  "image": "/images/04_aroma_still_life.webp"
- },
- {
-  "id": "sleep_stress-43",
-  "cluster": "sleep_stress",
-  "query": "шум в голове не могу остановиться",
-  "angle": "Когда мысли не замолкают: телесные способы замедлиться",
-  "service": "gong-session-private",
-  "slug": "shum-v-golove-ne-mogu-ostanovitsya",
-  "slug_en": "racing-thoughts-body-based-ways-to-slow-down",
-  "image": "/images/05_gong_session.webp"
- },
- {
-  "id": "sleep_stress-44",
-  "cluster": "sleep_stress",
-  "query": "хронический стресс признаки восстановление",
-  "angle": "Усталость, которая не проходит выходными: что делать в первую очередь",
-  "service": "gong-session-private",
-  "slug": "ustalost-kotoraya-ne-prohodit",
-  "slug_en": "tiredness-that-wont-go-away",
-  "image": "/images/06_brand_atmosphere.webp"
- },
- {
-  "id": "sleep_stress-45",
-  "cluster": "sleep_stress",
-  "query": "как расслабиться без медитации",
-  "angle": "Способы выдохнуть, если вы не любите сидеть с закрытыми глазами",
-  "service": "gong-session-private",
-  "slug": "rasslabitsya-bez-meditacii",
-  "slug_en": "relax-without-meditating",
-  "image": "/images/05_gong_session.webp"
- },
- {
-  "id": "seasonal-46",
-  "cluster": "seasonal",
-  "query": "осенняя усталость что делать",
-  "angle": "Осенняя перезагрузка: аромат, звук, режим",
-  "service": "resource-aroma",
-  "slug": "osennyaya-ustalost",
-  "slug_en": "autumn-fatigue",
-  "image": "/images/04_aroma_still_life.webp"
- },
- {
-  "id": "seasonal-47",
-  "cluster": "seasonal",
-  "query": "новогодний корпоратив идеи необычные",
-  "angle": "Новогодний корпоратив без банкета: арома-бар и гонг",
-  "service": "aroma-bar",
-  "slug": "novogodnij-korporativ-idei",
-  "slug_en": "new-year-corporate-ideas",
-  "image": "/images/04_aroma_still_life.webp"
- },
- {
-  "id": "seasonal-48",
-  "cluster": "seasonal",
-  "query": "подарки коллегам на новый год",
-  "angle": "Именные духи и подарки, которые составляют под человека",
-  "service": "aroma-bar",
-  "slug": "podarki-kollegam-novyj-god",
-  "slug_en": "new-year-gifts-for-colleagues",
-  "image": "/images/04_aroma_still_life.webp"
- },
- {
-  "id": "seasonal-49",
-  "cluster": "seasonal",
-  "query": "весенняя перезагрузка команды",
-  "angle": "Весна после длинной зимы: формат для команды",
-  "service": "deep-workshop",
-  "slug": "vesennyaya-perezagruzka-komandy",
-  "slug_en": "spring-reset-for-teams",
-  "image": "/images/06_brand_atmosphere.webp"
- },
- {
-  "id": "seasonal-50",
-  "cluster": "seasonal",
-  "query": "отпуск вернуться в рабочий ритм",
-  "angle": "Возвращение после отпуска и длинных праздников",
-  "service": "gong-session-private",
-  "slug": "vozvrashchenie-posle-otpuska",
-  "slug_en": "coming-back-after-vacation",
-  "image": "/images/06_brand_atmosphere.webp"
- },
- {
-  "id": "seasonal-51",
-  "cluster": "seasonal",
-  "query": "8 марта корпоратив мастер класс",
-  "angle": "Мастер-класс по духам на 8 марта для коллектива",
-  "service": "essential-oils-masterclass",
-  "slug": "8-marta-master-klass-duhi",
-  "slug_en": "womens-day-perfume-masterclass",
-  "image": "/images/03_workshop_corporate.webp"
- }
+  {
+    "id": "gong_private-02",
+    "cluster": "gong_private",
+    "query": "гонг медитация польза для тела",
+    "angle": "Что чувствует тело на гонг-сессии: вибрации, дыхание, расслабление, без мистики",
+    "service": "gong-session-private",
+    "slug": "chto-chuvstvuet-telo-na-gong-sessii",
+    "slug_en": "what-the-body-feels-in-a-gong-session",
+    "image": "/images/05_gong_session.webp"
+  },
+  {
+    "id": "gong_private-03",
+    "cluster": "gong_private",
+    "query": "звуковая медитация для начинающих",
+    "angle": "Первый раз на звуковой сессии: чего ждать и как подготовиться",
+    "service": "gong-session-private",
+    "slug": "zvukovaya-meditaciya-dlya-nachinayushchih",
+    "slug_en": "sound-meditation-for-beginners",
+    "image": "/images/05_gong_session.webp"
+  },
+  {
+    "id": "gong_private-04",
+    "cluster": "gong_private",
+    "query": "гонг медитация с выездом на дом",
+    "angle": "Гонг-сессия дома: как это устроено, что нужно от вас",
+    "service": "gong-session-private",
+    "slug": "gong-sessiya-na-domu",
+    "slug_en": "gong-session-at-home",
+    "image": "/images/05_gong_session.webp"
+  },
+  {
+    "id": "gong_private-05",
+    "cluster": "gong_private",
+    "query": "гонг медитация противопоказания",
+    "angle": "Кому гонг-сессия не подходит и что учесть заранее; честный разговор о границах формата",
+    "service": "gong-session-private",
+    "slug": "gong-sessiya-komu-ne-podhodit",
+    "slug_en": "who-a-gong-session-is-not-for",
+    "image": "/images/05_gong_session.webp"
+  },
+  {
+    "id": "gong_private-06",
+    "cluster": "gong_private",
+    "query": "не получается медитировать что делать",
+    "angle": "Почему не получается отключить голову и как тело помогает там, где не работает дыхание",
+    "service": "gong-session-private",
+    "slug": "ne-poluchaetsya-meditirovat",
+    "slug_en": "cant-meditate-what-helps",
+    "image": "/images/05_gong_session.webp"
+  },
+  {
+    "id": "gong_private-07",
+    "cluster": "gong_private",
+    "query": "групповая гонг медитация москва",
+    "angle": "Групповая гонг-медитация: когда проходит, как попасть, чем отличается от индивидуальной",
+    "service": "gong-session-private",
+    "slug": "gruppovaya-gong-meditaciya-moskva",
+    "slug_en": "group-gong-meditation-moscow",
+    "image": "/images/05_gong_session.webp"
+  },
+  {
+    "id": "gong_corporate-08",
+    "cluster": "gong_corporate",
+    "query": "гонг медитация для сотрудников",
+    "angle": "Как организовать гонг-сессию для сотрудников: площадка, время, подготовка организатора",
+    "service": "gong-session-corporate",
+    "slug": "gong-sessiya-dlya-sotrudnikov",
+    "slug_en": "gong-session-for-employees",
+    "image": "/images/05_gong_session.webp"
+  },
+  {
+    "id": "gong_corporate-11",
+    "cluster": "gong_corporate",
+    "query": "гонг сессия после тяжёлого проекта",
+    "angle": "Восстановление команды после релиза, сезона или дедлайна",
+    "service": "gong-session-corporate",
+    "slug": "gong-posle-tyazhelogo-proekta",
+    "slug_en": "gong-after-a-hard-project",
+    "image": "/images/05_gong_session.webp"
+  },
+  {
+    "id": "gong_corporate-12",
+    "cluster": "gong_corporate",
+    "query": "что нужно для гонг сессии в офисе",
+    "angle": "Практический чеклист организатора: помещение, коврики, тишина, длительность",
+    "service": "gong-session-corporate",
+    "slug": "gong-sessiya-v-ofise-chek-list",
+    "slug_en": "gong-session-in-the-office-checklist",
+    "image": "/images/05_gong_session.webp"
+  },
+  {
+    "id": "aroma_diagnostics-13",
+    "cluster": "aroma_diagnostics",
+    "query": "аромодиагностика москва",
+    "angle": "Аромодиагностика в Москве: для кого и что даёт личный опыт",
+    "service": "resource-aroma",
+    "slug": "aromodiagnostika-moskva",
+    "slug_en": "aroma-diagnostics-moscow",
+    "image": "/images/04_aroma_still_life.webp"
+  },
+  {
+    "id": "aroma_diagnostics-14",
+    "cluster": "aroma_diagnostics",
+    "query": "как подобрать эфирные масла по состоянию",
+    "angle": "Почему реакция на запах информативна: обоняние и лимбическая система простым языком",
+    "service": "resource-aroma",
+    "slug": "kak-podobrat-efirnye-masla-po-sostoyaniyu",
+    "slug_en": "how-to-choose-oils-by-state",
+    "image": "/images/04_aroma_still_life.webp"
+  },
+  {
+    "id": "aroma_diagnostics-15",
+    "cluster": "aroma_diagnostics",
+    "query": "ресурсный аромат что это",
+    "angle": "Что такое ресурсный аромат и чем он отличается от обычных духов",
+    "service": "resource-aroma",
+    "slug": "resursnyj-aromat-chto-eto",
+    "slug_en": "what-is-a-resource-aroma",
+    "image": "/images/04_aroma_still_life.webp"
+  },
+  {
+    "id": "aroma_diagnostics-16",
+    "cluster": "aroma_diagnostics",
+    "query": "аромат на каждый день для спокойствия",
+    "angle": "Персональный аромат как якорь на рабочий день",
+    "service": "resource-aroma",
+    "slug": "aromat-kak-yakor-na-den",
+    "slug_en": "scent-as-a-daily-anchor",
+    "image": "/images/04_aroma_still_life.webp"
+  },
+  {
+    "id": "aroma_diagnostics-17",
+    "cluster": "aroma_diagnostics",
+    "query": "онлайн аромадиагностика",
+    "angle": "Как проходит онлайн-сессия с набором пробников",
+    "service": "resource-aroma",
+    "slug": "onlajn-aromadiagnostika",
+    "slug_en": "online-aroma-diagnostics",
+    "image": "/images/04_aroma_still_life.webp"
+  },
+  {
+    "id": "bespoke_aroma-18",
+    "cluster": "bespoke_aroma",
+    "query": "духи на заказ москва",
+    "angle": "Индивидуальные духи под запрос: как идёт работа от разговора до флакона",
+    "service": "bespoke-aroma",
+    "slug": "duhi-na-zakaz-moskva",
+    "slug_en": "custom-perfume-moscow",
+    "image": "/images/04_aroma_still_life.webp"
+  },
+  {
+    "id": "bespoke_aroma-19",
+    "cluster": "bespoke_aroma",
+    "query": "персональный аромат в подарок",
+    "angle": "Подарок, который составляют под человека: как договориться и что получится",
+    "service": "bespoke-aroma",
+    "slug": "personalnyj-aromat-v-podarok",
+    "slug_en": "a-personal-scent-as-a-gift",
+    "image": "/images/04_aroma_still_life.webp"
+  },
+  {
+    "id": "bespoke_aroma-20",
+    "cluster": "bespoke_aroma",
+    "query": "как составляются духи эфирные масла",
+    "angle": "Ноты, базы и отклик: как собирается композиция на сессии",
+    "service": "bespoke-aroma",
+    "slug": "kak-sostavlyayutsya-duhi",
+    "slug_en": "how-a-perfume-is-composed",
+    "image": "/images/04_aroma_still_life.webp"
+  },
+  {
+    "id": "aroma_bar-21",
+    "cluster": "aroma_bar",
+    "query": "арома бар на корпоратив",
+    "angle": "Арома-бар на мероприятии: формат, логистика, пропускная способность",
+    "service": "aroma-bar",
+    "slug": "aroma-bar-na-korporativ",
+    "slug_en": "aroma-bar-for-corporate-events",
+    "image": "/images/04_aroma_still_life.webp"
+  },
+  {
+    "id": "aroma_bar-22",
+    "cluster": "aroma_bar",
+    "query": "именные духи для гостей мероприятия",
+    "angle": "Именные духи как точка притяжения на мероприятии",
+    "service": "aroma-bar",
+    "slug": "imennye-duhi-dlya-gostej",
+    "slug_en": "named-perfume-for-event-guests",
+    "image": "/images/04_aroma_still_life.webp"
+  },
+  {
+    "id": "aroma_bar-23",
+    "cluster": "aroma_bar",
+    "query": "активности для большого корпоратива",
+    "angle": "Чем занять 100+ гостей, чтобы формат не конкурировал с программой",
+    "service": "aroma-bar",
+    "slug": "aktivnosti-dlya-bolshogo-korporativa",
+    "slug_en": "activities-for-a-large-corporate-event",
+    "image": "/images/04_aroma_still_life.webp"
+  },
+  {
+    "id": "masterclass-24",
+    "cluster": "masterclass",
+    "query": "мастер класс по эфирным маслам москва",
+    "angle": "Мастер-класс по эфирным маслам: что делают участники и с чем уходят",
+    "service": "essential-oils-masterclass",
+    "slug": "master-klass-po-efirnym-maslam-moskva",
+    "slug_en": "essential-oils-masterclass-moscow",
+    "image": "/images/03_workshop_corporate.webp"
+  },
+  {
+    "id": "masterclass-25",
+    "cluster": "masterclass",
+    "query": "мастер класс создание духов своими руками",
+    "angle": "Как сделать духи, скраб или масло на мастер-классе: ход занятия",
+    "service": "essential-oils-masterclass",
+    "slug": "master-klass-sozdanie-duhov",
+    "slug_en": "make-your-own-perfume-masterclass",
+    "image": "/images/03_workshop_corporate.webp"
+  },
+  {
+    "id": "masterclass-26",
+    "cluster": "masterclass",
+    "query": "мастер класс для команды тимбилдинг",
+    "angle": "Мастер-класс как альтернатива классическому тимбилдингу",
+    "service": "essential-oils-masterclass",
+    "slug": "master-klass-vmesto-timbildinga",
+    "slug_en": "masterclass-instead-of-team-building",
+    "image": "/images/03_workshop_corporate.webp"
+  },
+  {
+    "id": "masterclass-27",
+    "cluster": "masterclass",
+    "query": "эфирные масла для начинающих",
+    "angle": "С чего начать знакомство с маслами: что понюхать первым и как не ошибиться",
+    "service": "essential-oils-masterclass",
+    "slug": "efirnye-masla-dlya-nachinayushchih",
+    "slug_en": "essential-oils-for-beginners",
+    "image": "/images/03_workshop_corporate.webp"
+  },
+  {
+    "id": "workshop-28",
+    "cluster": "workshop",
+    "query": "воркшоп для руководителей",
+    "angle": "Воркшоп для лидерской команды перед стратегической сессией",
+    "service": "deep-workshop",
+    "slug": "vorkshop-dlya-rukovoditelej",
+    "slug_en": "workshop-for-leadership-teams",
+    "image": "/images/03_workshop_corporate.webp"
+  },
+  {
+    "id": "workshop-29",
+    "cluster": "workshop",
+    "query": "как понять что вы перегружены",
+    "angle": "Сигналы перегрузки в теле и поведении и что с ними делать на воркшопе",
+    "service": "deep-workshop",
+    "slug": "signaly-peregruzki-v-tele",
+    "slug_en": "overload-signals-in-the-body",
+    "image": "/images/03_workshop_corporate.webp"
+  },
+  {
+    "id": "workshop-30",
+    "cluster": "workshop",
+    "query": "командная работа с состоянием",
+    "angle": "Малая команда до восьми человек: зачем камерный формат",
+    "service": "deep-workshop",
+    "slug": "kameryj-format-dlya-komandy",
+    "slug_en": "small-group-format-for-teams",
+    "image": "/images/03_workshop_corporate.webp"
+  },
+  {
+    "id": "wellbeing_corporate-31",
+    "cluster": "wellbeing_corporate",
+    "query": "день здоровья для сотрудников",
+    "angle": "День заботы о команде: как собрать программу из нескольких форматов",
+    "service": "gong-session-corporate",
+    "slug": "den-zdorovya-dlya-sotrudnikov",
+    "slug_en": "employee-wellbeing-day",
+    "image": "/images/06_brand_atmosphere.webp"
+  },
+  {
+    "id": "wellbeing_corporate-32",
+    "cluster": "wellbeing_corporate",
+    "query": "wellbeing сотрудников программа",
+    "angle": "Корпоративное wellbeing без галочки: что реально вспомнят через месяц",
+    "service": "gong-session-corporate",
+    "slug": "corporate-wellbeing-bez-galochki",
+    "slug_en": "corporate-wellbeing-without-box-ticking",
+    "image": "/images/06_brand_atmosphere.webp"
+  },
+  {
+    "id": "wellbeing_corporate-33",
+    "cluster": "wellbeing_corporate",
+    "query": "профилактика выгорания в команде",
+    "angle": "Что может сделать организатор, чтобы команда восстанавливалась",
+    "service": "gong-session-corporate",
+    "slug": "profilaktika-vygoraniya-v-komande",
+    "slug_en": "preventing-burnout-in-a-team",
+    "image": "/images/06_brand_atmosphere.webp"
+  },
+  {
+    "id": "wellbeing_corporate-34",
+    "cluster": "wellbeing_corporate",
+    "query": "бюджет на корпоративный wellbeing",
+    "angle": "Сколько стоят форматы и как собрать программу под бюджет, по ценам с сайта",
+    "service": "gong-session-corporate",
+    "slug": "byudzhet-na-wellbeing-komandy",
+    "slug_en": "wellbeing-budget-for-a-team",
+    "image": "/images/06_brand_atmosphere.webp"
+  },
+  {
+    "id": "wellbeing_corporate-35",
+    "cluster": "wellbeing_corporate",
+    "query": "выездная программа для команды москва",
+    "angle": "Как встроить сенсорный формат в выезд",
+    "service": "deep-workshop",
+    "slug": "vyezd-komandy-moskva-formaty",
+    "slug_en": "team-offsite-formats-moscow",
+    "image": "/images/06_brand_atmosphere.webp"
+  },
+  {
+    "id": "oils_home_office-36",
+    "cluster": "oils_home_office",
+    "query": "эфирные масла в домашних условиях как использовать",
+    "angle": "Как пользоваться эфирными маслами дома спокойно и без перегиба",
+    "service": "essential-oils-masterclass",
+    "slug": "efirnye-masla-doma",
+    "slug_en": "essential-oils-at-home",
+    "image": "/images/04_aroma_still_life.webp"
+  },
+  {
+    "id": "oils_home_office-37",
+    "cluster": "oils_home_office",
+    "query": "аромадиффузор в офисе",
+    "angle": "Диффузор в офисе: дозировка, этика, коллеги с чувствительностью к запахам",
+    "service": "essential-oils-masterclass",
+    "slug": "diffuzor-v-ofise",
+    "slug_en": "diffuser-at-the-office",
+    "image": "/images/04_aroma_still_life.webp"
+  },
+  {
+    "id": "oils_home_office-38",
+    "cluster": "oils_home_office",
+    "query": "какие эфирные масла для работы и концентрации",
+    "angle": "Что выбирать для рабочего стола и как проверить по своей реакции",
+    "service": "resource-aroma",
+    "slug": "masla-dlya-koncentracii",
+    "slug_en": "oils-for-focus",
+    "image": "/images/04_aroma_still_life.webp"
+  },
+  {
+    "id": "oils_home_office-39",
+    "cluster": "oils_home_office",
+    "query": "как хранить эфирные масла",
+    "angle": "Хранение, срок годности и признаки, что масло пора заменить",
+    "service": "essential-oils-masterclass",
+    "slug": "kak-hranit-efirnye-masla",
+    "slug_en": "how-to-store-essential-oils",
+    "image": "/images/04_aroma_still_life.webp"
+  },
+  {
+    "id": "oils_home_office-40",
+    "cluster": "oils_home_office",
+    "query": "аромат в переговорной",
+    "angle": "Запах в рабочем пространстве: что уместно, а что отвлекает",
+    "service": "essential-oils-masterclass",
+    "slug": "aromat-v-peregovornoj",
+    "slug_en": "scent-in-meeting-rooms",
+    "image": "/images/04_aroma_still_life.webp"
+  },
+  {
+    "id": "sleep_stress-41",
+    "cluster": "sleep_stress",
+    "query": "как успокоиться после рабочего дня",
+    "angle": "Вечерний ритуал переключения: звук, запах, пауза",
+    "service": "gong-session-private",
+    "slug": "kak-vyjti-iz-rabochego-rezhima-vecherom",
+    "slug_en": "how-to-switch-off-after-work",
+    "image": "/images/06_brand_atmosphere.webp"
+  },
+  {
+    "id": "sleep_stress-42",
+    "cluster": "sleep_stress",
+    "query": "аромат для сна эфирные масла",
+    "angle": "Ароматы перед сном: что пробуют, как проверять реакцию, чего не обещать",
+    "service": "resource-aroma",
+    "slug": "aromat-pered-snom",
+    "slug_en": "scent-before-sleep",
+    "image": "/images/04_aroma_still_life.webp"
+  },
+  {
+    "id": "sleep_stress-43",
+    "cluster": "sleep_stress",
+    "query": "шум в голове не могу остановиться",
+    "angle": "Когда мысли не замолкают: телесные способы замедлиться",
+    "service": "gong-session-private",
+    "slug": "shum-v-golove-ne-mogu-ostanovitsya",
+    "slug_en": "racing-thoughts-body-based-ways-to-slow-down",
+    "image": "/images/05_gong_session.webp"
+  },
+  {
+    "id": "sleep_stress-44",
+    "cluster": "sleep_stress",
+    "query": "хронический стресс признаки восстановление",
+    "angle": "Усталость, которая не проходит выходными: что делать в первую очередь",
+    "service": "gong-session-private",
+    "slug": "ustalost-kotoraya-ne-prohodit",
+    "slug_en": "tiredness-that-wont-go-away",
+    "image": "/images/06_brand_atmosphere.webp"
+  },
+  {
+    "id": "sleep_stress-45",
+    "cluster": "sleep_stress",
+    "query": "как расслабиться без медитации",
+    "angle": "Способы выдохнуть, если вы не любите сидеть с закрытыми глазами",
+    "service": "gong-session-private",
+    "slug": "rasslabitsya-bez-meditacii",
+    "slug_en": "relax-without-meditating",
+    "image": "/images/05_gong_session.webp"
+  },
+  {
+    "id": "seasonal-46",
+    "cluster": "seasonal",
+    "query": "осенняя усталость что делать",
+    "angle": "Осенняя перезагрузка: аромат, звук, режим",
+    "service": "resource-aroma",
+    "slug": "osennyaya-ustalost",
+    "slug_en": "autumn-fatigue",
+    "image": "/images/04_aroma_still_life.webp"
+  },
+  {
+    "id": "seasonal-47",
+    "cluster": "seasonal",
+    "query": "новогодний корпоратив идеи необычные",
+    "angle": "Новогодний корпоратив без банкета: арома-бар и гонг",
+    "service": "aroma-bar",
+    "slug": "novogodnij-korporativ-idei",
+    "slug_en": "new-year-corporate-ideas",
+    "image": "/images/04_aroma_still_life.webp"
+  },
+  {
+    "id": "seasonal-48",
+    "cluster": "seasonal",
+    "query": "подарки коллегам на новый год",
+    "angle": "Именные духи и подарки, которые составляют под человека",
+    "service": "aroma-bar",
+    "slug": "podarki-kollegam-novyj-god",
+    "slug_en": "new-year-gifts-for-colleagues",
+    "image": "/images/04_aroma_still_life.webp"
+  },
+  {
+    "id": "seasonal-49",
+    "cluster": "seasonal",
+    "query": "весенняя перезагрузка команды",
+    "angle": "Весна после длинной зимы: формат для команды",
+    "service": "deep-workshop",
+    "slug": "vesennyaya-perezagruzka-komandy",
+    "slug_en": "spring-reset-for-teams",
+    "image": "/images/06_brand_atmosphere.webp"
+  },
+  {
+    "id": "seasonal-50",
+    "cluster": "seasonal",
+    "query": "отпуск вернуться в рабочий ритм",
+    "angle": "Возвращение после отпуска и длинных праздников",
+    "service": "gong-session-private",
+    "slug": "vozvrashchenie-posle-otpuska",
+    "slug_en": "coming-back-after-vacation",
+    "image": "/images/06_brand_atmosphere.webp"
+  },
+  {
+    "id": "seasonal-51",
+    "cluster": "seasonal",
+    "query": "8 марта корпоратив мастер класс",
+    "angle": "Мастер-класс по духам на 8 марта для коллектива",
+    "service": "essential-oils-masterclass",
+    "slug": "8-marta-master-klass-duhi",
+    "slug_en": "womens-day-perfume-masterclass",
+    "image": "/images/03_workshop_corporate.webp"
+  }
 ]
