@@ -87,26 +87,66 @@ def _build_system_prompt(platform: str) -> str:
     )
 
 
-def _parse_response(raw: str) -> dict:
-    """Parse JSON from Claude response, handling possible markdown wrapping."""
-    text = raw.strip()
-    # Strip markdown code fence if present
-    if text.startswith("```"):
-        text = re.sub(r"^```(?:json)?\s*\n?", "", text)
-        text = re.sub(r"\n?```\s*$", "", text)
-        text = text.strip()
+def _parse_error(detail: str) -> dict:
+    return {
+        "passed": False,
+        "score": 0.0,
+        "violations": [{"type": "parse_error", "detail": detail, "severity": "error"}],
+        "suggested_fixes": [],
+        "cleaned_text": "",
+    }
 
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        logger.warning("Brand Guardian: failed to parse JSON response: %s", text[:200])
-        return {
-            "passed": True,
-            "score": 0.5,
-            "violations": [],
-            "suggested_fixes": [],
-            "cleaned_text": "",
-        }
+
+def extract_json(raw: str) -> dict | None:
+    """Extract the first JSON object from a model reply.
+
+    Tries, in order: the whole text, ```json fenced blocks, the first
+    balanced {...} span. Returns None if nothing parses to a dict.
+    """
+    text = (raw or "").strip()
+    candidates = [text]
+    candidates += [m.strip() for m in re.findall(r"```(?:json)?\s*(.*?)```", text, flags=re.S)]
+    start = text.find("{")
+    while start != -1:
+        depth = 0
+        in_str = False
+        esc = False
+        for i in range(start, len(text)):
+            ch = text[i]
+            if in_str:
+                if esc:
+                    esc = False
+                elif ch == "\\":
+                    esc = True
+                elif ch == '"':
+                    in_str = False
+            elif ch == '"':
+                in_str = True
+            elif ch == "{":
+                depth += 1
+            elif ch == "}":
+                depth -= 1
+                if depth == 0:
+                    candidates.append(text[start:i + 1])
+                    break
+        start = text.find("{", start + 1)
+    for cand in candidates:
+        try:
+            obj = json.loads(cand)
+        except (json.JSONDecodeError, ValueError):
+            continue
+        if isinstance(obj, dict):
+            return obj
+    return None
+
+
+def _parse_response(raw: str) -> dict:
+    """Parse the Guardian reply. Unparseable output is a failure, never a pass."""
+    obj = extract_json(raw)
+    if obj is None:
+        logger.warning("Brand Guardian: failed to parse JSON response: %s", (raw or "")[:200])
+        return _parse_error("Ответ модели не удалось разобрать как JSON")
+    return obj
 
 
 def audit_brand_sync(text: str, platform: str, brand_context: str = "") -> dict:

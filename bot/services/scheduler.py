@@ -329,6 +329,20 @@ async def _run_trends_pipeline() -> None:
     )
 
 
+async def _run_site_autopilot() -> None:
+    """Tuesday 10:00 MSK (07:00 UTC): publish the next aromara.ru article."""
+    import os
+
+    if os.getenv("SITE_AUTOPILOT_ENABLED", "").strip().lower() not in ("1", "true", "yes", "on"):
+        return
+    if datetime.now(timezone.utc).weekday() != 1:
+        return
+    from bot.services.site_autopilot import run_once
+
+    result = await asyncio.to_thread(run_once, publish=True)
+    logger.info("Site autopilot: %s", {k: v for k, v in result.items() if k != "article"})
+
+
 async def _poll_comments() -> None:
     from bot.services.comments_poller import poll_published_comments
 
@@ -495,6 +509,13 @@ def _build_task_registry() -> list[ScheduledTask]:
             fn=_check_status_feeds,
             check="every_Nm",
             interval_minutes=5,
+        ),
+        ScheduledTask(
+            name="site_autopilot",
+            fn=_run_site_autopilot,
+            hours={7},
+            minute=0,
+            check="daily",
         ),
         ScheduledTask(
             name="scheduled_posts",

@@ -151,3 +151,32 @@ def test_parse_response_handles_invalid_json():
     parsed = _parse_response("this is not json at all")
     assert "passed" in parsed
     assert "score" in parsed
+
+
+# --- Robust parsing / parse_error (site autopilot) --------------------------
+
+def test_parse_response_invalid_json_is_parse_error():
+    """Unparseable model output must NOT silently pass."""
+    parsed = _parse_response("this is not json at all")
+    assert parsed["passed"] is False
+    assert any(v["type"] == "parse_error" for v in parsed["violations"])
+
+
+def test_parse_response_extracts_json_from_prose():
+    raw = 'Вот результат проверки:\n{"passed": true, "score": 0.9, "violations": []}\nГотово.'
+    parsed = _parse_response(raw)
+    assert parsed["passed"] is True
+    assert parsed["score"] == 0.9
+
+
+def test_parse_response_extracts_json_from_fence_with_prose():
+    raw = 'Ответ:\n```json\n{"passed": false, "score": 0.3, "violations": []}\n```\nКонец.'
+    parsed = _parse_response(raw)
+    assert parsed["passed"] is False
+    assert parsed["score"] == 0.3
+
+
+def test_parse_response_non_object_json_is_parse_error():
+    parsed = _parse_response("[1, 2, 3]")
+    assert parsed["passed"] is False
+    assert parsed["violations"][0]["type"] == "parse_error"
