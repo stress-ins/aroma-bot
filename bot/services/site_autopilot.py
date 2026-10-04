@@ -433,9 +433,29 @@ def _section_user(topic: dict, facts: dict, plan: dict, heading: str | None, not
     )
 
 
+_DASH_RULES = [
+    (re.compile(r"(\d)[ \t]*—[ \t]*(\d)"), r"\1–\2"),            # ranges: 10—15 -> 10–15
+    (re.compile(r"(?m)^[ \t]*—[ \t]*"), ""),                       # dialogue dash at line start
+    (re.compile(r"([,;:.!?…])[ \t]*—[ \t]*"), r"\1 "),             # ", —" -> ", "
+    (re.compile(r"[ \t]*—[ \t]*(?=[,;:.!?…)]|\n|$)"), ""),        # dash before punctuation / EOL
+    (re.compile(r"[ \t]*—[ \t]*(?=это\b)", re.I), " "),           # "X — это Y" -> "X это Y"
+    (re.compile(r"[ \t]*—[ \t]*"), ", "),                          # any other dash -> comma
+]
+
+
+def normalize_dashes(text: str) -> str:
+    """Deterministically replace em dashes: the model keeps emitting them despite the prompt."""
+    t = text or ""
+    if "—" not in t:
+        return t
+    for pat, repl in _DASH_RULES:
+        t = pat.sub(repl, t)
+    return t
+
+
 def _clean_body(text: str) -> str:
     """Strip stray markdown a model adds around plain text (never touches meaning)."""
-    t = (text or "").strip()
+    t = normalize_dashes((text or "").strip())
     t = re.sub(r"(?m)^\s*#{1,6}\s.*$\n?", "", t)  # headings the model repeated
     t = re.sub(r"\*\*|__|`", "", t)
     t = re.sub(r"(?m)^\s*[-*•]\s+", "", t)
@@ -468,7 +488,7 @@ def _translate_headings(headings: list[str]) -> list[str]:
     raw = call_llm(system=_en_system(), max_tokens=400, context="site_autopilot/headings_en",
                    user="Translate these section headings into natural English, one per line, same "
                         "order, no numbering, no markdown:\n" + "\n".join(headings))
-    out = [re.sub(r"^[#\-*\d.\s]+", "", ln).strip() for ln in (raw or "").splitlines() if ln.strip()]
+    out = [normalize_dashes(re.sub(r"^[#\-*\d.\s]+", "", ln).strip()) for ln in (raw or "").splitlines() if ln.strip()]
     return out if len(out) == len(headings) else headings
 
 
@@ -479,7 +499,9 @@ def _read_minutes(post: dict) -> int:
 def _header(raw: str) -> tuple[str, str] | None:
     m_t = re.search(r"(?m)^TITLE:\s*(.+)$", raw or "")
     m_e = re.search(r"(?m)^EXCERPT:\s*(.+)$", raw or "")
-    return (m_t.group(1).strip(), m_e.group(1).strip()) if m_t and m_e else None
+    if not (m_t and m_e):
+        return None
+    return normalize_dashes(m_t.group(1).strip()), normalize_dashes(m_e.group(1).strip())
 
 
 def _header_issues(plan: dict, lang: str) -> list[str]:
@@ -496,7 +518,7 @@ def _header_issues(plan: dict, lang: str) -> list[str]:
 def _jobs_ru(topic: dict, facts: dict, global_notes: str):
     raw = call_llm(system="", user=_plan_user(topic, facts), max_tokens=900, context="site_autopilot/plan_ru")
     hdr = _header(raw)
-    heads = [h.strip() for h in re.findall(r"(?m)^@@\s*(.+)$", raw or "")][:7]
+    heads = [normalize_dashes(h.strip()) for h in re.findall(r"(?m)^@@\s*(.+)$", raw or "")][:7]
     if not hdr or len(heads) < 4:
         return None, "ru: план статьи не получен в нужном формате"
     plan = {"title": hdr[0], "excerpt": hdr[1], "sections": [{"heading": h} for h in heads]}
