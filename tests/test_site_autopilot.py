@@ -163,6 +163,26 @@ def test_validate_rejects_em_dash_and_markup_in_body():
     assert len(errs) >= 2
 
 
+@pytest.mark.parametrize("src,want", [
+    ("Гонг — это инструмент.", "Гонг это инструмент."),
+    ("Звук — тело — дыхание.", "Звук, тело, дыхание."),
+    ("Цена 10—15 минут", "Цена 10–15 минут"),
+    ("— Привет, — сказала она.", "Привет, сказала она."),
+    ("Конец фразы —.", "Конец фразы."),
+    ("Масла—основа", "Масла, основа"),
+    ("A word — another", "A word, another"),
+    ("Без тире", "Без тире"),
+])
+def test_normalize_dashes(src, want):
+    assert ap.normalize_dashes(src) == want
+
+
+def test_normalize_dashes_keeps_paragraphs():
+    out = ap.normalize_dashes("Абзац — один.\n\n— Второй абзац")
+    assert out == "Абзац, один.\n\nВторой абзац"
+    assert ap.stoplist_violations(out, "ru") == []
+
+
 # --- atomic write ---------------------------------------------------------------
 
 def test_write_article_atomic(tmp_path):
@@ -210,9 +230,11 @@ def _draft_text(words, lang="ru", dash=False):
 
 
 class Env:
-    def __init__(self, tmp_path, monkeypatch, *, ru_dash_always=False, verify_status=200, med_ok=True):
+    def __init__(self, tmp_path, monkeypatch, *, ru_dash_always=False, ru_cliche_always=False,
+                 verify_status=200, med_ok=True):
         self.calls = {"llm": [], "post": [], "get": [], "tg": [], "indexnow": []}
         self.ru_dash_always = ru_dash_always
+        self.ru_cliche_always = ru_cliche_always
         self.verify_status = verify_status
         self.med_ok = med_ok
         self.tmp = tmp_path
@@ -237,14 +259,18 @@ class Env:
         if context == "site_autopilot/plan_ru":
             return f"TITLE: {ru_title}\nEXCERPT: {ru_exc}\n" + "".join(f"@@ Раздел {i}\n" for i in range(1, 7))
         if context == "site_autopilot/section_ru":
-            return _words(150) + (" тест — тест" if self.ru_dash_always else "")
+            return self._ru_section()
         if context == "site_autopilot/rewrite_ru":
-            return _words(150) + (" тест — тест" if self.ru_dash_always else "")
+            return self._ru_section()
         if context == "site_autopilot/header_en":
             return f"TITLE: Gong in Moscow: how a session goes\nEXCERPT: {en_exc}"
         if context == "site_autopilot/headings_en":
             return "\n".join(f"Section {i}" for i in range(1, 7))
         return _words(110, "word")  # section_en / rewrite_en
+
+    def _ru_section(self):
+        return (_words(150) + (" Гонг — это звук, а тишина — пауза." if self.ru_dash_always else "")
+                + (" безусловно тест" if self.ru_cliche_always else ""))
 
     def med(self, text, cluster):
         return {"passed": self.med_ok, "issues": [] if self.med_ok else ["medical claim"]}
@@ -292,7 +318,7 @@ def test_pipeline_rewrites_section_then_succeeds(tmp_path, monkeypatch):
         if kw["context"] == "site_autopilot/section_ru" and state["first"]:
             state["first"] = False
             env.calls["llm"].append(kw["context"])
-            return _words(150) + " тест — тест"
+            return _words(150) + " безусловно тест"
         return orig(**kw)
     monkeypatch.setattr(ap, "call_llm", llm)
     res = ap.run_once(publish=True, now=NOW)
@@ -300,8 +326,17 @@ def test_pipeline_rewrites_section_then_succeeds(tmp_path, monkeypatch):
     assert env.calls["llm"].count("site_autopilot/rewrite_ru") == 1
 
 
-def test_pipeline_stoplist_failure_no_file(tmp_path, monkeypatch):
+def test_pipeline_normalizes_em_dash_without_rewrites(tmp_path, monkeypatch):
     env = Env(tmp_path, monkeypatch, ru_dash_always=True)
+    res = ap.run_once(publish=True, now=NOW)
+    assert res["status"] == "published"
+    assert "site_autopilot/rewrite_ru" not in env.calls["llm"]
+    raw = (tmp_path / "content" / "blog" / "gong-t1.json").read_text()
+    assert "—" not in raw and "Гонг это звук, а тишина, пауза." in raw
+
+
+def test_pipeline_stoplist_failure_no_file(tmp_path, monkeypatch):
+    env = Env(tmp_path, monkeypatch, ru_cliche_always=True)
     res = ap.run_once(publish=True, now=NOW)
     assert res["status"] == "failed"
     assert not (tmp_path / "content" / "blog").exists() or not list((tmp_path / "content" / "blog").glob("*"))
