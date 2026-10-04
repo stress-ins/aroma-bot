@@ -22,6 +22,23 @@ from zoneinfo import ZoneInfo
 
 import httpx
 
+from dotenv import dotenv_values
+
+# aroma-bot.service has no EnvironmentFile; pydantic Settings reads .env only into
+# declared fields, so autopilot keys are looked up here: process env first, then .env.
+DOTENV_PATH = Path(__file__).resolve().parents[2] / ".env"
+_dotenv_cache: dict[str, str | None] = {}
+
+
+def _env(key: str, default: str = "") -> str:
+    val = os.environ.get(key)
+    if val:
+        return val
+    if not _dotenv_cache:
+        _dotenv_cache.update(dotenv_values(DOTENV_PATH) if DOTENV_PATH.exists() else {})
+        _dotenv_cache.setdefault("__loaded__", "1")
+    return _dotenv_cache.get(key) or default
+
 logger = logging.getLogger(__name__)
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -338,7 +355,7 @@ def http_get_status(url: str) -> int:
 def send_group_message(text: str) -> None:
     from config import settings
 
-    chat = os.getenv("SITE_AUTOPILOT_CHAT_ID", DEFAULT_CHAT_ID)
+    chat = _env("SITE_AUTOPILOT_CHAT_ID", DEFAULT_CHAT_ID)
     httpx.post(f"https://api.telegram.org/bot{settings.telegram_bot_token}/sendMessage",
                json={"chat_id": chat, "text": text, "disable_web_page_preview": False},
                timeout=20).raise_for_status()
@@ -598,10 +615,10 @@ def build_article(topic: dict, facts: dict, content_dir: Path, now: datetime,
 # --------------------------------------------------------------------------
 
 def _revalidate(slug: str) -> None:
-    secret = os.getenv("REVALIDATE_SECRET", "")
+    secret = _env("REVALIDATE_SECRET", "")
     if not secret:
         raise RuntimeError("REVALIDATE_SECRET не задан")
-    url = os.getenv("SITE_REVALIDATE_URL", DEFAULT_REVALIDATE_URL)
+    url = _env("SITE_REVALIDATE_URL", DEFAULT_REVALIDATE_URL)
     last: Any = None
     for i in range(3):
         try:
@@ -629,7 +646,7 @@ def _verify_page(url: str, attempts: int = 12, delay: float = 5.0) -> None:
 
 def publish_article(article: dict, content_dir: Path) -> list[str]:
     """Write + revalidate + verify. Rolls back the file on failure. Returns public URLs."""
-    site = os.getenv("SITE_URL", DEFAULT_SITE_URL).rstrip("/")
+    site = _env("SITE_URL", DEFAULT_SITE_URL).rstrip("/")
     slug, slug_en = article["ru"]["slug"], article["en"]["slug"]
     path = write_article(article, content_dir)
     try:
@@ -654,7 +671,7 @@ def _notify(text: str) -> None:
 
 def run_once(*, publish: bool, now: datetime | None = None, topic_id: str | None = None) -> dict:
     now = now or datetime.now(timezone.utc)
-    content_dir = Path(os.getenv("SITE_CONTENT_DIR", DEFAULT_CONTENT_DIR))
+    content_dir = Path(_env("SITE_CONTENT_DIR", DEFAULT_CONTENT_DIR))
     facts = load_facts()
     state = load_state()
     topic = pick_next_topic(load_topics(), state, now=now, topic_id=topic_id)

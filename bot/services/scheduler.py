@@ -333,7 +333,9 @@ async def _run_site_autopilot() -> None:
     """Tuesday 10:00 MSK (07:00 UTC): publish the next aromara.ru article."""
     import os
 
-    if os.getenv("SITE_AUTOPILOT_ENABLED", "").strip().lower() not in ("1", "true", "yes", "on"):
+    from bot.services.site_autopilot import _env
+
+    if _env("SITE_AUTOPILOT_ENABLED", "").strip().lower() not in ("1", "true", "yes", "on"):
         return
     if datetime.now(timezone.utc).weekday() != 1:
         return
