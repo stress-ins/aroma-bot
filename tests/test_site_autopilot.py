@@ -353,3 +353,42 @@ def test_medical_review_json_in_prose(monkeypatch):
     import bot.services.claude_client as cc
     monkeypatch.setattr(cc, "call_claude", lambda **kw: 'Вердикт: {"passed": true, "issues": []} Спасибо')
     assert ap.medical_review("текст", "aroma_diagnostics") == {"passed": True, "issues": []}
+
+
+def test_env_falls_back_to_dotenv_file(tmp_path, monkeypatch):
+    """aroma-bot has no systemd EnvironmentFile: values living only in .env must be visible."""
+    from bot.services import site_autopilot as sa
+
+    env = tmp_path / ".env"
+    env.write_text("REVALIDATE_SECRET=from-file\nSITE_CONTENT_DIR=/x\n", encoding="utf-8")
+    monkeypatch.delenv("REVALIDATE_SECRET", raising=False)
+    monkeypatch.setattr(sa, "DOTENV_PATH", env)
+    sa._dotenv_cache.clear()
+    assert sa._env("REVALIDATE_SECRET") == "from-file"
+    monkeypatch.setenv("REVALIDATE_SECRET", "from-env")
+    assert sa._env("REVALIDATE_SECRET") == "from-env"
+    assert sa._env("MISSING_KEY", "dflt") == "dflt"
+
+
+def test_scheduler_flag_read_from_dotenv(tmp_path, monkeypatch):
+    """The enable flag must also be visible when it lives only in .env."""
+    import asyncio
+    from bot.services import scheduler, site_autopilot as sa
+
+    env = tmp_path / ".env"
+    env.write_text("SITE_AUTOPILOT_ENABLED=1\n", encoding="utf-8")
+    monkeypatch.delenv("SITE_AUTOPILOT_ENABLED", raising=False)
+    monkeypatch.setattr(sa, "DOTENV_PATH", env)
+    sa._dotenv_cache.clear()
+    calls = []
+    monkeypatch.setattr(sa, "run_once", lambda *a, **k: calls.append(1) or {"status": "skipped"})
+    from datetime import datetime as _dt, timezone as _tz
+
+    class _Tue(_dt):
+        @classmethod
+        def now(cls, tz=None):
+            return _dt(2026, 10, 6, 7, 0, tzinfo=_tz.utc)
+
+    monkeypatch.setattr(scheduler, "datetime", _Tue)
+    asyncio.run(scheduler._run_site_autopilot())
+    assert calls, "autopilot did not run although .env enables it"
