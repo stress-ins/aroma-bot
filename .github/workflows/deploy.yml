@@ -26,10 +26,15 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -H 46.32.186.192 >> ~/.ssh/known_hosts
 
+      - name: Update VPS trust store
+        run: |
+          scp deploy/emsign-trust-hardening.sh root@46.32.186.192:/usr/local/sbin/emsign-trust-hardening
+          ssh root@46.32.186.192 'chmod 0755 /usr/local/sbin/emsign-trust-hardening && /usr/local/sbin/emsign-trust-hardening'
+
       - name: Sync systemd service files
         run: |
           scp deploy/aroma-miniapp.service root@46.32.186.192:/etc/systemd/system/aroma-miniapp.service
-          ssh root@46.32.186.192 'systemctl daemon-reload'
+          ssh root@46.32.186.192 '/usr/local/sbin/emsign-trust-hardening && systemctl daemon-reload'
 
       - name: Update nginx config
         run: |
@@ -39,7 +44,7 @@ jobs:
       - name: Push to VPS bare repo
         run: |
           git remote add vps ssh://root@46.32.186.192/opt/aroma.git
-          git push --force vps HEAD:main
+          git push vps HEAD:main
 
       - name: Ensure Node.js on VPS
         run: |

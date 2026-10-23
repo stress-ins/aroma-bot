@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 WorkingDirectory=/opt/aroma
-ExecStart=/usr/local/bin/uvicorn threads_oauth_callback:app --host 127.0.0.1 --port 8090
+ExecStart=/usr/local/libexec/emsign-exec /usr/local/bin/uvicorn threads_oauth_callback:app --host 127.0.0.1 --port 8090
 Restart=always
 RestartSec=3
 User=root
