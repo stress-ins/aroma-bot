@@ -11,6 +11,7 @@ make_cert() {
 }
 make_cert emsign 0xABCD 'emSign Test Root'
 make_cert comodo 0x1234 'Comodo AAA Certificate Services'
+make_cert zeroca 0x0 'DigiCert Serial Zero Test CA'
 serials=$(sed -n "s/^readonly serials='\(.*\)'/\1/p" "$HELPER")
 n=0
 for serial in $serials; do n=$((n+1)); make_cert "blocked$n" "0x$serial" "Blocked CA $n"; done
@@ -33,9 +34,9 @@ for pass in 1 2; do
   PATH="$ROOT/bin:$PATH" EMSIGN_TRUST_ROOT="$ROOT" bash "$HELPER" --ca-store-only
 done
 bundle="$ROOT/etc/ssl/certs/ca-certificates.crt"
-openssl verify -CAfile "$bundle" "$ROOT/usr/share/ca-certificates/test/comodo.crt"
+openssl verify -CAfile "$bundle" "$ROOT/usr/share/ca-certificates/test/comodo.crt" "$ROOT/usr/share/ca-certificates/test/zeroca.crt"
 for cert in "$ROOT/usr/share/ca-certificates/test/"*.crt; do
-  [[ "$cert" == */comodo.crt ]] && continue
+  [[ "$cert" == */comodo.crt || "$cert" == */zeroca.crt ]] && continue
   if openssl verify -CAfile "$bundle" "$cert" > /dev/null 2>&1; then echo "Still trusted: $cert" >&2; exit 1; fi
 done
 test ! -e "$ROOT/usr/local/share/ca-certificates/local-emsign.crt"

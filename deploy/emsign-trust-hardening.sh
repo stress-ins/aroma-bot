@@ -26,7 +26,6 @@ declare -A blocked=()
 normalize_serial() {
   local value=${1^^}
   value=${value//:/}
-  value=${value#0}
   while [[ "$value" == 0* && ${#value} -gt 1 ]]; do value=${value#0}; done
   printf '%s' "$value"
 }
@@ -44,8 +43,8 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     [[ $(grep -c -- "-----BEGIN CERTIFICATE-----" "$cert") -eq 1 && $(grep -c -- "-----END CERTIFICATE-----" "$cert") -eq 1 ]] || die "CA file must contain exactly one PEM certificate: $cert"
     details=$(openssl x509 -in "$cert" -noout -serial -subject 2>/dev/null) \
       || die "cannot inspect configured certificate: $cert"
-    serial=$(normalize_serial "${details#*serial=}")
-    serial=${serial%%$'\n'*}
+    serial=${details%%$'\n'*}
+    serial=$(normalize_serial "${serial#serial=}")
     subject=${details#*$'\n'}
     subject=${subject,,}
     if [[ -n ${blocked[$serial]+yes} || "$subject" == *emsign* || "$subject" == *emudhra* ]]; then
@@ -73,8 +72,8 @@ if [[ -d "$local_dir" ]]; then
     [[ $(grep -c -- "-----BEGIN CERTIFICATE-----" "$cert") -eq 1 && $(grep -c -- "-----END CERTIFICATE-----" "$cert") -eq 1 ]] || die "CA file must contain exactly one PEM certificate: $cert"
     details=$(openssl x509 -in "$cert" -noout -serial -subject 2>/dev/null) \
       || die "cannot inspect local CA certificate: $cert"
-    serial=$(normalize_serial "${details#*serial=}")
-    serial=${serial%%$'\n'*}
+    serial=${details%%$'\n'*}
+    serial=$(normalize_serial "${serial#serial=}")
     subject=${details#*$'\n'}
     subject=${subject,,}
     if [[ -n ${blocked[$serial]+yes} || "$subject" == *emsign* || "$subject" == *emudhra* ]]; then
@@ -92,8 +91,8 @@ update-ca-certificates --fresh
 if awk '!/^#/ && !/^!/ && NF { print $0 }' "$config" | while IFS= read -r entry; do
   cert="$source_dir/$entry"
   details=$(openssl x509 -in "$cert" -noout -serial -subject 2>/dev/null) || exit 2
-  serial=$(normalize_serial "${details#*serial=}")
-  serial=${serial%%$'\n'*}
+  serial=${details%%$'\n'*}
+  serial=$(normalize_serial "${serial#serial=}")
   subject=${details#*$'\n'}
   subject=${subject,,}
   [[ -z ${blocked[$serial]+yes} && "$subject" != *emsign* && "$subject" != *emudhra* ]] || exit 1
@@ -114,8 +113,8 @@ awk -v dir="$verify_dir" '
 ' "$bundle" || { rm -rf "$verify_dir"; die "malformed generated CA bundle"; }
 for cert in "$verify_dir"/*.pem; do
   details=$(openssl x509 -in "$cert" -noout -serial -subject 2>/dev/null) || { rm -rf "$verify_dir"; die "invalid certificate in generated bundle"; }
-  serial=$(normalize_serial "${details#*serial=}")
-  serial=${serial%%$'\n'*}
+  serial=${details%%$'\n'*}
+  serial=$(normalize_serial "${serial#serial=}")
   subject=${details#*$'\n'}
   subject=${subject,,}
   if [[ -n ${blocked[$serial]+yes} || "$subject" == *emsign* || "$subject" == *emudhra* ]]; then
