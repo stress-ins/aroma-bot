@@ -188,15 +188,17 @@ def assert_visual_snapshot(locator, snapshot_name: str, *, max_diff_ratio: float
 # ---------------------------------------------------------------------------
 
 def click_bottom_tab(page, tab_id: str, *, timeout: int = 5000) -> None:
-    """Click a bottom tab and wait until it becomes active (aria-pressed)."""
+    """Click a bottom tab and wait for its asynchronously loaded list."""
     page.locator(tab_id).click()
     page.locator(f'{tab_id}[aria-pressed="true"]').wait_for(state="attached", timeout=timeout)
+    page.locator("#draftList .panel-loader-card").wait_for(state="hidden", timeout=timeout)
 
 
 def click_content_sub_tab(page, label: str, *, timeout: int = 5000) -> None:
-    """Click a content sub-tab and wait for it to become active."""
+    """Click a content sub-tab and wait for its asynchronously loaded list."""
     page.locator(".content-sub-tab", has_text=label).click()
     page.locator(".content-sub-tab.active", has_text=label).wait_for(state="visible", timeout=timeout)
+    page.locator("#draftList .panel-loader-card").wait_for(state="hidden", timeout=timeout)
 
 
 def click_draft_card(page, text: str, *, timeout: int = 5000) -> None:
