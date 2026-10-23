@@ -1,7 +1,7 @@
 """Layout: touch targets, overlap, mobile safety."""
 from __future__ import annotations
 
-from .helpers import click_bottom_tab, click_handbook_tab, nav_back_to_list
+from .helpers import click_bottom_tab, click_handbook_tab, nav_back_to_list, wait_for_detail_panel
 
 
 def test_mobile_layout_has_no_overlapping_controls(page):
@@ -250,7 +250,7 @@ def test_detail_sections_not_clipped_on_sides(page):
         page.evaluate("window.goBackToList()")
         page.locator(".draft-card").first.wait_for(state="visible", timeout=5000)
         cards.nth(i).click()
-        page.locator("#draftDetail").wait_for(state="visible", timeout=5000)
+        wait_for_detail_panel(page)
 
         issues = page.evaluate(_JS_CHECK_DETAIL_INTEGRITY, 430)
         assert issues is None, f"Card {i}: detail integrity issues: {issues}"
