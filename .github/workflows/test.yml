@@ -14,6 +14,10 @@ permissions:
   contents: read
   pull-requests: read
 
+# GitHub rejects NODE_OPTIONS written through GITHUB_ENV; declare it before jobs.
+env:
+  NODE_OPTIONS: --use-openssl-ca
+
 jobs:
   # ── Detect which paths changed ──────────────────────────────────────
   changes:
@@ -49,7 +53,7 @@ jobs:
         run: |
           sudo bash deploy/emsign-trust-hardening.sh --ca-store-only
           sudo install -d -m 0755 /etc/emsign/empty-ca-dir
-          printf 'SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt\nREQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt\nPIP_CERT=/etc/ssl/certs/ca-certificates.crt\nSSL_CERT_DIR=/etc/emsign/empty-ca-dir\nNODE_OPTIONS=--use-openssl-ca %s\n' "${NODE_OPTIONS:-}" >> "$GITHUB_ENV"
+          printf 'SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt\nREQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt\nPIP_CERT=/etc/ssl/certs/ca-certificates.crt\nSSL_CERT_DIR=/etc/emsign/empty-ca-dir\n' >> "$GITHUB_ENV"
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -87,7 +91,7 @@ jobs:
         run: |
           sudo bash deploy/emsign-trust-hardening.sh --ca-store-only
           sudo install -d -m 0755 /etc/emsign/empty-ca-dir
-          printf 'SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt\nREQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt\nPIP_CERT=/etc/ssl/certs/ca-certificates.crt\nSSL_CERT_DIR=/etc/emsign/empty-ca-dir\nNODE_OPTIONS=--use-openssl-ca %s\n' "${NODE_OPTIONS:-}" >> "$GITHUB_ENV"
+          printf 'SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt\nREQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt\nPIP_CERT=/etc/ssl/certs/ca-certificates.crt\nSSL_CERT_DIR=/etc/emsign/empty-ca-dir\n' >> "$GITHUB_ENV"
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -124,7 +128,7 @@ jobs:
         run: |
           sudo bash deploy/emsign-trust-hardening.sh --ca-store-only
           sudo install -d -m 0755 /etc/emsign/empty-ca-dir
-          printf 'SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt\nREQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt\nPIP_CERT=/etc/ssl/certs/ca-certificates.crt\nSSL_CERT_DIR=/etc/emsign/empty-ca-dir\nNODE_OPTIONS=--use-openssl-ca %s\n' "${NODE_OPTIONS:-}" >> "$GITHUB_ENV"
+          printf 'SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt\nREQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt\nPIP_CERT=/etc/ssl/certs/ca-certificates.crt\nSSL_CERT_DIR=/etc/emsign/empty-ca-dir\n' >> "$GITHUB_ENV"
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -157,7 +161,7 @@ jobs:
         run: |
           sudo bash deploy/emsign-trust-hardening.sh --ca-store-only
           sudo install -d -m 0755 /etc/emsign/empty-ca-dir
-          printf 'SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt\nREQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt\nPIP_CERT=/etc/ssl/certs/ca-certificates.crt\nSSL_CERT_DIR=/etc/emsign/empty-ca-dir\nNODE_OPTIONS=--use-openssl-ca %s\n' "${NODE_OPTIONS:-}" >> "$GITHUB_ENV"
+          printf 'SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt\nREQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt\nPIP_CERT=/etc/ssl/certs/ca-certificates.crt\nSSL_CERT_DIR=/etc/emsign/empty-ca-dir\n' >> "$GITHUB_ENV"
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -179,7 +183,8 @@ jobs:
     needs: changes
     if: needs.changes.outputs.ui == 'true' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    # A cold apt dependency download took 9m42s; retain time for the full UI suite.
+    timeout-minutes: 25
     env:
       TELEGRAM_BOT_TOKEN: test-token
       REPORT_TARGET_CHAT_ID: test-chat
@@ -193,7 +198,7 @@ jobs:
         run: |
           sudo bash deploy/emsign-trust-hardening.sh --ca-store-only
           sudo install -d -m 0755 /etc/emsign/empty-ca-dir
-          printf 'SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt\nREQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt\nPIP_CERT=/etc/ssl/certs/ca-certificates.crt\nSSL_CERT_DIR=/etc/emsign/empty-ca-dir\nNODE_OPTIONS=--use-openssl-ca %s\n' "${NODE_OPTIONS:-}" >> "$GITHUB_ENV"
+          printf 'SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt\nREQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt\nPIP_CERT=/etc/ssl/certs/ca-certificates.crt\nSSL_CERT_DIR=/etc/emsign/empty-ca-dir\n' >> "$GITHUB_ENV"
 
       - name: Set up Python
         uses: actions/setup-python@v5
