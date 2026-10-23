@@ -41,6 +41,7 @@ while IFS= read -r line || [[ -n "$line" ]]; do
   if [[ -n "$entry" && "$entry" != \#* && "$entry" != \!* ]]; then
     cert="$source_dir/$entry"
     [[ -f "$cert" ]] || die "configured certificate is missing: $cert"
+    [[ $(grep -c -- "-----BEGIN CERTIFICATE-----" "$cert") -eq 1 && $(grep -c -- "-----END CERTIFICATE-----" "$cert") -eq 1 ]] || die "CA file must contain exactly one PEM certificate: $cert"
     details=$(openssl x509 -in "$cert" -noout -serial -subject 2>/dev/null) \
       || die "cannot inspect configured certificate: $cert"
     serial=$(normalize_serial "${details#*serial=}")
@@ -69,6 +70,7 @@ fi
 # only matching files by extension, retaining their bytes for recovery.
 if [[ -d "$local_dir" ]]; then
   while IFS= read -r -d '' cert; do
+    [[ $(grep -c -- "-----BEGIN CERTIFICATE-----" "$cert") -eq 1 && $(grep -c -- "-----END CERTIFICATE-----" "$cert") -eq 1 ]] || die "CA file must contain exactly one PEM certificate: $cert"
     details=$(openssl x509 -in "$cert" -noout -serial -subject 2>/dev/null) \
       || die "cannot inspect local CA certificate: $cert"
     serial=$(normalize_serial "${details#*serial=}")
@@ -124,8 +126,12 @@ set -eu
 export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 export REQUESTS_CA_BUNDLE="$SSL_CERT_FILE" PIP_CERT="$SSL_CERT_FILE"
 export SSL_CERT_DIR=/etc/emsign/empty-ca-dir
-# Suppress alternate extra roots and CA flags while preserving unrelated flags.
-unset NODE_EXTRA_CA_CERTS
+# Extra roots need separate sanitization; fail explicitly instead of silently
+# discarding private/corporate trust or accepting an unchecked alternate bundle.
+if [ -n "${NODE_EXTRA_CA_CERTS:-}" ]; then
+  echo "emsign: NODE_EXTRA_CA_CERTS requires an audited clean bundle before service start: $NODE_EXTRA_CA_CERTS" >&2
+  exit 1
+fi
 case " ${NODE_OPTIONS:-} " in
   *--use-bundled-ca*|*--use-system-ca*) echo 'emsign: conflicting Node CA option' >&2; exit 1;;
 esac

@@ -46,12 +46,15 @@ wrapper = helper.split("cat > /usr/local/libexec/emsign-exec <<'EOF'\n", 1)[1].s
 path = root / 'wrapper'
 path.write_text(wrapper)
 path.chmod(0o755)
-env = dict(os.environ, NODE_OPTIONS='--max-old-space-size=256', NODE_EXTRA_CA_CERTS='/bad', SSL_CERT_FILE='/bad')
+env = dict(os.environ, NODE_OPTIONS='--max-old-space-size=256', SSL_CERT_FILE='/bad')
 result = json.loads(subprocess.check_output([str(path), 'python3', '-c', 'import os,json;print(json.dumps(dict(os.environ)))'], env=env))
 assert result['NODE_OPTIONS'] == '--max-old-space-size=256 --use-openssl-ca'
 assert result['SSL_CERT_FILE'] == result['REQUESTS_CA_BUNDLE'] == result['PIP_CERT'] == '/etc/ssl/certs/ca-certificates.crt'
 assert result['SSL_CERT_DIR'] == '/etc/emsign/empty-ca-dir'
-assert 'NODE_EXTRA_CA_CERTS' not in result
+# Unknown extra roots fail visibly instead of being silently dropped.
+extra = dict(env, NODE_EXTRA_CA_CERTS='/private/corporate.pem')
+failed = subprocess.run([str(path), '/bin/true'], env=extra, capture_output=True)
+assert failed.returncode != 0 and b'requires an audited clean bundle' in failed.stderr
 original = subprocess.check_output
 unit = '''[Service]
 EnvironmentFile=/secret/options.env
@@ -78,4 +81,10 @@ exec(compile(installer, '<installer>', 'exec'))
 assert (root / 'kartracers-test.service.d/90-emsign-trust.conf').read_text() == dropin
 print('PASS: wrapper preserves inherited options; scoped command overrides retain args/EnvFiles, idempotent')
 PY
-echo 'PASS: actual verification rejects all 19 serials and emSign; unrelated Comodo remains trusted'
+# A .crt with multiple certificates must never be classified by only its first.
+cat "$ROOT/usr/share/ca-certificates/test/comodo.crt" "$ROOT/usr/share/ca-certificates/test/emsign.crt" > "$ROOT/usr/local/share/ca-certificates/mixed.crt"
+if PATH="$ROOT/bin:$PATH" EMSIGN_TRUST_ROOT="$ROOT" bash "$HELPER" --ca-store-only > "$ROOT/multi.log" 2>&1; then
+  echo 'ERROR: accepted a multi-certificate local CA file' >&2; exit 1
+fi
+grep -q 'exactly one PEM certificate' "$ROOT/multi.log"
+echo 'PASS: actual verification rejects all 19 serials and emSign; unrelated Comodo retained; mixed PEM rejected'
