@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import json
 
+from playwright.sync_api import expect
+
 from .helpers import click_bottom_tab, click_content_sub_tab
 
 
@@ -109,7 +111,7 @@ def test_plan_detail_allows_creating_and_opening_linked_draft(page):
     page.locator(".plan-card").first.click()
     page.locator("#draftDetail").wait_for(state="visible", timeout=5000)
 
-    assert page.get_by_role("button", name="Создать Тредс").is_visible()
+    expect(page.get_by_role("button", name="Создать Тредс")).to_be_visible()
     page.get_by_role("button", name="Создать Тредс").click()
 
     # After async generation UX: navigates directly to draft detail on drafts tab
