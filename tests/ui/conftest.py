@@ -168,9 +168,9 @@ def miniapp_server(tmp_path_factory: pytest.TempPathFactory) -> str:
         "series_summary": "Опорная мысль серии про восстановление.",
         "goal": "trust",
         "emotion": "calm",
-        "posts": [
-            {"slot": 1, "text": "Утренний пост серии.", "status": "draft"},
-            {"slot": 2, "text": "Дневной пост серии.", "status": "draft"},
+        "threads_posts": [
+            {"slot": "morning", "text": "Утренний пост серии.", "status": "draft"},
+            {"slot": "day", "text": "Дневной пост серии.", "status": "draft"},
         ],
     }
     cursor.execute(

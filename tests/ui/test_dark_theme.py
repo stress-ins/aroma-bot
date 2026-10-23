@@ -145,9 +145,13 @@ def test_dark_button_contrast_on_all_tabs(dark_page):
 
 def test_dark_draft_detail_scroll_and_actions(dark_page):
     click_bottom_tab(dark_page, "#btnTabInspiration")
-    dark_page.locator(".draft-card").first.wait_for(state="visible", timeout=10000)
-    dark_page.locator(".draft-card").first.click()
+    # Exercise the ready series fixture, not whichever draft sorts first.
+    card = dark_page.locator(".draft-card").filter(has_text="Восстановление энергии и ресурса").first
+    card.wait_for(state="visible", timeout=10000)
+    card.click()
     dark_page.locator("#draftDetail").wait_for(state="visible", timeout=5000)
+    # A wrong payload field otherwise renders an empty, continuously refreshing series.
+    dark_page.get_by_text("Утренний пост серии.", exact=True).wait_for(state="visible", timeout=5000)
     # Wait for detail content to render (buttons appear async)
     dark_page.locator("#draftDetail .detail-title, #draftDetail .section, #draftDetail .reels-stepper").first.wait_for(
         state="visible", timeout=5000,
