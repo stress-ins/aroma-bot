@@ -186,6 +186,10 @@ for name in sorted(names):
         elif path.suffix == '.service' or path.parent.name.endswith('.service.d'):
             # Only project unit definitions may be changed. Shared global
             # service.d configuration and app checkout symlinks are rejected.
+            # Resource-only generated drop-ins need no command migration.
+            # Ignore them before evaluating write authorization.
+            if not re.search(r'^\s*Exec(?:Start|Stop|Reload)', path.read_text(), re.M):
+                continue
             owner = path.name if path.suffix == '.service' else path.parent.name[:-2]
             if not any(fnmatch.fnmatchcase(owner, p) for p in patterns):
                 if re.search(r'^Exec(?:Start|Stop|Reload)', path.read_text(), re.M):

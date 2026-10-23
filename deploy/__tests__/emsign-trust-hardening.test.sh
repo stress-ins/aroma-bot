@@ -136,7 +136,32 @@ finally:
     for entry in project_units.iterdir(): entry.unlink()
     project_units.rmdir()
 
-print('PASS: wrapper options, in-place commands/prefixes/EnvFiles, fresh deploy command, idempotence, external source guard')
+# A systemctl set-property resource-only drop-in outside the usual unit tree
+# must be ignored, while Exec directives in the same foreign path still fail.
+source.write_text(original)
+resource_dir = root.parent / (root.name + '-system.control') / 'kartracers-test.service.d'
+resource_dir.mkdir(parents=True)
+resource = resource_dir / '50-MemoryHigh.conf'
+resource.write_text('[Service]\nMemoryHigh=256M\n')
+base_mock = mock
+def resource_mock(args, **kwargs):
+    result = base_mock(args, **kwargs)
+    return result + (f'\n# {resource}\n{resource.read_text()}' if args[1] == 'cat' else '')
+subprocess.check_output = resource_mock
+try:
+    exec(compile(installer, '<resource-installer>', 'exec'))
+    assert resource.read_text() == '[Service]\nMemoryHigh=256M\n'
+    resource.write_text('[Service]\nExecStart=/foreign/command\n')
+    try:
+        exec(compile(installer, '<resource-installer>', 'exec'))
+        raise AssertionError('accepted foreign Exec in resource path')
+    except SystemExit as error:
+        assert 'outside systemd config' in str(error)
+finally:
+    resource.unlink()
+    resource_dir.rmdir()
+    resource_dir.parent.rmdir()
+print('PASS: wrapper options, in-place commands/prefixes/EnvFiles, fresh deploy command, idempotence, external source guard, resource-only drop-in')
 PY
 test -L "$ROOT/usr/local/share/ca-certificates/linked-emsign.crt.emsign-distrusted"
 test -s "$ROOT/usr/share/ca-certificates/test/emsign.crt"
