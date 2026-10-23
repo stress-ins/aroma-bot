@@ -118,6 +118,23 @@ try:
 finally:
     source.unlink()
     app_source.unlink()
+# Known production checkout unit links are explicitly authorized; preserve the
+# symlink and back up the target, while the foreign-link guard above remains.
+project_units = root.parent / (root.name + '-known-project-units')
+project_units.mkdir()
+project_target = project_units / source.name
+project_target.write_text(original)
+source.symlink_to(project_target)
+try:
+    linked_installer = installer.replace("pathlib.Path('/opt/kartracers-site/deploy/systemd')", 'project_units')
+    exec(compile(linked_installer, '<linked-installer>', 'exec'))
+    assert source.is_symlink()
+    assert '/usr/local/libexec/emsign-exec' in project_target.read_text()
+    assert project_target.with_name(project_target.name + '.emsign-before').read_text() == original
+finally:
+    source.unlink()
+    for entry in project_units.iterdir(): entry.unlink()
+    project_units.rmdir()
 
 print('PASS: wrapper options, in-place commands/prefixes/EnvFiles, fresh deploy command, idempotence, external source guard')
 PY

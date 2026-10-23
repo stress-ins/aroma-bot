@@ -165,7 +165,7 @@ exec /usr/local/libexec/emsign-exec /usr/bin/node "$@"
 EOF
 chmod 0755 /usr/local/libexec/emsign-node
 python3 - <<'PYINSTALL'
-import fnmatch, pathlib, re, subprocess
+import fnmatch, pathlib, re, shutil, subprocess
 patterns = ('kartracers*.service', 'aroma*.service', 'aromara-site.service', 'saturn*.service', 'rod-family*.service')
 def run(*args):
     return subprocess.check_output(['systemctl', *args], text=True)
@@ -192,7 +192,11 @@ for name in sorted(names):
                     raise SystemExit(f'Exec directive in shared unit config requires review: {path}')
                 continue
             allowed = ('/etc/systemd/system/', '/run/systemd/system/', '/usr/lib/systemd/system/', '/lib/systemd/system/')
-            if not str(path.resolve()).startswith(allowed):
+            target = path.resolve()
+            known_project = pathlib.Path('/opt/kartracers-site/deploy/systemd')
+            project_link = (path.suffix == '.service' and target.parent == known_project
+                            and target.name == path.name and path.name.startswith('kartracers-'))
+            if not str(target).startswith(allowed) and not project_link:
                 raise SystemExit(f'Refusing to edit unit source outside systemd config: {path}')
             paths.add(path)
 plans = []
@@ -220,6 +224,12 @@ for path in sorted(paths):
 # override. Future installers ship wrapped unit definitions with fresh args.
 for path, content in plans:
     if path.read_text() != content:
+        target = path.resolve()
+        backup = target.with_name(target.name + '.emsign-before')
+        if backup.is_symlink():
+            raise SystemExit(f'Refusing symlink backup path: {backup}')
+        if not backup.exists():
+            shutil.copy2(target, backup)
         path.write_text(content)
         print(f'emsign-trust: migrated unit commands {path}')
 for path in obsolete:
