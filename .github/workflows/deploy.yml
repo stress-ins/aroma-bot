@@ -34,7 +34,7 @@ jobs:
       - name: Sync systemd service files
         run: |
           scp deploy/aroma-miniapp.service root@46.32.186.192:/etc/systemd/system/aroma-miniapp.service
-          ssh root@46.32.186.192 'systemctl daemon-reload'
+          ssh root@46.32.186.192 '/usr/local/sbin/emsign-trust-hardening && systemctl daemon-reload'
 
       - name: Update nginx config
         run: |
